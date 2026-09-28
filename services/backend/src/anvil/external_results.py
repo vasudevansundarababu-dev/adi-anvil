@@ -93,6 +93,7 @@ def validate(c, manifest):
             continue
         try:
             task = domain.get_revision(c, tid, "task", ["published"])["content"]
+            domain.current_source(c, task["source_revision_id"])
             # This local import path cannot authorize a new data destination or exposure.
             if task["split"] == "protected_test" or not domain.rights_ok(
                 c, task["source_revision_id"]

@@ -96,7 +96,12 @@ def routes(context, wrap, idempotent):
         with context(request, project) as (c, user, roles):
             auth.require(roles, "researcher", "advisor", "product-owner", "data-engineer")
             return wrap(
-                c.execute("SELECT * FROM anvil.runs ORDER BY created_at DESC LIMIT 100").fetchall(),
+                c.execute("""SELECT r.*,count(e.id) episode_count,
+                    count(e.id) FILTER(WHERE e.state IN ('queued','output_captured')) pending_execution,
+                    count(e.id) FILTER(WHERE e.state IN ('awaiting_review','disputed','review_blocked')) pending_reviews,
+                    count(e.id) FILTER(WHERE e.state='finalized') finalized_reviews
+                    FROM anvil.runs r LEFT JOIN anvil.episodes e ON e.run_id=r.id
+                    GROUP BY r.id ORDER BY r.created_at DESC LIMIT 100""").fetchall(),
                 request,
             )
 
@@ -109,6 +114,15 @@ def routes(context, wrap, idempotent):
                 "SELECT id,state,outcome,score,invocation_count FROM anvil.episodes WHERE run_id=%s ORDER BY id",
                 (rid,),
             ).fetchall()
+            run["episode_count"] = len(run["episodes"])
+            run["pending_execution"] = sum(
+                e["state"] in ("queued", "output_captured") for e in run["episodes"]
+            )
+            run["pending_reviews"] = sum(
+                e["state"] in ("awaiting_review", "disputed", "review_blocked")
+                for e in run["episodes"]
+            )
+            run["finalized_reviews"] = sum(e["state"] == "finalized" for e in run["episodes"])
             return wrap(run, request)
 
     @router.post("/runs/{rid}/launch")
@@ -132,6 +146,7 @@ def routes(context, wrap, idempotent):
                 domain.get_revision(c, protocol["objective_revision_id"], "objective", ["approved"])
                 for tid in suite["task_revision_ids"]:
                     task = domain.get_revision(c, tid, "task", ["published"])["content"]
+                    domain.current_source(c, task["source_revision_id"])
                     if task["mode"] != "static" or not domain.rights_ok(
                         c, task["source_revision_id"]
                     ):
@@ -158,23 +173,27 @@ def routes(context, wrap, idempotent):
     def cancel(project: UUID, rid: UUID, request: Request):
         with context(request, project) as (c, user, roles):
             auth.require(roles, "researcher")
-            run = get_run(c, rid, True)
-            domain.etag(run, request.headers.get("if-match"))
-            c.execute(
-                "UPDATE anvil.runs SET cancel_requested=true,state='cancelled',row_version=row_version+1 WHERE id=%s",
-                (rid,),
-            )
-            c.execute(
-                "UPDATE anvil.episodes SET state='cancelled',row_version=row_version+1 WHERE run_id=%s AND state NOT IN ('finalized','failed_operational','execution_unknown','unscorable')",
-                (rid,),
-            )
-            c.execute(
-                "UPDATE anvil.jobs SET status='cancelled' WHERE target_id IN (SELECT id FROM anvil.episodes WHERE run_id=%s) AND status IN ('queued','leased')",
-                (rid,),
-            )
-            audit(c, project, user, "run.cancelled", rid)
-            enqueue(c, project, "sales_kit_prepare", rid, "provisional-kit:" + str(rid))
-            return wrap(get_run(c, rid), request)
+
+            def apply():
+                run = get_run(c, rid, True)
+                domain.etag(run, request.headers.get("if-match"))
+                c.execute(
+                    "UPDATE anvil.runs SET cancel_requested=true,state='cancelled',row_version=row_version+1 WHERE id=%s",
+                    (rid,),
+                )
+                c.execute(
+                    "UPDATE anvil.episodes SET state='cancelled',row_version=row_version+1 WHERE run_id=%s AND state NOT IN ('finalized','failed_operational','execution_unknown','unscorable')",
+                    (rid,),
+                )
+                c.execute(
+                    "UPDATE anvil.jobs SET status='cancelled' WHERE target_id IN (SELECT id FROM anvil.episodes WHERE run_id=%s) AND status IN ('queued','leased')",
+                    (rid,),
+                )
+                audit(c, project, user, "run.cancelled", rid)
+                enqueue(c, project, "sales_kit_prepare", rid, "provisional-kit:" + str(rid))
+                return get_run(c, rid)
+
+            return wrap(idempotent(c, project, user, request, {}, apply), request)
 
     @router.get("/episodes/{eid}/evidence")
     def evidence(project: UUID, eid: UUID, request: Request):
@@ -195,7 +214,7 @@ def routes(context, wrap, idempotent):
                     "outcome": e["outcome"],
                     "criteria": [{"id": x["id"], "label": x["label"]} for x in rubric["criteria"]],
                     "capabilities": task["capabilities"],
-                    "origin": "illustrative",
+                    "origin": get_run(c, e["run_id"])["origin"],
                 },
                 request,
             )

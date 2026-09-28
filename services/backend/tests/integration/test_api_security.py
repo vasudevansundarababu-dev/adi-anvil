@@ -49,7 +49,12 @@ def client_factory():
             )
 
 
-def test_external_results_preserve_origin_and_never_invoke(client_factory, monkeypatch):
+@pytest.mark.parametrize(
+    "valid_alternative", [False, True], ids=["missing-answer", "valid-alternative"]
+)
+def test_external_results_preserve_origin_and_never_invoke(
+    client_factory, monkeypatch, valid_alternative
+):
     from anvil import evaluation, external_results, reports, worker
     from anvil.db import one
 
@@ -120,10 +125,37 @@ def test_external_results_preserve_origin_and_never_invoke(client_factory, monke
             "SELECT content FROM anvil.revisions WHERE id=%s",
             (journey["suite"]["current_revision_id"],),
         )["content"]["task_revision_ids"]
+        tasks.sort(
+            key=lambda tid: (
+                one(
+                    c,
+                    "SELECT content->>'external_case_id' AS case_id FROM anvil.revisions WHERE id=%s",
+                    (tid,),
+                )["case_id"]
+                != "MKT-001"
+            )
+        )
+        alternate = json.loads(
+            (ROOT / "fixtures/calibration/valid-alternative-mkt.json").read_text()
+        )["output"]
+        output_text = (
+            json.dumps(alternate)
+            if valid_alternative
+            else "Synthetic externally supplied final answer for import verification."
+        )
+        if valid_alternative:
+            original_output = next(
+                row["output"]
+                for row in json.loads(
+                    (ROOT / "fixtures/candidate-outputs/responses.json").read_text()
+                )["responses"]
+                if row["case_id"] == "MKT-001" and row["candidate"] == "fixture-correct"
+            )
+            assert alternate != original_output
         output = store(
             c,
             project,
-            b"Synthetic externally supplied final answer for import verification.",
+            output_text.encode(),
             "internal",
             "text/plain",
             origin="partner_reported",
@@ -266,19 +298,29 @@ def test_external_results_preserve_origin_and_never_invoke(client_factory, monke
             name,
             "/episodes/" + reviewable["id"] + "/assessments",
             {
-                "scores": {"R1": 0, "R2": 0, "R3": 0},
+                "scores": {k: 4 if valid_alternative else 0 for k in ["R1", "R2", "R3"]},
                 "critical": [],
                 "evidence": {
-                    k: "Synthetic externally supplied final answer" for k in ["R1", "R2", "R3"]
-                },
-                "rationale": "Independent synthetic review disagrees with the supplied source score.",
+                    "R1": '"gross_profit": 3750',
+                    "R2": "Ten-percent reduction",
+                    "R3": "actor/exhibits.json",
+                }
+                if valid_alternative
+                else {k: "Synthetic externally supplied final answer" for k in ["R1", "R2", "R3"]},
+                "rationale": "Scripted calibration review credits equivalent option names, correct calculations and limits; no exact-answer matching."
+                if valid_alternative
+                else "Independent synthetic review disagrees with the supplied source score.",
             },
             detail["row_version"],
         )
     assert worker.tick()
     with transaction(project, USERS["researcher"]) as c:
         facts = reports.facts(c, run["id"])
-        assert facts["origin"] == "partner_reported" and facts["mean_score"] == 0
+        assert facts["origin"] == "partner_reported" and facts["mean_score"] == (
+            100 if valid_alternative else 0
+        )
+        assert facts["passes"] == int(valid_alternative)
+        assert facts["failures"] == int(not valid_alternative)
         assert facts["unscorable"] == 1 and facts["unknown"] == 1 and facts["valid"] == 1
         assert all(
             e["trace_coverage"] == "none" and not e["independently_reproduced"]
@@ -314,6 +356,10 @@ def test_external_results_preserve_origin_and_never_invoke(client_factory, monke
             c.execute(
                 "UPDATE anvil.episodes SET invocation_count=1 WHERE id=%s", (reviewable["id"],)
             )
+    assert (
+        get("researcher", "/episodes/" + reviewable["id"] + "/evidence")["origin"]
+        == "partner_reported"
+    )
     report = post(
         "researcher",
         "/reports",
@@ -449,6 +495,24 @@ def test_200_synthetic_source_inventory_pagination_and_search(client_factory):
         headers={"Idempotency-Key": uid()},
     )
     assert committed.status_code == 200, committed.text
+    revised_manifest = {
+        **manifest,
+        "cases": [
+            {**case, "source_version": "synthetic-v2", "title": case["title"] + " version two"}
+            for case in manifest["cases"]
+        ],
+    }
+    revised_preview = client.post(
+        base + "/imports/validate", json=revised_manifest, headers={"Idempotency-Key": uid()}
+    ).json()["data"]
+    assert revised_preview["status"] == "validated"
+    revised = client.post(
+        base + "/imports/" + revised_preview["id"] + "/commit",
+        json={"manifest_hash": revised_preview["manifest_hash"]},
+        headers={"Idempotency-Key": uid()},
+    )
+    assert revised.status_code == 200, revised.text
+    assert revised.json()["data"]["source_ids"] == committed.json()["data"]["source_ids"]
     ids, cursor = [], None
     while True:
         page = client.get(
@@ -457,6 +521,7 @@ def test_200_synthetic_source_inventory_pagination_and_search(client_factory):
         assert page.status_code == 200, page.text
         result = page.json()
         assert result["meta"]["inventory_total"] == 200 and result["meta"]["qualified_sources"] == 0
+        assert result["meta"]["source_versions"] == 400 and result["meta"]["source_families"] == 100
         ids.extend(row["id"] for row in result["data"])
         cursor = result["meta"]["next_cursor"]
         if not cursor:
@@ -488,6 +553,8 @@ def test_200_synthetic_source_inventory_pagination_and_search(client_factory):
         "project_id": project,
         "origin": "synthetic_load_test",
         "source_records": 200,
+        "source_versions": 400,
+        "source_families": 100,
         "published_tasks": 0,
         "model_performance": "not_measured",
         "concurrency": 1,
@@ -498,12 +565,57 @@ def test_200_synthetic_source_inventory_pagination_and_search(client_factory):
         "free_disk_bytes": shutil.disk_usage(ROOT).free,
         "measurements": measurements,
         "target_under_500ms": all(m["p95_ms"] < 500 for m in measurements.values()),
-        "not_run": ["400_episode_batch", "browser_network_latency", "related_source_versions"],
+        "not_run": ["400_episode_batch", "browser_network_latency"],
     }
     (ROOT / "artifacts/test-runs/inventory-performance.json").write_text(
         json.dumps(evidence, indent=2)
     )
     assert evidence["target_under_500ms"], evidence["measurements"]
+
+
+def test_graph_old_version_edges_cannot_starve_current_snapshot(monkeypatch):
+    import contextlib
+    import io
+
+    from anvil import domain
+    from anvil.operations import new_demo
+
+    captured = io.StringIO()
+    with contextlib.redirect_stdout(captured):
+        new_demo("Synthetic graph version-history boundary")
+    project = json.loads(captured.getvalue())["project_id"]
+    with transaction(project, USERS["researcher"]) as c:
+        target = domain.create(c, project, USERS["researcher"], "objective", objective_body())
+        source = domain.create(c, project, USERS["researcher"], "objective", objective_body())
+        with monkeypatch.context() as patched:
+            patched.setattr(domain, "uid", lambda: "11111111" + uid()[8:])
+            for revision in range(501):
+                source = domain.revise(
+                    c,
+                    source,
+                    USERS["researcher"],
+                    {**objective_body(), "title": f"Synthetic historical graph version {revision}"},
+                )
+            patched.setattr(domain, "uid", lambda: "ffffffff" + uid()[8:])
+            source = domain.revise(
+                c,
+                source,
+                USERS["researcher"],
+                {**objective_body(), "title": "Current synthetic graph version"},
+            )
+        c.execute(
+            "INSERT INTO anvil.revision_links VALUES(%s,%s,%s,'objective')",
+            (project, source["current_revision_id"], target["current_revision_id"]),
+        )
+        snapshot = graph.canonical(c)
+        assert len(snapshot["nodes"]) == 2 and not snapshot["truncated"]
+        assert snapshot["edges"] == [
+            {
+                "source": str(source["current_revision_id"]),
+                "target": str(target["current_revision_id"]),
+                "relation": "objective",
+            }
+        ]
 
 
 def test_logout_invalidates_captured_cookie(client_factory):
@@ -594,6 +706,33 @@ def test_idempotency_stale_etag_and_submitted_immutability(client_factory):
     )
 
 
+def test_draft_edit_replay_preserves_one_new_revision(client_factory):
+    client, _ = client_factory()
+    body = objective_body()
+    original = client.post(BASE + "/objectives", json=body).json()["data"]
+    path = BASE + "/objectives/" + original["id"] + "/draft"
+    changed = {**body, "title": "Edited draft with immutable history"}
+    headers = {"If-Match": str(original["row_version"]), "Idempotency-Key": uid()}
+    response = client.patch(path, json=changed, headers=headers)
+    assert response.status_code == 200, response.text
+    edited = response.json()["data"]
+    assert edited["revision"] == original["revision"] + 1
+    assert client.patch(path, json=changed, headers=headers).json()["data"] == edited
+    assert client.patch(path, json=body, headers=headers).status_code == 409
+    assert (
+        client.patch(path, json=changed, headers={**headers, "Idempotency-Key": uid()}).status_code
+        == 412
+    )
+    with transaction(PROJECT, USERS["researcher"]) as c:
+        versions = c.execute(
+            "SELECT content FROM anvil.revisions WHERE resource_id=%s ORDER BY revision",
+            (original["id"],),
+        ).fetchall()
+    assert len(versions) == 2
+    assert versions[0]["content"] == body
+    assert versions[1]["content"] == changed
+
+
 def test_manifest_dryrun_atomic_commit_dedup_and_quarantine(client_factory):
     client, _ = client_factory("data-engineer")
     with transaction(PROJECT, USERS["data-engineer"]) as c:
@@ -657,6 +796,78 @@ def test_manifest_dryrun_atomic_commit_dedup_and_quarantine(client_factory):
     assert source["content"]["faculty_validation"] is None
     assert source["content"]["rights_status"] == "unknown"
     assert source["rights"] == []
+    owner, _ = client_factory("product-owner")
+    grant_body = {
+        "operation": "managed_evaluation",
+        "destination": "local_fixture",
+        "status": "approved",
+        "evidence": "Independent synthetic first-version rights review for version-isolation testing.",
+    }
+    grant_headers = {"Idempotency-Key": uid(), "If-Match": str(source["row_version"])}
+    grant = owner.post(
+        BASE + "/cases/" + ids[0] + "/rights", json=grant_body, headers=grant_headers
+    )
+    assert grant.status_code == 200, grant.text
+    old_revision = source["current_revision_id"]
+    second = commit(
+        preview(
+            {
+                **manifest,
+                "cases": [
+                    {**case, "source_version": "2", "title": "Synthetic corrected source version"}
+                ],
+            }
+        )
+    )
+    assert second.status_code == 200, second.text
+    assert second.json()["data"]["source_ids"] == ids
+    new_revision = second.json()["data"]["source_revision_ids"][0]
+    assert new_revision != old_revision
+    current = client.get(BASE + "/cases/" + ids[0]).json()["data"]
+    assert current["current_revision_id"] == new_revision and current["rights"] == []
+    replay = owner.post(
+        BASE + "/cases/" + ids[0] + "/rights", json=grant_body, headers=grant_headers
+    )
+    assert replay.status_code == 200 and replay.json()["data"] == grant.json()["data"]
+    assert replay.json()["data"]["source_revision_id"] == old_revision
+    assert client.get(BASE + "/cases/" + ids[0]).json()["data"]["rights"] == []
+    assert (
+        current["content"]["faculty_validation"] is None
+        and current["content"]["qualification"] == "not_reviewed"
+    )
+    assert commit(preview(manifest)).json()["data"]["source_revision_ids"] == [old_revision]
+    assert (
+        client.get(BASE + "/cases/" + ids[0]).json()["data"]["current_revision_id"] == new_revision
+    )
+    from fastapi import HTTPException
+
+    from anvil import domain
+
+    with transaction(PROJECT, USERS["data-engineer"]) as c:
+        assert domain.rights_ok(c, old_revision) and not domain.rights_ok(c, new_revision)
+        assert domain.get_revision(c, old_revision)["content"]["title"] == case["title"]
+        with pytest.raises(HTTPException, match="Source was superseded"):
+            domain.current_source(c, old_revision)
+        assert str(domain.current_source(c, new_revision)["id"]) == new_revision
+    from datetime import datetime, timedelta, timezone
+
+    expiry_body = {
+        **grant_body,
+        "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+    }
+    expiring = owner.post(
+        BASE + "/cases/" + ids[0] + "/rights",
+        json=expiry_body,
+        headers={"Idempotency-Key": uid(), "If-Match": str(current["row_version"])},
+    )
+    assert expiring.status_code == 200, expiring.text
+    with transaction(PROJECT, USERS["product-owner"]) as c:
+        assert domain.rights_ok(c, new_revision)
+        c.execute(
+            "UPDATE anvil.rights_grants SET expires_at=now()-interval '1 second' WHERE source_revision_id=%s",
+            (new_revision,),
+        )
+        assert not domain.rights_ok(c, new_revision)
     conflict = preview({**manifest, "cases": [{**case, "title": "Changed original"}]})
     assert conflict["status"] == "rejected"
     assert conflict["errors"][0]["code"] == "source_version_conflict"

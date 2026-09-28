@@ -43,6 +43,7 @@ textarea {
   outline-offset: 4px;
 }
 button:focus-visible,
+svg [role='button']:focus-visible,
 a:focus-visible,
 input:focus-visible,
 select:focus-visible,
@@ -300,6 +301,9 @@ th {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 22px;
+}
+.split > * {
+  min-width: 0;
 }
 footer {
   margin-top: 35px;

@@ -5,6 +5,8 @@ import Intake from './Intake';
 import ProviderSetup from './ProviderSetup';
 import RightsReview from './RightsReview';
 import ExternalResults from './ExternalResults';
+import GraphMap from './GraphMap';
+import RevisionEditor from './RevisionEditor';
 import FindingComposer from './FindingComposer';
 import FixtureDelivery from './FixtureDelivery';
 
@@ -20,12 +22,17 @@ type Episode = {
 };
 type Row = {
   id: string;
+  created_by?: string;
   kind: string;
   lifecycle: string;
   state?: string;
   origin?: string;
   my_review_submitted?: boolean;
   episodes?: Episode[];
+  episode_count?: number;
+  pending_execution?: number;
+  pending_reviews?: number;
+  finalized_reviews?: number;
   row_version: number;
   current_revision_id: string;
   content_hash: string;
@@ -52,6 +59,7 @@ type Review = {
   submitted_assessments?: unknown[];
 };
 type Graph = {
+  truncated: boolean;
   projection_status: string;
   source: string;
   canonical_sequence: number;
@@ -153,15 +161,35 @@ export default function Console() {
     inventory_total: number;
     matching_total: number;
     qualified_sources?: number;
+    source_versions?: number;
+    source_families?: number;
     next_cursor: string | null;
   } | null>(null);
   const [review, setReview] = useState<Review | null>(null),
+    [editing, setEditing] = useState<Row | null>(null),
     [graph, setGraph] = useState<Graph | null>(null),
     [node, setNode] = useState<Graph['nodes'][number] | null>(null);
   const project = user?.projects.find((p) => p.id === parts[2]) || user?.projects[0];
-  const section = modules.includes(parts[3]) ? parts[3] : 'objectives';
-  const base = project ? '/projects/' + project.id : '';
   const role = (...r: string[]) => !!project?.roles.some((x) => r.includes(x));
+  const contentRole = role(
+    'researcher',
+    'advisor',
+    'data-engineer',
+    'reviewer',
+    'adjudicator',
+    'product-owner',
+  );
+  const visibleModules = modules.filter((module) => {
+    if (module === 'providers') return role('admin');
+    if (module === 'reviews') return role('reviewer', 'adjudicator');
+    if (module === 'diagnostics') return role('researcher', 'advisor');
+    if (module === 'runs') return role('researcher', 'advisor', 'data-engineer', 'product-owner');
+    if (module === 'sales-kits') return role('researcher', 'advisor', 'product-owner', 'sales');
+    if (module === 'objectives') return contentRole || role('sales');
+    return contentRole;
+  });
+  const section = modules.includes(parts[3]) ? parts[3] : visibleModules[0] || 'objectives';
+  const base = project ? '/projects/' + project.id : '';
   useEffect(() => {
     api('/me')
       .then(setUser)
@@ -185,7 +213,8 @@ export default function Console() {
         setGraph(data);
         setRows([]);
       } else setRows(data);
-      if (!project?.roles.includes('sales')) setMembers(await api(base + '/members'));
+      if (project?.roles.some((r) => r !== 'sales')) setMembers(await api(base + '/members'));
+      else setMembers([]);
     } catch (e) {
       setError((e as Error).message);
       setRows([]);
@@ -196,17 +225,45 @@ export default function Console() {
   }, [reload]);
   useEffect(() => {
     setForm(false);
+    setEditing(null);
     setSearch('');
     setQuery('');
   }, [base, section]);
-  async function act(fn: () => Promise<unknown>, success = 'Saved to the project audit trail.') {
+  useEffect(() => {
+    if (section !== 'runs' || !rows.some((row) => (row.pending_execution || 0) > 0)) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const updated: Row[] = await api(base + '/runs');
+        const detailed = await Promise.all(
+          updated.map((row) =>
+            rows.some((old) => old.id === row.id && old.episodes)
+              ? api(base + '/runs/' + row.id)
+              : row,
+          ),
+        );
+        if (!cancelled) setRows(detailed);
+      } catch (e) {
+        if (!cancelled) setError((e as Error).message);
+      }
+    }, 2000);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [base, section, rows]);
+  async function act(
+    fn: () => Promise<unknown>,
+    success = 'Saved to the project audit trail.',
+    refresh = true,
+  ) {
     setBusy(true);
     setError('');
     setMessage('');
     try {
       await fn();
       setMessage(success);
-      await reload();
+      if (refresh) await reload();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -393,7 +450,7 @@ export default function Console() {
         </div>
       </header>
       <nav aria-label="Project navigation">
-        {modules.map((m) => (
+        {visibleModules.map((m) => (
           <a
             key={m}
             href={'/p/' + project?.id + '/' + m}
@@ -486,6 +543,26 @@ export default function Console() {
             )}
           </div>
         </div>
+        {editing && (
+          <RevisionEditor
+            key={editing.current_revision_id}
+            resource={editing}
+            busy={busy}
+            onClose={() => setEditing(null)}
+            onSave={(body) =>
+              void act(async () => {
+                const draft = ['draft', 'changes_requested'].includes(editing.lifecycle);
+                await api(
+                  base + '/' + section + '/' + editing.id + (draft ? '/draft' : '/successor'),
+                  draft ? 'PATCH' : 'POST',
+                  body,
+                  editing.row_version,
+                );
+                setEditing(null);
+              }, 'New draft version saved. Fresh review is required.')
+            }
+          />
+        )}
         {form && (
           <form className="card" onSubmit={create}>
             <h2>New {section.slice(0, -1)}</h2>
@@ -661,6 +738,14 @@ export default function Console() {
               <small>Actual source cases</small>
             </div>
             <div>
+              <strong>{pageInfo?.source_versions ?? '—'}</strong>
+              <small>Source versions</small>
+            </div>
+            <div>
+              <strong>{pageInfo?.source_families ?? '—'}</strong>
+              <small>Source families</small>
+            </div>
+            <div>
               <strong>{pageInfo?.qualified_sources ?? 0}</strong>
               <small>Sources with published tasks</small>
             </div>
@@ -683,18 +768,20 @@ export default function Console() {
                   Select a node to inspect its exact version. Lines represent recorded evidence
                   relationships, not causality.
                 </p>
-                <div className="grid">
-                  {graph.nodes
-                    .filter((n) => n.label.toLowerCase().includes(search.toLowerCase()))
-                    .map((n) => (
-                      <button key={n.id} onClick={() => setNode(n)}>
-                        {n.label}
-                        <small className="badge">
-                          {n.kind} · {n.status}
-                        </small>
-                      </button>
-                    ))}
-                </div>
+                <GraphMap
+                  nodes={graph.nodes.filter((n) =>
+                    n.label.toLowerCase().includes(search.toLowerCase()),
+                  )}
+                  edges={graph.edges}
+                  selected={node?.id}
+                  onSelect={setNode}
+                />
+                {graph.truncated && (
+                  <p className="muted">
+                    Bounded view: at most 200 nodes and 500 relationships. Additional evidence may
+                    be outside this snapshot.
+                  </p>
+                )}
               </div>
               <div className="card">
                 <h2>Node inspector</h2>
@@ -964,6 +1051,14 @@ export default function Console() {
                       ? 'Actual model cost: not applicable to network-free fixtures'
                       : 'External execution is reported, not independently reproduced. Cost is not verified by Anvil.'}
                   </p>
+                  <p>
+                    {r.episode_count ?? 0} episodes · {r.pending_execution ?? 0} pending execution ·{' '}
+                    {r.pending_reviews ?? 0} awaiting review · {r.finalized_reviews ?? 0} finalized
+                    reviews
+                  </p>
+                  {!!r.pending_execution && (
+                    <p className="muted">Execution status refreshes every two seconds.</p>
+                  )}
                   <div className="actions">
                     {r.state === 'draft' && r.origin === 'illustrative' && role('researcher') && (
                       <button
@@ -1063,6 +1158,25 @@ export default function Console() {
                   <div className="actions">
                     <button disabled>Email sending disabled</button>
                   </div>
+                  {r.lifecycle === 'approved' && role('researcher', 'product-owner', 'sales') && (
+                    <div className="actions">
+                      {[
+                        ['sales-kit.pdf', 'Download PDF'],
+                        ['sales-kit.html', 'Download HTML'],
+                        ['evidence.zip', 'Download evidence ZIP'],
+                        ['email-draft.txt', 'Download email draft'],
+                        ['internal-brief.txt', 'Download internal brief'],
+                      ].map(([name, label]) => (
+                        <a
+                          className="button"
+                          key={name}
+                          href={'/api/v1' + base + '/sales-kits/' + r.id + '/download/' + name}
+                        >
+                          {label}
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </>
               )}
               {section === 'providers' && role('admin') && (
@@ -1073,6 +1187,29 @@ export default function Console() {
                 />
               )}
               <div className="actions">
+                {r.created_by === user.id &&
+                  role('researcher', 'data-engineer') &&
+                  [
+                    'objective',
+                    'rubric',
+                    'task',
+                    'suite',
+                    'protocol',
+                    'finding',
+                    'report',
+                  ].includes(r.kind) && (
+                    <button
+                      disabled={busy}
+                      onClick={() => {
+                        setForm(false);
+                        setEditing(r);
+                      }}
+                    >
+                      {['draft', 'changes_requested'].includes(r.lifecycle)
+                        ? 'Edit draft'
+                        : 'Create successor'}
+                    </button>
+                  )}
                 {r.lifecycle === 'draft' && role('researcher', 'data-engineer') && r.kind && (
                   <button disabled={busy} onClick={() => void change(r, 'submit')}>
                     Submit for review
@@ -1178,10 +1315,14 @@ export default function Console() {
                 {!['reviews', 'providers', 'sales-kits'].includes(section) && (
                   <button
                     onClick={() =>
-                      act(async () => {
-                        const full = await api(base + '/' + section + '/' + r.id);
-                        setRows((old) => old.map((x) => (x.id === r.id ? full : x)));
-                      }, 'Current evidence and history loaded.')
+                      act(
+                        async () => {
+                          const full = await api(base + '/' + section + '/' + r.id);
+                          setRows((old) => old.map((x) => (x.id === r.id ? full : x)));
+                        },
+                        'Current evidence and history loaded.',
+                        false,
+                      )
                     }
                   >
                     {section === 'runs' ? 'Inspect episodes' : 'Load review history'}

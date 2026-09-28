@@ -949,6 +949,63 @@
         }
       }
     },
+    "/api/v1/projects/{project}/sales-kits/{kid}/download/{name}": {
+      "get": {
+        "summary": "Kit Download",
+        "operationId": "kit_download_api_v1_projects__project__sales_kits__kid__download__name__get",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project"
+            }
+          },
+          {
+            "name": "kid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Kid"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects/{project}/reports/{rid}/download/{name}": {
       "get": {
         "summary": "Download",
@@ -3444,6 +3501,18 @@
             "maxLength": 5000,
             "minLength": 20,
             "title": "Evidence"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
           }
         },
         "additionalProperties": false,

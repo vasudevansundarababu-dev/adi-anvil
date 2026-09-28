@@ -242,6 +242,18 @@ def rights_ok(c, source, operation="managed_evaluation", destination="local_fixt
     )
 
 
+def current_source(c, revision):
+    source = get_revision(c, revision, "case")
+    if source["id"] != source["current_revision_id"] or source["lifecycle"] in (
+        "withdrawn",
+        "revoked",
+    ):
+        raise HTTPException(
+            409, "Source was superseded or withdrawn; requalify its dependent evidence"
+        )
+    return source
+
+
 def qualify(c, r):
     b = r["content"]
     kind = r["kind"]
@@ -249,7 +261,7 @@ def qualify(c, r):
     if kind == "task":
         if b["mode"] != "static":
             raise HTTPException(409, "unsupported_execution_mode")
-        get_revision(c, b["source_revision_id"], "case")
+        current_source(c, b["source_revision_id"])
         get_revision(c, b["rubric_revision_id"], "rubric", ["approved"])
         if not rights_ok(c, b["source_revision_id"]):
             raise HTTPException(409, "Local evaluation rights not reviewed")
@@ -272,6 +284,7 @@ def qualify(c, r):
         families = {}
         for tid in b["task_revision_ids"]:
             task = get_revision(c, tid, "task", ["published"])["content"]
+            current_source(c, task["source_revision_id"])
             if task["family_id"] in families and families[task["family_id"]] != task["split"]:
                 raise HTTPException(409, "Related family split conflict")
             families[task["family_id"]] = task["split"]

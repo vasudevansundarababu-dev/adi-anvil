@@ -36,14 +36,28 @@ def guard(c, job):
         raise RuntimeError("lease_lost")
     e = one(
         c,
-        "SELECT e.*,r.cancel_requested FROM anvil.episodes e JOIN anvil.runs r ON r.id=e.run_id WHERE e.id=%s FOR UPDATE OF e",
+        "SELECT e.*,r.cancel_requested,r.protocol_revision_id,r.created_by AS run_author FROM anvil.episodes e JOIN anvil.runs r ON r.id=e.run_id WHERE e.id=%s FOR UPDATE OF e",
         (job["target_id"],),
     )
     if not e or e["cancel_requested"] or e["state"] == "cancelled":
         raise RuntimeError("cancelled")
     if e["graph_version"] not in (GRAPH_VERSION, EXTERNAL_GRAPH_VERSION):
         raise RuntimeError("graph_version_mismatch")
+    if not one(
+        c,
+        "SELECT 1 FROM anvil.memberships WHERE project_id=%s AND user_id=%s AND role='researcher' AND active",
+        (job["project_id"], e["run_author"]),
+    ):
+        raise RuntimeError("run_authorization_revoked")
+    protocol = domain.get_revision(c, e["protocol_revision_id"], "protocol", ["approved"])[
+        "content"
+    ]
+    domain.get_revision(c, protocol["objective_revision_id"], "objective", ["approved"])
+    domain.get_revision(c, protocol["suite_revision_id"], "suite", ["frozen"])
     task = domain.get_revision(c, e["task_revision_id"], "task", ["published"])
+    domain.current_source(c, task["content"]["source_revision_id"])
+    if not domain.rights_ok(c, task["content"]["source_revision_id"]):
+        raise RuntimeError("rights_revoked")
     rubric = one(
         c,
         "SELECT 1 FROM anvil.resources WHERE current_revision_id=%s AND kind='rubric' AND lifecycle='approved'",
@@ -267,6 +281,7 @@ def tick():
             "graph_version_mismatch",
             "rights_or_mode_blocked",
             "rights_revoked",
+            "run_authorization_revoked",
             "final_review_missing",
             "pending_interrupt_missing",
         }:

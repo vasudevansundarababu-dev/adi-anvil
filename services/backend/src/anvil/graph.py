@@ -27,7 +27,7 @@ def canonical(c):
     records = c.execute("""SELECT r.id,r.kind,r.lifecycle,v.id revision_id,v.content_hash,v.content
                           FROM anvil.resources r JOIN anvil.revisions v ON v.id=r.current_revision_id
                           WHERE r.kind IN ('objective','case','task','suite','protocol','finding','report')
-                          AND r.lifecycle NOT IN ('withdrawn','revoked') ORDER BY r.id LIMIT 200""").fetchall()
+                          AND r.lifecycle NOT IN ('withdrawn','revoked') ORDER BY r.id LIMIT 201""").fetchall()
     nodes = [
         {
             "id": str(r["revision_id"]),
@@ -37,21 +37,22 @@ def canonical(c):
             "status": r["lifecycle"],
             "hash": r["content_hash"],
         }
-        for r in records
+        for r in records[:200]
     ]
     ids = {n["id"] for n in nodes}
+    linked = c.execute(
+        "SELECT * FROM anvil.revision_links WHERE revision_id=ANY(%s::uuid[]) AND target_revision_id=ANY(%s::uuid[]) ORDER BY revision_id,target_revision_id,relation LIMIT 501",
+        (list(ids), list(ids)),
+    ).fetchall()
     edges = [
         {
             "source": str(x["revision_id"]),
             "target": str(x["target_revision_id"]),
             "relation": x["relation"],
         }
-        for x in c.execute(
-            "SELECT * FROM anvil.revision_links ORDER BY revision_id LIMIT 500"
-        ).fetchall()
-        if str(x["revision_id"]) in ids and str(x["target_revision_id"]) in ids
+        for x in linked[:500]
     ]
-    return {"nodes": nodes, "edges": edges, "truncated": len(nodes) == 200 or len(edges) == 500}
+    return {"nodes": nodes, "edges": edges, "truncated": len(records) > 200 or len(linked) > 500}
 
 
 def project_graph(project):

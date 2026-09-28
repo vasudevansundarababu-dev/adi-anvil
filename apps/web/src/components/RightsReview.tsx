@@ -47,6 +47,9 @@ export default function RightsReview({
                   operation === 'managed_evaluation' ? 'local_fixture' : 'internal_fixture',
                 status: String(data.get('status')),
                 evidence: String(data.get('evidence')),
+                expires_at: data.get('expires_at')
+                  ? new Date(String(data.get('expires_at'))).toISOString()
+                  : null,
               }),
             });
             const result = await response.json();
@@ -71,6 +74,8 @@ export default function RightsReview({
         </select>
         <label htmlFor={id + '-evidence'}>Reviewed rights evidence and limits</label>
         <textarea id={id + '-evidence'} name="evidence" minLength={20} maxLength={5000} required />
+        <label htmlFor={id + '-expires'}>Permission expiry (optional, your local time)</label>
+        <input id={id + '-expires'} name="expires_at" type="datetime-local" />
         <button disabled={busy}>Record rights decision</button>
       </form>
       {message && <p role="status">{message}</p>}

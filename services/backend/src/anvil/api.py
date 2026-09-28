@@ -252,18 +252,18 @@ def case_rights(project: UUID, rid: UUID, body: Rights, request: Request):
             (user,),
         ):
             raise HTTPException(403, "Designated rights reviewer required")
-        r = domain.get_resource(c, rid, True)
-        if r["kind"] != "case":
-            raise HTTPException(404, "Case not found")
-        domain.etag(r, request.headers.get("if-match"))
-        if str(r["created_by"]) == str(user):
-            raise HTTPException(409, "Independent rights review required")
 
         def change():
+            r = domain.get_resource(c, rid, True)
+            if r["kind"] != "case":
+                raise HTTPException(404, "Case not found")
+            domain.etag(r, request.headers.get("if-match"))
+            if str(r["created_by"]) == str(user):
+                raise HTTPException(409, "Independent rights review required")
             c.execute(
-                """INSERT INTO anvil.rights_grants(id,project_id,source_revision_id,operation,destination,status,reviewed_by,evidence)
-                         VALUES(%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(source_revision_id,operation,destination)
-                         DO UPDATE SET status=excluded.status,reviewed_by=excluded.reviewed_by,evidence=excluded.evidence,row_version=anvil.rights_grants.row_version+1""",
+                """INSERT INTO anvil.rights_grants(id,project_id,source_revision_id,operation,destination,status,reviewed_by,evidence,expires_at)
+                         VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(source_revision_id,operation,destination)
+                         DO UPDATE SET status=excluded.status,reviewed_by=excluded.reviewed_by,evidence=excluded.evidence,expires_at=excluded.expires_at,row_version=anvil.rights_grants.row_version+1""",
                 (
                     uid(),
                     project,
@@ -273,6 +273,7 @@ def case_rights(project: UUID, rid: UUID, body: Rights, request: Request):
                     body.status,
                     user,
                     body.evidence,
+                    body.expires_at,
                 ),
             )
             audit(
@@ -281,9 +282,18 @@ def case_rights(project: UUID, rid: UUID, body: Rights, request: Request):
                 user,
                 "rights." + body.status,
                 rid,
-                {"operation": body.operation, "destination": body.destination},
+                {
+                    "operation": body.operation,
+                    "destination": body.destination,
+                    "source_revision_id": str(r["current_revision_id"]),
+                    "expires_at": body.expires_at.isoformat() if body.expires_at else None,
+                },
             )
-            return {"status": body.status}
+            return {
+                "status": body.status,
+                "source_revision_id": str(r["current_revision_id"]),
+                "expires_at": body.expires_at.isoformat() if body.expires_at else None,
+            }
 
         return wrap(idempotent(c, project, user, request, body, change), request)
 
@@ -324,6 +334,18 @@ def list_resources(
             {**counts, "next_cursor": str(rows[limit - 1]["id"]) if len(rows) > limit else None}
         )
         if kind == "case":
+            result["meta"].update(
+                one(
+                    c,
+                    """SELECT count(*) source_versions FROM anvil.revisions v
+                JOIN anvil.resources r ON r.id=v.resource_id WHERE r.kind='case'""",
+                )
+            )
+            result["meta"]["source_families"] = one(
+                c,
+                """SELECT count(DISTINCT coalesce(v.content->>'source_family_key',v.content->>'family_id')) n
+                FROM anvil.resources r JOIN anvil.revisions v ON v.id=r.current_revision_id WHERE r.kind='case'""",
+            )["n"]
             result["meta"]["qualified_sources"] = one(
                 c,
                 """SELECT count(*) n FROM anvil.resources source WHERE source.kind='case'
@@ -378,19 +400,22 @@ def create_resource(project: UUID, collection: str, body: dict, request: Request
 def edit_resource(project: UUID, collection: str, rid: UUID, body: dict, request: Request):
     with context(request, project) as (c, user, roles):
         auth.require(roles, "researcher", "data-engineer")
-        c.execute("SELECT id FROM anvil.projects WHERE id=%s FOR UPDATE", (project,))
-        r = domain.get_resource(c, rid, True)
-        if KINDS.get(collection) != r["kind"]:
-            raise HTTPException(404, "Resource not found")
-        domain.etag(r, request.headers.get("if-match"))
-        if r["lifecycle"] not in ("draft", "changes_requested"):
-            raise HTTPException(409, "Submitted content is immutable; create a successor")
-        if r["created_by"] != user:
-            raise HTTPException(403, "Only author can edit this draft")
-        content = domain.validate_content(c, project, r["kind"], body)
-        if r["kind"] == "report":
-            content = prepare_report(c, content)
-        return wrap(domain.revise(c, r, user, content), request)
+
+        def act():
+            r = domain.get_resource(c, rid, True)
+            if KINDS.get(collection) != r["kind"]:
+                raise HTTPException(404, "Resource not found")
+            domain.etag(r, request.headers.get("if-match"))
+            if r["lifecycle"] not in ("draft", "changes_requested"):
+                raise HTTPException(409, "Submitted content is immutable; create a successor")
+            if r["created_by"] != user:
+                raise HTTPException(403, "Only author can edit this draft")
+            content = domain.validate_content(c, project, r["kind"], body)
+            if r["kind"] == "report":
+                content = prepare_report(c, content)
+            return domain.revise(c, r, user, content)
+
+        return wrap(idempotent(c, project, user, request, body, act), request)
 
 
 @app.post("/api/v1/projects/{project}/{collection}/{rid}/successor")

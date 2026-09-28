@@ -1,7 +1,8 @@
+from datetime import datetime, timezone
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, StrictInt, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StrictInt, model_validator
 
 
 class Strict(BaseModel):
@@ -156,6 +157,20 @@ class Rights(Strict):
     destination: Literal["local_fixture", "internal_fixture"]
     status: Literal["approved", "revoked"]
     evidence: str = Field(min_length=20, max_length=5000)
+    expires_at: AwareDatetime | None = None
+
+    @model_validator(mode="after")
+    def bounded_scope(self):
+        expected = "local_fixture" if self.operation == "managed_evaluation" else "internal_fixture"
+        if self.destination != expected:
+            raise ValueError("Operation and reviewed local destination must match")
+        if (
+            self.status == "approved"
+            and self.expires_at
+            and self.expires_at <= datetime.now(timezone.utc)
+        ):
+            raise ValueError("A new approved scope must expire in the future")
+        return self
 
 
 class Assessment(Strict):

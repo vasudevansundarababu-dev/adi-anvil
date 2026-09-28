@@ -1,0 +1,16 @@
+{
+  "origin": "synthetic_calibration_only",
+  "warning": "Hand-authored alternate wording for review-mechanics verification. Not a model output or expert-calibrated performance result.",
+  "case_id": "MKT-001",
+  "output": {
+    "options": [
+      {"id": "Full price", "unit_price": 100, "units": 100, "revenue": 10000, "gross_profit": 4000, "gross_margin": 0.4},
+      {"id": "Ten-percent reduction", "unit_price": 90, "units": 125, "revenue": 11250, "gross_profit": 3750, "gross_margin": 0.3333333333333333},
+      {"id": "Twenty-percent reduction", "unit_price": 80, "units": 140, "revenue": 11200, "gross_profit": 2800, "gross_margin": 0.25}
+    ],
+    "selected_option": "Ten-percent reduction",
+    "constraint_checks": "The full-price and ten-percent options exceed the 30% margin floor, but the latter sells 125 rather than 100 units. Both stay within stock of 140. The twenty-percent option hits the stock cap but earns only 25% gross margin and is infeasible. Margin displays are 40.00%, 33.33%, and 25.00%; currency amounts are in whole dollars with zero cents.",
+    "evidence": ["actor/exhibits.json"],
+    "limitations": "All demand values are supplied point estimates, not demonstrated causal uplift. No replenishment or outside demand assumptions are used. The objective is units, not the largest dollar profit."
+  }
+}

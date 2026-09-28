@@ -303,6 +303,13 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
     (k: any) => k.content.report_revision_id === report.current_revision_id,
   );
   expect(kit.content.artifacts['evidence.zip']).toBeTruthy();
+  const salesPage = await contexts.sales.newPage();
+  await salesPage.goto('/p/' + project + '/sales-kits');
+  const downloaded = salesPage.waitForEvent('download');
+  await salesPage.getByRole('link', { name: 'Download PDF', exact: true }).click();
+  const salesPdf = await downloaded;
+  expect(salesPdf.suggestedFilename()).toBe('sales-kit.pdf');
+  await salesPdf.saveAs('artifacts/test-runs/sales-ui-download.pdf');
   const contact = await call(contexts.sales, '/sales-contacts', 'POST', {
     name: 'Synthetic lab contact',
     email: 'evaluation@lab.invalid',
@@ -351,6 +358,21 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
   const csrf = await R.request.post(base + '/objectives', { data: {} });
   expect(csrf.status()).toBe(403);
   const page = await R.newPage();
+  await page.goto('/p/' + project + '/diagnostics');
+  const graphView = page.getByRole('group', { name: 'Version-bound evidence graph' });
+  await expect(graphView).toBeVisible();
+  const firstNode = graphView.getByRole('button').first();
+  await firstNode.focus();
+  await page.keyboard.press('Enter');
+  await expect(firstNode).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText('Revision ' + graph.nodes[0].id, { exact: false })).toBeVisible();
+  for (const width of [320, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBeTruthy();
+    await page.screenshot({ path: `artifacts/test-runs/graph-${width}.png`, fullPage: true });
+  }
   await page.goto('/p/' + project + '/objectives');
   await expect(
     page.getByRole('heading', { name: 'Research objectives', exact: true }),
@@ -493,7 +515,24 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
   expect(invalid.score).toBeNull();
   expect(invalid.invocation_count).toBe(1);
   const cancelTarget = await call(R, `/runs/${disputedRun.id}`);
-  await call(R, `/runs/${disputedRun.id}/cancel`, 'POST', {}, cancelTarget.row_version);
+  const cancelKey = randomUUID();
+  const firstCancel = await call(
+    R,
+    `/runs/${disputedRun.id}/cancel`,
+    'POST',
+    {},
+    cancelTarget.row_version,
+    cancelKey,
+  );
+  const repeatedCancel = await call(
+    R,
+    `/runs/${disputedRun.id}/cancel`,
+    'POST',
+    {},
+    cancelTarget.row_version,
+    cancelKey,
+  );
+  expect(repeatedCancel).toEqual(firstCancel);
   const cancelled = await call(R, `/runs/${disputedRun.id}`);
   expect(cancelled.state).toBe('cancelled');
   expect(cancelled.episodes.filter((e: any) => e.state === 'cancelled')).toHaveLength(4);
@@ -642,5 +681,41 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
   await expect(
     importPage.getByRole('heading', { name: 'Synthetic browser pagination case 025', exact: true }),
   ).toBeVisible();
+  const editable = await call(R, '/objectives', 'POST', {
+    ...objective.content,
+    title: 'Browser draft editing exercise',
+  });
+  const editPage = await R.newPage();
+  await editPage.goto('/p/' + project + '/objectives');
+  await editPage
+    .getByRole('article')
+    .filter({ hasText: 'Browser draft editing exercise' })
+    .getByRole('button', { name: 'Edit draft', exact: true })
+    .click();
+  const editor = editPage.getByRole('form', { name: 'Revision editor' });
+  await editor.getByLabel('Title', { exact: true }).fill('Browser revised objective');
+  await editor
+    .getByLabel('Observable hypothesis')
+    .fill('A changed synthetic hypothesis requires a new version and independent review.');
+  await editor.getByRole('button', { name: 'Save new version' }).click();
+  await expect(editor).toHaveCount(0);
+  const edited = await call(R, '/objectives/' + editable.id);
+  expect(edited.revision).toBe(2);
+  expect(edited.content.title).toBe('Browser revised objective');
+  expect(edited.reviews).toHaveLength(0);
+  await transition(R, 'objectives', edited, 'submit');
+  await editPage.reload();
+  await editPage
+    .getByRole('article')
+    .filter({ hasText: 'Browser revised objective' })
+    .getByRole('button', { name: 'Create successor', exact: true })
+    .click();
+  await editor.getByLabel('Title', { exact: true }).fill('Browser successor objective');
+  await editor.getByRole('button', { name: 'Save new version' }).click();
+  await expect(editor).toHaveCount(0);
+  const successorObjective = await call(R, '/objectives/' + editable.id);
+  expect(successorObjective.revision).toBe(3);
+  expect(successorObjective.lifecycle).toBe('draft');
+  expect(successorObjective.reviews).toHaveLength(0);
   for (const ctx of Object.values(contexts)) await ctx.close();
 });

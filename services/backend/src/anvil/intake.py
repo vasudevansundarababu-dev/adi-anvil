@@ -142,44 +142,58 @@ def routes(context, wrap, idempotent):
                     return {
                         "id": str(bid),
                         "source_ids": batch["committed_source_ids"],
+                        "source_revision_ids": batch["committed_revision_ids"],
                         "status": "committed",
                     }
                 manifest = batch["manifest"]
                 errors = validate(c, manifest)
                 if errors or batch["status"] != "validated":
                     raise HTTPException(409, {"code": "import_not_ready", "errors": errors})
-                sources = []
+                sources, revisions = [], []
                 for raw in manifest["cases"]:
                     case = Case.model_validate(raw)
                     prior = one(
                         c,
-                        "SELECT resource_id FROM anvil.source_import_receipts WHERE partner_key=%s AND external_case_id=%s AND source_version=%s",
+                        "SELECT resource_id,revision_id FROM anvil.source_import_receipts WHERE partner_key=%s AND external_case_id=%s AND source_version=%s",
                         (manifest["partner_key"], case.external_case_id, case.source_version),
                     )
                     if prior:
                         sources.append(str(prior["resource_id"]))
+                        revisions.append(str(prior["revision_id"]))
                         continue
-                    source = domain.create(
-                        c,
-                        project,
-                        user,
-                        "case",
-                        {
-                            **raw,
-                            "partner_key": manifest["partner_key"],
-                            "source_origin": "partner_reported",
-                            "faculty_validation": None,
-                            "qualification": "not_reviewed",
-                            "rights_status": "unknown",
-                        },
-                    )
+                    content = {
+                        **raw,
+                        "partner_key": manifest["partner_key"],
+                        "source_origin": "partner_reported",
+                        "faculty_validation": None,
+                        "qualification": "not_reviewed",
+                        "rights_status": "unknown",
+                    }
+                    identities = c.execute(
+                        "SELECT DISTINCT resource_id FROM anvil.source_import_receipts WHERE partner_key=%s AND external_case_id=%s",
+                        (manifest["partner_key"], case.external_case_id),
+                    ).fetchall()
+                    if len(identities) > 1:
+                        raise HTTPException(
+                            409,
+                            "Historical source identity conflict requires explicit reconciliation",
+                        )
+                    if identities:
+                        existing = domain.get_resource(c, identities[0]["resource_id"], True)
+                        if existing["lifecycle"] in ("withdrawn", "revoked"):
+                            raise HTTPException(
+                                409, "Withdrawn source cannot receive an automatic successor"
+                            )
+                        source = domain.revise(c, existing, user, content)
+                    else:
+                        source = domain.create(c, project, user, "case", content)
                     for aid in case.artifact_ids:
                         c.execute(
                             "INSERT INTO anvil.artifact_links VALUES(%s,%s,%s,'original')",
                             (project, source["current_revision_id"], aid),
                         )
                     c.execute(
-                        "INSERT INTO anvil.source_import_receipts VALUES(%s,%s,%s,%s,%s,%s)",
+                        "INSERT INTO anvil.source_import_receipts(project_id,partner_key,external_case_id,source_version,content_hash,resource_id,revision_id) VALUES(%s,%s,%s,%s,%s,%s,%s)",
                         (
                             project,
                             manifest["partner_key"],
@@ -187,15 +201,22 @@ def routes(context, wrap, idempotent):
                             case.source_version,
                             digest(raw),
                             source["id"],
+                            source["current_revision_id"],
                         ),
                     )
                     sources.append(str(source["id"]))
+                    revisions.append(str(source["current_revision_id"]))
                 c.execute(
-                    "UPDATE anvil.import_batches SET status='committed',committed_source_ids=%s WHERE id=%s",
-                    (Jsonb(sources), bid),
+                    "UPDATE anvil.import_batches SET status='committed',committed_source_ids=%s,committed_revision_ids=%s WHERE id=%s",
+                    (Jsonb(sources), Jsonb(revisions), bid),
                 )
                 audit(c, project, user, "import.committed", bid, {"case_count": len(sources)})
-                return {"id": str(bid), "source_ids": sources, "status": "committed"}
+                return {
+                    "id": str(bid),
+                    "source_ids": sources,
+                    "source_revision_ids": revisions,
+                    "status": "committed",
+                }
 
             return wrap(idempotent(c, project, user, request, body, act), request)
 

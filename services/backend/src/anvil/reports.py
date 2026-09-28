@@ -7,7 +7,7 @@ import zipfile
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import Response
+from fastapi.responses import RedirectResponse, Response
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
@@ -187,6 +187,7 @@ def validity(c, report, sharing=True):
     suite = domain.get_revision(c, f["suite_revision_id"], "suite", ["frozen"])
     for tid in suite["content"]["task_revision_ids"]:
         task = domain.get_revision(c, tid, "task", ["published"])
+        domain.current_source(c, task["content"]["source_revision_id"])
         # The worker cannot read rubric content; checking its metadata needs no hidden bytes.
         rubric = one(
             c,
@@ -499,6 +500,29 @@ def routes(context, wrap, idempotent):
                     "SELECT r.*,v.content,v.content_hash FROM anvil.resources r JOIN anvil.revisions v ON v.id=r.current_revision_id WHERE kind='sales_kit' ORDER BY r.created_at DESC LIMIT 100"
                 ).fetchall(),
                 request,
+            )
+
+    @router.get("/sales-kits/{kid}/download/{name}")
+    def kit_download(project: UUID, kid: UUID, name: str, request: Request):
+        with context(request, project) as (c, user, roles):
+            auth.require(roles, "researcher", "product-owner", "sales")
+            kit = domain.get_resource(c, kid)
+            if kit["kind"] != "sales_kit":
+                raise HTTPException(404, "Kit not found")
+            if kit["lifecycle"] != "approved":
+                raise HTTPException(409, "Provisional kit has no download authority")
+            report = one(
+                c,
+                "SELECT id FROM anvil.resources WHERE kind='report' AND current_revision_id=%s",
+                (kit["content"].get("report_revision_id"),),
+            )
+            if not report:
+                raise HTTPException(409, "Kit was superseded; use a newly reviewed report")
+            if name not in kit["content"].get("artifacts", {}):
+                raise HTTPException(404, "Export not found")
+            return RedirectResponse(
+                f"/api/v1/projects/{project}/reports/{report['id']}/download/{name}",
+                status_code=307,
             )
 
     @router.get("/reports/{rid}/download/{name}")
