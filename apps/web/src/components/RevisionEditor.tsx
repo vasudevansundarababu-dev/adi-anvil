@@ -61,6 +61,7 @@ export default function RevisionEditor({
           delete body.facts;
           delete body.reviewed_findings;
           delete body.evidence_manifest_hash;
+          delete body.claim_registry;
         }
         onSave(body);
       }}

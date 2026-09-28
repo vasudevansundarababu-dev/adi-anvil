@@ -366,6 +366,33 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
   await page.keyboard.press('Enter');
   await expect(firstNode).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByText('Revision ' + graph.nodes[0].id, { exact: false })).toBeVisible();
+  const capability = graphView.getByRole('button', {
+    name: /^capability: constraint_preservation,/,
+  });
+  await capability.focus();
+  await page.keyboard.press('Enter');
+  const findingNode = graph.nodes.find((node: any) => node.id === finding.current_revision_id);
+  const episodeLink = graph.edges.find(
+    (edge: any) => edge.source === findingNode.id && edge.relation === 'observes',
+  );
+  const episodeNode = graph.nodes.find((node: any) => node.id === episodeLink.target);
+  const taskLink = graph.edges.find(
+    (edge: any) => edge.source === episodeNode.id && edge.relation === 'evaluates',
+  );
+  const taskNode = graph.nodes.find((node: any) => node.id === taskLink.target);
+  const inspector = page
+    .getByRole('heading', { name: 'Node inspector', exact: true })
+    .locator('..');
+  await inspector.getByRole('button', { name: 'Inspect ' + taskNode.label, exact: true }).click();
+  await inspector
+    .getByRole('button', { name: 'Inspect ' + episodeNode.label, exact: true })
+    .click();
+  await inspector
+    .getByRole('button', { name: 'Inspect ' + findingNode.label, exact: true })
+    .click();
+  await expect(
+    inspector.getByRole('heading', { name: findingNode.label, exact: true }),
+  ).toBeVisible();
   for (const width of [320, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     expect(

@@ -56,6 +56,9 @@ def test_pdf_single_page_and_html_escaping():
     content["question"] = "<script>alert(1)</script>"
     assert b"<script>" not in html_bytes(content)
     content["question"] = "overflow " * 1000
+    with pytest.raises(ValueError, match="question_word_limit"):
+        pdf_bytes(content)
+    content["question"] = "x" * 10000
     with pytest.raises(ValueError, match="one_page_overflow"):
         pdf_bytes(content)
 

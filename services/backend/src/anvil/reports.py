@@ -24,6 +24,65 @@ router = APIRouter(prefix="/api/v1/projects/{project}")
 LABEL = "ILLUSTRATIVE SYNTHETIC FIXTURE - INTERNAL USE ONLY"
 
 
+def claim_registry(f):
+    """Only descriptive claims are registered by this local diagnostic slice."""
+    evidence = {
+        "run_id": f["run_id"],
+        "protocol_revision_id": f["protocol_revision_id"],
+        "suite_revision_id": f["suite_revision_id"],
+    }
+    return {
+        "schema_version": "anvil.descriptive_claims.v1",
+        "scope": "descriptive_custom_suite_only",
+        "claims": [
+            {
+                "id": "execution_origin",
+                "value": f["origin"],
+                "evidence": evidence,
+                "independently_reproduced": False,
+            },
+            {
+                "id": "sample_and_outcomes",
+                "value": {
+                    key: f[key]
+                    for key in [
+                        "case_count",
+                        "family_count",
+                        "launched",
+                        "planned",
+                        "completed",
+                        "valid",
+                        "passes",
+                        "failures",
+                        "pending",
+                        "invalid",
+                        "unscorable",
+                        "unknown",
+                        "cancelled",
+                    ]
+                },
+                "evidence": evidence,
+            },
+            {
+                "id": "reviewed_score",
+                "value": f["mean_score"],
+                "denominator": f["valid"],
+                "assessment_ids": f["assessment_ids"],
+                "evidence": evidence,
+            },
+        ],
+        "unsupported_claims": [
+            "named_benchmark_comparison",
+            "institutional_endorsement",
+            "human_baseline_comparison",
+            "internal_causal_reasoning",
+            "improvement_or_training_gain",
+            "commercial_acceptance",
+        ],
+        "boundary": "No evidence for these unsupported claim types is registered. Narrative interpretation still requires independent scientific and audience review.",
+    }
+
+
 def facts(c, run_id, final=True):
     run = get_run(c, run_id)
     if final and run["state"] not in ("reviewed", "execution_complete", "cancelled"):
@@ -142,6 +201,7 @@ def prepare_report(c, content):
     return {
         **content,
         "facts": f,
+        "claim_registry": claim_registry(f),
         "reviewed_findings": findings,
         "evidence_manifest_hash": digest(f),
     }
@@ -198,6 +258,8 @@ def validity(c, report, sharing=True):
             raise HTTPException(409, "Bound rubric is no longer current and approved")
     if digest(facts(c, b["run_id"])) != b["evidence_manifest_hash"]:
         raise HTTPException(409, "Evidence changed; create and review a successor report")
+    if b.get("claim_registry") != claim_registry(f):
+        raise HTTPException(409, "Claim registry changed; create and review a successor report")
     for source in b["facts"]["sources"]:
         if not domain.rights_ok(c, source):
             raise HTTPException(409, "Evaluation rights revoked")
@@ -223,23 +285,45 @@ def kit_content(report):
         if external
         else f"Custom synthetic suite: {f['case_count']} cases, {f['family_count']} families, deterministic fixture candidates, one attempt per case. Static document-to-deliverable harness; no live inference.",
         "observed": [
-            f"{f['passes']} passes and {f['failures']} failures among {f['valid']} valid reviewed episodes.",
+            f"Valid reviewed episodes: {f['valid']}; passes: {f['passes']}; failures: {f['failures']}.",
             f"Mean submitted-review score: {mean}. Critical violations override numeric thresholds.",
             "Anvil review grades supplied output; source scores remain separate reported values."
             if external
             else "These results verify application mechanics; they do not measure model capability.",
         ],
         "relevance": "This workflow can support a scoped investigation of constraint preservation. A real-model study still needs processing rights, exact models, bounded spend, independent approvals and calibrated human review.",
-        "boundary": f"{f['launched']} attempts; {f['completed']} finalized; {f['valid']} valid; {f['invalid']} invalid; {f['unscorable']} unscorable; {f['unknown']} unknown; {f['cancelled']} cancelled; {f['pending']} pending. {f['limitations']} Uncertainty not estimated; improvement not tested.",
+        "boundary": f"{f['launched']} attempts; {f['completed']} finalized; {f['valid']} valid; {f['invalid']} invalid; {f['unscorable']} unscorable; {f['unknown']} unknown; {f['cancelled']} cancelled; {f['pending']} pending. "
+        + (
+            "Producer-reported execution, not independently reproduced. Anvil grades supplied output; absent traces cannot establish trajectories. Synthetic development suite; no faculty validation, human baseline, causal diagnosis or generalization. "
+            if external
+            else "Synthetic development cases, predetermined outputs and scripted local reviews. No measured model performance, faculty validation, human baseline, causal diagnosis or generalization. "
+        )
+        + "Uncertainty not estimated; improvement not tested.",
         "next_step": "Review the evidence and agree a permitted, bounded real-model pilot with independent grading.",
         "report_revision_id": str(report["current_revision_id"]),
         "report_hash": report["content_hash"],
         "origin": f["origin"],
         "source_origin": f["source_origin"],
+        "claim_registry": claim_registry(f),
     }
 
 
+def validate_copy(content):
+    for field, maximum in [
+        ("question", 35),
+        ("tested", 50),
+        ("relevance", 45),
+        ("boundary", 60),
+        ("next_step", 25),
+    ]:
+        if len(content[field].split()) > maximum:
+            raise ValueError(field + "_word_limit")
+    if len(content["observed"]) > 3 or any(len(item.split()) > 30 for item in content["observed"]):
+        raise ValueError("observed_word_limit")
+
+
 def pdf_bytes(content):
+    validate_copy(content)
     stream = io.BytesIO()
     width, height = A4
     pdf = canvas.Canvas(stream, pagesize=A4, invariant=1)
@@ -318,6 +402,7 @@ def pdf_bytes(content):
 
 
 def html_bytes(content):
+    validate_copy(content)
     body = "".join(
         f"<section><h2>{html.escape(k.replace('_', ' '))}</h2><p>{html.escape(' '.join(v) if isinstance(v, list) else str(v))}</p></section>"
         for k, v in content.items()
@@ -339,8 +424,15 @@ def render_kit(c, report, user):
     if prior:
         return domain.get_resource(c, prior["id"])
     content = kit_content(report)
-    pdf = pdf_bytes(content)
-    html_data = html_bytes(content)
+    try:
+        pdf = pdf_bytes(content)
+        html_data = html_bytes(content)
+    except ValueError as exc:
+        if str(exc) == "one_page_overflow" or str(exc).endswith("_word_limit"):
+            raise HTTPException(
+                422, "Sales Kit copy needs a reviewed correction: " + str(exc)
+            ) from exc
+        raise
     email = (
         "Subject: Diagnostic workflow - internal review draft\n\n"
         + content["label"]
@@ -436,6 +528,7 @@ def bundle(c, report, kit):
             + content["boundary"]
         ).encode(),
         "findings.jsonl": "\n".join(json.dumps(x) for x in b["reviewed_findings"]).encode(),
+        "claim-registry.json": json.dumps(b["claim_registry"], indent=2).encode(),
     }
     if f["external_results"]:
         # Export only the evidence receipt; arbitrary producer parameters may contain private data.

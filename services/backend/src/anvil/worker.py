@@ -3,6 +3,7 @@
 import json
 import signal
 import time
+from time import monotonic
 from typing import TypedDict
 
 import psycopg
@@ -82,6 +83,7 @@ def graph_for(job, saver):
         return {}
 
     def invoke(state):
+        capture_started = monotonic()
         with transaction(project, worker=True) as c:
             e = guard(c, job)
             if e["graph_version"] == EXTERNAL_GRAPH_VERSION:
@@ -109,6 +111,16 @@ def graph_for(job, saver):
             if len(matches) != 1:
                 raise RuntimeError("unregistered_fixture_candidate")
             output = json.dumps(matches[0]["output"], ensure_ascii=False, indent=2).encode()
+            protocol = domain.get_revision(c, e["protocol_revision_id"], "protocol", ["approved"])[
+                "content"
+            ]
+            # Fixture outputs have no provider tokenizer or reported token usage.
+            # A UTF-8 byte ceiling conservatively bounds this local fixture slice;
+            # it is not presented as a measured token count or a live-model limit.
+            if len(output) > protocol["max_output_tokens"]:
+                raise RuntimeError("fixture_output_limit")
+            if monotonic() - capture_started > protocol["episode_timeout_seconds"]:
+                raise RuntimeError("fixture_capture_timeout")
             aid = artifacts.store(c, project, output, "internal")
             c.execute(
                 "UPDATE anvil.episodes SET output_artifact_id=%s,invocation_count=invocation_count+1,state='output_captured',row_version=row_version+1 WHERE id=%s",
@@ -282,6 +294,8 @@ def tick():
             "rights_or_mode_blocked",
             "rights_revoked",
             "run_authorization_revoked",
+            "fixture_output_limit",
+            "fixture_capture_timeout",
             "final_review_missing",
             "pending_interrupt_missing",
         }:

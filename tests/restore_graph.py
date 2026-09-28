@@ -43,6 +43,10 @@ class SessionProxy:
     def execute_write(self, operation):
         return self.session.execute_write(lambda tx: operation(TransactionProxy(tx)))
 
+    def run(self, query, **parameters):
+        assert query.startswith("CREATE CONSTRAINT")
+        return self.session.run(query, **parameters)
+
 
 class DriverProxy:
     def __init__(self):

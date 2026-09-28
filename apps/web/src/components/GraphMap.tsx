@@ -15,9 +15,18 @@ export default function GraphMap({
   onSelect: (node: Node) => void;
 }) {
   const marker = useId();
-  const kinds = ['objective', 'case', 'task', 'suite', 'protocol', 'finding', 'report'].filter(
-    (kind) => nodes.some((node) => node.kind === kind),
-  );
+  const kinds = [
+    'objective',
+    'case_family',
+    'case',
+    'task',
+    'capability',
+    'suite',
+    'protocol',
+    'episode',
+    'finding',
+    'report',
+  ].filter((kind) => nodes.some((node) => node.kind === kind));
   const grouped = kinds.map((kind) => nodes.filter((node) => node.kind === kind));
   const width = Math.max(600, kinds.length * 190);
   const height = Math.max(200, ...grouped.map((group) => group.length * 72 + 60));
@@ -56,7 +65,7 @@ export default function GraphMap({
             fontSize={13}
             fontWeight={600}
           >
-            {kind.toUpperCase()}
+            {kind.replaceAll('_', ' ').toUpperCase()}
           </text>
         ))}
         {edges.map((edge, i) => {

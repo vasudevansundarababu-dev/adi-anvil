@@ -271,6 +271,12 @@ def qualify(c, r):
                 409,
                 "Task origin must preserve its source origin; partner task qualification is not available in this local fixture slice",
             )
+        if b["family_id"] != (
+            source["content"].get("family_id") or source["content"].get("source_family_key")
+        ):
+            raise HTTPException(409, "Task family must preserve its source family")
+        if source["content"].get("split") == "development" and b["split"] == "protected_test":
+            raise HTTPException(409, "Known development fixtures cannot become protected tests")
         get_revision(c, b["rubric_revision_id"], "rubric", ["approved"])
         if not rights_ok(c, b["source_revision_id"]):
             raise HTTPException(409, "Local evaluation rights not reviewed")

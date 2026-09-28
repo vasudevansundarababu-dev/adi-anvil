@@ -360,20 +360,37 @@ def test_external_results_preserve_origin_and_never_invoke(
         get("researcher", "/episodes/" + reviewable["id"] + "/evidence")["origin"]
         == "partner_reported"
     )
-    report = post(
+    report_body = {
+        "title": "Synthetic reported-origin export acceptance",
+        "run_id": run["id"],
+        "finding_revision_ids": [],
+        "advisor_id": USERS["advisor"],
+        "reviewer_id": USERS["reviewer-1"],
+        "product_owner_id": USERS["product-owner"],
+        "audience": "internal_fixture",
+    }
+    post(
         "researcher",
         "/reports",
-        {
-            "title": "Synthetic reported-origin export acceptance",
-            "run_id": run["id"],
-            "finding_revision_ids": [],
-            "advisor_id": USERS["advisor"],
-            "reviewer_id": USERS["reviewer-1"],
-            "product_owner_id": USERS["product-owner"],
-            "audience": "internal_fixture",
-        },
-        expected=201,
+        {**report_body, "claim_scope": "institutional_endorsement"},
+        expected=422,
     )
+    post(
+        "researcher",
+        "/reports",
+        {**report_body, "claim_registry": {"mean_score": 100, "endorsement": True}},
+        expected=422,
+    )
+    report = post("researcher", "/reports", report_body, expected=201)
+    registry = report["content"]["claim_registry"]
+    assert registry["scope"] == "descriptive_custom_suite_only"
+    assert "institutional_endorsement" in registry["unsupported_claims"]
+    score_claim = next(claim for claim in registry["claims"] if claim["id"] == "reviewed_score")
+    assert (
+        score_claim["value"] == (100 if valid_alternative else 0)
+        and score_claim["denominator"] == 1
+    )
+    assert len(score_claim["assessment_ids"]) == 1
     report_path = "/reports/" + report["id"]
     report = post("researcher", report_path + "/submit", {}, report["row_version"])
     for role, purpose in [
@@ -407,6 +424,7 @@ def test_external_results_preserve_origin_and_never_invoke(
     assert bundle.status_code == 200
     with zipfile.ZipFile(io.BytesIO(bundle.content)) as archive:
         exported = json.loads(archive.read("manifest.json"))
+        assert json.loads(archive.read("claim-registry.json")) == registry
         assert exported["origin"] == "partner_reported"
         receipt_rows = json.loads(archive.read("external-result-receipts.json"))
         assert len(receipt_rows) == 3 and all(
@@ -532,13 +550,21 @@ def test_200_synthetic_source_inventory_pagination_and_search(client_factory):
     assert client.get(base + "/cases", params={"q": "%"}).json()["data"] == []
     assert client.get(base + "/cases", params={"q": "x" * 201}).status_code == 422
     measurements = {}
-    for kind, path in [("list", "/cases"), ("detail", "/cases/" + ids[-1])]:
+    graph.project_graph(project)
+    graph_client = client_factory("researcher")[0]
+    for kind, path in [
+        ("list", "/cases"),
+        ("detail", "/cases/" + ids[-1]),
+        ("graph", "/graph?depth=3"),
+    ]:
         elapsed = []
         for _ in range(30):
             start = time.perf_counter()
-            response = client.get(base + path)
+            response = (graph_client if kind == "graph" else client).get(base + path)
             elapsed.append((time.perf_counter() - start) * 1000)
             assert response.status_code == 200
+            if kind == "graph":
+                assert len(response.json()["data"]["nodes"]) == 200
         measurements[kind] = {
             "samples": 30,
             "p95_ms": sorted(elapsed)[math.ceil(len(elapsed) * 0.95) - 1],
@@ -564,13 +590,16 @@ def test_200_synthetic_source_inventory_pagination_and_search(client_factory):
         "ram_bytes": memory,
         "free_disk_bytes": shutil.disk_usage(ROOT).free,
         "measurements": measurements,
-        "target_under_500ms": all(m["p95_ms"] < 500 for m in measurements.values()),
-        "not_run": ["400_episode_batch", "browser_network_latency"],
+        "target_under_500ms": all(measurements[k]["p95_ms"] < 500 for k in ["list", "detail"]),
+        "graph_target_under_2000ms": measurements["graph"]["p95_ms"] < 2000,
+        "not_run": ["browser_network_latency"],
+        "separate_batch_evidence": "artifacts/test-runs/load-fixture-performance.json",
     }
     (ROOT / "artifacts/test-runs/inventory-performance.json").write_text(
         json.dumps(evidence, indent=2)
     )
     assert evidence["target_under_500ms"], evidence["measurements"]
+    assert evidence["graph_target_under_2000ms"], evidence["measurements"]
 
 
 def test_graph_old_version_edges_cannot_starve_current_snapshot(monkeypatch):
@@ -618,6 +647,79 @@ def test_graph_old_version_edges_cannot_starve_current_snapshot(monkeypatch):
         ]
 
 
+def test_graph_failed_transaction_and_out_of_order_snapshot(monkeypatch):
+    import contextlib
+    import io
+
+    from anvil import domain
+    from anvil.db import one
+    from anvil.operations import new_demo
+
+    captured = io.StringIO()
+    with contextlib.redirect_stdout(captured):
+        new_demo("Synthetic graph atomicity and ordering verification")
+    project = json.loads(captured.getvalue())["project_id"]
+    with transaction(project, USERS["researcher"]) as c:
+        resource = domain.create(c, project, USERS["researcher"], "objective", objective_body())
+    old_snapshot = graph.project_graph(project)
+    with transaction(project, USERS["researcher"]) as c:
+        old_watermark = one(c, "SELECT max(id) n FROM anvil.graph_outbox")["n"]
+        domain.revise(
+            c,
+            resource,
+            USERS["researcher"],
+            {**objective_body(), "title": "Newer canonical graph version"},
+        )
+    real_write = graph.write_snapshot
+
+    def fail_after_writes(tx, *args):
+        assert real_write(tx, *args)
+        raise ServiceUnavailable("Synthetic failure before graph transaction commit")
+
+    with monkeypatch.context() as patched:
+        patched.setattr(graph, "write_snapshot", fail_after_writes)
+        with pytest.raises(ServiceUnavailable):
+            graph.project_graph(project)
+    with transaction(project, USERS["researcher"]) as c:
+        assert one(c, "SELECT count(*) n FROM anvil.graph_outbox WHERE status='pending'")["n"] == 1
+        assert (
+            one(c, "SELECT last_event FROM anvil.graph_projection_state")["last_event"]
+            == old_watermark
+        )
+        new_watermark = one(c, "SELECT max(id) n FROM anvil.graph_outbox")["n"]
+    with graph.driver() as driver, driver.session() as session:
+        assert (
+            session.run(
+                "MATCH (p:AnvilProject {id:$p}) RETURN p.watermark AS w", p=project
+            ).single()["w"]
+            == old_watermark
+        )
+        assert (
+            session.run(
+                "MATCH (n:AnvilRecord {project:$p}) RETURN n.hash AS h", p=project
+            ).single()["h"]
+            == old_snapshot["nodes"][0]["hash"]
+        )
+    current = graph.project_graph(project)
+    with graph.driver() as driver, driver.session() as session:
+        assert not session.execute_write(
+            lambda tx: real_write(tx, project, old_snapshot, old_watermark)
+        )
+        assert session.execute_write(lambda tx: real_write(tx, project, current, new_watermark))
+        assert (
+            session.run(
+                "MATCH (p:AnvilProject {id:$p}) RETURN p.watermark AS w", p=project
+            ).single()["w"]
+            == new_watermark
+        )
+        rows = session.run(
+            "MATCH (n:AnvilRecord {project:$p}) RETURN n.id AS id,n.hash AS hash", p=project
+        ).data()
+        assert rows == [{"id": current["nodes"][0]["id"], "hash": current["nodes"][0]["hash"]}]
+    with transaction(project, USERS["researcher"]) as c:
+        assert one(c, "SELECT count(*) n FROM anvil.graph_outbox WHERE status='pending'")["n"] == 0
+
+
 def test_logout_invalidates_captured_cookie(client_factory):
     client, _ = client_factory()
     token = client.cookies.get("anvil_session")
@@ -663,6 +765,52 @@ def test_content_role_required(client_factory, role):
     for path in ("/rubrics", "/cases", "/artifacts/" + uid() + "/content"):
         assert client.get(BASE + path).status_code == 403
     assert client.post(BASE + "/objectives", json={}).status_code == 403
+
+
+def test_graph_declared_capability_family_and_episode_lineage():
+    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+    with transaction(journey["project_id"], USERS["researcher"]) as c:
+        snapshot = graph.canonical(c)
+        kinds = {node["kind"] for node in snapshot["nodes"]}
+        assert {"capability", "case_family", "episode", "finding"} <= kinds
+        relations = {edge["relation"] for edge in snapshot["edges"]}
+        assert {"measures", "member_of_family", "evaluates", "observes"} <= relations
+        references = {
+            str(row["id"])
+            for row in c.execute(
+                "SELECT id FROM anvil.artifacts WHERE classification='hidden_reference'"
+            ).fetchall()
+        }
+        assert not references & {node["id"] for node in snapshot["nodes"]}
+        assert all(
+            set(node) == {"id", "resource_id", "kind", "label", "status", "hash"}
+            for node in snapshot["nodes"]
+        )
+        assert len(snapshot["nodes"]) <= 200 and len(snapshot["edges"]) <= 500
+
+
+def test_task_cannot_relabel_source_family_or_claim_protected_fixture(client_factory):
+    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+    base = f"/api/v1/projects/{journey['project_id']}"
+    client = client_factory("researcher")[0]
+    template = client.get(base + "/tasks").json()["data"][0]["content"]
+    for change, message in [
+        ({"family_id": "invented-independent-family"}, "source family"),
+        ({"split": "protected_test"}, "protected tests"),
+    ]:
+        response = client.post(
+            base + "/tasks",
+            json={**template, **change, "title": "Synthetic exposure-label negative fixture"},
+            headers={"Idempotency-Key": uid()},
+        )
+        assert response.status_code == 201, response.text
+        record = response.json()["data"]
+        blocked = client.post(
+            base + "/tasks/" + record["id"] + "/submit",
+            json={},
+            headers={"Idempotency-Key": uid(), "If-Match": str(record["row_version"])},
+        )
+        assert blocked.status_code == 409 and message in blocked.text
 
 
 def objective_body():
@@ -967,6 +1115,158 @@ def test_cross_project_mutation_matrix_preserves_foreign_records(client_factory)
     assert digest(json.loads(json.dumps(resources, default=str))) == digest(
         json.loads(json.dumps(after, default=str))
     )
+
+
+def test_provider_and_delivery_role_and_project_boundaries(client_factory):
+    from anvil.db import digest
+
+    foreign = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())["project_id"]
+    assert foreign != PROJECT
+    other = f"/api/v1/projects/{foreign}"
+    clients = {
+        name: client_factory(name)[0]
+        for name in [
+            "researcher",
+            "advisor",
+            "data-engineer",
+            "reviewer-1",
+            "adjudicator",
+            "product-owner",
+            "sales",
+            "admin-1",
+            "admin-2",
+        ]
+    }
+
+    def request(name, path, body):
+        return clients[name].post(
+            path, json=body, headers={"Idempotency-Key": uid(), "If-Match": "1"}
+        )
+
+    contact_body = {
+        "name": "Isolation fixture",
+        "email": "isolation@fixture.invalid",
+        "organization_label": "Synthetic",
+        "contact_basis": "Local isolation verification only",
+    }
+    sender_body = {"name": "Isolation fixture sender", "scenario": "accepted"}
+    contact_response = request("sales", other + "/sales-contacts", contact_body)
+    sender_response = request("admin-1", other + "/fixture-senders", sender_body)
+    config_response = request(
+        "admin-1", other + "/providers/openai/config", {"model_id": "mock-only-no-dispatch"}
+    )
+    for response in (contact_response, sender_response, config_response):
+        assert response.status_code == 200, response.text
+    contact = contact_response.json()["data"]
+    sender = sender_response.json()["data"]
+    connection = config_response.json()["data"]
+    with transaction(foreign, USERS["sales"]) as c:
+        approval = c.execute(
+            "SELECT id,binding_hash,kit_revision_id FROM anvil.delivery_approvals LIMIT 1"
+        ).fetchone()
+        delivery_row = c.execute("SELECT id FROM anvil.sales_deliveries LIMIT 1").fetchone()
+        kit = c.execute(
+            "SELECT id FROM anvil.resources WHERE kind='sales_kit' AND lifecycle='approved' LIMIT 1"
+        ).fetchone()
+    assert approval and delivery_row and kit
+    paid = {
+        "purpose": "activation",
+        "subject_hash": connection["content_hash"],
+        "cap_micro_usd": 1,
+        "authority_reference": "Negative test; never real authority",
+        "expires_at": "2099-01-01T00:00:00Z",
+    }
+    delivery_body = {"recipient_contact_id": contact["id"], "sender_connection_id": sender["id"]}
+    send_body = {
+        "delivery_approval_id": str(approval["id"]),
+        "content_hash": approval["binding_hash"],
+    }
+
+    def snapshot():
+        with transaction(foreign, USERS["admin-1"]) as c:
+            rows = {
+                table: c.execute(f"SELECT * FROM anvil.{table} ORDER BY id").fetchall()
+                for table in (
+                    "sales_contacts",
+                    "fixture_senders",
+                    "delivery_approvals",
+                    "sales_deliveries",
+                    "connections",
+                )
+            }
+        return digest(json.loads(json.dumps(rows, default=str)))
+
+    before = snapshot()
+    commands = [
+        ("product-owner", f"/sales-contacts/{contact['id']}/decision", {"status": "approved"}),
+        ("admin-2", f"/fixture-senders/{sender['id']}/activate", {}),
+        ("admin-1", f"/connections/{connection['id']}/approvals", paid),
+        ("product-owner", f"/sales-kits/{kit['id']}/delivery-approvals", delivery_body),
+        ("sales", f"/sales-kits/{kit['id']}/simulate-send", send_body),
+    ]
+    for who, path, body in commands:
+        response = request(who, BASE + path, body)
+        assert response.status_code == 404, (path, response.text)
+    for who in ("sales", "product-owner"):
+        response = clients[who].get(BASE + f"/sales-deliveries/{delivery_row['id']}")
+        assert response.status_code == 404
+    # Roles are checked before looking up the supplied record, even for identities
+    # that are valid members of both projects. No action creates paid authority.
+    actions = [
+        ({"sales"}, "/sales-contacts", contact_body),
+        ({"product-owner"}, f"/sales-contacts/{contact['id']}/decision", {"status": "approved"}),
+        ({"admin-1", "admin-2"}, "/fixture-senders", sender_body),
+        ({"admin-1", "admin-2"}, f"/fixture-senders/{sender['id']}/activate", {}),
+        ({"product-owner"}, f"/sales-kits/{kit['id']}/delivery-approvals", delivery_body),
+        ({"sales"}, f"/sales-kits/{kit['id']}/simulate-send", send_body),
+        ({"admin-1", "admin-2"}, "/providers/openai/config", {"model_id": "mock-only-no-dispatch"}),
+        ({"admin-1", "admin-2"}, f"/connections/{connection['id']}/approvals", paid),
+        ({"admin-1", "admin-2", "researcher"}, "/providers/dry-run", {}),
+    ]
+    denied = 0
+    for allowed, path, body in actions:
+        for who in clients.keys() - allowed:
+            response = request(who, other + path, body)
+            assert response.status_code == 403, (who, path, response.text)
+            denied += 1
+    assert denied >= 60
+    for who in ("admin-1", "admin-2"):
+        response = request(who, other + f"/connections/{connection['id']}/approvals", paid)
+        assert response.status_code == 403
+        assert "Seeded identities" in response.text
+    assert snapshot() == before
+
+
+def test_review_request_cannot_inject_checkpoint_or_graph_commands(client_factory):
+    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+    episode = journey["episodes"][0]["id"]
+    client = client_factory("reviewer-1")[0]
+    path = f"/api/v1/projects/{journey['project_id']}/episodes/{episode}/assessments"
+    body = {
+        "scores": {"R1": 4},
+        "critical": [],
+        "evidence": {"R1": "synthetic"},
+        "rationale": "Synthetic malicious-state negative test",
+    }
+    marker = "never-execute-this-checkpoint-command"
+    with transaction(journey["project_id"], USERS["reviewer-1"]) as c:
+        before = c.execute(
+            "SELECT state,row_version,invocation_count,final_assessment_id FROM anvil.episodes WHERE id=%s",
+            (episode,),
+        ).fetchone()
+    for field in ["thread_id", "checkpoint", "resume", "command", "goto", "update"]:
+        response = client.post(
+            path,
+            json={**body, field: {"code": marker}},
+            headers={"Idempotency-Key": uid(), "If-Match": str(before["row_version"])},
+        )
+        assert response.status_code == 422 and marker not in response.text
+    with transaction(journey["project_id"], USERS["reviewer-1"]) as c:
+        after = c.execute(
+            "SELECT state,row_version,invocation_count,final_assessment_id FROM anvil.episodes WHERE id=%s",
+            (episode,),
+        ).fetchone()
+    assert before == after
 
 
 def test_manifest_dryrun_atomic_commit_dedup_and_quarantine(client_factory):

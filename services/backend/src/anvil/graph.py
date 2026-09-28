@@ -1,6 +1,6 @@
 """Rebuildable Neo4j metadata projection; canonical records control visibility."""
 
-from uuid import UUID
+from uuid import UUID, uuid5
 
 from fastapi import APIRouter, HTTPException, Request
 from neo4j import GraphDatabase
@@ -8,9 +8,10 @@ from neo4j.exceptions import Neo4jError, ServiceUnavailable, SessionExpired
 
 from anvil import auth
 from anvil.config import setting
-from anvil.db import audit, one, transaction
+from anvil.db import audit, digest, one, transaction
 
 router = APIRouter(prefix="/api/v1/projects/{project}")
+PROJECTION_VERSION = "evidence-v2"
 
 
 def driver():
@@ -24,7 +25,7 @@ def driver():
 
 
 def canonical(c):
-    records = c.execute("""SELECT r.id,r.kind,r.lifecycle,v.id revision_id,v.content_hash,v.content
+    records = c.execute("""SELECT r.id,r.project_id,r.kind,r.lifecycle,v.id revision_id,v.content_hash,v.content
                           FROM anvil.resources r JOIN anvil.revisions v ON v.id=r.current_revision_id
                           WHERE r.kind IN ('objective','case','task','suite','protocol','finding','report')
                           AND r.lifecycle NOT IN ('withdrawn','revoked') ORDER BY r.id LIMIT 201""").fetchall()
@@ -52,7 +53,133 @@ def canonical(c):
         }
         for x in linked[:500]
     ]
-    return {"nodes": nodes, "edges": edges, "truncated": len(records) > 200 or len(linked) > 500}
+    truncated = len(records) > 200 or len(linked) > 500
+
+    def add_node(node):
+        nonlocal truncated
+        if node["id"] in ids:
+            return True
+        if len(nodes) >= 200:
+            truncated = True
+            return False
+        nodes.append(node)
+        ids.add(node["id"])
+        return True
+
+    def add_edge(source, target, relation):
+        nonlocal truncated
+        edge = {"source": str(source), "target": str(target), "relation": relation}
+        if edge in edges or edge["source"] not in ids or edge["target"] not in ids:
+            return
+        if len(edges) >= 500:
+            truncated = True
+        else:
+            edges.append(edge)
+
+    for record in records[:200]:
+        content = record["content"]
+        family = content.get("family_id") or content.get("source_family_key")
+        concepts = [("case_family", str(family), "member_of_family")] if family else []
+        if record["kind"] == "task":
+            concepts += [
+                ("capability", str(capability), "measures")
+                for capability in content.get("capabilities", [])
+            ]
+        for kind, label, relation in concepts:
+            nid = str(uuid5(record["project_id"], kind + ":" + label))
+            node = {
+                "id": nid,
+                "resource_id": None,
+                "kind": kind,
+                "label": label,
+                "status": "declared_mapping",
+                "hash": digest({"kind": kind, "label": label}),
+            }
+            if add_node(node):
+                add_edge(record["revision_id"], nid, relation)
+    task_ids = [str(r["revision_id"]) for r in records[:200] if r["kind"] == "task"]
+    episodes = c.execute(
+        """SELECT e.id,e.task_revision_id,e.state,e.outcome,e.score,r.origin
+        FROM anvil.episodes e JOIN anvil.runs r ON r.id=e.run_id
+        WHERE e.task_revision_id=ANY(%s::uuid[]) ORDER BY e.id LIMIT 201""",
+        (task_ids,),
+    ).fetchall()
+    if len(episodes) > 200:
+        truncated = True
+    for episode in episodes[:200]:
+        metadata = {
+            "state": episode["state"],
+            "outcome": episode["outcome"]
+            if episode["state"] in ("finalized", "failed_operational")
+            else "not_finalized",
+            "score": float(episode["score"])
+            if episode["state"] == "finalized" and episode["score"] is not None
+            else None,
+            "origin": episode["origin"],
+        }
+        if add_node(
+            {
+                "id": str(episode["id"]),
+                "resource_id": None,
+                "kind": "episode",
+                "label": "Episode "
+                + str(episode["id"])[:8]
+                + " · "
+                + episode["origin"].replace("_", " "),
+                "status": episode["state"],
+                "hash": digest(metadata),
+            }
+        ):
+            add_edge(episode["id"], episode["task_revision_id"], "evaluates")
+    for record in records[:200]:
+        if record["kind"] == "finding":
+            add_edge(record["revision_id"], record["content"].get("episode_id"), "observes")
+    return {"nodes": nodes, "edges": edges, "truncated": truncated}
+
+
+def ensure_schema(session):
+    session.run(
+        "CREATE CONSTRAINT anvil_project_identity IF NOT EXISTS FOR (p:AnvilProject) REQUIRE p.id IS UNIQUE"
+    ).consume()
+    session.run(
+        "CREATE CONSTRAINT anvil_record_identity IF NOT EXISTS FOR (v:AnvilRecord) REQUIRE (v.project,v.id,v.generation) IS UNIQUE"
+    ).consume()
+
+
+def write_snapshot(tx, project, snapshot, watermark):
+    # Take the Neo4j node write lock before testing the watermark. An older
+    # transaction arriving after a newer one may not rewind the cache generation.
+    accepted = tx.run(
+        "MERGE (p:AnvilProject {id:$p}) ON CREATE SET p.watermark=-1 "
+        "SET p.write_lock=coalesce(p.write_lock,0)+1 WITH p WHERE p.watermark <= $w "
+        "SET p.watermark=$w RETURN p.watermark AS watermark",
+        p=str(project),
+        w=watermark,
+    ).single()
+    if accepted is None:
+        return False
+    tx.run(
+        "UNWIND $nodes AS n MERGE (v:AnvilRecord {project:$p,id:n.id,generation:$w}) "
+        "SET v.resource_id=n.resource_id,v.kind=n.kind,v.label=n.label,v.status=n.status,v.hash=n.hash",
+        p=str(project),
+        w=watermark,
+        nodes=snapshot["nodes"],
+    ).consume()
+    tx.run(
+        "UNWIND $edges AS e MATCH (a:AnvilRecord {project:$p,id:e.source,generation:$w}) "
+        "MATCH (b:AnvilRecord {project:$p,id:e.target,generation:$w}) "
+        "MERGE (a)-[:ANVIL_RELATION {kind:e.relation}]->(b)",
+        p=str(project),
+        w=watermark,
+        edges=snapshot["edges"],
+    ).consume()
+    # Only disposable cache generations are removed; PostgreSQL owns all history.
+    tx.run(
+        "MATCH (v:AnvilRecord {project:$p}) WHERE v.generation <> $w DETACH DELETE v",
+        p=str(project),
+        w=watermark,
+    ).consume()
+    return True
 
 
 def project_graph(project):
@@ -61,38 +188,13 @@ def project_graph(project):
         snapshot = canonical(c)
         watermark = one(c, "SELECT coalesce(max(id),0) n FROM anvil.graph_outbox")["n"]
         with driver() as d, d.session() as s:
-
-            def write(tx):
-                tx.run(
-                    "MERGE (p:AnvilProject {id:$p}) SET p.watermark=$w", p=str(project), w=watermark
-                ).consume()
-                tx.run(
-                    "UNWIND $nodes AS n MERGE (v:AnvilRecord {project:$p,id:n.id,generation:$w}) "
-                    "SET v.resource_id=n.resource_id,v.kind=n.kind,v.label=n.label,v.status=n.status,v.hash=n.hash",
-                    p=str(project),
-                    w=watermark,
-                    nodes=snapshot["nodes"],
-                ).consume()
-                tx.run(
-                    "UNWIND $edges AS e MATCH (a:AnvilRecord {project:$p,id:e.source,generation:$w}) "
-                    "MATCH (b:AnvilRecord {project:$p,id:e.target,generation:$w}) "
-                    "MERGE (a)-[:ANVIL_RELATION {kind:e.relation}]->(b)",
-                    p=str(project),
-                    w=watermark,
-                    edges=snapshot["edges"],
-                ).consume()
-                # Only disposable cache generations are removed; PostgreSQL owns all history.
-                tx.run(
-                    "MATCH (v:AnvilRecord {project:$p}) WHERE v.generation <> $w DETACH DELETE v",
-                    p=str(project),
-                    w=watermark,
-                ).consume()
-
-            s.execute_write(write)
+            ensure_schema(s)
+            if not s.execute_write(lambda tx: write_snapshot(tx, project, snapshot, watermark)):
+                raise ServiceUnavailable("Projection watermark is ahead of this canonical snapshot")
         c.execute("UPDATE anvil.graph_outbox SET status='done' WHERE id<=%s", (watermark,))
         c.execute(
-            "INSERT INTO anvil.graph_projection_state(project_id,last_event,status,last_success_at) VALUES(%s,%s,'current',now()) ON CONFLICT(project_id) DO UPDATE SET last_event=excluded.last_event,status='current',last_success_at=now()",
-            (project, watermark),
+            "INSERT INTO anvil.graph_projection_state(project_id,last_event,status,last_success_at,projection_version) VALUES(%s,%s,'current',now(),%s) ON CONFLICT(project_id) DO UPDATE SET last_event=excluded.last_event,status='current',last_success_at=now(),projection_version=excluded.projection_version",
+            (project, watermark, PROJECTION_VERSION),
         )
     return snapshot
 
@@ -103,7 +205,13 @@ def project_pending():
         projects = c.execute("SELECT id FROM anvil.projects ORDER BY id").fetchall()
     for p in projects:
         with transaction(p["id"], worker=True) as c:
-            pending = one(c, "SELECT 1 FROM anvil.graph_outbox WHERE status='pending' LIMIT 1")
+            pending = one(
+                c, "SELECT 1 FROM anvil.graph_outbox WHERE status='pending' LIMIT 1"
+            ) or one(
+                c,
+                "SELECT 1 FROM anvil.graph_projection_state WHERE projection_version<>%s",
+                (PROJECTION_VERSION,),
+            )
         if pending:
             try:
                 project_graph(p["id"])
@@ -154,6 +262,7 @@ def routes(context, wrap):
                     actual == permitted
                     and actual_edges == canonical_edges
                     and state
+                    and state["projection_version"] == PROJECTION_VERSION
                     and state["last_event"] == watermark
                 )
                 data["projection_status"] = "current" if current else "lagging"

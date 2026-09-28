@@ -201,6 +201,7 @@ class Report(Strict):
     reviewer_id: UUID
     product_owner_id: UUID
     audience: Literal["internal_fixture"] = "internal_fixture"
+    claim_scope: Literal["descriptive_custom_suite_only"] = "descriptive_custom_suite_only"
 
 
 SCHEMAS = {

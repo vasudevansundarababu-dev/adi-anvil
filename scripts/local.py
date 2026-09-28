@@ -352,6 +352,8 @@ def main():
                 "--check",
                 "apps/web/src",
                 "tests/e2e",
+                "tests/load_fixture_batch.mjs",
+                "tests/demo_walkthrough.mjs",
                 "playwright.config.ts",
             ],
             env=env(),

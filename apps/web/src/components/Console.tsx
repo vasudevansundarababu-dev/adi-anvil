@@ -8,6 +8,7 @@ import CaseReadiness from './CaseReadiness';
 import ExternalResults from './ExternalResults';
 import GraphMap from './GraphMap';
 import RevisionEditor from './RevisionEditor';
+import ReportSummary from './ReportSummary';
 import FindingComposer from './FindingComposer';
 import FixtureDelivery from './FixtureDelivery';
 
@@ -793,23 +794,37 @@ export default function Console() {
                       {node.kind} · {node.status}
                     </p>
                     <p className="muted" style={{ overflowWrap: 'anywhere' }}>
-                      Revision {node.id}
+                      {['episode', 'capability', 'case_family'].includes(node.kind)
+                        ? 'Evidence ID'
+                        : 'Revision'}{' '}
+                      {node.id}
                       <br />
                       Digest {node.hash}
                     </p>
                     <h3>Linked records</h3>
                     {graph.edges
                       .filter((e) => e.source === node.id || e.target === node.id)
-                      .map((e, i) => (
-                        <p key={i}>
-                          {e.relation} →{' '}
-                          {
-                            graph.nodes.find(
-                              (n) => n.id === (e.source === node.id ? e.target : e.source),
-                            )?.label
-                          }
-                        </p>
-                      ))}
+                      .map((e, i) => {
+                        const linked = graph.nodes.find(
+                          (n) => n.id === (e.source === node.id ? e.target : e.source),
+                        );
+                        return (
+                          <p key={i}>
+                            {e.relation.replaceAll('_', ' ')} →{' '}
+                            {linked && (
+                              <button
+                                aria-label={'Inspect ' + linked.label}
+                                onClick={() => {
+                                  setSearch('');
+                                  setNode(linked);
+                                }}
+                              >
+                                {linked.label}
+                              </button>
+                            )}
+                          </p>
+                        );
+                      })}
                   </>
                 ) : (
                   <p>Select an evidence node.</p>
@@ -1129,6 +1144,7 @@ export default function Console() {
                   </button>
                 </div>
               )}
+              {r.kind === 'report' && <ReportSummary content={r.content} />}
               {r.kind === 'report' && r.lifecycle === 'approved' && (
                 <>
                   <button

@@ -63,3 +63,25 @@ def test_runtime_roles_are_nonowners_without_bypass():
             assert c.execute(
                 "SELECT tableowner FROM pg_tables WHERE schemaname='anvil' AND tablename='resources'"
             ).fetchone()["tableowner"] not in ("anvil_app", "anvil_worker")
+
+
+def test_web_role_cannot_access_checkpoints_and_worker_cannot_read_private_references():
+    users = json.loads((ROOT / ".local/demo-identities.json").read_text())
+    with transaction(PROJECT, users["data-engineer"]) as c:
+        reference = c.execute(
+            "SELECT id FROM anvil.artifacts WHERE classification='hidden_reference' LIMIT 1"
+        ).fetchone()
+        assert reference
+        with pytest.raises(psycopg.errors.InsufficientPrivilege), c.transaction():
+            c.execute("SELECT * FROM anvil_checkpoints.checkpoints LIMIT 1")
+    with transaction(PROJECT, worker=True) as c:
+        assert (
+            c.execute("SELECT id FROM anvil.artifacts WHERE id=%s", (reference["id"],)).fetchone()
+            is None
+        )
+        assert (
+            c.execute(
+                "SELECT v.content FROM anvil.revisions v JOIN anvil.resources r ON r.id=v.resource_id WHERE r.kind='rubric'"
+            ).fetchall()
+            == []
+        )

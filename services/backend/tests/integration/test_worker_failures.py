@@ -7,18 +7,28 @@ import pytest
 from psycopg.errors import RaiseException
 from psycopg.rows import dict_row
 
-from anvil import worker
+from anvil import domain, worker
 from anvil.config import ROOT, setting
 from anvil.db import one, transaction, uid
 from anvil.evaluation import GRAPH_VERSION
 
 
-def prepared_job(graph_version):
+def prepared_job(graph_version, protocol_overrides=None):
     journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
     project = journey["project_id"]
     user = json.loads((ROOT / ".local/demo-identities.json").read_text())["researcher"]
     rid, eid, jid, token = uid(), uid(), uid(), uid()
     with transaction(project, user) as c:
+        protocol_revision = journey["protocol"]["current_revision_id"]
+        if protocol_overrides:
+            # Test-only narrower fixture protocol, prepared directly to isolate
+            # worker limit behavior. Application approval is tested via real APIs.
+            content = domain.get_revision(c, protocol_revision)["content"]
+            protocol = domain.create(
+                c, project, user, "protocol", {**content, **protocol_overrides}
+            )
+            domain.move(c, protocol, user, "approved")
+            protocol_revision = protocol["current_revision_id"]
         task = one(
             c,
             "SELECT task_revision_id FROM anvil.episodes WHERE id=%s",
@@ -26,7 +36,7 @@ def prepared_job(graph_version):
         )
         c.execute(
             "INSERT INTO anvil.runs(id,project_id,protocol_revision_id,origin,created_by,state) VALUES(%s,%s,%s,'illustrative',%s,'queued')",
-            (rid, project, journey["protocol"]["current_revision_id"], user),
+            (rid, project, protocol_revision, user),
         )
         c.execute(
             "INSERT INTO anvil.episodes(id,project_id,run_id,task_revision_id,candidate_key,thread_id,graph_version) VALUES(%s,%s,%s,%s,'fixture-correct',%s,%s)",
@@ -37,6 +47,34 @@ def prepared_job(graph_version):
             (jid, project, eid, "isolated-worker-test:" + jid, token),
         )
         return one(c, "SELECT * FROM anvil.jobs WHERE id=%s", (jid,))
+
+
+@pytest.mark.parametrize("limit", ["output", "elapsed"])
+def test_fixture_capture_limits_are_operational_not_candidate_failure(monkeypatch, limit):
+    job = prepared_job(
+        GRAPH_VERSION,
+        {"max_output_tokens": 1} if limit == "output" else {"episode_timeout_seconds": 1},
+    )
+    original = worker.one
+    monkeypatch.setattr(
+        worker,
+        "one",
+        lambda c, query, params=(): (
+            job if query == "SELECT * FROM anvil.claim_job()" else original(c, query, params)
+        ),
+    )
+    if limit == "elapsed":
+        readings = iter([10.0, 12.0])
+        monkeypatch.setattr(worker, "monotonic", lambda: next(readings))
+    assert worker.tick()
+    with transaction(job["project_id"], worker=True) as c:
+        episode = one(c, "SELECT * FROM anvil.episodes WHERE id=%s", (job["target_id"],))
+        assert episode["state"] == "failed_operational" and episode["outcome"] == "invalid"
+        assert episode["score"] is None and episode["output_artifact_id"] is None
+        assert episode["invocation_count"] == 0
+        assert one(c, "SELECT error_code FROM anvil.jobs WHERE id=%s", (job["id"],))[
+            "error_code"
+        ] == ("fixture_output_limit" if limit == "output" else "fixture_capture_timeout")
 
 
 def test_stale_worker_token_cannot_mutate_or_invoke():
@@ -198,3 +236,55 @@ def test_graph_version_mismatch_is_operational_invalidity_not_candidate_failure(
             one(c, "SELECT error_code FROM anvil.jobs WHERE id=%s", (job["id"],))["error_code"]
             == "graph_version_mismatch"
         )
+
+
+def test_cancelled_durable_review_cannot_be_resumed(monkeypatch):
+    job = prepared_job(GRAPH_VERSION)
+    claimed = [job]
+    original = worker.one
+    monkeypatch.setattr(
+        worker,
+        "one",
+        lambda c, query, params=(): (
+            claimed[0] if query == "SELECT * FROM anvil.claim_job()" else original(c, query, params)
+        ),
+    )
+    assert worker.tick()
+    with transaction(job["project_id"], worker=True) as c:
+        episode = one(c, "SELECT * FROM anvil.episodes WHERE id=%s", (job["target_id"],))
+        assert episode["state"] == "awaiting_review" and episode["invocation_count"] == 1
+        c.execute(
+            "UPDATE anvil.runs SET cancel_requested=true,state='cancelled' WHERE id=%s",
+            (episode["run_id"],),
+        )
+        c.execute("UPDATE anvil.episodes SET state='cancelled' WHERE id=%s", (episode["id"],))
+        jid, token = uid(), uid()
+        c.execute(
+            "INSERT INTO anvil.jobs(id,project_id,kind,target_id,operation_key,status,lease_token,lease_until) VALUES(%s,%s,'resume',%s,%s,'leased',%s,now()+interval '60 seconds')",
+            (jid, job["project_id"], episode["id"], "cancelled-resume-test:" + jid, token),
+        )
+        claimed[0] = one(c, "SELECT * FROM anvil.jobs WHERE id=%s", (jid,))
+    assert worker.tick()
+    with transaction(job["project_id"], worker=True) as c:
+        after = one(c, "SELECT * FROM anvil.episodes WHERE id=%s", (episode["id"],))
+        assert after["state"] == "cancelled" and after["score"] is None
+        assert (
+            after["invocation_count"] == 1
+            and after["output_artifact_id"] == episode["output_artifact_id"]
+        )
+        assert (
+            one(c, "SELECT error_code FROM anvil.jobs WHERE id=%s", (jid,))["error_code"]
+            == "cancelled"
+        )
+
+
+def test_episode_updates_enqueue_canonical_graph_projection():
+    job = prepared_job(GRAPH_VERSION)
+    with transaction(job["project_id"], worker=True) as c:
+        before = one(c, "SELECT count(*) n FROM anvil.graph_outbox")["n"]
+        c.execute("UPDATE anvil.episodes SET state='cancelled' WHERE id=%s", (job["target_id"],))
+        after = one(c, "SELECT count(*) n FROM anvil.graph_outbox")["n"]
+        assert after == before + 1
+        c.execute("UPDATE anvil.episodes SET state='cancelled' WHERE id=%s", (job["target_id"],))
+        assert one(c, "SELECT count(*) n FROM anvil.graph_outbox")["n"] == after
+        c.execute("UPDATE anvil.jobs SET status='cancelled' WHERE id=%s", (job["id"],))
