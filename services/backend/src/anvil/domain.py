@@ -45,7 +45,7 @@ def get_revision(c, rid, kind=None, lifecycle=None):
 def assigned(c, project, user, role):
     if not one(
         c,
-        "SELECT 1 FROM anvil.memberships WHERE project_id=%s AND user_id=%s AND role=%s AND active",
+        "SELECT 1 FROM anvil.memberships m JOIN anvil.users u ON u.id=m.user_id WHERE m.project_id=%s AND m.user_id=%s AND m.role=%s AND m.active AND u.active",
         (project, user, role),
     ):
         raise HTTPException(422, f"Assigned {role} is not an active project member")

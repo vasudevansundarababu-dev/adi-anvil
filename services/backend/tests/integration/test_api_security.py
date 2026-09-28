@@ -185,7 +185,7 @@ def test_external_results_preserve_origin_and_never_invoke(
             "harness_version": None,
             "graph_version": None,
             "tools": None,
-            "parameters": None,
+            "parameters": {"private_note": "ANVIL_TEST_ONLY_PRIVATE_PRODUCER_CANARY"},
         },
         "attempts": [
             {
@@ -423,6 +423,10 @@ def test_external_results_preserve_origin_and_never_invoke(
     bundle = clients["sales"].get(base + report_path + "/download/evidence.zip")
     assert bundle.status_code == 200
     with zipfile.ZipFile(io.BytesIO(bundle.content)) as archive:
+        import csv
+        import hashlib
+        from pathlib import PurePosixPath
+
         exported = json.loads(archive.read("manifest.json"))
         assert json.loads(archive.read("claim-registry.json")) == registry
         assert exported["origin"] == "partner_reported"
@@ -432,6 +436,32 @@ def test_external_results_preserve_origin_and_never_invoke(
         )
         assert b"PARTNER REPORTED" in archive.read("email-draft.txt")
         assert all("reference" not in name for name in archive.namelist())
+        assert set(archive.namelist()) == {
+            "README.md",
+            "suite-card.json",
+            "protocol.json",
+            "report.html",
+            "report.md",
+            "findings.jsonl",
+            "claim-registry.json",
+            "external-result-receipts.json",
+            "scorecards.csv",
+            "sales-kit.pdf",
+            "sales-kit.html",
+            "email-draft.txt",
+            "manifest.json",
+        }
+        for name in archive.namelist():
+            assert not PurePosixPath(name).is_absolute() and ".." not in PurePosixPath(name).parts
+            data = archive.read(name)
+            assert b"ANVIL_TEST_ONLY_PRIVATE_PRODUCER_CANARY" not in data
+            assert b"Private reference must not be imported as output" not in data
+            if name != "manifest.json":
+                assert hashlib.sha256(data).hexdigest() == exported["files"][name]
+        for row in csv.DictReader(io.StringIO(archive.read("scorecards.csv").decode())):
+            assert all(
+                not value.startswith(("=", "+", "-", "@", "\t", "\r")) for value in row.values()
+            )
     latest = get("researcher", "/runs/" + run["id"])
     post("researcher", "/runs/" + run["id"] + "/cancel", {}, latest["row_version"])
     assert sorted(e["state"] for e in get("researcher", "/runs/" + run["id"])["episodes"]) == [
@@ -1237,6 +1267,254 @@ def test_provider_and_delivery_role_and_project_boundaries(client_factory):
     assert snapshot() == before
 
 
+def test_disabled_and_multi_role_identity_cannot_fill_separated_assignments(client_factory):
+    import psycopg
+
+    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+    project = journey["project_id"]
+    base = f"/api/v1/projects/{project}"
+    researcher = client_factory("researcher")[0]
+    person = uid()
+    with psycopg.connect(setting("MIGRATION_DATABASE_URL")) as c:
+        org = c.execute("SELECT org_id FROM anvil.projects WHERE id=%s", (project,)).fetchone()[0]
+        c.execute(
+            "INSERT INTO anvil.users(id,org_id,issuer,subject,name,active,is_synthetic) VALUES(%s,%s,%s,%s,'Isolated assignment fixture',false,true)",
+            (person, org, setting("OIDC_ISSUER"), person),
+        )
+        for role in ("researcher", "advisor", "product-owner", "reviewer", "adjudicator"):
+            c.execute(
+                "INSERT INTO anvil.memberships(project_id,user_id,role) VALUES(%s,%s,%s)",
+                (project, person, role),
+            )
+    objective = {
+        "title": "Identity-separation negative fixture",
+        "origin": "adi_initiated",
+        "entry_type": "capability",
+        "hypothesis": "Synthetic assignment verification only",
+        "business_context": "Local security test",
+        "measurement_plan": "No execution or approval is requested by this negative fixture.",
+        "researcher_id": USERS["researcher"],
+        "advisor_id": person,
+        "product_owner_id": USERS["product-owner"],
+    }
+    try:
+        response = researcher.post(
+            base + "/objectives", json=objective, headers={"Idempotency-Key": uid()}
+        )
+        assert response.status_code == 422 and "not an active project member" in response.text
+        members = researcher.get(base + "/members").json()["data"]
+        assert all(row["id"] != person for row in members)
+        with psycopg.connect(setting("MIGRATION_DATABASE_URL")) as c:
+            c.execute("UPDATE anvil.users SET active=true WHERE id=%s", (person,))
+        response = researcher.post(
+            base + "/objectives",
+            json={**objective, "researcher_id": person, "product_owner_id": person},
+            headers={"Idempotency-Key": uid()},
+        )
+        assert response.status_code == 409 and "distinct people" in response.text
+        protocol = researcher.get(base + "/protocols/" + journey["protocol"]["id"]).json()["data"][
+            "content"
+        ]
+        for reviewers, adjudicator in [
+            ([person, person], USERS["adjudicator"]),
+            ([person, USERS["reviewer-2"]], person),
+        ]:
+            response = researcher.post(
+                base + "/protocols",
+                json={**protocol, "reviewer_ids": reviewers, "adjudicator_id": adjudicator},
+                headers={"Idempotency-Key": uid()},
+            )
+            assert response.status_code == 409 and "distinct people" in response.text
+        with transaction(project, USERS["researcher"]) as c:
+            assert (
+                c.execute(
+                    "SELECT count(*) n FROM anvil.review_decisions WHERE reviewer_id=%s", (person,)
+                ).fetchone()["n"]
+                == 0
+            )
+    finally:
+        # Retain the synthetic fixture for audit; it cannot sign in or receive work.
+        with psycopg.connect(setting("MIGRATION_DATABASE_URL")) as c:
+            c.execute("UPDATE anvil.users SET active=false WHERE id=%s", (person,))
+
+
+def test_authenticated_reads_do_not_mutate_canonical_state(client_factory):
+    from psycopg import sql
+
+    from anvil.db import digest
+
+    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+    project = journey["project_id"]
+    base = f"/api/v1/projects/{project}"
+    clients = {
+        name: client_factory(name)[0]
+        for name in (
+            "researcher",
+            "data-engineer",
+            "reviewer-1",
+            "sales",
+            "admin-1",
+            "advisor",
+            "product-owner",
+        )
+    }
+
+    def post(who, path, body, version=None):
+        headers = {"Idempotency-Key": uid()}
+        if version is not None:
+            headers["If-Match"] = str(version)
+        response = clients[who].post(base + path, json=body, headers=headers)
+        assert response.status_code in (200, 201), response.text
+        return response.json()["data"]
+
+    # E2E intentionally supersedes its report for invalidation tests. Prepare a
+    # separate current approved report before measuring read-only behavior.
+    prepared = post(
+        "researcher",
+        "/reports",
+        {
+            "title": "Authenticated read audit fixture",
+            "run_id": journey["run_id"],
+            "finding_revision_ids": [],
+            "advisor_id": USERS["advisor"],
+            "reviewer_id": USERS["reviewer-1"],
+            "product_owner_id": USERS["product-owner"],
+            "audience": "internal_fixture",
+        },
+    )
+    report_path = "/reports/" + prepared["id"]
+    prepared = post("researcher", report_path + "/submit", {}, prepared["row_version"])
+    for who, purpose in [
+        ("advisor", "technical"),
+        ("reviewer-1", "domain"),
+        ("product-owner", "audience"),
+        ("product-owner", "release"),
+    ]:
+        prepared = post(
+            who,
+            report_path + "/decisions",
+            {
+                "purpose": purpose,
+                "decision": "approve",
+                "rationale": "Independent local fixture setup for read-only verification.",
+            },
+            prepared["row_version"],
+        )
+    post("researcher", report_path + "/build", {}, prepared["row_version"])
+    # Capture every business table, including jobs and graph watermark state.
+    # Session activity and append-only evidence-access audit events are expected.
+    with transaction(project, USERS["researcher"]) as c:
+        tables = [
+            row["table_name"]
+            for row in c.execute(
+                "SELECT table_name FROM information_schema.columns WHERE table_schema='anvil' AND column_name='project_id' AND table_name<>'audit_events' ORDER BY table_name"
+            ).fetchall()
+        ]
+        resources = c.execute(
+            "SELECT id,kind FROM anvil.resources ORDER BY created_at DESC"
+        ).fetchall()
+        episode = c.execute(
+            "SELECT id FROM anvil.episodes WHERE run_id=%s AND state='finalized' LIMIT 1",
+            (journey["run_id"],),
+        ).fetchone()["id"]
+        artifact = c.execute(
+            "SELECT id FROM anvil.artifacts WHERE classification='actor' LIMIT 1"
+        ).fetchone()["id"]
+        delivery_row = c.execute("SELECT id FROM anvil.sales_deliveries LIMIT 1").fetchone()["id"]
+        report = c.execute(
+            "SELECT r.id,k.id kit_id FROM anvil.resources r JOIN anvil.revisions v ON v.id=r.current_revision_id JOIN anvil.revisions kv ON kv.content->>'report_revision_id'=r.current_revision_id::text JOIN anvil.resources k ON k.current_revision_id=kv.id WHERE r.kind='report' AND r.lifecycle='approved' AND k.kind='sales_kit' AND k.lifecycle='approved' AND v.content->>'run_id'=%s ORDER BY r.created_at DESC LIMIT 1",
+            (journey["run_id"],),
+        ).fetchone()
+        assert report
+        old_audit = c.execute("SELECT * FROM anvil.audit_events ORDER BY event_seq").fetchall()
+
+    def snapshot():
+        with transaction(project, USERS["researcher"]) as c:
+            values = {}
+            for table in tables:
+                rows = c.execute(
+                    sql.SQL(
+                        "SELECT to_jsonb(t)::text AS value FROM anvil.{} t ORDER BY to_jsonb(t)::text"
+                    ).format(sql.Identifier(table))
+                ).fetchall()
+                values[table] = [row["value"] for row in rows]
+            return digest(values)
+
+    # Freeze only this project's existing jobs/projection while measuring reads;
+    # otherwise the independent worker can legitimately advance its outbox.
+    with transaction(project, USERS["researcher"]) as frozen:
+        frozen.execute("SELECT id FROM anvil.jobs ORDER BY id FOR UPDATE")
+        frozen.execute("SELECT id FROM anvil.projects WHERE id=%s FOR NO KEY UPDATE", (project,))
+        before = snapshot()
+        reads = [
+            ("researcher", "/members"),
+            ("researcher", "/runs"),
+            ("researcher", "/runs/" + journey["run_id"]),
+            ("researcher", f"/episodes/{episode}/evidence"),
+            ("reviewer-1", "/reviews"),
+            ("reviewer-1", f"/reviews/{episode}"),
+            ("data-engineer", f"/artifacts/{artifact}/content"),
+            ("sales", "/sales-contacts"),
+            ("sales", "/fixture-senders"),
+            ("sales", "/sales-deliveries"),
+            ("sales", f"/sales-deliveries/{delivery_row}"),
+            ("sales", "/delivery-approvals"),
+            ("sales", "/sales-kits"),
+            ("admin-1", "/providers"),
+            ("researcher", "/diagnostics"),
+            ("researcher", "/graph"),
+        ]
+        collections = {
+            "objective": "objectives",
+            "case": "cases",
+            "rubric": "rubrics",
+            "task": "tasks",
+            "suite": "suites",
+            "protocol": "protocols",
+            "finding": "findings",
+            "report": "reports",
+        }
+        for kind, collection in collections.items():
+            row = next(item for item in resources if item["kind"] == kind)
+            reads += [
+                ("researcher", "/" + collection),
+                ("researcher", f"/{collection}/{row['id']}"),
+            ]
+            if kind == "case":
+                reads.append(("data-engineer", f"/cases/{row['id']}/readiness"))
+        for who, path in reads:
+            response = clients[who].get(base + path)
+            assert response.status_code == 200, (path, response.text)
+        for name in (
+            "sales-kit.pdf",
+            "sales-kit.html",
+            "evidence.zip",
+            "email-draft.txt",
+            "internal-brief.txt",
+        ):
+            response = clients["sales"].get(
+                base + f"/sales-kits/{report['kit_id']}/download/{name}"
+            )
+            assert response.status_code == 200, (name, response.status_code)
+        assert clients["researcher"].get("/api/v1/me").status_code == 200
+        assert snapshot() == before, "A read mutated tenant state"
+        with transaction(project, USERS["researcher"]) as c:
+            audit_rows = c.execute("SELECT * FROM anvil.audit_events ORDER BY event_seq").fetchall()
+        assert audit_rows[: len(old_audit)] == old_audit
+        added = audit_rows[len(old_audit) :]
+        assert len(added) == 8
+        assert {row["action"] for row in added} == {
+            "artifact.read",
+            "review.evidence_read",
+            "episode.evidence_read",
+            "release.download",
+        }
+        for row in added:
+            assert set(row["metadata"]) == (
+                {"format", "hash"} if row["action"] == "release.download" else set()
+            )
+
+
 def test_review_request_cannot_inject_checkpoint_or_graph_commands(client_factory):
     journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
     episode = journey["episodes"][0]["id"]
@@ -1271,6 +1549,16 @@ def test_review_request_cannot_inject_checkpoint_or_graph_commands(client_factor
 
 def test_manifest_dryrun_atomic_commit_dedup_and_quarantine(client_factory):
     client, _ = client_factory("data-engineer")
+    fixtures = client.post(
+        BASE + "/fixtures/import",
+        json={
+            "case_ids": ["MKT-001"],
+            "reviewer_id": USERS["reviewer-1"],
+            "advisor_id": USERS["advisor"],
+        },
+        headers={"Idempotency-Key": uid()},
+    )
+    assert fixtures.status_code == 200, fixtures.text
     with transaction(PROJECT, USERS["data-engineer"]) as c:
         clean = store(
             c, PROJECT, b'{"synthetic_test":true}', "actor", origin="original_synthetic_fixture"

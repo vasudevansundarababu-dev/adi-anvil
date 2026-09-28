@@ -67,14 +67,15 @@ def test_runtime_roles_are_nonowners_without_bypass():
 
 def test_web_role_cannot_access_checkpoints_and_worker_cannot_read_private_references():
     users = json.loads((ROOT / ".local/demo-identities.json").read_text())
-    with transaction(PROJECT, users["data-engineer"]) as c:
+    project = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())["project_id"]
+    with transaction(project, users["data-engineer"]) as c:
         reference = c.execute(
             "SELECT id FROM anvil.artifacts WHERE classification='hidden_reference' LIMIT 1"
         ).fetchone()
         assert reference
         with pytest.raises(psycopg.errors.InsufficientPrivilege), c.transaction():
             c.execute("SELECT * FROM anvil_checkpoints.checkpoints LIMIT 1")
-    with transaction(PROJECT, worker=True) as c:
+    with transaction(project, worker=True) as c:
         assert (
             c.execute("SELECT id FROM anvil.artifacts WHERE id=%s", (reference["id"],)).fetchone()
             is None
