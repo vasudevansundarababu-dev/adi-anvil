@@ -1,0 +1,9 @@
+{
+  "currency": "USD",
+  "launch_budget": 120000,
+  "regions": [
+    {"id": "North", "launch_investment": 100000, "demand_accounts": 90, "capacity_accounts": 80, "quarterly_contribution_per_account": 700, "quarterly_fixed_operating_cost": 15000, "launch_readiness": "approved"},
+    {"id": "South", "launch_investment": 80000, "demand_accounts": 100, "capacity_accounts": 120, "quarterly_contribution_per_account": 600, "quarterly_fixed_operating_cost": 10000, "launch_readiness": "pending"},
+    {"id": "West", "launch_investment": 125000, "demand_accounts": 110, "capacity_accounts": 110, "quarterly_contribution_per_account": 650, "quarterly_fixed_operating_cost": 10000, "launch_readiness": "approved"}
+  ]
+}

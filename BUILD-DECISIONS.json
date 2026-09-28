@@ -1,0 +1,48 @@
+{
+  "schema_version": "anvil.build_decisions.v1",
+  "handoff_version": "1.1",
+  "repository": {
+    "name": "ADI-Anvil",
+    "local_path": "/Users/vasudevansundarababu/Code-Repo/ADI-Anvil",
+    "visibility": "private",
+    "local_first_confirmed": true,
+    "github_owner": null,
+    "remote_publish_authorized": false
+  },
+  "target": {
+    "diagnostic_journey": true,
+    "live_evaluation_requested": true,
+    "live_execution_authority": "conditional_on_models_budget_and_runtime_gates"
+  },
+  "stack": {
+    "frontend": "Next.js / React / TypeScript / Tailwind",
+    "backend": "Python / FastAPI",
+    "orchestration": "LangGraph",
+    "canonical_database": "PostgreSQL 17",
+    "graph_database": "Neo4j Community",
+    "local_identity": "Keycloak OIDC",
+    "additional_stack_confirmation": "user_confirmed",
+    "docker_compose_readiness": "user_reports_working; build_preflight_required"
+  },
+  "live_evaluation": {
+    "requested_providers": ["meta_muse", "openai", "anthropic", "gemini", "mistral", "open_weight_compatible"],
+    "model_ids": [],
+    "max_total_spend_usd": null,
+    "secret_locally_ready": "no_keys_user_confirmed",
+    "live_calls_enabled": false,
+    "max_initial_cases": 3,
+    "repetitions_per_case_model": 1,
+    "synthetic_cases_only": true,
+    "required_in_app_approvals": "not_recorded"
+  },
+  "operations": {
+    "local_integrations_only": true,
+    "real_email_enabled": false,
+    "cloud_deployment_authorized": false,
+    "global_installation_authorized": false,
+    "work_window_hours": 8,
+    "duration_and_install_scope_confirmation": "user_confirmed",
+    "local_only_integrations_confirmation": "user_confirmed"
+  },
+  "note": "Pending values are not consent. The build agent must not fill user approvals from inference. Dependency/default choices are proposals; live keys never belong in this file."
+}

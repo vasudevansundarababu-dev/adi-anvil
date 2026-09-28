@@ -1,0 +1,15 @@
+{
+  "schema_version": "anvil.synthetic_rubric_template.v1",
+  "origin": "original_synthetic_fixture",
+  "threshold": 75,
+  "calibration_status": "fixture_testing_only_not_expert_validated",
+  "criteria": [
+    {"id": "R1", "label": "Quantitative accuracy", "weight_bps": 5000, "anchors": {"0": "No usable calculations", "1": "Most decision calculations incorrect", "2": "Some correct calculations with material omission", "3": "All decision-driving calculations correct with minor omission", "4": "All requested option calculations correct and supplied caps applied"}},
+    {"id": "R2", "label": "Constraint-preserving recommendation", "weight_bps": 3000, "anchors": {"0": "No choice or final recommendation violates a hard constraint", "1": "Mentions constraints but feasibility remains materially wrong", "2": "Feasible choice without adequate option comparison", "3": "Correct feasible choice and core exclusion reasons", "4": "Correct choice with explicit treatment of every relevant hard constraint and alternative"}},
+    {"id": "R3", "label": "Evidence and limitations", "weight_bps": 2000, "anchors": {"0": "Fabricated or absent basis", "1": "Unsupported assertions", "2": "Uses supplied data but omits important uncertainty", "3": "Cites exhibit and notes major assumptions", "4": "Explicit supplied evidence, assumptions and scope limits without invented external facts"}}
+  ],
+  "score_rule": "sum(weight_bps * dimension_score / 4) / 100",
+  "critical_override": "Apply the case-specific critical rule independently of numeric threshold.",
+  "missing_judgment": "unscorable_or_pending_review_not_zero",
+  "note": "Copy into a separate immutable case rubric revision on import; file path is not an execution expression."
+}

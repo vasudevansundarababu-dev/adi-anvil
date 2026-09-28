@@ -1,0 +1,11 @@
+{
+  "currency": "USD",
+  "minimum_funding": 500000,
+  "cash_available_for_debt_service": 240000,
+  "minimum_dscr": 1.5,
+  "offers": [
+    {"id": "A", "initial_principal": 500000, "annual_rate": 0.08, "first_year_principal_repayment": 100000},
+    {"id": "B", "initial_principal": 650000, "annual_rate": 0.10, "first_year_principal_repayment": 150000},
+    {"id": "C", "initial_principal": 400000, "annual_rate": 0.09, "first_year_principal_repayment": 80000}
+  ]
+}

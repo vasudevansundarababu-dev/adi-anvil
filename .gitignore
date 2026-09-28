@@ -1,0 +1,25 @@
+.env
+.env.*
+!.env.example
+.secrets/
+.local/
+.data/
+node_modules/
+.next/
+.venv/
+__pycache__/
+*.pyc
+*.tsbuildinfo
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+dist/
+coverage/
+test-results/
+playwright-report/
+artifacts/private/
+artifacts/test-runs/
+*.log
+.DS_Store
+
+# Commit original synthetic fixtures, source, specifications and lockfiles.

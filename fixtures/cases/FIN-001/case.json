@@ -1,0 +1,16 @@
+{
+  "schema_version": "anvil.repo_fixture.v1",
+  "external_case_id": "FIN-001",
+  "source_version": "1",
+  "title": "Funding choice with debt-service coverage",
+  "subjects": ["Finance"],
+  "family_id": "SYNTH-DEBT-01",
+  "mode": "static",
+  "source_origin": "original_synthetic_fixture",
+  "faculty_validation": null,
+  "actor_files": ["actor/task.md", "actor/exhibits.json"],
+  "private_files": ["private/reference.json"],
+  "capabilities": ["quantitative_reasoning", "constraint_preservation", "evidence_grounding"],
+  "split": "development",
+  "rights_note": "Local synthetic fixture testing only by default. Provider processing and sharing require separately reviewed scope."
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": "anvil.morning_expectations.v1",
+  "not_actual_test_results": true,
+  "source_cases": 3,
+  "independent_families": 3,
+  "fixture_candidates": 2,
+  "repetitions": 1,
+  "expected_fixture_episodes": 6,
+  "correct_choices": {"MKT-001": "discount_10", "FIN-001": "A", "STR-001": "North"},
+  "scripted_review_vectors": {
+    "fixture-correct": {"R1": 4, "R2": 4, "R3": 4, "score": 100, "critical": false, "outcome": "pass"},
+    "fixture-constraint-blind": {"R1": 4, "R2": 0, "R3": 4, "score": 70, "critical": true, "outcome": "fail"}
+  },
+  "aggregate_if_all_six_receive_these_final_reviews": {"valid": 6, "pass": 3, "fail": 3, "invalid": 0, "unscorable": 0, "unknown": 0, "pass_fraction": 0.5, "mean_score": 85, "origin": "illustrative"},
+  "negative_assertions": ["No live provider requests in fixture run", "No private references in candidate payload", "No emails sent", "PDF page count exactly one", "Actor changes require a new version and fresh approval"],
+  "note": "Scripted review vectors test software scoring, not independent expert agreement. Real human/live reviews need not reproduce these numbers."
+}

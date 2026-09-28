@@ -1,0 +1,29 @@
+{
+  "name": "adi-anvil",
+  "private": true,
+  "packageManager": "pnpm@10.34.5",
+  "scripts": {
+    "preflight": "python3 scripts/local.py preflight",
+    "setup:local": "python3 scripts/local.py setup",
+    "services:up": "python3 scripts/local.py services-up",
+    "services:down": "python3 scripts/local.py services-down",
+    "db:migrate": "python3 scripts/local.py migrate",
+    "seed:demo": "python3 scripts/local.py seed",
+    "dev": "python3 scripts/local.py dev",
+    "stop": "python3 scripts/local.py stop",
+    "worker:restart": "python3 scripts/local.py worker-restart",
+    "check": "python3 scripts/local.py check",
+    "test:unit": "python3 scripts/local.py unit",
+    "test:integration": "python3 scripts/local.py integration",
+    "test:e2e": "python3 scripts/local.py e2e",
+    "test:smoke": "python3 scripts/local.py smoke",
+    "test:live": "python3 scripts/local.py live",
+    "demo:new": "python3 scripts/local.py demo-new",
+    "graph:rebuild": "python3 scripts/local.py graph-rebuild",
+    "backup:local": "python3 scripts/local.py backup",
+    "restore:test": "python3 scripts/local.py restore-test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.2"
+  }
+}

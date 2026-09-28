@@ -1,0 +1,15 @@
+{
+  "schema_version": "anvil.negative_fixture_recipes.v1",
+  "recipes_not_preexecuted_results": true,
+  "scenarios": [
+    {"id":"NEG-INPUT","base":"MKT-001","change":"Omit actor/exhibits.json from received files","expect":"Qualification blocked; no model failure or dispatch"},
+    {"id":"NEG-RIGHTS","base":"FIN-001","change":"External processing rights remain unknown","expect":"Live dispatch blocked; no spend"},
+    {"id":"NEG-MODE","base":"STR-001","change":"Task requires interactive state without a qualified adapter","expect":"Unsupported mode visible; no false candidate failure"},
+    {"id":"NEG-DUP","base":"MKT-001","change":"Import same external ID/version/hash twice","expect":"Idempotent receipt; source count unchanged"},
+    {"id":"NEG-VERSION","base":"MKT-001","change":"Same version but changed exhibit bytes","expect":"Conflict; original unchanged; new source version required"},
+    {"id":"NEG-DISPUTE","base":"FIN-001","change":"Reviewer1 passes, Reviewer2 marks critical failure","expect":"Disputed, no final average; third independent adjudication required"},
+    {"id":"NEG-RESTART","base":"STR-001","change":"Stop only Anvil worker while awaiting human review, restart","expect":"Pending review persists; one resume; no duplicate candidate invocation"},
+    {"id":"NEG-GRAPH","base":"all","change":"Temporarily stop only Anvil Neo4j service","expect":"Canonical CRUD/review/report remain available; degraded graph and table fallback"},
+    {"id":"NEG-SECRET","base":"all","change":"Provider registered without key/model/budget","expect":"Not configured; live button blocked; no fabricated live result"}
+  ]
+}

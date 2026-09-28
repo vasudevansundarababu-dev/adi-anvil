@@ -1,0 +1,12 @@
+{
+  "currency": "USD",
+  "list_price_per_unit": 100,
+  "unit_cost": 60,
+  "stock_units": 140,
+  "minimum_gross_margin_fraction": 0.30,
+  "options": [
+    {"id": "no_promotion", "discount_fraction": 0, "assumed_demand_units": 100},
+    {"id": "discount_10", "discount_fraction": 0.10, "assumed_demand_units": 125},
+    {"id": "discount_20", "discount_fraction": 0.20, "assumed_demand_units": 160}
+  ]
+}

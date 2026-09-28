@@ -1,0 +1,15 @@
+{
+  "case_id": "FIN-001",
+  "review_status": "synthetic_reference_not_expert_validated",
+  "selected_option": "A",
+  "calculations": [
+    {"id": "A", "interest": 40000, "debt_service": 140000, "dscr": 1.7142857142857142, "funding_ok": true, "coverage_ok": true},
+    {"id": "B", "interest": 65000, "debt_service": 215000, "dscr": 1.1162790697674418, "funding_ok": true, "coverage_ok": false},
+    {"id": "C", "interest": 36000, "debt_service": 116000, "dscr": 2.0689655172413794, "funding_ok": false, "coverage_ok": true}
+  ],
+  "basis": "Only A meets both constraints; lower debt service at C cannot compensate for insufficient funding.",
+  "acceptable_alternatives": "Equivalent calculations and final choice A. Numeric display tolerance 0.01 USD and 0.001 DSCR; preserve actual feasibility boundaries.",
+  "critical_rule": "Recommending B or C as a feasible final offer violates an explicit constraint.",
+  "rubric_template_key": "synthetic_business_v1",
+  "pass_threshold": 75
+}

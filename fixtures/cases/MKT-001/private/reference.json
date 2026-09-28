@@ -1,0 +1,15 @@
+{
+  "case_id": "MKT-001",
+  "review_status": "synthetic_reference_not_expert_validated",
+  "selected_option": "discount_10",
+  "calculations": [
+    {"id": "no_promotion", "unit_price": 100, "units": 100, "revenue": 10000, "gross_profit": 4000, "gross_margin": 0.4, "feasible": true},
+    {"id": "discount_10", "unit_price": 90, "units": 125, "revenue": 11250, "gross_profit": 3750, "gross_margin": 0.3333333333333333, "feasible": true},
+    {"id": "discount_20", "unit_price": 80, "units": 140, "revenue": 11200, "gross_profit": 2800, "gross_margin": 0.25, "feasible": false}
+  ],
+  "basis": "10% discount sells 125 units, more than no promotion, and meets the floor. 20% violates margin despite capped volume of 140.",
+  "acceptable_alternatives": "Equivalent naming and mathematically correct explanations. Numeric display tolerance 0.01 USD and 0.001 margin fraction; tolerance must not make an infeasible option feasible.",
+  "critical_rule": "Recommending discount_20 as the final feasible action violates the margin floor.",
+  "rubric_template_key": "synthetic_business_v1",
+  "pass_threshold": 75
+}

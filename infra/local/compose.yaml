@@ -1,0 +1,43 @@
+name: adi-anvil
+services:
+  postgres:
+    image: postgres:17.6-bookworm
+    environment:
+      POSTGRES_DB: anvil_local
+      POSTGRES_USER: anvil_migration
+      POSTGRES_PASSWORD: ${ANVIL_DB_OWNER_PASSWORD:?Run setup first}
+    ports: ["127.0.0.1:${ANVIL_POSTGRES_PORT:-5542}:5432"]
+    volumes:
+      - adi-anvil-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U anvil_migration -d anvil_local"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  neo4j:
+    image: neo4j:5.26.12-community
+    environment:
+      NEO4J_AUTH: neo4j/${ANVIL_NEO4J_PASSWORD:?Run setup first}
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 512m
+      NEO4J_server_memory_pagecache_size: 128m
+    ports:
+      - "127.0.0.1:${ANVIL_NEO4J_HTTP_PORT:-7475}:7474"
+      - "127.0.0.1:${ANVIL_NEO4J_BOLT_PORT:-7688}:7687"
+    volumes: ["adi-anvil-neo4j:/data"]
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3.5
+    command: [start-dev, --import-realm]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: anvil-bootstrap
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${ANVIL_OIDC_ADMIN_PASSWORD:?Run setup first}
+      KC_HOSTNAME: http://127.0.0.1:${ANVIL_OIDC_PORT:-8180}
+      KC_HTTP_ENABLED: "true"
+    ports: ["127.0.0.1:${ANVIL_OIDC_PORT:-8180}:8080"]
+    volumes:
+      - ../../.local/realm.json:/opt/keycloak/data/import/anvil-realm.json:ro
+      - adi-anvil-keycloak:/opt/keycloak/data
+volumes:
+  adi-anvil-postgres:
+  adi-anvil-neo4j:
+  adi-anvil-keycloak:

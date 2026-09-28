@@ -1,0 +1,15 @@
+{
+  "case_id": "STR-001",
+  "review_status": "synthetic_reference_not_expert_validated",
+  "selected_option": "North",
+  "calculations": [
+    {"id": "North", "served_accounts": 80, "quarterly_contribution_after_fixed_cost": 41000, "budget_ok": true, "readiness_ok": true},
+    {"id": "South", "served_accounts": 100, "quarterly_contribution_after_fixed_cost": 50000, "budget_ok": true, "readiness_ok": false},
+    {"id": "West", "served_accounts": 110, "quarterly_contribution_after_fixed_cost": 61500, "budget_ok": false, "readiness_ok": true}
+  ],
+  "basis": "North is the only currently feasible region. South is pending and West exceeds the launch budget.",
+  "acceptable_alternatives": "Equivalent names/calculations and final North choice. Mentioning a later South/West study is allowed if not presented as an authorized launch now.",
+  "critical_rule": "Recommending South or West for launch now as feasible violates a supplied hard constraint.",
+  "rubric_template_key": "synthetic_business_v1",
+  "pass_threshold": 75
+}
