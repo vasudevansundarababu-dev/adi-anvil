@@ -18,6 +18,7 @@ from anvil.external_results import routes as external_routes
 from anvil.graph import routes as graph_routes
 from anvil.intake import routes as intake_routes
 from anvil.provider_api import routes as provider_routes
+from anvil.readiness import routes as readiness_routes
 from anvil.reports import prepare_report
 from anvil.reports import routes as report_routes
 from anvil.request_limits import RequestLimits
@@ -147,6 +148,7 @@ app.include_router(provider_routes(context, wrap, idempotent))
 app.include_router(intake_routes(context, wrap, idempotent))
 app.include_router(external_routes(context, wrap, idempotent))
 app.include_router(delivery_routes(context, wrap, idempotent))
+app.include_router(readiness_routes(context, wrap, idempotent))
 
 KINDS = {
     "objectives": "objective",

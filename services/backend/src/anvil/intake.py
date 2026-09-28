@@ -5,7 +5,7 @@ from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import Field, ValidationError
+from pydantic import Field, ValidationError, model_validator
 
 from anvil import artifacts, auth, domain
 from anvil.db import Jsonb, audit, digest, one, uid
@@ -17,6 +17,14 @@ class Readiness(Strict):
     status: Literal["missing", "partial", "available", "not_applicable"]
     explanation: str = Field(max_length=2000)
     evidence_ids: list[UUID] = Field(default_factory=list, max_length=30)
+
+    @model_validator(mode="after")
+    def explained_exception(self):
+        if self.status == "not_applicable" and (
+            len(self.explanation.strip()) < 10 or not self.evidence_ids
+        ):
+            raise ValueError("Not-applicable declarations require an explanation and evidence")
+        return self
 
 
 class Declaration(Strict):

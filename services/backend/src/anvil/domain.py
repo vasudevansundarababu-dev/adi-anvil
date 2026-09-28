@@ -242,7 +242,7 @@ def rights_ok(c, source, operation="managed_evaluation", destination="local_fixt
     )
 
 
-def current_source(c, revision):
+def current_source(c, revision, ready=True):
     source = get_revision(c, revision, "case")
     if source["id"] != source["current_revision_id"] or source["lifecycle"] in (
         "withdrawn",
@@ -251,6 +251,10 @@ def current_source(c, revision):
         raise HTTPException(
             409, "Source was superseded or withdrawn; requalify its dependent evidence"
         )
+    if ready:
+        from anvil.readiness import require_no_declared_gaps
+
+        require_no_declared_gaps(c, revision)
     return source
 
 
@@ -261,7 +265,12 @@ def qualify(c, r):
     if kind == "task":
         if b["mode"] != "static":
             raise HTTPException(409, "unsupported_execution_mode")
-        current_source(c, b["source_revision_id"])
+        source = current_source(c, b["source_revision_id"])
+        if source["content"].get("source_origin") != b["origin"]:
+            raise HTTPException(
+                409,
+                "Task origin must preserve its source origin; partner task qualification is not available in this local fixture slice",
+            )
         get_revision(c, b["rubric_revision_id"], "rubric", ["approved"])
         if not rights_ok(c, b["source_revision_id"]):
             raise HTTPException(409, "Local evaluation rights not reviewed")

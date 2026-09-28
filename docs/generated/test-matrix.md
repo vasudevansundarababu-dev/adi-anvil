@@ -1,15 +1,15 @@
 # Acceptance evidence matrix
 
-Updated 2026-09-28 14:26 UTC. **Partial build, not release complete.** Stable checkpoint `664703a`; source-version, graph, revision-editor and execution-binding changes are subsequent working-tree work. No live provider or real email test passed. Partial evidence does not waive the remaining criterion.
+Updated 2026-09-28 14:44 UTC. **Partial build, not release complete.** Stable checkpoint `21fd458`; readiness ledger and expanded isolation checks are subsequent verified working-tree work. No live provider or real email test passed. Partial evidence does not waive the remaining criterion.
 
-Latest checks:89 unit tests,50 integration tests; browser passed21.9s test/47.3s total after execution-binding hardening, including draft/successor editing, Sales-role PDF download, customer import, inventory pagination and graph keyboard/responsive checks. Full `pnpm check` passed formatting, lint, TypeScript, production build and generated contracts. Fresh/repeated migrations001–009 passed. Occupied-port launcher test and actual HTTP readiness passed.
+Latest checks:89 unit tests,52 integration tests; browser passed25.9s test/46.5s total including gap creation/resolution, draft/successor editing, Sales-role PDF download, customer import, inventory pagination and graph keyboard/responsive checks. Full `pnpm check` passed formatting, lint, TypeScript, production build and generated contracts. Fresh/repeated migrations001–010 passed. Occupied-port launcher test and actual HTTP readiness passed.
 
 Evidence references: API = `services/backend/tests/integration/test_api_security.py`; DB = `test_isolation.py`; worker = `test_worker_failures.py`; science = `services/backend/tests/unit/test_science_exports.py`; SDK = `test_providers.py`; browser = `tests/e2e/journey.spec.ts`. Private evidence artifacts live under `artifacts/test-runs/`.
 
 | Requirement | Actual status | Evidence / remaining gate |
 | --- | --- | --- |
 | F-ENG01 | Passed | API session expiry/idle/revocation; signed issuer/audience/nonce/expiry/signature/unsigned negatives; invalid/reused state; real OIDC browser logins. |
-| F-ENG02 | Partial | Scoped list/detail/artifact/review/graph/export substitutions and DB RLS passed; exhaustive mutation/job/resume matrix remains. |
+| F-ENG02 | Partial | Cross-project list/detail/draft/successor/submit/review/publish/freeze/withdraw/run/assessment/issue/export/artifact substitutions passed with unchanged foreign revisions; DB RLS passed. Full delivery/provider command matrix remains. |
 | F-ENG03 | Partial | Direct API Sales/Admin content denial and Sales import denial passed; exhaustive role/mutation matrix remains. |
 | F-ENG04 | Partial | CSRF/Origin negatives passed; exhaustive authenticated GET side-effect audit remains. |
 | F-ENG05 | Passed | Stale412, replay and changed-body conflict; browser duplicate launch and external receipt replay. |
@@ -18,9 +18,9 @@ Evidence references: API = `services/backend/tests/integration/test_api_security
 | F-ENG08 | Passed | Non-owner cross-project FKs, missing tenant context and same-connection context reset. |
 | F-ENG09 | Passed | Case dry-run, row errors, atomic commit, repeat deduplication and quarantine rejection. |
 | F-ENG10 | Passed for fail-closed intake | Executable/macro/MIME/path/bomb fixtures remain quarantined without parsing; oversized requests rejected before storage. General scanner unavailable. |
-| F-ENG11 | Partial | Original hashes/immutable versions preserved; derivative/faculty-review workflow absent. |
+| F-ENG11 | Partial | Original hashes/immutable versions and exact-version readiness/gap history preserved. Gap UI and missing-input launch block passed; derivative/faculty-review workflow absent. |
 | F-ENG12 | Partial / live blocked | Local operation/destination rights, expiry and revocation tested; dispatch/resume rechecks active author and rights. External processing/training/redistribution workflow absent. |
-| F-ENG13 | Partial | Missing/duplicate/cross-source inputs and unsupported modes rejected; full missing rubric/calibration matrix remains. |
+| F-ENG13 | Partial | Missing/duplicate/cross-source inputs, unresolved gaps, mismatched source origin and unsupported modes rejected; readiness cannot grant rights or replace evidence. Full missing rubric/calibration permutations remain. |
 | F-ENG14 | Partial | Source/task/family/episode counts distinct; complete related-variant split fixture matrix remains. |
 | F-ENG15 | Partial | Actor-only resolver, strict SDK schemas and minimal checkpoint state; exhaustive log/graph leakage audit remains. |
 | F-ENG16 | Passed | Actual LangGraph fixture journey: 3 pass/3 fail, mean85, one invocation each; illustrative exports. |

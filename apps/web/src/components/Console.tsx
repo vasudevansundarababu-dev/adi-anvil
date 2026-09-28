@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Intake from './Intake';
 import ProviderSetup from './ProviderSetup';
 import RightsReview from './RightsReview';
+import CaseReadiness from './CaseReadiness';
 import ExternalResults from './ExternalResults';
 import GraphMap from './GraphMap';
 import RevisionEditor from './RevisionEditor';
@@ -997,6 +998,12 @@ export default function Console() {
                   )}
                   {r.kind === 'case' && (
                     <>
+                      <CaseReadiness
+                        key={r.current_revision_id}
+                        base={base}
+                        id={r.id}
+                        members={members}
+                      />
                       <p>
                         {text(r.content.external_case_id)} · {text(r.content.family_id)} · source
                         version {text(r.content.source_version)}
@@ -1210,11 +1217,21 @@ export default function Console() {
                         : 'Create successor'}
                     </button>
                   )}
-                {r.lifecycle === 'draft' && role('researcher', 'data-engineer') && r.kind && (
-                  <button disabled={busy} onClick={() => void change(r, 'submit')}>
-                    Submit for review
-                  </button>
-                )}
+                {r.lifecycle === 'draft' &&
+                  role('researcher', 'data-engineer') &&
+                  [
+                    'objective',
+                    'rubric',
+                    'task',
+                    'suite',
+                    'protocol',
+                    'finding',
+                    'report',
+                  ].includes(r.kind) && (
+                    <button disabled={busy} onClick={() => void change(r, 'submit')}>
+                      Submit for review
+                    </button>
+                  )}
                 {r.lifecycle === 'submitted' && r.content && (
                   <>
                     {role('researcher') &&

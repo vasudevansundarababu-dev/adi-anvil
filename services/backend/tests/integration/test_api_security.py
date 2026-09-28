@@ -733,6 +733,242 @@ def test_draft_edit_replay_preserves_one_new_revision(client_factory):
     assert versions[1]["content"] == changed
 
 
+def test_readiness_gap_is_scoped_versioned_and_blocks_launch(client_factory):
+    from anvil.db import one
+
+    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+    project = journey["project_id"]
+    base = f"/api/v1/projects/{project}"
+    engineer = client_factory("data-engineer")[0]
+    researcher = client_factory("researcher")[0]
+    with transaction(project, USERS["researcher"]) as c:
+        source = one(
+            c,
+            "SELECT r.id,r.current_revision_id FROM anvil.resources r JOIN anvil.revisions v ON v.id=r.current_revision_id WHERE r.kind='case' AND v.content->>'external_case_id'='MKT-001'",
+        )
+    path = base + "/cases/" + str(source["id"]) + "/readiness"
+    initial = engineer.get(path).json()["data"]
+    assert initial["local_blockers"] == []
+    assert (
+        next(x for x in initial["items"] if x["item_key"] == "external_processing_rights")["status"]
+        == "missing"
+    )
+    assert client_factory("sales")[0].get(path).status_code == 403
+    assert client_factory("outsider")[0].get(path).status_code == 404
+    item = next(x for x in initial["items"] if x["item_key"] == "actor_inputs")
+    body = {
+        "source_revision_id": str(source["current_revision_id"]),
+        "status": "missing",
+        "explanation": "Synthetic missing-exhibit gate exercise",
+        "owner_user_id": USERS["data-engineer"],
+        "evidence_ids": [],
+    }
+    headers = {"If-Match": str(item["row_version"]), "Idempotency-Key": uid()}
+    assert researcher.patch(path + "/actor_inputs", json=body, headers=headers).status_code == 403
+    assert (
+        client_factory("reviewer-2")[0]
+        .patch(path + "/actor_inputs", json=body, headers=headers)
+        .status_code
+        == 403
+    )
+    assert (
+        engineer.patch(path + "/evaluation_rights", json=body, headers=headers).status_code == 422
+    )
+    assert (
+        engineer.patch(
+            path + "/actor_inputs", json={**body, "evidence_ids": [uid()]}, headers=headers
+        ).status_code
+        == 422
+    )
+    missing = engineer.patch(path + "/actor_inputs", json=body, headers=headers)
+    assert missing.status_code == 200, missing.text
+    assert "actor_inputs" in missing.json()["data"]["local_blockers"]
+    assert (
+        engineer.patch(path + "/actor_inputs", json=body, headers=headers).json()["data"]
+        == missing.json()["data"]
+    )
+    run = researcher.post(
+        base + "/runs",
+        json={"protocol_revision_id": journey["protocol"]["current_revision_id"]},
+        headers={"Idempotency-Key": uid()},
+    ).json()["data"]
+    blocked = researcher.post(
+        base + "/runs/" + run["id"] + "/launch",
+        json={},
+        headers={"Idempotency-Key": uid(), "If-Match": str(run["row_version"])},
+    )
+    assert blocked.status_code == 409 and "readiness" in blocked.text
+    assert researcher.get(base + "/runs/" + run["id"]).json()["data"]["episodes"] == []
+    item = next(x for x in missing.json()["data"]["items"] if x["item_key"] == "actor_inputs")
+    resolved = {
+        **body,
+        "status": "available",
+        "explanation": "Verified both original actor artifacts for this synthetic source.",
+        "evidence_ids": [
+            str(x["id"]) for x in initial["evidence_options"] if x["classification"] == "actor"
+        ],
+    }
+    assert (
+        engineer.patch(
+            path + "/actor_inputs", json=resolved, headers={**headers, "Idempotency-Key": uid()}
+        ).status_code
+        == 412
+    )
+    result = engineer.patch(
+        path + "/actor_inputs",
+        json=resolved,
+        headers={"Idempotency-Key": uid(), "If-Match": str(item["row_version"])},
+    )
+    assert result.status_code == 200, result.text
+    assert result.json()["data"]["local_blockers"] == []
+    with transaction(project, USERS["researcher"]) as c:
+        from anvil import domain
+
+        domain.current_source(c, source["current_revision_id"])
+
+
+def test_cross_project_mutation_matrix_preserves_foreign_records(client_factory):
+    from anvil.db import digest
+
+    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+    foreign_project = journey["project_id"]
+    assert foreign_project != PROJECT
+    clients = {
+        name: client_factory(name)[0]
+        for name in [
+            "researcher",
+            "data-engineer",
+            "reviewer-1",
+            "adjudicator",
+            "product-owner",
+            "sales",
+        ]
+    }
+    with transaction(foreign_project, USERS["researcher"]) as c:
+        resources = c.execute(
+            "SELECT id,kind,current_revision_id,row_version,lifecycle FROM anvil.resources WHERE kind IN ('objective','case','rubric','task','suite','protocol','finding','report') ORDER BY id"
+        ).fetchall()
+        episode = c.execute(
+            "SELECT id FROM anvil.episodes WHERE run_id=%s LIMIT 1", (journey["run_id"],)
+        ).fetchone()["id"]
+        artifact = c.execute("SELECT id FROM anvil.artifacts LIMIT 1").fetchone()["id"]
+    checks = 0
+    for row in resources:
+        collection = {
+            "case": "cases",
+            "objective": "objectives",
+            "rubric": "rubrics",
+            "task": "tasks",
+            "suite": "suites",
+            "protocol": "protocols",
+            "finding": "findings",
+            "report": "reports",
+        }[row["kind"]]
+        path = BASE + "/" + collection + "/" + str(row["id"])
+        commands = [
+            ("researcher", "GET", "", None),
+            ("researcher", "PATCH", "/draft", {}),
+            ("researcher", "POST", "/successor", {}),
+            ("researcher", "POST", "/submit", {}),
+            ("data-engineer", "POST", "/publish", {}),
+            ("researcher", "POST", "/freeze", {}),
+            (
+                "researcher",
+                "POST",
+                "/withdraw",
+                {"reason": "Synthetic cross-project negative verification"},
+            ),
+            (
+                "reviewer-1",
+                "POST",
+                "/decisions",
+                {
+                    "purpose": "content",
+                    "decision": "approve",
+                    "rationale": "Synthetic cross-project negative verification",
+                },
+            ),
+        ]
+        for user, method, suffix, body in commands:
+            response = clients[user].request(
+                method,
+                path + suffix,
+                json=body,
+                headers={"Idempotency-Key": uid(), "If-Match": str(row["row_version"])},
+            )
+            assert response.status_code == 404, (
+                collection,
+                suffix,
+                response.status_code,
+                response.text,
+            )
+            checks += 1
+    for action in ["launch", "cancel"]:
+        response = clients["researcher"].post(
+            BASE + "/runs/" + journey["run_id"] + "/" + action,
+            json={},
+            headers={"If-Match": "1", "Idempotency-Key": uid()},
+        )
+        assert response.status_code == 404
+    for user, action, body in [
+        (
+            "reviewer-1",
+            "assessments",
+            {
+                "scores": {"R1": 4},
+                "critical": [],
+                "evidence": {"R1": "Synthetic"},
+                "rationale": "Synthetic cross-project judgment",
+            },
+        ),
+        (
+            "adjudicator",
+            "adjudicate",
+            {
+                "scores": {"R1": 4},
+                "critical": [],
+                "evidence": {"R1": "Synthetic"},
+                "rationale": "Synthetic cross-project judgment",
+            },
+        ),
+        (
+            "reviewer-1",
+            "review-issues",
+            {"code": "ambiguous_reference", "rationale": "Synthetic cross-project issue"},
+        ),
+        (
+            "adjudicator",
+            "resolve-issue",
+            {"decision": "invalid", "rationale": "Synthetic cross-project resolution"},
+        ),
+    ]:
+        response = clients[user].post(
+            BASE + "/episodes/" + str(episode) + "/" + action,
+            json=body,
+            headers={"If-Match": "1", "Idempotency-Key": uid()},
+        )
+        assert response.status_code == 404, response.text
+    assert (
+        clients["data-engineer"].get(BASE + "/artifacts/" + str(artifact) + "/content").status_code
+        == 404
+    )
+    assert clients["reviewer-1"].get(BASE + "/reviews/" + str(episode)).status_code == 404
+    assert (
+        clients["sales"]
+        .get(BASE + "/reports/" + journey["report"]["id"] + "/download/sales-kit.pdf")
+        .status_code
+        == 404
+    )
+    assert checks >= 8 * 8
+    with transaction(foreign_project, USERS["researcher"]) as c:
+        after = c.execute(
+            "SELECT id,kind,current_revision_id,row_version,lifecycle FROM anvil.resources WHERE kind IN ('objective','case','rubric','task','suite','protocol','finding','report') ORDER BY id"
+        ).fetchall()
+    assert digest(json.loads(json.dumps(resources, default=str))) == digest(
+        json.loads(json.dumps(after, default=str))
+    )
+
+
 def test_manifest_dryrun_atomic_commit_dedup_and_quarantine(client_factory):
     client, _ = client_factory("data-engineer")
     with transaction(PROJECT, USERS["data-engineer"]) as c:
@@ -809,6 +1045,19 @@ def test_manifest_dryrun_atomic_commit_dedup_and_quarantine(client_factory):
     )
     assert grant.status_code == 200, grant.text
     old_revision = source["current_revision_id"]
+    gap_body = {
+        "source_revision_id": old_revision,
+        "status": "missing",
+        "explanation": "Synthetic first-version gap remains in its historical record",
+        "evidence_ids": [],
+    }
+    gap_path = BASE + "/cases/" + ids[0] + "/readiness/actor_inputs"
+    assert (
+        client.patch(
+            gap_path, json=gap_body, headers={"Idempotency-Key": uid(), "If-Match": "0"}
+        ).status_code
+        == 200
+    )
     second = commit(
         preview(
             {
@@ -822,6 +1071,31 @@ def test_manifest_dryrun_atomic_commit_dedup_and_quarantine(client_factory):
     assert second.status_code == 200, second.text
     assert second.json()["data"]["source_ids"] == ids
     new_revision = second.json()["data"]["source_revision_ids"][0]
+    readiness = client.get(BASE + "/cases/" + ids[0] + "/readiness").json()["data"]
+    assert all(item["declared_status"] is None for item in readiness["items"])
+    assert (
+        client.patch(
+            gap_path, json=gap_body, headers={"Idempotency-Key": uid(), "If-Match": "1"}
+        ).status_code
+        == 409
+    )
+    researcher = client_factory("researcher")[0]
+    template = researcher.get(BASE + "/tasks?limit=100").json()["data"][0]["content"]
+    draft = researcher.post(
+        BASE + "/tasks",
+        json={
+            **template,
+            "title": "Cannot relabel a partner source as an original fixture",
+            "source_revision_id": new_revision,
+        },
+        headers={"Idempotency-Key": uid()},
+    ).json()["data"]
+    rejected_origin = researcher.post(
+        BASE + "/tasks/" + draft["id"] + "/submit",
+        json={},
+        headers={"Idempotency-Key": uid(), "If-Match": str(draft["row_version"])},
+    )
+    assert rejected_origin.status_code == 409 and "source origin" in rejected_origin.text
     assert new_revision != old_revision
     current = client.get(BASE + "/cases/" + ids[0]).json()["data"]
     assert current["current_revision_id"] == new_revision and current["rights"] == []

@@ -127,6 +127,7 @@ def backup():
                 ("anvil", "review_issues"),
                 ("anvil", "review_resolutions"),
                 ("anvil", "external_result_receipts"),
+                ("anvil", "readiness_items"),
                 ("anvil", "sales_contacts"),
                 ("anvil", "delivery_approvals"),
                 ("anvil", "sales_deliveries"),

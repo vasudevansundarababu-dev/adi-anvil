@@ -2038,6 +2038,121 @@
         }
       }
     },
+    "/api/v1/projects/{project}/cases/{rid}/readiness": {
+      "get": {
+        "summary": "Get",
+        "operationId": "get_api_v1_projects__project__cases__rid__readiness_get",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project"
+            }
+          },
+          {
+            "name": "rid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project}/cases/{rid}/readiness/{item}": {
+      "patch": {
+        "summary": "Update",
+        "operationId": "update_api_v1_projects__project__cases__rid__readiness__item__patch",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project"
+            }
+          },
+          {
+            "name": "rid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rid"
+            }
+          },
+          {
+            "name": "item",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GapUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/health": {
       "get": {
         "summary": "Health",
@@ -3278,6 +3393,60 @@
           "advisor_id"
         ],
         "title": "FixtureImport"
+      },
+      "GapUpdate": {
+        "properties": {
+          "source_revision_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Source Revision Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "partial",
+              "missing",
+              "not_applicable"
+            ],
+            "title": "Status"
+          },
+          "explanation": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 10,
+            "title": "Explanation"
+          },
+          "owner_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner User Id"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "title": "Evidence Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_revision_id",
+          "status",
+          "explanation"
+        ],
+        "title": "GapUpdate"
       },
       "HTTPValidationError": {
         "properties": {

@@ -681,6 +681,42 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
   await expect(
     importPage.getByRole('heading', { name: 'Synthetic browser pagination case 025', exact: true }),
   ).toBeVisible();
+  await importPage.getByLabel('Search this view').fill('MKT-001');
+  await importPage.getByRole('button', { name: 'Search all records' }).click();
+  await expect(
+    importPage.getByRole('heading', {
+      name: 'Promotion under inventory and margin constraints',
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(importPage.getByText('1 of 1 matching records loaded')).toBeVisible();
+  await importPage.getByRole('button', { name: 'View readiness and gaps' }).click();
+  await expect(
+    importPage.getByText(
+      'No local readiness gaps detected. Task qualification and independent reviews remain required.',
+    ),
+  ).toBeVisible();
+  await importPage.getByRole('button', { name: 'Record actor inputs gap', exact: true }).click();
+  const gapForm = importPage.getByRole('form', { name: 'Gap annotation' });
+  await gapForm.getByLabel('Gap status', { exact: true }).selectOption('partial');
+  await gapForm
+    .getByLabel('Gap explanation or resolution')
+    .fill('Synthetic browser exercise: confirm the actor exhibits are complete.');
+  await gapForm.getByRole('button', { name: 'Save gap annotation' }).click();
+  await expect(importPage.getByText('1 local readiness gaps remain.')).toBeVisible();
+  await importPage.getByRole('button', { name: 'Record actor inputs gap', exact: true }).click();
+  await gapForm.getByLabel('Gap status', { exact: true }).selectOption('available');
+  await gapForm
+    .getByLabel('Gap explanation or resolution')
+    .fill('Synthetic browser exercise: both immutable actor exhibits were checked.');
+  for (const checkbox of await gapForm.getByRole('checkbox', { name: /^actor / }).all())
+    await checkbox.check();
+  await gapForm.getByRole('button', { name: 'Save gap annotation' }).click();
+  await expect(
+    importPage.getByText(
+      'No local readiness gaps detected. Task qualification and independent reviews remain required.',
+    ),
+  ).toBeVisible();
   const editable = await call(R, '/objectives', 'POST', {
     ...objective.content,
     title: 'Browser draft editing exercise',
