@@ -1,88 +1,1063 @@
 'use client';
-import {useCallback,useEffect,useState} from 'react';
-import {usePathname,useRouter} from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import Intake from './Intake';
 import ProviderSetup from './ProviderSetup';
+import RightsReview from './RightsReview';
+import FindingComposer from './FindingComposer';
+import FixtureDelivery from './FixtureDelivery';
 
-type Member={id:string;name:string;role:string};
-type Project={id:string;name:string;roles:string[]};
-type User={id:string;name:string;projects:Project[]};
-type Episode={id:string;state:string;outcome:string;score:number|null;invocation_count:number};
-type Row={id:string;kind:string;lifecycle:string;state?:string;origin?:string;my_review_submitted?:boolean;episodes?:Episode[];row_version:number;current_revision_id:string;content_hash:string;content:Record<string,unknown>;reviews?:{purpose:string;decision:string;rationale:string}[]};
-type Review={id:string;title:string;state:string;row_version:number;output:string;references:string[];adjudication_allowed:boolean;rubric:{criteria:{id:string;label:string;anchors:Record<string,string>}[];critical_rules:string[]};submitted_assessments?:unknown[]};
-type Graph={projection_status:string;source:string;canonical_sequence:number;as_of_sequence:number;nodes:{id:string;label:string;kind:string;status:string;hash:string}[];edges:{source:string;target:string;relation:string}[]};
-const modules=['objectives','cases','rubrics','tasks','suites','protocols','runs','reviews','diagnostics','reports','sales-kits','providers'];
-const labels:Record<string,string>={objectives:'Research objectives',cases:'Case bank',rubrics:'Rubrics',tasks:'Qualification',suites:'Suites',protocols:'Protocols',runs:'Run console',reviews:'Review inbox',diagnostics:'Diagnostics',reports:'Reports', 'sales-kits':'Sales Kit',providers:'Providers'};
-const notes:Record<string,string>={objectives:'Define the question, measurement and scope before evaluation.',cases:'Original synthetic cases. Intake, rights and readiness stay separate.',rubrics:'Anchored criteria and calibration evidence, bound to exact versions.',tasks:'Publish only after content, research and rights reviews.',suites:'Freeze exact task versions and disclose selection limits.',protocols:'Bind the suite, candidates and independent reviewers.',runs:'Explicit execution through the durable queue. Fixture results are illustrative.',reviews:'Independent, blinded judgments. Missing grades are never treated as zero.',diagnostics:'Observable evidence and relationships. Internal causal reasoning remains unknown.',reports:'Reviewed evidence, honest denominators and internal draft downloads.',providers:'Configuration does not authorize inference. No live models are enabled.'};
+type Member = { id: string; name: string; role: string };
+type Project = { id: string; name: string; roles: string[] };
+type User = { id: string; name: string; projects: Project[] };
+type Episode = {
+  id: string;
+  state: string;
+  outcome: string;
+  score: number | null;
+  invocation_count: number;
+};
+type Row = {
+  id: string;
+  kind: string;
+  lifecycle: string;
+  state?: string;
+  origin?: string;
+  my_review_submitted?: boolean;
+  episodes?: Episode[];
+  row_version: number;
+  current_revision_id: string;
+  content_hash: string;
+  content: Record<string, unknown>;
+  reviews?: { purpose: string; decision: string; rationale: string }[];
+};
+type Review = {
+  id: string;
+  title: string;
+  state: string;
+  row_version: number;
+  output: string;
+  references: string[];
+  adjudication_allowed: boolean;
+  rubric: {
+    criteria: { id: string; label: string; anchors: Record<string, string> }[];
+    critical_rules: string[];
+  };
+  submitted_assessments?: unknown[];
+};
+type Graph = {
+  projection_status: string;
+  source: string;
+  canonical_sequence: number;
+  as_of_sequence: number;
+  nodes: { id: string; label: string; kind: string; status: string; hash: string }[];
+  edges: { source: string; target: string; relation: string }[];
+};
+const modules = [
+  'objectives',
+  'cases',
+  'rubrics',
+  'tasks',
+  'suites',
+  'protocols',
+  'runs',
+  'reviews',
+  'diagnostics',
+  'findings',
+  'reports',
+  'sales-kits',
+  'providers',
+];
+const labels: Record<string, string> = {
+  objectives: 'Research objectives',
+  cases: 'Case bank',
+  rubrics: 'Rubrics',
+  tasks: 'Qualification',
+  suites: 'Suites',
+  protocols: 'Protocols',
+  runs: 'Run console',
+  reviews: 'Review inbox',
+  diagnostics: 'Diagnostics',
+  reports: 'Reports',
+  'sales-kits': 'Sales Kit',
+  providers: 'Providers',
+};
+const notes: Record<string, string> = {
+  objectives: 'Define the question, measurement and scope before evaluation.',
+  cases: 'Original synthetic cases. Intake, rights and readiness stay separate.',
+  rubrics: 'Anchored criteria and calibration evidence, bound to exact versions.',
+  tasks: 'Publish only after content, research and rights reviews.',
+  suites: 'Freeze exact task versions and disclose selection limits.',
+  protocols: 'Bind the suite, candidates and independent reviewers.',
+  runs: 'Explicit execution through the durable queue. Fixture results are illustrative.',
+  reviews: 'Independent, blinded judgments. Missing grades are never treated as zero.',
+  diagnostics: 'Observable evidence and relationships. Internal causal reasoning remains unknown.',
+  reports: 'Reviewed evidence, honest denominators and internal draft downloads.',
+  providers: 'Configuration does not authorize inference. No live models are enabled.',
+};
+labels.findings = 'Findings';
+notes.findings =
+  'Reviewed observations and explicitly labeled hypotheses, linked to output evidence.';
 
-async function api(path:string,method='GET',body?:unknown,version?:number){
- const csrf=document.cookie.split('; ').find(x=>x.startsWith('anvil_csrf='))?.split('=')[1]||'';
- const r=await fetch('/api/v1'+path,{method,headers:{'Content-Type':'application/json','X-CSRF-Token':csrf,...(method==='GET'?{}:{'Idempotency-Key':crypto.randomUUID()}),...(version?{'If-Match':String(version)}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});
- const j=await r.json();if(!r.ok)throw new Error(j.error?.message||'Request failed');return j.data;
+async function api(path: string, method = 'GET', body?: unknown, version?: number) {
+  const csrf =
+    document.cookie
+      .split('; ')
+      .find((x) => x.startsWith('anvil_csrf='))
+      ?.split('=')[1] || '';
+  const r = await fetch('/api/v1' + path, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': csrf,
+      ...(method === 'GET' ? {} : { 'Idempotency-Key': crypto.randomUUID() }),
+      ...(version ? { 'If-Match': String(version) } : {}),
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error?.message || 'Request failed');
+  return j.data;
 }
-const text=(v:unknown)=>typeof v==='string'?v:JSON.stringify(v,null,2);
+const text = (v: unknown) => (typeof v === 'string' ? v : JSON.stringify(v, null, 2));
 
-export default function Console(){
- const router=useRouter(),pathname=usePathname();const parts=pathname.split('/');
- const [user,setUser]=useState<User|null>(null),[ready,setReady]=useState(false),[dark,setDark]=useState(false);
- const [rows,setRows]=useState<Row[]>([]),[members,setMembers]=useState<Member[]>([]),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[search,setSearch]=useState(''),[form,setForm]=useState(false);
- const [options,setOptions]=useState<Record<string,Row[]>>({});
- const [review,setReview]=useState<Review|null>(null),[graph,setGraph]=useState<Graph|null>(null),[node,setNode]=useState<Graph['nodes'][number]|null>(null);
- const project=user?.projects.find(p=>p.id===parts[2])||user?.projects[0];const section=modules.includes(parts[3])?parts[3]:'objectives';
- const base=project?'/projects/'+project.id:'';
- const role=(...r:string[])=>!!project?.roles.some(x=>r.includes(x));
- useEffect(()=>{api('/me').then(setUser).catch(()=>setUser(null)).finally(()=>setReady(true));},[]);
- const reload=useCallback(async()=>{if(!base)return;setError('');try{
-   const data=await api(base+'/'+section);if(section==='diagnostics'){setGraph(data);setRows([]);}else setRows(data);
-   if(!project?.roles.includes('sales'))setMembers(await api(base+'/members'));
- }catch(e){setError((e as Error).message);setRows([]);}},[base,section,project?.roles]);
- useEffect(()=>{void reload();setForm(false);setSearch('');},[reload]);
- async function act(fn:()=>Promise<unknown>,success='Saved to the project audit trail.'){setBusy(true);setError('');setMessage('');try{await fn();setMessage(success);await reload();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
- function member(role:string,name?:string){return members.find(m=>m.role===role&&(!name||m.name===name))?.id||'';}
- async function openForm(){setForm(!form);if(['suites','protocols','reports'].includes(section)){const kinds=section==='suites'?['objectives','tasks']:section==='protocols'?['objectives','suites']:['runs','findings'];const o:Record<string,Row[]>={};for(const k of kinds)o[k]=await api(base+'/'+k);setOptions(o);}}
- async function create(e:React.FormEvent<HTMLFormElement>){e.preventDefault();const data=new FormData(e.currentTarget);const value=(k:string)=>String(data.get(k)||'');let body:Record<string,unknown>={title:value('title')};
- if(section==='objectives')body={...body,origin:value('origin'),entry_type:value('entry_type'),hypothesis:value('hypothesis'),business_context:value('business_context'),measurement_plan:value('measurement_plan'),researcher_id:member('researcher'),advisor_id:member('advisor'),product_owner_id:member('product-owner')};
- if(section==='suites')body={...body,objective_revision_id:value('objective'),task_revision_ids:data.getAll('tasks'),selection_method:value('selection_method'),exposure_note:value('exposure_note'),advisor_id:member('advisor'),planned_source_count:200};
- if(section==='protocols')body={...body,objective_revision_id:value('objective'),suite_revision_id:value('suite'),candidates:['fixture-correct','fixture-constraint-blind'],repetitions:1,reviewer_ids:[member('reviewer','reviewer-1'),member('reviewer','reviewer-2')],adjudicator_id:member('adjudicator'),advisor_id:member('advisor'),comparison_policy:value('comparison_policy'),pass_policy:value('pass_policy'),mode:'fixture'};
- if(section==='reports')body={...body,run_id:value('run'),finding_revision_ids:[],advisor_id:member('advisor'),reviewer_id:member('reviewer','reviewer-1'),product_owner_id:member('product-owner'),audience:'internal_fixture'};
- await act(async()=>{await api(base+'/'+section,'POST',body);setForm(false);});}
- const change=(r:Row,action:string,body?:unknown)=>act(()=>api(base+'/'+section+'/'+r.id+'/'+action,'POST',body??{},r.row_version));
- function decision(r:Row,purpose:string){const rationale=window.prompt('Review rationale (at least 10 characters). This is a synthetic local exercise.');if(rationale)void change(r,'decisions',{purpose,decision:'approve',rationale});}
- async function grade(e:React.FormEvent<HTMLFormElement>){e.preventDefault();if(!review)return;const form=new FormData(e.currentTarget);const scores:Record<string,number>={},evidence:Record<string,string>={};for(const c of review.rubric.criteria){scores[c.id]=Number(form.get(c.id));evidence[c.id]=String(form.get(c.id+'-evidence'));}await act(async()=>{await api(base+'/episodes/'+review.id+(review.adjudication_allowed?'/adjudicate':'/assessments'),'POST',{scores,critical:form.getAll('critical'),evidence,rationale:String(form.get('rationale'))},review.row_version);setReview(null);},'Independent assessment saved. Required secondary review or adjudication remains separate.');}
- if(!ready)return <main><p role="status">Loading your session…</p></main>;
- if(!user)return <main className="login"><img src="/brand/adi-anvil-logo-v1.png" alt="ADI Anvil"/><h1>ADI Anvil</h1><p>Frontier Evaluation &amp; Diagnostics Platform</p><div className="banner">Local synthetic workspace · no live inference</div><p className="muted">Sign in with your assigned local identity. Each role uses a distinct account.</p><a className="button primary" href="/api/v1/auth/login">Sign in with Keycloak</a></main>;
- return <div className={dark?'dark':''}><header><div><strong>ADI Anvil</strong><small>Frontier Evaluation &amp; Diagnostics Platform</small></div><div className="tools"><small>{user.name} · {project?.roles.join(', ')}</small><button onClick={()=>setDark(!dark)} aria-label="Toggle color theme">{dark?'Light':'Dark'} theme</button><button onClick={()=>act(async()=>{await api('/auth/logout','POST',{});setUser(null);})}>Sign out</button></div></header>
- <nav aria-label="Project navigation">{modules.map(m=><a key={m} href={'/p/'+project?.id+'/'+m} aria-current={section===m?'page':undefined}>{labels[m]}</a>)}</nav>
- <main><div className="toolbar"><div><div className="eyebrow">{project?.name}</div><h1>{labels[section]}</h1><p className="muted">{notes[section]}</p></div><div><label htmlFor="project">Project</label><select id="project" value={project?.id} onChange={e=>router.push('/p/'+e.target.value+'/'+section)}>{user.projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div></div>
- <div className="banner">Synthetic source material · fixture execution is illustrative · no faculty validation or measured frontier-model performance.</div>
- {error&&<div className="banner error" role="alert">{error}</div>}{message&&<div className="banner success" role="status">{message}</div>}
- <div className="toolbar"><div><label htmlFor="search">Search this view</label><input id="search" type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search titles or status"/></div><div className="actions"><button onClick={()=>void reload()} disabled={busy}>Refresh</button>{role('researcher')&&['objectives','suites','protocols','reports'].includes(section)&&<button className="primary" onClick={()=>void openForm()}>New {section==='objectives'?'objective':section.slice(0,-1)}</button>}
- {section==='cases'&&role('data-engineer')&&<button className="primary" disabled={busy} onClick={()=>act(()=>api(base+'/fixtures/import','POST',{case_ids:['MKT-001','FIN-001','STR-001'],reviewer_id:member('reviewer','reviewer-1'),advisor_id:member('advisor')}),'Three original fixtures imported; review drafts and rights before publishing.')}>Import built-in synthetic cases</button>}</div></div>
- {form&&<form className="card" onSubmit={create}><h2>New {section.slice(0,-1)}</h2><label htmlFor="title">Title</label><input id="title" name="title" required minLength={3}/>
- {section==='objectives'&&<><div className="fieldgrid"><div><label htmlFor="origin">Origin</label><select id="origin" name="origin"><option value="adi_initiated">ADI initiated</option><option value="customer_requested">Customer requested</option></select></div><div><label htmlFor="entry_type">Starting point</label><select id="entry_type" name="entry_type"><option value="capability">Capability led</option><option value="benchmark">Benchmark led</option></select></div></div><label htmlFor="hypothesis">Observable hypothesis</label><textarea id="hypothesis" name="hypothesis" required minLength={10}/><label htmlFor="business_context">Business context and scope</label><textarea id="business_context" name="business_context" required/><label htmlFor="measurement_plan">Measurement and acceptance plan</label><textarea id="measurement_plan" name="measurement_plan" required minLength={20} placeholder="Cases, candidates, rubric, exclusions and descriptive comparison limits"/></>}
- {['suites','protocols'].includes(section)&&<><label htmlFor="objective">Approved objective</label><select id="objective" name="objective" required><option value="">Select an approved revision</option>{options.objectives?.filter(r=>r.lifecycle==='approved').map(r=><option key={r.id} value={r.current_revision_id}>{text(r.content.title)}</option>)}</select></>}
- {section==='suites'&&<><fieldset><legend>Published task versions</legend>{options.tasks?.filter(r=>r.lifecycle==='published').map(r=><label key={r.id}><input type="checkbox" name="tasks" value={r.current_revision_id}/>{text(r.content.title)}</label>)}</fieldset><label htmlFor="selection_method">Selection method</label><textarea id="selection_method" name="selection_method" required defaultValue="Three supplied original synthetic cases; convenience sample for pipeline verification."/><label htmlFor="exposure_note">Exposure and comparison limits</label><textarea id="exposure_note" name="exposure_note" required defaultValue="Development fixtures only. Predetermined answers; no benchmark generalization or independent expert validation."/></>}
- {section==='protocols'&&<><label htmlFor="suite">Frozen suite</label><select id="suite" name="suite" required><option value="">Select frozen suite</option>{options.suites?.filter(r=>r.lifecycle==='frozen').map(r=><option key={r.id} value={r.current_revision_id}>{text(r.content.title)}</option>)}</select><p>Two deterministic candidates · one attempt each · both pilot reviewers and independent adjudicator required.</p><label htmlFor="comparison_policy">Comparison policy</label><textarea id="comparison_policy" name="comparison_policy" required defaultValue="Same actor inputs and task versions; illustrative fixture pipeline verification only. No measured model ranking."/><label htmlFor="pass_policy">Pass policy</label><textarea id="pass_policy" name="pass_policy" required defaultValue="Frozen rubric threshold; critical violation overrides numeric pass. Missing judgments stay pending."/></>}
- {section==='reports'&&<><label htmlFor="run">Reviewed run</label><select id="run" name="run" required><option value="">Choose reviewed run</option>{options.runs?.map(r=><option key={r.id} value={r.id}>{r.id}</option>)}</select><p>Internal fixture audience only. Technical, domain, audience and release approvals required.</p></>}
- <p className="muted">Reviews are assigned to the project&apos;s distinct local test identities. Assignments are bound to this revision.</p><button className="primary" disabled={busy}>Save draft</button></form>}
- {section==='cases'&&role('data-engineer')&&<Intake key={base} base={base}/>}
- {section==='cases'&&<div className="stats"><div><strong>{rows.length}</strong><small>Actual cases shown</small></div><div><strong>200</strong><small>Planned portfolio · not received</small></div></div>}
- {section==='diagnostics'&&graph&&<><div className="banner">Projection: {graph.projection_status} · {graph.source} · applied {graph.as_of_sequence} / canonical {graph.canonical_sequence}</div><div className="split"><div className="card"><h2>Evidence relationships</h2><p className="muted">Select a node to inspect its exact version. Lines represent recorded evidence relationships, not causality.</p><div className="grid">{graph.nodes.filter(n=>n.label.toLowerCase().includes(search.toLowerCase())).map(n=><button key={n.id} onClick={()=>setNode(n)}>{n.label}<small className="badge">{n.kind} · {n.status}</small></button>)}</div></div><div className="card"><h2>Node inspector</h2>{node?<><h3>{node.label}</h3><p>{node.kind} · {node.status}</p><p className="muted" style={{overflowWrap:'anywhere'}}>Revision {node.id}<br/>Digest {node.hash}</p><h3>Linked records</h3>{graph.edges.filter(e=>e.source===node.id||e.target===node.id).map((e,i)=><p key={i}>{e.relation} → {graph.nodes.find(n=>n.id===(e.source===node.id?e.target:e.source))?.label}</p>)}</>:<p>Select an evidence node.</p>}</div></div><details className="card"><summary>Canonical relationship table</summary><div className="tablewrap"><table><thead><tr><th>From</th><th>Relationship</th><th>To</th></tr></thead><tbody>{graph.edges.map((e,i)=><tr key={i}><td>{graph.nodes.find(n=>n.id===e.source)?.label}</td><td>{e.relation}</td><td>{graph.nodes.find(n=>n.id===e.target)?.label}</td></tr>)}</tbody></table></div></details></>}
- {review&&<form className="card" onSubmit={grade}><h2>Blind review · {review.title}</h2><div className="split"><div><h3>Candidate output</h3><pre>{review.output}</pre></div><div><h3>Assigned private reference</h3>{review.references.map((r,i)=><pre key={i}>{r}</pre>)}</div></div>{review.rubric.criteria.map(c=><fieldset key={c.id}><legend>{c.id} · {c.label}</legend><label htmlFor={c.id}>Anchored score</label><select id={c.id} name={c.id} required><option value="">Select judgment</option>{Object.entries(c.anchors).map(([n,a])=><option key={n} value={n}>{n} — {a}</option>)}</select><label htmlFor={c.id+'-evidence'}>Verbatim output evidence</label><input id={c.id+'-evidence'} name={c.id+'-evidence'} minLength={3} required placeholder="Paste a supporting span from the output"/></fieldset>)}<fieldset><legend>Critical violations (independent of numeric score)</legend>{review.rubric.critical_rules.map(rule=><label key={rule}><input name="critical" type="checkbox" value={rule}/>{rule}</label>)}</fieldset><label htmlFor="rationale">Review rationale</label><textarea name="rationale" id="rationale" minLength={10} required/>{review.submitted_assessments&&<details><summary>Submitted judgments for adjudication</summary><pre>{text(review.submitted_assessments)}</pre></details>}<div className="actions"><button className="primary" disabled={busy}>{review.adjudication_allowed?'Submit independent adjudication':'Submit independent assessment'}</button><button type="button" onClick={()=>setReview(null)}>Close review</button></div></form>}
- {rows.filter(r=>JSON.stringify(r).toLowerCase().includes(search.toLowerCase())).map(r=><article className="card" key={r.id}><div className="toolbar"><h2>{text(r.content?.title||r.id)}</h2><span className="badge">{r.lifecycle||r.state||'pending'}</span></div>
- {r.content&&<div>{['hypothesis','measurement_plan','selection_method','exposure_note','comparison_policy','pass_policy','observation'].map(k=>r.content[k]?<p key={k}><strong>{k.replaceAll('_',' ')}: </strong>{text(r.content[k])}</p>:null)}{r.kind==='case'&&<><p>{text(r.content.external_case_id)} · {text(r.content.family_id)} · source version {text(r.content.source_version)}</p><p className="muted">{text(r.content.rights_note)}</p></>}{r.kind==='rubric'&&<div className="tablewrap"><table><thead><tr><th>Criterion</th><th>Weight</th><th>Anchors</th></tr></thead><tbody>{(r.content.criteria as {id:string;label:string;weight_bps:number;anchors:Record<string,string>}[])?.map(c=><tr key={c.id}><td>{c.id} · {c.label}</td><td>{c.weight_bps/100}%</td><td>{Object.entries(c.anchors).map(([n,a])=><div key={n}>{n}: {a}</div>)}</td></tr>)}</tbody></table></div>}</div>}
- {section==='runs'&&<><p>Origin: {r.origin} · Actual model cost: not applicable to network-free fixtures</p><div className="actions">{r.state==='draft'&&role('researcher')&&<button className="primary" disabled={busy} onClick={()=>void change(r,'launch')}>Launch six-episode fixture evaluation</button>}{r.state!=='reviewed'&&r.state!=='cancelled'&&role('researcher')&&<button onClick={()=>void change(r,'cancel')}>Cancel pending execution</button>}</div>{r.episodes&&<div className="tablewrap"><table><thead><tr><th>Episode</th><th>State</th><th>Outcome</th><th>Score</th><th>Invocations</th></tr></thead><tbody>{r.episodes.map(e=><tr key={e.id}><td>{e.id.slice(0,8)}</td><td>{e.state}</td><td>{e.outcome}</td><td>{e.score??'Not established'}</td><td>{e.invocation_count}</td></tr>)}</tbody></table></div>}</>}
- {section==='reviews'&&<div className="actions"><button className="primary" disabled={busy||r.my_review_submitted} onClick={()=>act(async()=>setReview(await api(base+'/reviews/'+r.id)),'Assigned evidence loaded; candidate identity and other unfinished grades withheld.')}>{r.my_review_submitted?'Your judgment is recorded':'Open blinded review'}</button></div>}
- {r.kind==='report'&&r.lifecycle==='approved'&&<><button className="primary" disabled={busy} onClick={()=>void change(r,'build')}>Build reviewed PDF &amp; evidence kit</button><div className="actions">{['sales-kit.pdf','sales-kit.html','evidence.zip','email-draft.txt','internal-brief.txt'].map(name=><a className="button" key={name} href={'/api/v1'+base+'/reports/'+r.id+'/download/'+name}>{name}</a>)}</div></>}
- {section==='sales-kits'&&<><p className="banner">{text(r.content.label)}</p><p>{text(r.content.tested)}</p><p>{text(r.content.boundary)}</p><div className="actions"><button disabled>Email sending disabled</button></div></>}
- {section==='providers'&&role('admin')&&<ProviderSetup base={base} provider={String(r.content.provider_key)} model={r.content.model_id as string|null}/>}
- <div className="actions">{r.lifecycle==='draft'&&role('researcher','data-engineer')&&r.kind&&<button disabled={busy} onClick={()=>void change(r,'submit')}>Submit for review</button>}
- {r.lifecycle==='submitted'&&r.content&&<>{role('researcher')&&r.kind==='objective'&&r.content.researcher_id===user.id&&<button onClick={()=>decision(r,'research')}>Recommend research scope</button>}{role('advisor')&&r.content.advisor_id===user.id&&<button onClick={()=>decision(r,r.kind==='objective'?'advisor':r.kind==='rubric'?'calibration':r.kind==='task'?'research':'technical')}>Approve {r.kind==='rubric'?'calibration':'technical review'}</button>}{role('reviewer')&&r.content.reviewer_id===user.id&&<button onClick={()=>decision(r,r.kind==='report'?'domain':'content')}>Approve domain content</button>}{role('product-owner')&&r.content.product_owner_id===user.id&&<button onClick={()=>decision(r,r.kind==='objective'?'scope':'audience')}>Approve {r.kind==='objective'?'scope':'audience'}</button>}{role('product-owner')&&r.kind==='report'&&<button onClick={()=>decision(r,'release')}>Approve internal release</button>}</>}
- {r.kind==='case'&&role('product-owner')&&<button onClick={()=>act(()=>api(base+'/cases/'+r.id+'/rights','POST',{operation:'managed_evaluation',destination:'local_fixture',status:'approved',evidence:'Reviewed supplied original synthetic case license: local fixture evaluation only. No external processing authority.'},r.row_version))}>Approve local fixture rights</button>}
- {r.kind==='task'&&r.lifecycle==='qualified'&&role('data-engineer')&&<button onClick={()=>void change(r,'publish')}>Publish qualified task</button>}{r.kind==='suite'&&r.lifecycle==='approved'&&role('researcher')&&<button onClick={()=>void change(r,'freeze')}>Freeze suite</button>}
- {r.kind==='protocol'&&r.lifecycle==='approved'&&role('researcher')&&<button className="primary" onClick={()=>act(()=>api(base+'/runs','POST',{protocol_revision_id:r.current_revision_id}),'Run created. Open Run console to explicitly launch.')}>Prepare fixture run</button>}
- {!['reviews','providers','sales-kits'].includes(section)&&<button onClick={()=>act(async()=>{const full=await api(base+'/'+section+'/'+r.id);setRows(old=>old.map(x=>x.id===r.id?full:x));},'Current evidence and history loaded.')}>{section==='runs'?'Inspect episodes':'Load review history'}</button>}</div>
- {r.reviews?.map((v,i)=><p key={i} className="muted">{v.purpose}: {v.decision} — {v.rationale}</p>)}<details><summary>Version and evidence details</summary><p className="muted">Revision {r.current_revision_id} · hash {r.content_hash}</p><pre>{text(r.content)}</pre></details></article>)}
- {!rows.length&&!error&&section!=='diagnostics'&&<div className="card empty">No records in this view yet. Start with an objective and the original synthetic cases.</div>}
- <footer>ADI Anvil · Local diagnostic workspace · External inference and sending require separate authorization.</footer></main></div>;
+export default function Console() {
+  const router = useRouter(),
+    pathname = usePathname();
+  const parts = pathname.split('/');
+  const [user, setUser] = useState<User | null>(null),
+    [ready, setReady] = useState(false),
+    [dark, setDark] = useState(false);
+  const [rows, setRows] = useState<Row[]>([]),
+    [members, setMembers] = useState<Member[]>([]),
+    [error, setError] = useState(''),
+    [message, setMessage] = useState(''),
+    [busy, setBusy] = useState(false),
+    [search, setSearch] = useState(''),
+    [form, setForm] = useState(false);
+  const [options, setOptions] = useState<Record<string, Row[]>>({});
+  const [review, setReview] = useState<Review | null>(null),
+    [graph, setGraph] = useState<Graph | null>(null),
+    [node, setNode] = useState<Graph['nodes'][number] | null>(null);
+  const project = user?.projects.find((p) => p.id === parts[2]) || user?.projects[0];
+  const section = modules.includes(parts[3]) ? parts[3] : 'objectives';
+  const base = project ? '/projects/' + project.id : '';
+  const role = (...r: string[]) => !!project?.roles.some((x) => r.includes(x));
+  useEffect(() => {
+    api('/me')
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => setReady(true));
+  }, []);
+  const reload = useCallback(async () => {
+    if (!base) return;
+    setError('');
+    try {
+      const data = await api(base + '/' + section);
+      if (section === 'diagnostics') {
+        setGraph(data);
+        setRows([]);
+      } else setRows(data);
+      if (!project?.roles.includes('sales')) setMembers(await api(base + '/members'));
+    } catch (e) {
+      setError((e as Error).message);
+      setRows([]);
+    }
+  }, [base, section, project?.roles]);
+  useEffect(() => {
+    void reload();
+    setForm(false);
+    setSearch('');
+  }, [reload]);
+  async function act(fn: () => Promise<unknown>, success = 'Saved to the project audit trail.') {
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      await fn();
+      setMessage(success);
+      await reload();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  function member(role: string, name?: string) {
+    return members.find((m) => m.role === role && (!name || m.name === name))?.id || '';
+  }
+  async function openForm() {
+    setForm(!form);
+    if (['suites', 'protocols', 'reports'].includes(section)) {
+      const kinds =
+        section === 'suites'
+          ? ['objectives', 'tasks']
+          : section === 'protocols'
+            ? ['objectives', 'suites']
+            : ['runs', 'findings'];
+      const o: Record<string, Row[]> = {};
+      for (const k of kinds) o[k] = await api(base + '/' + k);
+      setOptions(o);
+    }
+  }
+  async function create(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    const value = (k: string) => String(data.get(k) || '');
+    let body: Record<string, unknown> = { title: value('title') };
+    if (section === 'objectives')
+      body = {
+        ...body,
+        origin: value('origin'),
+        entry_type: value('entry_type'),
+        hypothesis: value('hypothesis'),
+        business_context: value('business_context'),
+        measurement_plan: value('measurement_plan'),
+        researcher_id: member('researcher'),
+        advisor_id: member('advisor'),
+        product_owner_id: member('product-owner'),
+      };
+    if (section === 'suites')
+      body = {
+        ...body,
+        objective_revision_id: value('objective'),
+        task_revision_ids: data.getAll('tasks'),
+        selection_method: value('selection_method'),
+        exposure_note: value('exposure_note'),
+        advisor_id: member('advisor'),
+        planned_source_count: 200,
+      };
+    if (section === 'protocols')
+      body = {
+        ...body,
+        objective_revision_id: value('objective'),
+        suite_revision_id: value('suite'),
+        candidates: ['fixture-correct', 'fixture-constraint-blind'],
+        repetitions: 1,
+        reviewer_ids: [member('reviewer', 'reviewer-1'), member('reviewer', 'reviewer-2')],
+        adjudicator_id: member('adjudicator'),
+        advisor_id: member('advisor'),
+        comparison_policy: value('comparison_policy'),
+        pass_policy: value('pass_policy'),
+        mode: 'fixture',
+      };
+    if (section === 'reports')
+      body = {
+        ...body,
+        run_id: value('run'),
+        finding_revision_ids: data.getAll('findings'),
+        advisor_id: member('advisor'),
+        reviewer_id: member('reviewer', 'reviewer-1'),
+        product_owner_id: member('product-owner'),
+        audience: 'internal_fixture',
+      };
+    await act(async () => {
+      await api(base + '/' + section, 'POST', body);
+      setForm(false);
+    });
+  }
+  const change = (r: Row, action: string, body?: unknown) =>
+    act(() =>
+      api(base + '/' + section + '/' + r.id + '/' + action, 'POST', body ?? {}, r.row_version),
+    );
+  function decision(r: Row, purpose: string) {
+    const rationale = window.prompt(
+      'Review rationale (at least 10 characters). This is a synthetic local exercise.',
+    );
+    if (rationale) void change(r, 'decisions', { purpose, decision: 'approve', rationale });
+  }
+  async function grade(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!review) return;
+    const form = new FormData(e.currentTarget);
+    const scores: Record<string, number> = {},
+      evidence: Record<string, string> = {};
+    for (const c of review.rubric.criteria) {
+      scores[c.id] = Number(form.get(c.id));
+      evidence[c.id] = String(form.get(c.id + '-evidence'));
+    }
+    await act(async () => {
+      await api(
+        base +
+          '/episodes/' +
+          review.id +
+          (review.adjudication_allowed ? '/adjudicate' : '/assessments'),
+        'POST',
+        {
+          scores,
+          critical: form.getAll('critical'),
+          evidence,
+          rationale: String(form.get('rationale')),
+        },
+        review.row_version,
+      );
+      setReview(null);
+    }, 'Independent assessment saved. Required secondary review or adjudication remains separate.');
+  }
+  if (!ready)
+    return (
+      <main>
+        <p role="status">Loading your session…</p>
+      </main>
+    );
+  if (!user)
+    return (
+      <main className="login">
+        <img src="/brand/adi-anvil-logo-v1.png" alt="ADI Anvil" />
+        <h1>ADI Anvil</h1>
+        <p>Frontier Evaluation &amp; Diagnostics Platform</p>
+        <div className="banner">Local synthetic workspace · no live inference</div>
+        <p className="muted">
+          Sign in with your assigned local identity. Each role uses a distinct account.
+        </p>
+        <a className="button primary" href="/api/v1/auth/login">
+          Sign in with Keycloak
+        </a>
+      </main>
+    );
+  return (
+    <div className={dark ? 'dark' : ''}>
+      <header>
+        <div>
+          <strong>ADI Anvil</strong>
+          <small>Frontier Evaluation &amp; Diagnostics Platform</small>
+        </div>
+        <div className="tools">
+          <small>
+            {user.name} · {project?.roles.join(', ')}
+          </small>
+          <button
+            onClick={() => setDark(!dark)}
+            aria-label="Toggle color theme"
+            aria-pressed={dark}
+          >
+            {dark ? 'Light' : 'Dark'} theme
+          </button>
+          <button
+            onClick={() =>
+              act(async () => {
+                await api('/auth/logout', 'POST', {});
+                setUser(null);
+              })
+            }
+          >
+            Sign out
+          </button>
+        </div>
+      </header>
+      <nav aria-label="Project navigation">
+        {modules.map((m) => (
+          <a
+            key={m}
+            href={'/p/' + project?.id + '/' + m}
+            aria-current={section === m ? 'page' : undefined}
+          >
+            {labels[m]}
+          </a>
+        ))}
+      </nav>
+      <main>
+        <div className="toolbar">
+          <div>
+            <div className="eyebrow">{project?.name}</div>
+            <h1>{labels[section]}</h1>
+            <p className="muted">{notes[section]}</p>
+          </div>
+          <div>
+            <label htmlFor="project">Project</label>
+            <select
+              id="project"
+              value={project?.id}
+              onChange={(e) => router.push('/p/' + e.target.value + '/' + section)}
+            >
+              {user.projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="banner">
+          Synthetic source material · fixture execution is illustrative · no faculty validation or
+          measured frontier-model performance.
+        </div>
+        {error && (
+          <div className="banner error" role="alert">
+            {error}
+          </div>
+        )}
+        {message && (
+          <div className="banner success" role="status">
+            {message}
+          </div>
+        )}
+        <div className="toolbar">
+          <div>
+            <label htmlFor="search">Search this view</label>
+            <input
+              id="search"
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search titles or status"
+            />
+          </div>
+          <div className="actions">
+            <button onClick={() => void reload()} disabled={busy}>
+              Refresh
+            </button>
+            {role('researcher') &&
+              ['objectives', 'suites', 'protocols', 'reports'].includes(section) && (
+                <button className="primary" onClick={() => void openForm()}>
+                  New {section === 'objectives' ? 'objective' : section.slice(0, -1)}
+                </button>
+              )}
+            {section === 'cases' && role('data-engineer') && (
+              <button
+                className="primary"
+                disabled={busy}
+                onClick={() =>
+                  act(
+                    () =>
+                      api(base + '/fixtures/import', 'POST', {
+                        case_ids: ['MKT-001', 'FIN-001', 'STR-001'],
+                        reviewer_id: member('reviewer', 'reviewer-1'),
+                        advisor_id: member('advisor'),
+                      }),
+                    'Three original fixtures imported; review drafts and rights before publishing.',
+                  )
+                }
+              >
+                Import built-in synthetic cases
+              </button>
+            )}
+          </div>
+        </div>
+        {form && (
+          <form className="card" onSubmit={create}>
+            <h2>New {section.slice(0, -1)}</h2>
+            <label htmlFor="title">Title</label>
+            <input id="title" name="title" required minLength={3} />
+            {section === 'objectives' && (
+              <>
+                <div className="fieldgrid">
+                  <div>
+                    <label htmlFor="origin">Origin</label>
+                    <select id="origin" name="origin">
+                      <option value="adi_initiated">ADI initiated</option>
+                      <option value="customer_requested">Customer requested</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="entry_type">Starting point</label>
+                    <select id="entry_type" name="entry_type">
+                      <option value="capability">Capability led</option>
+                      <option value="benchmark">Benchmark led</option>
+                    </select>
+                  </div>
+                </div>
+                <label htmlFor="hypothesis">Observable hypothesis</label>
+                <textarea id="hypothesis" name="hypothesis" required minLength={10} />
+                <label htmlFor="business_context">Business context and scope</label>
+                <textarea id="business_context" name="business_context" required />
+                <label htmlFor="measurement_plan">Measurement and acceptance plan</label>
+                <textarea
+                  id="measurement_plan"
+                  name="measurement_plan"
+                  required
+                  minLength={20}
+                  placeholder="Cases, candidates, rubric, exclusions and descriptive comparison limits"
+                />
+              </>
+            )}
+            {['suites', 'protocols'].includes(section) && (
+              <>
+                <label htmlFor="objective">Approved objective</label>
+                <select id="objective" name="objective" required>
+                  <option value="">Select an approved revision</option>
+                  {options.objectives
+                    ?.filter((r) => r.lifecycle === 'approved')
+                    .map((r) => (
+                      <option key={r.id} value={r.current_revision_id}>
+                        {text(r.content.title)}
+                      </option>
+                    ))}
+                </select>
+              </>
+            )}
+            {section === 'suites' && (
+              <>
+                <fieldset>
+                  <legend>Published task versions</legend>
+                  {options.tasks
+                    ?.filter((r) => r.lifecycle === 'published')
+                    .map((r) => (
+                      <label key={r.id}>
+                        <input type="checkbox" name="tasks" value={r.current_revision_id} />
+                        {text(r.content.title)}
+                      </label>
+                    ))}
+                </fieldset>
+                <label htmlFor="selection_method">Selection method</label>
+                <textarea
+                  id="selection_method"
+                  name="selection_method"
+                  required
+                  defaultValue="Three supplied original synthetic cases; convenience sample for pipeline verification."
+                />
+                <label htmlFor="exposure_note">Exposure and comparison limits</label>
+                <textarea
+                  id="exposure_note"
+                  name="exposure_note"
+                  required
+                  defaultValue="Development fixtures only. Predetermined answers; no benchmark generalization or independent expert validation."
+                />
+              </>
+            )}
+            {section === 'protocols' && (
+              <>
+                <label htmlFor="suite">Frozen suite</label>
+                <select id="suite" name="suite" required>
+                  <option value="">Select frozen suite</option>
+                  {options.suites
+                    ?.filter((r) => r.lifecycle === 'frozen')
+                    .map((r) => (
+                      <option key={r.id} value={r.current_revision_id}>
+                        {text(r.content.title)}
+                      </option>
+                    ))}
+                </select>
+                <p>
+                  Two deterministic candidates · one attempt each · both pilot reviewers and
+                  independent adjudicator required.
+                </p>
+                <label htmlFor="comparison_policy">Comparison policy</label>
+                <textarea
+                  id="comparison_policy"
+                  name="comparison_policy"
+                  required
+                  defaultValue="Same actor inputs and task versions; illustrative fixture pipeline verification only. No measured model ranking."
+                />
+                <label htmlFor="pass_policy">Pass policy</label>
+                <textarea
+                  id="pass_policy"
+                  name="pass_policy"
+                  required
+                  defaultValue="Frozen rubric threshold; critical violation overrides numeric pass. Missing judgments stay pending."
+                />
+              </>
+            )}
+            {section === 'reports' && (
+              <>
+                <label htmlFor="run">Reviewed run</label>
+                <select id="run" name="run" required>
+                  <option value="">Choose reviewed run</option>
+                  {options.runs?.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.id}
+                    </option>
+                  ))}
+                </select>
+                <p>
+                  Internal fixture audience only. Technical, domain, audience and release approvals
+                  required.
+                </p>
+              </>
+            )}
+            {section === 'reports' && (
+              <fieldset>
+                <legend>Approved findings from the selected run</legend>
+                {options.findings
+                  ?.filter((r) => r.lifecycle === 'approved')
+                  .map((r) => (
+                    <label key={r.id}>
+                      <input name="findings" type="checkbox" value={r.current_revision_id} />
+                      {text(r.content.title)}
+                    </label>
+                  ))}
+              </fieldset>
+            )}
+            <p className="muted">
+              Reviews are assigned to the project&apos;s distinct local test identities. Assignments
+              are bound to this revision.
+            </p>
+            <button className="primary" disabled={busy}>
+              Save draft
+            </button>
+          </form>
+        )}
+        {section === 'findings' && role('researcher') && (
+          <FindingComposer key={base} base={base} advisor={member('advisor')} />
+        )}
+        {((section === 'sales-kits' && role('sales', 'product-owner')) ||
+          (section === 'providers' && role('admin'))) && (
+          <FixtureDelivery key={base} base={base} roles={project?.roles || []} />
+        )}
+        {section === 'cases' && role('data-engineer') && <Intake key={base} base={base} />}
+        {section === 'cases' && (
+          <div className="stats">
+            <div>
+              <strong>{rows.length}</strong>
+              <small>Actual cases shown</small>
+            </div>
+            <div>
+              <strong>200</strong>
+              <small>Planned portfolio · not received</small>
+            </div>
+          </div>
+        )}
+        {section === 'diagnostics' && graph && (
+          <>
+            <div className="banner">
+              Projection: {graph.projection_status} · {graph.source} · applied{' '}
+              {graph.as_of_sequence} / canonical {graph.canonical_sequence}
+            </div>
+            <div className="split">
+              <div className="card">
+                <h2>Evidence relationships</h2>
+                <p className="muted">
+                  Select a node to inspect its exact version. Lines represent recorded evidence
+                  relationships, not causality.
+                </p>
+                <div className="grid">
+                  {graph.nodes
+                    .filter((n) => n.label.toLowerCase().includes(search.toLowerCase()))
+                    .map((n) => (
+                      <button key={n.id} onClick={() => setNode(n)}>
+                        {n.label}
+                        <small className="badge">
+                          {n.kind} · {n.status}
+                        </small>
+                      </button>
+                    ))}
+                </div>
+              </div>
+              <div className="card">
+                <h2>Node inspector</h2>
+                {node ? (
+                  <>
+                    <h3>{node.label}</h3>
+                    <p>
+                      {node.kind} · {node.status}
+                    </p>
+                    <p className="muted" style={{ overflowWrap: 'anywhere' }}>
+                      Revision {node.id}
+                      <br />
+                      Digest {node.hash}
+                    </p>
+                    <h3>Linked records</h3>
+                    {graph.edges
+                      .filter((e) => e.source === node.id || e.target === node.id)
+                      .map((e, i) => (
+                        <p key={i}>
+                          {e.relation} →{' '}
+                          {
+                            graph.nodes.find(
+                              (n) => n.id === (e.source === node.id ? e.target : e.source),
+                            )?.label
+                          }
+                        </p>
+                      ))}
+                  </>
+                ) : (
+                  <p>Select an evidence node.</p>
+                )}
+              </div>
+            </div>
+            <details className="card">
+              <summary>Canonical relationship table</summary>
+              <div className="tablewrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>From</th>
+                      <th>Relationship</th>
+                      <th>To</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {graph.edges.map((e, i) => (
+                      <tr key={i}>
+                        <td>{graph.nodes.find((n) => n.id === e.source)?.label}</td>
+                        <td>{e.relation}</td>
+                        <td>{graph.nodes.find((n) => n.id === e.target)?.label}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          </>
+        )}
+        {review && (
+          <form className="card" onSubmit={grade}>
+            <h2>Blind review · {review.title}</h2>
+            <div className="split">
+              <div>
+                <h3>Candidate output</h3>
+                <pre>{review.output}</pre>
+              </div>
+              <div>
+                <h3>Assigned private reference</h3>
+                {review.references.map((r, i) => (
+                  <pre key={i}>{r}</pre>
+                ))}
+              </div>
+            </div>
+            {review.rubric.criteria.map((c) => (
+              <fieldset key={c.id}>
+                <legend>
+                  {c.id} · {c.label}
+                </legend>
+                <label htmlFor={c.id}>Anchored score</label>
+                <select id={c.id} name={c.id} required>
+                  <option value="">Select judgment</option>
+                  {Object.entries(c.anchors).map(([n, a]) => (
+                    <option key={n} value={n}>
+                      {n} — {a}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor={c.id + '-evidence'}>Verbatim output evidence</label>
+                <input
+                  id={c.id + '-evidence'}
+                  name={c.id + '-evidence'}
+                  minLength={3}
+                  required
+                  placeholder="Paste a supporting span from the output"
+                />
+              </fieldset>
+            ))}
+            <fieldset>
+              <legend>Critical violations (independent of numeric score)</legend>
+              {review.rubric.critical_rules.map((rule) => (
+                <label key={rule}>
+                  <input name="critical" type="checkbox" value={rule} />
+                  {rule}
+                </label>
+              ))}
+            </fieldset>
+            <label htmlFor="rationale">Review rationale</label>
+            <textarea name="rationale" id="rationale" minLength={10} required />
+            {review.submitted_assessments && (
+              <details>
+                <summary>Submitted judgments for adjudication</summary>
+                <pre>{text(review.submitted_assessments)}</pre>
+              </details>
+            )}
+            <div className="actions">
+              <button className="primary" disabled={busy}>
+                {review.adjudication_allowed
+                  ? 'Submit independent adjudication'
+                  : 'Submit independent assessment'}
+              </button>
+              <button type="button" onClick={() => setReview(null)}>
+                Close review
+              </button>
+            </div>
+          </form>
+        )}
+        {rows
+          .filter((r) => JSON.stringify(r).toLowerCase().includes(search.toLowerCase()))
+          .map((r) => (
+            <article className="card" key={r.id}>
+              <div className="toolbar">
+                <h2>{text(r.content?.title || r.id)}</h2>
+                <span className="badge">{r.lifecycle || r.state || 'pending'}</span>
+              </div>
+              {r.content && (
+                <div>
+                  {[
+                    'hypothesis',
+                    'measurement_plan',
+                    'selection_method',
+                    'exposure_note',
+                    'comparison_policy',
+                    'pass_policy',
+                    'observation',
+                  ].map((k) =>
+                    r.content[k] ? (
+                      <p key={k}>
+                        <strong>{k.replaceAll('_', ' ')}: </strong>
+                        {text(r.content[k])}
+                      </p>
+                    ) : null,
+                  )}
+                  {r.kind === 'case' && (
+                    <>
+                      <p>
+                        {text(r.content.external_case_id)} · {text(r.content.family_id)} · source
+                        version {text(r.content.source_version)}
+                      </p>
+                      <p className="muted">{text(r.content.rights_note)}</p>
+                    </>
+                  )}
+                  {r.kind === 'rubric' && (
+                    <div className="tablewrap">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Criterion</th>
+                            <th>Weight</th>
+                            <th>Anchors</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(
+                            r.content.criteria as {
+                              id: string;
+                              label: string;
+                              weight_bps: number;
+                              anchors: Record<string, string>;
+                            }[]
+                          )?.map((c) => (
+                            <tr key={c.id}>
+                              <td>
+                                {c.id} · {c.label}
+                              </td>
+                              <td>{c.weight_bps / 100}%</td>
+                              <td>
+                                {Object.entries(c.anchors).map(([n, a]) => (
+                                  <div key={n}>
+                                    {n}: {a}
+                                  </div>
+                                ))}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+              {section === 'runs' && (
+                <>
+                  <p>
+                    Origin: {r.origin} · Actual model cost: not applicable to network-free fixtures
+                  </p>
+                  <div className="actions">
+                    {r.state === 'draft' && role('researcher') && (
+                      <button
+                        className="primary"
+                        disabled={busy}
+                        onClick={() => void change(r, 'launch')}
+                      >
+                        Launch six-episode fixture evaluation
+                      </button>
+                    )}
+                    {r.state !== 'reviewed' && r.state !== 'cancelled' && role('researcher') && (
+                      <button onClick={() => void change(r, 'cancel')}>
+                        Cancel pending execution
+                      </button>
+                    )}
+                  </div>
+                  {r.episodes && (
+                    <div className="tablewrap">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Episode</th>
+                            <th>State</th>
+                            <th>Outcome</th>
+                            <th>Score</th>
+                            <th>Invocations</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {r.episodes.map((e) => (
+                            <tr key={e.id}>
+                              <td>{e.id.slice(0, 8)}</td>
+                              <td>{e.state}</td>
+                              <td>{e.outcome}</td>
+                              <td>{e.score ?? 'Not established'}</td>
+                              <td>{e.invocation_count}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              )}
+              {section === 'reviews' && (
+                <div className="actions">
+                  <button
+                    className="primary"
+                    disabled={busy || r.my_review_submitted}
+                    onClick={() =>
+                      act(
+                        async () => setReview(await api(base + '/reviews/' + r.id)),
+                        'Assigned evidence loaded; candidate identity and other unfinished grades withheld.',
+                      )
+                    }
+                  >
+                    {r.my_review_submitted ? 'Your judgment is recorded' : 'Open blinded review'}
+                  </button>
+                </div>
+              )}
+              {r.kind === 'report' && r.lifecycle === 'approved' && (
+                <>
+                  <button
+                    className="primary"
+                    disabled={busy}
+                    onClick={() => void change(r, 'build')}
+                  >
+                    Build reviewed PDF &amp; evidence kit
+                  </button>
+                  <div className="actions">
+                    {[
+                      'sales-kit.pdf',
+                      'sales-kit.html',
+                      'evidence.zip',
+                      'email-draft.txt',
+                      'internal-brief.txt',
+                    ].map((name) => (
+                      <a
+                        className="button"
+                        key={name}
+                        href={'/api/v1' + base + '/reports/' + r.id + '/download/' + name}
+                      >
+                        {name}
+                      </a>
+                    ))}
+                  </div>
+                </>
+              )}
+              {section === 'sales-kits' && (
+                <>
+                  <p className="banner">{text(r.content.label)}</p>
+                  <p>{text(r.content.tested)}</p>
+                  <p>{text(r.content.boundary)}</p>
+                  <div className="actions">
+                    <button disabled>Email sending disabled</button>
+                  </div>
+                </>
+              )}
+              {section === 'providers' && role('admin') && (
+                <ProviderSetup
+                  base={base}
+                  provider={String(r.content.provider_key)}
+                  model={r.content.model_id as string | null}
+                />
+              )}
+              <div className="actions">
+                {r.lifecycle === 'draft' && role('researcher', 'data-engineer') && r.kind && (
+                  <button disabled={busy} onClick={() => void change(r, 'submit')}>
+                    Submit for review
+                  </button>
+                )}
+                {r.lifecycle === 'submitted' && r.content && (
+                  <>
+                    {role('researcher') &&
+                      r.kind === 'objective' &&
+                      r.content.researcher_id === user.id && (
+                        <button onClick={() => decision(r, 'research')}>
+                          Recommend research scope
+                        </button>
+                      )}
+                    {role('advisor') && r.content.advisor_id === user.id && (
+                      <button
+                        onClick={() =>
+                          decision(
+                            r,
+                            r.kind === 'objective'
+                              ? 'advisor'
+                              : r.kind === 'rubric'
+                                ? 'calibration'
+                                : r.kind === 'task'
+                                  ? 'research'
+                                  : 'technical',
+                          )
+                        }
+                      >
+                        Approve {r.kind === 'rubric' ? 'calibration' : 'technical review'}
+                      </button>
+                    )}
+                    {role('reviewer') && r.content.reviewer_id === user.id && (
+                      <button
+                        onClick={() => decision(r, r.kind === 'report' ? 'domain' : 'content')}
+                      >
+                        Approve domain content
+                      </button>
+                    )}
+                    {role('product-owner') && r.content.product_owner_id === user.id && (
+                      <button
+                        onClick={() => decision(r, r.kind === 'objective' ? 'scope' : 'audience')}
+                      >
+                        Approve {r.kind === 'objective' ? 'scope' : 'audience'}
+                      </button>
+                    )}
+                    {role('product-owner') && r.kind === 'report' && (
+                      <button onClick={() => decision(r, 'release')}>
+                        Approve internal release
+                      </button>
+                    )}
+                  </>
+                )}
+                {r.kind === 'case' && role('product-owner') && (
+                  <RightsReview base={base} id={r.id} version={r.row_version} />
+                )}
+                {r.kind === 'task' && r.lifecycle === 'qualified' && role('data-engineer') && (
+                  <button onClick={() => void change(r, 'publish')}>Publish qualified task</button>
+                )}
+                {r.kind === 'suite' && r.lifecycle === 'approved' && role('researcher') && (
+                  <button onClick={() => void change(r, 'freeze')}>Freeze suite</button>
+                )}
+                {r.kind === 'protocol' && r.lifecycle === 'approved' && role('researcher') && (
+                  <button
+                    className="primary"
+                    onClick={() =>
+                      act(
+                        () =>
+                          api(base + '/runs', 'POST', {
+                            protocol_revision_id: r.current_revision_id,
+                          }),
+                        'Run created. Open Run console to explicitly launch.',
+                      )
+                    }
+                  >
+                    Prepare fixture run
+                  </button>
+                )}
+                {!['reviews', 'providers', 'sales-kits'].includes(section) && (
+                  <button
+                    onClick={() =>
+                      act(async () => {
+                        const full = await api(base + '/' + section + '/' + r.id);
+                        setRows((old) => old.map((x) => (x.id === r.id ? full : x)));
+                      }, 'Current evidence and history loaded.')
+                    }
+                  >
+                    {section === 'runs' ? 'Inspect episodes' : 'Load review history'}
+                  </button>
+                )}
+              </div>
+              {r.reviews?.map((v, i) => (
+                <p key={i} className="muted">
+                  {v.purpose}: {v.decision} — {v.rationale}
+                </p>
+              ))}
+              <details>
+                <summary>Version and evidence details</summary>
+                <p className="muted">
+                  Revision {r.current_revision_id} · hash {r.content_hash}
+                </p>
+                <pre>{text(r.content)}</pre>
+              </details>
+            </article>
+          ))}
+        {!rows.length && !error && section !== 'diagnostics' && (
+          <div className="card empty">
+            No records in this view yet. Start with an objective and the original synthetic cases.
+          </div>
+        )}
+        <footer>
+          ADI Anvil · Local diagnostic workspace · External inference and sending require separate
+          authorization.
+        </footer>
+      </main>
+    </div>
+  );
 }

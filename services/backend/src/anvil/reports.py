@@ -26,7 +26,7 @@ LABEL = "ILLUSTRATIVE SYNTHETIC FIXTURE - INTERNAL USE ONLY"
 
 def facts(c, run_id, final=True):
     run = get_run(c, run_id)
-    if final and run["state"] != "reviewed":
+    if final and run["state"] not in ("reviewed", "execution_complete", "cancelled"):
         raise HTTPException(409, "Run still has pending, disputed or incomplete assessments")
     protocol = domain.get_revision(c, run["protocol_revision_id"], "protocol")
     suite = domain.get_revision(c, protocol["content"]["suite_revision_id"], "suite")
@@ -57,11 +57,17 @@ def facts(c, run_id, final=True):
         "case_count": len({t["source_revision_id"] for t in tasks}),
         "family_count": len({t["family_id"] for t in tasks}),
         "launched": len(episodes),
+        "planned": len(suite["content"]["task_revision_ids"])
+        * len(protocol["content"]["candidates"])
+        * protocol["content"].get("repetitions", 1),
         "completed": sum(e["state"] == "finalized" for e in episodes),
         "valid": len(valid),
         "passes": sum(e["outcome"] == "pass" for e in valid),
         "failures": sum(e["outcome"] == "fail" for e in valid),
-        "pending": sum(e["outcome"] == "pending_review" for e in episodes),
+        "pending": sum(
+            e["state"] in ("queued", "output_captured", "awaiting_review", "disputed")
+            for e in episodes
+        ),
         "invalid": sum(e["outcome"] == "invalid" for e in episodes),
         "unscorable": sum(e["outcome"] == "unscorable" for e in episodes),
         "unknown": sum(e["state"] == "execution_unknown" for e in episodes),
@@ -82,6 +88,7 @@ def facts(c, run_id, final=True):
         "uncertainty": "not_estimated",
         "improvement": "not_tested",
         "limitations": "Custom development suite; predetermined fixture responses; synthetic source and scripted local reviews. No measured frontier-model performance, faculty validation, human baseline, causal diagnosis or generalization.",
+        "denominator_definition": "Pass rate and mean include only finalized scored pass/fail episodes. Completed counts finalized reviews. Cancelled, invalid, unknown and pending episodes are disclosed separately.",
     }
 
 
@@ -113,6 +120,7 @@ def prepare_report(c, content):
 
 def prepare_provisional(c, run_id):
     run = get_run(c, run_id)
+    c.execute("SELECT id FROM anvil.projects WHERE id=%s FOR UPDATE", (run["project_id"],))
     prior = one(
         c,
         "SELECT r.id FROM anvil.resources r JOIN anvil.revisions v ON v.id=r.current_revision_id WHERE kind='sales_kit' AND v.content->>'run_id'=%s AND v.content->>'stage'='provisional'",
@@ -144,6 +152,20 @@ def validity(c, report, sharing=True):
     if report["lifecycle"] != "approved":
         raise HTTPException(409, "Report scientific/audience/release approval required")
     b = report["content"]
+    f = b["facts"]
+    domain.get_revision(c, f["objective_revision_id"], "objective", ["approved"])
+    domain.get_revision(c, f["protocol_revision_id"], "protocol", ["approved"])
+    suite = domain.get_revision(c, f["suite_revision_id"], "suite", ["frozen"])
+    for tid in suite["content"]["task_revision_ids"]:
+        task = domain.get_revision(c, tid, "task", ["published"])
+        # The worker cannot read rubric content; checking its metadata needs no hidden bytes.
+        rubric = one(
+            c,
+            "SELECT r.lifecycle,r.current_revision_id FROM anvil.resources r WHERE r.current_revision_id=%s AND r.kind='rubric'",
+            (task["content"]["rubric_revision_id"],),
+        )
+        if not rubric or rubric["lifecycle"] != "approved":
+            raise HTTPException(409, "Bound rubric is no longer current and approved")
     if digest(facts(c, b["run_id"])) != b["evidence_manifest_hash"]:
         raise HTTPException(409, "Evidence changed; create and review a successor report")
     for source in b["facts"]["sources"]:
@@ -170,7 +192,7 @@ def kit_content(report):
             "These results verify application mechanics; they do not measure model capability.",
         ],
         "relevance": "This workflow can support a scoped investigation of constraint preservation. A real-model study still needs processing rights, exact models, bounded spend, independent approvals and calibrated human review.",
-        "boundary": f"{f['launched']} launched; {f['completed']} completed; {f['valid']} valid; {f['invalid']} invalid; {f['unscorable']} unscorable; {f['unknown']} unknown; {f['pending']} pending. Predetermined development fixtures and synthetic reviews. No faculty validation, human baseline, generalization or causal claim. Uncertainty not estimated; improvement not tested.",
+        "boundary": f"{f['launched']} launched; {f['completed']} completed; {f['valid']} valid; {f['invalid']} invalid; {f['unscorable']} unscorable; {f['unknown']} unknown; {f['cancelled']} cancelled; {f['pending']} pending. Predetermined development fixtures and synthetic reviews. No faculty validation, human baseline, generalization or causal claim. Uncertainty not estimated; improvement not tested.",
         "next_step": "Review the evidence and agree a permitted, bounded real-model pilot with independent grading.",
         "report_revision_id": str(report["current_revision_id"]),
         "report_hash": report["content_hash"],
@@ -269,6 +291,7 @@ def html_bytes(content):
 
 
 def render_kit(c, report, user):
+    c.execute("SELECT id FROM anvil.projects WHERE id=%s FOR UPDATE", (report["project_id"],))
     validity(c, report)
     prior = one(
         c,
@@ -309,6 +332,13 @@ def render_kit(c, report, user):
             ("internal-brief.txt", brief, "text/plain"),
         ]
     }
+    rendered["evidence.zip"] = artifacts.store(
+        c,
+        report["project_id"],
+        bundle(c, report, {"content": {"artifacts": rendered}}),
+        "approved_delivery",
+        "application/zip",
+    )
     kit = domain.create(
         c,
         report["project_id"],
@@ -373,7 +403,7 @@ def bundle(c, report, kit):
     writer.writerows(f["scorecards"])
     files["scorecards.csv"] = csvfile.getvalue().encode()
     for name, aid in kit["content"]["artifacts"].items():
-        if name != "internal-brief.txt":
+        if name in ("sales-kit.pdf", "sales-kit.html", "email-draft.txt"):
             files[name] = artifacts.read(c, aid)
     manifest = {
         "schema_version": "anvil.release.v1",
@@ -450,7 +480,7 @@ def routes(context, wrap, idempotent):
                 raise HTTPException(404, "Export not found")
             data = (
                 bundle(c, report, kit)
-                if name == "evidence.zip"
+                if name == "evidence.zip" and name not in kit["content"]["artifacts"]
                 else artifacts.read(c, kit["content"]["artifacts"][name])
             )
             audit(

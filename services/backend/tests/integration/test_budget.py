@@ -6,15 +6,21 @@ import pytest
 from fastapi import HTTPException
 
 from anvil.budget import reconcile, reserve
-from anvil.cli import PROJECT
+from anvil.cli import PROJECT as DEFAULT_PROJECT
 from anvil.config import ROOT
 from anvil.db import one, transaction, uid
 
 
 def test_concurrent_shared_ceiling_and_unknown_reservation():
+    evidence = ROOT / "artifacts/test-runs/journey.json"
+    project = (
+        json.loads(evidence.read_text()).get("project_id", DEFAULT_PROJECT)
+        if evidence.exists()
+        else DEFAULT_PROJECT
+    )
     user = json.loads((ROOT / ".local/demo-identities.json").read_text())["researcher"]
     window = uid()
-    with transaction(PROJECT, user) as c:
+    with transaction(project, user) as c:
         protocol = one(
             c,
             "SELECT current_revision_id FROM anvil.resources WHERE kind='protocol' AND lifecycle='approved' LIMIT 1",
@@ -26,22 +32,22 @@ def test_concurrent_shared_ceiling_and_unknown_reservation():
         runs = [uid(), uid()]
         c.execute(
             "INSERT INTO anvil.evaluation_spend_windows(id,project_id,cap_micro_usd,end_at,status,authority_reference) VALUES(%s,%s,100,%s,'active','synthetic ledger concurrency test - no dispatch authority')",
-            (window, PROJECT, datetime.now(timezone.utc) + timedelta(hours=1)),
+            (window, project, datetime.now(timezone.utc) + timedelta(hours=1)),
         )
         for rid in runs:
             c.execute(
                 "INSERT INTO anvil.runs(id,project_id,protocol_revision_id,origin,created_by) VALUES(%s,%s,%s,'illustrative',%s)",
-                (rid, PROJECT, protocol["current_revision_id"], user),
+                (rid, project, protocol["current_revision_id"], user),
             )
             c.execute(
                 "INSERT INTO anvil.run_budgets(project_id,run_id,window_id,cap_micro_usd) VALUES(%s,%s,%s,100)",
-                (PROJECT, rid, window),
+                (project, rid, window),
             )
 
     def attempt(rid):
         try:
-            with transaction(PROJECT, user) as c:
-                return reserve(c, PROJECT, window, rid, 60, "synthetic-concurrency:" + rid)
+            with transaction(project, user) as c:
+                return reserve(c, project, window, rid, 60, "synthetic-concurrency:" + rid)
         except HTTPException as e:
             assert e.status_code == 409
             return None
@@ -50,10 +56,10 @@ def test_concurrent_shared_ceiling_and_unknown_reservation():
         results = list(pool.map(attempt, runs))
     assert sum(r is not None for r in results) == 1
     winner = next(r for r in results if r)
-    with transaction(PROJECT, user) as c:
-        replay = reserve(c, PROJECT, window, winner["run_id"], 60, winner["operation_key"])
+    with transaction(project, user) as c:
+        replay = reserve(c, project, window, winner["run_id"], 60, winner["operation_key"])
         assert replay["id"] == winner["id"]
-        reconcile(c, PROJECT, winner["id"])
+        reconcile(c, project, winner["id"])
         assert (
             one(
                 c,
@@ -62,7 +68,7 @@ def test_concurrent_shared_ceiling_and_unknown_reservation():
             )["reserved_micro_usd"]
             == 60
         )
-        reconcile(c, PROJECT, winner["id"], actual=25)
-        reconcile(c, PROJECT, winner["id"], actual=25)
+        reconcile(c, project, winner["id"], actual=25)
+        reconcile(c, project, winner["id"], actual=25)
         state = one(c, "SELECT * FROM anvil.evaluation_spend_windows WHERE id=%s", (window,))
         assert state["reserved_micro_usd"] == 0 and state["settled_micro_usd"] == 25

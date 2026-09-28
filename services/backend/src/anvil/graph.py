@@ -115,7 +115,7 @@ def project_pending():
 def routes(context, wrap):
     @router.get("/diagnostics")
     @router.get("/graph")
-    def read_graph(project: UUID, request: Request, depth: int = 2):
+    def read_graph(project: UUID, request: Request, depth: int = 2, root: UUID | None = None):
         if not 1 <= depth <= 3:
             raise HTTPException(422, "Graph depth must be 1..3")
         with context(request, project) as (c, user, roles):
@@ -137,9 +137,24 @@ def routes(context, wrap):
                         "MATCH (p:AnvilProject {id:$p}) MATCH (v:AnvilRecord {project:$p,generation:p.watermark}) RETURN v.id AS id,v.hash AS hash LIMIT 200",
                         p=str(project),
                     ).data()
+                    projected_edges = s.run(
+                        "MATCH (p:AnvilProject {id:$p}) MATCH (a:AnvilRecord {project:$p,generation:p.watermark})-[r:ANVIL_RELATION]->(b:AnvilRecord {project:$p,generation:p.watermark}) RETURN a.id AS source,b.id AS target,r.kind AS relation LIMIT 500",
+                        p=str(project),
+                    ).data()
                 permitted = {n["id"]: n["hash"] for n in data["nodes"]}
                 actual = {r["id"]: r["hash"] for r in records if r["id"] in permitted}
-                current = actual == permitted and state and state["last_event"] == watermark
+                canonical_edges = {(e["source"], e["target"], e["relation"]) for e in data["edges"]}
+                actual_edges = {
+                    (e["source"], e["target"], e["relation"])
+                    for e in projected_edges
+                    if e["source"] in permitted and e["target"] in permitted
+                }
+                current = (
+                    actual == permitted
+                    and actual_edges == canonical_edges
+                    and state
+                    and state["last_event"] == watermark
+                )
                 data["projection_status"] = "current" if current else "lagging"
                 data["source"] = (
                     "Neo4j projection verified against PostgreSQL"
@@ -148,6 +163,22 @@ def routes(context, wrap):
                 )
             except (Neo4jError, ServiceUnavailable, SessionExpired, OSError):
                 pass
+            if root is not None:
+                root_id = str(root)
+                if root_id not in {n["id"] for n in data["nodes"]}:
+                    raise HTTPException(404, "Graph root not found in permitted bounded snapshot")
+                visited, frontier = {root_id}, {root_id}
+                for _ in range(depth):
+                    adjacent = {e["target"] for e in data["edges"] if e["source"] in frontier}
+                    adjacent |= {e["source"] for e in data["edges"] if e["target"] in frontier}
+                    frontier = adjacent - visited
+                    visited |= frontier
+                data["nodes"] = [n for n in data["nodes"] if n["id"] in visited]
+                data["edges"] = [
+                    e for e in data["edges"] if e["source"] in visited and e["target"] in visited
+                ]
+                data["root"] = root_id
+                data["depth"] = depth
             return wrap(data, request)
 
     @router.post("/graph/rebuild")

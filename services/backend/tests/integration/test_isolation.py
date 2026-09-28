@@ -4,7 +4,7 @@ import psycopg
 import pytest
 
 from anvil.cli import ORG, OUTSIDER_PROJECT, PROJECT
-from anvil.config import ROOT
+from anvil.config import ROOT, setting
 from anvil.db import Jsonb, digest, transaction, uid
 
 
@@ -32,6 +32,25 @@ def test_missing_context_and_cross_project_rls():
     with transaction(PROJECT, users["researcher"]) as c:
         with pytest.raises(psycopg.errors.InsufficientPrivilege):
             c.execute("UPDATE anvil.revisions SET content='{}' WHERE id=%s", (rev,))
+    with transaction(OUTSIDER_PROJECT, users["outsider"]) as c:
+        with pytest.raises(psycopg.errors.ForeignKeyViolation):
+            c.execute(
+                "INSERT INTO anvil.revisions(id,project_id,resource_id,revision,content,content_hash,created_by) VALUES(%s,%s,%s,2,%s,%s,%s)",
+                (uid(), OUTSIDER_PROJECT, rid, Jsonb({}), digest({}), users["outsider"]),
+            )
+    # Exercise the same physical connection across transactions, as a pool would reuse it.
+    with psycopg.connect(setting("DATABASE_URL"), autocommit=True) as reused:
+        with reused.transaction():
+            reused.execute(
+                "SELECT set_config('anvil.project',%s,true),set_config('anvil.user',%s,true)",
+                (PROJECT, users["researcher"]),
+            )
+            assert reused.execute("SELECT id FROM anvil.resources WHERE id=%s", (rid,)).fetchone()
+        with reused.transaction():
+            assert (
+                reused.execute("SELECT id FROM anvil.resources WHERE id=%s", (rid,)).fetchone()
+                is None
+            )
 
 
 def test_runtime_roles_are_nonowners_without_bypass():

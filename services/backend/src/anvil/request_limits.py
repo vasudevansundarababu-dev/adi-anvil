@@ -14,15 +14,16 @@ class RequestLimits:
         upload = scope["method"] == "POST" and scope["path"].endswith("/artifacts")
         manifest = scope["path"].endswith("/imports/validate")
         limit = (26 if upload else 2 if manifest else 1) * 1024 * 1024
+        request_id = scope.get("state", {}).get("request_id", str(uuid4()))
         lengths = [v for k, v in scope.get("headers", []) if k.lower() == b"content-length"]
         try:
             if len(lengths) > 1 or (lengths and int(lengths[0]) < 0):
                 raise ValueError
             declared = int(lengths[0]) if lengths else 0
         except ValueError:
-            return await self.reject(send, 400, "Invalid Content-Length")
+            return await self.reject(send, 400, "Invalid Content-Length", request_id)
         if declared > limit:
-            return await self.reject(send, 413, "Request exceeds size limit")
+            return await self.reject(send, 413, "Request exceeds size limit", request_id)
         chunks, size = [], 0
         while True:
             message = await receive()
@@ -31,7 +32,7 @@ class RequestLimits:
             chunk = message.get("body", b"")
             size += len(chunk)
             if size > limit:
-                return await self.reject(send, 413, "Request exceeds size limit")
+                return await self.reject(send, 413, "Request exceeds size limit", request_id)
             chunks.append(chunk)
             if not message.get("more_body", False):
                 break
@@ -47,8 +48,7 @@ class RequestLimits:
         await self.app(scope, bounded_receive, send)
 
     @staticmethod
-    async def reject(send, status, message):
-        request_id = str(uuid4())
+    async def reject(send, status, message, request_id):
         body = json.dumps(
             {
                 "error": {

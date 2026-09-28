@@ -1,3 +1,4 @@
+import logging
 from contextlib import contextmanager
 from uuid import UUID
 
@@ -11,6 +12,7 @@ from pydantic import ValidationError
 
 from anvil import artifacts, auth, domain, fixtures
 from anvil.db import audit, digest, one, transaction, uid
+from anvil.delivery import routes as delivery_routes
 from anvil.evaluation import routes as evaluation_routes
 from anvil.graph import routes as graph_routes
 from anvil.intake import routes as intake_routes
@@ -18,7 +20,7 @@ from anvil.provider_api import routes as provider_routes
 from anvil.reports import prepare_report
 from anvil.reports import routes as report_routes
 from anvil.request_limits import RequestLimits
-from anvil.schemas import Decision, FixtureImport, Rights
+from anvil.schemas import Decision, FixtureImport, Rights, Withdrawal
 
 app = FastAPI(title="ADI Anvil", version="0.1.0")
 app.add_middleware(RequestLimits)
@@ -28,7 +30,23 @@ app.include_router(auth.router)
 @app.middleware("http")
 async def security_headers(request, call_next):
     request.state.request_id = uid()
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        logging.getLogger("anvil.api").error(
+            "request=%s code=%s", request.state.request_id, type(exc).__name__
+        )
+        response = JSONResponse(
+            {
+                "error": {
+                    "code": "internal_error",
+                    "message": "Unexpected server error; retain the request ID for diagnosis",
+                    "retryable": False,
+                    "request_id": request.state.request_id,
+                }
+            },
+            status_code=500,
+        )
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Cache-Control"] = "no-store"
     response.headers["X-Frame-Options"] = "DENY"
@@ -126,6 +144,7 @@ app.include_router(graph_routes(context, wrap))
 app.include_router(report_routes(context, wrap, idempotent))
 app.include_router(provider_routes(context, wrap, idempotent))
 app.include_router(intake_routes(context, wrap, idempotent))
+app.include_router(delivery_routes(context, wrap, idempotent))
 
 KINDS = {
     "objectives": "objective",
@@ -332,6 +351,7 @@ def create_resource(project: UUID, collection: str, body: dict, request: Request
 def edit_resource(project: UUID, collection: str, rid: UUID, body: dict, request: Request):
     with context(request, project) as (c, user, roles):
         auth.require(roles, "researcher", "data-engineer")
+        c.execute("SELECT id FROM anvil.projects WHERE id=%s FOR UPDATE", (project,))
         r = domain.get_resource(c, rid, True)
         if KINDS.get(collection) != r["kind"]:
             raise HTTPException(404, "Resource not found")
@@ -341,17 +361,49 @@ def edit_resource(project: UUID, collection: str, rid: UUID, body: dict, request
         if r["created_by"] != user:
             raise HTTPException(403, "Only author can edit this draft")
         content = domain.validate_content(c, project, r["kind"], body)
-        rev = uid()
-        c.execute(
-            "INSERT INTO anvil.revisions(id,project_id,resource_id,revision,content,content_hash,created_by) VALUES(%s,%s,%s,%s,%s,%s,%s)",
-            (rev, project, rid, r["revision"] + 1, Jsonb(content), digest(content), user),
-        )
-        c.execute(
-            "UPDATE anvil.resources SET current_revision_id=%s,lifecycle='draft',row_version=row_version+1 WHERE id=%s",
-            (rev, rid),
-        )
-        audit(c, project, user, "draft.revised", rid)
-        return wrap(domain.get_resource(c, rid), request)
+        if r["kind"] == "report":
+            content = prepare_report(c, content)
+        return wrap(domain.revise(c, r, user, content), request)
+
+
+@app.post("/api/v1/projects/{project}/{collection}/{rid}/successor")
+def successor(project: UUID, collection: str, rid: UUID, body: dict, request: Request):
+    with context(request, project) as (c, user, roles):
+        auth.require(roles, "researcher", "data-engineer")
+
+        def act():
+            r = domain.get_resource(c, rid, True)
+            if KINDS.get(collection) != r["kind"]:
+                raise HTTPException(404, "Resource not found")
+            domain.etag(r, request.headers.get("if-match"))
+            if r["created_by"] != user:
+                raise HTTPException(403, "Only author can create a successor")
+            if r["lifecycle"] in ("draft", "changes_requested"):
+                raise HTTPException(409, "Edit the existing draft instead")
+            content = domain.validate_content(c, project, r["kind"], body)
+            if r["kind"] == "report":
+                content = prepare_report(c, content)
+            return domain.revise(c, r, user, content)
+
+        return wrap(idempotent(c, project, user, request, body, act), request)
+
+
+@app.post("/api/v1/projects/{project}/{collection}/{rid}/withdraw")
+def withdraw(project: UUID, collection: str, rid: UUID, body: Withdrawal, request: Request):
+    with context(request, project) as (c, user, roles):
+        auth.require(roles, "researcher", "data-engineer", "product-owner")
+
+        def act():
+            r = domain.get_resource(c, rid, True)
+            if KINDS.get(collection) != r["kind"]:
+                raise HTTPException(404, "Resource not found")
+            domain.etag(r, request.headers.get("if-match"))
+            if r["created_by"] != user and "product-owner" not in roles:
+                raise HTTPException(403, "Author or Product Owner required for withdrawal")
+            audit(c, project, user, "withdrawal.reason", rid, {"reason": body.reason})
+            return domain.move(c, r, user, "withdrawn")
+
+        return wrap(idempotent(c, project, user, request, body, act), request)
 
 
 @app.post("/api/v1/projects/{project}/{collection}/{rid}/decisions")

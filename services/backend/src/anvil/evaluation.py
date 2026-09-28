@@ -146,7 +146,32 @@ def routes(context, wrap, idempotent):
                 (rid,),
             )
             audit(c, project, user, "run.cancelled", rid)
+            enqueue(c, project, "sales_kit_prepare", rid, "provisional-kit:" + str(rid))
             return wrap(get_run(c, rid), request)
+
+    @router.get("/episodes/{eid}/evidence")
+    def evidence(project: UUID, eid: UUID, request: Request):
+        with context(request, project) as (c, user, roles):
+            auth.require(roles, "researcher", "advisor")
+            e = one(c, "SELECT * FROM anvil.episodes WHERE id=%s", (eid,))
+            if not e:
+                raise HTTPException(404, "Episode not found")
+            if e["state"] != "finalized":
+                raise HTTPException(409, "Evidence interpretation requires finalized review")
+            task = domain.get_revision(c, e["task_revision_id"], "task")["content"]
+            rubric = domain.get_revision(c, task["rubric_revision_id"], "rubric")["content"]
+            audit(c, project, user, "episode.evidence_read", eid)
+            return wrap(
+                {
+                    "id": str(eid),
+                    "output": artifacts.read(c, e["output_artifact_id"]).decode(),
+                    "outcome": e["outcome"],
+                    "criteria": [{"id": x["id"], "label": x["label"]} for x in rubric["criteria"]],
+                    "capabilities": task["capabilities"],
+                    "origin": "illustrative",
+                },
+                request,
+            )
 
     @router.get("/reviews")
     def inbox(project: UUID, request: Request):

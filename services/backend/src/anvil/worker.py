@@ -43,6 +43,14 @@ def guard(c, job):
         raise RuntimeError("cancelled")
     if e["graph_version"] != GRAPH_VERSION:
         raise RuntimeError("graph_version_mismatch")
+    task = domain.get_revision(c, e["task_revision_id"], "task", ["published"])
+    rubric = one(
+        c,
+        "SELECT 1 FROM anvil.resources WHERE current_revision_id=%s AND kind='rubric' AND lifecycle='approved'",
+        (task["content"]["rubric_revision_id"],),
+    )
+    if not rubric:
+        raise RuntimeError("rubric_no_longer_qualified")
     return e
 
 
@@ -136,13 +144,13 @@ def graph_for(job, saver):
             )
             pending = one(
                 c,
-                "SELECT count(*) n FROM anvil.episodes WHERE run_id=%s AND state<>'finalized'",
+                "SELECT count(*) n FROM anvil.episodes WHERE run_id=%s AND state NOT IN ('finalized','failed_operational','execution_unknown','cancelled')",
                 (e["run_id"],),
             )["n"]
             if pending == 0:
                 c.execute(
-                    "UPDATE anvil.runs SET state='reviewed',row_version=row_version+1 WHERE id=%s",
-                    (e["run_id"],),
+                    "UPDATE anvil.runs SET state=CASE WHEN EXISTS(SELECT 1 FROM anvil.episodes WHERE run_id=%s AND state<>'finalized') THEN 'execution_complete' ELSE 'reviewed' END,row_version=row_version+1 WHERE id=%s AND NOT cancel_requested",
+                    (e["run_id"], e["run_id"]),
                 )
             audit(c, project, None, "episode.finalized", e["id"])
         return {}
@@ -167,7 +175,7 @@ def tick():
         return False
     project = job["project_id"]
     try:
-        if job["kind"] in ("sales_kit_prepare", "sales_kit_render"):
+        if job["kind"] in ("sales_kit_prepare", "sales_kit_render", "fixture_mail"):
             from anvil.reports import prepare_provisional, render_kit
 
             with transaction(project, worker=True) as c:
@@ -177,7 +185,11 @@ def tick():
                     (job["id"], job["lease_token"]),
                 ):
                     raise RuntimeError("lease_lost")
-                if job["kind"] == "sales_kit_prepare":
+                if job["kind"] == "fixture_mail":
+                    from anvil.delivery import dispatch_fixture
+
+                    dispatch_fixture(c, job)
+                elif job["kind"] == "sales_kit_prepare":
                     prepare_provisional(c, job["target_id"])
                 else:
                     report = domain.get_resource(c, job["target_id"])
@@ -244,10 +256,41 @@ def tick():
         }:
             code = type(exc).__name__
         with transaction(project, worker=True) as c:
-            c.execute(
-                "UPDATE anvil.jobs SET status='failed',error_code=%s WHERE id=%s AND lease_token=%s AND lease_until>now()",
+            failed = c.execute(
+                "UPDATE anvil.jobs SET status='failed',error_code=%s WHERE id=%s AND lease_token=%s AND lease_until>now() RETURNING id",
                 (code, job["id"], job["lease_token"]),
-            )
+            ).fetchone()
+            if failed and job["kind"] in ("episode", "resume"):
+                episode = c.execute(
+                    "UPDATE anvil.episodes SET state='failed_operational',outcome='invalid',score=NULL,row_version=row_version+1 WHERE id=%s AND state NOT IN ('cancelled','finalized') RETURNING run_id",
+                    (job["target_id"],),
+                ).fetchone()
+                if episode:
+                    remaining = one(
+                        c,
+                        "SELECT 1 FROM anvil.episodes WHERE run_id=%s AND state NOT IN ('failed_operational','execution_unknown','cancelled','finalized') LIMIT 1",
+                        (episode["run_id"],),
+                    )
+                    if not remaining:
+                        c.execute(
+                            "UPDATE anvil.runs SET state='execution_complete',row_version=row_version+1 WHERE id=%s AND NOT cancel_requested",
+                            (episode["run_id"],),
+                        )
+                    outputs_pending = one(
+                        c,
+                        "SELECT 1 FROM anvil.episodes WHERE run_id=%s AND output_artifact_id IS NULL AND state NOT IN ('failed_operational','execution_unknown','cancelled','finalized') LIMIT 1",
+                        (episode["run_id"],),
+                    )
+                    if not outputs_pending:
+                        from anvil.evaluation import enqueue
+
+                        enqueue(
+                            c,
+                            project,
+                            "sales_kit_prepare",
+                            episode["run_id"],
+                            "provisional-kit:" + str(episode["run_id"]),
+                        )
         print(f"job={job['id']} status=failed code={code}", flush=True)
     return True
 

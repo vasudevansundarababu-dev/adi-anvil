@@ -68,7 +68,14 @@ def load(c, project, user, body):
         if old:
             if old["content_hash"] != content_hash:
                 raise HTTPException(409, "Existing version has different bytes")
-            results.append(domain.get_resource(c, old["resource_id"]))
+            source = domain.get_resource(c, old["resource_id"])
+            # Backfill lineage for the original local importer using independently checked bytes.
+            hashes = [hashlib.sha256(value).hexdigest() for value in bundle.values()]
+            c.execute(
+                "INSERT INTO anvil.artifact_links(project_id,revision_id,artifact_id,use_role) SELECT project_id,%s,id,'original' FROM anvil.artifacts WHERE sha256=ANY(%s) AND origin='original_synthetic_fixture' AND scan_status='clean' ON CONFLICT DO NOTHING",
+                (source["current_revision_id"], hashes),
+            )
+            results.append(source)
             continue
         source = domain.create(c, project, user, "case", manifest)
         actor_ids = [
@@ -88,6 +95,11 @@ def load(c, project, user, body):
             )
             for name in manifest["private_files"]
         ]
+        for aid in actor_ids + reference_ids:
+            c.execute(
+                "INSERT INTO anvil.artifact_links VALUES(%s,%s,%s,'original')",
+                (project, source["current_revision_id"], aid),
+            )
         reference = json.loads(bundle["private/reference.json"])
         rubric_content = {
             "title": f"{case} anchored synthetic rubric",

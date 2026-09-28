@@ -1,11 +1,15 @@
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, model_validator
 
 
 class Strict(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+
+class Withdrawal(Strict):
+    reason: str = Field(min_length=10, max_length=2000)
 
 
 class Objective(Strict):
@@ -23,7 +27,7 @@ class Objective(Strict):
 class Criterion(Strict):
     id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,30}$")
     label: str = Field(min_length=1)
-    weight_bps: int = Field(ge=1, le=10000)
+    weight_bps: int = Field(ge=1, le=10000, strict=True)
     anchors: dict[str, str]
 
     @model_validator(mode="after")
@@ -57,6 +61,8 @@ class Rubric(Strict):
             "ambiguous_reference",
         }:
             raise ValueError("All calibration categories required")
+        if any(not value.strip() for value in self.calibration.values()):
+            raise ValueError("Calibration examples must not be empty")
         return self
 
 
@@ -74,6 +80,16 @@ class Task(Strict):
     reviewer_id: UUID
     advisor_id: UUID
     origin: Literal["original_synthetic_fixture"]
+
+    @model_validator(mode="after")
+    def separated_unique_inputs(self):
+        if len(set(self.actor_artifact_ids)) != len(self.actor_artifact_ids) or len(
+            set(self.reference_artifact_ids)
+        ) != len(self.reference_artifact_ids):
+            raise ValueError("Input artifact IDs must be unique")
+        if set(self.actor_artifact_ids) & set(self.reference_artifact_ids):
+            raise ValueError("Actor and hidden-reference artifacts must remain separate")
+        return self
 
 
 class Suite(Strict):
@@ -134,7 +150,7 @@ class Rights(Strict):
 
 
 class Assessment(Strict):
-    scores: dict[str, int]
+    scores: dict[str, StrictInt]
     critical: list[str]
     evidence: dict[str, str]
     rationale: str = Field(min_length=10, max_length=5000)

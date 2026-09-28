@@ -99,6 +99,37 @@ def create(c, project, user, kind, content, links=()):
     return get_resource(c, rid)
 
 
+def revise(c, r, user, content):
+    rev = uid()
+    c.execute(
+        "INSERT INTO anvil.revisions(id,project_id,resource_id,revision,content,content_hash,created_by) VALUES(%s,%s,%s,%s,%s,%s,%s)",
+        (rev, r["project_id"], r["id"], r["revision"] + 1, Jsonb(content), digest(content), user),
+    )
+    c.execute(
+        "INSERT INTO anvil.revision_links VALUES(%s,%s,%s,'supersedes')",
+        (r["project_id"], rev, r["current_revision_id"]),
+    )
+    c.execute(
+        "UPDATE anvil.resources SET current_revision_id=%s,lifecycle='draft',row_version=row_version+1 WHERE id=%s",
+        (rev, r["id"]),
+    )
+    for field, relation in [
+        ("actor_artifact_ids", "actor"),
+        ("reference_artifact_ids", "reference"),
+    ]:
+        for aid in content.get(field, []):
+            c.execute(
+                "INSERT INTO anvil.artifact_links VALUES(%s,%s,%s,%s)",
+                (r["project_id"], rev, aid, relation),
+            )
+    c.execute(
+        "INSERT INTO anvil.graph_outbox(project_id,resource_id) VALUES(%s,%s)",
+        (r["project_id"], r["id"]),
+    )
+    audit(c, r["project_id"], user, "revision.appended", r["id"], {"content_hash": digest(content)})
+    return get_resource(c, r["id"])
+
+
 def etag(r, expected):
     if expected is None:
         raise HTTPException(428, "If-Match required")
@@ -229,10 +260,12 @@ def qualify(c, r):
             for aid in b[field]:
                 if not one(
                     c,
-                    "SELECT 1 FROM anvil.artifacts WHERE id=%s AND classification=%s AND scan_status='clean'",
-                    (aid, classification),
+                    "SELECT 1 FROM anvil.artifacts a JOIN anvil.artifact_links l ON l.artifact_id=a.id WHERE a.id=%s AND a.classification=%s AND a.scan_status='clean' AND l.revision_id=%s",
+                    (aid, classification, b["source_revision_id"]),
                 ):
-                    raise HTTPException(409, "Required classified input missing or quarantined")
+                    raise HTTPException(
+                        409, "Required input missing, quarantined or not bound to this source"
+                    )
         links = [(b["source_revision_id"], "source"), (b["rubric_revision_id"], "rubric")]
     elif kind == "suite":
         get_revision(c, b["objective_revision_id"], "objective", ["approved"])

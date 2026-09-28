@@ -1,7 +1,7 @@
 name: adi-anvil
 services:
   postgres:
-    image: postgres:17.6-bookworm
+    image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
     environment:
       POSTGRES_DB: anvil_local
       POSTGRES_USER: anvil_migration
@@ -15,7 +15,7 @@ services:
       timeout: 3s
       retries: 30
   neo4j:
-    image: neo4j:5.26.12-community
+    image: neo4j:5.26.12-community@sha256:9f75e8df4325a24f00fdd7a8c0bcce650a58375049b1058e496e8b43d6c36b37
     environment:
       NEO4J_AUTH: neo4j/${ANVIL_NEO4J_PASSWORD:?Run setup first}
       NEO4J_server_memory_heap_initial__size: 256m
@@ -26,7 +26,7 @@ services:
       - "127.0.0.1:${ANVIL_NEO4J_BOLT_PORT:-7688}:7687"
     volumes: ["adi-anvil-neo4j:/data"]
   keycloak:
-    image: quay.io/keycloak/keycloak:26.3.5
+    image: quay.io/keycloak/keycloak:26.3.5@sha256:357829ec7c4693397533035092ad13b0644bcc95ded311f33a3738c4d9e9bdba
     command: [start-dev, --import-realm]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: anvil-bootstrap

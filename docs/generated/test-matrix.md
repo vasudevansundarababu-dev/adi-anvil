@@ -1,6 +1,8 @@
 # Acceptance evidence matrix
 
-Final working tree: partial and unverified after final edits. No absent P0 has been waived. `Not run` below means the complete requirement is not verified, even where narrower evidence passed. No Git commit was created.
+Active continuation: partial; no absent P0 has been waived. Local checkpoint `7377af7`; subsequent changes under verification. `Not run` below means the complete requirement is not verified, even where narrower evidence passed. The table is the prior-window baseline; current evidence updates follow and will be folded into the final report.
+
+Continuation evidence: root setup/build passed; 83 unit and 31 integration tests passed; expanded browser journey passed automatic kit generation, dispute/adjudication, cancellation, rights revocation and successor export denial. Signed OIDC issuer/audience/nonce/expiry/signature/unsigned negatives passed. Partner manifest dry-run, atomic commit, duplicate and quarantine negatives passed. Actual Neo4j stop/fallback/start/rebuild passed with unchanged scores. Responsive UI and persisted ZIP verification is in progress. No live calls or email.
 
 | Requirement | Status | Evidence / remaining gate |
 | --- | --- | --- |
@@ -60,4 +62,3 @@ Final working tree: partial and unverified after final edits. No absent P0 has b
 | F-SK12 | Not run (complete criterion) | Email draft contains no localhost evidence URL; recipient access workflow not implemented. |
 
 Evidence files and exact commands are in [morning-report.md](morning-report.md). Full latest lint: failed, 56 findings. Latest unit: 77 passed; integration: 3 passed; browser journey: 1 passed before subsequent edits. Live provider smoke: blocked, not passed.
-

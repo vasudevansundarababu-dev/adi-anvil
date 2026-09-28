@@ -24,6 +24,7 @@
     "restore:test": "python3 scripts/local.py restore-test"
   },
   "devDependencies": {
-    "@playwright/test": "1.58.2"
+    "@playwright/test": "1.58.2",
+    "prettier": "3.6.2"
   }
 }

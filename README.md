@@ -2,14 +2,16 @@
 
 Frontier Evaluation & Diagnostics Platform
 
-**Partial implementation handoff — 28 September 2026.** The authorized work window ended. Read [the morning report](docs/generated/morning-report.md) and [current build status](BUILD-STATUS.md) before running or resuming. The fixture journey passed before later unverified changes; the complete MVP is not accepted, lint currently fails, and live inference remains blocked. Application processes are stopped; local infrastructure and evidence are preserved. An independent Git repository exists, but no commit has been created.
+**Active local build — 28 September 2026.** Work resumed under the user's additional eight-hour window (11:24–19:24 UTC). The fixture journey, production build, unit tests and expanded security tests pass; the complete MVP acceptance matrix remains partial. Live inference and external sending are disabled. See [current build status](BUILD-STATUS.md); the [morning report](docs/generated/morning-report.md) records the previous window. Local checkpoint: `7377af7`.
 
 ## Start
 
-1. Read [START-HERE.md](START-HERE.md).
-2. Resolve launch decisions in [QUESTIONS.md](QUESTIONS.md) and [BUILD-DECISIONS.json](BUILD-DECISIONS.json).
-3. Open this folder in VS Code and use [CODEX-OVERNIGHT-PROMPT.md](CODEX-OVERNIGHT-PROMPT.md).
-4. In the morning, read the generated build report, then run [the acceptance walkthrough](docs/build/04-MORNING-ACCEPTANCE.md).
+1. Run `pnpm setup:local` to install locked dependencies and start PostgreSQL, Neo4j and Keycloak. Docker, Node/pnpm, Python and uv must already be available.
+2. Run `pnpm dev`, then open http://127.0.0.1:3202. Distinct local account credentials are in ignored, owner-only `.local/demo-accounts.md`.
+3. Verify with `pnpm check`, `pnpm test:unit`, `pnpm test:e2e`, then `pnpm test:integration`. Integration budget tests require the qualified protocol produced by E2E.
+4. `pnpm stop` stops registered app/worker processes while preserving infrastructure and data. `pnpm services:down` stops infrastructure without deleting volumes.
+
+The [acceptance walkthrough](docs/build/04-MORNING-ACCEPTANCE.md) describes the target; consult the [test matrix](docs/generated/test-matrix.md) for remaining gates. No specification is evidence of a passed test.
 
 ## Engineering authority
 

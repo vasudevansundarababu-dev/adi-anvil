@@ -123,6 +123,10 @@ def backup():
                 ("anvil", "resources"),
                 ("anvil", "episodes"),
                 ("anvil", "assessments"),
+                ("anvil", "import_batches"),
+                ("anvil", "sales_contacts"),
+                ("anvil", "delivery_approvals"),
+                ("anvil", "sales_deliveries"),
                 ("anvil_checkpoints", "checkpoints"),
             ]
         }

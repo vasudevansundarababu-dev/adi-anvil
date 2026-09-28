@@ -33,9 +33,8 @@ def migrate():
                     ).format(sql.Identifier(name), sql.Literal(setting(key)))
                 )
         c.execute("CREATE SCHEMA IF NOT EXISTS anvil")
-        from alembic.config import Config
-
         from alembic import command
+        from alembic.config import Config
 
         command.upgrade(Config(str(ROOT / "services/backend/alembic.ini")), "head")
         c.execute("SET search_path TO anvil_checkpoints")

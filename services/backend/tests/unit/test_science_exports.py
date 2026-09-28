@@ -91,3 +91,73 @@ def test_rubric_rejects_missing_anchors_and_bad_weights():
     del content["criteria"][0]["anchors"]["2"]
     with pytest.raises(ValidationError):
         Rubric.model_validate(content)
+
+
+@pytest.mark.parametrize("include_valid", [False, True])
+def test_denominators_keep_cancelled_unknown_invalid_and_missing_separate(
+    monkeypatch, include_valid
+):
+    from anvil import reports
+
+    entries = [
+        ("cancelled", "pending_review", None),
+        ("execution_unknown", "pending_review", None),
+        ("failed_operational", "invalid", None),
+        ("finalized", "unscorable", None),
+        ("awaiting_review", "pending_review", None),
+    ]
+    if include_valid:
+        entries.extend([("finalized", "pass", Decimal(100)), ("finalized", "fail", Decimal(70))])
+    episodes = [
+        {
+            "id": str(i),
+            "state": state,
+            "outcome": outcome,
+            "score": score,
+            "final_assessment_id": str(i) if state == "finalized" else None,
+        }
+        for i, (state, outcome, score) in enumerate(entries)
+    ]
+
+    class Query:
+        def execute(self, *args):
+            return self
+
+        def fetchall(self):
+            return episodes
+
+    def revision(c, rid, kind):
+        content = {
+            "protocol": {
+                "suite_revision_id": "suite",
+                "objective_revision_id": "objective",
+                "candidates": ["a", "b"],
+            },
+            "suite": {"task_revision_ids": ["task"]},
+            "objective": {"hypothesis": "test"},
+            "task": {"source_revision_id": "source", "family_id": "family"},
+        }[kind]
+        return {"id": rid, "content_hash": "test-hash", "content": content}
+
+    monkeypatch.setattr(
+        reports,
+        "get_run",
+        lambda c, rid: {
+            "state": "review_pending",
+            "protocol_revision_id": "protocol",
+            "origin": "illustrative",
+        },
+    )
+    monkeypatch.setattr(reports.domain, "get_revision", revision)
+    result = reports.facts(Query(), "run", final=False)
+    assert (
+        result["cancelled"]
+        == result["unknown"]
+        == result["invalid"]
+        == result["unscorable"]
+        == result["pending"]
+        == 1
+    )
+    assert result["valid"] == (2 if include_valid else 0)
+    assert result["mean_score"] == (85 if include_valid else None)
+    assert result["pass_rate"] == (0.5 if include_valid else None)

@@ -1,0 +1,51 @@
+name: Local fixture verification
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  fixture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CI: "true"
+      ANVIL_LIVE_PROVIDERS_ENABLED: "false"
+      ANVIL_REAL_EMAIL_ENABLED: "false"
+      LANGSMITH_TRACING: "false"
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .node-version
+      - name: Install repository-local tool binaries
+        run: |
+          python3 -m venv .local/ci-tools
+          .local/ci-tools/bin/pip install uv==0.12.19
+          npm install --prefix .local/ci-node pnpm@10.34.5
+          echo "$PWD/.local/ci-tools/bin" >> "$GITHUB_PATH"
+          echo "$PWD/.local/ci-node/node_modules/.bin" >> "$GITHUB_PATH"
+      - run: pnpm setup:local
+      - run: python3 scripts/secret_scan.py
+      - run: pnpm check
+      - run: pnpm test:unit
+      - run: pnpm exec playwright install chromium
+      - run: pnpm dev
+      - run: pnpm test:e2e
+      - run: pnpm test:integration
+      - name: Empty-database migrations and actual graph outage
+        run: |
+          services/backend/.venv/bin/python tests/migration_smoke.py
+          services/backend/.venv/bin/python tests/graph_outage.py
+      - name: Dependency advisory check
+        run: |
+          pnpm audit --prod
+          UV_CACHE_DIR=.local/uv-cache uvx --from pip-audit==2.9.0 pip-audit --path services/backend/.venv/lib/python3.12/site-packages
+      - name: Stop only registered fixture processes
+        if: always()
+        run: pnpm stop
+# This file is prepared locally. No GitHub run has been executed or certified.
+# No secrets, local account files, raw logs or private artifacts are uploaded.
