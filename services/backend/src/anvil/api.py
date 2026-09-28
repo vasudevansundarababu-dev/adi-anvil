@@ -2,7 +2,7 @@ import logging
 from contextlib import contextmanager
 from uuid import UUID
 
-from fastapi import FastAPI, HTTPException, Request, UploadFile
+from fastapi import FastAPI, HTTPException, Query, Request, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
@@ -14,6 +14,7 @@ from anvil import artifacts, auth, domain, fixtures
 from anvil.db import audit, digest, one, transaction, uid
 from anvil.delivery import routes as delivery_routes
 from anvil.evaluation import routes as evaluation_routes
+from anvil.external_results import routes as external_routes
 from anvil.graph import routes as graph_routes
 from anvil.intake import routes as intake_routes
 from anvil.provider_api import routes as provider_routes
@@ -144,6 +145,7 @@ app.include_router(graph_routes(context, wrap))
 app.include_router(report_routes(context, wrap, idempotent))
 app.include_router(provider_routes(context, wrap, idempotent))
 app.include_router(intake_routes(context, wrap, idempotent))
+app.include_router(external_routes(context, wrap, idempotent))
 app.include_router(delivery_routes(context, wrap, idempotent))
 
 KINDS = {
@@ -288,7 +290,12 @@ def case_rights(project: UUID, rid: UUID, body: Rights, request: Request):
 
 @app.get("/api/v1/projects/{project}/{collection}")
 def list_resources(
-    project: UUID, collection: str, request: Request, limit: int = 25, after: UUID | None = None
+    project: UUID,
+    collection: str,
+    request: Request,
+    limit: int = 25,
+    after: UUID | None = None,
+    q: str = Query(default="", max_length=200),
 ):
     if collection not in KINDS:
         raise HTTPException(404, "Collection not found")
@@ -300,10 +307,30 @@ def list_resources(
         rows = c.execute(
             """SELECT r.*,v.content,v.content_hash,v.revision FROM anvil.resources r
                           JOIN anvil.revisions v ON v.id=r.current_revision_id
-                          WHERE kind=%s AND (%s::uuid IS NULL OR r.id>%s) ORDER BY r.id LIMIT %s""",
-            (kind, after, after, limit),
+                          WHERE kind=%s AND (%s::uuid IS NULL OR r.id>%s)
+                          AND strpos(lower(concat_ws(' ',v.content->>'title',v.content->>'external_case_id',r.lifecycle)),lower(%s))>0
+                          ORDER BY r.id LIMIT %s""",
+            (kind, after, after, q, limit + 1),
         ).fetchall()
-        return wrap(rows, request)
+        counts = one(
+            c,
+            """SELECT count(*) AS inventory_total,
+            count(*) FILTER(WHERE strpos(lower(concat_ws(' ',v.content->>'title',v.content->>'external_case_id',r.lifecycle)),lower(%s))>0) AS matching_total
+            FROM anvil.resources r JOIN anvil.revisions v ON v.id=r.current_revision_id WHERE kind=%s""",
+            (q, kind),
+        )
+        result = wrap(rows[:limit], request)
+        result["meta"].update(
+            {**counts, "next_cursor": str(rows[limit - 1]["id"]) if len(rows) > limit else None}
+        )
+        if kind == "case":
+            result["meta"]["qualified_sources"] = one(
+                c,
+                """SELECT count(*) n FROM anvil.resources source WHERE source.kind='case'
+                AND EXISTS(SELECT 1 FROM anvil.resources task JOIN anvil.revisions v ON v.id=task.current_revision_id
+                    WHERE task.kind='task' AND task.lifecycle='published' AND v.content->>'source_revision_id'=source.current_revision_id::text)""",
+            )["n"]
+        return result
 
 
 @app.get("/api/v1/projects/{project}/{collection}/{rid}")

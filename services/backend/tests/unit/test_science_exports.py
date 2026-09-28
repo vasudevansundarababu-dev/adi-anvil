@@ -135,7 +135,11 @@ def test_denominators_keep_cancelled_unknown_invalid_and_missing_separate(
             },
             "suite": {"task_revision_ids": ["task"]},
             "objective": {"hypothesis": "test"},
-            "task": {"source_revision_id": "source", "family_id": "family"},
+            "task": {
+                "source_revision_id": "source",
+                "family_id": "family",
+                "origin": "original_synthetic_fixture",
+            },
         }[kind]
         return {"id": rid, "content_hash": "test-hash", "content": content}
 

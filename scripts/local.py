@@ -11,6 +11,8 @@ import sys
 import time
 import uuid
 from pathlib import Path
+from urllib.error import URLError
+from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCAL = ROOT / ".local"
@@ -185,6 +187,10 @@ def preflight():
         raise SystemExit(1)
 
 
+def process_stamp(pid):
+    return subprocess.check_output(["ps", "-p", str(pid), "-o", "lstart="], text=True).strip()
+
+
 def stop():
     path = LOCAL / "processes.json"
     if path.exists():
@@ -193,7 +199,9 @@ def stop():
                 actual = subprocess.check_output(
                     ["ps", "-p", str(item["pid"]), "-o", "command="], text=True
                 )
-                if item["marker"] not in actual:
+                if item["marker"] not in actual or (
+                    item.get("started") and process_stamp(item["pid"]) != item["started"]
+                ):
                     print(f"Refusing to stop reused PID {item['pid']}")
                     continue
                 os.killpg(item["pid"], signal.SIGTERM)
@@ -206,6 +214,14 @@ def dev():
     backend("health")
     if (LOCAL / "processes.json").exists():
         raise SystemExit("Process registry exists; use pnpm stop before restarting.")
+    for port in (3202, 8200):
+        with socket.socket() as probe:
+            try:
+                probe.bind(("127.0.0.1", port))
+            except OSError:
+                raise SystemExit(
+                    f"Port {port} is occupied; no processes were started or stopped."
+                ) from None
     commands = [
         (
             [
@@ -224,17 +240,46 @@ def dev():
         ([str(PY), "-m", "anvil.worker"], "anvil.worker"),
         (["pnpm", "--filter", "@anvil/web", "dev"], "pnpm"),
     ]
-    procs = []
-    for i, (cmd, marker) in enumerate(commands):
-        with (LOCAL / f"process-{i}.log").open("ab") as log:
-            p = subprocess.Popen(
-                cmd, cwd=ROOT, env=env(), stdout=log, stderr=log, start_new_session=True
-            )
-        procs.append({"pid": p.pid, "marker": marker})
-    (LOCAL / "processes.json").write_text(json.dumps(procs))
-    time.sleep(2)
-    for p in procs:
-        os.kill(p["pid"], 0)
+    procs, handles = [], []
+    try:
+        for i, (cmd, marker) in enumerate(commands):
+            with (LOCAL / f"process-{i}.log").open("ab") as log:
+                p = subprocess.Popen(
+                    cmd,
+                    cwd=ROOT,
+                    env=env(),
+                    stdin=subprocess.DEVNULL,
+                    stdout=log,
+                    stderr=log,
+                    start_new_session=True,
+                )
+            handles.append(p)
+            procs.append({"pid": p.pid, "marker": marker, "started": process_stamp(p.pid)})
+        (LOCAL / "processes.json").write_text(json.dumps(procs))
+        deadline = time.monotonic() + 45
+        while True:
+            if any(p.poll() is not None for p in handles):
+                raise RuntimeError(
+                    "Anvil process exited during startup; inspect .local/process-*.log"
+                )
+            try:
+                with urlopen("http://127.0.0.1:8200/api/v1/health", timeout=2) as response:
+                    healthy = json.load(response)["data"]["api"] == "ready"
+                with urlopen("http://127.0.0.1:3202", timeout=2) as response:
+                    healthy = healthy and response.status == 200 and b"ADI Anvil" in response.read()
+                if healthy:
+                    break
+            except (URLError, TimeoutError, ConnectionError, ValueError):
+                pass
+            if time.monotonic() >= deadline:
+                raise RuntimeError("Anvil HTTP readiness timed out; inspect .local/process-*.log")
+            time.sleep(0.25)
+    except Exception:
+        for p in handles:
+            if p.poll() is None:
+                os.killpg(p.pid, signal.SIGTERM)
+        (LOCAL / "processes.json").unlink(missing_ok=True)
+        raise
     print(
         "Anvil web: http://127.0.0.1:3202 | API: http://127.0.0.1:8200 | logs: .local/process-*.log"
     )
@@ -245,7 +290,9 @@ def restart_worker():
     procs = json.loads(path.read_text())
     worker = next(p for p in procs if p["marker"] == "anvil.worker")
     actual = subprocess.check_output(["ps", "-p", str(worker["pid"]), "-o", "command="], text=True)
-    if "anvil.worker" not in actual:
+    if "anvil.worker" not in actual or (
+        worker.get("started") and process_stamp(worker["pid"]) != worker["started"]
+    ):
         raise SystemExit("Worker PID ownership mismatch")
     os.killpg(worker["pid"], signal.SIGTERM)
     time.sleep(1)
@@ -254,11 +301,13 @@ def restart_worker():
             [str(PY), "-m", "anvil.worker"],
             cwd=ROOT,
             env=env(),
+            stdin=subprocess.DEVNULL,
             stdout=log,
             stderr=log,
             start_new_session=True,
         )
     worker["pid"] = p.pid
+    worker["started"] = process_stamp(p.pid)
     path.write_text(json.dumps(procs))
     print("Restarted only the registered Anvil worker; checkpoints preserved.")
 
@@ -290,7 +339,23 @@ def main():
     elif cmd == "worker-restart":
         restart_worker()
     elif cmd == "check":
-        run([str(PY), "-m", "ruff", "check", "services/backend", "scripts"], env=env())
+        run([str(PY), "-m", "ruff", "check", "services/backend", "scripts", "tests"], env=env())
+        run(
+            [str(PY), "-m", "ruff", "format", "--check", "services/backend", "scripts", "tests"],
+            env=env(),
+        )
+        run(
+            [
+                "pnpm",
+                "exec",
+                "prettier",
+                "--check",
+                "apps/web/src",
+                "tests/e2e",
+                "playwright.config.ts",
+            ],
+            env=env(),
+        )
         run(["pnpm", "--filter", "@anvil/web", "check"], env=env())
         run(["pnpm", "--filter", "@anvil/web", "build"], env=env())
         backend("contracts")

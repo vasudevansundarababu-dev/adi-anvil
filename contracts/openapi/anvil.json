@@ -463,6 +463,122 @@
         }
       }
     },
+    "/api/v1/projects/{project}/episodes/{eid}/review-issues": {
+      "post": {
+        "summary": "Issue",
+        "operationId": "issue_api_v1_projects__project__episodes__eid__review_issues_post",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project"
+            }
+          },
+          {
+            "name": "eid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Eid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewIssue"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project}/episodes/{eid}/resolve-issue": {
+      "post": {
+        "summary": "Resolve Issue",
+        "operationId": "resolve_issue_api_v1_projects__project__episodes__eid__resolve_issue_post",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project"
+            }
+          },
+          {
+            "name": "eid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Eid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveIssue"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects/{project}/episodes/{eid}/adjudicate": {
       "post": {
         "summary": "Assess",
@@ -603,6 +719,23 @@
               "default": 2,
               "title": "Depth"
             }
+          },
+          {
+            "name": "root",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Root"
+            }
           }
         ],
         "responses": {
@@ -650,6 +783,23 @@
               "type": "integer",
               "default": 2,
               "title": "Depth"
+            }
+          },
+          {
+            "name": "root",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Root"
             }
           }
         ],
@@ -1116,7 +1266,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Manifest"
+                "$ref": "#/components/schemas/anvil__intake__Manifest"
               }
             }
           }
@@ -1166,6 +1316,122 @@
               "type": "string",
               "format": "uuid",
               "title": "Bid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Commit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project}/runs/{rid}/external-results/validate": {
+      "post": {
+        "summary": "Preview",
+        "operationId": "preview_api_v1_projects__project__runs__rid__external_results_validate_post",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project"
+            }
+          },
+          {
+            "name": "rid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/anvil__external_results__Manifest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project}/imports/{iid}/commit-results": {
+      "post": {
+        "summary": "Commit",
+        "operationId": "commit_api_v1_projects__project__imports__iid__commit_results_post",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project"
+            }
+          },
+          {
+            "name": "iid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Iid"
             }
           }
         ],
@@ -2021,6 +2287,17 @@
               ],
               "title": "After"
             }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "default": "",
+              "title": "Q"
+            }
           }
         ],
         "responses": {
@@ -2568,6 +2845,133 @@
         ],
         "title": "Assessment"
       },
+      "Attempt": {
+        "properties": {
+          "task_revision_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Task Revision Id"
+          },
+          "repetition": {
+            "type": "integer",
+            "const": 1,
+            "title": "Repetition"
+          },
+          "attempt": {
+            "type": "integer",
+            "const": 1,
+            "title": "Attempt"
+          },
+          "execution_state": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "failed_operational",
+              "execution_unknown"
+            ],
+            "title": "Execution State"
+          },
+          "output_artifact_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Artifact Id"
+          },
+          "trace_artifact_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trace Artifact Id"
+          },
+          "trace_coverage": {
+            "type": "string",
+            "enum": [
+              "none",
+              "partial",
+              "producer_claimed_complete"
+            ],
+            "title": "Trace Coverage",
+            "default": "none"
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usage"
+          },
+          "reported_cost_micro_usd": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reported Cost Micro Usd"
+          },
+          "source_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Score"
+          },
+          "source_rubric_version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Rubric Version"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "title": "Limitations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "task_revision_id",
+          "repetition",
+          "attempt",
+          "execution_state",
+          "limitations"
+        ],
+        "title": "Attempt"
+      },
       "Body_upload_api_v1_projects__project__artifacts_post": {
         "properties": {
           "file": {
@@ -2581,6 +2985,95 @@
           "file"
         ],
         "title": "Body_upload_api_v1_projects__project__artifacts_post"
+      },
+      "CandidateDescriptor": {
+        "properties": {
+          "model_requested": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Requested"
+          },
+          "model_returned": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Returned"
+          },
+          "harness_version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Harness Version"
+          },
+          "graph_version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Graph Version"
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parameters"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "model_requested",
+          "model_returned",
+          "harness_version",
+          "graph_version",
+          "tools",
+          "parameters"
+        ],
+        "title": "CandidateDescriptor"
       },
       "Commit": {
         "properties": {
@@ -2742,44 +3235,27 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
-      "Manifest": {
-        "properties": {
-          "schema_version": {
-            "type": "string",
-            "const": "anvil.case_import.v1",
-            "title": "Schema Version"
-          },
-          "partner_key": {
-            "type": "string",
-            "pattern": "^[a-zA-Z0-9_-]{1,100}$",
-            "title": "Partner Key"
-          },
-          "cases": {
-            "items": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "type": "array",
-            "maxItems": 200,
-            "minItems": 1,
-            "title": "Cases"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "schema_version",
-          "partner_key",
-          "cases"
-        ],
-        "title": "Manifest"
-      },
       "NewRun": {
         "properties": {
           "protocol_revision_id": {
             "type": "string",
             "format": "uuid",
             "title": "Protocol Revision Id"
+          },
+          "external_origin": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "customer_reported",
+                  "partner_reported"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Origin"
           }
         },
         "additionalProperties": false,
@@ -2885,6 +3361,57 @@
         "additionalProperties": false,
         "type": "object",
         "title": "ProviderConfig"
+      },
+      "ResolveIssue": {
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "invalid",
+              "resume_review"
+            ],
+            "title": "Decision"
+          },
+          "rationale": {
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 10,
+            "title": "Rationale"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "decision",
+          "rationale"
+        ],
+        "title": "ResolveIssue"
+      },
+      "ReviewIssue": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "ambiguous_reference",
+              "missing_evidence",
+              "rubric_issue"
+            ],
+            "title": "Code"
+          },
+          "rationale": {
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 10,
+            "title": "Rationale"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "rationale"
+        ],
+        "title": "ReviewIssue"
       },
       "Rights": {
         "properties": {
@@ -3031,6 +3558,130 @@
           "reason"
         ],
         "title": "Withdrawal"
+      },
+      "anvil__external_results__Manifest": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "anvil.external_results.v1",
+            "title": "Schema Version"
+          },
+          "run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Run Id"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "customer_reported",
+              "partner_reported"
+            ],
+            "title": "Origin"
+          },
+          "producer": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Producer"
+          },
+          "executed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Executed At"
+          },
+          "protocol_hash": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol Hash"
+          },
+          "producer_manifest_hash": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Manifest Hash"
+          },
+          "incomparability_reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "title": "Incomparability Reasons"
+          },
+          "candidate_descriptor": {
+            "$ref": "#/components/schemas/CandidateDescriptor"
+          },
+          "attempts": {
+            "items": {
+              "$ref": "#/components/schemas/Attempt"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Attempts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "schema_version",
+          "run_id",
+          "origin",
+          "producer",
+          "executed_at",
+          "protocol_hash",
+          "producer_manifest_hash",
+          "incomparability_reasons",
+          "candidate_descriptor",
+          "attempts"
+        ],
+        "title": "Manifest"
+      },
+      "anvil__intake__Manifest": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "anvil.case_import.v1",
+            "title": "Schema Version"
+          },
+          "partner_key": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_-]{1,100}$",
+            "title": "Partner Key"
+          },
+          "cases": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Cases"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "schema_version",
+          "partner_key",
+          "cases"
+        ],
+        "title": "Manifest"
       }
     }
   }

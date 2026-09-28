@@ -448,11 +448,55 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
       { timeout: 30000 },
     )
     .toBe('finalized');
+  const ambiguous = (await call(R, `/runs/${disputedRun.id}`)).episodes.find(
+    (e: any) => e.state === 'awaiting_review',
+  );
+  for (const decision of ['resume_review', 'invalid']) {
+    const detail = await call(contexts['reviewer-1'], `/reviews/${ambiguous.id}`);
+    await call(
+      contexts['reviewer-1'],
+      `/episodes/${ambiguous.id}/review-issues`,
+      'POST',
+      {
+        code: 'ambiguous_reference',
+        rationale:
+          'Synthetic ambiguous-reference exercise; evidence cannot support a candidate failure.',
+      },
+      detail.row_version,
+    );
+    const blocked = await call(contexts.adjudicator, `/reviews/${ambiguous.id}`);
+    expect(blocked.state).toBe('review_blocked');
+    expect(blocked.issue_resolution_allowed).toBe(true);
+    await call(
+      contexts.adjudicator,
+      `/episodes/${ambiguous.id}/resolve-issue`,
+      'POST',
+      {
+        decision,
+        rationale: 'Independent adjudicator records the synthetic evidence validity decision.',
+      },
+      blocked.row_version,
+    );
+  }
+  await expect
+    .poll(
+      async () =>
+        (await call(R, `/runs/${disputedRun.id}`)).episodes.find((e: any) => e.id === ambiguous.id)
+          .state,
+      { timeout: 30000 },
+    )
+    .toBe('finalized');
+  const invalid = (await call(R, `/runs/${disputedRun.id}`)).episodes.find(
+    (e: any) => e.id === ambiguous.id,
+  );
+  expect(invalid.outcome).toBe('invalid');
+  expect(invalid.score).toBeNull();
+  expect(invalid.invocation_count).toBe(1);
   const cancelTarget = await call(R, `/runs/${disputedRun.id}`);
   await call(R, `/runs/${disputedRun.id}/cancel`, 'POST', {}, cancelTarget.row_version);
   const cancelled = await call(R, `/runs/${disputedRun.id}`);
   expect(cancelled.state).toBe('cancelled');
-  expect(cancelled.episodes.filter((e: any) => e.state === 'cancelled')).toHaveLength(5);
+  expect(cancelled.episodes.filter((e: any) => e.state === 'cancelled')).toHaveLength(4);
   expect(cancelled.episodes.every((e: any) => e.invocation_count === 1)).toBeTruthy();
   await call(
     P,
@@ -506,5 +550,97 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
       await contexts.sales.request.get(base + `/reports/${report.id}/download/evidence.zip`)
     ).status(),
   ).toBe(409);
+  const externalProtocol = await call(R, '/protocols', 'POST', {
+    ...protocol.content,
+    title: 'Reported result browser import',
+    candidates: ['external-reported'],
+    mode: 'external_result_import_v1',
+  });
+  await transition(R, 'protocols', externalProtocol, 'submit');
+  await approve(A, 'protocols', externalProtocol, 'technical');
+  const externalRun = await call(R, '/runs', 'POST', {
+    protocol_revision_id: externalProtocol.current_revision_id,
+    external_origin: 'customer_reported',
+  });
+  const importPage = await D.newPage();
+  await importPage.goto('/p/' + project + '/runs');
+  await importPage.getByText('Import reported results', { exact: true }).click();
+  await importPage.getByLabel('External results manifest').fill(
+    JSON.stringify({
+      schema_version: 'anvil.external_results.v1',
+      run_id: externalRun.id,
+      origin: 'customer_reported',
+      producer: 'Synthetic browser import exercise',
+      executed_at: '2026-09-27T10:00:00Z',
+      protocol_hash: null,
+      producer_manifest_hash: null,
+      incomparability_reasons: ['Synthetic aggregate-only recording; configuration not known.'],
+      candidate_descriptor: {
+        model_requested: null,
+        model_returned: null,
+        harness_version: null,
+        graph_version: null,
+        tools: null,
+        parameters: null,
+      },
+      attempts: [
+        {
+          task_revision_id: tasks[0].current_revision_id,
+          repetition: 1,
+          attempt: 1,
+          execution_state: 'completed',
+          limitations: ['No output supplied; cannot receive an Anvil grade.'],
+        },
+      ],
+    }),
+  );
+  await importPage.getByRole('button', { name: 'Validate without importing' }).click();
+  await expect(importPage.getByText('Batch: validated', { exact: true })).toBeVisible();
+  expect((await call(R, `/runs/${externalRun.id}`)).episodes).toHaveLength(0);
+  await importPage.getByRole('button', { name: 'Commit this validated manifest' }).click();
+  await expect(importPage.getByText('Batch: committed', { exact: true })).toBeVisible();
+  const imported = await call(R, `/runs/${externalRun.id}`);
+  expect(imported.origin).toBe('customer_reported');
+  expect(imported.episodes[0].state).toBe('unscorable');
+  expect(imported.episodes[0].score).toBeNull();
+  expect(imported.episodes[0].invocation_count).toBe(0);
+  const inventory = await call(D, '/imports/validate', 'POST', {
+    schema_version: 'anvil.case_import.v1',
+    partner_key: 'synthetic-browser-pagination',
+    cases: Array.from({ length: 26 }, (_, i) => ({
+      external_case_id: 'BROWSER-LOAD-' + i,
+      source_version: 'synthetic-v1',
+      title: 'Synthetic browser pagination case ' + String(i).padStart(3, '0'),
+      subjects: ['synthetic_test_only'],
+      source_family_key: 'synthetic-browser-family-' + i,
+      artifact_ids: [tasks[0].content.actor_artifact_ids[0]],
+      provenance: { origin: 'synthetic_browser_load_test', faculty_reviewed: false },
+      readiness: [],
+      rights_declarations: [],
+    })),
+  });
+  expect(inventory.status).toBe('validated');
+  await call(D, '/imports/' + inventory.id + '/commit', 'POST', {
+    manifest_hash: inventory.manifest_hash,
+  });
+  await importPage.goto('/p/' + project + '/cases');
+  await expect(importPage.getByText('25 of 29 matching records loaded')).toBeVisible();
+  await expect(
+    importPage.getByText('Actual source cases').locator('..').getByText('29', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    importPage
+      .getByText('Sources with published tasks')
+      .locator('..')
+      .getByText('3', { exact: true }),
+  ).toBeVisible();
+  await importPage.getByRole('button', { name: 'Load more records' }).click();
+  await expect(importPage.getByText('29 of 29 matching records loaded')).toBeVisible();
+  await importPage.getByLabel('Search this view').fill('Synthetic browser pagination case 025');
+  await importPage.getByRole('button', { name: 'Search all records' }).click();
+  await expect(importPage.getByText('1 of 1 matching records loaded')).toBeVisible();
+  await expect(
+    importPage.getByRole('heading', { name: 'Synthetic browser pagination case 025', exact: true }),
+  ).toBeVisible();
   for (const ctx of Object.values(contexts)) await ctx.close();
 });

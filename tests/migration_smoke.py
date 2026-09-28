@@ -27,8 +27,8 @@ try:
     with psycopg.connect(url) as c:
         assert c.execute(
             "SELECT version FROM anvil.schema_versions ORDER BY version"
-        ).fetchall() == [(1,), (2,), (3,), (4,)]
-        assert c.execute("SELECT version_num FROM anvil.alembic_version").fetchone()[0] == "004"
+        ).fetchall() == [(1,), (2,), (3,), (4,), (5,), (6,), (7,)]
+        assert c.execute("SELECT version_num FROM anvil.alembic_version").fetchone()[0] == "007"
         assert c.execute(
             "SELECT relrowsecurity AND relforcerowsecurity FROM pg_class WHERE oid='anvil.sales_deliveries'::regclass"
         ).fetchone()[0]

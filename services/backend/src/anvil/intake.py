@@ -136,6 +136,8 @@ def routes(context, wrap, idempotent):
                     raise HTTPException(404, "Import batch not found")
                 if batch["manifest_hash"] != body.manifest_hash:
                     raise HTTPException(409, "Manifest hash changed")
+                if batch["manifest"].get("schema_version") != "anvil.case_import.v1":
+                    raise HTTPException(409, "Case import manifest required")
                 if batch["status"] == "committed":
                     return {
                         "id": str(bid),

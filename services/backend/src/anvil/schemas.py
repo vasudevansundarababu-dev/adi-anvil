@@ -106,9 +106,9 @@ class Protocol(Strict):
     title: str = Field(min_length=3)
     objective_revision_id: UUID
     suite_revision_id: UUID
-    candidates: list[Literal["fixture-correct", "fixture-constraint-blind"]] = Field(
-        min_length=1, max_length=2
-    )
+    candidates: list[
+        Literal["fixture-correct", "fixture-constraint-blind", "external-reported"]
+    ] = Field(min_length=1, max_length=2)
     repetitions: Literal[1] = 1
     reviewer_ids: list[UUID] = Field(min_length=2, max_length=2)
     adjudicator_id: UUID
@@ -117,7 +117,16 @@ class Protocol(Strict):
     episode_timeout_seconds: int = Field(default=60, ge=1, le=600)
     comparison_policy: str = Field(min_length=20)
     pass_policy: str = Field(min_length=10)
-    mode: Literal["fixture"] = "fixture"
+    mode: Literal["fixture", "external_result_import_v1"] = "fixture"
+
+    @model_validator(mode="after")
+    def candidate_mode(self):
+        if self.mode == "external_result_import_v1":
+            if self.candidates != ["external-reported"]:
+                raise ValueError("External imports bind one reported candidate descriptor")
+        elif "external-reported" in self.candidates:
+            raise ValueError("External candidate cannot be dispatched as a fixture")
+        return self
 
 
 class Decision(Strict):

@@ -49,6 +49,334 @@ def client_factory():
             )
 
 
+def test_external_results_preserve_origin_and_never_invoke(client_factory, monkeypatch):
+    from anvil import evaluation, external_results, reports, worker
+    from anvil.db import one
+
+    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+    project = journey["project_id"]
+    base = f"/api/v1/projects/{project}"
+    clients = {
+        name: client_factory(name)[0]
+        for name in [
+            "researcher",
+            "data-engineer",
+            "advisor",
+            "reviewer-1",
+            "reviewer-2",
+            "sales",
+            "product-owner",
+        ]
+    }
+
+    def post(name, path, body, version=None, expected=200):
+        result = clients[name].post(
+            base + path,
+            json=body,
+            headers={"Idempotency-Key": uid(), **({"If-Match": str(version)} if version else {})},
+        )
+        assert result.status_code == expected, result.text
+        return result.json().get("data")
+
+    def get(name, path):
+        result = clients[name].get(base + path)
+        assert result.status_code == 200, result.text
+        return result.json()["data"]
+
+    original = get("researcher", "/protocols/" + journey["protocol"]["id"])
+    body = {
+        **original["content"],
+        "title": "Synthetic partner import acceptance",
+        "mode": "external_result_import_v1",
+        "candidates": ["external-reported"],
+    }
+    protocol = post("researcher", "/protocols", body, expected=201)
+    protocol = post(
+        "researcher", "/protocols/" + protocol["id"] + "/submit", {}, protocol["row_version"]
+    )
+    protocol = post(
+        "advisor",
+        "/protocols/" + protocol["id"] + "/decisions",
+        {
+            "purpose": "technical",
+            "decision": "approve",
+            "rationale": "Independent review of the local reported-execution protocol.",
+        },
+        protocol["row_version"],
+    )
+    run = post(
+        "researcher",
+        "/runs",
+        {
+            "protocol_revision_id": protocol["current_revision_id"],
+            "external_origin": "partner_reported",
+        },
+        expected=201,
+    )
+    post("researcher", "/runs/" + run["id"] + "/launch", {}, run["row_version"], expected=409)
+    with transaction(project, USERS["data-engineer"]) as c:
+        tasks = one(
+            c,
+            "SELECT content FROM anvil.revisions WHERE id=%s",
+            (journey["suite"]["current_revision_id"],),
+        )["content"]["task_revision_ids"]
+        output = store(
+            c,
+            project,
+            b"Synthetic externally supplied final answer for import verification.",
+            "internal",
+            "text/plain",
+            origin="partner_reported",
+        )
+        hidden = store(
+            c,
+            project,
+            b"Private reference must not be imported as output",
+            "hidden_reference",
+            "text/plain",
+            origin="partner_reported",
+        )
+    manifest = {
+        "schema_version": "anvil.external_results.v1",
+        "run_id": run["id"],
+        "origin": "partner_reported",
+        "producer": "Synthetic integration test only",
+        "executed_at": "2026-09-27T10:00:00Z",
+        "protocol_hash": None,
+        "producer_manifest_hash": "a" * 64,
+        "incomparability_reasons": [
+            "Synthetic external recording has no matching execution protocol."
+        ],
+        "candidate_descriptor": {
+            "model_requested": None,
+            "model_returned": None,
+            "harness_version": None,
+            "graph_version": None,
+            "tools": None,
+            "parameters": None,
+        },
+        "attempts": [
+            {
+                "task_revision_id": tasks[0],
+                "repetition": 1,
+                "attempt": 1,
+                "execution_state": "completed",
+                "output_artifact_id": output,
+                "source_score": 99,
+                "source_rubric_version": "partner-test-v1",
+                "limitations": ["Final output only; no action trajectory supplied."],
+            },
+            {
+                "task_revision_id": tasks[1],
+                "repetition": 1,
+                "attempt": 1,
+                "execution_state": "completed",
+                "source_score": 100,
+                "source_rubric_version": "partner-test-v1",
+                "limitations": ["Aggregate-only result; no output available for Anvil grading."],
+            },
+            {
+                "task_revision_id": tasks[2],
+                "repetition": 1,
+                "attempt": 1,
+                "execution_state": "execution_unknown",
+                "limitations": ["Producer could not determine execution acceptance."],
+            },
+        ],
+    }
+    path = "/runs/" + run["id"] + "/external-results/validate"
+    post("sales", path, manifest, expected=403)
+    for mutation, expected_code in [
+        ({"protocol_hash": "b" * 64}, "protocol_hash_mismatch"),
+        ({"origin": "customer_reported"}, "execution_origin_mismatch"),
+        (
+            {"attempts": [{**manifest["attempts"][0], "task_revision_id": uid()}]},
+            "task_not_in_frozen_suite",
+        ),
+        ({"attempts": [manifest["attempts"][0], manifest["attempts"][0]]}, "duplicate_attempt"),
+        (
+            {"attempts": [{**manifest["attempts"][0], "output_artifact_id": hidden}]},
+            "evidence_unavailable_or_unqualified",
+        ),
+    ]:
+        bad = post("data-engineer", path, {**manifest, **mutation})
+        assert bad["status"] == "rejected" and expected_code in [e["code"] for e in bad["errors"]]
+        post(
+            "data-engineer",
+            "/imports/" + bad["id"] + "/commit-results",
+            {"manifest_hash": bad["manifest_hash"]},
+            expected=409,
+        )
+    preview = post("data-engineer", path, manifest)
+    assert preview["status"] == "validated" and not preview["independently_reproduced"]
+    assert get("researcher", "/runs/" + run["id"])["episodes"] == []
+    post(
+        "data-engineer",
+        "/imports/" + preview["id"] + "/commit",
+        {"manifest_hash": preview["manifest_hash"]},
+        expected=409,
+    )
+
+    jobs = []
+
+    def enqueue(c, project, kind, target, key):
+        if kind not in ("episode", "resume"):
+            return
+        jid, token = uid(), uid()
+        c.execute(
+            "INSERT INTO anvil.jobs(id,project_id,kind,target_id,operation_key,status,lease_token,lease_until) VALUES(%s,%s,%s,%s,%s,'leased',%s,now()+interval '60 seconds')",
+            (jid, project, kind, target, key, token),
+        )
+        jobs.append(one(c, "SELECT * FROM anvil.jobs WHERE id=%s", (jid,)))
+
+    monkeypatch.setattr(external_results, "enqueue", enqueue)
+    monkeypatch.setattr(evaluation, "enqueue", enqueue)
+    receipt = post(
+        "data-engineer",
+        "/imports/" + preview["id"] + "/commit-results",
+        {"manifest_hash": preview["manifest_hash"]},
+    )
+    repeat = post(
+        "data-engineer",
+        "/imports/" + preview["id"] + "/commit-results",
+        {"manifest_hash": preview["manifest_hash"]},
+    )
+    assert receipt == repeat and receipt["receipt_hash"] != manifest["producer_manifest_hash"]
+    original_one = worker.one
+    monkeypatch.setattr(
+        worker,
+        "one",
+        lambda c, query, params=(): (
+            jobs.pop(0)
+            if query == "SELECT * FROM anvil.claim_job()"
+            else original_one(c, query, params)
+        ),
+    )
+    assert worker.tick()
+    episodes = get("researcher", "/runs/" + run["id"])["episodes"]
+    reviewable = next(e for e in episodes if e["state"] == "awaiting_review")
+    assert all(e["score"] is None and e["invocation_count"] == 0 for e in episodes)
+    for name in ["reviewer-1", "reviewer-2"]:
+        detail = get(name, "/reviews/" + reviewable["id"])
+        assert (
+            detail["execution_origin"] == "partner_reported" and detail["trace_coverage"] == "none"
+        )
+        assert "source_score" not in detail and "external_provenance" not in detail
+        post(
+            name,
+            "/episodes/" + reviewable["id"] + "/assessments",
+            {
+                "scores": {"R1": 0, "R2": 0, "R3": 0},
+                "critical": [],
+                "evidence": {
+                    k: "Synthetic externally supplied final answer" for k in ["R1", "R2", "R3"]
+                },
+                "rationale": "Independent synthetic review disagrees with the supplied source score.",
+            },
+            detail["row_version"],
+        )
+    assert worker.tick()
+    with transaction(project, USERS["researcher"]) as c:
+        facts = reports.facts(c, run["id"])
+        assert facts["origin"] == "partner_reported" and facts["mean_score"] == 0
+        assert facts["unscorable"] == 1 and facts["unknown"] == 1 and facts["valid"] == 1
+        assert all(
+            e["trace_coverage"] == "none" and not e["independently_reproduced"]
+            for e in facts["external_results"]
+        )
+        assert sorted(
+            e["source_score_reported"]
+            for e in facts["external_results"]
+            if e["source_score_reported"] is not None
+        ) == [99, 100]
+        kit = reports.kit_content(
+            {"content": {"facts": facts}, "current_revision_id": uid(), "content_hash": "c" * 64}
+        )
+        assert "PARTNER REPORTED" in kit["label"] and "NOT INDEPENDENTLY REPRODUCED" in kit["label"]
+        assert b"PARTNER REPORTED" in reports.html_bytes(kit)
+        assert reports.pdf_bytes(kit).startswith(b"%PDF")
+        assert all(
+            e["invocation_count"] == 0
+            for e in c.execute(
+                "SELECT invocation_count FROM anvil.episodes WHERE run_id=%s", (run["id"],)
+            ).fetchall()
+        )
+        from psycopg.errors import CheckViolation, RaiseException
+
+        with (
+            pytest.raises(RaiseException, match="immutable imported execution binding"),
+            c.transaction(),
+        ):
+            c.execute(
+                "UPDATE anvil.episodes SET output_artifact_id=NULL WHERE id=%s", (reviewable["id"],)
+            )
+        with pytest.raises(CheckViolation), c.transaction():
+            c.execute(
+                "UPDATE anvil.episodes SET invocation_count=1 WHERE id=%s", (reviewable["id"],)
+            )
+    report = post(
+        "researcher",
+        "/reports",
+        {
+            "title": "Synthetic reported-origin export acceptance",
+            "run_id": run["id"],
+            "finding_revision_ids": [],
+            "advisor_id": USERS["advisor"],
+            "reviewer_id": USERS["reviewer-1"],
+            "product_owner_id": USERS["product-owner"],
+            "audience": "internal_fixture",
+        },
+        expected=201,
+    )
+    report_path = "/reports/" + report["id"]
+    report = post("researcher", report_path + "/submit", {}, report["row_version"])
+    for role, purpose in [
+        ("advisor", "technical"),
+        ("reviewer-1", "domain"),
+        ("product-owner", "audience"),
+        ("product-owner", "release"),
+    ]:
+        report = post(
+            role,
+            report_path + "/decisions",
+            {
+                "purpose": purpose,
+                "decision": "approve",
+                "rationale": "Independent internal approval of the synthetic external-origin test report.",
+            },
+            report["row_version"],
+        )
+    post("researcher", report_path + "/build", {}, report["row_version"])
+    import io
+    import zipfile
+
+    from pypdf import PdfReader
+
+    pdf = clients["sales"].get(base + report_path + "/download/sales-kit.pdf")
+    assert pdf.status_code == 200
+    pages = PdfReader(io.BytesIO(pdf.content)).pages
+    assert len(pages) == 1 and "PARTNER REPORTED" in pages[0].extract_text()
+    (ROOT / "artifacts/test-runs/external-sales-kit.pdf").write_bytes(pdf.content)
+    bundle = clients["sales"].get(base + report_path + "/download/evidence.zip")
+    assert bundle.status_code == 200
+    with zipfile.ZipFile(io.BytesIO(bundle.content)) as archive:
+        exported = json.loads(archive.read("manifest.json"))
+        assert exported["origin"] == "partner_reported"
+        receipt_rows = json.loads(archive.read("external-result-receipts.json"))
+        assert len(receipt_rows) == 3 and all(
+            not row["independently_reproduced"] for row in receipt_rows
+        )
+        assert b"PARTNER REPORTED" in archive.read("email-draft.txt")
+        assert all("reference" not in name for name in archive.namelist())
+    latest = get("researcher", "/runs/" + run["id"])
+    post("researcher", "/runs/" + run["id"] + "/cancel", {}, latest["row_version"])
+    assert sorted(e["state"] for e in get("researcher", "/runs/" + run["id"])["episodes"]) == [
+        "execution_unknown",
+        "finalized",
+        "unscorable",
+    ]
+
+
 @pytest.mark.parametrize("state", ["expired", "idle", "revoked"])
 def test_expired_idle_revoked_session(client_factory, state):
     client, token_hash = client_factory()
@@ -62,6 +390,120 @@ def test_expired_idle_revoked_session(client_factory, state):
             f"UPDATE anvil.sessions SET {statements[state]} WHERE token_hash=%s", (token_hash,)
         )
     assert client.get("/api/v1/me").status_code == 401
+
+
+def test_200_synthetic_source_inventory_pagination_and_search(client_factory):
+    import contextlib
+    import io
+    import math
+    import os
+    import platform
+    import shutil
+    import subprocess
+
+    from anvil.operations import new_demo
+
+    captured = io.StringIO()
+    with contextlib.redirect_stdout(captured):
+        new_demo("Synthetic 200-source inventory acceptance")
+    project = json.loads(captured.getvalue())["project_id"]
+    base = f"/api/v1/projects/{project}"
+    client, _ = client_factory("data-engineer")
+    with transaction(project, USERS["data-engineer"]) as c:
+        aid = store(
+            c,
+            project,
+            b"Original synthetic load-test exhibit. Not university cases or model-performance evidence.",
+            "internal",
+            "text/plain",
+            origin="synthetic_load_test",
+        )
+    manifest = {
+        "schema_version": "anvil.case_import.v1",
+        "partner_key": "synthetic-load-test",
+        "cases": [
+            {
+                "external_case_id": f"LOAD-{i:03}",
+                "source_version": "synthetic-v1",
+                "title": f"Synthetic inventory load case {i:03}",
+                "subjects": ["test_only"],
+                "source_family_key": f"load-family-{i // 2:03}",
+                "artifact_ids": [aid],
+                "provenance": {"origin": "synthetic_load_test", "faculty_reviewed": False},
+                "readiness": [],
+                "rights_declarations": [],
+            }
+            for i in range(200)
+        ],
+    }
+    preview = client.post(
+        base + "/imports/validate", json=manifest, headers={"Idempotency-Key": uid()}
+    )
+    assert preview.status_code == 200, preview.text
+    batch = preview.json()["data"]
+    assert batch["status"] == "validated"
+    assert client.get(base + "/cases").json()["meta"]["inventory_total"] == 0
+    committed = client.post(
+        base + "/imports/" + batch["id"] + "/commit",
+        json={"manifest_hash": batch["manifest_hash"]},
+        headers={"Idempotency-Key": uid()},
+    )
+    assert committed.status_code == 200, committed.text
+    ids, cursor = [], None
+    while True:
+        page = client.get(
+            base + "/cases", params={"limit": 25, **({"after": cursor} if cursor else {})}
+        )
+        assert page.status_code == 200, page.text
+        result = page.json()
+        assert result["meta"]["inventory_total"] == 200 and result["meta"]["qualified_sources"] == 0
+        ids.extend(row["id"] for row in result["data"])
+        cursor = result["meta"]["next_cursor"]
+        if not cursor:
+            break
+    assert len(ids) == len(set(ids)) == 200
+    search = client.get(base + "/cases", params={"q": "LOAD-199"}).json()
+    assert search["meta"]["matching_total"] == 1 and len(search["data"]) == 1
+    assert client.get(base + "/cases", params={"q": "%"}).json()["data"] == []
+    assert client.get(base + "/cases", params={"q": "x" * 201}).status_code == 422
+    measurements = {}
+    for kind, path in [("list", "/cases"), ("detail", "/cases/" + ids[-1])]:
+        elapsed = []
+        for _ in range(30):
+            start = time.perf_counter()
+            response = client.get(base + path)
+            elapsed.append((time.perf_counter() - start) * 1000)
+            assert response.status_code == 200
+        measurements[kind] = {
+            "samples": 30,
+            "p95_ms": sorted(elapsed)[math.ceil(len(elapsed) * 0.95) - 1],
+            "max_ms": max(elapsed),
+        }
+    memory = (
+        subprocess.check_output(["sysctl", "-n", "hw.memsize"], text=True).strip()
+        if platform.system() == "Darwin"
+        else "not_measured"
+    )
+    evidence = {
+        "project_id": project,
+        "origin": "synthetic_load_test",
+        "source_records": 200,
+        "published_tasks": 0,
+        "model_performance": "not_measured",
+        "concurrency": 1,
+        "transport": "in_process_ASGI_with_real_PostgreSQL",
+        "platform": platform.platform(),
+        "cpu_count": os.cpu_count(),
+        "ram_bytes": memory,
+        "free_disk_bytes": shutil.disk_usage(ROOT).free,
+        "measurements": measurements,
+        "target_under_500ms": all(m["p95_ms"] < 500 for m in measurements.values()),
+        "not_run": ["400_episode_batch", "browser_network_latency", "related_source_versions"],
+    }
+    (ROOT / "artifacts/test-runs/inventory-performance.json").write_text(
+        json.dumps(evidence, indent=2)
+    )
+    assert evidence["target_under_500ms"], evidence["measurements"]
 
 
 def test_logout_invalidates_captured_cookie(client_factory):

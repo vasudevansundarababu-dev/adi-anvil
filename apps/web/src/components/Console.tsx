@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Intake from './Intake';
 import ProviderSetup from './ProviderSetup';
 import RightsReview from './RightsReview';
+import ExternalResults from './ExternalResults';
 import FindingComposer from './FindingComposer';
 import FixtureDelivery from './FixtureDelivery';
 
@@ -37,8 +38,13 @@ type Review = {
   state: string;
   row_version: number;
   output: string;
+  execution_origin: string;
+  evidence_limitations: string[];
+  trace_coverage: string;
   references: string[];
   adjudication_allowed: boolean;
+  issue_resolution_allowed: boolean;
+  issues: { id: string; code: string; rationale: string; status: string }[];
   rubric: {
     criteria: { id: string; label: string; anchors: Record<string, string> }[];
     critical_rules: string[];
@@ -99,7 +105,13 @@ labels.findings = 'Findings';
 notes.findings =
   'Reviewed observations and explicitly labeled hypotheses, linked to output evidence.';
 
-async function api(path: string, method = 'GET', body?: unknown, version?: number) {
+async function api(
+  path: string,
+  method = 'GET',
+  body?: unknown,
+  version?: number,
+  envelope = false,
+) {
   const csrf =
     document.cookie
       .split('; ')
@@ -117,7 +129,7 @@ async function api(path: string, method = 'GET', body?: unknown, version?: numbe
   });
   const j = await r.json();
   if (!r.ok) throw new Error(j.error?.message || 'Request failed');
-  return j.data;
+  return envelope ? j : j.data;
 }
 const text = (v: unknown) => (typeof v === 'string' ? v : JSON.stringify(v, null, 2));
 
@@ -136,6 +148,13 @@ export default function Console() {
     [search, setSearch] = useState(''),
     [form, setForm] = useState(false);
   const [options, setOptions] = useState<Record<string, Row[]>>({});
+  const [query, setQuery] = useState('');
+  const [pageInfo, setPageInfo] = useState<{
+    inventory_total: number;
+    matching_total: number;
+    qualified_sources?: number;
+    next_cursor: string | null;
+  } | null>(null);
   const [review, setReview] = useState<Review | null>(null),
     [graph, setGraph] = useState<Graph | null>(null),
     [node, setNode] = useState<Graph['nodes'][number] | null>(null);
@@ -153,7 +172,15 @@ export default function Console() {
     if (!base) return;
     setError('');
     try {
-      const data = await api(base + '/' + section);
+      const response = await api(
+        base + '/' + section + '?q=' + encodeURIComponent(query),
+        'GET',
+        undefined,
+        undefined,
+        true,
+      );
+      const data = response.data;
+      setPageInfo(response.meta.inventory_total === undefined ? null : response.meta);
       if (section === 'diagnostics') {
         setGraph(data);
         setRows([]);
@@ -163,12 +190,15 @@ export default function Console() {
       setError((e as Error).message);
       setRows([]);
     }
-  }, [base, section, project?.roles]);
+  }, [base, section, project?.roles, query]);
   useEffect(() => {
     void reload();
+  }, [reload]);
+  useEffect(() => {
     setForm(false);
     setSearch('');
-  }, [reload]);
+    setQuery('');
+  }, [base, section]);
   async function act(fn: () => Promise<unknown>, success = 'Saved to the project audit trail.') {
     setBusy(true);
     setError('');
@@ -196,7 +226,21 @@ export default function Console() {
             ? ['objectives', 'suites']
             : ['runs', 'findings'];
       const o: Record<string, Row[]> = {};
-      for (const k of kinds) o[k] = await api(base + '/' + k);
+      for (const k of kinds) {
+        o[k] = [];
+        let cursor: string | null = null;
+        do {
+          const page = await api(
+            base + '/' + k + '?limit=100' + (cursor ? '&after=' + cursor : ''),
+            'GET',
+            undefined,
+            undefined,
+            true,
+          );
+          o[k].push(...page.data);
+          cursor = page.meta.next_cursor || null;
+        } while (cursor);
+      }
       setOptions(o);
     }
   }
@@ -232,14 +276,17 @@ export default function Console() {
         ...body,
         objective_revision_id: value('objective'),
         suite_revision_id: value('suite'),
-        candidates: ['fixture-correct', 'fixture-constraint-blind'],
+        candidates:
+          value('mode') === 'external_result_import_v1'
+            ? ['external-reported']
+            : ['fixture-correct', 'fixture-constraint-blind'],
         repetitions: 1,
         reviewer_ids: [member('reviewer', 'reviewer-1'), member('reviewer', 'reviewer-2')],
         adjudicator_id: member('adjudicator'),
         advisor_id: member('advisor'),
         comparison_policy: value('comparison_policy'),
         pass_policy: value('pass_policy'),
-        mode: 'fixture',
+        mode: value('mode'),
       };
     if (section === 'reports')
       body = {
@@ -402,6 +449,11 @@ export default function Console() {
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search titles or status"
             />
+            {pageInfo && (
+              <button onClick={() => setQuery(search)} disabled={busy}>
+                Search all records
+              </button>
+            )}
           </div>
           <div className="actions">
             <button onClick={() => void reload()} disabled={busy}>
@@ -528,9 +580,16 @@ export default function Console() {
                       </option>
                     ))}
                 </select>
+                <label htmlFor="mode">Execution mode</label>
+                <select id="mode" name="mode">
+                  <option value="fixture">Two deterministic fixture candidates</option>
+                  <option value="external_result_import_v1">
+                    Reported external results — no candidate dispatch
+                  </option>
+                </select>
                 <p>
-                  Two deterministic candidates · one attempt each · both pilot reviewers and
-                  independent adjudicator required.
+                  One attempt per case. Both assigned reviewers and an independent adjudicator are
+                  required.
                 </p>
                 <label htmlFor="comparison_policy">Comparison policy</label>
                 <textarea
@@ -598,12 +657,16 @@ export default function Console() {
         {section === 'cases' && (
           <div className="stats">
             <div>
-              <strong>{rows.length}</strong>
-              <small>Actual cases shown</small>
+              <strong>{pageInfo?.inventory_total ?? rows.length}</strong>
+              <small>Actual source cases</small>
+            </div>
+            <div>
+              <strong>{pageInfo?.qualified_sources ?? 0}</strong>
+              <small>Sources with published tasks</small>
             </div>
             <div>
               <strong>200</strong>
-              <small>Planned portfolio · not received</small>
+              <small>Planning target · not evidence of receipt</small>
             </div>
           </div>
         )}
@@ -693,6 +756,12 @@ export default function Console() {
         {review && (
           <form className="card" onSubmit={grade}>
             <h2>Blind review · {review.title}</h2>
+            <p>
+              Execution origin: {review.execution_origin} · Trace coverage: {review.trace_coverage}
+            </p>
+            {review.evidence_limitations.map((limitation, i) => (
+              <p key={i}>{limitation}</p>
+            ))}
             <div className="split">
               <div>
                 <h3>Candidate output</h3>
@@ -746,8 +815,63 @@ export default function Console() {
                 <pre>{text(review.submitted_assessments)}</pre>
               </details>
             )}
+            {review.issues?.map((issue) => (
+              <p className="banner" key={issue.id}>
+                {issue.code.replaceAll('_', ' ')} · {issue.status}: {issue.rationale}
+              </p>
+            ))}
             <div className="actions">
-              <button className="primary" disabled={busy}>
+              {review.issue_resolution_allowed &&
+                (['invalid', 'resume_review'] as const).map((decision) => (
+                  <button
+                    key={decision}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      const rationale = window.prompt(
+                        'Independent issue-resolution rationale (at least 10 characters)',
+                      );
+                      if (rationale)
+                        void act(async () => {
+                          await api(
+                            base + '/episodes/' + review.id + '/resolve-issue',
+                            'POST',
+                            { decision, rationale },
+                            review.row_version,
+                          );
+                          setReview(null);
+                        });
+                    }}
+                  >
+                    {decision === 'invalid'
+                      ? 'Mark evidence invalid, no candidate score'
+                      : 'Return to independent review'}
+                  </button>
+                ))}
+              {role('reviewer') && review.state !== 'review_blocked' && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    const rationale = window.prompt(
+                      'Explain the reference ambiguity (at least 10 characters)',
+                    );
+                    if (rationale)
+                      void act(async () => {
+                        await api(
+                          base + '/episodes/' + review.id + '/review-issues',
+                          'POST',
+                          { code: 'ambiguous_reference', rationale },
+                          review.row_version,
+                        );
+                        setReview(null);
+                      });
+                  }}
+                >
+                  Flag ambiguous reference
+                </button>
+              )}
+              <button className="primary" disabled={busy || review.state === 'review_blocked'}>
                 {review.adjudication_allowed
                   ? 'Submit independent adjudication'
                   : 'Submit independent assessment'}
@@ -759,7 +883,7 @@ export default function Console() {
           </form>
         )}
         {rows
-          .filter((r) => JSON.stringify(r).toLowerCase().includes(search.toLowerCase()))
+          .filter((r) => pageInfo || JSON.stringify(r).toLowerCase().includes(search.toLowerCase()))
           .map((r) => (
             <article className="card" key={r.id}>
               <div className="toolbar">
@@ -835,16 +959,19 @@ export default function Console() {
               {section === 'runs' && (
                 <>
                   <p>
-                    Origin: {r.origin} · Actual model cost: not applicable to network-free fixtures
+                    Origin: {r.origin} ·{' '}
+                    {r.origin === 'illustrative'
+                      ? 'Actual model cost: not applicable to network-free fixtures'
+                      : 'External execution is reported, not independently reproduced. Cost is not verified by Anvil.'}
                   </p>
                   <div className="actions">
-                    {r.state === 'draft' && role('researcher') && (
+                    {r.state === 'draft' && r.origin === 'illustrative' && role('researcher') && (
                       <button
                         className="primary"
                         disabled={busy}
                         onClick={() => void change(r, 'launch')}
                       >
-                        Launch six-episode fixture evaluation
+                        Launch fixture evaluation
                       </button>
                     )}
                     {r.state !== 'reviewed' && r.state !== 'cancelled' && role('researcher') && (
@@ -853,6 +980,9 @@ export default function Console() {
                       </button>
                     )}
                   </div>
+                  {r.state === 'draft' && r.origin !== 'illustrative' && role('data-engineer') && (
+                    <ExternalResults base={base} runId={r.id} />
+                  )}
                   {r.episodes && (
                     <div className="tablewrap">
                       <table>
@@ -1005,22 +1135,46 @@ export default function Console() {
                 {r.kind === 'suite' && r.lifecycle === 'approved' && role('researcher') && (
                   <button onClick={() => void change(r, 'freeze')}>Freeze suite</button>
                 )}
-                {r.kind === 'protocol' && r.lifecycle === 'approved' && role('researcher') && (
-                  <button
-                    className="primary"
-                    onClick={() =>
-                      act(
-                        () =>
-                          api(base + '/runs', 'POST', {
-                            protocol_revision_id: r.current_revision_id,
-                          }),
-                        'Run created. Open Run console to explicitly launch.',
-                      )
-                    }
-                  >
-                    Prepare fixture run
-                  </button>
-                )}
+                {r.kind === 'protocol' &&
+                  r.lifecycle === 'approved' &&
+                  r.content.mode !== 'external_result_import_v1' &&
+                  role('researcher') && (
+                    <button
+                      className="primary"
+                      onClick={() =>
+                        act(
+                          () =>
+                            api(base + '/runs', 'POST', {
+                              protocol_revision_id: r.current_revision_id,
+                            }),
+                          'Run created. Open Run console to explicitly launch.',
+                        )
+                      }
+                    >
+                      Prepare fixture run
+                    </button>
+                  )}
+                {r.kind === 'protocol' &&
+                  r.lifecycle === 'approved' &&
+                  r.content.mode === 'external_result_import_v1' &&
+                  role('researcher') &&
+                  ['customer_reported', 'partner_reported'].map((origin) => (
+                    <button
+                      key={origin}
+                      onClick={() =>
+                        act(
+                          () =>
+                            api(base + '/runs', 'POST', {
+                              protocol_revision_id: r.current_revision_id,
+                              external_origin: origin,
+                            }),
+                          'Reported run prepared. A Data Engineer can validate and commit its manifest in Run console.',
+                        )
+                      }
+                    >
+                      Prepare {origin.replace('_', '-')} run
+                    </button>
+                  ))}
                 {!['reviews', 'providers', 'sales-kits'].includes(section) && (
                   <button
                     onClick={() =>
@@ -1048,9 +1202,49 @@ export default function Console() {
               </details>
             </article>
           ))}
+        {pageInfo && (
+          <div className="actions">
+            <p>
+              {rows.length} of {pageInfo.matching_total} matching records loaded
+            </p>
+            {pageInfo.next_cursor && (
+              <button
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    const page = await api(
+                      base +
+                        '/' +
+                        section +
+                        '?q=' +
+                        encodeURIComponent(query) +
+                        '&after=' +
+                        pageInfo.next_cursor,
+                      'GET',
+                      undefined,
+                      undefined,
+                      true,
+                    );
+                    setRows((prior) => [...prior, ...page.data]);
+                    setPageInfo(page.meta);
+                  } catch (e) {
+                    setError((e as Error).message);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Load more records
+              </button>
+            )}
+          </div>
+        )}
         {!rows.length && !error && section !== 'diagnostics' && (
           <div className="card empty">
-            No records in this view yet. Start with an objective and the original synthetic cases.
+            {query
+              ? 'No records match this search.'
+              : 'No records in this view yet. Start with an objective and the original synthetic cases.'}
           </div>
         )}
         <footer>

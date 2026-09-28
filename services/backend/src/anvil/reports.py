@@ -32,7 +32,7 @@ def facts(c, run_id, final=True):
     suite = domain.get_revision(c, protocol["content"]["suite_revision_id"], "suite")
     objective = domain.get_revision(c, protocol["content"]["objective_revision_id"], "objective")
     episodes = c.execute(
-        "SELECT id,task_revision_id,state,outcome,score,final_assessment_id FROM anvil.episodes WHERE run_id=%s ORDER BY id",
+        "SELECT id,task_revision_id,state,outcome,score,final_assessment_id,invalidity_resolution_id,external_provenance FROM anvil.episodes WHERE run_id=%s ORDER BY id",
         (run_id,),
     ).fetchall()
     valid = [
@@ -46,7 +46,28 @@ def facts(c, run_id, final=True):
     ]
     return {
         "origin": run["origin"],
-        "source_origin": "original_synthetic_fixture",
+        "source_origin": ", ".join(sorted({t["origin"] for t in tasks})),
+        "external_results": [
+            {
+                "episode_id": str(e["id"]),
+                "origin": e["external_provenance"]["origin"],
+                "executed_at": e["external_provenance"]["executed_at"],
+                "manifest_hash": e["external_provenance"]["manifest_hash"],
+                "receipt_hash": e["external_provenance"]["receipt_hash"],
+                "producer_manifest_hash": e["external_provenance"]["producer_manifest_hash"],
+                "candidate_descriptor": e["external_provenance"]["candidate_descriptor"],
+                "incomparability_reasons": e["external_provenance"]["incomparability_reasons"],
+                "source_score_reported": e["external_provenance"]["attempt"]["source_score"],
+                "source_rubric_version": e["external_provenance"]["attempt"][
+                    "source_rubric_version"
+                ],
+                "trace_coverage": e["external_provenance"]["attempt"]["trace_coverage"],
+                "limitations": e["external_provenance"]["attempt"]["limitations"],
+                "independently_reproduced": False,
+            }
+            for e in episodes
+            if e.get("external_provenance")
+        ],
         "run_id": str(run_id),
         "protocol_revision_id": str(protocol["id"]),
         "protocol_hash": protocol["content_hash"],
@@ -65,7 +86,8 @@ def facts(c, run_id, final=True):
         "passes": sum(e["outcome"] == "pass" for e in valid),
         "failures": sum(e["outcome"] == "fail" for e in valid),
         "pending": sum(
-            e["state"] in ("queued", "output_captured", "awaiting_review", "disputed")
+            e["state"]
+            in ("queued", "output_captured", "awaiting_review", "disputed", "review_blocked")
             for e in episodes
         ),
         "invalid": sum(e["outcome"] == "invalid" for e in episodes),
@@ -75,6 +97,11 @@ def facts(c, run_id, final=True):
         "mean_score": float(sum(e["score"] for e in valid) / len(valid)) if valid else None,
         "pass_rate": sum(e["outcome"] == "pass" for e in valid) / len(valid) if valid else None,
         "assessment_ids": [str(e["final_assessment_id"]) for e in valid],
+        "invalidity_resolution_ids": [
+            str(e["invalidity_resolution_id"])
+            for e in episodes
+            if e.get("invalidity_resolution_id")
+        ],
         "sources": [t["source_revision_id"] for t in tasks],
         "scorecards": [
             {
@@ -87,7 +114,9 @@ def facts(c, run_id, final=True):
         ],
         "uncertainty": "not_estimated",
         "improvement": "not_tested",
-        "limitations": "Custom development suite; predetermined fixture responses; synthetic source and scripted local reviews. No measured frontier-model performance, faculty validation, human baseline, causal diagnosis or generalization.",
+        "limitations": "Custom development suite; predetermined fixture responses; synthetic source and scripted local reviews. No measured frontier-model performance, faculty validation, human baseline, causal diagnosis or generalization."
+        if run["origin"] == "illustrative"
+        else "External execution is producer-reported, not independently reproduced. Anvil human review does not change execution origin. Missing or partial traces cannot establish action trajectories. Synthetic source suite; no faculty validation, human baseline, causal diagnosis or generalization.",
         "denominator_definition": "Pass rate and mean include only finalized scored pass/fail episodes. Completed counts finalized reviews. Cancelled, invalid, unknown and pending episodes are disclosed separately.",
     }
 
@@ -135,12 +164,12 @@ def prepare_provisional(c, run_id):
         run["created_by"],
         "sales_kit",
         {
-            "title": "Provisional synthetic run digest",
+            "title": "Provisional run digest",
             "run_id": str(run_id),
             "stage": "provisional",
             "label": "PROVISIONAL - NOT FOR EXTERNAL USE",
             "origin": run["origin"],
-            "tested": f"{f['case_count']} original synthetic cases; {f['launched']} illustrative episodes.",
+            "tested": f"{f['case_count']} cases; {f['launched']} episodes; execution origin: {f['origin']}. Source origin: {f['source_origin']}.",
             "boundary": "Human review is incomplete. Performance is not established. No external download or sending authority.",
             "facts": f,
         },
@@ -181,18 +210,26 @@ def kit_content(report):
     b = report["content"]
     f = b["facts"]
     mean = "Not yet established" if f["mean_score"] is None else f"{f['mean_score']:.2f}/100"
+    external = f["origin"] != "illustrative"
     return {
-        "label": LABEL,
+        "label": f["origin"].replace("_", " ").upper()
+        + " - NOT INDEPENDENTLY REPRODUCED - INTERNAL USE ONLY"
+        if external
+        else LABEL,
         "title": "Constraint preservation diagnostic",
         "question": f["question"],
-        "tested": f"Custom synthetic suite: {f['case_count']} cases, {f['family_count']} families, two deterministic fixture candidates, one attempt per case. Static document-to-deliverable harness; no live inference.",
+        "tested": f"Custom synthetic suite: {f['case_count']} cases, {f['family_count']} families; {f['launched']} imported attempts. Producer-reported configuration; no Anvil candidate execution."
+        if external
+        else f"Custom synthetic suite: {f['case_count']} cases, {f['family_count']} families, deterministic fixture candidates, one attempt per case. Static document-to-deliverable harness; no live inference.",
         "observed": [
             f"{f['passes']} passes and {f['failures']} failures among {f['valid']} valid reviewed episodes.",
             f"Mean submitted-review score: {mean}. Critical violations override numeric thresholds.",
-            "These results verify application mechanics; they do not measure model capability.",
+            "Anvil review grades supplied output; source scores remain separate reported values."
+            if external
+            else "These results verify application mechanics; they do not measure model capability.",
         ],
         "relevance": "This workflow can support a scoped investigation of constraint preservation. A real-model study still needs processing rights, exact models, bounded spend, independent approvals and calibrated human review.",
-        "boundary": f"{f['launched']} launched; {f['completed']} completed; {f['valid']} valid; {f['invalid']} invalid; {f['unscorable']} unscorable; {f['unknown']} unknown; {f['cancelled']} cancelled; {f['pending']} pending. Predetermined development fixtures and synthetic reviews. No faculty validation, human baseline, generalization or causal claim. Uncertainty not estimated; improvement not tested.",
+        "boundary": f"{f['launched']} attempts; {f['completed']} finalized; {f['valid']} valid; {f['invalid']} invalid; {f['unscorable']} unscorable; {f['unknown']} unknown; {f['cancelled']} cancelled; {f['pending']} pending. {f['limitations']} Uncertainty not estimated; improvement not tested.",
         "next_step": "Review the evidence and agree a permitted, bounded real-model pilot with independent grading.",
         "report_revision_id": str(report["current_revision_id"]),
         "report_hash": report["content_hash"],
@@ -270,7 +307,7 @@ def pdf_bytes(content):
     pdf.drawString(
         margin,
         17 * mm,
-        "Private diagnostic - internal fixture draft; not approved customer delivery",
+        "Private diagnostic - internal review; not approved customer delivery",
     )
     pdf.setFont("Helvetica", 10)
     pdf.drawString(margin, 12 * mm, "Report revision: " + content["report_revision_id"])
@@ -286,7 +323,7 @@ def html_bytes(content):
         if k in ["question", "tested", "observed", "relevance", "boundary", "next_step"]
     )
     return (
-        f'<!doctype html><html lang="en"><meta charset="utf-8"><title>ADI Anvil diagnostic</title><style>body{{font:16px/1.6 Arial;max-width:850px;margin:40px auto;padding:24px;color:#172a45}}h1,h2{{color:#0a2170}}h2{{font-size:20px}}.label{{background:#e9f3f8;padding:14px}}</style><body><h1>ADI Anvil</h1><p>Frontier Evaluation &amp; Diagnostics Platform</p><p class="label">{LABEL}</p>{body}<footer>Report revision {html.escape(content["report_revision_id"])}</footer></body></html>'
+        f'<!doctype html><html lang="en"><meta charset="utf-8"><title>ADI Anvil diagnostic</title><style>body{{font:16px/1.6 Arial;max-width:850px;margin:40px auto;padding:24px;color:#172a45}}h1,h2{{color:#0a2170}}h2{{font-size:20px}}.label{{background:#e9f3f8;padding:14px}}</style><body><h1>ADI Anvil</h1><p>Frontier Evaluation &amp; Diagnostics Platform</p><p class="label">{html.escape(content["label"])}</p>{body}<footer>Report revision {html.escape(content["report_revision_id"])}</footer></body></html>'
     ).encode()
 
 
@@ -304,8 +341,8 @@ def render_kit(c, report, user):
     pdf = pdf_bytes(content)
     html_data = html_bytes(content)
     email = (
-        "Subject: Synthetic diagnostic workflow - internal review draft\n\n"
-        + LABEL
+        "Subject: Diagnostic workflow - internal review draft\n\n"
+        + content["label"]
         + "\n\n"
         + content["tested"]
         + "\n\n"
@@ -324,6 +361,7 @@ def render_kit(c, report, user):
             data,
             "approved_delivery" if name != "internal-brief.txt" else "internal",
             mime,
+            origin=content["origin"],
         )
         for name, data, mime in [
             ("sales-kit.pdf", pdf, "application/pdf"),
@@ -338,6 +376,7 @@ def render_kit(c, report, user):
         bundle(c, report, {"content": {"artifacts": rendered}}),
         "approved_delivery",
         "application/zip",
+        origin=content["origin"],
     )
     kit = domain.create(
         c,
@@ -356,7 +395,7 @@ def bundle(c, report, kit):
     content = kit_content(report)
     files = {
         "README.md": (
-            LABEL
+            content["label"]
             + "\nCustom suite. Improvement not tested. No raw cases, references, identities or protected learning content included."
         ).encode(),
         "suite-card.json": json.dumps(
@@ -387,7 +426,7 @@ def bundle(c, report, kit):
         ).encode(),
         "report.html": html_bytes(content),
         "report.md": (
-            LABEL
+            content["label"]
             + "\n\n"
             + content["tested"]
             + "\n\n"
@@ -397,6 +436,15 @@ def bundle(c, report, kit):
         ).encode(),
         "findings.jsonl": "\n".join(json.dumps(x) for x in b["reviewed_findings"]).encode(),
     }
+    if f["external_results"]:
+        # Export only the evidence receipt; arbitrary producer parameters may contain private data.
+        files["external-result-receipts.json"] = json.dumps(
+            [
+                {k: value for k, value in result.items() if k != "candidate_descriptor"}
+                for result in f["external_results"]
+            ],
+            indent=2,
+        ).encode()
     csvfile = io.StringIO()
     writer = csv.DictWriter(csvfile, fieldnames=["episode_id", "state", "outcome", "score"])
     writer.writeheader()
@@ -409,7 +457,7 @@ def bundle(c, report, kit):
         "schema_version": "anvil.release.v1",
         "product": "ADI Anvil",
         "audience": "internal_fixture",
-        "label": LABEL,
+        "label": content["label"],
         "report_revision_id": str(report["current_revision_id"]),
         "report_hash": report["content_hash"],
         "origin": f["origin"],

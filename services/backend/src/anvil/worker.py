@@ -15,7 +15,7 @@ from psycopg.rows import dict_row
 from anvil import artifacts, domain
 from anvil.config import ROOT, setting
 from anvil.db import audit, one, transaction
-from anvil.evaluation import GRAPH_VERSION
+from anvil.evaluation import EXTERNAL_GRAPH_VERSION, GRAPH_VERSION
 
 STOP = False
 
@@ -41,7 +41,7 @@ def guard(c, job):
     )
     if not e or e["cancel_requested"] or e["state"] == "cancelled":
         raise RuntimeError("cancelled")
-    if e["graph_version"] != GRAPH_VERSION:
+    if e["graph_version"] not in (GRAPH_VERSION, EXTERNAL_GRAPH_VERSION):
         raise RuntimeError("graph_version_mismatch")
     task = domain.get_revision(c, e["task_revision_id"], "task", ["published"])
     rubric = one(
@@ -63,13 +63,18 @@ def graph_for(job, saver):
             task = domain.get_revision(c, e["task_revision_id"], "task", ["published"])["content"]
             if task["mode"] != "static" or not domain.rights_ok(c, task["source_revision_id"]):
                 raise RuntimeError("rights_or_mode_blocked")
-            if state["graph_version"] != GRAPH_VERSION:
+            if state["graph_version"] != e["graph_version"]:
                 raise RuntimeError("graph_version_mismatch")
         return {}
 
     def invoke(state):
         with transaction(project, worker=True) as c:
             e = guard(c, job)
+            if e["graph_version"] == EXTERNAL_GRAPH_VERSION:
+                if not e["external_provenance"] or not e["output_artifact_id"]:
+                    raise RuntimeError("external_evidence_missing")
+                artifacts.read(c, e["output_artifact_id"])
+                return {"output_artifact_id": str(e["output_artifact_id"])}
             if e["output_artifact_id"]:
                 return {"output_artifact_id": str(e["output_artifact_id"])}
             task = domain.get_revision(c, e["task_revision_id"], "task", ["published"])["content"]
@@ -119,7 +124,7 @@ def graph_for(job, saver):
     def await_review(state):
         with transaction(project, worker=True) as c:
             e = guard(c, job)
-            if not e["final_assessment_id"]:
+            if not e["final_assessment_id"] and not e["invalidity_resolution_id"]:
                 c.execute(
                     "UPDATE anvil.episodes SET state='awaiting_review' WHERE id=%s", (e["id"],)
                 )
@@ -129,14 +134,14 @@ def graph_for(job, saver):
         interrupt({"episode_id": state["episode_id"], "pending": "independent_human_review"})
         with transaction(project, worker=True) as c:
             e = guard(c, job)
-            if not e["final_assessment_id"]:
+            if not e["final_assessment_id"] and not e["invalidity_resolution_id"]:
                 raise RuntimeError("final_review_missing")
         return {}
 
     def finalize(state):
         with transaction(project, worker=True) as c:
             e = guard(c, job)
-            if not e["final_assessment_id"]:
+            if not e["final_assessment_id"] and not e["invalidity_resolution_id"]:
                 raise RuntimeError("final_review_missing")
             c.execute(
                 "UPDATE anvil.episodes SET state='finalized',row_version=row_version+1 WHERE id=%s AND state<>'finalized'",
@@ -144,7 +149,7 @@ def graph_for(job, saver):
             )
             pending = one(
                 c,
-                "SELECT count(*) n FROM anvil.episodes WHERE run_id=%s AND state NOT IN ('finalized','failed_operational','execution_unknown','cancelled')",
+                "SELECT count(*) n FROM anvil.episodes WHERE run_id=%s AND state NOT IN ('finalized','failed_operational','execution_unknown','cancelled','unscorable')",
                 (e["run_id"],),
             )["n"]
             if pending == 0:
@@ -157,12 +162,15 @@ def graph_for(job, saver):
 
     g = StateGraph(State)
     g.add_node("validate_authorization", validate)
-    g.add_node("invoke_fixture_capture_output", invoke)
+    capture_node = (
+        "capture_imported_output" if job.get("external_graph") else "invoke_fixture_capture_output"
+    )
+    g.add_node(capture_node, invoke)
     g.add_node("await_human_review", await_review)
     g.add_node("finalize_assessment", finalize)
     g.add_edge(START, "validate_authorization")
-    g.add_edge("validate_authorization", "invoke_fixture_capture_output")
-    g.add_edge("invoke_fixture_capture_output", "await_human_review")
+    g.add_edge("validate_authorization", capture_node)
+    g.add_edge(capture_node, "await_human_review")
     g.add_edge("await_human_review", "finalize_assessment")
     g.add_edge("finalize_assessment", END)
     return g.compile(checkpointer=saver)
@@ -208,10 +216,12 @@ def tick():
             options="-c search_path=anvil_checkpoints",
         ) as conn:
             saver = PostgresSaver(conn, serde=JsonPlusSerializer(pickle_fallback=False))
-            graph = graph_for(job, saver)
+            graph = graph_for(
+                {**job, "external_graph": e["graph_version"] == EXTERNAL_GRAPH_VERSION}, saver
+            )
             config = {"configurable": {"thread_id": str(e["thread_id"])}, "recursion_limit": 20}
             if job["kind"] == "resume":
-                if not e["final_assessment_id"]:
+                if not e["final_assessment_id"] and not e["invalidity_resolution_id"]:
                     raise RuntimeError("final_review_missing")
                 snapshot = graph.get_state(config)
                 if not snapshot.next and e["state"] == "finalized":
@@ -220,7 +230,13 @@ def tick():
                     raise RuntimeError("pending_interrupt_missing")
                 else:
                     graph.invoke(
-                        Command(resume={"final_assessment_id": str(e["final_assessment_id"])}),
+                        Command(
+                            resume={
+                                "decision_id": str(
+                                    e["final_assessment_id"] or e["invalidity_resolution_id"]
+                                )
+                            }
+                        ),
                         config,
                     )
             elif job["kind"] == "episode":
@@ -231,7 +247,7 @@ def tick():
                     state = {
                         "episode_id": str(e["id"]),
                         "project_id": str(project),
-                        "graph_version": GRAPH_VERSION,
+                        "graph_version": e["graph_version"],
                         "output_artifact_id": None,
                     }
                     graph.invoke(None if snapshot.values else state, config)
@@ -268,7 +284,7 @@ def tick():
                 if episode:
                     remaining = one(
                         c,
-                        "SELECT 1 FROM anvil.episodes WHERE run_id=%s AND state NOT IN ('failed_operational','execution_unknown','cancelled','finalized') LIMIT 1",
+                        "SELECT 1 FROM anvil.episodes WHERE run_id=%s AND state NOT IN ('failed_operational','execution_unknown','cancelled','finalized','unscorable') LIMIT 1",
                         (episode["run_id"],),
                     )
                     if not remaining:
@@ -278,7 +294,7 @@ def tick():
                         )
                     outputs_pending = one(
                         c,
-                        "SELECT 1 FROM anvil.episodes WHERE run_id=%s AND output_artifact_id IS NULL AND state NOT IN ('failed_operational','execution_unknown','cancelled','finalized') LIMIT 1",
+                        "SELECT 1 FROM anvil.episodes WHERE run_id=%s AND output_artifact_id IS NULL AND state NOT IN ('failed_operational','execution_unknown','cancelled','finalized','unscorable') LIMIT 1",
                         (episode["run_id"],),
                     )
                     if not outputs_pending:

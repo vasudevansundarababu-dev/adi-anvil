@@ -1,8 +1,10 @@
 from decimal import Decimal
+from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request
 from psycopg.types.json import Jsonb
+from pydantic import Field
 
 from anvil import artifacts, auth, domain
 from anvil.db import audit, one, uid
@@ -10,10 +12,22 @@ from anvil.schemas import Assessment, Strict
 
 router = APIRouter(prefix="/api/v1/projects/{project}")
 GRAPH_VERSION = "fixture-static-review-v1"
+EXTERNAL_GRAPH_VERSION = "external-static-review-v1"
 
 
 class NewRun(Strict):
     protocol_revision_id: UUID
+    external_origin: Literal["customer_reported", "partner_reported"] | None = None
+
+
+class ReviewIssue(Strict):
+    code: Literal["ambiguous_reference", "missing_evidence", "rubric_issue"]
+    rationale: str = Field(min_length=10, max_length=5000)
+
+
+class ResolveIssue(Strict):
+    decision: Literal["invalid", "resume_review"]
+    rationale: str = Field(min_length=10, max_length=5000)
 
 
 def protocol_for(c, run):
@@ -56,12 +70,21 @@ def routes(context, wrap, idempotent):
                 protocol = domain.get_revision(
                     c, body.protocol_revision_id, "protocol", ["approved"]
                 )
-                if protocol["content"]["mode"] != "fixture":
-                    raise HTTPException(409, "Live authority absent")
+                external = protocol["content"]["mode"] == "external_result_import_v1"
+                if external != (body.external_origin is not None):
+                    raise HTTPException(
+                        422, "External protocols require an explicit reported origin"
+                    )
                 rid = uid()
                 c.execute(
-                    "INSERT INTO anvil.runs(id,project_id,protocol_revision_id,origin,created_by) VALUES(%s,%s,%s,'illustrative',%s)",
-                    (rid, project, body.protocol_revision_id, user),
+                    "INSERT INTO anvil.runs(id,project_id,protocol_revision_id,origin,created_by) VALUES(%s,%s,%s,%s,%s)",
+                    (
+                        rid,
+                        project,
+                        body.protocol_revision_id,
+                        body.external_origin or "illustrative",
+                        user,
+                    ),
                 )
                 audit(c, project, user, "run.prepared", rid)
                 return get_run(c, rid)
@@ -71,7 +94,7 @@ def routes(context, wrap, idempotent):
     @router.get("/runs")
     def runs(project: UUID, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "researcher", "advisor", "product-owner")
+            auth.require(roles, "researcher", "advisor", "product-owner", "data-engineer")
             return wrap(
                 c.execute("SELECT * FROM anvil.runs ORDER BY created_at DESC LIMIT 100").fetchall(),
                 request,
@@ -80,7 +103,7 @@ def routes(context, wrap, idempotent):
     @router.get("/runs/{rid}")
     def run_detail(project: UUID, rid: UUID, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "researcher", "advisor", "product-owner")
+            auth.require(roles, "researcher", "advisor", "product-owner", "data-engineer")
             run = get_run(c, rid)
             run["episodes"] = c.execute(
                 "SELECT id,state,outcome,score,invocation_count FROM anvil.episodes WHERE run_id=%s ORDER BY id",
@@ -99,6 +122,10 @@ def routes(context, wrap, idempotent):
                 if run["state"] != "draft":
                     raise HTTPException(409, "Run already launched or not launchable")
                 protocol = protocol_for(c, run)
+                if protocol["mode"] != "fixture":
+                    raise HTTPException(
+                        409, "External runs accept manifests; they never dispatch candidates"
+                    )
                 suite = domain.get_revision(c, protocol["suite_revision_id"], "suite", ["frozen"])[
                     "content"
                 ]
@@ -138,7 +165,7 @@ def routes(context, wrap, idempotent):
                 (rid,),
             )
             c.execute(
-                "UPDATE anvil.episodes SET state='cancelled',row_version=row_version+1 WHERE run_id=%s AND state<>'finalized'",
+                "UPDATE anvil.episodes SET state='cancelled',row_version=row_version+1 WHERE run_id=%s AND state NOT IN ('finalized','failed_operational','execution_unknown','unscorable')",
                 (rid,),
             )
             c.execute(
@@ -179,7 +206,7 @@ def routes(context, wrap, idempotent):
             auth.require(roles, "reviewer", "adjudicator")
             rows = c.execute("""SELECT e.id,e.state,e.outcome,e.row_version,e.run_id,r.protocol_revision_id
                               FROM anvil.episodes e JOIN anvil.runs r ON r.id=e.run_id
-                              WHERE e.state IN ('awaiting_review','disputed') ORDER BY e.id""").fetchall()
+                              WHERE e.state IN ('awaiting_review','disputed','review_blocked') ORDER BY e.id""").fetchall()
             out = []
             for row in rows:
                 p = protocol_for(c, row)
@@ -213,6 +240,13 @@ def routes(context, wrap, idempotent):
                 "state": e["state"],
                 "row_version": e["row_version"],
                 "title": task["title"],
+                "execution_origin": get_run(c, e["run_id"])["origin"],
+                "evidence_limitations": e["external_provenance"]["attempt"]["limitations"]
+                if e["external_provenance"]
+                else [],
+                "trace_coverage": e["external_provenance"]["attempt"]["trace_coverage"]
+                if e["external_provenance"]
+                else "none",
                 "output": artifacts.read(c, e["output_artifact_id"]).decode()
                 if e["output_artifact_id"]
                 else None,
@@ -222,6 +256,12 @@ def routes(context, wrap, idempotent):
                 "rubric": rubric,
                 "adjudication_allowed": str(user) == p["adjudicator_id"]
                 and e["state"] == "disputed",
+                "issue_resolution_allowed": str(user) == p["adjudicator_id"]
+                and e["state"] == "review_blocked",
+                "issues": c.execute(
+                    "SELECT id,code,rationale,status FROM anvil.review_issues WHERE episode_id=%s ORDER BY created_at",
+                    (eid,),
+                ).fetchall(),
             }
             if out["adjudication_allowed"]:
                 out["submitted_assessments"] = c.execute(
@@ -230,6 +270,95 @@ def routes(context, wrap, idempotent):
                 ).fetchall()
             audit(c, project, user, "review.evidence_read", eid)
             return wrap(out, request)
+
+    @router.post("/episodes/{eid}/review-issues")
+    def issue(project: UUID, eid: UUID, body: ReviewIssue, request: Request):
+        with context(request, project) as (c, user, roles):
+            auth.require(roles, "reviewer")
+
+            def act():
+                e = one(c, "SELECT * FROM anvil.episodes WHERE id=%s FOR UPDATE", (eid,))
+                if not e:
+                    raise HTTPException(404, "Episode not found")
+                domain.etag(e, request.headers.get("if-match"))
+                run = get_run(c, e["run_id"])
+                p = protocol_for(c, run)
+                if str(user) not in p["reviewer_ids"]:
+                    raise HTTPException(403, "Assigned independent reviewer required")
+                if (
+                    e["state"] not in ("awaiting_review", "disputed")
+                    or e["final_assessment_id"]
+                    or run["cancel_requested"]
+                ):
+                    raise HTTPException(409, "Episode is not open to review issues")
+                iid = uid()
+                c.execute(
+                    "INSERT INTO anvil.review_issues(id,project_id,episode_id,reported_by,code,rationale) VALUES(%s,%s,%s,%s,%s,%s)",
+                    (iid, project, eid, user, body.code, body.rationale),
+                )
+                c.execute(
+                    "UPDATE anvil.episodes SET state='review_blocked',row_version=row_version+1 WHERE id=%s",
+                    (eid,),
+                )
+                audit(c, project, user, "review.issue_raised", eid, {"code": body.code})
+                return {"id": iid, "episode_id": str(eid), "state": "review_blocked"}
+
+            return wrap(idempotent(c, project, user, request, body, act), request)
+
+    @router.post("/episodes/{eid}/resolve-issue")
+    def resolve_issue(project: UUID, eid: UUID, body: ResolveIssue, request: Request):
+        with context(request, project) as (c, user, roles):
+            auth.require(roles, "adjudicator")
+
+            def act():
+                e = one(c, "SELECT * FROM anvil.episodes WHERE id=%s FOR UPDATE", (eid,))
+                if not e:
+                    raise HTTPException(404, "Episode not found")
+                domain.etag(e, request.headers.get("if-match"))
+                run = get_run(c, e["run_id"])
+                p = protocol_for(c, run)
+                if str(user) != p["adjudicator_id"]:
+                    raise HTTPException(403, "Independent assigned adjudicator required")
+                issue = one(
+                    c,
+                    "SELECT * FROM anvil.review_issues WHERE episode_id=%s AND status='open' FOR UPDATE",
+                    (eid,),
+                )
+                if not issue or e["state"] != "review_blocked" or run["cancel_requested"]:
+                    raise HTTPException(409, "No open review issue")
+                if issue["reported_by"] == user:
+                    raise HTTPException(409, "Issue resolution must be independent")
+                resolution = uid()
+                c.execute(
+                    "INSERT INTO anvil.review_resolutions(id,project_id,issue_id,episode_id,resolved_by,decision,rationale) VALUES(%s,%s,%s,%s,%s,%s,%s)",
+                    (resolution, project, issue["id"], eid, user, body.decision, body.rationale),
+                )
+                c.execute(
+                    "UPDATE anvil.review_issues SET status='resolved' WHERE id=%s", (issue["id"],)
+                )
+                if body.decision == "invalid":
+                    c.execute(
+                        "UPDATE anvil.episodes SET invalidity_resolution_id=%s,state='invalid_pending_finalization',outcome='invalid',score=NULL,row_version=row_version+1 WHERE id=%s",
+                        (resolution, eid),
+                    )
+                    enqueue(c, project, "resume", eid, f"resume-invalid:{eid}:{resolution}")
+                else:
+                    count = one(
+                        c, "SELECT count(*) n FROM anvil.assessments WHERE episode_id=%s", (eid,)
+                    )["n"]
+                    c.execute(
+                        "UPDATE anvil.episodes SET state=%s,row_version=row_version+1 WHERE id=%s",
+                        ("disputed" if count >= 2 else "awaiting_review", eid),
+                    )
+                audit(c, project, user, "review.issue_resolved", eid, {"decision": body.decision})
+                return {
+                    "id": resolution,
+                    "episode_id": str(eid),
+                    "decision": body.decision,
+                    "score": None,
+                }
+
+            return wrap(idempotent(c, project, user, request, body, act), request)
 
     @router.post("/episodes/{eid}/assessments")
     @router.post("/episodes/{eid}/adjudicate")
