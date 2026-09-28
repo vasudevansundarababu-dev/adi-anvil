@@ -1,3 +1,4 @@
+import Form from './Form';
 import { useState } from 'react';
 
 export default function ProviderSetup({
@@ -19,7 +20,7 @@ export default function ProviderSetup({
         Secrets are supplied in the local private environment or secret file. Saving this form makes
         no provider request.
       </p>
-      <form
+      <Form
         onSubmit={async (e) => {
           e.preventDefault();
           const f = new FormData(e.currentTarget);
@@ -82,7 +83,7 @@ export default function ProviderSetup({
         <label htmlFor={provider + '-bound'}>Conservative request cost bound (micro USD)</label>
         <input id={provider + '-bound'} name="bound" type="number" min={1} step={1} />
         <button disabled={busy}>Save configuration</button>
-      </form>
+      </Form>
       {message && <p role="status">{message}</p>}
       {error && <p role="alert">{error}</p>}
     </details>

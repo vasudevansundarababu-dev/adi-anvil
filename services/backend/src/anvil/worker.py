@@ -209,6 +209,11 @@ def tick():
         return False
     project = job["project_id"]
     try:
+        if job["kind"] == "task_ingestion":
+            from anvil.ingestion import process
+
+            process(job)
+            return True
         if job["kind"] in ("sales_kit_prepare", "sales_kit_render", "fixture_mail"):
             from anvil.reports import prepare_provisional, render_kit
 
@@ -301,6 +306,11 @@ def tick():
         }:
             code = type(exc).__name__
         with transaction(project, worker=True) as c:
+            if job["kind"] == "task_ingestion":
+                from anvil.ingestion import retry_transient
+
+                if retry_transient(c, job, exc):
+                    return True
             failed = c.execute(
                 "UPDATE anvil.jobs SET status='failed',error_code=%s WHERE id=%s AND lease_token=%s AND lease_until>now() RETURNING id",
                 (code, job["id"], job["lease_token"]),
@@ -336,6 +346,11 @@ def tick():
                             episode["run_id"],
                             "provisional-kit:" + str(episode["run_id"]),
                         )
+            if failed and job["kind"] == "task_ingestion":
+                c.execute(
+                    "UPDATE anvil.ingestion_jobs SET state='failed',error_code=%s,finished_at=now() WHERE id=%s AND state NOT IN ('cancelled','ready','invalid')",
+                    (code, job["target_id"]),
+                )
         print(f"job={job['id']} status=failed code={code}", flush=True)
     return True
 

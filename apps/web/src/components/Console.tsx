@@ -1,4 +1,5 @@
 'use client';
+import Form from './Form';
 import { useCallback, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Intake from './Intake';
@@ -11,6 +12,8 @@ import RevisionEditor from './RevisionEditor';
 import ReportSummary from './ReportSummary';
 import FindingComposer from './FindingComposer';
 import FixtureDelivery from './FixtureDelivery';
+import TaskImport, { DatasetRunConfiguration } from './TaskImport';
+import AnvilHelp from './AnvilHelp';
 
 type Member = { id: string; name: string; role: string };
 type Project = { id: string; name: string; roles: string[] };
@@ -29,6 +32,8 @@ type Row = {
   lifecycle: string;
   state?: string;
   origin?: string;
+  dataset_version_id?: string;
+  dataset_snapshot?: { task_count: number; version_number: number; task_schema_version: string };
   my_review_submitted?: boolean;
   episodes?: Episode[];
   episode_count?: number;
@@ -158,6 +163,7 @@ export default function Console() {
     [search, setSearch] = useState(''),
     [form, setForm] = useState(false);
   const [options, setOptions] = useState<Record<string, Row[]>>({});
+  const [importObjective, setImportObjective] = useState<Row | null>(null);
   const [query, setQuery] = useState('');
   const [pageInfo, setPageInfo] = useState<{
     inventory_total: number;
@@ -227,6 +233,7 @@ export default function Console() {
   }, [reload]);
   useEffect(() => {
     setForm(false);
+    setImportObjective(null);
     setEditing(null);
     setSearch('');
     setQuery('');
@@ -545,6 +552,21 @@ export default function Console() {
             )}
           </div>
         </div>
+        {importObjective && (
+          <TaskImport
+            base={base}
+            objective={{
+              ...importObjective,
+              content: { ...importObjective.content, title: String(importObjective.content.title) },
+            }}
+            canAttach={role('researcher')}
+            onClose={() => setImportObjective(null)}
+          />
+        )}
+        {section === 'runs' && role('researcher') && (
+          <DatasetRunConfiguration base={base} onSaved={() => void reload()} />
+        )}
+        <AnvilHelp screen={importObjective ? 'imports' : section} />
         {editing && (
           <RevisionEditor
             key={editing.current_revision_id}
@@ -566,7 +588,7 @@ export default function Console() {
           />
         )}
         {form && (
-          <form className="card" onSubmit={create}>
+          <Form className="card" onSubmit={create}>
             <h2>New {section.slice(0, -1)}</h2>
             <label htmlFor="title">Title</label>
             <input id="title" name="title" required minLength={3} />
@@ -723,7 +745,7 @@ export default function Console() {
             <button className="primary" disabled={busy}>
               Save draft
             </button>
-          </form>
+          </Form>
         )}
         {section === 'findings' && role('researcher') && (
           <FindingComposer key={base} base={base} advisor={member('advisor')} />
@@ -857,7 +879,7 @@ export default function Console() {
           </>
         )}
         {review && (
-          <form className="card" onSubmit={grade}>
+          <Form className="card" onSubmit={grade}>
             <h2>Blind review · {review.title}</h2>
             <p>
               Execution origin: {review.execution_origin} · Trace coverage: {review.trace_coverage}
@@ -983,7 +1005,7 @@ export default function Console() {
                 Close review
               </button>
             </div>
-          </form>
+          </Form>
         )}
         {rows
           .filter((r) => pageInfo || JSON.stringify(r).toLowerCase().includes(search.toLowerCase()))
@@ -1067,6 +1089,14 @@ export default function Console() {
               )}
               {section === 'runs' && (
                 <>
+                  {r.dataset_snapshot && (
+                    <p className="banner">
+                      Imported dataset version {r.dataset_snapshot.version_number} ·{' '}
+                      {r.dataset_snapshot.task_count} tasks · TaskSpec{' '}
+                      {r.dataset_snapshot.task_schema_version} · {r.dataset_version_id}. Configured
+                      only; task qualification and supported execution are pending.
+                    </p>
+                  )}
                   <p>
                     Origin: {r.origin} ·{' '}
                     {r.origin === 'illustrative'
@@ -1082,24 +1112,28 @@ export default function Console() {
                     <p className="muted">Execution status refreshes every two seconds.</p>
                   )}
                   <div className="actions">
-                    {r.state === 'draft' && r.origin === 'illustrative' && role('researcher') && (
-                      <button
-                        className="primary"
-                        disabled={busy}
-                        onClick={() => void change(r, 'launch')}
-                      >
-                        Launch fixture evaluation
-                      </button>
-                    )}
+                    {r.state === 'draft' &&
+                      !r.dataset_version_id &&
+                      r.origin === 'illustrative' &&
+                      role('researcher') && (
+                        <button
+                          className="primary"
+                          disabled={busy}
+                          onClick={() => void change(r, 'launch')}
+                        >
+                          Launch fixture evaluation
+                        </button>
+                      )}
                     {r.state !== 'reviewed' && r.state !== 'cancelled' && role('researcher') && (
                       <button onClick={() => void change(r, 'cancel')}>
                         Cancel pending execution
                       </button>
                     )}
                   </div>
-                  {r.state === 'draft' && r.origin !== 'illustrative' && role('data-engineer') && (
-                    <ExternalResults base={base} runId={r.id} />
-                  )}
+                  {r.state === 'draft' &&
+                    !r.dataset_version_id &&
+                    r.origin !== 'illustrative' &&
+                    role('data-engineer') && <ExternalResults base={base} runId={r.id} />}
                   {r.episodes && (
                     <div className="tablewrap">
                       <table>
@@ -1299,6 +1333,11 @@ export default function Console() {
                 {r.kind === 'case' && role('product-owner') && (
                   <RightsReview base={base} id={r.id} version={r.row_version} />
                 )}
+                {r.kind === 'objective' &&
+                  r.lifecycle === 'approved' &&
+                  role('researcher', 'data-engineer') && (
+                    <button onClick={() => setImportObjective(r)}>Import tasks</button>
+                  )}
                 {r.kind === 'task' && r.lifecycle === 'qualified' && role('data-engineer') && (
                   <button onClick={() => void change(r, 'publish')}>Publish qualified task</button>
                 )}

@@ -1,3 +1,4 @@
+import Form from './Form';
 import { useState } from 'react';
 
 type Contact = { id: string; name: string; email: string; status: string; row_version: number };
@@ -91,7 +92,7 @@ export default function FixtureDelivery({ base, roles }: { base: string; roles: 
         {loaded ? 'Refresh simulation state' : 'Load simulation controls'}
       </button>
       {admin && (
-        <form
+        <Form
           onSubmit={(e) => {
             e.preventDefault();
             const f = new FormData(e.currentTarget);
@@ -113,7 +114,7 @@ export default function FixtureDelivery({ base, roles }: { base: string; roles: 
             <option value="unknown">Unknown acceptance</option>
           </select>
           <button disabled={busy}>Save fixture sender draft</button>
-        </form>
+        </Form>
       )}
       {loaded &&
         admin &&
@@ -138,7 +139,7 @@ export default function FixtureDelivery({ base, roles }: { base: string; roles: 
           </div>
         ))}
       {sales && (
-        <form
+        <Form
           onSubmit={(e) => {
             e.preventDefault();
             const f = new FormData(e.currentTarget);
@@ -168,7 +169,7 @@ export default function FixtureDelivery({ base, roles }: { base: string; roles: 
           <label htmlFor="fixture-contact-basis">Test purpose and contact basis</label>
           <textarea id="fixture-contact-basis" name="basis" minLength={10} required />
           <button disabled={busy}>Save synthetic contact draft</button>
-        </form>
+        </Form>
       )}
       {loaded &&
         (sales || owner) &&
@@ -213,7 +214,7 @@ export default function FixtureDelivery({ base, roles }: { base: string; roles: 
           </div>
         ))}
       {loaded && owner && (
-        <form
+        <Form
           onSubmit={(e) => {
             e.preventDefault();
             const f = new FormData(e.currentTarget);
@@ -265,7 +266,7 @@ export default function FixtureDelivery({ base, roles }: { base: string; roles: 
             sender.
           </p>
           <button disabled={busy}>Approve fixture delivery</button>
-        </form>
+        </Form>
       )}
       {loaded &&
         sales &&

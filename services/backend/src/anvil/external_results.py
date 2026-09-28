@@ -70,6 +70,10 @@ class Manifest(Strict):
 def validate(c, manifest):
     errors = []
     run = get_run(c, manifest["run_id"])
+    if run.get("dataset_version_id"):
+        raise HTTPException(
+            409, "Dataset-bound runs require a qualified imported-task execution binding"
+        )
     protocol = domain.get_revision(c, run["protocol_revision_id"], "protocol", ["approved"])
     suite = domain.get_revision(c, protocol["content"]["suite_revision_id"], "suite", ["frozen"])
     domain.get_revision(c, protocol["content"]["objective_revision_id"], "objective", ["approved"])

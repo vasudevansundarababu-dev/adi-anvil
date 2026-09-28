@@ -26,8 +26,17 @@
   },
   "live_evaluation": {
     "requested_providers": ["meta_muse", "openai", "anthropic", "gemini", "mistral", "open_weight_compatible"],
-    "model_ids": [],
-    "max_total_spend_usd": null,
+    "model_ids": ["gpt-6-sol"],
+    "max_total_spend_usd": 100,
+    "first_run_selection": {
+      "provider": "openai",
+      "model": "gpt-6-sol",
+      "task": "MKT-LH-001",
+      "user_confirmed_date": "2026-09-28",
+      "budget_scope": "cumulative API spend ceiling; separate from simulated marketing budget",
+      "task_status": "original synthetic development pack; not qualified or live-integrated",
+      "credential_readiness": "not_reconfirmed"
+    },
     "secret_locally_ready": "no_keys_user_confirmed",
     "live_calls_enabled": false,
     "max_initial_cases": 3,
@@ -43,6 +52,19 @@
     "work_window_hours": 8,
     "duration_and_install_scope_confirmation": "user_confirmed",
     "local_only_integrations_confirmation": "user_confirmed"
+  },
+  "ingestion": {
+    "current_daily_increment": 1,
+    "specifications": ["next-vertical-slice-task-data-import.md", "advanced-ingestion-generation-privacy-spec.md"],
+    "supported_sources": ["csv", "jsonl"],
+    "max_source_bytes": 26214400,
+    "max_records": 10000,
+    "records_per_logical_chunk": 200,
+    "queue": "existing PostgreSQL anvil.jobs",
+    "execution_handoff": "immutable dataset-bound draft run; imported-task dispatch remains unqualified",
+    "help_mode": "static read-only browser help; no data or questions sent to a model",
+    "automated_privacy_processing": false,
+    "later_increments": "PDF/Parquet, web/API, database/cloud, generation/augmentation, privacy processing"
   },
   "note": "Pending values are not consent. The build agent must not fill user approvals from inference. Dependency/default choices are proposals; live keys never belong in this file."
 }

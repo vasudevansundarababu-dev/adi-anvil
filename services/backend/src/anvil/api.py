@@ -23,6 +23,7 @@ from anvil.reports import prepare_report
 from anvil.reports import routes as report_routes
 from anvil.request_limits import RequestLimits
 from anvil.schemas import Decision, FixtureImport, Rights, Withdrawal
+from anvil.task_imports import routes as task_import_routes
 
 app = FastAPI(title="ADI Anvil", version="0.1.0")
 app.add_middleware(RequestLimits)
@@ -149,6 +150,7 @@ app.include_router(intake_routes(context, wrap, idempotent))
 app.include_router(external_routes(context, wrap, idempotent))
 app.include_router(delivery_routes(context, wrap, idempotent))
 app.include_router(readiness_routes(context, wrap, idempotent))
+app.include_router(task_import_routes(context, wrap, idempotent))
 
 KINDS = {
     "objectives": "objective",
@@ -200,14 +202,32 @@ def import_fixtures(project: UUID, body: FixtureImport, request: Request):
 
 
 @app.post("/api/v1/projects/{project}/artifacts")
-async def upload(project: UUID, request: Request, file: UploadFile):
+async def upload(project: UUID, request: Request, file: UploadFile, purpose: str | None = None):
     with context(request, project) as (c, user, roles):
-        auth.require(roles, "data-engineer")
+        if purpose not in (None, "task_import"):
+            raise HTTPException(422, "Unknown upload purpose")
+        auth.require(roles, *(["data-engineer", "researcher"] if purpose else ["data-engineer"]))
+        filename = (file.filename or "").replace("\\", "/").split("/")[-1][:255]
+        extension = filename.rsplit(".", 1)[-1].lower()
+        if purpose and extension not in ("csv", "jsonl"):
+            raise HTTPException(422, "Task imports accept .csv or .jsonl files only")
         data = await file.read(25 * 1024 * 1024 + 1)
         if len(data) > 25 * 1024 * 1024:
             raise HTTPException(413, "File exceeds 25 MiB")
         aid = artifacts.store(
-            c, project, data, "internal", "application/octet-stream", "user_upload", "quarantined"
+            c,
+            project,
+            data,
+            "hidden_reference" if purpose else "internal",
+            ("text/csv" if extension == "csv" else "application/x-ndjson")
+            if purpose
+            else "application/octet-stream",
+            "user_upload",
+            "quarantined",
+        )
+        c.execute(
+            "UPDATE anvil.artifacts SET original_filename=%s,upload_purpose=%s,uploaded_by=%s WHERE id=%s",
+            (filename, purpose, user, aid),
         )
         audit(c, project, user, "artifact.quarantined", aid)
         return wrap(

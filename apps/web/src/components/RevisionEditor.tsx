@@ -1,4 +1,5 @@
 'use client';
+import Form from './Form';
 
 type Resource = {
   kind: string;
@@ -43,7 +44,7 @@ export default function RevisionEditor({
 }) {
   const draft = ['draft', 'changes_requested'].includes(resource.lifecycle);
   return (
-    <form
+    <Form
       className="card"
       aria-label="Revision editor"
       onSubmit={(event) => {
@@ -109,6 +110,6 @@ export default function RevisionEditor({
           Cancel editing
         </button>
       </div>
-    </form>
+    </Form>
   );
 }

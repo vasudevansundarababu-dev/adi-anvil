@@ -1,3 +1,4 @@
+import Form from './Form';
 import { useState } from 'react';
 
 type Item = {
@@ -114,7 +115,7 @@ export default function CaseReadiness({
           </div>
           <p className="muted">{data.boundary}</p>
           {selected && (
-            <form
+            <Form
               aria-label="Gap annotation"
               key={selected.item_key}
               onSubmit={(event) => {
@@ -182,7 +183,7 @@ export default function CaseReadiness({
                   Cancel gap editing
                 </button>
               </div>
-            </form>
+            </Form>
           )}
         </>
       )}

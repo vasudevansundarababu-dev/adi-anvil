@@ -17,6 +17,7 @@ EXTERNAL_GRAPH_VERSION = "external-static-review-v1"
 
 class NewRun(Strict):
     protocol_revision_id: UUID
+    dataset_version_id: UUID | None = None
     external_origin: Literal["customer_reported", "partner_reported"] | None = None
 
 
@@ -76,14 +77,21 @@ def routes(context, wrap, idempotent):
                         422, "External protocols require an explicit reported origin"
                     )
                 rid = uid()
+                snapshot = None
+                if body.dataset_version_id:
+                    from anvil.task_imports import run_snapshot
+
+                    snapshot = run_snapshot(c, body.dataset_version_id, protocol["content"])
                 c.execute(
-                    "INSERT INTO anvil.runs(id,project_id,protocol_revision_id,origin,created_by) VALUES(%s,%s,%s,%s,%s)",
+                    "INSERT INTO anvil.runs(id,project_id,protocol_revision_id,origin,created_by,dataset_version_id,dataset_snapshot) VALUES(%s,%s,%s,%s,%s,%s,%s)",
                     (
                         rid,
                         project,
                         body.protocol_revision_id,
                         body.external_origin or "illustrative",
                         user,
+                        body.dataset_version_id,
+                        Jsonb(snapshot) if snapshot else None,
                     ),
                 )
                 audit(c, project, user, "run.prepared", rid)
@@ -135,6 +143,11 @@ def routes(context, wrap, idempotent):
                 domain.etag(run, request.headers.get("if-match"))
                 if run["state"] != "draft":
                     raise HTTPException(409, "Run already launched or not launchable")
+                if run["dataset_version_id"]:
+                    raise HTTPException(
+                        409,
+                        "Imported tasks are configured. Execution requires task qualification and a supported adapter; fixture answers cannot execute arbitrary imported tasks.",
+                    )
                 protocol = protocol_for(c, run)
                 if protocol["mode"] != "fixture":
                     raise HTTPException(

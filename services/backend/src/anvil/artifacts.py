@@ -48,11 +48,19 @@ def store(
     return aid
 
 
-def read(c, aid, actor_only=False):
+def read(c, aid, actor_only=False, *, structured_import=False):
     a = one(c, "SELECT * FROM anvil.artifacts WHERE id=%s", (aid,))
     if not a:
         raise HTTPException(404, "Artifact not found")
-    if a["scan_status"] != "clean" or (actor_only and a["classification"] != "actor"):
+    structured_source = (
+        structured_import
+        and not actor_only
+        and a.get("upload_purpose") == "task_import"
+        and a["scan_status"] == "quarantined"
+    )
+    if (a["scan_status"] != "clean" and not structured_source) or (
+        actor_only and a["classification"] != "actor"
+    ):
         raise HTTPException(403, "Artifact unavailable for this use")
     root = storage_root().resolve()
     path = root / a["object_key"]

@@ -1,3 +1,4 @@
+import Form from './Form';
 import { useState } from 'react';
 
 export default function RightsReview({
@@ -19,7 +20,7 @@ export default function RightsReview({
         Record the evidence you reviewed. This local scope grants no external processing, raw
         redistribution or training permission.
       </p>
-      <form
+      <Form
         onSubmit={async (e) => {
           e.preventDefault();
           const data = new FormData(e.currentTarget);
@@ -77,7 +78,7 @@ export default function RightsReview({
         <label htmlFor={id + '-expires'}>Permission expiry (optional, your local time)</label>
         <input id={id + '-expires'} name="expires_at" type="datetime-local" />
         <button disabled={busy}>Record rights decision</button>
-      </form>
+      </Form>
       {message && <p role="status">{message}</p>}
       {error && <p role="alert">{error}</p>}
     </details>

@@ -1,3 +1,4 @@
+import Form from './Form';
 import { useState } from 'react';
 
 type Batch = {
@@ -63,7 +64,7 @@ export default function Intake({ base }: { base: string }) {
         The local malware scanner is unavailable. Uploaded files remain quarantined and cannot enter
         a committed import.
       </p>
-      <form
+      <Form
         onSubmit={(e) => {
           e.preventDefault();
           const data = new FormData(e.currentTarget);
@@ -76,8 +77,8 @@ export default function Intake({ base }: { base: string }) {
         <label htmlFor="case-file">Private original file (maximum 25 MiB)</label>
         <input id="case-file" name="file" type="file" required />
         <button disabled={busy}>Upload to quarantine</button>
-      </form>
-      <form
+      </Form>
+      <Form
         onSubmit={(e) => {
           e.preventDefault();
           void run(async () => {
@@ -99,7 +100,7 @@ export default function Intake({ base }: { base: string }) {
           spellCheck={false}
         />
         <button disabled={busy}>Validate manifest</button>
-      </form>
+      </Form>
       {batch && (
         <div>
           <h3>Preview: {batch.status}</h3>

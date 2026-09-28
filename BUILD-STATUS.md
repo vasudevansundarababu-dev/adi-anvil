@@ -2,6 +2,41 @@
 
 Status: **LOCAL DIAGNOSTIC SLICE VERIFIED — FULL MVP ACCEPTANCE PARTIAL**
 
+2026-09-28 19:16 UTC — **Task & Data Import and advanced-ingestion Increment 1 verified.**
+The user resumed work with both ingestion specifications after the explicit halt. Per the
+advanced spec's §14, this delivery implements the current daily increment, not all six.
+CSV/JSONL upload → durable validation/mapping → immutable DatasetVersion → exact suite
+attachment → Run Console configuration is working. A draft run snapshots the exact
+dataset ID, TaskSpec version, source/content checksums and task count. Arbitrary imported
+tasks remain blocked from fixture dispatch and external-result substitution. No live calls.
+
+Schema013 was applied before the halt; schema014 adds durable ingestion. Original records
+and volumes were retained. Raw sources stay quarantined; actor/reference records are
+separated. Logical200-record chunks use the existing PostgreSQL job queue, scoped author
+transactions, lease fencing, cancellation/retry and bounded local transient backoff.
+Static read-only Anvil Help and shared required-field/error-summary forms are included.
+Later connectors, generation and PII processing are explicitly not implemented. This is
+not a qualified runtime for the separate 12-week marketing task.
+
+Verification: `pnpm check` passed lint/format/typecheck/production build/OpenAPI;
+`pnpm test:unit` **103 passed**; `pnpm test:integration` **65 passed**. Full
+`pnpm test:e2e` **2 passed** on final source (44.8s); expanded CSV+JSONL/help/configuration test
+`pnpm test:e2e -- task-import.spec.ts` **1 passed** (10.7s total). Import integration
+verifies atomic rollback on an injected insert failure, publish replay, immutable v1/v2,
+exact run pinning, reference isolation, SIGKILL after a committed chunk, stale-lease denial,
+cancel/resume without duplicate chunks, and bounded transient retry. Fresh/repeated001–014
+migrations passed in retained `anvil_migrationcheck_9ca8c2c0ab5a`. Screenshot
+`artifacts/test-runs/task-import-config.png` inspected. Anvil is running at3202/API8200.
+Initial publication row-lock permission failure and CSV mapping-order UI issue were fixed;
+no unresolved verification failures. Existing Authlib deprecation warning remains nonfatal.
+The current branch retains this verified addition; previous checkpoint/counts below are historical.
+Next daily increment is PDF/Parquet extraction; read its specification before proceeding.
+See [five-minute import demo](docs/runbooks/task-data-import.md) for limits and remaining gates.
+
+2026-09-28 marketing-task addition: user selected OpenAI, confirmed exact model `gpt-6-sol` and a $100 cumulative API ceiling. Created `task-packs/marketing-12-week/`: original synthetic Northstar Flow launch, 64 historical channel-week rows, 8 fictional interviews, actor instructions, input checksums and operator rubric. `scripts/marketing_task.py` provides a network-free 12-step development environment with budget carryover, delayed conversions, fatigue, capacity losses and disruptions. This is **not integrated with or qualified for Anvil live execution**. No existing user records, runtime services or approvals were changed. No model calls were made. Secret readiness has not been reconfirmed; rights, actual distinct-Admin approvals and live runtime implementation remain outstanding.
+
+Task-pack checks: `python3 scripts/marketing_task.py generate` passed; `python3 -m unittest discover -s tests -p 'test_marketing_task.py' -v` **9 passed**; `python3 scripts/marketing_task.py rehearse` completed all12 steps with $106,000 simulated spend,47 simulated customers and $2,255.32 CAC. These are scripted software feasibility results, **not model performance**. Ruff check/format and `git diff --check` passed for the addition. Full application/browser/integration suites were not rerun for this isolated task pack; prior application results below remain historical. Next live work requires the qualified interactive binding, durable dispatch/step controls, actor isolation and real paid gates; the task pack does not bypass them.
+
 New authorization: user instructed “ok continue the work” after the proposed additional eight-hour window. Resumed 2026-09-28 11:24 UTC; new stop deadline 2026-09-28 19:24 UTC. Single writer; no live inference or external publication authority. First action: repair lint and verify the final prior-session changes, preserving all data and source.
 
 Current source checkpoint: `0adfcd9` on `build/overnight-v1`. No remote publication. Latest unit/integration totals: **89/64 passed**. Production check passed. Real-OIDC browser passed29.5s test/47.4s total. Schema012. Main web/API/worker and infrastructure are running; clean-test services are stopped with all volumes retained. The updated morning report and JSON record current evidence and remaining work.

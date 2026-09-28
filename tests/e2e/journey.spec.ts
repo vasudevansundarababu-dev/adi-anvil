@@ -756,7 +756,7 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
     .getByRole('button', { name: 'Edit draft', exact: true })
     .click();
   const editor = editPage.getByRole('form', { name: 'Revision editor' });
-  await editor.getByLabel('Title', { exact: true }).fill('Browser revised objective');
+  await editor.getByLabel('Title * Required', { exact: true }).fill('Browser revised objective');
   await editor
     .getByLabel('Observable hypothesis')
     .fill('A changed synthetic hypothesis requires a new version and independent review.');
@@ -773,7 +773,7 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
     .filter({ hasText: 'Browser revised objective' })
     .getByRole('button', { name: 'Create successor', exact: true })
     .click();
-  await editor.getByLabel('Title', { exact: true }).fill('Browser successor objective');
+  await editor.getByLabel('Title * Required', { exact: true }).fill('Browser successor objective');
   await editor.getByRole('button', { name: 'Save new version' }).click();
   await expect(editor).toHaveCount(0);
   const successorObjective = await call(R, '/objectives/' + editable.id);

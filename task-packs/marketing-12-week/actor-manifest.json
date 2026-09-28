@@ -1,0 +1,14 @@
+{
+  "task_version": "MKT-LH-001/1.0",
+  "classification": "actor_input",
+  "files": [
+    {
+      "path": "actor/task.md",
+      "sha256": "9bea5784575b71586d496208ef2882612bbfe366b0f94c2b65beb6349c3fe14d"
+    },
+    {
+      "path": "actor/initial-input.json",
+      "sha256": "6d7be1fed852af2115597424074d4368ee94faf80893c29b02f054ad9a5d7d3d"
+    }
+  ]
+}

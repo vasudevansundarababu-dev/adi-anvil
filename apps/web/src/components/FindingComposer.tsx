@@ -1,3 +1,4 @@
+import Form from './Form';
 import { useState } from 'react';
 
 type Evidence = {
@@ -54,7 +55,7 @@ export default function FindingComposer({ base, advisor }: { base: string; advis
         Use a finalized episode ID from the run console. Describe observable behavior separately
         from possible explanations.
       </p>
-      <form
+      <Form
         onSubmit={(e) => {
           e.preventDefault();
           void run(async () =>
@@ -73,12 +74,12 @@ export default function FindingComposer({ base, advisor }: { base: string; advis
           required
         />
         <button disabled={busy}>Load reviewed output</button>
-      </form>
+      </Form>
       {evidence && (
         <>
           <h3>Reviewed output · {evidence.outcome}</h3>
           <pre>{evidence.output}</pre>
-          <form
+          <Form
             onSubmit={(e) => {
               e.preventDefault();
               const f = new FormData(e.currentTarget);
@@ -136,7 +137,7 @@ export default function FindingComposer({ base, advisor }: { base: string; advis
             <button className="primary" disabled={busy}>
               Save finding draft
             </button>
-          </form>
+          </Form>
         </>
       )}
       {error && (

@@ -2,7 +2,7 @@
 
 Frontier Evaluation & Diagnostics Platform
 
-**Verified local diagnostic slice — 28 September 2026.** The real-OIDC fixture journey, production build,89 unit tests and64 integration tests pass. Fresh isolated startup and recovery were rehearsed. Full MVP acceptance remains partial; live inference and external sending are disabled. See [current build status](BUILD-STATUS.md) and the updated [morning report](docs/generated/morning-report.md). Verified source checkpoint: `0adfcd9`.
+**Verified local diagnostic slice — 28 September 2026.** The real-OIDC fixture journey, Task & Data Import flow, production build,103 unit tests and65 integration tests pass. Fresh migrations and ingestion crash recovery were verified. Full MVP acceptance remains partial; live inference and external sending are disabled. See [current build status](BUILD-STATUS.md). The [morning report](docs/generated/morning-report.md) describes the earlier local diagnostic rehearsal; the new import walkthrough below covers this addition.
 
 ## Start
 
@@ -17,7 +17,12 @@ The [current walkthrough](docs/runbooks/morning-walkthrough.md) links to the pre
 
 ## Engineering authority
 
-The latest user selected a new independent repository named **ADI-Anvil**, private, local build first and GitHub publication only after review. Infrastructure and the eight-hour/local-only build boundaries are confirmed. The requested morning target includes the diagnostic journey **and live model evaluations**. Provider families are selected, but credentials, exact model IDs, budget and real paid approvals remain missing; live calls stay blocked until configured and authorized.
+The [Task & Data Import walkthrough](docs/runbooks/task-data-import.md) covers CSV/JSONL
+upload, background validation, immutable dataset publication, suite attachment and exact
+version selection in Run Console. This is the first daily ingestion increment; advanced
+connectors, generation, privacy processing and arbitrary imported-task execution remain pending.
+
+The latest user selected a new independent repository named **ADI-Anvil**, private, local build first and GitHub publication only after review. Infrastructure and the eight-hour/local-only build boundaries are confirmed. The requested morning target includes the diagnostic journey **and live model evaluations**. The first selected provider/model is OpenAI `gpt-6-sol`, with a $100 cumulative API ceiling. Credentials, reviewed rights, real paid approvals and live execution integration remain pending; live calls stay blocked. The requested [12-week synthetic marketing task](task-packs/marketing-12-week/README.md) includes generated inputs and an offline development simulation, separate from the existing Anvil execution modes.
 
 Read [overnight build specification](docs/build/01-OVERNIGHT-BUILD-SPEC.md), [repository structure](docs/build/02-REPOSITORY-STRUCTURE.md), [runbook](docs/build/03-EXECUTION-RUNBOOK.md), [live evaluation gates](docs/build/05-LIVE-EVALUATION.md) and [fixture contract](docs/build/06-FIXTURE-CONTRACT.md).
 
