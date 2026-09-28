@@ -209,6 +209,18 @@ def tick():
         return False
     project = job["project_id"]
     try:
+        marketing = job["kind"] == "marketing_episode"
+        if job["kind"] == "resume":
+            with transaction(project, worker=True) as c:
+                row = one(
+                    c, "SELECT graph_version FROM anvil.episodes WHERE id=%s", (job["target_id"],)
+                )
+                marketing = bool(row and row["graph_version"] == "marketing-interactive-review-v1")
+        if marketing:
+            from anvil.marketing_runtime import process
+
+            process(job)
+            return True
         if job["kind"] == "task_ingestion":
             from anvil.ingestion import process
 
@@ -351,6 +363,26 @@ def tick():
                     "UPDATE anvil.ingestion_jobs SET state='failed',error_code=%s,finished_at=now() WHERE id=%s AND state NOT IN ('cancelled','ready','invalid')",
                     (code, job["target_id"]),
                 )
+            if failed and job["kind"] == "marketing_episode":
+                pending = one(
+                    c,
+                    "SELECT 1 FROM anvil.interactive_calls WHERE episode_id=%s AND status='dispatching'",
+                    (job["target_id"],),
+                )
+                state = "execution_unknown" if pending else "failed_operational"
+                row = one(
+                    c,
+                    "UPDATE anvil.episodes SET state=%s,outcome='invalid',row_version=row_version+1 WHERE id=%s AND state NOT IN ('cancelled','finalized') RETURNING run_id",
+                    (state, job["target_id"]),
+                )
+                if row:
+                    c.execute(
+                        "UPDATE anvil.runs SET state=%s,row_version=row_version+1 WHERE id=%s AND NOT cancel_requested",
+                        (
+                            "reconciliation_required" if pending else "execution_complete",
+                            row["run_id"],
+                        ),
+                    )
         print(f"job={job['id']} status=failed code={code}", flush=True)
     return True
 
@@ -362,7 +394,7 @@ def main():
 
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
-    print("Anvil fixture worker ready; live dispatch disabled", flush=True)
+    print("Anvil worker ready; marketing dispatch requires exact paid approvals", flush=True)
     while not STOP:
         if not tick():
             from anvil.graph import project_pending

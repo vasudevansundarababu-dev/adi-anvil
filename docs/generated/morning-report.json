@@ -1,4 +1,39 @@
 {
+  "latest_marketing_handoff": {
+    "updated_utc": "2026-09-28T20:20:00Z",
+    "session_start_utc": "2026-09-28T19:38:00Z",
+    "outer_deadline_utc": "2026-09-29T03:38:00Z",
+    "status": "workflow_mock_verified_paid_launch_blocked_by_user_request",
+    "source_base_commit": "9c46e43",
+    "schema_version": 16,
+    "check": "passed",
+    "unit_passed": 116,
+    "integration_passed": 66,
+    "integration_seconds": 37.71,
+    "browser_passed": 3,
+    "browser_total_seconds": 47.3,
+    "fresh_repeat_migrations": "passed within isolated marketing integration test",
+    "mock_database": "anvil_marketingtest_12df460a55ec",
+    "mock_provider_responses_in_completed_episode": 13,
+    "provider_network_calls_by_build": 0,
+    "real_paid_approvals_created": 0,
+    "provider_account_billing_balance": "unknown",
+    "screenshot": "artifacts/test-runs/marketing-readiness.png",
+    "mock_evidence": "artifacts/test-runs/marketing-mock.json",
+    "walkthrough": "docs/runbooks/marketing-live.md",
+    "blocked": [
+      "local OpenAI key missing",
+      "two real Admin approvers unavailable",
+      "live model verification"
+    ],
+    "not_implemented": [
+      "real-person onboarding UI",
+      "automated billing settlement or release UI",
+      "arbitrary imported-task execution"
+    ],
+    "not_run": ["schema016 backup/restore", "real paid approval exercise", "live API execution"],
+    "earlier_root_fields_below": "historical diagnostic handoff from 15:45 UTC"
+  },
   "status": "local_diagnostic_slice_verified_full_mvp_partial",
   "verified_source_commit": "0adfcd9",
   "git_branch": "build/overnight-v1",
@@ -85,10 +120,7 @@
     "restored_graph_nodes": 174,
     "restored_graph_edges": 169
   },
-  "evidence_directories": [
-    "artifacts/morning-demo",
-    "artifacts/test-runs"
-  ],
+  "evidence_directories": ["artifacts/morning-demo", "artifacts/test-runs"],
   "model_inference_requests": 0,
   "provider_billed_spend_usd": null,
   "provider_billing_status": "unknown_not_queried",

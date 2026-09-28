@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Anvil — 12-week marketing setup</title>
+    <style>
+      body {
+        font:
+          17px/1.6 system-ui,
+          sans-serif;
+        max-width: 780px;
+        margin: 40px auto;
+        padding: 0 20px;
+        color: #172433;
+        background: #fafafa;
+      }
+      code {
+        overflow-wrap: anywhere;
+        background: #eaf0f5;
+      }
+      a {
+        color: #075ba8;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>12-week marketing task</h1>
+      <p>
+        One synthetic launch, 12 dependent weekly decisions and a final board memo. Simulated weeks
+        run sequentially; no real advertising or email is sent.
+      </p>
+      <h2>Prepare without spending</h2>
+      <ol>
+        <li>Data Engineer → Case bank → <strong>Import 12-week marketing task</strong>.</li>
+        <li>
+          Review the exact source rights for local evaluation and OpenAI processing. Calibrate and
+          approve its rubric, then qualify and publish its task.
+        </li>
+        <li>
+          Researcher → create a suite with this one task and an approved objective; obtain technical
+          review and freeze the suite.
+        </li>
+        <li>
+          Admin → Providers → configure OpenAI <code>gpt-6-sol</code> with the marketing defaults,
+          after reviewing terms and pricing.
+        </li>
+        <li>
+          Researcher → Protocols → choose <strong>12-week marketing · OpenAI gpt-6-sol</strong>, the
+          exact connection and suite. Review the comparison plan and obtain technical approval.
+        </li>
+        <li>
+          Select <strong>Prepare marketing run</strong>. Run console shows progress and missing
+          launch gates.
+        </li>
+      </ol>
+      <h2>Key and approvals</h2>
+      <p>
+        Store your key only in the owner-only local file <code>.secrets/openai_api_key</code>. Set
+        <code>OPENAI_API_KEY_FILE=.secrets/openai_api_key</code> in the existing local
+        <code>.env</code>, with <code>OPENAI_API_KEY</code> empty or unset. Restart Anvil. Never
+        paste keys into chat or forms.
+      </p>
+      <p>
+        Two distinct real Admins must each approve provider activation and the exact paid run. Demo
+        accounts are rejected. Real-person onboarding still requires separate local provisioning; do
+        not relabel demo identities. Launch remains blocked until these gates are satisfied.
+      </p>
+      <h2>Cost and recovery</h2>
+      <p>
+        The cumulative API ceiling is $100. Each run allows at most 13 calls and $13 of conservative
+        reservations. This is separate from the $120,000 simulated campaign budget. Pricing review
+        expires October 5, 2026 at 00:00 UTC.
+      </p>
+      <p>
+        Reservations remain held until separate billing reconciliation. Unknown dispatches are never
+        automatically retried. Cancel cannot retract an in-flight call. Invalid JSON or actions are
+        retained and end the sequence for review.
+      </p>
+      <p>
+        The final decision trail enters the existing independent review workflow. Mocked software
+        tests are not model performance.
+      </p>
+      <p>
+        Full local walkthrough: <code>docs/runbooks/marketing-live.md</code>.
+        <a href="https://developers.openai.com/api/docs/models/gpt-6-sol"
+          >Official model and pricing documentation</a
+        >.
+      </p>
+    </main>
+  </body>
+</html>

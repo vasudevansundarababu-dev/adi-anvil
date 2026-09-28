@@ -45,7 +45,7 @@ export default function ProviderSetup({
                 max_output_tokens: Number(f.get('tokens')),
                 pricing_revision: String(f.get('pricing')) || null,
                 bound_micro_usd: f.get('bound') ? Number(f.get('bound')) : null,
-                processing_terms_reviewed: false,
+                processing_terms_reviewed: f.get('terms') === 'on',
               }),
             });
             const result = await response.json();
@@ -66,7 +66,7 @@ export default function ProviderSetup({
           name="model"
           required
           maxLength={200}
-          defaultValue={model || ''}
+          defaultValue={model || (provider === 'openai' ? 'gpt-6-sol' : '')}
         />
         <label htmlFor={provider + '-tokens'}>Maximum output tokens</label>
         <input
@@ -75,13 +75,43 @@ export default function ProviderSetup({
           type="number"
           min={1}
           max={8192}
-          defaultValue={4096}
+          defaultValue={provider === 'openai' ? 8192 : 4096}
           required
         />
         <label htmlFor={provider + '-pricing'}>Reviewed pricing revision reference</label>
-        <input id={provider + '-pricing'} name="pricing" />
+        <input
+          id={provider + '-pricing'}
+          name="pricing"
+          defaultValue={provider === 'openai' ? 'openai-gpt-6-sol-2026-09-28-standard-text-v1' : ''}
+        />
         <label htmlFor={provider + '-bound'}>Conservative request cost bound (micro USD)</label>
-        <input id={provider + '-bound'} name="bound" type="number" min={1} step={1} />
+        <input
+          id={provider + '-bound'}
+          name="bound"
+          type="number"
+          min={1}
+          step={1}
+          defaultValue={provider === 'openai' ? 1000000 : undefined}
+        />
+        {provider === 'openai' && (
+          <p>
+            Marketing harness: at most 100,000 UTF-8 input bytes and 8,192 output tokens per
+            response; $1 conservative reservation per call, 13 calls maximum. Pricing review expires
+            October 5, 2026.{' '}
+            <a
+              href="https://developers.openai.com/api/docs/models/gpt-6-sol"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Review official model pricing
+            </a>
+            .
+          </p>
+        )}
+        <label htmlFor={provider + '-terms'}>
+          <input id={provider + '-terms'} name="terms" type="checkbox" /> I reviewed processing
+          terms for this exact destination
+        </label>
         <button disabled={busy}>Save configuration</button>
       </Form>
       {message && <p role="status">{message}</p>}

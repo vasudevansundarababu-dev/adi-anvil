@@ -25,7 +25,14 @@
     "docker_compose_readiness": "user_reports_working; build_preflight_required"
   },
   "live_evaluation": {
-    "requested_providers": ["meta_muse", "openai", "anthropic", "gemini", "mistral", "open_weight_compatible"],
+    "requested_providers": [
+      "meta_muse",
+      "openai",
+      "anthropic",
+      "gemini",
+      "mistral",
+      "open_weight_compatible"
+    ],
     "model_ids": ["gpt-6-sol"],
     "max_total_spend_usd": 100,
     "first_run_selection": {
@@ -34,15 +41,28 @@
       "task": "MKT-LH-001",
       "user_confirmed_date": "2026-09-28",
       "budget_scope": "cumulative API spend ceiling; separate from simulated marketing budget",
-      "task_status": "original synthetic development pack; not qualified or live-integrated",
-      "credential_readiness": "not_reconfirmed"
+      "task_status": "registered interactive development task; mocked workflow verification; no live model result",
+      "credential_readiness": "user_confirmed_not_configured_2026-09-28"
     },
     "secret_locally_ready": "no_keys_user_confirmed",
     "live_calls_enabled": false,
     "max_initial_cases": 3,
     "repetitions_per_case_model": 1,
     "synthetic_cases_only": true,
-    "required_in_app_approvals": "not_recorded"
+    "required_in_app_approvals": "two real Admins unavailable; user explicitly requested leaving paid launch blocked",
+    "marketing_runtime": {
+      "mode": "marketing_interactive_v1",
+      "responses_per_episode": 13,
+      "max_output_tokens_per_response": 8192,
+      "max_prompt_utf8_bytes": 100000,
+      "request_reservation_micro_usd": 1000000,
+      "run_cap_micro_usd": 13000000,
+      "pricing_revision": "openai-gpt-6-sol-2026-09-28-standard-text-v1",
+      "pricing_expiry_utc": "2026-10-05T00:00:00Z",
+      "automatic_inference_retries": false,
+      "real_identity_onboarding": "not implemented in UI",
+      "billing_reconciliation": "reported usage retained; no automated settlement or release UI"
+    }
   },
   "operations": {
     "local_integrations_only": true,
@@ -55,7 +75,10 @@
   },
   "ingestion": {
     "current_daily_increment": 1,
-    "specifications": ["next-vertical-slice-task-data-import.md", "advanced-ingestion-generation-privacy-spec.md"],
+    "specifications": [
+      "next-vertical-slice-task-data-import.md",
+      "advanced-ingestion-generation-privacy-spec.md"
+    ],
     "supported_sources": ["csv", "jsonl"],
     "max_source_bytes": 26214400,
     "max_records": 10000,

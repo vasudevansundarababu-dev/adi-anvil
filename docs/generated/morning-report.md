@@ -1,5 +1,34 @@
 # ADI Anvil — current local handoff
 
+## Marketing update — 28 September 2026, 20:20 UTC
+
+The registered 12-week workflow is implemented and mock-verified. **Paid launch remains
+blocked as the user requested:** no local API key and no two real Admin approvers are
+ready. Follow [the marketing walkthrough](../runbooks/marketing-live.md) for task import,
+qualification, provider configuration, local key setup and the exact-run approval controls.
+
+- `pnpm check`: passed lint, types, production build and generated OpenAPI.
+- `pnpm test:unit`:116 passed.
+- `pnpm test:e2e`:3 passed,47.3s total, including marketing preparation and blocked launch.
+- `pnpm test:integration`:66 passed,37.71s; includes full13-response mocked worker execution,
+  independent review, preserved ambiguous dispatch and captured-response recovery.
+- Fresh/repeated migrations001–016 passed within the isolated marketing integration test.
+- Evidence: `artifacts/test-runs/marketing-mock.json`, `marketing-readiness.png` (inspected).
+- No live inference, real paid approvals or real sending. Provider-account billing balance
+  remains unknown; no paid model requests were made by this build.
+
+The runtime bounds actor prompts, output tokens and call count; it never automatically
+retries an uncertain generation. $1 reservations per call remain held, up to $13/run,
+within the shared $100 authority. Operator references and future state stay out of actor
+requests. Real identity onboarding, billing reconciliation, live verification and schema016
+backup/restore remain outstanding. Other provider adapters and arbitrary imported-task
+execution remain unavailable. This is not a complete-MVP or model-performance claim.
+
+The new implementation session began19:38 UTC with a03:38 UTC outer deadline; it is
+finishing early after verification. Prior diagnostic/recovery evidence below is historical.
+
+## Earlier diagnostic handoff — 15:45 UTC
+
 **The local synthetic diagnostic journey works end to end. Full MVP acceptance remains partial; live inference and real sending are unavailable.**
 
 Verified source checkpoint: `0adfcd9` on `build/overnight-v1`, 28 September 2026. Local commits only. The user authorized continuation at11:24 UTC, with an outer deadline of19:24 UTC. This replaces the earlier10:52 handoff; its lint failures and missing local modules are no longer the current state.

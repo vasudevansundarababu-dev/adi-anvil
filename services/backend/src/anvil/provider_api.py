@@ -40,6 +40,9 @@ def readiness(c, provider, connection=None):
         "frozen_live_protocol",
         "live_dispatch_qualification",
     ]
+    marketing = provider == "openai" and connection and connection["model_id"] == "gpt-6-sol"
+    if marketing:
+        missing = ["check_exact_marketing_run_readiness_in_run_console"]
     if not present:
         missing.append(secret_error or "secret_missing")
     if not connection or not connection["model_id"]:
@@ -64,8 +67,12 @@ def readiness(c, provider, connection=None):
             "model_id": connection["model_id"] if connection else None,
             "destination": PROVIDERS[provider][2],
             "missing_gates": missing,
-            "inference_requests": 0,
-            "integration_scope": "Official SDK mocked transport; live dispatch unavailable pending qualification and authority",
+            "inference_requests": None if marketing else 0,
+            "integration_scope": (
+                "13-response marketing harness; mocked transport and durable local workflow. Paid launch requires exact run readiness and real approvals. Live verification not performed."
+                if marketing
+                else "Official SDK mocked transport; live dispatch unavailable pending qualification and authority"
+            ),
         },
         "content_hash": connection["config_hash"] if connection else None,
     }
@@ -143,7 +150,7 @@ def routes(context, wrap, idempotent):
             raise HTTPException(403, "Reauthentication required")
         with context(request, project) as (c, user, roles):
             auth.require(roles, "admin")
-            record = one(c, "SELECT * FROM anvil.connections WHERE id=%s FOR UPDATE", (cid,))
+            record = one(c, "SELECT * FROM anvil.connections WHERE id=%s", (cid,))
             if not record:
                 raise HTTPException(404, "Connection not found")
             if one(c, "SELECT is_synthetic FROM anvil.users WHERE id=%s", (user,))["is_synthetic"]:
@@ -154,9 +161,40 @@ def routes(context, wrap, idempotent):
                 or body.expires_at <= datetime.now(timezone.utc)
             ):
                 raise HTTPException(409, "Approval hash or expiry invalid")
-            raise HTTPException(
-                409, "Explicit user live authority and frozen paid scope have not been supplied"
-            )
+            from anvil.marketing_authority import CAP, PRICE_EXPIRES, config_valid, real_admin
+
+            real_admin(c, project, user)
+            if body.purpose != "activation":
+                raise HTTPException(409, "Paid scope must be approved on the exact configured run")
+            if (
+                not config_valid(record)
+                or body.cap_micro_usd != CAP
+                or body.expires_at > PRICE_EXPIRES
+            ):
+                raise HTTPException(
+                    409, "Use the reviewed marketing configuration, $100 ceiling and pricing expiry"
+                )
+
+            def save():
+                aid = uid()
+                c.execute(
+                    "INSERT INTO anvil.provider_approvals(id,project_id,connection_id,approver_id,purpose,subject_hash,cap_micro_usd,authority_reference,expires_at) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                    (
+                        aid,
+                        project,
+                        cid,
+                        user,
+                        body.purpose,
+                        body.subject_hash,
+                        body.cap_micro_usd,
+                        body.authority_reference,
+                        body.expires_at,
+                    ),
+                )
+                audit(c, project, user, "provider.activation_approved", cid)
+                return {"id": aid, "approved": True}
+
+            return wrap(idempotent(c, project, user, request, body, save), request)
 
     @router.post("/providers/dry-run")
     def dry_run(project: UUID, request: Request):

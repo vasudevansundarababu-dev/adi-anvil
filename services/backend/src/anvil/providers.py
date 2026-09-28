@@ -280,3 +280,38 @@ def execute_contract(provider: str, request: ActorRequest, transport: httpx.Mock
             ):
                 return normalized(provider, raw)
             return Result("failed_operational", error_code="malformed_provider_response")
+
+
+def execute_marketing(request: ActorRequest):
+    """Server-only transport; caller must commit authorization, intent and reservation first."""
+    if (
+        request.model != "gpt-6-sol"
+        or len(request.actor_text.encode("utf-8")) > 100000
+        or request.max_output_tokens != 8192
+    ):
+        raise ValueError("Unqualified marketing request")
+    present, _ = secret_presence("openai")
+    if not present:
+        return Result("failed_operational", error_code="secret_unavailable")
+    name = PROVIDERS["openai"][1]
+    key = os.environ.get(name)
+    if not key:
+        key = (ROOT / os.environ[name + "_FILE"]).read_text().strip()
+    try:
+        with httpx.Client(timeout=600, follow_redirects=False, trust_env=False) as http:
+            sdk = OpenAI(
+                api_key=key, base_url=PROVIDERS["openai"][2], http_client=http, max_retries=0
+            )
+            response = sdk.responses.create(
+                model="gpt-6-sol",
+                input=[{"role": "user", "content": request.actor_text}],
+                max_output_tokens=8192,
+                reasoning={"effort": "medium"},
+                store=False,
+                service_tier="default",
+                text={"format": {"type": "json_object"}},
+            )
+            return normalized("openai", response.model_dump(mode="json", warnings=False))
+    except Exception:
+        # Retain the full reservation and never retry an ambiguous paid dispatch.
+        return Result("execution_unknown", error_code="provider_dispatch_uncertain")

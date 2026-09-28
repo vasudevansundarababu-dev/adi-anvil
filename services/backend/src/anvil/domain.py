@@ -263,7 +263,11 @@ def qualify(c, r):
     kind = r["kind"]
     links = []
     if kind == "task":
-        if b["mode"] != "static":
+        if b["mode"] == "interactive" and b.get("environment_version") == "MKT-LH-001/1.0":
+            from anvil.marketing_pack import verify_task
+
+            verify_task(c, b)
+        elif b["mode"] != "static" or b.get("environment_version"):
             raise HTTPException(409, "unsupported_execution_mode")
         source = current_source(c, b["source_revision_id"])
         if source["content"].get("source_origin") != b["origin"]:
@@ -329,6 +333,10 @@ def qualify(c, r):
             raise HTTPException(409, "Suite/objective mismatch")
         if len(set(b["candidates"])) != len(b["candidates"]):
             raise HTTPException(422, "Duplicate candidate")
+        if b["mode"] == "marketing_interactive_v1":
+            from anvil.marketing_pack import verify_protocol
+
+            verify_protocol(c, b, suite["content"])
         links = [(b["objective_revision_id"], "objective"), (b["suite_revision_id"], "suite")]
     for target, relation in links:
         c.execute(

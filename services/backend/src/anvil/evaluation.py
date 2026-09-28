@@ -72,6 +72,12 @@ def routes(context, wrap, idempotent):
                     c, body.protocol_revision_id, "protocol", ["approved"]
                 )
                 external = protocol["content"]["mode"] == "external_result_import_v1"
+                marketing = protocol["content"]["mode"] == "marketing_interactive_v1"
+                if marketing and body.dataset_version_id:
+                    raise HTTPException(
+                        409,
+                        "Interactive marketing uses its qualified task pack, not an imported static dataset",
+                    )
                 if external != (body.external_origin is not None):
                     raise HTTPException(
                         422, "External protocols require an explicit reported origin"
@@ -88,7 +94,7 @@ def routes(context, wrap, idempotent):
                         rid,
                         project,
                         body.protocol_revision_id,
-                        body.external_origin or "illustrative",
+                        body.external_origin or ("adi_executed" if marketing else "illustrative"),
                         user,
                         body.dataset_version_id,
                         Jsonb(snapshot) if snapshot else None,
@@ -102,10 +108,10 @@ def routes(context, wrap, idempotent):
     @router.get("/runs")
     def runs(project: UUID, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "researcher", "advisor", "product-owner", "data-engineer")
+            auth.require(roles, "researcher", "advisor", "product-owner", "data-engineer", "admin")
             return wrap(
                 c.execute("""SELECT r.*,count(e.id) episode_count,
-                    count(e.id) FILTER(WHERE e.state IN ('queued','output_captured')) pending_execution,
+                    count(e.id) FILTER(WHERE e.state IN ('queued','running','output_captured')) pending_execution,
                     count(e.id) FILTER(WHERE e.state IN ('awaiting_review','disputed','review_blocked')) pending_reviews,
                     count(e.id) FILTER(WHERE e.state='finalized') finalized_reviews
                     FROM anvil.runs r LEFT JOIN anvil.episodes e ON e.run_id=r.id
@@ -116,7 +122,7 @@ def routes(context, wrap, idempotent):
     @router.get("/runs/{rid}")
     def run_detail(project: UUID, rid: UUID, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "researcher", "advisor", "product-owner", "data-engineer")
+            auth.require(roles, "researcher", "advisor", "product-owner", "data-engineer", "admin")
             run = get_run(c, rid)
             run["episodes"] = c.execute(
                 "SELECT id,state,outcome,score,invocation_count FROM anvil.episodes WHERE run_id=%s ORDER BY id",
@@ -124,7 +130,7 @@ def routes(context, wrap, idempotent):
             ).fetchall()
             run["episode_count"] = len(run["episodes"])
             run["pending_execution"] = sum(
-                e["state"] in ("queued", "output_captured") for e in run["episodes"]
+                e["state"] in ("queued", "running", "output_captured") for e in run["episodes"]
             )
             run["pending_reviews"] = sum(
                 e["state"] in ("awaiting_review", "disputed", "review_blocked")
@@ -149,6 +155,11 @@ def routes(context, wrap, idempotent):
                         "Imported tasks are configured. Execution requires task qualification and a supported adapter; fixture answers cannot execute arbitrary imported tasks.",
                     )
                 protocol = protocol_for(c, run)
+                if protocol["mode"] == "marketing_interactive_v1":
+                    from anvil.marketing_runtime import launch
+
+                    launch(c, run)
+                    return get_run(c, rid)
                 if protocol["mode"] != "fixture":
                     raise HTTPException(
                         409, "External runs accept manifests; they never dispatch candidates"
@@ -278,7 +289,11 @@ def routes(context, wrap, idempotent):
                 else [],
                 "trace_coverage": e["external_provenance"]["attempt"]["trace_coverage"]
                 if e["external_provenance"]
-                else "none",
+                else (
+                    "observable_interactive_steps"
+                    if e["graph_version"] == "marketing-interactive-review-v1"
+                    else "none"
+                ),
                 "output": artifacts.read(c, e["output_artifact_id"]).decode()
                 if e["output_artifact_id"]
                 else None,

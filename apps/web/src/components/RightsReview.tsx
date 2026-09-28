@@ -17,8 +17,8 @@ export default function RightsReview({
     <details>
       <summary>Review or revoke permitted use</summary>
       <p>
-        Record the evidence you reviewed. This local scope grants no external processing, raw
-        redistribution or training permission.
+        Record the evidence and exact destination you reviewed. Local evaluation and OpenAI
+        processing are separate scopes; neither grants redistribution or training permission.
       </p>
       <Form
         onSubmit={async (e) => {
@@ -45,7 +45,11 @@ export default function RightsReview({
               body: JSON.stringify({
                 operation,
                 destination:
-                  operation === 'managed_evaluation' ? 'local_fixture' : 'internal_fixture',
+                  operation === 'managed_evaluation'
+                    ? 'local_fixture'
+                    : operation === 'external_processing'
+                      ? 'openai'
+                      : 'internal_fixture',
                 status: String(data.get('status')),
                 evidence: String(data.get('evidence')),
                 expires_at: data.get('expires_at')
@@ -66,6 +70,7 @@ export default function RightsReview({
         <label htmlFor={id + '-operation'}>Permitted operation</label>
         <select id={id + '-operation'} name="operation">
           <option value="managed_evaluation">Local fixture evaluation</option>
+          <option value="external_processing">External actor-input processing by OpenAI</option>
           <option value="report_sharing">Internal aggregate report sharing</option>
         </select>
         <label htmlFor={id + '-status'}>Decision</label>

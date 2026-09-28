@@ -46,6 +46,8 @@ def load(c, project, user, body):
     # Validate all bytes before any business writes; database transaction is all-or-nothing.
     bundles = {}
     for case in body.case_ids:
+        if case == "MKT-LH-001":
+            continue
         bundles[case] = {
             name: trusted(f"{case}/{name}")
             for name in [
@@ -57,6 +59,10 @@ def load(c, project, user, body):
         }
     template = json.loads(trusted("rubric-template.json"))
     results = []
+    if "MKT-LH-001" in body.case_ids:
+        from anvil.marketing_pack import load
+
+        results.append(load(c, project, user, body))
     for case, bundle in bundles.items():
         manifest = json.loads(bundle["case.json"])
         content_hash = digest({k: hashlib.sha256(v).hexdigest() for k, v in bundle.items()})

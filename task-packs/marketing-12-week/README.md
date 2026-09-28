@@ -27,10 +27,12 @@ to the week-12 target. Creative fatigue persists; a refresh consumes money. Week
 disruptions change available actions and results. Results are computed from actions,
 not selected from predetermined model answers.
 
-The local reference environment lives in `scripts/marketing_task.py`. It is an offline
-authoring/rehearsal tool, **not an Anvil-qualified execution mode**. Current Anvil live
-dispatch and interactive environment integration remain unavailable. Do not upload this
-as a static case and claim a completed long-horizon execution.
+The offline reference environment lives in `scripts/marketing_task.py`. Anvil now has
+a registered interactive workflow using the parity-tested `anvil.marketing_env` module,
+durable step/dispatch records and independent review. Follow the
+[Anvil marketing walkthrough](../../docs/runbooks/marketing-live.md). Paid launch remains
+blocked by missing credentials and real Admin approvals; no live model result is claimed.
+Use **Import 12-week marketing task**, not the static CSV/JSONL importer.
 
 ## Local use (no model calls)
 
@@ -62,6 +64,7 @@ They must be isolated by an approved harness before any protected evaluation.
   performance. Neither history nor scenario dynamics are market forecasts.
 - No external research, ad buying, email sending, browsing or real campaign execution.
 - Model, provider and API ceiling selected by user on 2026-09-28. Credentials, reviewed
-  rights, real distinct-Admin approvals and integrated live/runtime gates remain pending.
+  rights and real distinct-Admin approvals remain required. The user requested building
+  the workflow and leaving paid launch blocked while real approvers are unavailable.
 - [Operator review guide](operator/review.md) describes evaluation and limitations.
   It must not be part of actor input.

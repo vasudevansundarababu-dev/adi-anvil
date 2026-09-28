@@ -2,7 +2,7 @@
 
 Frontier Evaluation & Diagnostics Platform
 
-**Verified local diagnostic slice — 28 September 2026.** The real-OIDC fixture journey, Task & Data Import flow, production build,103 unit tests and65 integration tests pass. Fresh migrations and ingestion crash recovery were verified. Full MVP acceptance remains partial; live inference and external sending are disabled. See [current build status](BUILD-STATUS.md). The [morning report](docs/generated/morning-report.md) describes the earlier local diagnostic rehearsal; the new import walkthrough below covers this addition.
+**Verified local diagnostic slice — 28 September 2026.** The real-OIDC diagnostic, task-import and marketing-preparation journeys pass, along with the production build,116 unit tests and66 integration tests. Fresh migrations and durable recovery were verified. Full MVP acceptance remains partial; paid launch and external sending stay blocked. See [current build status](BUILD-STATUS.md) and the [handoff report](docs/generated/morning-report.md).
 
 ## Start
 
@@ -17,12 +17,18 @@ The [current walkthrough](docs/runbooks/morning-walkthrough.md) links to the pre
 
 ## Engineering authority
 
+The [12-week marketing walkthrough](docs/runbooks/marketing-live.md) covers the registered
+interactive task, exact OpenAI connection, draft run, real paid approvals and local key setup.
+The harness supports 12 dependent decisions plus a final memo, PostgreSQL checkpoints and
+independent review. It has been exercised with a mocked provider, not a live model. The user
+requested leaving paid launch blocked: no local key or real Admin approvers are ready.
+
 The [Task & Data Import walkthrough](docs/runbooks/task-data-import.md) covers CSV/JSONL
 upload, background validation, immutable dataset publication, suite attachment and exact
 version selection in Run Console. This is the first daily ingestion increment; advanced
 connectors, generation, privacy processing and arbitrary imported-task execution remain pending.
 
-The latest user selected a new independent repository named **ADI-Anvil**, private, local build first and GitHub publication only after review. Infrastructure and the eight-hour/local-only build boundaries are confirmed. The requested morning target includes the diagnostic journey **and live model evaluations**. The first selected provider/model is OpenAI `gpt-6-sol`, with a $100 cumulative API ceiling. Credentials, reviewed rights, real paid approvals and live execution integration remain pending; live calls stay blocked. The requested [12-week synthetic marketing task](task-packs/marketing-12-week/README.md) includes generated inputs and an offline development simulation, separate from the existing Anvil execution modes.
+The latest user selected a new independent repository named **ADI-Anvil**, private, local build first and GitHub publication only after review. Infrastructure and the eight-hour/local-only build boundaries are confirmed. The requested morning target includes the diagnostic journey **and live model evaluations**. The first selected provider/model is OpenAI `gpt-6-sol`, with a $100 cumulative API ceiling. Credentials, reviewed rights and real paid approvals remain required; paid launch stays blocked. The [12-week synthetic marketing task](task-packs/marketing-12-week/README.md) now has a dedicated Anvil workflow alongside its offline development simulation.
 
 Read [overnight build specification](docs/build/01-OVERNIGHT-BUILD-SPEC.md), [repository structure](docs/build/02-REPOSITORY-STRUCTURE.md), [runbook](docs/build/03-EXECUTION-RUNBOOK.md), [live evaluation gates](docs/build/05-LIVE-EVALUATION.md) and [fixture contract](docs/build/06-FIXTURE-CONTRACT.md).
 
@@ -30,6 +36,6 @@ The files in `docs/product/` preserve the detailed v1.0 product/contracts baseli
 
 ## Target and current boundary
 
-The local slice includes UI + API + PostgreSQL + LangGraph worker + Neo4j projection + OIDC, source intake/gaps, rights, qualification, versioned suites/protocols, fixture execution, reported-result import, human review, diagnostics and downloadable one-page Sales Kits. Live provider dispatch is not implemented or verified for a selected model; SDK adapters are mock-contract tested. General files stay quarantined without a qualified scanner. No enterprise training, TNG/TTM, simulator authoring, cloud deployment, real email, Notion publishing or live Praxis synchronization.
+The local slice includes UI + API + PostgreSQL + LangGraph worker + Neo4j projection + OIDC, source intake/gaps, rights, qualification, versioned suites/protocols, fixture execution, reported-result import, human review, diagnostics and downloadable one-page Sales Kits. The registered marketing runtime adds guarded OpenAI dispatch, tested with a mock transport; actual model access, real-person Admin onboarding and live verification remain outstanding. Other provider adapters remain mock-contract only. General files stay quarantined without a qualified scanner. No enterprise training, TNG/TTM, simulator authoring, cloud deployment, real email, Notion publishing or live Praxis synchronization.
 
 Original sample cases test application mechanics, not research novelty, long-horizon intelligence, university validation or commercial performance. All fixture outputs remain illustrative after review/export. No real Bodhium cases are included.

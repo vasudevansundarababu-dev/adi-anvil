@@ -2655,6 +2655,112 @@
         }
       }
     },
+    "/api/v1/projects/{project}/runs/{rid}/marketing": {
+      "get": {
+        "summary": "Detail",
+        "operationId": "detail_api_v1_projects__project__runs__rid__marketing_get",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project"
+            }
+          },
+          {
+            "name": "rid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project}/runs/{rid}/paid-approvals": {
+      "post": {
+        "summary": "Approve",
+        "operationId": "approve_api_v1_projects__project__runs__rid__paid_approvals_post",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project"
+            }
+          },
+          {
+            "name": "rid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaidApproval"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/health": {
       "get": {
         "summary": "Health",
@@ -3899,11 +4005,12 @@
               "enum": [
                 "MKT-001",
                 "FIN-001",
-                "STR-001"
+                "STR-001",
+                "MKT-LH-001"
               ]
             },
             "type": "array",
-            "maxItems": 3,
+            "maxItems": 4,
             "minItems": 1,
             "title": "Case Ids"
           },
@@ -4270,7 +4377,8 @@
             "type": "string",
             "enum": [
               "managed_evaluation",
-              "report_sharing"
+              "report_sharing",
+              "external_processing"
             ],
             "title": "Operation"
           },
@@ -4278,7 +4386,8 @@
             "type": "string",
             "enum": [
               "local_fixture",
-              "internal_fixture"
+              "internal_fixture",
+              "openai"
             ],
             "title": "Destination"
           },

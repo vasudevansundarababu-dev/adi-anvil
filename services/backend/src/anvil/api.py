@@ -152,6 +152,10 @@ app.include_router(delivery_routes(context, wrap, idempotent))
 app.include_router(readiness_routes(context, wrap, idempotent))
 app.include_router(task_import_routes(context, wrap, idempotent))
 
+from anvil.marketing_api import routes as marketing_routes  # noqa: E402
+
+app.include_router(marketing_routes(context, wrap, idempotent))
+
 KINDS = {
     "objectives": "objective",
     "cases": "case",

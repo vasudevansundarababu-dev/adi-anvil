@@ -1,5 +1,16 @@
 # Acceptance evidence matrix
 
+2026-09-28 20:20 UTC addition: `pnpm check`,116 units,66 integrations and3 browser
+journeys pass. `test_marketing.py` uses an isolated mock database:13 dependent responses,
+independent review/resume, durable intent/capture recovery, stale fencing, immutable
+environment binding, actor/reference isolation and missing-paid-authority denial. The
+browser verifies preparation through disabled paid launch. Fresh/repeated001–016 migrations
+pass in that isolated test. No live provider or real Admin approval exercise passed;
+real-person onboarding and billing reconciliation remain outstanding. The following
+15:46 matrix retains earlier evidence and limitations; F-ENG12 now additionally has
+an explicit OpenAI external-processing scope, and F-ENG17/18 have the guarded marketing
+runtime and shared spending-window integration, verified only with a mock provider.
+
 Updated 2026-09-28 15:46 UTC. **Local diagnostic slice verified; full acceptance partial, not release complete.** Verified source checkpoint `0adfcd9`. No live provider or real email test passed. Partial evidence does not waive the remaining criterion.
 
 Latest checks:89 unit tests,64 integration tests; browser29.5s test/47.4s total including capability → task → episode → finding navigation, gaps, draft/successor editing, Sales PDF download, external import, pagination and responsive/keyboard checks. `pnpm check` passed. Fresh/repeated migrations001–012 passed. A separate fresh-service rehearsal passed startup, real-OIDC browser and62 integrations after explicit fixture-prerequisite repairs. `pnpm demo:walkthrough` prepared the clean three-case project and pending practice run.

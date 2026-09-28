@@ -77,6 +77,7 @@ class Task(Strict):
     family_id: str
     capabilities: list[str] = Field(min_length=1)
     mode: Literal["static", "interactive", "tool_enabled"]
+    environment_version: Literal["MKT-LH-001/1.0"] | None = None
     split: Literal["development", "calibration", "protected_test"]
     reviewer_id: UUID
     advisor_id: UUID
@@ -108,7 +109,9 @@ class Protocol(Strict):
     objective_revision_id: UUID
     suite_revision_id: UUID
     candidates: list[
-        Literal["fixture-correct", "fixture-constraint-blind", "external-reported"]
+        Literal[
+            "fixture-correct", "fixture-constraint-blind", "external-reported", "openai-marketing"
+        ]
     ] = Field(min_length=1, max_length=2)
     repetitions: Literal[1] = 1
     reviewer_ids: list[UUID] = Field(min_length=2, max_length=2)
@@ -118,10 +121,22 @@ class Protocol(Strict):
     episode_timeout_seconds: int = Field(default=60, ge=1, le=600)
     comparison_policy: str = Field(min_length=20)
     pass_policy: str = Field(min_length=10)
-    mode: Literal["fixture", "external_result_import_v1"] = "fixture"
+    mode: Literal["fixture", "external_result_import_v1", "marketing_interactive_v1"] = "fixture"
+    connection_id: UUID | None = None
+    connection_hash: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
     @model_validator(mode="after")
     def candidate_mode(self):
+        if self.mode == "marketing_interactive_v1":
+            if (
+                self.candidates != ["openai-marketing"]
+                or not self.connection_id
+                or not self.connection_hash
+            ):
+                raise ValueError("Interactive marketing requires one pinned OpenAI connection")
+            return self
+        if self.connection_id or self.connection_hash or "openai-marketing" in self.candidates:
+            raise ValueError("Live candidate requires an interactive protocol")
         if self.mode == "external_result_import_v1":
             if self.candidates != ["external-reported"]:
                 raise ValueError("External imports bind one reported candidate descriptor")
@@ -147,21 +162,27 @@ class Decision(Strict):
 
 
 class FixtureImport(Strict):
-    case_ids: list[Literal["MKT-001", "FIN-001", "STR-001"]] = Field(min_length=1, max_length=3)
+    case_ids: list[Literal["MKT-001", "FIN-001", "STR-001", "MKT-LH-001"]] = Field(
+        min_length=1, max_length=4
+    )
     reviewer_id: UUID
     advisor_id: UUID
 
 
 class Rights(Strict):
-    operation: Literal["managed_evaluation", "report_sharing"]
-    destination: Literal["local_fixture", "internal_fixture"]
+    operation: Literal["managed_evaluation", "report_sharing", "external_processing"]
+    destination: Literal["local_fixture", "internal_fixture", "openai"]
     status: Literal["approved", "revoked"]
     evidence: str = Field(min_length=20, max_length=5000)
     expires_at: AwareDatetime | None = None
 
     @model_validator(mode="after")
     def bounded_scope(self):
-        expected = "local_fixture" if self.operation == "managed_evaluation" else "internal_fixture"
+        expected = {
+            "managed_evaluation": "local_fixture",
+            "report_sharing": "internal_fixture",
+            "external_processing": "openai",
+        }[self.operation]
         if self.destination != expected:
             raise ValueError("Operation and reviewed local destination must match")
         if (

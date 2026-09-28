@@ -1,5 +1,50 @@
 # Build status
 
+2026-09-28 20:20 UTC — **Registered 12-week marketing workflow verified locally;
+paid launch remains blocked at the user's request.** User confirmed that the API key
+is not configured and two real Admin approvers are unavailable. Implemented the
+trusted draft importer, exact task/suite/protocol/connection bindings, external
+processing rights scope, run readiness/approval UI, bounded OpenAI Responses adapter,
+13-step LangGraph/PostgreSQL runtime, immutable dispatch intents, preserved usage,
+review handoff and conservative $100 cumulative/$13 run reservations. No live calls,
+real paid approvals, external sending or remote publication were made.
+
+`pnpm check` passed lint/format, types, production webpack and OpenAPI generation.
+`pnpm test:unit`: **116 passed**. `pnpm test:integration`: **66 passed**,37.71s.
+`pnpm test:e2e`: **3 passed**,47.3s total (diagnostic26.8s, marketing6.9s,
+CSV/JSONL import7.7s). Browser screenshot `artifacts/test-runs/marketing-readiness.png`
+was visually inspected. Initial browser failures found an import-assignment timing
+bug and new-test account-switching assumptions; readiness gating, automatic search
+and isolated OIDC contexts resolved them. No final verification failure remains.
+
+Migrations001–016 were applied and repeated from empty schema in the isolated mock
+database `anvil_marketingtest_12df460a55ec`. The real worker dispatched all13 mocked
+responses, persisted the review interrupt and resumed after two synthetic software-test
+reviews. Committed-intent interruption becomes unknown without retry; captured-output
+interruption applies once without another call; stale lease and changed environment
+binding are denied. Actor prompts exclude private future state/references. Evidence:
+`artifacts/test-runs/marketing-mock.json`. Mock outputs are isolated from the main app
+database and are not model performance. Main-browser acceptance stops at a draft run.
+
+Scope limits: real identity onboarding, actual model/account access, real paid approval
+exercise, live verification and billing reconciliation are outstanding. All API reservations
+are retained conservatively; reported usage is not a verified bill. Pricing expires
+2026-10-05. Runtime hashes prevent resuming a changed harness. General imported tasks,
+other live providers and later ingestion/privacy increments remain outside this slice.
+Schema016 backup/restore was not rehearsed; earlier schema012 recovery evidence remains
+historical. Follow [marketing setup](docs/runbooks/marketing-live.md); do not relabel
+demo accounts or grant fabricated approvals. Anvil was restarted; web3202 and API8200
+both returned HTTP200. Staged secret scan checked216 tracked files with zero findings;
+`git diff --cached --check` passed. This entry is included in the local implementation checkpoint;
+no remote publication. Work stops after verification of this requested workflow.
+
+2026-09-28 19:38 UTC — User requested enabling execution and selected the full
+12-week interactive marketing task. New bounded implementation session (eight-hour
+maximum, stopping by 2026-09-29 03:38 UTC). Implement the interactive binding and
+verify locally; exact selection remains OpenAI `gpt-6-sol`, cumulative $100 ceiling.
+No paid launch or fabricated Admin approval. User subsequently confirmed missing keys
+and real approvers, and explicitly requested leaving paid launch blocked.
+
 Status: **LOCAL DIAGNOSTIC SLICE VERIFIED — FULL MVP ACCEPTANCE PARTIAL**
 
 2026-09-28 19:16 UTC — **Task & Data Import and advanced-ingestion Increment 1 verified.**

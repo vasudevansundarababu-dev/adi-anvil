@@ -14,6 +14,7 @@ import FindingComposer from './FindingComposer';
 import FixtureDelivery from './FixtureDelivery';
 import TaskImport, { DatasetRunConfiguration } from './TaskImport';
 import AnvilHelp from './AnvilHelp';
+import MarketingRun from './MarketingRun';
 
 type Member = { id: string; name: string; role: string };
 type Project = { id: string; name: string; roles: string[] };
@@ -191,7 +192,8 @@ export default function Console() {
     if (module === 'providers') return role('admin');
     if (module === 'reviews') return role('reviewer', 'adjudicator');
     if (module === 'diagnostics') return role('researcher', 'advisor');
-    if (module === 'runs') return role('researcher', 'advisor', 'data-engineer', 'product-owner');
+    if (module === 'runs')
+      return role('researcher', 'advisor', 'data-engineer', 'product-owner', 'admin');
     if (module === 'sales-kits') return role('researcher', 'advisor', 'product-owner', 'sales');
     if (module === 'objectives') return contentRole || role('sales');
     return contentRole;
@@ -289,7 +291,7 @@ export default function Console() {
         section === 'suites'
           ? ['objectives', 'tasks']
           : section === 'protocols'
-            ? ['objectives', 'suites']
+            ? ['objectives', 'suites', 'providers']
             : ['runs', 'findings'];
       const o: Record<string, Row[]> = {};
       for (const k of kinds) {
@@ -345,7 +347,9 @@ export default function Console() {
         candidates:
           value('mode') === 'external_result_import_v1'
             ? ['external-reported']
-            : ['fixture-correct', 'fixture-constraint-blind'],
+            : value('mode') === 'marketing_interactive_v1'
+              ? ['openai-marketing']
+              : ['fixture-correct', 'fixture-constraint-blind'],
         repetitions: 1,
         reviewer_ids: [member('reviewer', 'reviewer-1'), member('reviewer', 'reviewer-2')],
         adjudicator_id: member('adjudicator'),
@@ -353,6 +357,15 @@ export default function Console() {
         comparison_policy: value('comparison_policy'),
         pass_policy: value('pass_policy'),
         mode: value('mode'),
+        ...(value('mode') === 'marketing_interactive_v1'
+          ? {
+              connection_id: value('connection'),
+              connection_hash: options.providers?.find((p) => p.id === value('connection'))
+                ?.content_hash,
+              max_output_tokens: 8192,
+              episode_timeout_seconds: 600,
+            }
+          : {}),
       };
     if (section === 'reports')
       body = {
@@ -534,7 +547,7 @@ export default function Console() {
             {section === 'cases' && role('data-engineer') && (
               <button
                 className="primary"
-                disabled={busy}
+                disabled={busy || !member('reviewer', 'reviewer-1') || !member('advisor')}
                 onClick={() =>
                   act(
                     () =>
@@ -548,6 +561,29 @@ export default function Console() {
                 }
               >
                 Import built-in synthetic cases
+              </button>
+            )}
+            {section === 'cases' && role('data-engineer') && (
+              <button
+                disabled={busy || !member('reviewer', 'reviewer-1') || !member('advisor')}
+                onClick={() =>
+                  act(
+                    async () => {
+                      await api(base + '/fixtures/import', 'POST', {
+                        case_ids: ['MKT-LH-001'],
+                        reviewer_id: member('reviewer', 'reviewer-1'),
+                        advisor_id: member('advisor'),
+                      });
+                      setSearch('MKT-LH-001');
+                      setQuery('MKT-LH-001');
+                      if (query === 'MKT-LH-001') await reload();
+                    },
+                    '12-week marketing case, task and rubric drafts imported. Review rights and qualification before use.',
+                    false,
+                  )
+                }
+              >
+                Import 12-week marketing task
               </button>
             )}
           </div>
@@ -684,9 +720,26 @@ export default function Console() {
                 <label htmlFor="mode">Execution mode</label>
                 <select id="mode" name="mode">
                   <option value="fixture">Two deterministic fixture candidates</option>
+                  <option value="marketing_interactive_v1">
+                    12-week marketing · OpenAI gpt-6-sol
+                  </option>
                   <option value="external_result_import_v1">
                     Reported external results — no candidate dispatch
                   </option>
+                </select>
+                <label htmlFor="connection">OpenAI connection (required for marketing mode)</label>
+                <select id="connection" name="connection">
+                  <option value="">Select configured connection</option>
+                  {options.providers
+                    ?.filter(
+                      (p) =>
+                        p.content.provider_key === 'openai' && p.content.model_id === 'gpt-6-sol',
+                    )
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>
+                        gpt-6-sol · {p.id}
+                      </option>
+                    ))}
                 </select>
                 <p>
                   One attempt per case. Both assigned reviewers and an independent adjudicator are
@@ -1101,7 +1154,9 @@ export default function Console() {
                     Origin: {r.origin} ·{' '}
                     {r.origin === 'illustrative'
                       ? 'Actual model cost: not applicable to network-free fixtures'
-                      : 'External execution is reported, not independently reproduced. Cost is not verified by Anvil.'}
+                      : r.origin === 'adi_executed'
+                        ? 'Real model execution on original synthetic inputs. Review pending; billing is not independently verified.'
+                        : 'External execution is reported, not independently reproduced. Cost is not verified by Anvil.'}
                   </p>
                   <p>
                     {r.episode_count ?? 0} episodes · {r.pending_execution ?? 0} pending execution ·{' '}
@@ -1110,6 +1165,17 @@ export default function Console() {
                   </p>
                   {!!r.pending_execution && (
                     <p className="muted">Execution status refreshes every two seconds.</p>
+                  )}
+                  {r.origin === 'adi_executed' && (
+                    <MarketingRun
+                      base={base}
+                      id={r.id}
+                      version={r.row_version}
+                      state={r.state}
+                      admin={role('admin')}
+                      researcher={role('researcher')}
+                      refresh={reload}
+                    />
                   )}
                   <div className="actions">
                     {r.state === 'draft' &&
@@ -1132,7 +1198,7 @@ export default function Console() {
                   </div>
                   {r.state === 'draft' &&
                     !r.dataset_version_id &&
-                    r.origin !== 'illustrative' &&
+                    (r.origin === 'customer_reported' || r.origin === 'partner_reported') &&
                     role('data-engineer') && <ExternalResults base={base} runId={r.id} />}
                   {r.episodes && (
                     <div className="tablewrap">
@@ -1170,7 +1236,7 @@ export default function Console() {
                     onClick={() =>
                       act(
                         async () => setReview(await api(base + '/reviews/' + r.id)),
-                        'Assigned evidence loaded; candidate identity and other unfinished grades withheld.',
+                        'Assigned evidence loaded; other unfinished grades are withheld. Source material may identify the candidate.',
                       )
                     }
                   >
@@ -1360,7 +1426,9 @@ export default function Console() {
                         )
                       }
                     >
-                      Prepare fixture run
+                      {r.content.mode === 'marketing_interactive_v1'
+                        ? 'Prepare marketing run'
+                        : 'Prepare fixture run'}
                     </button>
                   )}
                 {r.kind === 'protocol' &&
