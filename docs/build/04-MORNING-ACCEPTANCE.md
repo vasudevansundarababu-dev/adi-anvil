@@ -1,12 +1,12 @@
 # Morning acceptance — user walkthrough
 
-These are expected tests for the application Codex will build. They are not run instructions for the current documentation-only folder. First read `docs/generated/morning-report.md`; if setup or a required step is missing, record failure rather than assuming the mockup represents the application.
+These are the acceptance targets. The working local implementation and its remaining gaps are recorded in `docs/generated/morning-report.md`; use [the current walkthrough](../runbooks/morning-walkthrough.md) for the prepared project and actual built UI. A target here is not itself evidence of a passed test.
 
 Estimated hands-on walkthrough: 45–60 minutes after a successful build. Live provider setup and real independent approvals can take longer. Run the happy path first, then negative checks. All examples are synthetic.
 
 ## Start and sign in
 
-Use the exact commands/ports recorded by the build agent. Required intended contract: `pnpm preflight`, `pnpm setup:local`, `pnpm dev`. The final build must have tested these; do not run a command that remains an unimplemented requirement. Default web URL is http://127.0.0.1:3200, not the older port4186 static mockup.
+Use the exact commands/ports recorded by the build agent. Local commands are `pnpm preflight`, `pnpm setup:local`, `pnpm dev`. Current web URL is http://127.0.0.1:3202; ports3200/3201 were already occupied and were preserved.
 
 Read `.local/demo-accounts.md` locally for generated development credentials. Do not paste credentials into Codex. Log in/out between roles; no unrestricted role-switch menu. Use a fresh demo project if the overnight test suite has already exercised the original records.
 

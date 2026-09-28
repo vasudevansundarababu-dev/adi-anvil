@@ -2,7 +2,7 @@
 
 Frontier Evaluation & Diagnostics Platform
 
-**Active local build — 28 September 2026.** Work resumed under the user's additional eight-hour window (11:24–19:24 UTC). The fixture journey, production build, source-readiness workflow and expanded security tests pass; the complete MVP acceptance matrix remains partial. Live inference and external sending are disabled. See [current build status](BUILD-STATUS.md); the [morning report](docs/generated/morning-report.md) records the previous window. Local checkpoint: `b39b799`, with subsequent work in progress.
+**Verified local diagnostic slice — 28 September 2026.** The real-OIDC fixture journey, production build,89 unit tests and64 integration tests pass. Fresh isolated startup and recovery were rehearsed. Full MVP acceptance remains partial; live inference and external sending are disabled. See [current build status](BUILD-STATUS.md) and the updated [morning report](docs/generated/morning-report.md). Verified source checkpoint: `0adfcd9`.
 
 ## Start
 

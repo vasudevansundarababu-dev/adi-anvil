@@ -1,10 +1,14 @@
 # Build status
 
-Status: **RESUMED — VERIFICATION AND REMAINING ACCEPTANCE WORK IN PROGRESS**
+Status: **LOCAL DIAGNOSTIC SLICE VERIFIED — FULL MVP ACCEPTANCE PARTIAL**
 
 New authorization: user instructed “ok continue the work” after the proposed additional eight-hour window. Resumed 2026-09-28 11:24 UTC; new stop deadline 2026-09-28 19:24 UTC. Single writer; no live inference or external publication authority. First action: repair lint and verify the final prior-session changes, preserving all data and source.
 
-Current checkpoint: `b39b799` on `build/overnight-v1`; expanded graph/claims/limits and walkthrough work is subsequent verified working-tree code pending checkpoint. No remote publication. Latest unit/integration totals: **89/62 passed**. Production check passed including demo-script formatting, lint, TypeScript, webpack build and generated contracts. Real-OIDC browser passed25.5s test/46.6s total. Schema012; application stopped for production check, infrastructure retained.
+Current source checkpoint: `0adfcd9` on `build/overnight-v1`. No remote publication. Latest unit/integration totals: **89/64 passed**. Production check passed. Real-OIDC browser passed29.5s test/47.4s total. Schema012. Main web/API/worker and infrastructure are running; clean-test services are stopped with all volumes retained. The updated morning report and JSON record current evidence and remaining work.
+
+15:46 UTC: Disabled-account assignment and same-person multi-role negatives passed. Authenticated reads leave business tables unchanged except exact append-only access auditing; the test freezes independent background jobs/projection during measurement. Export canary, ZIP paths/allowlist/hashes and CSV checks passed. Independent build/89 units and fresh startup/browser/62 integrations passed after two explicit fixture-prerequisite repairs. Final main suite64 passed; no unresolved final-check failures. Next development scope: scanner/partner qualification, structured editing and remaining baseline/security permutations, then separately authorized and qualified live integration. No paid authority or real sender configured.
+
+Historical15:30 UTC rehearsal: temporarily stopped the main app/services while a fresh checkout used the same loopback ports under separate Compose project `adi-anvil-fresh-3e1ac27`. Rehearsal finished and original services/app were restored; both sets of volumes are retained. Never run the clean checkout's default setup against the main Compose project.
 
 15:25 UTC: All latest checks passed. Expanded graph lineage/atomic ordering, descriptive claim registry, fixture capture bounds and role/project provider/delivery negatives verified. Repeated400-episode load:39.84s execution,232.4ms table readiness,1.18s first progress after worker restart, zero duplicate invocations; all400 reviews pending. `pnpm demo:walkthrough` prepared project `ea1cc06d-3ad8-4e9c-8e89-87f27b2d2d82`: three cases, reviewed6 with3 pass/3 fail/mean85, plus separate6 pending practice episodes. Actual PDF visually inspected. Current schema012 backup restored into `anvil_restore_2f647051f0bc`, verifying4,856 checkpoints/1,898 artifact checksums/846 pending reviews. Copied review resume, isolated restored graph174 nodes/169 edges and actual Neo4j outage/rebuild passed. Next: local checkpoint and restart, then remaining bounded security/accessibility checks and current clean-checkout verification. See `docs/runbooks/morning-walkthrough.md` for the usable UI map. No live calls or real mail.
 
@@ -50,10 +54,10 @@ Resume evidence (12:57 UTC): checkpoint `387648a` contains the verified continua
 | M1 Identity, API/DB, shell | Core path verified; security matrix incomplete | Real OIDC11 identities, CSRF/role/project negatives, RLS; no production identity readiness claim |
 | M2 Intake, qualification, suite/protocol | Core path verified; baseline gaps remain | Source versions/receipts, rights expiry, rubric/task reviews, frozen bindings; general uploads quarantined |
 | M3 Durable fixture evaluation + review | Core path and400-episode processing verified | Blinded double grading, dispute/invalidity, SIGKILL recovery, cancelled/unknown states;400 human reviews intentionally pending |
-| M4 Diagnostics and graph | Partial; tested projection path | Actual outage/rebuild, isolated restored graph, historical-edge regression, interactive keyboard graph |
-| M5 Report, release, Sales Kit | Core local path verified; claim registry incomplete | Actual PDF/HTML/ZIP/email draft, one-page visual inspection, Sales download, network-free approved mail simulation |
+| M4 Diagnostics and graph | Core bounded local path verified | Family/capability/task/episode/finding links, atomic ordering, actual outage/rebuild, restored graph and keyboard navigation |
+| M5 Report, release, Sales Kit | Core local path verified; semantic claims remain human-reviewed | Descriptive claim registry, real downloads, one-page visual QA, rights invalidation and network-free mail simulation |
 | M6 Provider adapters and authorized smoke | Mock contracts passed; live blocked/unqualified | 73 SDK transport contracts; no inference; paid gate integration incomplete |
-| M7 Full verification and morning handoff | In progress within resumed window |89 unit/46 integration; clean build and browser recheck running; schema008 recovery next; remote CI not run |
+| M7 Verification and morning handoff | Current local evidence recorded; full acceptance partial |89 unit/64 integration, production/browser/load, independent startup and schema012 recovery passed; live/remote CI not passed |
 
 Build agent maintains below: start/deadline, current commit, versions, last passing command, failures, pending questions, next exact action, local URLs/processes and safe resume instructions. Keep secrets and raw candidate/source content out of this file.
 

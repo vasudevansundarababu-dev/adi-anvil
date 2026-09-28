@@ -1,90 +1,77 @@
-# ADI Anvil morning handoff
+# ADI Anvil — current local handoff
 
-**Overall: partial. Live verification: blocked. Not accepted as a complete local MVP.**
+**The local synthetic diagnostic journey works end to end. Full MVP acceptance remains partial; live inference and real sending are unavailable.**
 
-Authorized launch: 2026-09-28 02:43 UTC. Deadline: 10:43 UTC. Deadline overrun detected at 10:52 UTC; implementation stopped immediately on detection. This handoff records the partial state, not a completion claim.
+Verified source checkpoint: `0adfcd9` on `build/overnight-v1`, 28 September 2026. Local commits only. The user authorized continuation at11:24 UTC, with an outer deadline of19:24 UTC. This replaces the earlier10:52 handoff; its lint failures and missing local modules are no longer the current state.
 
-## What was verified
+## Open the working application
 
-- Independent pnpm workspace and Python 3.12 virtualenv/uv lock; PostgreSQL, Neo4j and Keycloak Compose services under project `adi-anvil`.
-- Real browser OIDC login for nine distinct local identities. Session-backed API calls, objective recommendations and separate scope approval.
-- Hash-pinned import of MKT-001, FIN-001 and STR-001; repeated import does not duplicate cases. Explicit local rights review, rubric/content/calibration reviews, task publication, reviewed/frozen suite and reviewed protocol.
-- Six illustrative episodes through PostgreSQL queue and LangGraph/PostgresSaver. Duplicate launch replay preserved six invocations. Worker restart while review was pending preserved output and reviews; independent double grading resumed without another candidate invocation.
-- Scripted synthetic judgments produced three passes, three critical failures, six valid episodes, mean score 85. These are application fixture assertions, not measured model performance or expert validation.
-- Actual authenticated PDF, HTML, ZIP and email-draft downloads. PDF page count was one. ZIP contained an explicit aggregate-file allowlist. Initial PDF visual inspection found transparent page background; renderer was corrected to paint white, but the corrected renderer was not regenerated/reinspected before deadline.
-- Six official-SDK/compatible adapters: 73 transport-contract tests passed. Success, missing usage, refusal, truncation, malformed/empty output, authentication/model/rate/server errors and ambiguous timeout covered; one inference request maximum asserted. No real provider calls.
-- Four additional scoring/rubric/fixture/PDF tests passed, for 77 unit tests total.
-- Three database integration tests passed: runtime nonowner/RLS isolation and immutable revisions; concurrent shared spending ceiling; retained unknown-cost reservation and idempotent settlement.
-- Consistent private PostgreSQL/artifact backup restored successfully into a new database. Counts verified: 22 resources, 18 episodes, 30 assessments, 102 checkpoints; 3 pending reviews and 31 artifact checksums preserved. Test history includes an earlier interrupted E2E run, so the database intentionally contains more than one six-episode run.
+Open [the prepared three-case project](http://127.0.0.1:3202/p/ea1cc06d-3ad8-4e9c-8e89-87f27b2d2d82/objectives). The web/API/worker and main infrastructure are running. Credentials are in owner-only `.local/demo-accounts.md`; no passwords are included here.
 
-## Latest state and limitations
+The [current walkthrough](../runbooks/morning-walkthrough.md) maps MORN-01–08 to the built UI. It contains3 original synthetic cases/families, a reviewed6-episode run with3 passes/3 critical failures and mean85, plus a separate6-episode run awaiting manual review. These are scripted fixture assertions, not measured model performance or expert validation.
 
-The final working tree is **not fully verified**. Later changes added Alembic migration adoption, provider-readiness/configuration routes, designated rights assignments, automatic provisional/refreshed Sales Kit jobs and maintenance commands. Alembic and backup/restore passed; automatic kit jobs and the latest API/worker/UI combination were not rerun end to end.
+- Web: http://127.0.0.1:3202
+- API health: http://127.0.0.1:8200/api/v1/health
+- Keycloak: http://127.0.0.1:8180/realms/anvil
+- PostgreSQL: loopback5542; Neo4j: loopback7475/7688.
+- Screenshots and actual PDF/HTML/ZIP/email-draft/internal-brief downloads: `artifacts/morning-demo/`. The actual PDF was rendered and visually inspected as one readable A4 page.
+- Restart: `pnpm services:up`, then `pnpm dev`. Stop the registered app with `pnpm stop`; restart only its worker with `pnpm worker:restart`. Preserve existing volumes and records.
 
-The last lint invocation failed with 56 import/style/unused-import findings. `pnpm check` is not passing. Frontend typecheck and webpack production build passed before the latest changes. Turbopack production builds failed on subprocess port permission even with requested escalation; the build script now uses the supported webpack path.
+## What works
 
-Important missing or incomplete work:
+Real Keycloak OIDC with opaque sessions, CSRF/Origin checks, independent local identities and project isolation; reviewed objectives; immutable source versions/receipts; manifest dry-run/commit/deduplication; local rights and expiry; version-bound readiness gaps; task/rubric qualification; frozen suites/protocols; actual LangGraph/PostgreSQL checkpoints; double grading, disputes and independent adjudication; invalid-reference resolution; cancellation and crash/restart recovery.
 
-- Complete F-ENG/F-SK negative/security matrix, including OIDC failure permutations, session expiry/revocation, assigned-review boundary hardening, stale lease/crash/cancellation cases and actual disagreement/adjudication tests.
-- Public partner JSON import/validation/commit, gap editing, external-result import, invitations/member administration, structured draft/successor editing and full typed-detail/API baseline compatibility. General uploads remain quarantined; no scanner qualification.
-- Findings UI and complete evidence-link validation; graph outage/rebuild/replay tests, full graph lineage coverage and generation validation. Diagnostics presently verifies projected node hashes against canonical records and returns canonical relationships.
-- A fully usable provider configuration UI and integrated live authorization/dispatch path. Adapters are **network-free SDK contract implementations**, not live-ready providers. The paid-approval endpoint deliberately blocks seeded identities and absent user authority. Budget mechanics are tested separately; reservation does not grant dispatch.
-- Final Sales Kit automation verification, immutable release/download artifact binding, complete revocation/correction tests, fixture mail-delivery mechanics and final one-page visual QA. Real sending is disabled.
-- Dockerfiles, CI workflow/checks, generated API client, full OpenAPI schema fidelity, dependency/advisory/secret audit, fresh clean startup, 200-record load fixture/performance measurement and responsive/keyboard coverage at required sizes.
-- Root scripts exist, but the entire root command contract is not verified; some implementations still need hardening (configurable ports, collision/ownership detection, startup failure detection, lock/cache behavior, backup permissions).
-- No local Git commit was created. Branch `build/overnight-v1` exists; all supplied and authored files remain untracked. Do not blindly stage the workspace. Secret scan and explicit staging remain required.
+Diagnostics includes bounded case-family/capability/task/episode/finding relationships, keyboard selection and linked-record navigation. PostgreSQL is canonical; Neo4j is a versioned rebuildable cache. Actual transaction rollback, out-of-order generation, service outage/rebuild and restored-namespace tests passed.
 
-## Tested commands and results
+Reports preserve origin and honest valid/pending/invalid/unscorable/unknown/cancelled denominators. A generated descriptive claim registry binds metrics to exact evidence IDs. Independent approvals gate actual PDF/HTML/ZIP/email draft exports. Successor versions and revoked rights block stale downloads. Sales can download approved kits without changing scientific facts. Network-free mail fixtures require independent sender/recipient/release approvals and never claim real delivery.
 
-| Exact command | Result |
+External-result import preserves producer-reported origin and configuration uncertainty, separates source scores from Anvil review, and uses durable review without calling a candidate. Aggregate-only and unknown executions cannot invent output or traces. General uploaded evidence remains quarantined.
+
+Six provider adapters have mock SDK transport contracts, actor-only inputs and no automatic inference retry. Provider configuration/status is visible. Integer spending reservations, concurrent ceilings and unknown-cost retention are tested separately. This is **not an enabled or end-to-end-qualified live execution path**.
+
+## Verification
+
+| Exact command | Latest result |
 | --- | --- |
-| `python3 scripts/local.py preflight` | Passed tool/Docker checks; Anvil infrastructure ports occupied as expected after startup |
-| `python3 scripts/local.py services-up` | Passed; isolated local infrastructure started |
-| `python3 scripts/local.py migrate` | Passed SQL migration; later passed Alembic adoption and checkpoint setup |
-| `python3 scripts/local.py seed` | Passed idempotent identity/project seed; no paid approvals or completed episodes seeded |
-| `python3 scripts/local.py dev` | Started registered web/API/worker processes and verified DB/OIDC |
-| `pnpm --filter @anvil/web check` | Passed before latest backend/automation edits |
-| `pnpm --filter @anvil/web exec next build --webpack` | Passed production build |
-| `pnpm exec playwright test` | Expanded real-OIDC journey passed, 1 test, 12.7 seconds; includes worker restart/downloads |
-| `python3 scripts/local.py unit` | 77 passed, 2.53 seconds; Authlib deprecation warning |
-| `python3 scripts/local.py integration` | 3 passed, 0.21 seconds |
-| `python3 scripts/local.py backup` | Passed consistent database/artifact backup |
-| `python3 scripts/local.py restore-test` | Passed into new retained `anvil_restore_64a52b7b141e` database |
-| `services/backend/.venv/bin/ruff check --config ruff.toml services/backend scripts --output-format concise` | Failed: 56 style/import/unused-import findings at stop |
-| `PLAYWRIGHT_BROWSERS_PATH=.local/browsers pnpm exec playwright install chromium` | Failed timeout/DNS; E2E used installed Chrome with fresh isolated profiles |
+| `pnpm check` | Passed Ruff, formatting, TypeScript, production webpack build and generated API contract. |
+| `pnpm test:unit` |89 passed. Includes73 provider transport-contract cases. |
+| `pnpm test:e2e` |1 comprehensive real-OIDC journey passed29.5s test/47.4s total. Includes11 identities, reviews/dispute/invalidity, rights/version invalidation, exports, fixture mail, intake, graph and responsive/keyboard checks. |
+| `pnpm test:integration` |64 passed35.66s. Run sequentially after E2E because it consumes the saved journey. |
+| `pnpm test:load` |400 fixture episodes from200 repeated variants of only3 sources/families;39.84s execution,232.4ms table readiness,1.18s first progress after worker restart, zero duplicate invocations. All400 human reviews pending. |
+| `pnpm demo:walkthrough` |Prepared the clean project linked above, verified real downloads and left a separate practice run pending. |
+| `services/backend/.venv/bin/python tests/migration_smoke.py` |Fresh and repeated migrations001–012 passed; retained database `anvil_migrationcheck_7050227e489a`. |
+| `services/backend/.venv/bin/python tests/launcher_smoke.py` |Occupied port rejected without touching its listener, including on the clean checkout. |
+| `services/backend/.venv/bin/python tests/graph_outage.py` |Actual Neo4j stop/fallback/start/rebuild passed; canonical score checksum unchanged. |
+| `pnpm backup:local`, then `pnpm restore:test` |Schema012 backup restored to a new retained database; counts/checksums passed. |
+| `services/backend/.venv/bin/python tests/restore_resume.py` |Copied pending review finalized using copied artifacts; invocation count and original episode unchanged. |
+| `services/backend/.venv/bin/python tests/restore_graph.py` |174 nodes/169 edges rebuilt in a separate namespace; canonical hashes matched and live evidence unchanged. |
+| `python3 scripts/secret_scan.py` |176 tracked files checked; zero findings. |
+| `pnpm audit --prod --json` |Earlier same-lockfile audit: zero advisories across102 production dependencies. Python audit:84 listed dependencies, zero advisories; unpublished local package skipped. |
+| `pnpm test:live` |Live verification blocked, not passed. No real model request was made. |
+| Remote CI, cloud deployment, real email |Not run; no publication or external sending authorized. |
 
-`pnpm setup:local`, the complete `pnpm check`, fresh-clone startup, `pnpm test:live -- --dry-run`, `pnpm demo:new`, and `pnpm graph:rebuild` were not fully exercised as root commands. Do not describe them as verified.
+P1 inventory verification used200 synthetic source identities/400 immutable versions/100 families, with zero published-task sources. Thirty sequential in-process ASGI+PostgreSQL/Neo4j samples met list/detail500ms and graph2s targets. Exact timings/hardware are in `artifacts/test-runs/inventory-performance.json`; this is not browser/network latency or an expert case bank.
 
-## Local locations and operating state
+The [acceptance matrix](test-matrix.md) records requirement-level partial/blocked coverage. Remaining permutations are not silently marked passed.
 
-- Web: http://127.0.0.1:3202. Ports 3200/3201 were occupied; unrelated processes were preserved.
-- API: http://127.0.0.1:8200. Identity: http://127.0.0.1:8180/realms/anvil.
-- PostgreSQL: loopback 5542; Neo4j: loopback 7475/7688.
-- Local credentials: `.local/demo-accounts.md`, generated owner-only. Secrets also in ignored `.env`/`.local/realm.json`. Do not copy values into chat, Git or reports.
-- Web/API/worker stopped at handoff; Compose infrastructure and all volumes preserved. No background work scheduled, no remote created, no cloud/email/Notion action.
-- Backup: `.local/backups/20260928T101755Z-b92c8a49/`; manifest and restore verification in that directory. Original database was not overwritten; restore target is retained for inspection.
-- Evidence: `artifacts/test-runs/playwright.json`, `journey.json`, `objectives.png`, `sales-kit.pdf`, `sales-kit.png`, `sales-kit.html`, `evidence.zip`, `email-draft.txt`. These ignored artifacts contain local synthetic evidence. Existing PDF is the earlier rendered version; final white-background change is unverified.
-- Runtime logs and former process registry: `.local/`. Raw local logs are never to be committed. API access logging was disabled in the latest launcher to avoid callback query tokens in future logs.
+## Independent startup and recovery
 
-## Versions
+Clean archive `.local/clean-checkout-3e1ac27` installed locked JS/Python dependencies into new directories using package caches, without copying node_modules, virtualenvs or credentials. Explicit nonsecret `ANVIL_ENV=local WEB_ORIGIN=http://127.0.0.1:3202 ANVIL_FIXTURE_MODE=true` made its check/89 units pass. Initial attempts used the wrong uv cache or omitted required local configuration; these were test setup failures, corrected before passing.
 
-Node 24.21.0; pnpm 10.34.5; Python 3.12.14 backend (system Python 3.14.6); uv 0.12.19. Next 16.3.6, React 19.3.0, Tailwind 4.3.3, TypeScript 5.9.3. FastAPI 0.141.1; LangGraph 1.2.12; checkpoint-postgres 3.1.2; psycopg 3.3.6; Neo4j driver 6.3.1; ReportLab 4.5.1. Images: postgres:17.6-bookworm, neo4j:5.26.12-community, keycloak:26.3.5. Exact dependencies in independent lockfiles; security/advisory qualification incomplete.
+Fresh bootstrap created new credentials and separate Compose project `adi-anvil-fresh-3e1ac27`. Explicit `docker compose --env-file .env -f infra/local/compose.yaml -p adi-anvil-fresh-3e1ac27 up -d --wait --wait-timeout 180`, followed by `pnpm db:migrate`, `pnpm seed:demo` and `pnpm dev`, passed. Its real-OIDC browser journey passed25.3s/47.8s. The first integration run exposed two tests relying on historical default-project fixtures; explicit prerequisites fixed them, and62 integrations passed29.12s. Those fixes are in0adfcd9. Later main-workspace hardening adds two more passing integrations.
 
-## Morning walkthrough mapping
+The isolated app/services are now stopped with their volumes retained. The original services/app were restarted. No database or volume was reset, overwritten or deleted.
 
-| Walkthrough | Built route | Status |
-| --- | --- | --- |
-| MORN-01 objective | `/p/{project}/objectives` | Core API/browser path passed; full editing/negative matrix incomplete |
-| MORN-02 cases/qualification | `/cases`, `/rubrics`, `/tasks` under project | Original fixture path passed; general partner import/gaps incomplete |
-| MORN-03 run | `/suites`, `/protocols`, `/runs` | Six-episode fixture path passed; latest UI combination not rechecked |
-| MORN-04 human review | `/reviews` | Double grading and actual worker restart passed; dispute/reconciliation matrix incomplete |
-| MORN-05 diagnostics | `/diagnostics` | Graph metadata/table response exercised; outage/rebuild walkthrough not run |
-| MORN-06 exports | `/reports`, `/sales-kits` | Downloads and one-page count passed; final visual/automation checks pending |
-| MORN-07 negatives | Same routes/direct API | Selected CSRF/role/project/idempotency tests passed; full walkthrough not run |
-| MORN-08 live | `/providers` | Blocked; no keys/models/budget/rights/real paid approvals, live dispatch not qualified |
+Latest rehearsed backup: `.local/backups/20260928T151725Z-3e32989f`, retained restore `anvil_restore_2f647051f0bc`:5,684 resources,1,291 episodes,373 assessments,462 imports,24 review issues/resolutions,42 external receipts,13 readiness items,4,856 checkpoints,846 pending reviews and1,898 artifact checksums. Later tests add records; these counts describe the snapshot, not the current entire database.
 
-## Spend and next action
+## Remaining work and authority gates
 
-Observed model-inference requests: **0**. No paid model credentials were used. Provider billed spend is **unknown/not queried**, not claimed to be a reconciled zero-dollar bill. Synthetic ledger test amounts are not real spending.
+- Live provider activation, paid-scope/run approval and dispatch/reconciliation integration remain unqualified. Exact provider/model IDs, local secrets, reviewed processing rights, budget and genuine distinct-Admin approvals are also absent. Adding a key alone does not enable execution. No seeded identity can grant real paid authority.
+- General clean-file scanning, nonfixture partner task qualification, faculty/derivative review, production invitation/member administration, complete structured rubric/task editing and full typed-detail/API baseline compatibility remain incomplete. Existing text draft/successor editing preserves bindings; it is not a full structured editor.
+- The descriptive claim registry does not semantically validate arbitrary free-text conclusions. Independent human review remains required; no benchmark comparison, endorsement, human baseline, causal diagnosis or improvement claim is established.
+- Fixture capture bounds are conservative UTF-8 byte and cooperative elapsed-time checks, not a provider tokenizer or hard process deadline. Broader execution and security permutations remain in the matrix.
+- Real email/recipient-access checks and production identity/deployment qualification are unavailable. CI is local source only. This is not a production/research release acceptance claim.
 
-Resume with a new explicit work window. Read `BUILD-STATUS.md`, inspect the untracked working tree, fix lint, run compilation/unit/integration checks, restart only Anvil, then rerun E2E on the final sources. Verify automatic kit jobs and the corrected PDF visually. Finish missing security/P0 criteria before calling the local MVP complete. Preserve existing projects/volumes; use a new demo project rather than resetting test evidence.
+Observed model-inference requests: **0**. Real email sent: **false**. Provider billed spend: **unknown/not queried**, not a reconciled zero-dollar bill. Synthetic ledger amounts are not actual spending.
+
+Continue from BUILD-STATUS.md and preserve the verified checkpoint, prepared demo and retained evidence. Do not reset the repository or use local test identities to manufacture live authority.

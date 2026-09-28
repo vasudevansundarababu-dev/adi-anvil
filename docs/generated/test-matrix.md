@@ -1,8 +1,8 @@
 # Acceptance evidence matrix
 
-Updated 2026-09-28 15:24 UTC. **Partial build, not release complete.** Stable checkpoint `b39b799`; expanded graph/claim/limit work is subsequent working-tree code under final verification. No live provider or real email test passed. Partial evidence does not waive the remaining criterion.
+Updated 2026-09-28 15:46 UTC. **Local diagnostic slice verified; full acceptance partial, not release complete.** Verified source checkpoint `0adfcd9`. No live provider or real email test passed. Partial evidence does not waive the remaining criterion.
 
-Latest completed checks:89 unit tests,62 integration tests; browser passed25.5s test/46.6s total including capability → task → episode → finding navigation, gap creation/resolution, draft/successor editing, Sales-role PDF download, customer import, inventory pagination and graph keyboard/responsive checks. Full `pnpm check` passed including the latest test/demo-script additions. Fresh/repeated migrations001–012 passed. Occupied-port launcher test and actual HTTP readiness passed. A clean three-case walkthrough with actual downloads and a separate pending practice run passed via `pnpm demo:walkthrough`.
+Latest checks:89 unit tests,64 integration tests; browser29.5s test/47.4s total including capability → task → episode → finding navigation, gaps, draft/successor editing, Sales PDF download, external import, pagination and responsive/keyboard checks. `pnpm check` passed. Fresh/repeated migrations001–012 passed. A separate fresh-service rehearsal passed startup, real-OIDC browser and62 integrations after explicit fixture-prerequisite repairs. `pnpm demo:walkthrough` prepared the clean three-case project and pending practice run.
 
 Evidence references: API = `services/backend/tests/integration/test_api_security.py`; DB = `test_isolation.py`; worker = `test_worker_failures.py`; science = `services/backend/tests/unit/test_science_exports.py`; SDK = `test_providers.py`; browser = `tests/e2e/journey.spec.ts`. Private evidence artifacts live under `artifacts/test-runs/`.
 
@@ -11,10 +11,10 @@ Evidence references: API = `services/backend/tests/integration/test_api_security
 | F-ENG01 | Passed | API session expiry/idle/revocation; signed issuer/audience/nonce/expiry/signature/unsigned negatives; invalid/reused state; real OIDC browser logins. |
 | F-ENG02 | Passed for tested routes | Cross-project content commands, runs, reviews, exports, artifacts, provider approvals, contact decisions, sender activation, delivery approval/send/read substitutions passed with unchanged foreign records; DB RLS passed. |
 | F-ENG03 | Partial | Content-role negatives and nine provider/delivery command classes across nine local identities passed; exhaustive content role/mutation permutations remain. |
-| F-ENG04 | Partial | CSRF/Origin negatives passed; exhaustive authenticated GET side-effect audit remains. |
+| F-ENG04 | Passed for authenticated routes | CSRF/Origin negatives passed; list/detail/review/evidence/readiness/graph/provider/delivery/download GETs leave business tables unchanged. Exact access-audit append events are checked separately from session activity. |
 | F-ENG05 | Passed | Stale412, replay and changed-body conflict; browser duplicate launch and external receipt replay. |
 | F-ENG06 | Partial | Source imports preserve one identity and exact immutable version receipts; no inherited rights; author draft/successor UI, replay, historical approvals and old-report invalidation passed. Database run/episode/thread/graph bindings immutable. Full dependency permutations remain. |
-| F-ENG07 | Partial | Distinct author/review/adjudicator/sender identities enforced; exhaustive multi-role negatives and real paid quorum absent. |
+| F-ENG07 | Passed locally / paid blocked | Disabled identities rejected; one synthetic identity with multiple content roles cannot fill separated objective/reviewer/adjudicator assignments. Distinct sender Admin required. Seeded paid approvals denied; real paid quorum absent. |
 | F-ENG08 | Passed | Non-owner cross-project FKs, missing tenant context and same-connection context reset. |
 | F-ENG09 | Passed | Case dry-run, row errors, atomic commit, repeat deduplication and quarantine rejection. |
 | F-ENG10 | Passed for fail-closed intake | Executable/macro/MIME/path/bomb fixtures remain quarantined without parsing; oversized requests rejected before storage. General scanner unavailable. |
@@ -44,10 +44,10 @@ Evidence references: API = `services/backend/tests/integration/test_api_security
 | F-ENG34 | Partial | Bounded scoped neighborhood, immediate canonical withdrawal and501 historical-edge starvation regression passed; exhaustive every-hop visibility remains. |
 | F-ENG35 | Passed | Actual Neo4j stop/fallback/start/rebuild with unchanged canonical score checksum. |
 | F-ENG36 | Passed | Rebuild/replay and expected node/edge/hash comparison; PostgreSQL canonical. |
-| F-ENG37 | Partial | ZIP allowlist, no raw references/internal brief, escaped HTML and fixed safe paths; exhaustive formula/path/secret matrix remains. |
+| F-ENG37 | Passed for current export schema | Exact ZIP allowlist/safe paths/hash manifest, private producer canary/hidden-reference exclusion, CSV enum/UUID/numeric cells and HTML escaping verified. Internal brief stays outside ZIP. Arbitrary reviewed text still requires human release review. |
 | F-ENG38 | Passed for report path | Sharing revocation and draft successor block old download; old revisions retained. |
 | F-ENG39 | Passed | Schema012 backup restored4,856 checkpoints/1,898 artifact checksums/846 pending reviews into retained `anvil_restore_2f647051f0bc`. Copied-review resume passed without reinvocation; isolated graph rebuilt174 nodes/169 edges with matching hashes and unchanged live evidence. |
-| F-ENG40 | Partial | Clean664703a archive installed JS/Python locks offline into independent directories; production check and88 units passed after explicit fixture test environment. Newest source and fresh infrastructure acceptance remain. |
+| F-ENG40 | Passed for recorded checkout | Independent3e1ac27 archive installed locked dependencies without copied environments/credentials; build/89 units passed. Separate new volumes/credentials passed startup/browser/62 integrations after explicit fixture repairs included in0adfcd9. Later main hardening passes64 integrations. No sibling dependency. |
 | F-ENG41 | Partial | 320/768/1440 overflow/theme/keyboard checks and visual inspection passed; full task-level accessibility audit remains. |
 | F-ENG42 | Passed for local boundary | Nonlocal/staging/wrong-origin startup tests reject bootstrap; mock-only SDK contracts; health/seed use local dependencies without inference. Remote CI execution remains untested. |
 | F-SK01 | Passed for fixture path | Automatic unique provisional kit; pending metrics unset and no release authority. |

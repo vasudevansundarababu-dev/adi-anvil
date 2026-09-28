@@ -1,34 +1,107 @@
 {
-  "status": "partial",
-  "live_verification": "blocked",
-  "launch_utc": "2026-09-28T02:43:00Z",
-  "deadline_utc": "2026-09-28T10:43:00Z",
-  "overrun_detected_utc": "2026-09-28T10:52:30Z",
-  "final_working_tree_verified": false,
+  "status": "local_diagnostic_slice_verified_full_mvp_partial",
+  "verified_source_commit": "0adfcd9",
   "git_branch": "build/overnight-v1",
-  "git_commit": null,
+  "updated_utc": "2026-09-28T15:45:00Z",
+  "continuation_start_utc": "2026-09-28T11:24:00Z",
+  "outer_deadline_utc": "2026-09-28T19:24:00Z",
   "tests": {
-    "unit": {"status": "passed_before_final_edits", "count": 77},
-    "integration": {"status": "passed_before_final_edits", "count": 3},
-    "browser_e2e": {"status": "passed_before_final_edits", "count": 1, "seconds": 12.7},
-    "webpack_build": "passed_before_final_edits",
-    "lint": {"status": "failed", "findings": 56},
+    "check": "passed",
+    "unit": {
+      "status": "passed",
+      "count": 89
+    },
+    "integration": {
+      "status": "passed",
+      "count": 64,
+      "seconds": 35.66
+    },
+    "browser": {
+      "status": "passed",
+      "count": 1,
+      "test_seconds": 29.5,
+      "total_seconds": 47.4
+    },
+    "fresh_startup": {
+      "status": "passed_after_explicit_test_fixture_fixes",
+      "source_commit": "3e1ac27",
+      "unit": 89,
+      "integration": 62,
+      "browser": "passed",
+      "compose_project": "adi-anvil-fresh-3e1ac27",
+      "volumes_retained": true
+    },
+    "load": {
+      "status": "passed",
+      "source_cases": 3,
+      "source_families": 3,
+      "repeated_tasks": 200,
+      "episodes": 400,
+      "pending_human_reviews": 400,
+      "execution_seconds": 39.840297708,
+      "duplicate_invocations": 0
+    },
+    "migration": "001-012 fresh and repeated passed",
     "backup_restore": "passed",
-    "final_pdf_visual": "not_run_after_background_fix",
-    "graph_outage_rebuild": "not_run",
-    "fresh_startup": "not_run",
-    "full_security_acceptance": "incomplete",
-    "live_smoke": "blocked"
+    "restored_review_resume": "passed",
+    "graph_outage_rebuild": "passed",
+    "restored_graph": "passed",
+    "pdf_visual": "passed",
+    "secret_scan": {
+      "tracked_files": 176,
+      "findings": 0
+    },
+    "live": "blocked",
+    "remote_ci": "not_run",
+    "full_acceptance": "partial"
   },
-  "fixture_assertions": {"cases": ["MKT-001", "FIN-001", "STR-001"], "episodes": 6, "passes": 3, "failures": 3, "mean_score": 85, "origin": "illustrative"},
-  "model_inference_requests_observed": 0,
+  "urls": {
+    "web": "http://127.0.0.1:3202",
+    "api": "http://127.0.0.1:8200",
+    "oidc": "http://127.0.0.1:8180/realms/anvil",
+    "demo": "http://127.0.0.1:3202/p/ea1cc06d-3ad8-4e9c-8e89-87f27b2d2d82/objectives"
+  },
+  "credential_file": ".local/demo-accounts.md",
+  "app_state": "running",
+  "demo": {
+    "project_id": "ea1cc06d-3ad8-4e9c-8e89-87f27b2d2d82",
+    "source_cases": 3,
+    "source_families": 3,
+    "reviewed_episodes": 6,
+    "passes": 3,
+    "failures": 3,
+    "mean_score": 85,
+    "pending_practice_episodes": 6,
+    "origin": "illustrative",
+    "model_performance": "not_measured"
+  },
+  "backup": {
+    "path": ".local/backups/20260928T151725Z-3e32989f",
+    "schema": 12,
+    "restore_database": "anvil_restore_2f647051f0bc",
+    "checkpoints": 4856,
+    "artifact_checksums": 1898,
+    "pending_reviews": 846,
+    "restored_graph_nodes": 174,
+    "restored_graph_edges": 169
+  },
+  "evidence_directories": [
+    "artifacts/morning-demo",
+    "artifacts/test-runs"
+  ],
+  "model_inference_requests": 0,
   "provider_billed_spend_usd": null,
   "provider_billing_status": "unknown_not_queried",
-  "urls": {"web": "http://127.0.0.1:3202", "api": "http://127.0.0.1:8200", "oidc": "http://127.0.0.1:8180/realms/anvil"},
-  "credential_file": ".local/demo-accounts.md",
-  "evidence_directory": "artifacts/test-runs",
-  "backup_directory": ".local/backups/20260928T101755Z-b92c8a49",
-  "restore_target": "anvil_restore_64a52b7b141e",
-  "data_safety": {"volumes_deleted": false, "original_database_overwritten": false, "github_pushed": false, "cloud_deployed": false, "email_sent": false},
-  "next_action": "New authorized work window: inspect BUILD-STATUS, fix lint, verify final sources and automatic kit jobs, finish missing P0 acceptance tests."
+  "real_email_sent": false,
+  "github_pushed": false,
+  "cloud_deployed": false,
+  "volumes_deleted": false,
+  "remaining": [
+    "live authority and qualified dispatch integration",
+    "general scanner and partner task qualification",
+    "production identity administration",
+    "full structured editing and baseline compatibility",
+    "semantic claim review and remaining security permutations",
+    "real delivery and production qualification"
+  ]
 }
