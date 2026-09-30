@@ -1,0 +1,31 @@
+{
+  "schema_version": "anvil.gcp.deployment.v1",
+  "application": "adi-anvil",
+  "release_label": "mvp-v1",
+  "status": "configuration_required",
+  "project_id": null,
+  "region": null,
+  "zone": null,
+  "web_origin": null,
+  "oidc_issuer": null,
+  "access_mode": null,
+  "monthly_infrastructure_budget_usd": null,
+  "gcloud_configuration": "anvil-mvp-v1",
+  "gcloud_credentials_directory": ".local/gcloud-anvil",
+  "architecture": {
+    "proposed_target": "dedicated_compute_engine_vm",
+    "selection_status": "proposed_not_provisioned",
+    "machine_type": null,
+    "persistent_disk_gb": null,
+    "service_account_email": null
+  },
+  "safety": {
+    "live_model_dispatch_enabled": false,
+    "real_email_enabled": false,
+    "reuse_local_demo_accounts": false,
+    "reuse_local_database": false,
+    "public_database_ports": false
+  },
+  "secret_resource_references": {},
+  "last_deployment": null
+}

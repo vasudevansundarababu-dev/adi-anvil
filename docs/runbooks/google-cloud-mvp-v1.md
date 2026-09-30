@@ -4,6 +4,10 @@ Status: preparation only. User requested Anvil deployment on 30 September 2026,
 superseding the earlier local-only deployment restriction. No cloud resources created.
 The existing application is not yet a qualified cloud release.
 
+Reusable target configuration: `infra/gcp/deployment.json`.
+Setup and credential isolation: `docs/runbooks/google-cloud-configuration.md`.
+Read both before every deployment; missing values block cloud provisioning.
+
 ## Repository checkpoint
 
 Application source is committed through `79b8422` on `build/overnight-v1`.
