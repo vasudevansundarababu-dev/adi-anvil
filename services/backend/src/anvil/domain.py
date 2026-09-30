@@ -300,6 +300,12 @@ def qualify(c, r):
         links = [(b["source_revision_id"], "source"), (b["rubric_revision_id"], "rubric")]
     elif kind == "suite":
         get_revision(c, b["objective_revision_id"], "objective", ["approved"])
+        if b.get("benchmark_revision_ids"):
+            from anvil.factory import qualify_suite
+
+            qualify_suite(c, b)
+            links += [(rid, "benchmark") for rid in b["benchmark_revision_ids"]]
+            links.append((b["recommendation_revision_id"], "recommendation"))
         families = {}
         for tid in b["task_revision_ids"]:
             task = get_revision(c, tid, "task", ["published"])["content"]

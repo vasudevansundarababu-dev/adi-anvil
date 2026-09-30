@@ -15,6 +15,7 @@ import FixtureDelivery from './FixtureDelivery';
 import TaskImport, { DatasetRunConfiguration } from './TaskImport';
 import AnvilHelp from './AnvilHelp';
 import MarketingRun from './MarketingRun';
+import BenchmarkFactory from './BenchmarkFactory';
 
 type Member = { id: string; name: string; role: string };
 type Project = { id: string; name: string; roles: string[] };
@@ -80,6 +81,7 @@ const modules = [
   'cases',
   'rubrics',
   'tasks',
+  'factory',
   'suites',
   'protocols',
   'runs',
@@ -95,6 +97,7 @@ const labels: Record<string, string> = {
   cases: 'Case bank',
   rubrics: 'Rubrics',
   tasks: 'Qualification',
+  factory: 'Benchmark Factory',
   suites: 'Suites',
   protocols: 'Protocols',
   runs: 'Run console',
@@ -109,6 +112,7 @@ const notes: Record<string, string> = {
   cases: 'Original synthetic cases. Intake, rights and readiness stay separate.',
   rubrics: 'Anchored criteria and calibration evidence, bound to exact versions.',
   tasks: 'Publish only after content, research and rights reviews.',
+  factory: 'Confirm task requirements, compare catalog metadata and prepare a Suite draft.',
   suites: 'Freeze exact task versions and disclose selection limits.',
   protocols: 'Bind the suite, candidates and independent reviewers.',
   runs: 'Explicit execution through the durable queue. Fixture results are illustrative.',
@@ -210,6 +214,12 @@ export default function Console() {
     if (!base) return;
     setError('');
     try {
+      if (section === 'factory') {
+        setRows([]);
+        setPageInfo(null);
+        setMembers(await api(base + '/members'));
+        return;
+      }
       const response = await api(
         base + '/' + section + '?q=' + encodeURIComponent(query),
         'GET',
@@ -222,7 +232,7 @@ export default function Console() {
       if (section === 'diagnostics') {
         setGraph(data);
         setRows([]);
-      } else setRows(data);
+      } else setRows(section === 'factory' ? [] : data);
       if (project?.roles.some((r) => r !== 'sales')) setMembers(await api(base + '/members'));
       else setMembers([]);
     } catch (e) {
@@ -518,76 +528,78 @@ export default function Console() {
             {message}
           </div>
         )}
-        <div className="toolbar">
-          <div>
-            <label htmlFor="search">Search this view</label>
-            <input
-              id="search"
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search titles or status"
-            />
-            {pageInfo && (
-              <button onClick={() => setQuery(search)} disabled={busy}>
-                Search all records
-              </button>
-            )}
-          </div>
-          <div className="actions">
-            <button onClick={() => void reload()} disabled={busy}>
-              Refresh
-            </button>
-            {role('researcher') &&
-              ['objectives', 'suites', 'protocols', 'reports'].includes(section) && (
-                <button className="primary" onClick={() => void openForm()}>
-                  New {section === 'objectives' ? 'objective' : section.slice(0, -1)}
+        {section !== 'factory' && (
+          <div className="toolbar">
+            <div>
+              <label htmlFor="search">Search this view</label>
+              <input
+                id="search"
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search titles or status"
+              />
+              {pageInfo && (
+                <button onClick={() => setQuery(search)} disabled={busy}>
+                  Search all records
                 </button>
               )}
-            {section === 'cases' && role('data-engineer') && (
-              <button
-                className="primary"
-                disabled={busy || !member('reviewer', 'reviewer-1') || !member('advisor')}
-                onClick={() =>
-                  act(
-                    () =>
-                      api(base + '/fixtures/import', 'POST', {
-                        case_ids: ['MKT-001', 'FIN-001', 'STR-001'],
-                        reviewer_id: member('reviewer', 'reviewer-1'),
-                        advisor_id: member('advisor'),
-                      }),
-                    'Three original fixtures imported; review drafts and rights before publishing.',
-                  )
-                }
-              >
-                Import built-in synthetic cases
+            </div>
+            <div className="actions">
+              <button onClick={() => void reload()} disabled={busy}>
+                Refresh
               </button>
-            )}
-            {section === 'cases' && role('data-engineer') && (
-              <button
-                disabled={busy || !member('reviewer', 'reviewer-1') || !member('advisor')}
-                onClick={() =>
-                  act(
-                    async () => {
-                      await api(base + '/fixtures/import', 'POST', {
-                        case_ids: ['MKT-LH-001'],
-                        reviewer_id: member('reviewer', 'reviewer-1'),
-                        advisor_id: member('advisor'),
-                      });
-                      setSearch('MKT-LH-001');
-                      setQuery('MKT-LH-001');
-                      if (query === 'MKT-LH-001') await reload();
-                    },
-                    '12-week marketing case, task and rubric drafts imported. Review rights and qualification before use.',
-                    false,
-                  )
-                }
-              >
-                Import 12-week marketing task
-              </button>
-            )}
+              {role('researcher') &&
+                ['objectives', 'suites', 'protocols', 'reports'].includes(section) && (
+                  <button className="primary" onClick={() => void openForm()}>
+                    New {section === 'objectives' ? 'objective' : section.slice(0, -1)}
+                  </button>
+                )}
+              {section === 'cases' && role('data-engineer') && (
+                <button
+                  className="primary"
+                  disabled={busy || !member('reviewer', 'reviewer-1') || !member('advisor')}
+                  onClick={() =>
+                    act(
+                      () =>
+                        api(base + '/fixtures/import', 'POST', {
+                          case_ids: ['MKT-001', 'FIN-001', 'STR-001'],
+                          reviewer_id: member('reviewer', 'reviewer-1'),
+                          advisor_id: member('advisor'),
+                        }),
+                      'Three original fixtures imported; review drafts and rights before publishing.',
+                    )
+                  }
+                >
+                  Import built-in synthetic cases
+                </button>
+              )}
+              {section === 'cases' && role('data-engineer') && (
+                <button
+                  disabled={busy || !member('reviewer', 'reviewer-1') || !member('advisor')}
+                  onClick={() =>
+                    act(
+                      async () => {
+                        await api(base + '/fixtures/import', 'POST', {
+                          case_ids: ['MKT-LH-001'],
+                          reviewer_id: member('reviewer', 'reviewer-1'),
+                          advisor_id: member('advisor'),
+                        });
+                        setSearch('MKT-LH-001');
+                        setQuery('MKT-LH-001');
+                        if (query === 'MKT-LH-001') await reload();
+                      },
+                      '12-week marketing case, task and rubric drafts imported. Review rights and qualification before use.',
+                      false,
+                    )
+                  }
+                >
+                  Import 12-week marketing task
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
         {importObjective && (
           <TaskImport
             base={base}
@@ -603,6 +615,15 @@ export default function Console() {
           <DatasetRunConfiguration base={base} onSaved={() => void reload()} />
         )}
         <AnvilHelp screen={importObjective ? 'imports' : section} />
+        {section === 'factory' && (
+          <BenchmarkFactory
+            key={base}
+            base={base}
+            api={api}
+            canWrite={role('researcher')}
+            advisorId={member('advisor')}
+          />
+        )}
         {editing && (
           <RevisionEditor
             key={editing.current_revision_id}
@@ -1521,7 +1542,7 @@ export default function Console() {
             )}
           </div>
         )}
-        {!rows.length && !error && section !== 'diagnostics' && (
+        {!rows.length && !error && !['diagnostics', 'factory'].includes(section) && (
           <div className="card empty">
             {query
               ? 'No records match this search.'

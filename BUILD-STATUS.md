@@ -1,5 +1,33 @@
 # Build status
 
+2026-09-29 — **ANV-BF-001 scoped Factory path locally verified.** User confirmed
+executing TaskProfile/recommendation first and extending the existing registry;
+GEO/intent-gap specs remain undefined. Added immutable confirmed profiles, explicit
+catalog metadata registration, deterministic weighted ranking with hard filters,
+gaps/composition advice and exact-version Suite draft creation in the existing shell.
+Migration017 applied; no new service/database/catalog, dependencies, live calls,
+external sends, schedules or remote publication. All supported data is original ADI
+synthetic; no Bodhium data fabricated. See `docs/generated/ANV-BF-001-report.md` and
+`docs/runbooks/benchmark-factory.md` for exact paths, commands and limits.
+
+Final source checks: `pnpm check` passed lint/format/types/production build/OpenAPI;
+`pnpm test:unit`124 passed; `pnpm test:integration`67 passed (38.13s);
+`pnpm test:e2e`4 passed (46.2s). Fresh/repeated001–017 passed in retained isolated
+`anvil_migrationcheck_ef26060f5c00`. Factory screenshot visually inspected.
+Initial new assertions and a preexisting repeat-run fixture-selection defect were
+repaired without weakening security gates. Current app restarted at3202/API8200.
+
+Full Benchmark Factory acceptance remains partial: registration is metadata only;
+full manifest/adapter smoke release, TaskBank profiling, measured cost/runtime,
+global optimal composition and100,000-task execution remain outstanding. Matching
+is limited to current qualified synthetic static fixtures; interactive marketing is
+explicitly excluded from this path. Paired benchmark/recommendation bindings and
+their exact task union are checked even for generic Suite creation. No hidden
+reference payloads are used for matching. Live verification remains blocked;
+schema017 backup/restore and destructive rollback were not run. Next ordered slice:
+Night2 provenance/owner-lineage alignment for the already-built CSV/JSONL importer;
+do not rebuild its upload/jobs/versioning. Stop after this requested increment.
+
 2026-09-28 20:20 UTC — **Registered 12-week marketing workflow verified locally;
 paid launch remains blocked at the user's request.** User confirmed that the API key
 is not configured and two real Admin approvers are unavailable. Implemented the

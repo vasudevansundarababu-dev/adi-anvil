@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 
 const topics: Record<string, string[]> = {
+  factory: ['How are benchmark matches ranked?', 'What does catalog registration mean?'],
   objectives: ['How do I write a measurable objective?', 'What is required for approval?'],
   imports: ['Why is input required?', 'Why is publication blocked?', 'How do I resume an import?'],
   suites: ['How are dataset versions attached?', 'Why freeze a suite?'],
@@ -8,6 +9,11 @@ const topics: Record<string, string[]> = {
   runs: ['Why can’t I launch imported tasks?', 'Which dataset version will run?'],
 };
 const definitions = [
+  {
+    keys: ['benchmark', 'catalog', 'rank', 'profile'],
+    text: 'Confirm all fourteen TaskProfile dimensions against the selected published tasks. Matching uses hard interface/schema/modality/environment/access/rights filters followed by fixed weighted metadata overlap. Registration stores metadata only; adapter smoke qualification remains pending. Recommendations pin exact revisions. Overrides need a recorded rationale; gap creation saves a draft and starts no execution.',
+    field: 'factory-objective',
+  },
   {
     keys: ['input', 'mapping', 'taskspec'],
     text: 'TaskSpec 1.0 requires schema_version, external_id, instruction and input. Input is a JSON object containing information available to the candidate. Keep reference answers in the separate reference field. CSV requires explicit external_id, instruction and input mappings.',

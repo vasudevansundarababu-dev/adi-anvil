@@ -823,7 +823,13 @@ def test_task_cannot_relabel_source_family_or_claim_protected_fixture(client_fac
     journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
     base = f"/api/v1/projects/{journey['project_id']}"
     client = client_factory("researcher")[0]
-    template = client.get(base + "/tasks").json()["data"][0]["content"]
+    # Repeated runs retain invalid drafts; start from a qualified fixture so each
+    # mutation isolates its intended security invariant rather than another draft's defect.
+    template = next(
+        item["content"]
+        for item in client.get(base + "/tasks").json()["data"]
+        if item["lifecycle"] == "published"
+    )
     for change, message in [
         ({"family_id": "invented-independent-family"}, "source family"),
         ({"split": "protected_test"}, "protected tests"),

@@ -15,6 +15,7 @@ from anvil.db import audit, digest, one, transaction, uid
 from anvil.delivery import routes as delivery_routes
 from anvil.evaluation import routes as evaluation_routes
 from anvil.external_results import routes as external_routes
+from anvil.factory import routes as factory_routes
 from anvil.graph import routes as graph_routes
 from anvil.intake import routes as intake_routes
 from anvil.provider_api import routes as provider_routes
@@ -151,6 +152,7 @@ app.include_router(external_routes(context, wrap, idempotent))
 app.include_router(delivery_routes(context, wrap, idempotent))
 app.include_router(readiness_routes(context, wrap, idempotent))
 app.include_router(task_import_routes(context, wrap, idempotent))
+app.include_router(factory_routes(context, wrap, idempotent))
 
 from anvil.marketing_api import routes as marketing_routes  # noqa: E402
 

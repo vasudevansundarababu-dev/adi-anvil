@@ -2,7 +2,7 @@
 
 Frontier Evaluation & Diagnostics Platform
 
-**Verified local diagnostic slice — 28 September 2026.** The real-OIDC diagnostic, task-import and marketing-preparation journeys pass, along with the production build,116 unit tests and66 integration tests. Fresh migrations and durable recovery were verified. Full MVP acceptance remains partial; paid launch and external sending stay blocked. See [current build status](BUILD-STATUS.md) and the [handoff report](docs/generated/morning-report.md).
+**Verified local diagnostic and Factory increment — 29 September 2026.** The real-OIDC diagnostic, task-import, marketing-preparation and Benchmark Factory journeys pass, along with the production build,124 unit tests and67 integration tests. Fresh migrations through017 pass. Full MVP and Benchmark Factory acceptance remain partial; paid launch and external sending stay blocked. See [current build status](BUILD-STATUS.md) and the [handoff report](docs/generated/morning-report.md).
 
 ## Start
 
@@ -16,6 +16,11 @@ Frontier Evaluation & Diagnostics Platform
 The [current walkthrough](docs/runbooks/morning-walkthrough.md) links to the prepared three-case project and maps the built UI to MORN-01–08. `pnpm demo:walkthrough` creates a fresh retained copy with scripted fixture reviews and a separate pending practice run. The [acceptance specification](docs/build/04-MORNING-ACCEPTANCE.md) describes the target; consult the [test matrix](docs/generated/test-matrix.md) for remaining gates. No specification is evidence of a passed test.
 
 ## Engineering authority
+
+The [Benchmark Factory walkthrough](docs/runbooks/benchmark-factory.md) describes the
+TaskProfile → deterministic recommendations → exact-version Suite draft increment.
+It extends the existing registry and shell; catalog registration is metadata only,
+and full benchmark smoke release and 100,000-task execution remain later work.
 
 The [12-week marketing walkthrough](docs/runbooks/marketing-live.md) covers the registered
 interactive task, exact OpenAI connection, draft run, real paid approvals and local key setup.

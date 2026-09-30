@@ -102,6 +102,17 @@ class Suite(Strict):
     exposure_note: str = Field(min_length=10)
     advisor_id: UUID
     planned_source_count: int = Field(default=200, ge=1)
+    benchmark_revision_ids: list[UUID] = Field(default_factory=list, max_length=10)
+    recommendation_revision_id: UUID | None = None
+    recommendation_override_reason: str = Field(default="", max_length=2000)
+
+    @model_validator(mode="after")
+    def paired_factory_binding(self):
+        if bool(self.benchmark_revision_ids) != bool(self.recommendation_revision_id):
+            raise ValueError(
+                "Benchmark versions and recommendation revision must be bound together"
+            )
+        return self
 
 
 class Protocol(Strict):

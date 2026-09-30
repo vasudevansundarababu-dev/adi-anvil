@@ -1,5 +1,21 @@
 # ADI Anvil — current local handoff
 
+## Benchmark Factory update — 29 September 2026
+
+The scoped ANV-BF-001 path works in the existing shell and registry: published tasks
+→ confirmed immutable profile → catalog metadata → deterministic recommendations
+→ exact-version Suite draft, with gap drafts and static Help. Migration017 applied.
+Production check,124 units,67 integrations and4 browser journeys pass; fresh/repeated
+migrations001–017 pass. See [the full Factory handoff](ANV-BF-001-report.md) for changed
+paths, exact commands, initial failures, repairs, screenshot evidence and limits.
+
+Overall MVP/Factory acceptance remains partial. Metadata registration is not executable
+benchmark publication, the composition heuristic is not globally cost-optimal, and
+runtime/cost estimates remain unknown. No100,000-task scale claim, live calls, real
+paid approvals, partner data, real sending or schedules. Next ordered increment:
+Night2 provenance/owner-lineage alignment of the existing CSV/JSONL importer.
+The marketing and earlier diagnostic sections below retain historical evidence.
+
 ## Marketing update — 28 September 2026, 20:20 UTC
 
 The registered 12-week workflow is implemented and mock-verified. **Paid launch remains

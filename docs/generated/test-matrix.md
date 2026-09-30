@@ -1,5 +1,15 @@
 # Acceptance evidence matrix
 
+2026-09-29 ANV-BF-001 update:124 units,67 integrations and4 browser journeys pass;
+production check and fresh/repeated001–017 migrations pass. See
+[Factory report](ANV-BF-001-report.md) for requirement-specific limits. Task-profile
+confirmation, exact deterministic ranking, visible hard exclusions, immutable
+snapshot readback, access/rights rechecks, scope bounds, paired Suite version binding,
+override rationale and gap drafts have direct test evidence in `test_factory.py`
+(unit and integration) and `tests/e2e/factory.spec.ts`. This does not establish complete
+ANV-REC-004 measured estimates, global cost-optimal ANV-REC-006, benchmark smoke release,
+TaskBank profiling or100,000-task capacity. Prior matrices below are historical.
+
 2026-09-28 20:20 UTC addition: `pnpm check`,116 units,66 integrations and3 browser
 journeys pass. `test_marketing.py` uses an isolated mock database:13 dependent responses,
 independent review/resume, durable intent/capture recovery, stale fencing, immutable

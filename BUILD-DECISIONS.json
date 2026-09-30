@@ -73,6 +73,18 @@
     "duration_and_install_scope_confirmation": "user_confirmed",
     "local_only_integrations_confirmation": "user_confirmed"
   },
+  "benchmark_factory": {
+    "increment": "ANV-BF-001",
+    "scope_authorized_date": "2026-09-29",
+    "case_first_order_replaced_by_user": true,
+    "catalog_storage": "existing anvil.resources/revisions registry; no parallel catalog",
+    "matching_policy": "deterministic-overlap-v1",
+    "scope_limit": "100 selected published tasks and 100 project catalog versions; larger catalog refuses ranking",
+    "registration_status": "metadata_only; manifest/adapter smoke release not implemented",
+    "supported_matching_path": "qualified original synthetic static-input fixtures with current local evaluation rights",
+    "runtime_cost_estimates": "explicitly unknown; no invented pricing or throughput",
+    "later_work": "full manifests/adapters, TaskBank profiling, partner data, cost-aware global composition and scale"
+  },
   "ingestion": {
     "current_daily_increment": 1,
     "specifications": [
