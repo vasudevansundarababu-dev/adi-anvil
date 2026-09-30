@@ -1,5 +1,15 @@
 # Build status
 
+2026-09-29 — **Local provenance increment verified.** User authorized autonomous local
+execution. Extended the existing importer with immutable source owner declarations,
+schema018, exact-version provenance and row lineage. Legacy sources stay unclassified;
+only explicitly declared ADI synthetic sources can publish pending reviewed rights/privacy
+controls. No partner fixtures, paid calls or external actions. `pnpm check` passed;
+130 units,67 integrations (final rerun39.55s) and4 browser journeys passed (45.6s).
+Final web type check and formatting passed. Fresh/repeated001–018 passed in retained
+`anvil_migrationcheck_446c2001b9f4`. See the provenance report for scope and limits.
+
+
 2026-09-29 — **ANV-BF-001 scoped Factory path locally verified.** User confirmed
 executing TaskProfile/recommendation first and extending the existing registry;
 GEO/intent-gap specs remain undefined. Added immutable confirmed profiles, explicit

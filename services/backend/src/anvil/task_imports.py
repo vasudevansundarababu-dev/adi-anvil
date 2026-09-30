@@ -5,8 +5,9 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import Field
 
-from anvil import artifacts, auth, domain, ingestion
+from anvil import artifacts, auth, domain, ingestion, provenance
 from anvil.db import Jsonb, audit, digest, one, uid
+from anvil.provenance import Declaration
 from anvil.schemas import Strict
 from anvil.task_parser import parse
 
@@ -15,6 +16,7 @@ class Import(Strict):
     artifact_id: UUID
     dataset_id: UUID | None = None
     mapping: dict[str, str] = Field(default_factory=dict, max_length=12)
+    provenance: Declaration | None = None
 
 
 class Mapping(Strict):
@@ -63,7 +65,7 @@ def batch(c, iid):
 def preview(c, item):
     source = one(
         c,
-        "SELECT original_filename,sha256,byte_size,mime_type FROM anvil.artifacts WHERE id=%s",
+        "SELECT id,original_filename,sha256,byte_size,mime_type FROM anvil.artifacts WHERE id=%s",
         (item["source_artifact_id"],),
     )
     job = one(
@@ -83,6 +85,10 @@ def preview(c, item):
             "published_version_id",
         )
     } | {
+        "provenance": provenance.read(c, item["source_artifact_id"]),
+        "publication_blocker": provenance.publication_blocker(
+            provenance.read(c, item["source_artifact_id"])
+        ),
         "source": source,
         **item["validation"],
         "job": job,
@@ -135,6 +141,9 @@ def run_snapshot(c, vid, protocol):
         "normalized_sha256": item["normalized_sha256"],
         "source_sha256": item["source"]["sha256"],
         "task_count": item["validation"]["counts"]["valid"],
+        "source_provenance": item["source"].get(
+            "provenance", {"classification": "unclassified", "source_owner": None}
+        ),
         "objective_id": str(item["objective_id"]),
         "objective_revision_id": str(protocol["objective_revision_id"]),
         "suite_revision_id": str(protocol["suite_revision_id"]),
@@ -166,6 +175,7 @@ def routes(context, wrap, idempotent):
                 )
                 if not source:
                     raise HTTPException(404, "Upload a CSV or JSONL task source first")
+                provenance.declare(c, project, user, body.artifact_id, body.provenance)
                 result = {
                     "columns": [],
                     "errors": [],
@@ -297,6 +307,10 @@ def routes(context, wrap, idempotent):
                     raise HTTPException(
                         409, "Wait for completed, valid ingestion before publishing"
                     )
+                declared = provenance.read(c, item["source_artifact_id"])
+                blocker = provenance.publication_blocker(declared)
+                if blocker:
+                    raise HTTPException(409, blocker)
                 dataset = one(
                     c, "SELECT * FROM anvil.task_datasets WHERE id=%s", (item["dataset_id"],)
                 )
@@ -315,6 +329,7 @@ def routes(context, wrap, idempotent):
                     (item["dataset_id"],),
                 )["n"]
                 source_info = {
+                    "provenance": declared,
                     "filename": source["original_filename"],
                     "media_type": source["mime_type"],
                     "byte_size": source["byte_size"],
@@ -447,14 +462,23 @@ def routes(context, wrap, idempotent):
     ):
         with context(request, project) as (c, user, roles):
             auth.require(roles, *domain.CONTENT_ROLES)
-            version(c, vid)
-            return wrap(
-                c.execute(
-                    "SELECT id,row_number,external_id,actor_spec FROM anvil.dataset_tasks WHERE version_id=%s ORDER BY row_number LIMIT %s OFFSET %s",
-                    (vid, limit, offset),
-                ).fetchall(),
-                request,
-            )
+            item = version(c, vid)
+            records = c.execute(
+                "SELECT id,row_number,external_id,actor_spec FROM anvil.dataset_tasks WHERE version_id=%s ORDER BY row_number LIMIT %s OFFSET %s",
+                (vid, limit, offset),
+            ).fetchall()
+            for row in records:
+                row["source_record"] = {
+                    "artifact_id": item["source"]["artifact_id"],
+                    "sha256": item["source"]["sha256"],
+                    "row_number": row["row_number"],
+                    "external_id": row["external_id"],
+                    "provenance": item["source"].get(
+                        "provenance", {"classification": "unclassified", "source_owner": None}
+                    ),
+                }
+            audit(c, project, user, "dataset.tasks_read", vid, {"offset": offset, "limit": limit})
+            return wrap(records, request)
 
     @router.put("/suites/{sid}/dataset-version")
     def attach(project: UUID, sid: UUID, body: Attach, request: Request):

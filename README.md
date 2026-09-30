@@ -2,7 +2,7 @@
 
 Frontier Evaluation & Diagnostics Platform
 
-**Verified local diagnostic and Factory increment — 29 September 2026.** The real-OIDC diagnostic, task-import, marketing-preparation and Benchmark Factory journeys pass, along with the production build,124 unit tests and67 integration tests. Fresh migrations through017 pass. Full MVP and Benchmark Factory acceptance remain partial; paid launch and external sending stay blocked. See [current build status](BUILD-STATUS.md) and the [handoff report](docs/generated/morning-report.md).
+**Verified local diagnostic, Factory and provenance increments — 29 September 2026.** The real-OIDC diagnostic, task-import, marketing-preparation and Benchmark Factory journeys pass, along with the production build,130 unit tests and67 integration tests. Fresh migrations through018 pass. Uploaded sources carry immutable author declarations; non-synthetic publication awaits reviewed rights/privacy controls. Full MVP and Benchmark Factory acceptance remain partial; paid launch and external sending stay blocked. See [current build status](BUILD-STATUS.md) and the [handoff report](docs/generated/morning-report.md).
 
 ## Start
 

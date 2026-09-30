@@ -87,3 +87,10 @@ Evidence references: API = `services/backend/tests/integration/test_api_security
 P1 inventory test passed200 synthetic case identities/400 immutable versions/100 families, zero published-task sources, cursor uniqueness and full-inventory search. Thirty sequential ASGI+PostgreSQL samples measured list/detail p95 under500ms (latest exact values in `artifacts/test-runs/inventory-performance.json`) on15 CPU cores/24GiB RAM. This excludes browser/network latency.
 
 `pnpm test:load` passed200 repeated task variants from only3 independent cases/families and400 episodes after the latest guards:39.84s execution,232.4ms table readiness,1.18s first progress after worker restart, zero duplicate invocations. All400 human reviews remain pending; no model performance was measured. Evidence: `artifacts/test-runs/load-fixture-performance.json`, `load-run-console.png`. Thirty sequential graph queries also stayed below the two-second target with a bounded200-node snapshot. CI configuration is local source only, not remotely executed. The [current walkthrough](../runbooks/morning-walkthrough.md) maps MORN-01–08; the final continuation handoff will replace the historical [morning report](morning-report.md).
+# Provenance continuation — 29 September 2026
+
+Existing CSV/JSONL source declarations:130 unit tests,67 integration tests and4 browser
+journeys passed. Missing declarations, immutable owner changes and retroactive source
+relabeling are blocked; exact dataset/run provenance and bounded row lineage verified.
+Non-synthetic policy permutations tested without storing fictional partner records.
+Fresh/repeated migrations001–018 passed. Rights/privacy review and live dispatch not run.

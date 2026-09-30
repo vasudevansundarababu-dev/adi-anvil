@@ -14,6 +14,8 @@ type Resource = {
   };
 };
 type Batch = {
+  provenance: { classification: string; source_owner: string | null; status: string };
+  publication_blocker: string | null;
   id: string;
   dataset_id: string;
   status: string;
@@ -42,6 +44,7 @@ type Version = {
   dataset_id: string;
   counts: { valid: number };
   objective_id: string;
+  source?: { provenance?: { classification: string; source_owner: string | null } };
 };
 const fields = [
   'schema_version',
@@ -127,6 +130,11 @@ export default function TaskImport({
     [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [filename, setFilename] = useState('');
+  const [classification, setClassification] = useState(''),
+    [owner, setOwner] = useState(''),
+    [basis, setBasis] = useState(''),
+    [generator, setGenerator] = useState(''),
+    [seed, setSeed] = useState('');
   async function work(fn: () => Promise<void>) {
     setBusy(true);
     setError('');
@@ -223,6 +231,14 @@ export default function TaskImport({
               artifact_id: artifact.id,
               ...(batch ? { dataset_id: batch.dataset_id } : {}),
               mapping: {},
+              provenance: {
+                classification,
+                source_owner: owner,
+                basis,
+                ...(classification === 'adi_synthetic'
+                  ? { generator_version: generator, seed }
+                  : {}),
+              },
             });
             setBatch(b);
             setVersion(null);
@@ -246,6 +262,63 @@ export default function TaskImport({
         <button disabled={busy}>
           {batch ? 'Upload corrected file to this dataset' : 'Upload and preview'}
         </button>
+        <label htmlFor="source-classification">Source provenance</label>
+        <select
+          id="source-classification"
+          required
+          value={classification}
+          onChange={(e) => setClassification(e.target.value)}
+        >
+          <option value="">Declare the source class</option>
+          <option value="adi_synthetic">ADI synthetic</option>
+          <option value="bodhium_restricted">Bodhium restricted</option>
+          <option value="adi_praxis_sme">ADI Praxis SME</option>
+          <option value="public_permitted">Permitted public</option>
+          <option value="third_party_licensed">Licensed third-party</option>
+        </select>
+        <label htmlFor="source-owner">Original source owner</label>
+        <input
+          id="source-owner"
+          required
+          minLength={3}
+          maxLength={200}
+          value={owner}
+          onChange={(e) => setOwner(e.target.value)}
+        />
+        <label htmlFor="source-basis">Declaration basis</label>
+        <textarea
+          id="source-basis"
+          required
+          minLength={10}
+          maxLength={1000}
+          value={basis}
+          onChange={(e) => setBasis(e.target.value)}
+        />
+        {classification === 'adi_synthetic' && (
+          <>
+            <label htmlFor="source-generator">Generator / authoring version</label>
+            <input
+              id="source-generator"
+              required
+              maxLength={100}
+              value={generator}
+              onChange={(e) => setGenerator(e.target.value)}
+            />
+            <label htmlFor="source-seed">Seed / authoring recipe identifier</label>
+            <input
+              id="source-seed"
+              required
+              maxLength={100}
+              value={seed}
+              onChange={(e) => setSeed(e.target.value)}
+            />
+          </>
+        )}
+        <p>
+          Author declaration only; no independent license or privacy clearance. Non-synthetic
+          publication remains blocked pending reviewed controls. Re-upload to correct an immutable
+          source declaration.
+        </p>
         {batch && (
           <button
             type="button"
@@ -268,6 +341,11 @@ export default function TaskImport({
       )}
       {batch && (
         <>
+          <p>
+            Source: {batch.provenance.classification} · owner{' '}
+            {batch.provenance.source_owner || 'unclassified'} · {batch.provenance.status}
+          </p>
+          {batch.publication_blocker && <p role="status">{batch.publication_blocker}</p>}
           {batch.job && (
             <div role="status">
               <p>
@@ -399,7 +477,9 @@ export default function TaskImport({
           ))}
           {!version && (
             <button
-              disabled={busy || batch.status !== 'ready' || mappingChanged}
+              disabled={
+                busy || batch.status !== 'ready' || mappingChanged || !!batch.publication_blocker
+              }
               onClick={() =>
                 void work(async () => {
                   const v = await request(base, `/task-imports/${batch.id}/publish`, 'POST', {
@@ -555,6 +635,10 @@ export function DatasetRunConfiguration({ base, onSaved }: { base: string; onSav
           <p>Protocol: {selection.protocol.content.title}</p>
           <p>
             Dataset version {selection.dataset.version_number} · {selection.dataset.version_id}
+          </p>
+          <p>
+            Source: {selection.dataset.source?.provenance?.classification ?? 'unclassified'} ·
+            owner: {selection.dataset.source?.provenance?.source_owner ?? 'unknown'}
           </p>
           <p>
             <strong>{selection.dataset.counts.valid} imported tasks selected</strong>

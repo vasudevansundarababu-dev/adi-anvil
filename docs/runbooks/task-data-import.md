@@ -11,7 +11,9 @@ privacy policy processing are not implemented by this increment. No paid calls o
 2. In **Research objectives**, find an approved objective with an existing frozen suite
    and approved protocol. The prepared walkthrough project already has these. Click
    **Import tasks** on the objective card.
-3. Download the **five-task synthetic example**, then select that JSONL file and click
+3. Download the **five-task synthetic example**, declare **ADI synthetic**, its original
+   author/owner, authoring basis, generator/authoring version and seed or recipe identifier.
+   Then select that JSONL file and click
    **Upload and preview**. The background worker reports queued/extracting progress.
    Wait for **5 received · 5 valid · 0 invalid · 0 duplicate rows**.
 4. Inspect the preview. References are stored separately and never displayed as actor
@@ -65,6 +67,15 @@ must preserve these scoped jobs, artifacts, checkpoints and publication bindings
 partially working remote connector controls are exposed.
 
 ## Privacy, references and Help
+
+Every new upload requires an explicit source declaration. It is immutable for that artifact
+and copied into published versions, row lineage and configured run snapshots. Historical
+imports without declarations stay **unclassified** and cannot be newly published; reupload
+with an explicit declaration instead. Source labels are author attestations, not reviewed
+rights or privacy clearance. Only explicitly declared ADI synthetic sources can publish
+through this development path. Bodhium, ADI Praxis, public and licensed declarations
+remain blocked until reviewed rights/privacy controls exist. Never label fictional fixtures
+as partner data.
 
 Use authorized, non-sensitive data. **Automated PII discovery/redaction is not implemented
 yet.** This is a development intake path, not a privacy clearance. The raw source is a

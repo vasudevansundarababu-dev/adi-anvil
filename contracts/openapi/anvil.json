@@ -4451,6 +4451,67 @@
         ],
         "title": "Decision"
       },
+      "Declaration": {
+        "properties": {
+          "classification": {
+            "type": "string",
+            "enum": [
+              "bodhium_restricted",
+              "adi_praxis_sme",
+              "adi_synthetic",
+              "public_permitted",
+              "third_party_licensed"
+            ],
+            "title": "Classification"
+          },
+          "source_owner": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 3,
+            "title": "Source Owner"
+          },
+          "basis": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 10,
+            "title": "Basis"
+          },
+          "generator_version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generator Version"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "classification",
+          "source_owner",
+          "basis"
+        ],
+        "title": "Declaration"
+      },
       "FixtureImport": {
         "properties": {
           "case_ids": {
@@ -4581,6 +4642,16 @@
             "type": "object",
             "maxProperties": 12,
             "title": "Mapping"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Declaration"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,

@@ -35,7 +35,12 @@ type Row = {
   state?: string;
   origin?: string;
   dataset_version_id?: string;
-  dataset_snapshot?: { task_count: number; version_number: number; task_schema_version: string };
+  dataset_snapshot?: {
+    task_count: number;
+    version_number: number;
+    task_schema_version: string;
+    source_provenance?: { classification: string; source_owner: string | null };
+  };
   my_review_submitted?: boolean;
   episodes?: Episode[];
   episode_count?: number;
@@ -515,8 +520,8 @@ export default function Console() {
           </div>
         </div>
         <div className="banner">
-          Synthetic source material · fixture execution is illustrative · no faculty validation or
-          measured frontier-model performance.
+          Built-in cases are ADI synthetic; uploaded sources have separate provenance declarations.
+          Fixture execution is illustrative; no measured frontier-model performance.
         </div>
         {error && (
           <div className="banner error" role="alert">
@@ -1168,7 +1173,9 @@ export default function Console() {
                       Imported dataset version {r.dataset_snapshot.version_number} ·{' '}
                       {r.dataset_snapshot.task_count} tasks · TaskSpec{' '}
                       {r.dataset_snapshot.task_schema_version} · {r.dataset_version_id}. Configured
-                      only; task qualification and supported execution are pending.
+                      only; task qualification and supported execution are pending. Source:{' '}
+                      {r.dataset_snapshot.source_provenance?.classification ?? 'unclassified'} ·
+                      owner: {r.dataset_snapshot.source_provenance?.source_owner ?? 'unknown'}.
                     </p>
                   )}
                   <p>

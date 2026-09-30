@@ -1,5 +1,10 @@
 # ADI Anvil — current local handoff
 
+Latest continuation: immutable source ownership/provenance in the existing importer,
+exact dataset lineage and run snapshots. Schema018;130 units and4 browser journeys
+passed. Non-synthetic publication remains blocked pending reviewed rights/privacy controls.
+See [the provenance report](ANV-ING-provenance-report.md) and BUILD-STATUS.md.
+
 ## Benchmark Factory update — 29 September 2026
 
 The scoped ANV-BF-001 path works in the existing shell and registry: published tasks

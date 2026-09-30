@@ -101,5 +101,12 @@
     "automated_privacy_processing": false,
     "later_increments": "PDF/Parquet, web/API, database/cloud, generation/augmentation, privacy processing"
   },
+  "source_provenance_increment": {
+    "schema_version": 18,
+    "ownership": "immutable author declaration per source artifact; copied into exact dataset and run snapshots",
+    "legacy": "unclassified; no inferred partner or synthetic ownership",
+    "publication": "explicit ADI synthetic only until independent rights/privacy controls exist",
+    "clearance": "author declarations do not grant reviewed rights or privacy clearance"
+  },
   "note": "Pending values are not consent. The build agent must not fill user approvals from inference. Dependency/default choices are proposals; live keys never belong in this file."
 }

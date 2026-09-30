@@ -36,6 +36,13 @@ test('import five tasks, pin a run, and use accessible static help', async ({ pa
     Array.from({ length: 5 }, (_, n) => `csv-${n},Choose within budget,"{""budget"":1000}"`).join(
       '\n',
     );
+  await page.locator('#source-classification').selectOption('adi_synthetic');
+  await page.locator('#source-owner').fill('ADI synthetic test authors');
+  await page
+    .locator('#source-basis')
+    .fill('Original invented development data; no real customer or partner material.');
+  await page.locator('#source-generator').fill('manual-fixture-v1');
+  await page.locator('#source-seed').fill('synthetic-five-v1');
   await page
     .locator('#task-source')
     .setInputFiles({ name: 'custom.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });

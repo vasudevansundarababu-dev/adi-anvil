@@ -41,16 +41,30 @@ def test_import_publish_versions_run_and_resume(client_factory, monkeypatch):  #
         )["resource_id"]
     source = (ROOT / "apps/web/public/examples/synthetic-five-tasks.jsonl").read_bytes()
 
-    def upload(data, dataset=None):
+    def upload(data, dataset=None, classification="adi_synthetic"):
         response = client.post(
             base + "/artifacts?purpose=task_import",
             files={"file": ("tasks.jsonl", data, "application/x-ndjson")},
         )
         assert response.status_code == 200, response.text
         artifact = response.json()["data"]["id"]
+        declaration = {
+            "classification": classification,
+            "source_owner": "ADI test authors",
+            "basis": "Original synthetic development fixture; not partner data.",
+            **(
+                {"generator_version": "manual-v1", "seed": "five-v1"}
+                if classification == "adi_synthetic"
+                else {}
+            ),
+        }
         return call(
             f"/objectives/{objective}/task-imports",
-            {"artifact_id": artifact, **({"dataset_id": dataset} if dataset else {})},
+            {
+                "artifact_id": artifact,
+                **({"provenance": declaration} if classification else {}),
+                **({"dataset_id": dataset} if dataset else {}),
+            },
         )
 
     def advance(batch):
@@ -98,6 +112,46 @@ def test_import_publish_versions_run_and_resume(client_factory, monkeypatch):  #
             == "ready"
         )
     v1 = call(f"/task-imports/{first['id']}/publish", body, headers={"Idempotency-Key": key})
+    assert v1["source"]["provenance"]["classification"] == "adi_synthetic"
+    assert v1["source"]["provenance"]["source_owner"] == "ADI test authors"
+    rows = call("/dataset-versions/" + v1["id"] + "/tasks", method="GET")
+    assert rows[0]["source_record"]["provenance"] == v1["source"]["provenance"]
+    assert rows[0]["source_record"]["sha256"] == v1["source"]["sha256"]
+    call(
+        f"/objectives/{objective}/task-imports",
+        {
+            "artifact_id": v1["source"]["artifact_id"],
+            "provenance": {
+                "classification": "bodhium_restricted",
+                "source_owner": "Another owner",
+                "basis": "Test-only declaration conflicts with immutable original ownership.",
+            },
+        },
+        expected=409,
+    )
+    # Never persist synthetic fixtures under partner/SME provenance. All class
+    # gate permutations are pure-policy unit tests; this exercises missing provenance.
+    blocked = advance(upload(source, classification=None))
+    assert blocked["publication_blocker"]
+    call(
+        f"/objectives/{objective}/task-imports",
+        {
+            "artifact_id": blocked["source"]["id"],
+            "provenance": {
+                "classification": "adi_synthetic",
+                "source_owner": "ADI test authors",
+                "basis": "Original synthetic development fixture; not partner data.",
+                "generator_version": "manual-v1",
+                "seed": "five-v1",
+            },
+        },
+        expected=409,
+    )
+    call(
+        f"/task-imports/{blocked['id']}/publish",
+        {"revision": blocked["revision"], "normalized_sha256": blocked["normalized_sha256"]},
+        expected=409,
+    )
     assert (
         call(f"/task-imports/{first['id']}/publish", body, headers={"Idempotency-Key": key}) == v1
     )
@@ -131,6 +185,7 @@ def test_import_publish_versions_run_and_resume(client_factory, monkeypatch):  #
     )
     assert run["dataset_snapshot"]["task_count"] == 5
     assert run["dataset_version_id"] == v1["id"]
+    assert run["dataset_snapshot"]["source_provenance"] == v1["source"]["provenance"]
     call(
         "/runs/" + run["id"] + "/launch",
         {},
