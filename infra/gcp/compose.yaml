@@ -1,5 +1,5 @@
 # ADI Anvil MVP v1 single-host stack (Compute Engine VM). Rendered to /opt/anvil by startup.sh.
-# Only Caddy publishes public ports. Keycloak's plain port is bound to the VM loopback for
+# Only Caddy publishes a port (80, load balancer ranges only). Keycloak's plain port is bound to the VM loopback for
 # IAP-tunnelled administration. Secrets come from owner-only env files written from Secret Manager.
 name: adi-anvil
 x-backend: &backend
@@ -76,18 +76,15 @@ services:
   caddy:
     image: caddy:2.10.2
     restart: unless-stopped
-    ports: ["${ANVIL_HTTP_PORT:-80}:80", "${ANVIL_HTTPS_PORT:-443}:443"]
+    # Plain HTTP only; reachable from the load balancer ranges (firewall), not the internet.
+    ports: ["${ANVIL_HTTP_PORT:-80}:80"]
     environment:
       ANVIL_WEB_HOST: ${ANVIL_WEB_HOST:?}
       ANVIL_AUTH_HOST: ${ANVIL_AUTH_HOST:?}
-      ANVIL_TLS: ${ANVIL_TLS:-}
+      ANVIL_TRUSTED_PROXIES: ${ANVIL_TRUSTED_PROXIES:-130.211.0.0/22 35.191.0.0/16}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - "${ANVIL_DATA:-/var/lib/anvil}/caddy:/data"
-    networks:
-      default:
-        # The API verifies OIDC against the public issuer; resolve it to Caddy inside the host.
-        aliases: ["${ANVIL_AUTH_HOST:?}", "${ANVIL_WEB_HOST:?}"]
     depends_on: [api, web, keycloak]
     logging: *logging
   ops:

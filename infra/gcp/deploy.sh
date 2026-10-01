@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Deploys ADI Anvil MVP v1 to a dedicated Google Cloud project as one Compute Engine VM.
+# Deploys ADI Anvil MVP v1 to a dedicated Google Cloud project: one private Compute Engine VM
+# (no external IP; the org policy forbids them) behind a global external Application Load
+# Balancer with a Google-managed certificate. Cloud NAT provides outbound access.
 #
 #   infra/gcp/deploy.sh <billing-account-id>      first deployment (creates project and resources)
 #   DEPLOY_ONLY=1 infra/gcp/deploy.sh             rebuild images and roll the VM forward
@@ -8,9 +10,8 @@
 # reused, secrets are created once and never printed, the data disk is never recreated.
 # Uses only Anvil's own gcloud credential directory (.local/gcloud-anvil), never sibling ones.
 #
-# Stack on the VM: Caddy (HTTPS, Let's Encrypt) -> Next.js web + FastAPI API, LangGraph worker,
-# PostgreSQL 17, Neo4j 5, Keycloak 26 (production mode). Only ports 80/443 are public; SSH is
-# IAP-only. Live model dispatch and real email stay disabled (cloud mode refuses them).
+# Stack on the VM: Caddy (host router, HTTP from the load balancer only) -> Next.js web + FastAPI
+# API, LangGraph worker, PostgreSQL 17, Neo4j 5, Keycloak 26 (production mode). SSH is IAP-only. Live model dispatch and real email stay disabled (cloud mode refuses them).
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
@@ -66,16 +67,28 @@ if [ -z "${DEPLOY_ONLY:-}" ]; then
       --threshold-rule=percent=1.0,basis=forecasted-spend >/dev/null
   fi
 
-  say "Network (dedicated VPC; HTTPS public, SSH via IAP only)"
+  say "Network (dedicated VPC, private VM, Cloud NAT; SSH via IAP only)"
   exists gcloud compute networks describe anvil-net || gcloud compute networks create anvil-net --subnet-mode=custom
   exists gcloud compute networks subnets describe anvil-subnet --region="$REGION" ||
     gcloud compute networks subnets create anvil-subnet --network=anvil-net --region="$REGION" --range=10.20.0.0/24
-  exists gcloud compute firewall-rules describe anvil-allow-https || gcloud compute firewall-rules create anvil-allow-https \
-    --network=anvil-net --allow=tcp:80,tcp:443 --target-tags=anvil-web --source-ranges=0.0.0.0/0
+  gcloud compute networks subnets update anvil-subnet --region="$REGION" --enable-private-ip-google-access >/dev/null
+  exists gcloud compute routers describe anvil-router --region="$REGION" ||
+    gcloud compute routers create anvil-router --network=anvil-net --region="$REGION"
+  exists gcloud compute routers nats describe anvil-nat --router=anvil-router --region="$REGION" ||
+    gcloud compute routers nats create anvil-nat --router=anvil-router --region="$REGION" \
+      --auto-allocate-nat-external-ips --nat-all-subnet-ip-ranges
+  # Only the Google load balancer and health checkers reach Caddy on port 80.
+  if exists gcloud compute firewall-rules describe anvil-allow-https; then
+    gcloud compute firewall-rules update anvil-allow-https --allow=tcp:80 \
+      --source-ranges=130.211.0.0/22,35.191.0.0/16 >/dev/null
+  else
+    gcloud compute firewall-rules create anvil-allow-https --network=anvil-net --allow=tcp:80 \
+      --target-tags=anvil-web --source-ranges=130.211.0.0/22,35.191.0.0/16
+  fi
   exists gcloud compute firewall-rules describe anvil-allow-iap-ssh || gcloud compute firewall-rules create anvil-allow-iap-ssh \
     --network=anvil-net --allow=tcp:22 --target-tags=anvil-web --source-ranges=35.235.240.0/20
-  exists gcloud compute addresses describe anvil-ip --region="$REGION" ||
-    gcloud compute addresses create anvil-ip --region="$REGION" --network-tier=PREMIUM
+  exists gcloud compute addresses describe anvil-lb-ip --global ||
+    gcloud compute addresses create anvil-lb-ip --global --ip-version=IPV4
 
   say "Runtime service account"
   exists gcloud iam service-accounts describe "$SA" ||
@@ -116,7 +129,7 @@ else
   say "Redeploy only ($PROJECT_ID)"
 fi
 
-IP=$(gcloud compute addresses describe anvil-ip --region="$REGION" --format='value(address)')
+IP=$(gcloud compute addresses describe anvil-lb-ip --global --format='value(address)')
 WEB_HOST=anvil-${IP//./-}.sslip.io
 AUTH_HOST=auth-${IP//./-}.sslip.io
 
@@ -133,7 +146,7 @@ FILES="$FILES,anvil-render-config=$ROOT/infra/gcp/render_config.py"
 if ! exists gcloud compute instances describe "$VM" --zone="$ZONE"; then
   say "VM $VM ($MACHINE)"
   gcloud compute instances create "$VM" --zone="$ZONE" --machine-type="$MACHINE" \
-    --network-interface=subnet=anvil-subnet,address=anvil-ip,network-tier=PREMIUM \
+    --network-interface=subnet=anvil-subnet,no-address \
     --image-family=debian-12 --image-project=debian-cloud --boot-disk-size=30GB --boot-disk-type=pd-balanced \
     --disk=name=anvil-data,device-name=anvil-data,mode=rw,boot=no,auto-delete=no \
     --service-account="$SA" --scopes=cloud-platform --tags=anvil-web \
@@ -146,8 +159,44 @@ else
   gcloud compute ssh "$VM" --zone="$ZONE" --tunnel-through-iap --command='sudo google_metadata_script_runner startup'
 fi
 
-say "Smoke checks"
-for _ in $(seq 1 60); do
+if [ -z "${DEPLOY_ONLY:-}" ]; then
+  say "Load balancer (Google-managed certificate for $WEB_HOST and $AUTH_HOST)"
+  exists gcloud compute instance-groups unmanaged describe anvil-ig --zone="$ZONE" || {
+    gcloud compute instance-groups unmanaged create anvil-ig --zone="$ZONE"
+    gcloud compute instance-groups unmanaged add-instances anvil-ig --zone="$ZONE" --instances="$VM"
+  }
+  gcloud compute instance-groups unmanaged set-named-ports anvil-ig --zone="$ZONE" --named-ports=http:80 >/dev/null
+  exists gcloud compute health-checks describe anvil-hc ||
+    gcloud compute health-checks create http anvil-hc --port=80 --request-path=/healthz
+  if ! exists gcloud compute backend-services describe anvil-backend --global; then
+    gcloud compute backend-services create anvil-backend --global --protocol=HTTP --port-name=http \
+      --health-checks=anvil-hc --timeout=120s --load-balancing-scheme=EXTERNAL_MANAGED
+    gcloud compute backend-services add-backend anvil-backend --global \
+      --instance-group=anvil-ig --instance-group-zone="$ZONE"
+  fi
+  exists gcloud compute url-maps describe anvil-urlmap || gcloud compute url-maps create anvil-urlmap --default-service=anvil-backend
+  exists gcloud compute ssl-certificates describe anvil-cert --global ||
+    gcloud compute ssl-certificates create anvil-cert --global --domains="$WEB_HOST,$AUTH_HOST"
+  exists gcloud compute target-https-proxies describe anvil-https-proxy ||
+    gcloud compute target-https-proxies create anvil-https-proxy --url-map=anvil-urlmap --ssl-certificates=anvil-cert
+  exists gcloud compute forwarding-rules describe anvil-https --global ||
+    gcloud compute forwarding-rules create anvil-https --global --load-balancing-scheme=EXTERNAL_MANAGED \
+      --address=anvil-lb-ip --target-https-proxy=anvil-https-proxy --ports=443
+  if ! exists gcloud compute url-maps describe anvil-redirect; then
+    REDIRECT=$(mktemp)
+    printf 'name: anvil-redirect\ndefaultUrlRedirect:\n  httpsRedirect: true\n  redirectResponseCode: MOVED_PERMANENTLY_DEFAULT\n' > "$REDIRECT"
+    gcloud compute url-maps import anvil-redirect --global --source="$REDIRECT" --quiet
+    rm -f "$REDIRECT"
+  fi
+  exists gcloud compute target-http-proxies describe anvil-http-proxy ||
+    gcloud compute target-http-proxies create anvil-http-proxy --url-map=anvil-redirect
+  exists gcloud compute forwarding-rules describe anvil-http --global ||
+    gcloud compute forwarding-rules create anvil-http --global --load-balancing-scheme=EXTERNAL_MANAGED \
+      --address=anvil-lb-ip --target-http-proxy=anvil-http-proxy --ports=80
+fi
+
+say "Smoke checks (the managed certificate can take 15-60 minutes to become ACTIVE)"
+for i in $(seq 1 120); do
   if curl -fsS "https://$WEB_HOST/api/v1/health" 2>/dev/null | grep -q '"api":"ready"' &&
      curl -fsS "https://$AUTH_HOST/realms/anvil/.well-known/openid-configuration" 2>/dev/null | grep -q "\"issuer\":\"https://$AUTH_HOST/realms/anvil\""; then
     echo "API health, OIDC discovery and TLS: OK"
@@ -168,10 +217,11 @@ d["secret_resource_references"] = {n: f"projects/{d['project_id']}/secrets/{n}" 
     "anvil-neo4j-password", "anvil-session-key", "anvil-oidc-client-secret",
     "anvil-keycloak-admin-password", "anvil-keycloak-db-password"]}
 d["last_deployment"] = {
-    "commit": commit, "image_tag": tag, "static_ip": ip,
+    "commit": commit, "image_tag": tag, "load_balancer_ip": ip,
     "web_origin": f"https://{web}", "oidc_issuer": f"https://{auth}/realms/anvil",
     "vm": "anvil-mvp-v1", "verified_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
     "smoke": ["api_health", "oidc_discovery", "tls", "keycloak_admin_private"],
+    "edge": "global external Application Load Balancer, Google-managed certificate",
 }
 json.dump(d, open(path, "w"), indent=2); open(path, "a").write("\n")
 PY
@@ -181,7 +231,8 @@ PY
     echo "  infra/gcp/invite.sh <username> <email> \"<Full Name>\" admin researcher"
     exit 0
   fi
-  sleep 10
+  [ $((i % 6)) -eq 0 ] && echo "  certificate: $(gcloud compute ssl-certificates describe anvil-cert --global --format='value(managed.status)')"
+  sleep 30
 done
 echo "Smoke checks did not pass. Inspect the VM: gcloud compute ssh $VM --zone=$ZONE --tunnel-through-iap" >&2
 echo "  then: sudo journalctl -t anvil-startup; sudo docker compose -f /opt/anvil/compose.yaml logs --tail=100" >&2
