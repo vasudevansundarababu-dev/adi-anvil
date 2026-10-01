@@ -2,22 +2,22 @@
   "schema_version": "anvil.gcp.deployment.v1",
   "application": "adi-anvil",
   "release_label": "mvp-v1",
-  "status": "configuration_required",
+  "status": "deployed",
   "project_id": "adi-anvil-mvp-2026",
   "region": "us-west1",
   "zone": "us-west1-a",
-  "web_origin": null,
-  "oidc_issuer": null,
+  "web_origin": "https://anvil-34-36-217-66.sslip.io",
+  "oidc_issuer": "https://auth-34-36-217-66.sslip.io/realms/anvil",
   "access_mode": "public_invited_users",
   "monthly_infrastructure_budget_usd": 150,
   "gcloud_configuration": "anvil-mvp-v1",
   "gcloud_credentials_directory": ".local/gcloud-anvil",
   "architecture": {
     "proposed_target": "dedicated_compute_engine_vm",
-    "selection_status": "approved_not_provisioned",
+    "selection_status": "provisioned",
     "machine_type": "e2-standard-4",
     "persistent_disk_gb": 50,
-    "service_account_email": null,
+    "service_account_email": "anvil-vm@adi-anvil-mvp-2026.iam.gserviceaccount.com",
     "hostname_scheme": "sslip.io names derived from the reserved static IP (anvil-<ip>, auth-<ip>)",
     "edge": "caddy_lets_encrypt",
     "backups": "daily data-disk snapshots, 14-day retention"
@@ -29,6 +29,30 @@
     "reuse_local_database": false,
     "public_database_ports": false
   },
-  "secret_resource_references": {},
-  "last_deployment": null
+  "secret_resource_references": {
+    "anvil-db-owner-password": "projects/adi-anvil-mvp-2026/secrets/anvil-db-owner-password",
+    "anvil-db-app-password": "projects/adi-anvil-mvp-2026/secrets/anvil-db-app-password",
+    "anvil-db-worker-password": "projects/adi-anvil-mvp-2026/secrets/anvil-db-worker-password",
+    "anvil-neo4j-password": "projects/adi-anvil-mvp-2026/secrets/anvil-neo4j-password",
+    "anvil-session-key": "projects/adi-anvil-mvp-2026/secrets/anvil-session-key",
+    "anvil-oidc-client-secret": "projects/adi-anvil-mvp-2026/secrets/anvil-oidc-client-secret",
+    "anvil-keycloak-admin-password": "projects/adi-anvil-mvp-2026/secrets/anvil-keycloak-admin-password",
+    "anvil-keycloak-db-password": "projects/adi-anvil-mvp-2026/secrets/anvil-keycloak-db-password"
+  },
+  "last_deployment": {
+    "commit": "401f98e",
+    "image_tag": "401f98e-1790866791",
+    "load_balancer_ip": "34.36.217.66",
+    "web_origin": "https://anvil-34-36-217-66.sslip.io",
+    "oidc_issuer": "https://auth-34-36-217-66.sslip.io/realms/anvil",
+    "vm": "anvil-mvp-v1",
+    "verified_at": "2026-10-01T15:14:45+00:00",
+    "smoke": [
+      "api_health",
+      "oidc_discovery",
+      "tls",
+      "keycloak_admin_private"
+    ],
+    "edge": "global external Application Load Balancer, Google-managed certificate"
+  }
 }

@@ -1,5 +1,16 @@
 # Build status
 
+2026-10-01 — **Deployed to Google Cloud: https://anvil-34-36-217-66.sslip.io** (commit
+`401f98e`, project `adi-anvil-mvp-2026`, us-west1-a). The org policy
+`compute.vmExternalIpAccess` forbids VM external IPs, so per user choice the VM is private
+(Cloud NAT egress, IAP SSH) behind a global external Application Load Balancer with a
+Google-managed certificate for `anvil-` and `auth-34-36-217-66.sslip.io`; Caddy routes HTTP from
+load balancer ranges only. Billing slot freed by the user unlinking empty `cs-project-kx8bsqkz`.
+Deployed smoke passed: backend HEALTHY, API health, OIDC discovery issuer, TLS, web 200,
+HTTP->HTTPS 301, login redirect 307, unauthenticated `/me` 401, public Keycloak admin 404.
+Not yet run on GCP: first invitation and browser sign-in, fixture run/review/report journeys,
+worker restart, upload persistence, snapshot restore. Live inference and email remain disabled.
+
 2026-10-01 — **Cloud deployment path built and rehearsed locally; not yet deployed.** User
 requested GCP deployment like Praxis and approved: create project `adi-anvil-mvp-2026`
 (us-west1), single e2-standard-4 VM + compose, sslip.io hostnames from a static IP,

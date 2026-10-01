@@ -1,7 +1,8 @@
 # Anvil MVP v1 Google Cloud deployment readiness
 
-Status: deployment path built and rehearsed locally (1 October 2026). No cloud resources
-created yet; first deployment needs the billing account ID. User requested Anvil deployment
+Status: deployed 1 October 2026 at https://anvil-34-36-217-66.sslip.io (commit `401f98e`);
+see `last_deployment` in `infra/gcp/deployment.json`. The VM is private (org policy forbids
+external IPs) behind a global HTTPS load balancer with a Google-managed certificate. User requested Anvil deployment
 on 30 September 2026, superseding the earlier local-only deployment restriction, and on
 1 October approved the target below.
 
@@ -16,16 +17,16 @@ infra/gcp/invite.sh <username> <email> "<Full Name>" admin researcher
 
 Approved target (`infra/gcp/deployment.json`): project `adi-anvil-mvp-2026`, us-west1-a,
 one e2-standard-4 VM (Debian 12, Shielded VM), 50 GB pd-balanced data disk with daily
-snapshots (14 days), reserved static IP, hostnames `anvil-<ip>.sslip.io` and
+snapshots (14 days), global load balancer IP, hostnames `anvil-<ip>.sslip.io` and
 `auth-<ip>.sslip.io`, $150/month budget alert at 50/90/100% and forecast 100%.
 
 | Piece | Implementation |
 | --- | --- |
-| Edge | Caddy 2.10, automatic Let's Encrypt, HSTS; `/api/*` to FastAPI, rest to Next.js |
+| Edge | Global external Application Load Balancer (Google-managed certificate, HTTP->HTTPS redirect) -> Caddy host router on port 80 (load balancer ranges only); `/api/*` to FastAPI, rest to Next.js |
 | Identity | Keycloak 26 `start` (production) on its own PostgreSQL database; admin console only via IAP tunnel to 127.0.0.1:8180 |
 | Data | PostgreSQL 17 and Neo4j 5 on the data disk, no published ports; artifacts on the data disk |
 | Secrets | Eight generated Secret Manager secrets, readable only by `anvil-vm@`; rendered to owner-only env files at boot |
-| Network | Dedicated `anvil-net`; 80/443 public, SSH only from the IAP range |
+| Network | Dedicated `anvil-net`; VM has no external IP, Cloud NAT egress, SSH only from the IAP range |
 | Images | Cloud Build to Artifact Registry `us-west1-docker.pkg.dev/<project>/anvil` |
 
 Keycloak administration: `gcloud compute ssh anvil-mvp-v1 --zone us-west1-a --tunnel-through-iap -- -L 8180:127.0.0.1:8180`
