@@ -20,9 +20,10 @@ class Objective(Strict):
     hypothesis: str = Field(min_length=10, max_length=5000)
     business_context: str = Field(min_length=3, max_length=5000)
     measurement_plan: str = Field(min_length=20, max_length=10000)
-    researcher_id: UUID
-    advisor_id: UUID
-    product_owner_id: UUID
+    # Optional since D-SIMPLE (AGENTS.md): the project Product Owner is the single approver.
+    researcher_id: UUID | None = None
+    advisor_id: UUID | None = None
+    product_owner_id: UUID | None = None
 
 
 class Criterion(Strict):
@@ -44,8 +45,8 @@ class Rubric(Strict):
     threshold: float = Field(ge=0, le=100)
     critical_rules: list[str]
     calibration: dict[str, str]
-    reviewer_id: UUID
-    advisor_id: UUID
+    reviewer_id: UUID | None = None
+    advisor_id: UUID | None = None
     origin: Literal["original_synthetic_fixture"]
 
     @model_validator(mode="after")
@@ -79,8 +80,8 @@ class Task(Strict):
     mode: Literal["static", "interactive", "tool_enabled"]
     environment_version: Literal["MKT-LH-001/1.0"] | None = None
     split: Literal["development", "calibration", "protected_test"]
-    reviewer_id: UUID
-    advisor_id: UUID
+    reviewer_id: UUID | None = None
+    advisor_id: UUID | None = None
     origin: Literal["original_synthetic_fixture"]
 
     @model_validator(mode="after")
@@ -100,7 +101,7 @@ class Suite(Strict):
     task_revision_ids: list[UUID] = Field(min_length=1, max_length=200)
     selection_method: str = Field(min_length=10)
     exposure_note: str = Field(min_length=10)
-    advisor_id: UUID
+    advisor_id: UUID | None = None
     planned_source_count: int = Field(default=200, ge=1)
     benchmark_revision_ids: list[UUID] = Field(default_factory=list, max_length=10)
     recommendation_revision_id: UUID | None = None
@@ -125,9 +126,12 @@ class Protocol(Strict):
         ]
     ] = Field(min_length=1, max_length=2)
     repetitions: Literal[1] = 1
-    reviewer_ids: list[UUID] = Field(min_length=2, max_length=2)
-    adjudicator_id: UUID
-    advisor_id: UUID
+    # D-SIMPLE grading: the first grader grades every output; the second checks critical,
+    # borderline, sampled and disputed results. A Product Owner who did not grade the output
+    # fills a missing second-grader or adjudicator position.
+    reviewer_ids: list[UUID] = Field(min_length=1, max_length=2)
+    adjudicator_id: UUID | None = None
+    advisor_id: UUID | None = None
     max_output_tokens: int = Field(default=4096, ge=1, le=8192)
     episode_timeout_seconds: int = Field(default=60, ge=1, le=600)
     comparison_policy: str = Field(min_length=20)
@@ -167,6 +171,7 @@ class Decision(Strict):
         "domain",
         "audience",
         "release",
+        "approval",
     ]
     decision: Literal["approve", "reject", "changes_requested"]
     rationale: str = Field(min_length=10, max_length=5000)
@@ -176,8 +181,8 @@ class FixtureImport(Strict):
     case_ids: list[Literal["MKT-001", "FIN-001", "STR-001", "MKT-LH-001"]] = Field(
         min_length=1, max_length=4
     )
-    reviewer_id: UUID
-    advisor_id: UUID
+    reviewer_id: UUID | None = None
+    advisor_id: UUID | None = None
 
 
 class Rights(Strict):
@@ -222,16 +227,16 @@ class Finding(Strict):
     criterion: str
     output_quote: str = Field(min_length=3)
     capability: str
-    advisor_id: UUID
+    advisor_id: UUID | None = None
 
 
 class Report(Strict):
     title: str
     run_id: UUID
     finding_revision_ids: list[UUID]
-    advisor_id: UUID
-    reviewer_id: UUID
-    product_owner_id: UUID
+    advisor_id: UUID | None = None
+    reviewer_id: UUID | None = None
+    product_owner_id: UUID | None = None
     audience: Literal["internal_fixture"] = "internal_fixture"
     claim_scope: Literal["descriptive_custom_suite_only"] = "descriptive_custom_suite_only"
 

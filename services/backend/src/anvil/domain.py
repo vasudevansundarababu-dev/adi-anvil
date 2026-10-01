@@ -64,11 +64,14 @@ def validate_content(c, project, kind, body):
     }
     people = []
     for field, role in assignments.items():
-        if field in content:
+        if content.get(field):
             assigned(c, project, content[field], role)
             people.append(content[field])
+    owners = set(product_owners(c, project)) if content.get("reviewer_ids") else set()
     for user in content.get("reviewer_ids", []):
-        assigned(c, project, user, "reviewer")
+        # D-SIMPLE: without Reviewers, a Product Owner grades.
+        if str(user) not in owners:
+            assigned(c, project, user, "reviewer")
         people.append(user)
     if len(people) != len(set(people)):
         raise HTTPException(409, "Separated assignments require distinct people")
@@ -158,55 +161,77 @@ def move(c, r, user, state):
     return get_resource(c, r["id"])
 
 
+# D-SIMPLE (AGENTS.md, 1 Oct 2026): the project Product Owner is the single approver.
+APPROVABLE = {"objective", "rubric", "task", "suite", "protocol", "report"}
+RECOMMENDATIONS = {
+    "research",
+    "advisor",
+    "scope",
+    "content",
+    "calibration",
+    "technical",
+    "domain",
+    "audience",
+    "release",
+}
+
+
+def product_owners(c, project):
+    return [
+        str(row["user_id"])
+        for row in c.execute(
+            """SELECT m.user_id FROM anvil.memberships m JOIN anvil.users u ON u.id=m.user_id
+               WHERE m.project_id=%s AND m.role='product-owner' AND m.active AND u.active""",
+            (project,),
+        ).fetchall()
+    ]
+
+
 def requirements(r):
-    return {
-        "objective": {
-            "research": ("researcher_id", "researcher"),
-            "advisor": ("advisor_id", "advisor"),
-            "scope": ("product_owner_id", "product-owner"),
-        },
-        "rubric": {
-            "content": ("reviewer_id", "reviewer"),
-            "calibration": ("advisor_id", "advisor"),
-        },
-        "task": {"content": ("reviewer_id", "reviewer"), "research": ("advisor_id", "advisor")},
-        "suite": {"technical": ("advisor_id", "advisor")},
-        "protocol": {"technical": ("advisor_id", "advisor")},
-        "finding": {"technical": ("advisor_id", "advisor")},
-        "report": {
-            "technical": ("advisor_id", "advisor"),
-            "domain": ("reviewer_id", "reviewer"),
-            "audience": ("product_owner_id", "product-owner"),
-            "release": ("product_owner_id", "product-owner"),
-        },
-    }.get(r["kind"], {})
+    return {"approval": "product-owner"} if r["kind"] in APPROVABLE else {}
 
 
 def decide(c, r, user, roles, body):
     if r["lifecycle"] != "submitted":
         raise HTTPException(409, "Only submitted revisions can be reviewed")
-    req = requirements(r)
-    purpose = body.purpose
-    if purpose not in req:
+    if r["kind"] not in APPROVABLE:
         raise HTTPException(422, "Review purpose not applicable")
-    field, role = req[purpose]
-    require(roles, role)
-    if r["content"][field] != str(user):
-        raise HTTPException(403, "Review is assigned to another identity")
-    if str(r["created_by"]) == str(user) and not (
-        r["kind"] == "objective" and purpose == "research"
+    if body.purpose in RECOMMENDATIONS:
+        # Optional, non-gating sign-off from another team member; never changes lifecycle.
+        require(roles, *CONTENT_ROLES)
+        if str(r["created_by"]) == str(user):
+            raise HTTPException(409, "A recommendation must come from someone else")
+        record_decision(c, r, user, body)
+        audit(c, r["project_id"], user, f"recommendation.{body.purpose}.{body.decision}", r["id"])
+        c.execute("UPDATE anvil.resources SET row_version=row_version+1 WHERE id=%s", (r["id"],))
+        return get_resource(c, r["id"])
+    if body.purpose != "approval":
+        raise HTTPException(422, "Review purpose not applicable")
+    require(roles, "product-owner")
+    self_approved = str(r["created_by"]) == str(user)
+    if self_approved and len(product_owners(c, r["project_id"])) != 1:
+        raise HTTPException(409, "Another Product Owner must approve work you created")
+    if one(
+        c,
+        "SELECT 1 FROM anvil.review_decisions WHERE revision_id=%s AND purpose='approval' AND reviewer_id=%s",
+        (r["current_revision_id"], user),
     ):
-        raise HTTPException(409, "Independent review required")
-    prior = c.execute(
-        "SELECT * FROM anvil.review_decisions WHERE revision_id=%s", (r["current_revision_id"],)
-    ).fetchall()
-    approved = {d["purpose"] for d in prior if d["decision"] == "approve"}
-    if purpose == "scope" and not {"research", "advisor"} <= approved:
-        raise HTTPException(409, "Both recommendations required")
-    if purpose == "release" and not {"technical", "domain", "audience"} <= approved:
-        raise HTTPException(409, "Scientific and audience reviews required")
-    if purpose != "release" and any(str(d["reviewer_id"]) == str(user) for d in prior):
-        raise HTTPException(409, "One person cannot fill separated review positions")
+        raise HTTPException(409, "This revision already has your decision")
+    record_decision(c, r, user, body)
+    audit(
+        c,
+        r["project_id"],
+        user,
+        f"review.approval.{body.decision}",
+        r["id"],
+        {"content_hash": r["content_hash"], "self_approved": self_approved},
+    )
+    if body.decision != "approve":
+        return move(c, r, user, "changes_requested")
+    return move(c, r, user, "qualified" if r["kind"] == "task" else "approved")
+
+
+def record_decision(c, r, user, body):
     c.execute(
         "INSERT INTO anvil.review_decisions(id,project_id,revision_id,subject_hash,reviewer_id,purpose,decision,rationale) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)",
         (
@@ -215,19 +240,11 @@ def decide(c, r, user, roles, body):
             r["current_revision_id"],
             r["content_hash"],
             user,
-            purpose,
+            body.purpose,
             body.decision,
             body.rationale,
         ),
     )
-    audit(c, r["project_id"], user, f"review.{purpose}.{body.decision}", r["id"])
-    if body.decision != "approve":
-        return move(c, r, user, "changes_requested")
-    approved.add(purpose)
-    if set(req) <= approved:
-        return move(c, r, user, "qualified" if r["kind"] == "task" else "approved")
-    c.execute("UPDATE anvil.resources SET row_version=row_version+1 WHERE id=%s", (r["id"],))
-    return get_resource(c, r["id"])
 
 
 def rights_ok(c, source, operation="managed_evaluation", destination="local_fixture"):

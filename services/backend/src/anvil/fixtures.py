@@ -38,11 +38,15 @@ def trusted(path):
     return data
 
 
-def load(c, project, user, body):
-    domain.assigned(c, project, body.reviewer_id, "reviewer")
-    domain.assigned(c, project, body.advisor_id, "advisor")
-    if len({str(user), str(body.reviewer_id), str(body.advisor_id)}) != 3:
-        raise HTTPException(409, "Independent content/research reviewers required")
+def load(c, project, user, body, rubric_override=None):
+    # D-SIMPLE: named reviewer/advisor are optional; the Product Owner approves the tasks.
+    named = [str(x) for x in (body.reviewer_id, body.advisor_id) if x]
+    if body.reviewer_id:
+        domain.assigned(c, project, body.reviewer_id, "reviewer")
+    if body.advisor_id:
+        domain.assigned(c, project, body.advisor_id, "advisor")
+    if len(set(named + [str(user)])) != len(named) + 1:
+        raise HTTPException(409, "Named reviewers must be distinct from the importer")
     # Validate all bytes before any business writes; database transaction is all-or-nothing.
     bundles = {}
     for case in body.case_ids:
@@ -81,7 +85,47 @@ def load(c, project, user, body):
                 "INSERT INTO anvil.artifact_links(project_id,revision_id,artifact_id,use_role) SELECT project_id,%s,id,'original' FROM anvil.artifacts WHERE sha256=ANY(%s) AND origin='original_synthetic_fixture' AND scan_status='clean' ON CONFLICT DO NOTHING",
                 (source["current_revision_id"], hashes),
             )
-            results.append(source)
+            if rubric_override is None:
+                results.append(source)
+                continue
+
+            # An evaluation plan gets its own rubric and task over the already imported source,
+            # bound to the same verified artifacts in manifest order.
+            def linked(names, classification):
+                ids = []
+                for name in names:
+                    row = one(
+                        c,
+                        """SELECT a.id FROM anvil.artifacts a JOIN anvil.artifact_links l
+                           ON l.artifact_id=a.id WHERE l.revision_id=%s AND a.sha256=%s
+                           AND a.classification=%s AND a.scan_status='clean' LIMIT 1""",
+                        (
+                            source["current_revision_id"],
+                            hashlib.sha256(bundle[name]).hexdigest(),
+                            classification,
+                        ),
+                    )
+                    if not row:
+                        raise HTTPException(409, "Imported fixture artifact missing")
+                    ids.append(str(row["id"]))
+                return ids
+
+            results.append(
+                rubric_and_task(
+                    c,
+                    project,
+                    user,
+                    body,
+                    case,
+                    manifest,
+                    source,
+                    linked(manifest["actor_files"], "actor"),
+                    linked(manifest["private_files"], "hidden_reference"),
+                    json.loads(bundle["private/reference.json"]),
+                    template,
+                    rubric_override,
+                )
+            )
             continue
         source = domain.create(c, project, user, "case", manifest)
         actor_ids = [
@@ -107,61 +151,97 @@ def load(c, project, user, body):
                 (project, source["current_revision_id"], aid),
             )
         reference = json.loads(bundle["private/reference.json"])
-        rubric_content = {
-            "title": f"{case} anchored synthetic rubric",
-            "criteria": template["criteria"],
-            "threshold": template["threshold"],
-            "critical_rules": [reference["critical_rule"]],
-            "calibration": {
-                "clear_pass": "Fixture correct response: independent scripted 4/4/4 example.",
-                "clear_fail": "Fixture constraint-blind response: scripted 4/0/4.",
-                "valid_alternative": reference["acceptable_alternatives"],
-                "critical_error": reference["critical_rule"],
-                "ambiguous_reference": "If required evidence is ambiguous, invalidate and request correction; do not assign candidate failure.",
-            },
-            "reviewer_id": str(body.reviewer_id),
-            "advisor_id": str(body.advisor_id),
-            "origin": "original_synthetic_fixture",
-        }
-        rubric = domain.create(
+        task = rubric_and_task(
             c,
             project,
             user,
-            "rubric",
-            domain.validate_content(c, project, "rubric", rubric_content),
+            body,
+            case,
+            manifest,
+            source,
+            actor_ids,
+            reference_ids,
+            reference,
+            template,
+            rubric_override,
         )
-        task_content = {
-            "title": manifest["title"],
-            "external_case_id": case,
-            "source_revision_id": str(source["current_revision_id"]),
-            "rubric_revision_id": str(rubric["current_revision_id"]),
-            "actor_artifact_ids": actor_ids,
-            "reference_artifact_ids": reference_ids,
-            "family_id": manifest["family_id"],
-            "capabilities": manifest["capabilities"],
-            "mode": manifest["mode"],
-            "split": manifest["split"],
-            "reviewer_id": str(body.reviewer_id),
-            "advisor_id": str(body.advisor_id),
-            "origin": "original_synthetic_fixture",
-        }
-        task = domain.create(
-            c, project, user, "task", domain.validate_content(c, project, "task", task_content)
-        )
-        for aid in actor_ids + reference_ids:
-            c.execute(
-                "INSERT INTO anvil.artifact_links VALUES(%s,%s,%s,%s)",
-                (
-                    project,
-                    task["current_revision_id"],
-                    aid,
-                    "actor" if aid in actor_ids else "reference",
-                ),
-            )
         c.execute(
             "INSERT INTO anvil.import_receipts VALUES(%s,%s,%s,%s,%s)",
             (project, case, "1", content_hash, source["id"]),
         )
         audit(c, project, user, "synthetic_fixture.imported", source["id"])
-        results.append(source)
+        results.append(task if rubric_override is not None else source)
     return results
+
+
+def rubric_and_task(
+    c,
+    project,
+    user,
+    body,
+    case,
+    manifest,
+    source,
+    actor_ids,
+    reference_ids,
+    reference,
+    template,
+    override,
+):
+    """Create the case rubric and task. An evaluation plan passes its own rubric definition."""
+    people = {
+        k: str(v)
+        for k, v in (("reviewer_id", body.reviewer_id), ("advisor_id", body.advisor_id))
+        if v
+    }
+    override = override or {}
+    rubric_content = {
+        "title": override.get("title") or f"{case} anchored synthetic rubric",
+        "criteria": override.get("criteria") or template["criteria"],
+        "threshold": override.get("threshold", template["threshold"]),
+        "critical_rules": [reference["critical_rule"], *override.get("critical_rules", [])],
+        "calibration": {
+            "clear_pass": "Fixture correct response: independent scripted 4/4/4 example.",
+            "clear_fail": "Fixture constraint-blind response: scripted 4/0/4.",
+            "valid_alternative": reference["acceptable_alternatives"],
+            "critical_error": reference["critical_rule"],
+            "ambiguous_reference": "If required evidence is ambiguous, invalidate and request correction; do not assign candidate failure.",
+        },
+        **people,
+        "origin": "original_synthetic_fixture",
+    }
+    rubric = domain.create(
+        c,
+        project,
+        user,
+        "rubric",
+        domain.validate_content(c, project, "rubric", rubric_content),
+    )
+    task_content = {
+        "title": manifest["title"],
+        "external_case_id": case,
+        "source_revision_id": str(source["current_revision_id"]),
+        "rubric_revision_id": str(rubric["current_revision_id"]),
+        "actor_artifact_ids": actor_ids,
+        "reference_artifact_ids": reference_ids,
+        "family_id": manifest["family_id"],
+        "capabilities": manifest["capabilities"],
+        "mode": manifest["mode"],
+        "split": manifest["split"],
+        **people,
+        "origin": "original_synthetic_fixture",
+    }
+    task = domain.create(
+        c, project, user, "task", domain.validate_content(c, project, "task", task_content)
+    )
+    for aid in actor_ids + reference_ids:
+        c.execute(
+            "INSERT INTO anvil.artifact_links VALUES(%s,%s,%s,%s)",
+            (
+                project,
+                task["current_revision_id"],
+                aid,
+                "actor" if aid in actor_ids else "reference",
+            ),
+        )
+    return task

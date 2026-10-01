@@ -61,6 +61,74 @@ def score_rubric(rubric, scores, critical):
     return score, "pass" if not critical and score >= Decimal(str(rubric["threshold"])) else "fail"
 
 
+# D-SIMPLE grading (AGENTS.md, 1 Oct 2026): one grader per output; a second grader checks
+# critical, borderline (within 5 points of the pass mark) and a frozen 10% sample; disputes are
+# adjudicated. A Product Owner who has not graded the output fills a missing position.
+SAMPLE_PERCENT = 10
+BORDERLINE_POINTS = Decimal(5)
+
+
+def sampled(protocol_revision_id, eid):
+    import hashlib
+
+    key = f"{protocol_revision_id}:{eid}".encode()
+    return int(hashlib.sha256(key).hexdigest(), 16) % 100 < SAMPLE_PERCENT
+
+
+def needs_second(c, e, run, first):
+    if first["critical"]:
+        return True
+    task = domain.get_revision(c, e["task_revision_id"], "task")["content"]
+    rubric = domain.get_revision(c, task["rubric_revision_id"], "rubric")["content"]
+    if abs(Decimal(str(first["score"])) - Decimal(str(rubric["threshold"]))) <= BORDERLINE_POINTS:
+        return True
+    return sampled(run["protocol_revision_id"], e["id"])
+
+
+def disagree(a, b):
+    return (
+        a["outcome"] != b["outcome"]
+        or set(a["critical"]) != set(b["critical"])
+        or any(abs(a["scores"][k] - b["scores"][k]) >= 2 for k in a["scores"])
+    )
+
+
+def judgments_for(c, eid):
+    return c.execute(
+        "SELECT * FROM anvil.assessments WHERE episode_id=%s ORDER BY created_at", (eid,)
+    ).fetchall()
+
+
+def grading_position(c, project, p, e, run, user):
+    """What this user may do on the episode now: 'grade', 'adjudicate' or None."""
+    user = str(user)
+    listed = [str(x) for x in p["reviewer_ids"]]
+    judgments = judgments_for(c, e["id"])
+    graded = {str(j["reviewer_id"]) for j in judgments}
+    owners = domain.product_owners(c, project) if user not in listed else []
+    open_for_grading = e["state"] == "awaiting_review" and not e.get("final_assessment_id")
+    if open_for_grading and user not in graded:
+        if not judgments:
+            return "grade" if user in listed else None
+        if len(judgments) == 1 and needs_second(c, e, run, judgments[0]):
+            if user in listed or (len(listed) == 1 and user in owners):
+                return "grade"
+    if e["state"] in ("disputed", "review_blocked"):
+        adjudicator = p.get("adjudicator_id")
+        if adjudicator and user == str(adjudicator):
+            return "adjudicate"
+        if not adjudicator and user not in graded and user in domain.product_owners(c, project):
+            return "adjudicate"
+    return None
+
+
+def assigned_grader(c, project, p, e, run, user):
+    user = str(user)
+    if user in [str(x) for x in p["reviewer_ids"]] or user == str(p.get("adjudicator_id")):
+        return True
+    return grading_position(c, project, p, e, run, user) is not None
+
+
 def routes(context, wrap, idempotent):
     @router.post("/runs", status_code=201)
     def new_run(project: UUID, body: NewRun, request: Request):
@@ -246,36 +314,43 @@ def routes(context, wrap, idempotent):
     @router.get("/reviews")
     def inbox(project: UUID, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "reviewer", "adjudicator")
-            rows = c.execute("""SELECT e.id,e.state,e.outcome,e.row_version,e.run_id,r.protocol_revision_id
+            auth.require(roles, "reviewer", "adjudicator", "product-owner")
+            rows = c.execute("""SELECT e.id,e.state,e.outcome,e.row_version,e.run_id,e.task_revision_id,
+                              e.final_assessment_id,r.protocol_revision_id
                               FROM anvil.episodes e JOIN anvil.runs r ON r.id=e.run_id
                               WHERE e.state IN ('awaiting_review','disputed','review_blocked') ORDER BY e.id""").fetchall()
             out = []
             for row in rows:
                 p = protocol_for(c, row)
-                if str(user) in p["reviewer_ids"] or str(user) == p["adjudicator_id"]:
-                    row.pop("protocol_revision_id")
-                    row["my_review_submitted"] = (
-                        one(
-                            c,
-                            "SELECT 1 FROM anvil.assessments WHERE episode_id=%s AND reviewer_id=%s",
-                            (row["id"], user),
-                        )
-                        is not None
+                run = get_run(c, row["run_id"])
+                submitted = (
+                    one(
+                        c,
+                        "SELECT 1 FROM anvil.assessments WHERE episode_id=%s AND reviewer_id=%s",
+                        (row["id"], user),
                     )
+                    is not None
+                )
+                # Shown when this user must act now, or to the grader who already submitted.
+                if grading_position(c, project, p, row, run, user) or submitted:
+                    for key in ("protocol_revision_id", "task_revision_id", "final_assessment_id"):
+                        row.pop(key)
+                    row["my_review_submitted"] = submitted
                     out.append(row)
             return wrap(out, request)
 
     @router.get("/reviews/{eid}")
     def review_detail(project: UUID, eid: UUID, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "reviewer", "adjudicator")
+            auth.require(roles, "reviewer", "adjudicator", "product-owner")
             e = one(c, "SELECT * FROM anvil.episodes WHERE id=%s", (eid,))
             if not e:
                 raise HTTPException(404, "Episode not found")
-            p = protocol_for(c, get_run(c, e["run_id"]))
-            if str(user) not in p["reviewer_ids"] + [p["adjudicator_id"]]:
+            run = get_run(c, e["run_id"])
+            p = protocol_for(c, run)
+            if not assigned_grader(c, project, p, e, run, user):
                 raise HTTPException(403, "Reviewer not assigned")
+            position = grading_position(c, project, p, e, run, user)
             task = domain.get_revision(c, e["task_revision_id"], "task")["content"]
             rubric = domain.get_revision(c, task["rubric_revision_id"], "rubric")["content"]
             out = {
@@ -301,9 +376,8 @@ def routes(context, wrap, idempotent):
                     artifacts.read(c, aid).decode() for aid in task["reference_artifact_ids"]
                 ],
                 "rubric": rubric,
-                "adjudication_allowed": str(user) == p["adjudicator_id"]
-                and e["state"] == "disputed",
-                "issue_resolution_allowed": str(user) == p["adjudicator_id"]
+                "adjudication_allowed": position == "adjudicate" and e["state"] == "disputed",
+                "issue_resolution_allowed": position == "adjudicate"
                 and e["state"] == "review_blocked",
                 "issues": c.execute(
                     "SELECT id,code,rationale,status FROM anvil.review_issues WHERE episode_id=%s ORDER BY created_at",
@@ -321,7 +395,7 @@ def routes(context, wrap, idempotent):
     @router.post("/episodes/{eid}/review-issues")
     def issue(project: UUID, eid: UUID, body: ReviewIssue, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "reviewer")
+            auth.require(roles, "reviewer", "product-owner")
 
             def act():
                 e = one(c, "SELECT * FROM anvil.episodes WHERE id=%s FOR UPDATE", (eid,))
@@ -330,7 +404,9 @@ def routes(context, wrap, idempotent):
                 domain.etag(e, request.headers.get("if-match"))
                 run = get_run(c, e["run_id"])
                 p = protocol_for(c, run)
-                if str(user) not in p["reviewer_ids"]:
+                if grading_position(c, project, p, e, run, user) != "grade" and not (
+                    str(user) in [str(x) for x in p["reviewer_ids"]] and e["state"] == "disputed"
+                ):
                     raise HTTPException(403, "Assigned independent reviewer required")
                 if (
                     e["state"] not in ("awaiting_review", "disputed")
@@ -355,7 +431,7 @@ def routes(context, wrap, idempotent):
     @router.post("/episodes/{eid}/resolve-issue")
     def resolve_issue(project: UUID, eid: UUID, body: ResolveIssue, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "adjudicator")
+            auth.require(roles, "adjudicator", "product-owner")
 
             def act():
                 e = one(c, "SELECT * FROM anvil.episodes WHERE id=%s FOR UPDATE", (eid,))
@@ -364,7 +440,7 @@ def routes(context, wrap, idempotent):
                 domain.etag(e, request.headers.get("if-match"))
                 run = get_run(c, e["run_id"])
                 p = protocol_for(c, run)
-                if str(user) != p["adjudicator_id"]:
+                if grading_position(c, project, p, e, run, user) != "adjudicate":
                     raise HTTPException(403, "Independent assigned adjudicator required")
                 issue = one(
                     c,
@@ -390,12 +466,11 @@ def routes(context, wrap, idempotent):
                     )
                     enqueue(c, project, "resume", eid, f"resume-invalid:{eid}:{resolution}")
                 else:
-                    count = one(
-                        c, "SELECT count(*) n FROM anvil.assessments WHERE episode_id=%s", (eid,)
-                    )["n"]
+                    judgments = judgments_for(c, eid)
+                    disputed = len(judgments) >= 2 and disagree(*judgments[:2])
                     c.execute(
                         "UPDATE anvil.episodes SET state=%s,row_version=row_version+1 WHERE id=%s",
-                        ("disputed" if count >= 2 else "awaiting_review", eid),
+                        ("disputed" if disputed else "awaiting_review", eid),
                     )
                 audit(c, project, user, "review.issue_resolved", eid, {"decision": body.decision})
                 return {
@@ -411,7 +486,7 @@ def routes(context, wrap, idempotent):
     @router.post("/episodes/{eid}/adjudicate")
     def assess(project: UUID, eid: UUID, body: Assessment, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "reviewer", "adjudicator")
+            auth.require(roles, "reviewer", "adjudicator", "product-owner")
 
             def apply():
                 e = one(c, "SELECT * FROM anvil.episodes WHERE id=%s FOR UPDATE", (eid,))
@@ -423,10 +498,11 @@ def routes(context, wrap, idempotent):
                     raise HTTPException(409, "Episode is not reviewable")
                 p = protocol_for(c, run)
                 adjudicate = request.url.path.endswith("/adjudicate")
+                position = grading_position(c, project, p, e, run, user)
                 if adjudicate:
-                    if str(user) != p["adjudicator_id"] or e["state"] != "disputed":
+                    if position != "adjudicate" or e["state"] != "disputed":
                         raise HTTPException(403, "Independent assigned adjudicator required")
-                elif str(user) not in p["reviewer_ids"]:
+                elif position != "grade":
                     raise HTTPException(403, "Reviewer not assigned")
                 task = domain.get_revision(c, e["task_revision_id"], "task")["content"]
                 rubric = domain.get_revision(c, task["rubric_revision_id"], "rubric")["content"]
@@ -455,19 +531,13 @@ def routes(context, wrap, idempotent):
                         "adjudication" if adjudicate else "independent",
                     ),
                 )
-                judgments = c.execute(
-                    "SELECT * FROM anvil.assessments WHERE episode_id=%s ORDER BY created_at",
-                    (eid,),
-                ).fetchall()
+                judgments = judgments_for(c, eid)
                 final = adjudicate
+                if len(judgments) == 1 and not adjudicate:
+                    final = not needs_second(c, e, run, judgments[0])
                 if len(judgments) == 2 and not adjudicate:
                     a, b = judgments
-                    dispute = (
-                        a["outcome"] != b["outcome"]
-                        or set(a["critical"]) != set(b["critical"])
-                        or any(abs(a["scores"][k] - b["scores"][k]) >= 2 for k in body.scores)
-                    )
-                    if dispute:
+                    if disagree(a, b):
                         c.execute(
                             "UPDATE anvil.episodes SET state='disputed',row_version=row_version+1 WHERE id=%s",
                             (eid,),

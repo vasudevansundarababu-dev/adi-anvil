@@ -53,19 +53,20 @@ def test_marketing_workflow_and_durable_dispatch(client_factory, monkeypatch):  
         return response.json().get("data")
 
     def submit(collection, row, author, reviews):
+        # D-SIMPLE: the listed former sign-offs are no longer required; the Product Owner
+        # approves alone (the `reviews` argument documents who used to sign).
+        del reviews
         row = post(author, f"/{collection}/{row['id']}/submit", version=row["row_version"])
-        for reviewer, purpose in reviews:
-            row = post(
-                reviewer,
-                f"/{collection}/{row['id']}/decisions",
-                {
-                    "purpose": purpose,
-                    "decision": "approve",
-                    "rationale": "Isolated synthetic software test only; not real scientific or paid authority.",
-                },
-                row["row_version"],
-            )
-        return row
+        return post(
+            "product-owner",
+            f"/{collection}/{row['id']}/decisions",
+            {
+                "purpose": "approval",
+                "decision": "approve",
+                "rationale": "Isolated synthetic software test only; not real scientific or paid authority.",
+            },
+            row["row_version"],
+        )
 
     objective = post(
         "researcher",
@@ -309,6 +310,12 @@ def test_marketing_workflow_and_durable_dispatch(client_factory, monkeypatch):  
             c, "SELECT 1 FROM anvil.revisions WHERE id=%s", (rubric["current_revision_id"],)
         )
     for reviewer in ("reviewer-1", "reviewer-2"):
+        # D-SIMPLE: the second grader checks only critical, borderline or sampled outputs.
+        if reviewer == "reviewer-2" and not any(
+            r["id"] == episode["id"] and not r["my_review_submitted"]
+            for r in get("/reviews", reviewer)
+        ):
+            continue
         current = get(f"/reviews/{episode['id']}", reviewer)
         criteria = [row["id"] for row in current["rubric"]["criteria"]]
         post(

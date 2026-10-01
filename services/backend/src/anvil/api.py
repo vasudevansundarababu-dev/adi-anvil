@@ -18,6 +18,7 @@ from anvil.external_results import routes as external_routes
 from anvil.factory import routes as factory_routes
 from anvil.graph import routes as graph_routes
 from anvil.intake import routes as intake_routes
+from anvil.plans import routes as plan_routes
 from anvil.provider_api import routes as provider_routes
 from anvil.readiness import routes as readiness_routes
 from anvil.reports import prepare_report
@@ -153,6 +154,7 @@ app.include_router(delivery_routes(context, wrap, idempotent))
 app.include_router(readiness_routes(context, wrap, idempotent))
 app.include_router(task_import_routes(context, wrap, idempotent))
 app.include_router(factory_routes(context, wrap, idempotent))
+app.include_router(plan_routes(context, wrap, idempotent))
 
 from anvil.marketing_api import routes as marketing_routes  # noqa: E402
 
@@ -525,7 +527,11 @@ def transition(project: UUID, collection: str, rid: UUID, action: str, request: 
                 if r["lifecycle"] != "draft":
                     raise HTTPException(409, "Only drafts may be submitted")
                 domain.qualify(c, r)
-                return domain.move(c, r, user, "submitted")
+                submitted = domain.move(c, r, user, "submitted")
+                if r["kind"] == "finding":
+                    # D-SIMPLE: findings are covered by the report's Product Owner approval.
+                    return domain.move(c, submitted, user, "approved")
+                return submitted
             if action == "publish" and r["kind"] == "task":
                 auth.require(roles, "data-engineer")
                 if r["lifecycle"] != "qualified":

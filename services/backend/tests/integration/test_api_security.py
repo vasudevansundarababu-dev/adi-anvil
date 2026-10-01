@@ -99,6 +99,7 @@ def test_external_results_preserve_origin_and_never_invoke(
     protocol = post(
         "researcher", "/protocols/" + protocol["id"] + "/submit", {}, protocol["row_version"]
     )
+    # D-SIMPLE: an Advisor sign-off is an optional recommendation and does not approve.
     protocol = post(
         "advisor",
         "/protocols/" + protocol["id"] + "/decisions",
@@ -109,6 +110,18 @@ def test_external_results_preserve_origin_and_never_invoke(
         },
         protocol["row_version"],
     )
+    assert protocol["lifecycle"] == "submitted"
+    protocol = post(
+        "product-owner",
+        "/protocols/" + protocol["id"] + "/decisions",
+        {
+            "purpose": "approval",
+            "decision": "approve",
+            "rationale": "Product Owner approval of the reported-execution protocol.",
+        },
+        protocol["row_version"],
+    )
+    assert protocol["lifecycle"] == "approved"
     run = post(
         "researcher",
         "/runs",
@@ -289,6 +302,12 @@ def test_external_results_preserve_origin_and_never_invoke(
     reviewable = next(e for e in episodes if e["state"] == "awaiting_review")
     assert all(e["score"] is None and e["invocation_count"] == 0 for e in episodes)
     for name in ["reviewer-1", "reviewer-2"]:
+        # D-SIMPLE: the second grader checks only critical, borderline or sampled outputs.
+        if name == "reviewer-2" and not any(
+            r["id"] == reviewable["id"] and not r["my_review_submitted"]
+            for r in get(name, "/reviews")
+        ):
+            continue
         detail = get(name, "/reviews/" + reviewable["id"])
         assert (
             detail["execution_origin"] == "partner_reported" and detail["trace_coverage"] == "none"
@@ -393,22 +412,17 @@ def test_external_results_preserve_origin_and_never_invoke(
     assert len(score_claim["assessment_ids"]) == 1
     report_path = "/reports/" + report["id"]
     report = post("researcher", report_path + "/submit", {}, report["row_version"])
-    for role, purpose in [
-        ("advisor", "technical"),
-        ("reviewer-1", "domain"),
-        ("product-owner", "audience"),
-        ("product-owner", "release"),
-    ]:
-        report = post(
-            role,
-            report_path + "/decisions",
-            {
-                "purpose": purpose,
-                "decision": "approve",
-                "rationale": "Independent internal approval of the synthetic external-origin test report.",
-            },
-            report["row_version"],
-        )
+    report = post(
+        "product-owner",
+        report_path + "/decisions",
+        {
+            "purpose": "approval",
+            "decision": "approve",
+            "rationale": "Product Owner approval of the synthetic external-origin test report.",
+        },
+        report["row_version"],
+    )
+    assert report["lifecycle"] == "approved"
     post("researcher", report_path + "/build", {}, report["row_version"])
     import io
     import zipfile
@@ -1390,22 +1404,16 @@ def test_authenticated_reads_do_not_mutate_canonical_state(client_factory):
     )
     report_path = "/reports/" + prepared["id"]
     prepared = post("researcher", report_path + "/submit", {}, prepared["row_version"])
-    for who, purpose in [
-        ("advisor", "technical"),
-        ("reviewer-1", "domain"),
-        ("product-owner", "audience"),
-        ("product-owner", "release"),
-    ]:
-        prepared = post(
-            who,
-            report_path + "/decisions",
-            {
-                "purpose": purpose,
-                "decision": "approve",
-                "rationale": "Independent local fixture setup for read-only verification.",
-            },
-            prepared["row_version"],
-        )
+    prepared = post(
+        "product-owner",
+        report_path + "/decisions",
+        {
+            "purpose": "approval",
+            "decision": "approve",
+            "rationale": "Product Owner approval for read-only verification setup.",
+        },
+        prepared["row_version"],
+    )
     post("researcher", report_path + "/build", {}, prepared["row_version"])
     # Capture every business table, including jobs and graph watermark state.
     # Session activity and append-only evidence-access audit events are expected.
@@ -1936,22 +1944,16 @@ def test_fixture_delivery_bound_approval_unknown_replay_and_suppression(
     )
     path = "/reports/" + report["id"]
     report = post("researcher", path + "/submit", {}, report["row_version"])
-    for role, purpose in [
-        ("advisor", "technical"),
-        ("reviewer-1", "domain"),
-        ("product-owner", "audience"),
-        ("product-owner", "release"),
-    ]:
-        report = post(
-            role,
-            path + "/decisions",
-            {
-                "purpose": purpose,
-                "decision": "approve",
-                "rationale": "Independent synthetic delivery pipeline verification.",
-            },
-            report["row_version"],
-        )
+    report = post(
+        "product-owner",
+        path + "/decisions",
+        {
+            "purpose": "approval",
+            "decision": "approve",
+            "rationale": "Product Owner approval for delivery pipeline verification.",
+        },
+        report["row_version"],
+    )
     kit = post("researcher", path + "/build", {}, report["row_version"])
     post(
         "sales",
