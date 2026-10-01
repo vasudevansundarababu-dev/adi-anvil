@@ -16,6 +16,7 @@ import TaskImport, { DatasetRunConfiguration } from './TaskImport';
 import AnvilHelp from './AnvilHelp';
 import MarketingRun from './MarketingRun';
 import BenchmarkFactory from './BenchmarkFactory';
+import EvaluationWizard from './EvaluationWizard';
 
 type Member = { id: string; name: string; role: string };
 type Project = { id: string; name: string; roles: string[] };
@@ -82,6 +83,7 @@ type Graph = {
   edges: { source: string; target: string; relation: string }[];
 };
 const modules = [
+  'evaluations',
   'objectives',
   'cases',
   'rubrics',
@@ -97,12 +99,22 @@ const modules = [
   'sales-kits',
   'providers',
 ];
+// Two-row menu: groups on top, the selected group's pages below. Suites and Protocols are
+// created by the evaluation wizard; they stay reachable from its records, not the menu.
+const groups: { label: string; modules: string[] }[] = [
+  { label: 'Home', modules: ['evaluations'] },
+  { label: 'Build', modules: ['objectives', 'cases', 'tasks', 'rubrics', 'factory'] },
+  { label: 'Run & review', modules: ['runs', 'reviews'] },
+  { label: 'Insights', modules: ['diagnostics', 'findings', 'reports', 'sales-kits'] },
+  { label: 'Settings', modules: ['providers'] },
+];
 const labels: Record<string, string> = {
+  evaluations: 'Evaluations',
   objectives: 'Research objectives',
-  cases: 'Case bank',
+  cases: 'Tasks & data',
   rubrics: 'Rubrics',
   tasks: 'Qualification',
-  factory: 'Benchmark Factory',
+  factory: 'Benchmarks',
   suites: 'Suites',
   protocols: 'Protocols',
   runs: 'Run console',
@@ -113,6 +125,8 @@ const labels: Record<string, string> = {
   providers: 'Providers',
 };
 const notes: Record<string, string> = {
+  evaluations:
+    'Five steps from objective to run. One Product Owner approval covers the whole plan.',
   objectives: 'Define the question, measurement and scope before evaluation.',
   cases: 'Original synthetic cases. Intake, rights and readiness stay separate.',
   rubrics: 'Anchored criteria and calibration evidence, bound to exact versions.',
@@ -208,6 +222,15 @@ export default function Console() {
     return contentRole;
   });
   const section = modules.includes(parts[3]) ? parts[3] : visibleModules[0] || 'objectives';
+  const visibleGroups = groups
+    .map((g) => ({ label: g.label, pages: g.modules.filter((m) => visibleModules.includes(m)) }))
+    .filter((g) => g.pages.length);
+  // Suites and Protocols open from evaluation records and belong to the Build area.
+  const activeGroup =
+    visibleGroups.find((g) => g.pages.includes(section)) ||
+    (['suites', 'protocols'].includes(section)
+      ? visibleGroups.find((g) => g.label === 'Build')
+      : undefined);
   const base = project ? '/projects/' + project.id : '';
   useEffect(() => {
     api('/me')
@@ -219,7 +242,7 @@ export default function Console() {
     if (!base) return;
     setError('');
     try {
-      if (section === 'factory') {
+      if (section === 'factory' || section === 'evaluations') {
         setRows([]);
         setPageInfo(null);
         setMembers(await api(base + '/members'));
@@ -486,17 +509,30 @@ export default function Console() {
           </button>
         </div>
       </header>
-      <nav aria-label="Project navigation">
-        {visibleModules.map((m) => (
+      <nav aria-label="Project areas">
+        {visibleGroups.map((g) => (
           <a
-            key={m}
-            href={'/p/' + project?.id + '/' + m}
-            aria-current={section === m ? 'page' : undefined}
+            key={g.label}
+            href={'/p/' + project?.id + '/' + g.pages[0]}
+            aria-current={g === activeGroup ? 'page' : undefined}
           >
-            {labels[m]}
+            {g.label}
           </a>
         ))}
       </nav>
+      {activeGroup && activeGroup.pages.length > 1 && (
+        <nav aria-label={activeGroup.label + ' pages'} className="subnav">
+          {activeGroup.pages.map((m) => (
+            <a
+              key={m}
+              href={'/p/' + project?.id + '/' + m}
+              aria-current={section === m ? 'page' : undefined}
+            >
+              {labels[m]}
+            </a>
+          ))}
+        </nav>
+      )}
       <main>
         <div className="toolbar">
           <div>
@@ -533,7 +569,7 @@ export default function Console() {
             {message}
           </div>
         )}
-        {section !== 'factory' && (
+        {section !== 'factory' && section !== 'evaluations' && (
           <div className="toolbar">
             <div>
               <label htmlFor="search">Search this view</label>
@@ -620,6 +656,17 @@ export default function Console() {
           <DatasetRunConfiguration base={base} onSaved={() => void reload()} />
         )}
         <AnvilHelp screen={importObjective ? 'imports' : section} />
+        {section === 'evaluations' && user && (
+          <EvaluationWizard
+            key={base}
+            base={base}
+            api={api}
+            userId={user.id}
+            canAuthor={role('researcher')}
+            canApprove={role('product-owner')}
+            canResearch={role('researcher', 'advisor')}
+          />
+        )}
         {section === 'factory' && (
           <BenchmarkFactory
             key={base}
@@ -1549,7 +1596,7 @@ export default function Console() {
             )}
           </div>
         )}
-        {!rows.length && !error && !['diagnostics', 'factory'].includes(section) && (
+        {!rows.length && !error && !['diagnostics', 'factory', 'evaluations'].includes(section) && (
           <div className="card empty">
             {query
               ? 'No records match this search.'

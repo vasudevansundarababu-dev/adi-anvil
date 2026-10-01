@@ -14,7 +14,7 @@ test('task profile, deterministic recommendation, suite and gap drafts', async (
   await page.locator('#kc-login').click();
   await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible();
   await page.goto(`/p/${journey.project_id}/factory`);
-  await expect(page.getByRole('heading', { name: 'Benchmark Factory', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Benchmarks', exact: true })).toBeVisible();
   await expect(
     page.locator('#factory-objective option').filter({ hasText: journey.objective.content.title }),
   ).toHaveCount(1);

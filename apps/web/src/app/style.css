@@ -121,6 +121,42 @@ nav a[aria-current='page'] {
   color: var(--ink);
   font-weight: 700;
 }
+nav.subnav {
+  padding-top: 6px;
+  padding-bottom: 6px;
+  background: var(--bg);
+}
+nav.subnav a {
+  padding: 6px 11px;
+  font-size: 14px;
+}
+.stepper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 18px;
+}
+.stepper button {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+.stepper button span {
+  font-weight: 700;
+  margin-right: 4px;
+}
+.stepper li[aria-current='step'] button {
+  background: var(--soft);
+  color: var(--ink);
+  font-weight: 700;
+  border-color: var(--ink);
+}
 main {
   max-width: 1320px;
   margin: auto;

@@ -101,16 +101,13 @@ test('prepare the interactive marketing task and keep paid launch blocked', asyn
       current.row_version,
     );
   }
-  await login('reviewer-1');
-  await review('rubrics', rubric.id, 'content');
-  await login('advisor');
-  await review('rubrics', rubric.id, 'calibration');
+  // D-SIMPLE: the Product Owner is the single approver.
+  await login('product-owner');
+  await review('rubrics', rubric.id, 'approval');
   await login('data-engineer');
   taskRow = await api(`/tasks/${taskRow.id}/submit`, {}, taskRow.row_version);
-  await login('reviewer-1');
-  await review('tasks', taskRow.id, 'content');
-  await login('advisor');
-  taskRow = await review('tasks', taskRow.id, 'research');
+  await login('product-owner');
+  taskRow = await review('tasks', taskRow.id, 'approval');
   await login('data-engineer');
   taskRow = await api(`/tasks/${taskRow.id}/publish`, {}, taskRow.row_version);
 
@@ -139,8 +136,8 @@ test('prepare the interactive marketing task and keep paid launch blocked', asyn
     planned_source_count: 1,
   });
   suite = await api(`/suites/${suite.id}/submit`, {}, suite.row_version);
-  await login('advisor');
-  suite = await review('suites', suite.id, 'technical');
+  await login('product-owner');
+  suite = await review('suites', suite.id, 'approval');
   await login('researcher');
   suite = await api(`/suites/${suite.id}/freeze`, {}, suite.row_version);
   await page.goto(`/p/${journey.project_id}/protocols`);
@@ -162,8 +159,8 @@ test('prepare the interactive marketing task and keep paid launch blocked', asyn
     (p: { content: { title: string } }) => p.content.title === title,
   );
   protocol = await api(`/protocols/${protocol.id}/submit`, {}, protocol.row_version);
-  await login('advisor');
-  protocol = await review('protocols', protocol.id, 'technical');
+  await login('product-owner');
+  protocol = await review('protocols', protocol.id, 'approval');
   await login('researcher');
   await page.goto(`/p/${journey.project_id}/protocols`);
   await page

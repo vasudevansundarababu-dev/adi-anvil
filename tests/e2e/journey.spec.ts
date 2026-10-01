@@ -49,11 +49,12 @@ async function transition(ctx: BrowserContext, col: string, r: any, action: stri
   const latest = await call(ctx, `/${col}/${r.id}`);
   return call(ctx, `/${col}/${r.id}/${action}`, 'POST', body, latest.row_version);
 }
-async function approve(ctx: BrowserContext, col: string, r: any, purpose: string) {
+// D-SIMPLE: the project Product Owner is the single approver.
+async function approve(ctx: BrowserContext, col: string, r: any) {
   return transition(ctx, col, r, 'decisions', {
-    purpose,
+    purpose: 'approval',
     decision: 'approve',
-    rationale: 'Independent synthetic fixture review for local pipeline verification only.',
+    rationale: 'Product Owner approval for local synthetic pipeline verification only.',
   });
 }
 
@@ -100,9 +101,7 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
     product_owner_id: ids['product-owner'],
   });
   await transition(R, 'objectives', objective, 'submit');
-  await approve(R, 'objectives', objective, 'research');
-  await approve(A, 'objectives', objective, 'advisor');
-  await approve(P, 'objectives', objective, 'scope');
+  await approve(P, 'objectives', objective);
   const imp = {
     case_ids: ['MKT-001', 'FIN-001', 'STR-001'],
     reviewer_id: ids['reviewer-1'],
@@ -132,14 +131,12 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
   for (const rubric of await call(D, '/rubrics'))
     if (rubric.lifecycle === 'draft') {
       await transition(D, 'rubrics', rubric, 'submit');
-      await approve(contexts['reviewer-1'], 'rubrics', rubric, 'content');
-      await approve(A, 'rubrics', rubric, 'calibration');
+      await approve(P, 'rubrics', rubric);
     }
   for (const task of await call(D, '/tasks'))
     if (task.lifecycle === 'draft') {
       await transition(D, 'tasks', task, 'submit');
-      await approve(contexts['reviewer-1'], 'tasks', task, 'content');
-      await approve(A, 'tasks', task, 'research');
+      await approve(P, 'tasks', task);
       await transition(D, 'tasks', task, 'publish');
     }
   const tasks = await call(R, '/tasks');
@@ -154,7 +151,7 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
     planned_source_count: 200,
   });
   await transition(R, 'suites', suite, 'submit');
-  await approve(A, 'suites', suite, 'technical');
+  await approve(P, 'suites', suite);
   await transition(R, 'suites', suite, 'freeze');
   const protocol = await call(R, '/protocols', 'POST', {
     title: 'Deterministic two-candidate pilot',
@@ -167,10 +164,10 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
     comparison_policy:
       'Same frozen actor inputs, descriptive fixture pipeline checks; no model ranking.',
     pass_policy:
-      'Rubric threshold and critical override; all pilot episodes independently double reviewed.',
+      'Rubric threshold and critical override; second grader for critical, borderline and sampled outputs.',
   });
   await transition(R, 'protocols', protocol, 'submit');
-  await approve(A, 'protocols', protocol, 'technical');
+  await approve(P, 'protocols', protocol);
   const run = await call(R, '/runs', 'POST', {
     protocol_revision_id: protocol.current_revision_id,
   });
@@ -205,6 +202,9 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
   execFileSync('python3', ['scripts/local.py', 'worker-restart']);
   for (const episode of before.episodes) {
     for (const name of ['reviewer-1', 'reviewer-2']) {
+      // D-SIMPLE: the second grader acts only on critical, borderline or sampled outputs.
+      const inbox = await call(contexts[name], '/reviews');
+      if (!inbox.some((r: any) => r.id === episode.id && !r.my_review_submitted)) continue;
       const detail = await call(contexts[name], `/reviews/${episode.id}`);
       expect(JSON.stringify(detail)).not.toContain('candidate_key');
       expect(detail.submitted_assessments).toBeUndefined();
@@ -263,8 +263,8 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
     capability: 'constraint_preservation',
     advisor_id: ids.advisor,
   });
+  // Findings are approved on submit; the report approval covers them.
   await transition(R, 'findings', finding, 'submit');
-  await approve(A, 'findings', finding, 'technical');
   const report = await call(R, '/reports', 'POST', {
     title: 'Reviewed synthetic diagnostic',
     run_id: run.id,
@@ -275,10 +275,7 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
     audience: 'internal_fixture',
   });
   await transition(R, 'reports', report, 'submit');
-  await approve(A, 'reports', report, 'technical');
-  await approve(contexts['reviewer-1'], 'reports', report, 'domain');
-  await approve(P, 'reports', report, 'audience');
-  await approve(P, 'reports', report, 'release');
+  await approve(P, 'reports', report);
   await expect
     .poll(
       async () =>
@@ -453,8 +450,10 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
     )
     .toBe(6);
   const episode = (await call(R, `/runs/${disputedRun.id}`)).episodes[0];
+  // A borderline first grade (75 at a 75 pass mark) requires the second grader (D-SIMPLE);
+  // the second grader's 0 then creates the dispute.
   for (const [name, value] of [
-    ['reviewer-1', 4],
+    ['reviewer-1', 3],
     ['reviewer-2', 0],
   ] as const) {
     const detail = await call(contexts[name], `/reviews/${episode.id}`);
@@ -623,7 +622,7 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
     mode: 'external_result_import_v1',
   });
   await transition(R, 'protocols', externalProtocol, 'submit');
-  await approve(A, 'protocols', externalProtocol, 'technical');
+  await approve(P, 'protocols', externalProtocol);
   const externalRun = await call(R, '/runs', 'POST', {
     protocol_revision_id: externalProtocol.current_revision_id,
     external_origin: 'customer_reported',
