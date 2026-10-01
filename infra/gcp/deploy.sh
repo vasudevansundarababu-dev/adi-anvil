@@ -129,6 +129,11 @@ else
   say "Redeploy only ($PROJECT_ID)"
 fi
 
+say "Support Bot (Claude on Vertex AI, like ADI Praxis; read-only help, no evaluation spend)"
+gcloud services enable aiplatform.googleapis.com
+retry gcloud projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:$SA" \
+  --role=roles/aiplatform.user --condition=None
+
 IP=$(gcloud compute addresses describe anvil-lb-ip --global --format='value(address)')
 WEB_HOST=anvil-${IP//./-}.sslip.io
 AUTH_HOST=auth-${IP//./-}.sslip.io
@@ -139,6 +144,7 @@ gcloud builds submit "$ROOT" --config="$ROOT/infra/gcp/cloudbuild.yaml" --region
 
 METADATA="anvil-registry=$REPO,anvil-backend-image=$REPO/backend:$TAG,anvil-web-image=$REPO/web:$TAG"
 METADATA="$METADATA,anvil-web-host=$WEB_HOST,anvil-auth-host=$AUTH_HOST,enable-oslogin=TRUE"
+METADATA="$METADATA,anvil-support-vertex=true"
 FILES="startup-script=$ROOT/infra/gcp/startup.sh,anvil-compose=$ROOT/infra/gcp/compose.yaml"
 FILES="$FILES,anvil-caddyfile=$ROOT/infra/gcp/Caddyfile,anvil-postgres-init=$ROOT/infra/gcp/postgres-init.sh"
 FILES="$FILES,anvil-render-config=$ROOT/infra/gcp/render_config.py"

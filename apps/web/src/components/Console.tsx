@@ -17,6 +17,7 @@ import AnvilHelp from './AnvilHelp';
 import MarketingRun from './MarketingRun';
 import BenchmarkFactory from './BenchmarkFactory';
 import EvaluationWizard from './EvaluationWizard';
+import SupportChat from './SupportChat';
 
 type Member = { id: string; name: string; role: string };
 type Project = { id: string; name: string; roles: string[] };
@@ -656,6 +657,7 @@ export default function Console() {
           <DatasetRunConfiguration base={base} onSaved={() => void reload()} />
         )}
         <AnvilHelp screen={importObjective ? 'imports' : section} />
+        {base && <SupportChat base={base} api={api} />}
         {section === 'evaluations' && user && (
           <EvaluationWizard
             key={base}

@@ -62,6 +62,16 @@ def main():
                 "ANVIL_NEO4J_PASSWORD": s["ANVIL_NEO4J_PASSWORD"],
                 "ARTIFACT_ROOT": ".data/artifacts",
                 "LANGSMITH_TRACING": "false",
+                # Support Bot (Claude on Vertex AI, like ADI Praxis); blank = local help pack.
+                **(
+                    {
+                        "ANVIL_SUPPORT_VERTEX_PROJECT": os.environ["ANVIL_SUPPORT_VERTEX_PROJECT"],
+                        "ANVIL_SUPPORT_VERTEX_REGION": "global",
+                        "ANVIL_SUPPORT_MODEL": "claude-sonnet-5",
+                    }
+                    if os.environ.get("ANVIL_SUPPORT_VERTEX_PROJECT")
+                    else {}
+                ),
             }
         ),
     )

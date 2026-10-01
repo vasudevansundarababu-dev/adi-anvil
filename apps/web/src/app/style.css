@@ -130,6 +130,57 @@ nav.subnav a {
   padding: 6px 11px;
   font-size: 14px;
 }
+.support-open {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 20;
+  box-shadow: 0 6px 20px #14274a33;
+}
+.support-panel {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 20;
+  width: min(420px, calc(100vw - 32px));
+  max-height: min(640px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  box-shadow: 0 10px 30px #14274a40;
+}
+.support-log {
+  flex: 1;
+  overflow: auto;
+  min-height: 120px;
+}
+.support-log .badge {
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+}
+.support-turn {
+  white-space: pre-wrap;
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin: 8px 0;
+}
+.support-turn.user {
+  background: var(--soft);
+  margin-left: 15%;
+}
+.support-turn.assistant {
+  border: 1px solid var(--border);
+  margin-right: 10%;
+}
+@media (max-width: 650px) {
+  .support-open,
+  .support-panel {
+    right: 16px;
+    bottom: 16px;
+  }
+}
 .stepper {
   display: flex;
   flex-wrap: wrap;

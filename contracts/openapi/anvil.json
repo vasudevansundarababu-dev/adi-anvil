@@ -3397,6 +3397,54 @@
         }
       }
     },
+    "/api/v1/projects/{project}/support/ask": {
+      "post": {
+        "summary": "Ask",
+        "operationId": "ask_api_v1_projects__project__support_ask_post",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Ask"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects/{project}/runs/{rid}/marketing": {
       "get": {
         "summary": "Detail",
@@ -4343,6 +4391,34 @@
         ],
         "title": "Approval"
       },
+      "Ask": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 2,
+            "title": "Question"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/Turn"
+            },
+            "type": "array",
+            "maxItems": 12,
+            "title": "History"
+          },
+          "screen": {
+            "$ref": "#/components/schemas/Screen"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question",
+          "screen"
+        ],
+        "title": "Ask"
+      },
       "Assessment": {
         "properties": {
           "scores": {
@@ -4914,6 +4990,46 @@
           "basis"
         ],
         "title": "Declaration"
+      },
+      "Field_": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Label"
+          },
+          "type": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Type",
+            "default": "text"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": false
+          },
+          "value": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Value",
+            "default": ""
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 40,
+            "title": "Options"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "label"
+        ],
+        "title": "Field_"
       },
       "FixtureImport": {
         "properties": {
@@ -5646,6 +5762,51 @@
         ],
         "title": "RubricDraft"
       },
+      "Screen": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Path"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Title",
+            "default": ""
+          },
+          "headings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "title": "Headings"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/Field_"
+            },
+            "type": "array",
+            "maxItems": 80,
+            "title": "Fields"
+          },
+          "messages": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Messages"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "path"
+        ],
+        "title": "Screen"
+      },
       "Select": {
         "properties": {
           "recommendation_revision_id": {
@@ -5785,6 +5946,30 @@
           "label"
         ],
         "title": "Source"
+      },
+      "Turn": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 4000,
+            "title": "Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "role",
+          "text"
+        ],
+        "title": "Turn"
       },
       "ValidationError": {
         "properties": {

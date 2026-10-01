@@ -25,6 +25,7 @@ from anvil.reports import prepare_report
 from anvil.reports import routes as report_routes
 from anvil.request_limits import RequestLimits
 from anvil.schemas import Decision, FixtureImport, Rights, Withdrawal
+from anvil.support import routes as support_routes
 from anvil.task_imports import routes as task_import_routes
 
 app = FastAPI(title="ADI Anvil", version="0.1.0")
@@ -155,6 +156,7 @@ app.include_router(readiness_routes(context, wrap, idempotent))
 app.include_router(task_import_routes(context, wrap, idempotent))
 app.include_router(factory_routes(context, wrap, idempotent))
 app.include_router(plan_routes(context, wrap, idempotent))
+app.include_router(support_routes(context, wrap, idempotent))
 
 from anvil.marketing_api import routes as marketing_routes  # noqa: E402
 

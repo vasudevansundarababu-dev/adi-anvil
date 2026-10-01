@@ -55,6 +55,9 @@ KEYCLOAK_DB_PASSWORD anvil-keycloak-db-password
 MAP
 mkdir -p /opt/anvil
 md anvil-render-config > /opt/anvil/render_config.py
+if [ "$(md anvil-support-vertex 2>/dev/null || true)" = "true" ]; then
+  export ANVIL_SUPPORT_VERTEX_PROJECT="$PROJECT"
+fi
 python3 /opt/anvil/render_config.py "$DATA/config" "$WEB_HOST" "$AUTH_HOST"
 unset ANVIL_DB_OWNER_PASSWORD ANVIL_DB_APP_PASSWORD ANVIL_DB_WORKER_PASSWORD ANVIL_NEO4J_PASSWORD \
   ANVIL_SESSION_KEY OIDC_CLIENT_SECRET ANVIL_OIDC_ADMIN_PASSWORD KEYCLOAK_DB_PASSWORD

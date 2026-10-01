@@ -77,3 +77,17 @@ test('five-step wizard, single Product Owner approval and run', async ({ page })
   await expect(page.getByText(/Run launched/)).toBeVisible();
   await page.screenshot({ path: 'artifacts/test-runs/wizard-step5.png', fullPage: true });
 });
+
+test('Ask Anvil answers about the current screen', async ({ page }) => {
+  const journey = JSON.parse(readFileSync('artifacts/test-runs/journey.json', 'utf8'));
+  await login(page, 'researcher');
+  await page.goto(`/p/${journey.project_id}/evaluations`);
+  await page.getByRole('button', { name: 'Ask Anvil', exact: true }).click();
+  const chat = page.getByRole('dialog', { name: 'Ask Anvil' });
+  await chat.getByRole('button', { name: 'How are outputs graded?' }).click();
+  await expect(chat.locator('.support-turn.assistant')).toContainText('second grader');
+  await chat.locator('#support-question').fill('What do I need to fill in on this screen?');
+  await chat.getByRole('button', { name: 'Ask', exact: true }).click();
+  await expect(chat.locator('.support-turn.assistant')).toHaveCount(2);
+  await page.screenshot({ path: 'artifacts/test-runs/ask-anvil.png' });
+});

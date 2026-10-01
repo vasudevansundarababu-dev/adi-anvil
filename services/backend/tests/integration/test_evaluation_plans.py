@@ -304,3 +304,26 @@ def test_plan_is_project_scoped_and_role_checked(client_factory):
         plan["row_version"],
         403,
     )
+
+
+def test_support_bot_answers_locally_audits_and_is_project_scoped(client_factory):
+    researcher = call(client_factory, "researcher")
+    outsider = call(client_factory, "outsider")
+    body = {
+        "question": "Which fields are required on this step?",
+        "screen": {
+            "path": "/p/x/evaluations",
+            "title": "Evaluations",
+            "fields": [{"label": "Hypothesis", "type": "textarea", "required": True}],
+        },
+    }
+    answer = researcher("POST", "/support/ask", body)
+    assert "Hypothesis" in answer["answer"] and answer["model"] == "local-help-pack"
+    outsider("POST", "/support/ask", body, expected=404)
+    with transaction(PROJECT, USERS["researcher"]) as c:
+        events = c.execute(
+            "SELECT action,metadata FROM anvil.audit_events WHERE actor_id=%s AND action LIKE 'support.%%' ORDER BY event_seq DESC LIMIT 2",
+            (USERS["researcher"],),
+        ).fetchall()
+    assert {e["action"] for e in events} == {"support.asked", "support.answered"}
+    assert all("question" not in e["metadata"] for e in events)  # content is never stored
