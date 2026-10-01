@@ -1,0 +1,18 @@
+# Allowlist: images receive only what they need. Secrets, local state and logs never enter a build.
+*
+!.python-version
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!apps/web
+!services/backend
+!fixtures
+!task-packs
+!assets/brand
+**/node_modules
+**/.next
+**/.venv
+**/__pycache__
+**/*.tsbuildinfo
+**/.env*
+services/backend/tests

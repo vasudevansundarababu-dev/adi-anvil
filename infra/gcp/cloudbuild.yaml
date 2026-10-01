@@ -1,0 +1,17 @@
+# Builds the two ADI Anvil images on Cloud Build (linux/amd64).
+# Substitutions: _REPO (Artifact Registry path), _TAG (commit-timestamp).
+steps:
+  - id: backend
+    name: gcr.io/cloud-builders/docker
+    args: ['build', '-f', 'infra/docker/backend.Dockerfile', '-t', '${_REPO}/backend:${_TAG}', '.']
+  - id: web
+    name: gcr.io/cloud-builders/docker
+    waitFor: ['-']
+    args: ['build', '-f', 'infra/docker/web.Dockerfile', '-t', '${_REPO}/web:${_TAG}', '.']
+images:
+  - '${_REPO}/backend:${_TAG}'
+  - '${_REPO}/web:${_TAG}'
+options:
+  machineType: E2_HIGHCPU_8
+  logging: CLOUD_LOGGING_ONLY
+timeout: 2400s

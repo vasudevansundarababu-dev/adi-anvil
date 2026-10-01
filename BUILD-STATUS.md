@@ -1,5 +1,21 @@
 # Build status
 
+2026-10-01 — **Cloud deployment path built and rehearsed locally; not yet deployed.** User
+requested GCP deployment like Praxis and approved: create project `adi-anvil-mvp-2026`
+(us-west1), single e2-standard-4 VM + compose, sslip.io hostnames from a static IP,
+$150/month budget alert. Added explicit validated `ANVIL_ENV=cloud` (HTTPS origin/issuer,
+live providers and real email forced off, Secure cookies; synthetic seeds, demo projects and
+local backups refuse cloud; local guard unchanged), `anvil.cli invite` (real Keycloak identity,
+temporary password, explicit roles), backend/web images, `infra/gcp/` compose stack
+(Caddy TLS, production Keycloak on PostgreSQL, private PostgreSQL/Neo4j), startup script,
+Cloud Build config and idempotent `deploy.sh`/`invite.sh`. Local production-mode rehearsal
+(Caddy internal CA) passed: migrations001–018, realm import, OIDC health via public issuer
+name, invite idempotency/conflict refusal, login with forced password change, Secure cookies,
+`/me` roles, public Keycloak admin 404, cross-origin CSRF 403, logout. `pnpm check` passed;
+146 units and67 integrations passed. E2E browser journeys not rerun. Cloud provisioning is
+blocked on the billing account ID; the configured project was not accessible. No cloud
+resources were created.
+
 2026-09-29 — **Local provenance increment verified.** User authorized autonomous local
 execution. Extended the existing importer with immutable source owner declarations,
 schema018, exact-version provenance and row lineage. Legacy sources stay unclassified;

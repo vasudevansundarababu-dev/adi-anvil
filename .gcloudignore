@@ -1,0 +1,21 @@
+# Cloud Build upload allowlist. Secrets, .env, .local, .data and logs never leave this machine.
+/*
+!/.python-version
+!/.dockerignore
+!/package.json
+!/pnpm-lock.yaml
+!/pnpm-workspace.yaml
+!/apps/
+!/services/
+!/fixtures/
+!/task-packs/
+!/assets/
+!/infra/
+node_modules/
+.next/
+.venv/
+__pycache__/
+*.tsbuildinfo
+.env
+.env.*
+services/backend/tests/

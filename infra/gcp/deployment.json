@@ -8,16 +8,19 @@
   "zone": "us-west1-a",
   "web_origin": null,
   "oidc_issuer": null,
-  "access_mode": null,
-  "monthly_infrastructure_budget_usd": null,
+  "access_mode": "public_invited_users",
+  "monthly_infrastructure_budget_usd": 150,
   "gcloud_configuration": "anvil-mvp-v1",
   "gcloud_credentials_directory": ".local/gcloud-anvil",
   "architecture": {
     "proposed_target": "dedicated_compute_engine_vm",
-    "selection_status": "proposed_not_provisioned",
-    "machine_type": null,
-    "persistent_disk_gb": null,
-    "service_account_email": null
+    "selection_status": "approved_not_provisioned",
+    "machine_type": "e2-standard-4",
+    "persistent_disk_gb": 50,
+    "service_account_email": null,
+    "hostname_scheme": "sslip.io names derived from the reserved static IP (anvil-<ip>, auth-<ip>)",
+    "edge": "caddy_lets_encrypt",
+    "backups": "daily data-disk snapshots, 14-day retention"
   },
   "safety": {
     "live_model_dispatch_enabled": false,

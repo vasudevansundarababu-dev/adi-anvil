@@ -13,11 +13,12 @@ from psycopg.conninfo import make_conninfo
 from psycopg.rows import dict_row
 
 from anvil.cli import ORG
-from anvil.config import ROOT, setting
+from anvil.config import ROOT, local_only, setting
 from anvil.db import audit, uid
 
 
 def new_demo(name):
+    local_only()
     if not name or not 3 <= len(name) <= 100:
         raise ValueError("Demo name must be 3..100 characters")
     project = uid()
@@ -81,6 +82,7 @@ def docker(*args, stdout=None):
 
 
 def backup():
+    local_only()
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uid()[:8]
     folder = ROOT / ".local/backups" / stamp
     folder.mkdir(parents=True, mode=0o700)
@@ -148,6 +150,7 @@ def backup():
 
 
 def restore_test():
+    local_only()
     folder = Path((ROOT / ".local/latest-backup").read_text())
     if not folder.resolve().is_relative_to((ROOT / ".local/backups").resolve()):
         raise ValueError("Unregistered backup")

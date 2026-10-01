@@ -9,7 +9,7 @@ from cryptography.fernet import Fernet
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 
-from anvil.config import setting
+from anvil.config import CLOUD, setting
 from anvil.db import one, transaction
 
 router = APIRouter(prefix="/api/v1")
@@ -89,7 +89,13 @@ def login():
         setting("OIDC_ISSUER") + "/protocol/openid-connect/auth?" + urlencode(params)
     )
     response.set_cookie(
-        "anvil_login", state, httponly=True, samesite="lax", max_age=300, path="/api/v1/auth"
+        "anvil_login",
+        state,
+        httponly=True,
+        secure=CLOUD,
+        samesite="lax",
+        max_age=300,
+        path="/api/v1/auth",
     )
     return response
 
@@ -153,9 +159,13 @@ def callback(request: Request, state: str = "", code: str = ""):
             (hashed(session), user["id"], hashed(csrf)),
         )
     response = RedirectResponse("/")
-    response.delete_cookie("anvil_login", path="/api/v1/auth")
-    response.set_cookie("anvil_session", session, httponly=True, samesite="lax", max_age=28800)
-    response.set_cookie("anvil_csrf", csrf, httponly=False, samesite="lax", max_age=28800)
+    response.delete_cookie("anvil_login", path="/api/v1/auth", secure=CLOUD)
+    response.set_cookie(
+        "anvil_session", session, httponly=True, secure=CLOUD, samesite="lax", max_age=28800
+    )
+    response.set_cookie(
+        "anvil_csrf", csrf, httponly=False, secure=CLOUD, samesite="lax", max_age=28800
+    )
     return response
 
 
@@ -168,8 +178,8 @@ def logout(request: Request):
             (hashed(request.cookies.get("anvil_session", "")),),
         )
     response = JSONResponse({"data": {"signed_out": True}})
-    response.delete_cookie("anvil_session")
-    response.delete_cookie("anvil_csrf")
+    response.delete_cookie("anvil_session", secure=CLOUD)
+    response.delete_cookie("anvil_csrf", secure=CLOUD)
     return response
 
 

@@ -10,7 +10,7 @@ from langgraph.checkpoint.postgres import PostgresSaver
 from psycopg import sql
 from psycopg.rows import dict_row
 
-from anvil.config import ROOT, setting
+from anvil.config import CLOUD, ROOT, local_only, setting
 from anvil.db import audit, transaction
 
 ORG = "a0000000-0000-4000-8000-000000000001"
@@ -20,8 +20,9 @@ OUTSIDER_PROJECT = "a0000000-0000-4000-8000-000000000003"
 
 def migrate():
     with psycopg.connect(setting("MIGRATION_DATABASE_URL"), autocommit=True) as c:
-        if c.info.dbname != "anvil_local":
-            raise RuntimeError("Migration target must be anvil_local")
+        expected = "anvil" if CLOUD else "anvil_local"
+        if c.info.dbname != expected:
+            raise RuntimeError(f"Migration target must be {expected}")
         for name, key in [
             ("anvil_app", "ANVIL_DB_APP_PASSWORD"),
             ("anvil_worker", "ANVIL_DB_WORKER_PASSWORD"),
@@ -47,6 +48,7 @@ def migrate():
 
 
 def seed():
+    local_only()
     ids = json.loads((ROOT / ".local/demo-identities.json").read_text())
     with psycopg.connect(setting("MIGRATION_DATABASE_URL"), row_factory=dict_row) as c:
         c.execute(
@@ -118,6 +120,11 @@ def main():
     parser.add_argument("--run-id")
     parser.add_argument("--name")
     parser.add_argument("--project-id", type=UUID)
+    parser.add_argument("--username")
+    parser.add_argument("--email")
+    parser.add_argument("--project-name", default="ADI Anvil MVP v1")
+    parser.add_argument("--role", action="append", default=[])
+    parser.add_argument("--capability", action="append", default=[])
     args = parser.parse_args()
     if args.command == "migrate":
         migrate()
@@ -139,6 +146,18 @@ def main():
             )
         )
         sys.exit(2)
+    elif args.command == "invite":
+        from anvil.invitations import invite
+
+        result = invite(
+            args.username or "",
+            args.email or "",
+            args.name or args.username or "",
+            args.project_name,
+            args.role,
+            args.capability,
+        )
+        print(json.dumps(result))
     elif args.command == "contracts":
         from anvil.api import app
 

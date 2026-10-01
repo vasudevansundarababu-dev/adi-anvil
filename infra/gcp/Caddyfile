@@ -1,0 +1,23 @@
+# Public HTTPS edge. Certificates are issued automatically (Let's Encrypt) for both hosts.
+{$ANVIL_WEB_HOST} {
+	{$ANVIL_TLS}
+	encode gzip
+	header Strict-Transport-Security "max-age=31536000"
+	header -Server
+	handle /api/* {
+		reverse_proxy api:8200
+	}
+	handle {
+		reverse_proxy web:3202
+	}
+}
+
+{$ANVIL_AUTH_HOST} {
+	{$ANVIL_TLS}
+	header Strict-Transport-Security "max-age=31536000"
+	header -Server
+	# Keycloak administration stays private (IAP tunnel to 127.0.0.1:8180 on the VM).
+	@private path /admin /admin/* /metrics* /health*
+	respond @private 404
+	reverse_proxy keycloak:8080
+}

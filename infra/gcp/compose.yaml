@@ -1,0 +1,101 @@
+# ADI Anvil MVP v1 single-host stack (Compute Engine VM). Rendered to /opt/anvil by startup.sh.
+# Only Caddy publishes public ports. Keycloak's plain port is bound to the VM loopback for
+# IAP-tunnelled administration. Secrets come from owner-only env files written from Secret Manager.
+name: adi-anvil
+x-backend: &backend
+  image: ${ANVIL_BACKEND_IMAGE:?}
+  restart: unless-stopped
+  env_file: ["${ANVIL_DATA:-/var/lib/anvil}/config/app.env"]
+  volumes: ["${ANVIL_DATA:-/var/lib/anvil}/artifacts:/app/.data/artifacts"]
+  logging: &logging
+    driver: json-file
+    options: {max-size: 10m, max-file: "5"}
+services:
+  postgres:
+    image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
+    restart: unless-stopped
+    env_file: ["${ANVIL_DATA:-/var/lib/anvil}/config/postgres.env"]
+    volumes:
+      - "${ANVIL_DATA:-/var/lib/anvil}/postgres:/var/lib/postgresql/data"
+      - ./postgres-init.sh:/docker-entrypoint-initdb.d/10-keycloak.sh:ro
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U anvil_migration -d anvil"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    logging: *logging
+  neo4j:
+    image: neo4j:5.26.12-community@sha256:9f75e8df4325a24f00fdd7a8c0bcce650a58375049b1058e496e8b43d6c36b37
+    restart: unless-stopped
+    env_file: ["${ANVIL_DATA:-/var/lib/anvil}/config/neo4j.env"]
+    environment:
+      NEO4J_server_memory_heap_initial__size: 512m
+      NEO4J_server_memory_heap_max__size: 1g
+      NEO4J_server_memory_pagecache_size: 512m
+    volumes: ["${ANVIL_DATA:-/var/lib/anvil}/neo4j:/data"]
+    logging: *logging
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3.5@sha256:357829ec7c4693397533035092ad13b0644bcc95ded311f33a3738c4d9e9bdba
+    restart: unless-stopped
+    command: [start, --import-realm]
+    env_file: ["${ANVIL_DATA:-/var/lib/anvil}/config/keycloak.env"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_HOSTNAME: https://${ANVIL_AUTH_HOST:?}
+      KC_HOSTNAME_ADMIN: http://127.0.0.1:${ANVIL_KC_ADMIN_PORT:-8180}
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+    ports: ["127.0.0.1:${ANVIL_KC_ADMIN_PORT:-8180}:8080"]
+    volumes: ["${ANVIL_DATA:-/var/lib/anvil}/config/realm.json:/opt/keycloak/data/import/anvil-realm.json:ro"]
+    depends_on: {postgres: {condition: service_healthy}}
+    logging: *logging
+  migrate:
+    <<: *backend
+    restart: "no"
+    env_file: ["${ANVIL_DATA:-/var/lib/anvil}/config/app.env", "${ANVIL_DATA:-/var/lib/anvil}/config/migrate.env"]
+    command: [python, -m, anvil.cli, migrate]
+    depends_on: {postgres: {condition: service_healthy}}
+  api:
+    <<: *backend
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      neo4j: {condition: service_started}
+  worker:
+    <<: *backend
+    command: [python, -m, anvil.worker]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      neo4j: {condition: service_started}
+  web:
+    image: ${ANVIL_WEB_IMAGE:?}
+    restart: unless-stopped
+    logging: *logging
+  caddy:
+    image: caddy:2.10.2
+    restart: unless-stopped
+    ports: ["${ANVIL_HTTP_PORT:-80}:80", "${ANVIL_HTTPS_PORT:-443}:443"]
+    environment:
+      ANVIL_WEB_HOST: ${ANVIL_WEB_HOST:?}
+      ANVIL_AUTH_HOST: ${ANVIL_AUTH_HOST:?}
+      ANVIL_TLS: ${ANVIL_TLS:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - "${ANVIL_DATA:-/var/lib/anvil}/caddy:/data"
+    networks:
+      default:
+        # The API verifies OIDC against the public issuer; resolve it to Caddy inside the host.
+        aliases: ["${ANVIL_AUTH_HOST:?}", "${ANVIL_WEB_HOST:?}"]
+    depends_on: [api, web, keycloak]
+    logging: *logging
+  ops:
+    <<: *backend
+    profiles: [ops]
+    restart: "no"
+    env_file:
+      - "${ANVIL_DATA:-/var/lib/anvil}/config/app.env"
+      - "${ANVIL_DATA:-/var/lib/anvil}/config/migrate.env"
+      - "${ANVIL_DATA:-/var/lib/anvil}/config/ops.env"
+    command: [python, -m, anvil.cli, health]

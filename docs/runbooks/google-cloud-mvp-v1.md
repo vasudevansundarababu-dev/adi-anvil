@@ -1,8 +1,38 @@
 # Anvil MVP v1 Google Cloud deployment readiness
 
-Status: preparation only. User requested Anvil deployment on 30 September 2026,
-superseding the earlier local-only deployment restriction. No cloud resources created.
-The existing application is not yet a qualified cloud release.
+Status: deployment path built and rehearsed locally (1 October 2026). No cloud resources
+created yet; first deployment needs the billing account ID. User requested Anvil deployment
+on 30 September 2026, superseding the earlier local-only deployment restriction, and on
+1 October approved the target below.
+
+## Deploy
+
+```sh
+git commit ...                                  # deploy.sh refuses uncommitted app changes
+infra/gcp/deploy.sh <BILLING_ACCOUNT_ID>        # first time: project, budget, VPC, VM, ...
+DEPLOY_ONLY=1 infra/gcp/deploy.sh               # later: rebuild images and roll forward
+infra/gcp/invite.sh <username> <email> "<Full Name>" admin researcher
+```
+
+Approved target (`infra/gcp/deployment.json`): project `adi-anvil-mvp-2026`, us-west1-a,
+one e2-standard-4 VM (Debian 12, Shielded VM), 50 GB pd-balanced data disk with daily
+snapshots (14 days), reserved static IP, hostnames `anvil-<ip>.sslip.io` and
+`auth-<ip>.sslip.io`, $150/month budget alert at 50/90/100% and forecast 100%.
+
+| Piece | Implementation |
+| --- | --- |
+| Edge | Caddy 2.10, automatic Let's Encrypt, HSTS; `/api/*` to FastAPI, rest to Next.js |
+| Identity | Keycloak 26 `start` (production) on its own PostgreSQL database; admin console only via IAP tunnel to 127.0.0.1:8180 |
+| Data | PostgreSQL 17 and Neo4j 5 on the data disk, no published ports; artifacts on the data disk |
+| Secrets | Eight generated Secret Manager secrets, readable only by `anvil-vm@`; rendered to owner-only env files at boot |
+| Network | Dedicated `anvil-net`; 80/443 public, SSH only from the IAP range |
+| Images | Cloud Build to Artifact Registry `us-west1-docker.pkg.dev/<project>/anvil` |
+
+Keycloak administration: `gcloud compute ssh anvil-mvp-v1 --zone us-west1-a --tunnel-through-iap -- -L 8180:127.0.0.1:8180`
+then open http://127.0.0.1:8180/admin; the bootstrap password is secret `anvil-keycloak-admin-password`.
+
+Backups are crash-consistent disk snapshots. Restore = create a disk from a snapshot and
+attach it as `anvil-data`. A restore rehearsal on GCP has not been run.
 
 Reusable target configuration: `infra/gcp/deployment.json`.
 Setup and credential isolation: `docs/runbooks/google-cloud-configuration.md`.
@@ -64,7 +94,9 @@ durable worker restart, upload/artifact persistence and backup recovery. Then ex
 the existing objective, Factory, Suite, Protocol, fixture run/review/report and import paths
 on the deployed host. Record the actual endpoint and deployment revision.
 
-Latest local evidence remains130 units,67 integrations and4 browser journeys.
-Cloud-specific build, deployment, identity and smoke checks are not run.
+Latest local evidence: 146 units, 67 integrations; production-mode compose rehearsal passed
+(see BUILD-STATUS 2026-10-01). Done in code: items 1-5 above and the private-endpoint part of 6.
+Not yet run on GCP: deployment, TLS issuance, deployed smoke checks, worker restart, upload
+persistence, snapshot restore and the fixture run/review/report paths on the deployed host.
 The MVP remains a research prototype using synthetic fixtures, with no proven live-model
 benchmark performance or complete long-horizon runtime acceptance.
