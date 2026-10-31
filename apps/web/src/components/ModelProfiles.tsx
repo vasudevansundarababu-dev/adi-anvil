@@ -17,8 +17,17 @@ export default function ModelProfiles({ base }: { base: string }) {
   const [history, setHistory] = useState<{ items: Model[]; next_cursor: number | null } | null>(
       null,
     ),
-    [historyId, setHistoryId] = useState('');
+    [historyId, setHistoryId] = useState(''),
+    [historyFocus, setHistoryFocus] = useState(0);
   const generation = useRef(0);
+  const historyGeneration = useRef(0),
+    historyHeading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (!editing && historyFocus) {
+      historyHeading.current?.focus();
+      historyHeading.current?.scrollIntoView({ block: 'start' });
+    }
+  }, [historyFocus, editing]);
   const load = useCallback(async () => {
     const current = ++generation.current;
     setBusy(true);
@@ -38,6 +47,7 @@ export default function ModelProfiles({ base }: { base: string }) {
     void load();
     return () => {
       generation.current++;
+      historyGeneration.current++;
     };
   }, [load]);
   const credentialsChanged = useCallback(
@@ -48,11 +58,17 @@ export default function ModelProfiles({ base }: { base: string }) {
     [load],
   );
   async function openHistory(id: string) {
+    const current = ++historyGeneration.current;
+    setError('');
     try {
-      setHistory(await api(base + '/workspace/models/' + id + '/versions'));
-      setHistoryId(id);
+      const result = await api(base + '/workspace/models/' + id + '/versions');
+      if (current === historyGeneration.current) {
+        setHistory(result);
+        setHistoryId(id);
+        setHistoryFocus((old) => old + 1);
+      }
     } catch (e) {
-      setError((e as Error).message);
+      if (current === historyGeneration.current) setError((e as Error).message);
     }
   }
   return (
@@ -220,7 +236,9 @@ export default function ModelProfiles({ base }: { base: string }) {
       )}
       {history && !editing && (
         <section className={styles.panel}>
-          <h2>Model version history</h2>
+          <h2 ref={historyHeading} tabIndex={-1}>
+            Model version history
+          </h2>
           <p>
             Saved configurations are immutable. Superseded or disabled versions cannot be selected
             for a new preparation.
@@ -256,6 +274,7 @@ export default function ModelProfiles({ base }: { base: string }) {
           {history.next_cursor && (
             <button
               onClick={async () => {
+                const current = historyGeneration.current;
                 try {
                   const next = await api(
                     base +
@@ -264,9 +283,10 @@ export default function ModelProfiles({ base }: { base: string }) {
                       '/versions?after=' +
                       history.next_cursor,
                   );
-                  setHistory({ ...next, items: [...history.items, ...next.items] });
+                  if (current === historyGeneration.current)
+                    setHistory({ ...next, items: [...history.items, ...next.items] });
                 } catch (e) {
-                  setError((e as Error).message);
+                  if (current === historyGeneration.current) setError((e as Error).message);
                 }
               }}
             >

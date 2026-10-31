@@ -107,14 +107,34 @@ test('Admin saves a typed preset and multi-model preparation without spending de
     exact: true,
   });
   await expect(preparationRegion).toHaveAttribute('aria-busy', 'false');
-  await page.getByLabel('Task package version', { exact: false }).selectOption(pack.id);
-  while (!(await page.locator('#preparation-preset option[value="' + preset.id + '"]').count())) {
-    const loaded = page.waitForResponse((r) => r.url().includes('/workspace/presets?after='));
-    await page.getByRole('button', { name: 'Load more preset choices', exact: true }).click();
-    await loaded;
-    await expect(preparationRegion).toHaveAttribute('aria-busy', 'false');
+  async function choosePackage() {
+    const field = page.locator('#preparation-package');
+    if (await field.evaluate((element) => element.tagName === 'SELECT'))
+      await field.selectOption(pack.id);
+    else {
+      await expect(field).toHaveAttribute('type', 'hidden');
+      await expect(field).toHaveValue(pack.id);
+      await expect(
+        page.getByRole('combobox', { name: 'Task package version', exact: false }),
+      ).toHaveCount(0);
+    }
   }
-  await page.getByLabel('Execution preset', { exact: false }).selectOption(preset.id);
+  async function choosePreset() {
+    const field = page.locator('#preparation-preset');
+    if (await field.evaluate((element) => element.tagName === 'SELECT')) {
+      while (
+        !(await page.locator('#preparation-preset option[value="' + preset.id + '"]').count())
+      ) {
+        const loaded = page.waitForResponse((r) => r.url().includes('/workspace/presets?after='));
+        await page.getByRole('button', { name: 'Load more preset choices', exact: true }).click();
+        await loaded;
+        await expect(preparationRegion).toHaveAttribute('aria-busy', 'false');
+      }
+      await field.selectOption(preset.id);
+    } else await expect(field).toHaveValue(preset.id);
+  }
+  await choosePackage();
+  await choosePreset();
   for (const model of models) await page.getByLabel(model.name, { exact: false }).check();
   const preparationResponse = page.waitForResponse(
     (response) =>
@@ -134,24 +154,74 @@ test('Admin saves a typed preset and multi-model preparation without spending de
     page.getByRole('heading', { name: 'Preparation readiness', exact: true }),
   ).toBeVisible();
   await expect(
+    page.getByRole('heading', { name: 'Preparation readiness', exact: true }),
+  ).toBeFocused();
+  await expect(
+    page.getByRole('region', { name: 'Evaluation preparation', exact: true }),
+  ).toHaveCount(0);
+  await expect(
     page.getByText('An explicit aggregate API cap is missing.', { exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole('button', { name: 'Launch unavailable', exact: true }),
   ).toBeDisabled();
-  await page.getByRole('button', { name: 'Refresh preparation choices', exact: true }).click();
+  const listPath = '**/workspace/preparations';
+  let interruptList = true;
+  await page.route(listPath, async (route) => {
+    if (route.request().method() === 'GET' && interruptList) {
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: { message: 'Test-only saved-list interruption' } }),
+      });
+    } else await route.continue();
+  });
+  await page.reload();
+  await expect(page.getByRole('main').getByRole('alert')).toHaveText(
+    'Test-only saved-list interruption',
+  );
+  await expect(page.getByText('No saved preparations.', { exact: true })).toHaveCount(0);
+  interruptList = false;
+  await page.getByRole('button', { name: 'Refresh saved preparations', exact: true }).click();
+  await expect(page.getByText('Test-only saved-list interruption', { exact: true })).toHaveCount(0);
+  await page.unroute(listPath);
+  await page.getByRole('button', { name: 'Refresh readiness', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Preparation readiness', exact: true }),
   ).toBeVisible();
+  const readinessPath = '**/workspace/preparations/' + saved.id;
+  let interruptReadiness = true;
+  await page.route(readinessPath, async (route) => {
+    if (interruptReadiness) {
+      interruptReadiness = false;
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: { message: 'Test-only readiness interruption' } }),
+      });
+    } else await route.continue();
+  });
+  await page.getByRole('button', { name: 'Refresh readiness', exact: true }).click();
+  await expect(page.getByRole('main').getByRole('alert')).toHaveText(
+    'Test-only readiness interruption',
+  );
+  await expect(
+    page.getByRole('heading', { name: 'Preparation readiness', exact: true }),
+  ).toHaveCount(0);
+  await page.unroute(readinessPath);
+  await page.getByRole('button', { name: 'Refresh readiness', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Preparation readiness', exact: true }),
+  ).toBeFocused();
+  await page.getByRole('button', { name: 'Create another preparation', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(
+    page.getByRole('heading', { name: 'Prepare model evaluation', exact: true }),
+  ).toBeFocused();
   await expect(preparationRegion).toHaveAttribute('aria-busy', 'false');
-  await page.getByLabel('Task package version', { exact: false }).selectOption(pack.id);
-  while (!(await page.locator('#preparation-preset option[value="' + preset.id + '"]').count())) {
-    const loaded = page.waitForResponse((r) => r.url().includes('/workspace/presets?after='));
-    await page.getByRole('button', { name: 'Load more preset choices', exact: true }).click();
-    await loaded;
-    await expect(preparationRegion).toHaveAttribute('aria-busy', 'false');
-  }
-  await page.getByLabel('Execution preset', { exact: false }).selectOption(preset.id);
+  await expect(page.getByLabel('Aggregate API budget', { exact: false })).toHaveValue('');
+  await choosePackage();
+  await choosePreset();
   for (const model of models) await page.getByLabel(model.name, { exact: false }).check();
   await page.getByLabel('Aggregate API budget', { exact: false }).fill('0.012345');
   const boundedResponse = page.waitForResponse(
@@ -166,13 +236,15 @@ test('Admin saves a typed preset and multi-model preparation without spending de
   ).data;
   expect(original.snapshot.aggregate_cap_micro_usd).toBeNull();
   await expect(page.getByText('Aggregate budget: $0.012345.', { exact: false })).toBeVisible();
+  for (const width of [320, 768, 1440]) {
+    await page.setViewportSize({ width, height: 844 });
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+  }
   await page.setViewportSize({ width: 320, height: 844 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
-    true,
-  );
   await page.getByRole('button', { name: 'Dark theme', exact: true }).click();
-  await page.screenshot({
+  await page.getByRole('region', { name: 'Preparation readiness', exact: true }).screenshot({
     path: 'artifacts/test-runs/modern-preparation-mobile.png',
-    fullPage: true,
   });
 });

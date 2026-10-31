@@ -92,6 +92,9 @@ test('Admin edits models as immutable versions with explicit pricing and disable
   await expect(
     page.getByRole('heading', { name: 'Model version history', exact: true }),
   ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Model version history', exact: true }),
+  ).toBeFocused();
   await page.reload();
   await expect(region).toHaveAttribute('aria-busy', 'false');
   const row = await rowForModel();

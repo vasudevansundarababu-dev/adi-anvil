@@ -550,7 +550,7 @@ function WorkspaceView() {
               {section === 'preparation' &&
                 (capabilities.includes('harbor.prepare') ? (
                   <WorkspacePreparation
-                    key={base}
+                    key={base + ':' + (query.get('task') || 'all')}
                     base={base}
                     taskId={query.get('task')}
                     preparationId={query.get('preparation')}

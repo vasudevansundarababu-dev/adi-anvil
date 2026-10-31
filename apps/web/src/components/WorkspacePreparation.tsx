@@ -89,6 +89,57 @@ function useList<T>(path: string) {
   };
 }
 
+function VersionChoice({
+  id,
+  label,
+  name,
+  choices,
+  complete,
+  loading,
+  value,
+  change,
+}: {
+  id: string;
+  label: string;
+  name?: string;
+  choices: { id: string; label: string }[];
+  complete: boolean;
+  loading: boolean;
+  value?: string;
+  change?: (value: string) => void;
+}) {
+  if (loading) return <p role="status">Loading {label.toLowerCase()}…</p>;
+  if (complete && choices.length === 1)
+    return (
+      <div>
+        <strong>{label}</strong>
+        <p>{choices[0].label}</p>
+        <input id={id} type="hidden" name={name} value={choices[0].id} />
+      </div>
+    );
+  return (
+    <>
+      <label htmlFor={id}>{label}</label>
+      <select
+        id={id}
+        name={name}
+        required
+        {...(value === undefined ? { defaultValue: '' } : { value })}
+        onChange={change ? (e) => change(e.target.value) : undefined}
+      >
+        <option value="" disabled>
+          Select a saved version
+        </option>
+        {choices.map((choice) => (
+          <option key={choice.id} value={choice.id}>
+            {choice.label}
+          </option>
+        ))}
+      </select>
+    </>
+  );
+}
+
 function ToggleModels({
   models,
   selected,
@@ -284,10 +335,9 @@ export function ExecutionPresets({ base }: { base: string }) {
 }
 
 const messages: Record<string, string> = {
-  workspace_dispatch_not_qualified: 'Workspace model dispatch is not qualified.',
+  workspace_dispatch_not_qualified: 'Live execution for workspace profiles is not available yet.',
   current_pricing_not_bound: 'Current reviewed pricing has not been bound to this preparation.',
-  reviewed_pricing_admission_not_bound:
-    'Declared pricing still requires exact-run admission and reviewed authority.',
+  reviewed_pricing_admission_not_bound: 'Pricing still needs review for this exact evaluation.',
   model_profile_disabled: 'This model profile is disabled for all new preparations.',
   model_version_superseded:
     'A newer model version exists. Create a preset with the current version.',
@@ -295,11 +345,11 @@ const messages: Record<string, string> = {
   pricing_metadata_missing: 'Declared pricing metadata is missing.',
   pricing_metadata_expired: 'Declared pricing metadata has expired.',
   pricing_metadata_invalid: 'Declared pricing metadata is invalid.',
-  exact_user_authority_not_bound: 'Exact user spending authority has not been bound.',
-  processing_rights_not_bound: 'Reviewed processing rights have not been bound.',
-  required_run_decisions_not_bound: 'Required real run decisions have not been bound.',
+  exact_user_authority_not_bound: 'No spending authorization is attached to this preparation.',
+  processing_rights_not_bound: 'No processing-rights decision is attached to this preparation.',
+  required_run_decisions_not_bound: 'Required run approvals are not attached to this preparation.',
   shared_spending_admission_not_implemented:
-    'Shared spending admission is not implemented for these profiles.',
+    'Shared spending controls are not ready for these models.',
   aggregate_api_cap_missing: 'An explicit aggregate API cap is missing.',
   candidate_runtime_not_qualified: 'The selected candidate runtime is not qualified.',
   external_tracing_not_qualified_export_disabled:
@@ -337,16 +387,37 @@ export default function WorkspacePreparation({
   const presets = useList<Preset>(base + '/workspace/presets');
   const drafts = useList<Draft>(base + '/workspace/preparations');
   const [presetId, setPresetId] = useState(''),
+    [composing, setComposing] = useState(!preparationId),
+    [detailLoading, setDetailLoading] = useState(!!preparationId),
     [selected, setSelected] = useState<string[]>([]),
     [saved, setSaved] = useState<Draft | null>(null),
     [refreshKey, setRefreshKey] = useState(0),
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false);
-  const preset = presets.items.find((p) => p.id === presetId);
+  const selectedPresetId =
+    !presets.loading && !presets.error && !presets.more && presets.items.length === 1
+      ? presets.items[0].id
+      : presetId;
+  const preset = presets.items.find((p) => p.id === selectedPresetId);
+  const composerHeading = useRef<HTMLHeadingElement>(null),
+    readinessHeading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    setComposing(!preparationId);
+  }, [preparationId]);
+  useEffect(() => {
+    if (composing) {
+      composerHeading.current?.focus();
+      composerHeading.current?.scrollIntoView({ block: 'start' });
+    } else if (saved) {
+      readinessHeading.current?.focus();
+      readinessHeading.current?.scrollIntoView({ block: 'start' });
+    }
+  }, [composing, saved?.id]);
   useEffect(() => {
     let active = true;
     setSaved(null);
     setError('');
+    setDetailLoading(!!preparationId);
     if (preparationId)
       api(base + '/workspace/preparations/' + preparationId)
         .then((value) => {
@@ -354,6 +425,9 @@ export default function WorkspacePreparation({
         })
         .catch((e) => {
           if (active) setError(e.message);
+        })
+        .finally(() => {
+          if (active) setDetailLoading(false);
         });
     return () => {
       active = false;
@@ -361,164 +435,205 @@ export default function WorkspacePreparation({
   }, [base, preparationId, refreshKey]);
   return (
     <>
-      <section
-        className={styles.panel}
-        aria-label="Evaluation preparation"
-        aria-busy={packages.loading || presets.loading || drafts.loading}
-      >
-        <h2>Prepare model evaluation</h2>
-        {(packages.loading || presets.loading || drafts.loading) && (
-          <p role="status">Loading preparation choices…</p>
-        )}
-        <p>
-          Choose exact saved versions and review what is missing. Saving creates a preparation, not
-          a run. No model request, reservation or external trace is sent.
-        </p>
-        <button
-          onClick={() => {
-            void presets.reload();
-            void packages.reload();
-            void drafts.reload();
-            setRefreshKey((old) => old + 1);
-          }}
-        >
-          Refresh preparation choices
-        </button>
-        {[error, packages.error, presets.error, drafts.error].filter(Boolean).map((e, i) => (
-          <p role="alert" key={i}>
-            {e}
-          </p>
-        ))}
-        <Form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const data = new FormData(e.currentTarget);
-            setBusy(true);
-            setError('');
-            try {
-              const dollars = String(data.get('cap') || '');
-              if (dollars && !/^\d+(\.\d{1,6})?$/.test(dollars))
-                throw new Error('Enter a USD amount with at most six decimal places.');
-              const [whole, fraction = ''] = dollars.split('.');
-              const result = await api(base + '/workspace/preparations', 'POST', {
-                preset_id: presetId,
-                package_id: data.get('package'),
-                model_profile_ids: selected,
-                max_output_tokens: Number(data.get('tokens')),
-                episode_timeout_seconds: Number(data.get('timeout')),
-                aggregate_cap_micro_usd: dollars
-                  ? Number(whole) * 1000000 + Number(fraction.padEnd(6, '0'))
-                  : null,
-              });
-              setSaved(result);
-              open(result.id);
-              await drafts.reload();
-            } catch (e) {
-              setError((e as Error).message);
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <label htmlFor="preparation-package">Task package version</label>
-          <select id="preparation-package" name="package" required defaultValue="">
-            <option value="" disabled>
-              Select an immutable package
-            </option>
-            {packages.items.map((p) => (
-              <option value={p.id} key={p.id}>
-                {p.title || p.manifest.task_id} · {p.manifest.task_version} ·{' '}
-                {shortId(p.package_sha256)}
-              </option>
-            ))}
-          </select>
-          {packages.more && (
-            <button
-              type="button"
-              disabled={packages.loading}
-              onClick={() => void packages.more?.()}
-            >
-              Load more package choices
-            </button>
-          )}
-          {!packages.loading && !packages.items.length && (
-            <p>No built packages in this view. Import and build a task package first.</p>
-          )}
-          <label htmlFor="preparation-preset">Execution preset</label>
-          <select
-            id="preparation-preset"
-            required
-            value={presetId}
-            onChange={(e) => {
-              setPresetId(e.target.value);
+      {!composing && (
+        <section className={styles.panel}>
+          <h2>Saved preparation</h2>
+          {detailLoading && <p role="status">Loading saved preparation…</p>}
+          {error && <p role="alert">{error}</p>}
+          <button onClick={() => setRefreshKey((old) => old + 1)} disabled={detailLoading}>
+            Refresh readiness
+          </button>
+          <button
+            onClick={() => {
+              setComposing(true);
+              setPresetId('');
               setSelected([]);
+              setError('');
             }}
           >
-            <option value="" disabled>
-              Select a saved preset
-            </option>
-            {presets.items.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.snapshot.name} · {shortId(p.subject_hash)}
-              </option>
-            ))}
-          </select>
-          {presets.more && (
-            <button type="button" disabled={presets.loading} onClick={() => void presets.more?.()}>
-              Load more preset choices
-            </button>
+            Create another preparation
+          </button>
+        </section>
+      )}
+      {composing && (
+        <section
+          className={styles.panel}
+          aria-label="Evaluation preparation"
+          aria-busy={packages.loading || presets.loading || drafts.loading}
+        >
+          <h2 ref={composerHeading} tabIndex={-1}>
+            Prepare model evaluation
+          </h2>
+          {(packages.loading || presets.loading || drafts.loading) && (
+            <p role="status">Loading preparation choices…</p>
           )}
-          {!presets.loading && !presets.items.length && (
-            <p>An Admin must save an execution preset in Frameworks first.</p>
-          )}
-          {preset && (
-            <ToggleModels
-              models={preset.snapshot.models}
-              selected={selected}
-              change={setSelected}
-            />
-          )}
-          <label htmlFor="preparation-tokens">Selected maximum output tokens</label>
-          <input
-            id="preparation-tokens"
-            name="tokens"
-            type="number"
-            required
-            min={1}
-            max={2048}
-            defaultValue={2048}
-          />
-          <label htmlFor="preparation-timeout">Episode time limit (seconds)</label>
-          <input
-            id="preparation-timeout"
-            name="timeout"
-            type="number"
-            required
-            min={1}
-            max={600}
-            defaultValue={300}
-          />
-          <label htmlFor="preparation-cap">
-            Aggregate API budget (USD, optional while planning)
-          </label>
-          <input
-            id="preparation-cap"
-            name="cap"
-            type="number"
-            min={0.000001}
-            max={1000}
-            step={0.000001}
-          />
           <p>
-            One trial per selected model, in sequence. The cap applies to the entire group. A blank
-            cap grants no spending authority.
+            Choose exact saved versions and review what is missing. Saving creates a preparation,
+            not a run. No model request, reservation or external trace is sent.
           </p>
-          <button disabled={busy || !selected.length}>Save preparation</button>
-        </Form>
-      </section>
+          <button
+            onClick={() => {
+              void presets.reload();
+              void packages.reload();
+              void drafts.reload();
+              setRefreshKey((old) => old + 1);
+            }}
+          >
+            Refresh preparation choices
+          </button>
+          {[error, packages.error, presets.error].filter(Boolean).map((e, i) => (
+            <p role="alert" key={i}>
+              {e}
+            </p>
+          ))}
+          <Form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const data = new FormData(e.currentTarget);
+              setBusy(true);
+              setError('');
+              try {
+                const dollars = String(data.get('cap') || '');
+                if (dollars && !/^\d+(\.\d{1,6})?$/.test(dollars))
+                  throw new Error('Enter a USD amount with at most six decimal places.');
+                const [whole, fraction = ''] = dollars.split('.');
+                const result = await api(base + '/workspace/preparations', 'POST', {
+                  preset_id: selectedPresetId,
+                  package_id: data.get('package'),
+                  model_profile_ids: selected,
+                  max_output_tokens: Number(data.get('tokens')),
+                  episode_timeout_seconds: Number(data.get('timeout')),
+                  aggregate_cap_micro_usd: dollars
+                    ? Number(whole) * 1000000 + Number(fraction.padEnd(6, '0'))
+                    : null,
+                });
+                setSaved(result);
+                open(result.id);
+                await drafts.reload();
+              } catch (e) {
+                setError((e as Error).message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <VersionChoice
+              id="preparation-package"
+              name="package"
+              label="Task package version"
+              complete={!packages.more && !packages.error}
+              loading={packages.loading}
+              choices={packages.items.map((p) => ({
+                id: p.id,
+                label:
+                  (p.title || p.manifest.task_id) +
+                  ' · ' +
+                  p.manifest.task_version +
+                  ' · ' +
+                  shortId(p.package_sha256),
+              }))}
+            />
+            {packages.more && (
+              <button
+                type="button"
+                disabled={packages.loading}
+                onClick={() => void packages.more?.()}
+              >
+                Load more package choices
+              </button>
+            )}
+            {!packages.loading && !packages.items.length && (
+              <p>No built packages in this view. Import and build a task package first.</p>
+            )}
+            <VersionChoice
+              id="preparation-preset"
+              label="Execution preset"
+              complete={!presets.more && !presets.error}
+              loading={presets.loading}
+              value={presetId}
+              change={(id) => {
+                setPresetId(id);
+                setSelected([]);
+              }}
+              choices={presets.items.map((p) => ({
+                id: p.id,
+                label: p.snapshot.name + ' · ' + shortId(p.subject_hash),
+              }))}
+            />
+            {presets.more && (
+              <button
+                type="button"
+                disabled={presets.loading}
+                onClick={() => void presets.more?.()}
+              >
+                Load more preset choices
+              </button>
+            )}
+            {!presets.loading && !presets.items.length && (
+              <p>An Admin must save an execution preset in Frameworks first.</p>
+            )}
+            {preset && (
+              <ToggleModels
+                models={preset.snapshot.models}
+                selected={selected}
+                change={setSelected}
+              />
+            )}
+            <label htmlFor="preparation-tokens">Selected maximum output tokens</label>
+            <input
+              id="preparation-tokens"
+              name="tokens"
+              type="number"
+              required
+              min={1}
+              max={2048}
+              defaultValue={2048}
+            />
+            <label htmlFor="preparation-timeout">Episode time limit (seconds)</label>
+            <input
+              id="preparation-timeout"
+              name="timeout"
+              type="number"
+              required
+              min={1}
+              max={600}
+              defaultValue={300}
+            />
+            <label htmlFor="preparation-cap">
+              Aggregate API budget (USD, optional while planning)
+            </label>
+            <input
+              id="preparation-cap"
+              name="cap"
+              type="number"
+              min={0.000001}
+              max={1000}
+              step={0.000001}
+            />
+            <p>
+              One trial per selected model, in sequence. The cap applies to the entire group. A
+              blank cap grants no spending authority.
+            </p>
+            <button
+              disabled={
+                busy ||
+                !selected.length ||
+                packages.loading ||
+                presets.loading ||
+                !!packages.error ||
+                !!presets.error
+              }
+            >
+              Save preparation
+            </button>
+          </Form>
+        </section>
+      )}
       {saved && (
-        <section className={styles.panel}>
-          <h2>Preparation readiness</h2>
+        <section className={styles.panel} aria-labelledby="preparation-readiness-heading">
+          <h2 id="preparation-readiness-heading" ref={readinessHeading} tabIndex={-1}>
+            Preparation readiness
+          </h2>
           <p role="status">Preparation saved · planning only</p>
           <h3>Bound task and settings</h3>
           <p>
@@ -568,8 +683,17 @@ export default function WorkspacePreparation({
           </details>
         </section>
       )}
-      <section className={styles.panel}>
-        <h2>Saved preparations</h2>
+      <section className={styles.panel} aria-labelledby="saved-preparations-heading">
+        <h2 id="saved-preparations-heading">Saved preparations</h2>
+        {drafts.loading && <p role="status">Loading saved preparations…</p>}
+        {drafts.error && (
+          <>
+            <p role="alert">{drafts.error}</p>
+            <button onClick={() => void drafts.reload()} disabled={drafts.loading}>
+              Refresh saved preparations
+            </button>
+          </>
+        )}
         {drafts.items.map((draft) => (
           <p key={draft.id}>
             <button onClick={() => open(draft.id)}>
@@ -577,9 +701,11 @@ export default function WorkspacePreparation({
             </button>
           </p>
         ))}
-        {!drafts.loading && !drafts.items.length && <p>No saved preparations.</p>}
+        {!drafts.loading && !drafts.error && !drafts.items.length && <p>No saved preparations.</p>}
         {drafts.more && (
-          <button onClick={() => void drafts.more?.()}>Load more preparations</button>
+          <button disabled={drafts.loading} onClick={() => void drafts.more?.()}>
+            Load more preparations
+          </button>
         )}
       </section>
     </>

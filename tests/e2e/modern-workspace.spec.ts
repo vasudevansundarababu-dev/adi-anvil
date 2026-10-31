@@ -185,6 +185,17 @@ test('Admin modern workspace persists model profiles and preserves classic compa
   await expect(page.getByRole('heading', { name: 'Model profiles', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Add credential', exact: true }).click();
   const credentialName = 'Test-only browser credential ' + Date.now();
+  // A newly saved UUID may be outside the first page. Keep the write response visible.
+  const credentialListPath = '**/workspace/credentials';
+  await page.route(credentialListPath, async (route) => {
+    if (route.request().method() !== 'GET') return route.continue();
+    const response = await route.fetch();
+    const body = await response.json();
+    body.data.items = body.data.items.filter(
+      (item: { name: string }) => item.name !== credentialName,
+    );
+    await route.fulfill({ response, json: body });
+  });
   const secret = 'test-only-not-a-provider-key-' + Date.now();
   await page.getByLabel('Credential name', { exact: false }).fill(credentialName);
   await page.getByLabel('Secret value', { exact: false }).fill(secret);
@@ -199,6 +210,8 @@ test('Admin modern workspace persists model profiles and preserves classic compa
   const credentialRow = page.getByRole('row').filter({ hasText: credentialName });
   await credentialRow.getByRole('button', { name: 'Revoke', exact: true }).click();
   await expect(credentialRow.getByText('Revoked', { exact: true })).toBeVisible();
+  await expect(credentialRow).toHaveCount(1);
+  await page.unroute(credentialListPath);
   await page.getByRole('link', { name: 'Frameworks', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Semantic Kernel', exact: true })).toBeVisible();
   await expect(page.getByText('Adapter not implemented.', { exact: false }).first()).toBeVisible();

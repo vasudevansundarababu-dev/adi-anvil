@@ -26,17 +26,25 @@ export default function CredentialManager({
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
     [message, setMessage] = useState('');
-  const load = useCallback(async () => {
-    try {
-      const result = await api(base + '/workspace/credentials');
-      setCredentials(result.items);
-      onChange(result.items);
-      setEntryAvailable(result.entry_available);
-      setCursor(result.next_cursor);
-    } catch (e) {
-      setError((e as Error).message);
-    }
-  }, [base, onChange]);
+  const load = useCallback(
+    async (saved?: CredentialMetadata) => {
+      try {
+        const result = await api(base + '/workspace/credentials');
+        const current =
+          result.items.find((item: CredentialMetadata) => item.id === saved?.id) || saved;
+        const values = saved
+          ? [current, ...result.items.filter((item: CredentialMetadata) => item.id !== saved.id)]
+          : result.items;
+        setCredentials(values);
+        onChange(values);
+        setEntryAvailable(result.entry_available);
+        setCursor(result.next_cursor);
+      } catch (e) {
+        setError((e as Error).message);
+      }
+    },
+    [base, onChange],
+  );
   useEffect(() => {
     void load();
   }, [load]);
@@ -44,9 +52,9 @@ export default function CredentialManager({
     setBusy(true);
     setError('');
     try {
-      await api(base + '/workspace/credentials/' + record.id + '/revoke', 'POST', {});
+      const saved = await api(base + '/workspace/credentials/' + record.id + '/revoke', 'POST', {});
       setMessage('Credential revoked for future use. Historical records were preserved.');
-      await load();
+      await load(saved);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -136,7 +144,11 @@ export default function CredentialManager({
           onClick={async () => {
             try {
               const next = await api(base + '/workspace/credentials?after=' + cursor);
-              const values = [...credentials, ...next.items];
+              const existing = new Set(credentials.map((item) => item.id));
+              const values = [
+                ...credentials,
+                ...next.items.filter((item: CredentialMetadata) => !existing.has(item.id)),
+              ];
               setCredentials(values);
               onChange(values);
               setCursor(next.next_cursor);
@@ -161,22 +173,27 @@ export default function CredentialManager({
             setBusy(true);
             setError('');
             try {
+              let saved: CredentialMetadata;
               if (editor === 'new') {
-                await api(base + '/workspace/credentials', 'POST', {
+                saved = await api(base + '/workspace/credentials', 'POST', {
                   name: String(data.get('credential_name')),
                   provider: String(data.get('credential_provider')),
                   secret,
                 });
               } else {
-                await api(base + '/workspace/credentials/' + editor.id + '/versions', 'POST', {
-                  secret,
-                });
+                saved = await api(
+                  base + '/workspace/credentials/' + editor.id + '/versions',
+                  'POST',
+                  {
+                    secret,
+                  },
+                );
               }
               setEditor(null);
               setMessage(
                 'Credential version saved. The value cannot be read back; no model request was sent.',
               );
-              await load();
+              await load(saved);
             } catch (e) {
               setError((e as Error).message);
             } finally {
