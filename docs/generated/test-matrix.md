@@ -6,8 +6,8 @@ Current feature evidence (full final counts in BUILD-STATUS.md):
 | Requirement                                | Evidence                                                                     | Status / limit                                                          |
 | ------------------------------------------ | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | MOD-01 Preserve classic journey            | modern-workspace browser; baseline Git branch                                | Passed local comparison; no deployment                                  |
-| MOD-02 Task-level Harbor history           | test_workspace integration; workspace APIs                                   | Passed; diagnostic task/run integration remains pending                 |
-| MOD-03 Honest run metrics / unknown cost   | test_workspace unit and integration                                          | Passed one-attempt Harbor projection; live comparisons descriptive only |
+| MOD-02 Harbor and diagnostic task history | workspace and diagnostic integration; modern browser | Passed local all-version history, snapshots and finalized-only evidence |
+| MOD-03 Honest run metrics / unknown cost | workspace and diagnostic units/integration | Finalized denominators, whole-run scope, frozen dataset counts; partial comparisons descriptive only |
 | MOD-04 Bound evidence and project scope    | test_workspace integration                                                   | Passed RLS, role, bound artifact/classification/hash checks             |
 | MOD-05 Multiple model/framework profiles   | test_workspace integration; modern-workspace browser                         | Persisted metadata passed; adapters/composition not all implemented     |
 | MOD-06 Write-only local credentials        | test_workspace_secrets unit; test_workspace_credentials integration; browser | Local save/rotate/revoke passed; cloud writes disabled                  |

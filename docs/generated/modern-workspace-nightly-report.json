@@ -5,6 +5,17 @@
   "status": "partial_local",
   "branch": "codex/anvil-modern-workspace",
   "code_checkpoint": "d2dfe82",
+  "diagnostic_increment": {
+    "code_checkpoint": "a96af51",
+    "status": "verified_local",
+    "production_check": "passed",
+    "unit_passed": 199,
+    "normal_integration_passed": 86,
+    "normal_integration_opt_in_skipped": 12,
+    "modern_browser_passed": 2,
+    "blinded_unfinished_results": true,
+    "comparison_policy": "complete matched finalized task/candidate/runtime cohorts only"
+  },
   "preserved_baseline": "codex/anvil-classic-v021-comparison",
   "nightly_window": "22:00–06:00, hourly checkpoint resumes",
   "local_url": "http://127.0.0.1:3202/workspace",
@@ -26,7 +37,6 @@
   "deployment": "not_performed",
   "github_push": "not_performed",
   "remaining": [
-    "diagnostic task/run integration with blinded-review preservation",
     "complete task/rubric/evaluation successor editor",
     "explicit two-profile capability migration and People/Limits actions",
     "qualified profile/credential dispatch and shared multi-model spending groups",

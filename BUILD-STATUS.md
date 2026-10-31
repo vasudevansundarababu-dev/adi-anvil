@@ -1,10 +1,26 @@
 # Build status
 
+23:00 nightly resume — diagnostic workspace increment verified as `a96af51`.
+M2 diagnostic task/run history now joins immutable suite/task revisions (including prepared
+runs), with cursor pagination, whole-run finalized-only metrics, exact safe task/rubric/
+protocol snapshots and paginated results. Candidate identity, score and pass/fail stay
+blinded until finalization. Only finalized, bound internal output is inspectable; raw private
+references/checkpoints remain excluded. Comparisons require complete planned cohorts and
+matching task/candidate/runtime/version signatures; partial cohorts are descriptive only.
+Frozen dataset counts and identity own planning/compatibility when attached to a run.
+Diagnostic source switch is available in Tasks/Runs. Mobile390px check caught a project
+selector overflow; fixed without weakening the assertion. Targeted modern browsers2 passed
+(7.6s), new API integration1 passed, full unit199 passed, production/type/lint/format/OpenAPI
+check passed. Isolated normal integration86 passed/12 opt-in skips (54.82s); real Harbor
+regression95/2 from the initial checkpoint remains historical evidence, not rerun this hour.
+Next work: M4 separate successor editor, explicit two-profile capability migration and
+qualified model/preset admission. Do not restart the completed diagnostic read milestone.
+
 Verified initial modern-workspace code checkpoint: `d2dfe82`. Local API/database ready;
 legacy and Harbor live inference disabled. Registered app, ordinary worker, web and
 dedicated synthetic Harbor worker are running for comparison. Only unrelated AGENTS.md
-and Google Cloud runbook edits remain outside the checkpoint. Next scheduled checkpoint
-resume23:00 America/Chicago; continue the remaining milestone list below, not M0 again.
+and Google Cloud runbook edits remain outside the checkpoint. The initial checkpoint
+was handed off to the23:00 resume recorded above; continue M4, not M0 again.
 
 Modern workspace autonomous build launched 30 Oct 2026 at 03:08 UTC on 31 Oct
 (22:08 America/Chicago). Initial window deadline 11:00 UTC (06:00 local). M0 branch preservation
@@ -13,7 +29,7 @@ Nightly thread automation `anvil-nightly-modern-workspace-build` active hourly d
 22:00–06:00 local, including checkpoint resumes tonight. No deadline reset on wake.
 Resume plan: `docs/build/08-MODERN-WORKSPACE-NIGHTLY.md`. Local preflight passed after
 granting access to existing Docker; Anvil infrastructure ports occupied, app ports free.
-Current next milestone: M2 diagnostic task/run integration, then M4 full versioned editor,
+Current next milestone: M4 full versioned editor,
 two-profile migration and qualified multi-model admission/composition.
 Unrelated user edits remain excluded. Deployment and paid inference are not authorized.
 
@@ -45,7 +61,7 @@ Initial browser failures were test selector issues (required-label suffix, dupli
 corrected without weakening product behavior. Retained-project security test now selects
 an originally static task and a genuinely different source instead of whichever task sorts
 first; targeted5 passed. Final regression and OpenAPI regeneration completed.
-Remaining: diagnostic-run integration, complete editor/versioning and profile migration,
+Remaining: complete editor/versioning and profile migration,
 multi-model admission/composition, managed cloud credentials, qualified external framework
 adapters and broader responsive/access regression. See docs/generated/modern-workspace-nightly-report.md.
 

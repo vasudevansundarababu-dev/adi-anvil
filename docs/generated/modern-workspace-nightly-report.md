@@ -1,5 +1,15 @@
 # Modern workspace nightly checkpoint — 30 October 2026
 
+23:00 continuation checkpoint: `a96af51` adds diagnostic task/run history, prepared-run
+membership, finalized-only result evidence, safe exact-version task/rubric/protocol snapshots
+and complete-cohort comparison rules. Read-only routes retain project isolation and grading
+blinding; unfinished pass/fail outcomes are masked, not just scores and candidate names.
+Mobile390px overflow was repaired. Latest validation: production/type/lint/format/OpenAPI
+passed,199 unit passed,86 normal isolated integration passed/12 opt-in skipped (54.82s),
+targeted modern browsers2 passed (7.6s). Dataset-bound planned counts have additional
+unit coverage. No paid calls, deployment or external credential transmission. Next: M4 editor,
+profile migration and qualified model/preset execution preparation.
+
 Status: **partial local implementation**. Autonomous build started22:08 America/Chicago;
 verified code checkpoint `d2dfe82`.
 this is the initial verified checkpoint, not a declaration that all approved screens and
@@ -59,8 +69,8 @@ remain excluded from this checkpoint.
 
 ## Next nightly work
 
-1. Integrate diagnostic tasks/runs and their exact safe snapshots into the modern journey.
-   Preserve blinded unfinished grading; finalized output evidence only in general views.
+1. Diagnostic task/run read integration is now verified; extend editing and preparation
+   while preserving blinded unfinished grading and finalized-only general output evidence.
 2. Build the full separate task/rubric/evaluation successor editor and explicit two-profile
    capability migration without rewriting historical identities or paid decisions.
 3. Qualify exact profile/credential bindings, atomic shared multi-model spending groups,

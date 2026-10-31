@@ -7,6 +7,9 @@ http://127.0.0.1:3202/workspace after local startup; classic `/p/{project}/...` 
 available through **Compare classic journey**. The preserved baseline branch is
 `codex/anvil-classic-v021-comparison`. Both journeys use the same canonical local data;
 new schema changes are additive. This development branch has not been deployed.
+Tasks and Runs offer a **Diagnostic evaluations** source switch for existing diagnostic
+history, finalized result evidence and exact task/rubric/protocol snapshots. Unfinished
+grading stays blinded, and diagnostic metrics explicitly cover the whole run.
 See the [nightly plan](docs/build/08-MODERN-WORKSPACE-NIGHTLY.md) and [current status](BUILD-STATUS.md)
 for built versus remaining capabilities; saved framework metadata is not a working SDK
 integration, and saved credentials do not enable inference.
