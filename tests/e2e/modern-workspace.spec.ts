@@ -1,5 +1,61 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+
+test('separate successor editor appends a persisted draft and keeps old versions read-only', async ({
+  page,
+}) => {
+  const fixture = JSON.parse(
+    execFileSync('services/backend/.venv/bin/python', ['tests/prepare_editor_fixture.py'], {
+      encoding: 'utf8',
+    }),
+  );
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Sign in with Keycloak' }).click();
+  await page.locator('#username').fill('admin-1');
+  const password = readFileSync('.local/demo-accounts.md', 'utf8')
+    .split('\n')
+    .find((l) => l.startsWith('- admin-1:'))!
+    .split('`')[1];
+  await page.locator('#password').fill(password);
+  await page.locator('#kc-login').click();
+  await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+  await page.goto(
+    '/workspace/' +
+      fixture.project_id +
+      '/editor?kind=diagnostic&revision=' +
+      fixture.revision_id +
+      '&return_run=' +
+      fixture.return_run,
+  );
+  await expect(page.getByRole('heading', { name: 'Review changes', exact: true })).toBeVisible();
+  const threshold = page.getByLabel('Pass threshold', { exact: false });
+  const previous = await threshold.inputValue();
+  const changed = Number(previous) > 80 ? Number(previous) - 5 : Number(previous) + 5;
+  await threshold.fill(String(changed));
+  const response = page.waitForResponse(
+    (r) => r.url().endsWith('/successor') && r.request().method() === 'POST',
+  );
+  await page.getByRole('button', { name: 'Save new draft version', exact: true }).click();
+  const savedResponse = await response;
+  expect(savedResponse.status()).toBe(200);
+  const saved = (await savedResponse.json()).data;
+  await expect(page).toHaveURL(new RegExp('revision=' + saved.revision_id));
+  await page.reload();
+  await expect(page.getByRole('heading', { name: /rubric · version 2/ })).toBeVisible();
+  await expect(threshold).toHaveValue(String(changed));
+  await page.getByRole('link', { name: 'Version 1', exact: true }).click();
+  await expect(threshold).toHaveValue(previous);
+  await expect(threshold).toBeDisabled();
+  await expect(
+    page.getByRole('button', { name: 'Save new draft version', exact: true }),
+  ).toBeDisabled();
+  await page.setViewportSize({ width: 320, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+  await page.screenshot({ path: 'artifacts/test-runs/modern-version-editor.png', fullPage: true });
+});
 
 test('modern diagnostic dashboard preserves exact snapshots and finalized-only output', async ({
   page,

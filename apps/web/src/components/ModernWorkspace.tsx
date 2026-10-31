@@ -6,6 +6,7 @@ import HarborWorkbench from './HarborWorkbench';
 import ModelProfiles from './ModelProfiles';
 import FrameworkProfiles from './FrameworkProfiles';
 import DiagnosticResults from './DiagnosticResults';
+import WorkspaceRevisionEditor from './WorkspaceRevisionEditor';
 import {
   comparable,
   dateTime,
@@ -59,7 +60,9 @@ function WorkspaceView() {
     [runs, setRuns] = useState<Page<WorkspaceRun> | null>(null);
   const [detail, setDetail] = useState<WorkspaceRun | null>(null),
     [selected, setSelected] = useState<string[]>([]);
-  const [tab, setTab] = useState('Dashboard'),
+  const [tab, setTab] = useState(
+      runTabs.includes(query.get('tab') || '') ? query.get('tab')! : 'Dashboard',
+    ),
     [prepare, setPrepare] = useState(false),
     [members, setMembers] = useState<{ id: string; name: string; role: string }[]>([]);
   const project =
@@ -148,7 +151,19 @@ function WorkspaceView() {
     );
   }
   const selectedRuns = (runs?.items || []).filter((r) => selected.includes(r.id));
-  const title = navigation.find(([key]) => key === section)?.[1] || 'Overview';
+  const title =
+    section === 'editor'
+      ? 'Edit as new version'
+      : navigation.find(([key]) => key === section)?.[1] || 'Overview';
+  const canEdit = !!project?.roles.some((r) =>
+    ['admin', 'researcher', 'data-engineer'].includes(r),
+  );
+  const editorHref = (id: string, returnRun = query.get('return_run') || runId || '') =>
+    route +
+    '/editor?kind=diagnostic&revision=' +
+    encodeURIComponent(id) +
+    '&return_run=' +
+    encodeURIComponent(returnRun);
   if (!ready)
     return (
       <main className={styles.login} role="status">
@@ -426,6 +441,8 @@ function WorkspaceView() {
                       tab={tab}
                       base={base}
                       setTab={setTab}
+                      canEdit={canEdit}
+                      editorHref={editorHref}
                     />
                   </>
                 ) : (
@@ -489,6 +506,25 @@ function WorkspaceView() {
                     </section>
                     {tab === 'Compare' && <Comparison runs={selectedRuns} />}
                   </>
+                ))}
+              {section === 'editor' &&
+                (query.get('revision') ? (
+                  <WorkspaceRevisionEditor
+                    key={base + query.get('revision')}
+                    base={base}
+                    revisionId={query.get('revision')!}
+                    href={editorHref}
+                    returnHref={
+                      route +
+                      '/runs?kind=diagnostic&run=' +
+                      encodeURIComponent(query.get('return_run') || '') +
+                      '&tab=' +
+                      encodeURIComponent('Task & evaluations')
+                    }
+                    onSaved={(id) => router.replace(editorHref(id))}
+                  />
+                ) : (
+                  <p>Open an exact task, rubric or evaluation version from a run snapshot.</p>
                 ))}
               {section === 'models' && admin && <ModelProfiles key={base} base={base} />}
               {section === 'frameworks' && admin && <FrameworkProfiles key={base} base={base} />}
@@ -806,11 +842,15 @@ function RunDetails({
   tab,
   base,
   setTab,
+  canEdit,
+  editorHref,
 }: {
   run: WorkspaceRun;
   tab: string;
   base: string;
   setTab: (tab: string) => void;
+  canEdit: boolean;
+  editorHref: (id: string) => string;
 }) {
   const [evidence, setEvidence] = useState<{
       kind: string;
@@ -907,13 +947,48 @@ function RunDetails({
           </details>
           <p className={styles.muted}>Source revision {run.source_revision_id}</p>
           <p className={styles.hash}>Binding SHA-256: {run.source_sha256}</p>
+          {run.kind === 'diagnostic' && canEdit && (
+            <details>
+              <summary>Edit a task as a new version</summary>
+              <ul>
+                {(Array.isArray(run.actor_snapshot?.tasks) ? run.actor_snapshot.tasks : []).map(
+                  (t: { revision_id: string; title: string }) => (
+                    <li key={t.revision_id}>
+                      <a href={editorHref(t.revision_id)}>{t.title}</a>
+                    </li>
+                  ),
+                )}
+              </ul>
+            </details>
+          )}
         </section>
         <section className={styles.panel}>
           <h2>Bound evaluation configuration</h2>
           <pre>{JSON.stringify(run.evaluation_snapshot, null, 2)}</pre>
+          {run.kind === 'diagnostic' && canEdit && (
+            <>
+              <a className="button" href={editorHref(run.source_revision_id!)}>
+                Edit evaluation as new version
+              </a>
+              <details>
+                <summary>Edit a rubric as a new version</summary>
+                <ul>
+                  {(Array.isArray(run.evaluation_snapshot?.rubrics)
+                    ? run.evaluation_snapshot.rubrics
+                    : []
+                  ).map((r: { revision_id: string }) => (
+                    <li key={r.revision_id}>
+                      <a href={editorHref(r.revision_id)}>Rubric {shortId(r.revision_id)}</a>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </>
+          )}
           <p className={styles.muted}>
-            Historical inputs are read-only. A separate new-version editor is being built; existing
-            run evidence is never overwritten.
+            Historical inputs are read-only. Editing opens a separate version workspace and creates
+            an unapproved draft. Existing run evidence is never overwritten. Source-asset changes
+            require a new import.
           </p>
         </section>
       </div>

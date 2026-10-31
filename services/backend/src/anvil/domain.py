@@ -196,10 +196,11 @@ def decide(c, r, user, roles, body):
         raise HTTPException(409, "Only submitted revisions can be reviewed")
     if r["kind"] not in APPROVABLE:
         raise HTTPException(422, "Review purpose not applicable")
+    revision_author = get_revision(c, r["current_revision_id"])["created_by"]
     if body.purpose in RECOMMENDATIONS:
         # Optional, non-gating sign-off from another team member; never changes lifecycle.
         require(roles, *CONTENT_ROLES)
-        if str(r["created_by"]) == str(user):
+        if str(revision_author) == str(user):
             raise HTTPException(409, "A recommendation must come from someone else")
         record_decision(c, r, user, body)
         audit(c, r["project_id"], user, f"recommendation.{body.purpose}.{body.decision}", r["id"])
@@ -208,7 +209,7 @@ def decide(c, r, user, roles, body):
     if body.purpose != "approval":
         raise HTTPException(422, "Review purpose not applicable")
     require(roles, "product-owner")
-    self_approved = str(r["created_by"]) == str(user)
+    self_approved = str(revision_author) == str(user)
     if self_approved and len(product_owners(c, r["project_id"])) != 1:
         raise HTTPException(409, "Another Product Owner must approve work you created")
     if one(

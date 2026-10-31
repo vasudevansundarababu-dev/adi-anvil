@@ -60,7 +60,7 @@ export type WorkspaceTask = {
 };
 export type Page<T> = { items: T[]; next_cursor: string | null; scope: string };
 
-export async function workspaceApi(path: string, method = 'GET', body?: unknown) {
+export async function workspaceApi(path: string, method = 'GET', body?: unknown, version?: number) {
   const csrf =
     document.cookie
       .split('; ')
@@ -73,6 +73,7 @@ export async function workspaceApi(path: string, method = 'GET', body?: unknown)
       'Content-Type': 'application/json',
       'X-CSRF-Token': csrf,
       ...(method === 'GET' ? {} : { 'Idempotency-Key': crypto.randomUUID() }),
+      ...(version === undefined ? {} : { 'If-Match': String(version) }),
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });

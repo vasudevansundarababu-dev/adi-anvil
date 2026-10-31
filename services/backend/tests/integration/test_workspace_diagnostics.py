@@ -67,10 +67,19 @@ def test_diagnostic_history_snapshots_pagination_and_finalized_output_only(clien
         stable = c.execute(
             "SELECT resource_id FROM anvil.revisions WHERE id=%s", (resource,)
         ).fetchone()["resource_id"]
-    history = admin.get(base + "/workspace/diagnostic-runs", params={"task_id": str(stable)})
-    assert history.status_code == 200 and any(
-        r["id"] == journey["run_id"] for r in history.json()["data"]["items"]
-    )
+    # Retained nightly projects can exceed one history page; verify the cursor contract.
+    params = {"task_id": str(stable)}
+    seen = set()
+    while True:
+        history = admin.get(base + "/workspace/diagnostic-runs", params=params)
+        assert history.status_code == 200
+        page = history.json()["data"]
+        if any(r["id"] == journey["run_id"] for r in page["items"]):
+            break
+        cursor = page["next_cursor"]
+        assert cursor and cursor not in seen, "Original bound run must remain reachable in history"
+        seen.add(cursor)
+        params["after"] = cursor
     outsider, _ = client_factory("outsider")
     assert outsider.get(base + "/workspace/diagnostic-runs/" + journey["run_id"]).status_code == 404
     sales, _ = client_factory("sales")
