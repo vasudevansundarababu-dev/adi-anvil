@@ -32,7 +32,10 @@ class FrameworkProfile(Strict):
 
 
 def model_public(c, row):
-    present, _ = secret_presence(row["provider_key"])
+    workspace_profile = row["config"].get("workspace_profile_version") == 1
+    present = False
+    if not workspace_profile:
+        present, _ = secret_presence(row["provider_key"])
     credential_state = "server_configured" if present else "missing"
     binding = row["config"].get("workspace_credential")
     if binding:
@@ -56,6 +59,7 @@ def model_public(c, row):
         "provider": row["provider_key"],
         "model_id": row["model_id"],
         "config_hash": row["config_hash"],
+        "workspace_profile": workspace_profile,
         "created_at": row["created_at"],
         "credential_present": present,
         "credential_state": credential_state,

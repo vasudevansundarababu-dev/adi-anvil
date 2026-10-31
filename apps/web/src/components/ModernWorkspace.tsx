@@ -8,6 +8,7 @@ import FrameworkProfiles from './FrameworkProfiles';
 import DiagnosticResults from './DiagnosticResults';
 import WorkspaceRevisionEditor from './WorkspaceRevisionEditor';
 import WorkspacePeople, { WorkspaceAccess } from './WorkspacePeople';
+import WorkspacePreparation, { ExecutionPresets } from './WorkspacePreparation';
 import {
   comparable,
   dateTime,
@@ -158,9 +159,11 @@ function WorkspaceView() {
   }
   const selectedRuns = (runs?.items || []).filter((r) => selected.includes(r.id));
   const title =
-    section === 'editor'
-      ? 'Edit as new version'
-      : navigation.find(([key]) => key === section)?.[1] || 'Overview';
+    section === 'preparation'
+      ? 'Prepare evaluation'
+      : section === 'editor'
+        ? 'Edit as new version'
+        : navigation.find(([key]) => key === section)?.[1] || 'Overview';
   const canEdit = capabilities.includes('task_drafts.write');
   const editorHref = (id: string, returnRun = query.get('return_run') || runId || '') =>
     route +
@@ -375,6 +378,15 @@ function WorkspaceView() {
                                 >
                                   View run history
                                 </a>
+                                {!diagnostic && capabilities.includes('harbor.prepare') && (
+                                  <a
+                                    href={
+                                      route + '/preparation?task=' + encodeURIComponent(t.task_id)
+                                    }
+                                  >
+                                    Prepare evaluation
+                                  </a>
+                                )}
                               </td>
                             </tr>
                           ))}
@@ -529,7 +541,34 @@ function WorkspaceView() {
                   <p>Open an exact task, rubric or evaluation version from a run snapshot.</p>
                 ))}
               {section === 'models' && admin && <ModelProfiles key={base} base={base} />}
-              {section === 'frameworks' && admin && <FrameworkProfiles key={base} base={base} />}
+              {section === 'frameworks' && admin && (
+                <>
+                  <FrameworkProfiles key={base} base={base} />
+                  <ExecutionPresets key={base + '-presets'} base={base} />
+                </>
+              )}
+              {section === 'preparation' &&
+                (capabilities.includes('harbor.prepare') ? (
+                  <WorkspacePreparation
+                    key={base}
+                    base={base}
+                    taskId={query.get('task')}
+                    preparationId={query.get('preparation')}
+                    open={(id) =>
+                      router.replace(
+                        route +
+                          '/preparation?' +
+                          (query.get('task')
+                            ? 'task=' + encodeURIComponent(query.get('task')!) + '&'
+                            : '') +
+                          'preparation=' +
+                          id,
+                      )
+                    }
+                  />
+                ) : (
+                  <p role="alert">Preparation requires an assigned planning capability.</p>
+                ))}
               {section === 'people' && admin && <WorkspacePeople key={base} base={base} />}
               {section === 'limits' && admin && (
                 <section className={styles.panel}>
