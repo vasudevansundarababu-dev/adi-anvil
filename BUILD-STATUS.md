@@ -1,5 +1,21 @@
 # Build status
 
+User-reported Harbor build feedback fix — 31 October2026. Read-only inspection of the
+user's local modern Runs view confirmed a persisted package/checksum despite the apparent
+no-op. Building is idempotent and does not start a run; the old UI only displayed its
+checksum/manifest, with no success state or next action. Shared workbench now shows
+Building progress, a focused 'Harbor package ready' heading, explicit saved/reused-package
+feedback and a modern Prepare evaluation link scoped to the source task. Modern task/run
+lists refresh after success. Source selection is disabled during writes, and an older
+package-list response cannot replace the build result. No approval, execution or budget
+gate was changed; no provider call made. New deterministic browser test covers503/retry,
+in-flight state, focused success, same-package rebuild and exact preparation binding with
+blank cap. Targeted browser1 passed (3.5s); shared Harbor browser3 passed (44.3s), including
+the classic real-OIDC staged synthetic-check journey and modern build feedback.
+TypeScript and scoped Prettier/whitespace checks passed. Backend/unit/full-browser/nightly
+production-build counts below remain earlier evidence and were not rerun for this UI fix.
+Unrelated AGENTS.md and cloud-runbook edits preserved.
+
 Final nightly usability checkpoint — `740b3b2`, 31 October2026. Overall **partial local**.
 Saved preparations open read-only, with explicit fresh creation/blank budget; sole complete
 package/preset choices become version summaries. Model/history and readiness focus, task-scope

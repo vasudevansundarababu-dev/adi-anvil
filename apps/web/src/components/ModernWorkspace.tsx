@@ -321,6 +321,10 @@ function WorkspaceView() {
                     canApprove={project.roles.includes('product-owner')}
                     canPlan={capabilities.includes('harbor.prepare')}
                     canAdmin={admin}
+                    preparationHref={(taskId) =>
+                      route + '/preparation?task=' + encodeURIComponent(taskId)
+                    }
+                    onPackageBuilt={() => void load()}
                   />
                   <p className={styles.muted}>
                     Existing authorization and spending controls apply. Admin includes task import,

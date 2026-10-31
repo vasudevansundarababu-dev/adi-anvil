@@ -31,6 +31,83 @@ async function login(context: BrowserContext, name: string) {
   return page;
 }
 
+test('modern package build shows progress, retry, saved feedback and the next step', async ({
+  browser,
+}) => {
+  const context = await browser.newContext();
+  const page = await login(context, 'admin-1');
+  const project = 'a0000000-0000-4000-8000-000000000002';
+  await page.goto('/workspace/' + project + '/tasks');
+  await page.getByRole('button', { name: 'Import / prepare run', exact: true }).click();
+  const fixture = JSON.parse(
+    readFileSync('contracts/praxis/synthetic-marketing.task.json', 'utf8'),
+  );
+  fixture.task_id += '-build-feedback-' + Date.now();
+  await page.getByLabel('Praxis task export (.json)').setInputFiles({
+    name: 'synthetic-build-feedback.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(fixture)),
+  });
+  const buildPath = '**/praxis-sources/*/build';
+  await page.route(buildPath, (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: { message: 'Test-only package build interruption' } }),
+    }),
+  );
+  await page.getByRole('button', { name: 'Build Harbor package', exact: true }).click();
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'Test-only package build interruption' }),
+  ).toBeVisible();
+  await page.unroute(buildPath);
+  let releaseBuild!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    releaseBuild = resolve;
+  });
+  await page.route(buildPath, async (route) => {
+    await gate;
+    await route.continue();
+  });
+  const response = page.waitForResponse(
+    (r) => r.url().endsWith('/build') && r.request().method() === 'POST',
+  );
+  await page.getByRole('button', { name: 'Build Harbor package', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'Building Harbor package…', exact: true }),
+  ).toBeDisabled();
+  await expect(page.getByLabel('Imported revision', { exact: true })).toBeDisabled();
+  releaseBuild();
+  const built = await response;
+  expect(built.status()).toBe(200);
+  const first = (await built.json()).data;
+  await expect(
+    page.getByRole('heading', { name: 'Harbor package ready', exact: true }),
+  ).toBeFocused();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Harbor package is ready.' }),
+  ).toBeVisible();
+  await expect(page.getByText('Test-only package build interruption', { exact: true })).toHaveCount(
+    0,
+  );
+  await page.unroute(buildPath);
+  const repeated = page.waitForResponse(
+    (r) => r.url().endsWith('/build') && r.request().method() === 'POST',
+  );
+  await page.getByRole('button', { name: 'Build Harbor package', exact: true }).click();
+  expect((await (await repeated).json()).data.id).toBe(first.id);
+  await expect(
+    page.getByRole('heading', { name: 'Harbor package ready', exact: true }),
+  ).toBeFocused();
+  await page.getByRole('link', { name: 'Prepare evaluation', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Prepare model evaluation', exact: true }),
+  ).toBeVisible();
+  await expect(page.locator('#preparation-package')).toHaveValue(first.id);
+  await expect(page.getByLabel('Aggregate API budget', { exact: false })).toHaveValue('');
+  await context.close();
+});
+
 test('Praxis export to staged Harbor check with real OIDC and retained analysis', async ({
   browser,
 }) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type Source = {
   id: string;
@@ -38,12 +38,16 @@ export default function HarborWorkbench({
   canApprove,
   canPlan,
   canAdmin,
+  preparationHref,
+  onPackageBuilt,
 }: {
   base: string;
   api: Api;
   canApprove: boolean;
   canPlan: boolean;
   canAdmin: boolean;
+  preparationHref?: (taskId: string) => string;
+  onPackageBuilt?: () => void;
 }) {
   const [sources, setSources] = useState<Source[]>([]);
   const [selected, setSelected] = useState<Source | null>(null);
@@ -53,6 +57,16 @@ export default function HarborWorkbench({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [rationale, setRationale] = useState('');
+  const [building, setBuilding] = useState(false);
+  const [buildNotice, setBuildNotice] = useState('');
+  const packageHeading = useRef<HTMLHeadingElement>(null);
+  const packageRequest = useRef(0);
+  useEffect(() => {
+    if (buildNotice) {
+      packageHeading.current?.focus();
+      packageHeading.current?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [buildNotice]);
 
   useEffect(() => {
     api(base + '/praxis-sources')
@@ -61,12 +75,16 @@ export default function HarborWorkbench({
   }, [api, base]);
   useEffect(() => {
     if (!selected) return;
+    const request = ++packageRequest.current;
+    setBuildNotice('');
     let active = true;
     api(base + '/praxis-sources/' + selected.id + '/packages')
       .then((items: Package[]) => {
-        if (active) setPackage(items[0] || null);
+        if (active && request === packageRequest.current) setPackage(items[0] || null);
       })
-      .catch((e) => setError(e.message));
+      .catch((e) => {
+        if (active && request === packageRequest.current) setError(e.message);
+      });
     return () => {
       active = false;
     };
@@ -150,6 +168,7 @@ export default function HarborWorkbench({
         Imported revision{' '}
         <select
           aria-label="Imported revision"
+          disabled={busy}
           value={selected?.id || ''}
           onChange={(e) => {
             setSelected(sources.find((s) => s.id === e.target.value) || null);
@@ -183,19 +202,42 @@ export default function HarborWorkbench({
           <button
             disabled={busy}
             onClick={() =>
-              void act(async () =>
-                setPackage(
-                  await api(base + '/praxis-sources/' + selected.id + '/build', 'POST', {}),
-                ),
-              )
+              void act(async () => {
+                ++packageRequest.current;
+                setBuildNotice('');
+                setBuilding(true);
+                try {
+                  setPackage(
+                    await api(base + '/praxis-sources/' + selected.id + '/build', 'POST', {}),
+                  );
+                  setBuildNotice('Harbor package is ready. Building does not start a run.');
+                  onPackageBuilt?.();
+                } finally {
+                  setBuilding(false);
+                }
+              })
             }
           >
-            Build Harbor package
+            {building ? 'Building Harbor package…' : 'Build Harbor package'}
           </button>
         </>
       )}
       {pkg && (
         <>
+          <h3 ref={packageHeading} tabIndex={-1}>
+            Harbor package ready
+          </h3>
+          {buildNotice && <p role="status">{buildNotice}</p>}
+          <p>This immutable package is saved. Building the same source again reuses it.</p>
+          {preparationHref && selected && (
+            <p>
+              <a className="button" href={preparationHref(selected.task_id)}>
+                Prepare evaluation
+              </a>{' '}
+              Choose saved model profiles and review readiness next. Live workspace launch remains
+              unavailable.
+            </p>
+          )}
           <p>
             Package SHA-256: <code>{pkg.package_sha256}</code>
           </p>
