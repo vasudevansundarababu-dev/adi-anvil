@@ -10,7 +10,7 @@ from google import genai
 from google.genai import types
 from mistralai.client import Mistral
 from openai import OpenAI
-from pydantic import Field
+from pydantic import Field, SecretStr
 
 from anvil.config import CLOUD, ROOT, private_file_owner
 from anvil.schemas import Strict
@@ -166,13 +166,24 @@ def normalized(provider, data):
     return Result("completed", text, model, request_id, usage, finish)
 
 
-def execute_contract(provider: str, request: ActorRequest, transport: httpx.MockTransport):
+def execute_contract(
+    provider: str,
+    request: ActorRequest,
+    transport: httpx.MockTransport,
+    *,
+    credential: SecretStr | None = None,
+):
     """Network-free qualification entry point; refuses a real transport."""
     if provider not in PROVIDERS or not isinstance(transport, httpx.MockTransport):
         raise ValueError(
             "Mock transport required; live dispatch must use paid authorization service"
         )
     endpoint = PROVIDERS[provider][2]
+    if credential is not None and (
+        not isinstance(credential, SecretStr) or not credential.get_secret_value()
+    ):
+        raise ValueError("Explicit credentials must be a nonempty SecretStr")
+    key = credential.get_secret_value() if credential is not None else "anvil-contract-test-only"
     observed = {}
 
     def capture(response):
@@ -195,7 +206,7 @@ def execute_contract(provider: str, request: ActorRequest, transport: httpx.Mock
         try:
             if provider in ("openai", "meta_muse"):
                 sdk = OpenAI(
-                    api_key="anvil-contract-test-only",
+                    api_key=key,
                     base_url=endpoint,
                     http_client=http,
                     max_retries=0,
@@ -208,7 +219,7 @@ def execute_contract(provider: str, request: ActorRequest, transport: httpx.Mock
                 )
             elif provider == "anthropic":
                 sdk = Anthropic(
-                    api_key="anvil-contract-test-only",
+                    api_key=key,
                     base_url=endpoint,
                     http_client=http,
                     max_retries=0,
@@ -220,7 +231,8 @@ def execute_contract(provider: str, request: ActorRequest, transport: httpx.Mock
                 )
             elif provider == "gemini":
                 sdk = genai.Client(
-                    api_key="anvil-contract-test-only",
+                    api_key=key,
+                    vertexai=False,
                     http_options=types.HttpOptions(
                         base_url=endpoint,
                         httpx_client=http,
@@ -235,7 +247,7 @@ def execute_contract(provider: str, request: ActorRequest, transport: httpx.Mock
                 )
             elif provider == "mistral":
                 sdk = Mistral(
-                    api_key="anvil-contract-test-only",
+                    api_key=key,
                     server_url=endpoint,
                     client=http,
                     retry_config=None,
@@ -249,7 +261,7 @@ def execute_contract(provider: str, request: ActorRequest, transport: httpx.Mock
                 )
             else:
                 sdk = OpenAI(
-                    api_key="anvil-contract-test-only",
+                    api_key=key,
                     base_url=endpoint,
                     http_client=http,
                     max_retries=0,
@@ -264,7 +276,7 @@ def execute_contract(provider: str, request: ActorRequest, transport: httpx.Mock
             # Never expose exception strings: SDK errors may include credentials/raw body.
             name = type(exc).__name__
             status = observed.get("status") or getattr(exc, "status_code", None)
-            if isinstance(exc, httpx.TimeoutException) or "Timeout" in name or "Connection" in name:
+            if isinstance(exc, httpx.TransportError) or "Timeout" in name or "Connection" in name:
                 return Result("execution_unknown", error_code="ambiguous_dispatch")
             if status in (401, 403):
                 return Result("failed_operational", error_code="unauthorized")
