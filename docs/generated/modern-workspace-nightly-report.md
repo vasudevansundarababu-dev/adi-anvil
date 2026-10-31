@@ -1,5 +1,32 @@
 # Modern workspace nightly checkpoint — 30 October 2026
 
+02:00 continuation checkpoint `b8d65a0` adds typed presets and exact multi-model planning preparations.
+Admin chooses a Harbor runner, built-in or unqualified Semantic Kernel candidate runtime,
+optional export-disabled LangSmith tracing and exact model allowlist. A scoped planner can
+save exact package/model/framework/credential versions, explicit token/time limits and one
+optional group budget. Money starts blank; UI USD converts exactly to integer micro-USD.
+Saved preparations are immutable and separate from executed run history. No jobs, calls,
+agent plans, approvals or reservations are created. There is no launch endpoint or legacy
+key fallback. Costs remain unknown; launch and trace export stay disabled.
+Readiness uses current metadata only, rechecking provider/model/destination/configuration,
+credential rotation/revocation, framework bindings and package compatibility. It reads no
+keys or private archive/grading content. Existing workspace profiles no longer inherit a
+legacy global key's presence. Destination drift was caught in read-only review and fixed.
+Migration029 and repeated migration passed; units213 passed; isolated integration94
+passed/12 opt-in skipped in57.32s. Full browser13 passed (2.0m), including Admin's preset/
+two-model journey,320px dark layout, exact $0.012345 conversion and immutable earlier draft.
+The first browser attempt clicked a disappearing last-page button before loading finished;
+pagination now waits for completed responses and explicit busy states. No assertion was
+weakened. A combined pytest command initially hit duplicate unit/integration module names;
+repository-standard separate suites passed. Final production/type/lint/format/OpenAPI
+recheck passed; staged whitespace/credential-pattern scan passed. Local app and synthetic
+worker restarted, with both live switches disabled. Classic baseline remains unchanged.
+This completes planning only; admitted multi-model execution, shared spending reservations,
+provider/runtime qualification and full two-profile authorization migration remain unfinished.
+Next safe slice: finish model-profile versioning/revocation and explicit settings/pricing
+metadata before implementing separately qualified credential mediation/shared admission.
+Single-choice input simplification and broader keyboard/loading coverage remain M5 work.
+
 01:00 continuation checkpoint `6d272cd` adds persisted profile mapping evidence and a read-only People transition.
 People lists each active person once, with Admin/RL Engineer labels derived from current
 grants and expandable preserved duties. Non-engineering historical identities retain

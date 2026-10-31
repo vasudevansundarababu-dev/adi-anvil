@@ -1,5 +1,36 @@
 # Build status
 
+02:00 nightly resume — typed presets and planning-only preparations verified as `b8d65a0`.
+Migration029 adds immutable, project-scoped presets, model
+allowlists, preparations and exact credential-version child bindings; repeated migration
+passed. Admin configures typed Harbor runner, built-in/optional unqualified Semantic Kernel
+candidate and optional export-disabled LangSmith tracing. Existing scoped planners/Admins save exact
+multi-model/package preparations with one optional aggregate cap, blank by default. UI uses
+USD with exact integer conversion; no silent rounding or copied per-model cap. Preset and
+preparation saves create no jobs, calls, approvals, agent plans or reservations. All launch
+paths remain unavailable. Readiness rechecks current model/provider/destination/config,
+credential rotation/revocation, framework bindings and package compatibility without
+reading keys, archive contents, private grading or future observations. Review caught a
+destination-drift gap; corrected. Workspace model rows no longer inherit global-key presence.
+`pnpm test:unit`213 passed; `pnpm check` passed; isolated integration94 passed/12 opt-in
+skipped in57.32s. Full `pnpm test:e2e`13 passed (2.0m), including Admin preset/two-model
+planning,320px dark layout, refresh, exact $0.012345 conversion and prior blank-budget
+snapshot preservation. First targeted browser timed out after its pagination loop clicked
+a disappearing final-page button; it now waits for completed responses and explicit busy
+states (targeted1 passed in3.9s, followed by full13). Final `pnpm check` passed after UI
+changes; staged whitespace and credential-pattern checks passed. Local app and dedicated
+synthetic worker restarted. Both live switches remain disabled; classic branch unchanged.
+Combined unit/integration invocation initially hit pytest's duplicate module-name collector;
+standard separate suites passed without deleting caches or changing tests. No source/data
+reset. Nightly deadline remains06:00 local /11:00 UTC. Preserve classic baseline/user edits.
+Next incomplete work: model-profile versioning/revocation and explicit configuration/pricing
+metadata, followed by separately tested credential mediation/provider qualification and
+atomic shared multi-model spending admission. Existing workspace-profile rejection by the
+legacy agent path stays enforced. Do not rebuild the completed preparation slice or label
+it executable. Full profile authorization migration, People/Limits mutations, source
+instruction authoring and M5 keyboard/loading/single-choice UX refinements remain partial.
+Missing real keys/authority block live qualification only; continue safe local implementation.
+
 01:00 nightly resume — profile mapping / People read transition verified as `6d272cd`.
 Migration028 records immutable, audited Admin/RL Engineer mapping evidence from existing
 active engineering/Admin grants; repeated migration passed. No identity or membership

@@ -13,6 +13,10 @@ grading stays blinded, and diagnostic metrics explicitly cover the whole run.
 Modern People groups each person once, with Admin/RL Engineer labels derived from current
 grants and preserved review duties available in details. Historical mapping evidence is
 recorded locally; this transition does not grant new access or implement invitations.
+Frameworks also offers typed execution presets. From a Harbor task, **Prepare evaluation**
+saves exact package/model/framework versions and shows missing readiness requirements.
+These are planning records: saving makes no model request or spending reservation, and
+launch remains unavailable until the workspace dispatch path is qualified.
 See the [nightly plan](docs/build/08-MODERN-WORKSPACE-NIGHTLY.md) and [current status](BUILD-STATUS.md)
 for built versus remaining capabilities; saved framework metadata is not a working SDK
 integration, and saved credentials do not enable inference.

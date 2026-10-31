@@ -5,7 +5,7 @@
   "status": "partial_local",
   "branch": "codex/anvil-modern-workspace",
   "code_checkpoint": "d2dfe82",
-  "latest_code_checkpoint": "6d272cd",
+  "latest_code_checkpoint": "b8d65a0",
   "successor_editor_increment": {
     "code_checkpoint": "9bddc3d",
     "status": "verified_local",
@@ -35,7 +35,25 @@
   "nightly_window": "22:00–06:00, hourly checkpoint resumes",
   "local_url": "http://127.0.0.1:3202/workspace",
   "classic_url": "http://127.0.0.1:3202/",
-  "schema_version_applied": 28,
+  "schema_version_applied": 29,
+  "preparation_increment": {
+    "code_checkpoint": "b8d65a0",
+    "status": "verified_local",
+    "production_check": "passed",
+    "migration_repeat": "passed",
+    "unit_passed": 213,
+    "normal_isolated_integration_passed": 94,
+    "normal_isolated_integration_opt_in_skipped": 12,
+    "normal_isolated_integration_seconds": 57.32,
+    "full_browser_passed": 13,
+    "browser_seconds_approx": 120,
+    "responsive_browser_width": 320,
+    "scope": "Immutable typed presets and multi-model/package/credential-version preparations only",
+    "execution_or_reservation_created_on_save": false,
+    "launch_available": false,
+    "external_trace_export": false,
+    "conservative_cost_micro_usd": null
+  },
   "profile_mapping_increment": {
     "code_checkpoint": "6d272cd",
     "status": "verified_local",
@@ -70,6 +88,7 @@
   "deployment": "not_performed",
   "github_push": "not_performed",
   "remaining": [
+    "model-profile versioning/revocation and explicit settings/pricing metadata",
     "source instruction authoring beyond the constrained diagnostic successor editor",
     "explicit two-profile capability migration and People/Limits actions",
     "qualified profile/credential dispatch and shared multi-model spending groups",

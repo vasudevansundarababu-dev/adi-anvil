@@ -14,6 +14,7 @@ Current feature evidence (full final counts in BUILD-STATUS.md):
 | MOD-07 No legacy key substitution          | test_workspace integration                                                   | New profiles blocked from unqualified legacy dispatch                   |
 | MOD-08 Two-profile migration / full editor | workspace_editor and workspace_access unit/integration; modern browser | Constrained editor and current-grant profile projection verified locally; full authorization migration, People management and source authoring pending |
 | MOD-09 Paid live verification              | Not run                                                                      | No new paid authority or real keys supplied                             |
+| MOD-10 Typed presets / multi-model preparation | workspace_preparation unit/integration and browser | Exact immutable planning bindings, credential rotation/drift, USD conversion, scope and zero execution/accounting effects passed; live admission unimplemented |
 
 2026-09-29 ANV-BF-001 update:124 units,67 integrations and4 browser journeys pass;
 production check and fresh/repeated001–017 migrations pass. See
