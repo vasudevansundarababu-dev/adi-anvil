@@ -1,5 +1,27 @@
 # Build status
 
+00:00 nightly resume — constrained M4 diagnostic successor editor verified as `9bddc3d`.
+Separate screen supports task title/capabilities/rubric binding, rubric labels/weights/
+threshold and evaluation protocol policies/limits. Save uses canonical immutable revisions,
+current-base locking, If-Match and idempotency; prior approvals and frozen run snapshots
+stay bound to their old versions. Current resource becomes an unapproved draft. Source
+assets, private references, anchors, calibration and execution binding remain server-side;
+instruction changes require a new source import. Revision author or scoped Admin may append;
+Admin override is audited. Approval/recommendation self-authorship now follows the actual
+current revision author. Historical versions are read-only, with mobile320px coverage.
+Full browser11 passed (1.6m), unit202 passed, targeted editor/diagnostic integration5 passed.
+Final `pnpm check` passed (format/lint/types/production/OpenAPI); isolated
+`pnpm test:integration`90 passed/12 opt-in skipped (54.36s) with registered workers stopped.
+Full `pnpm test:e2e`11 passed (1.6m); `pnpm test:unit`202 passed. Staged diff whitespace
+and credential-pattern checks passed. Real Harbor full integration95/2 remains historical;
+the full browser run did execute the real staged synthetic Harbor software check.
+The first test SQL lineage-column assumption was corrected; retained-history coverage now
+walks cursors instead of assuming the original run remains on page one. No database reset.
+M4 remains partial: explicit two-profile migration, People/Limits actions, source authoring,
+qualified model/preset admission and typed compositions remain. Next resume these after
+this checkpoint; do not rebuild the completed editor/read slices. Deadline remains06:00 local.
+Local app and synthetic-only dedicated worker restarted; classic comparison preserved.
+
 23:00 nightly resume — diagnostic workspace increment verified as `a96af51`.
 M2 diagnostic task/run history now joins immutable suite/task revisions (including prepared
 runs), with cursor pagination, whole-run finalized-only metrics, exact safe task/rubric/

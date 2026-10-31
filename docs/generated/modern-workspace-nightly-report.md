@@ -1,5 +1,23 @@
 # Modern workspace nightly checkpoint — 30 October 2026
 
+00:00 continuation checkpoint `9bddc3d` adds a separate diagnostic successor editor. It edits public task,
+rubric and protocol fields, shows a before/after review and paginated immutable version
+history, and saves an unapproved draft through the canonical revision path. Prior approvals
+and existing run snapshots remain unchanged. Private anchors/references/calibration and
+actor assets stay server-side; changing source instructions requires a new import. Only
+the scoped author or Admin may append, with audited Admin overrides and current-author
+self-approval checks. Historical versions are read-only. Full browser11 passed (1.6m),
+unit202 passed and targeted editor/diagnostic integration5 passed. Final `pnpm check`
+passed; isolated `pnpm test:integration`90 passed/12 opt-in skipped in54.36s after stopping
+registered workers. Staged whitespace/credential-pattern scan passed. The12 skips are
+opt-in integration paths; the historical real Harbor full integration95/2 result below
+was not rerun this hour. Full browser did rerun the real staged synthetic Harbor check.
+Latest app and synthetic-only worker restarted for local classic/modern comparison.
+This is a constrained editor slice, not completion of M4 or full source authoring.
+The initial integration test used incorrect lineage column names; repaired. A retained
+diagnostic history assertion now follows cursor pages rather than assuming page-one
+membership; no data reset or weakened isolation assertion was used.
+
 23:00 continuation checkpoint: `a96af51` adds diagnostic task/run history, prepared-run
 membership, finalized-only result evidence, safe exact-version task/rubric/protocol snapshots
 and complete-cohort comparison rules. Read-only routes retain project isolation and grading
@@ -71,7 +89,7 @@ remain excluded from this checkpoint.
 
 1. Diagnostic task/run read integration is now verified; extend editing and preparation
    while preserving blinded unfinished grading and finalized-only general output evidence.
-2. Build the full separate task/rubric/evaluation successor editor and explicit two-profile
+2. Finish source authoring beyond the constrained diagnostic successor editor and explicit two-profile
    capability migration without rewriting historical identities or paid decisions.
 3. Qualify exact profile/credential bindings, atomic shared multi-model spending groups,
    run preparation and versioned framework compositions. No silent legacy key fallback.

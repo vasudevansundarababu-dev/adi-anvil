@@ -5,6 +5,20 @@
   "status": "partial_local",
   "branch": "codex/anvil-modern-workspace",
   "code_checkpoint": "d2dfe82",
+  "successor_editor_increment": {
+    "code_checkpoint": "9bddc3d",
+    "status": "verified_local",
+    "production_check": "passed",
+    "unit_passed": 202,
+    "targeted_integration_passed": 5,
+    "normal_isolated_integration_passed": 90,
+    "normal_isolated_integration_opt_in_skipped": 12,
+    "normal_isolated_integration_seconds": 54.36,
+    "full_browser_passed": 11,
+    "scope": "Constrained public diagnostic task/rubric/protocol fields; canonical immutable draft successors; source assets and private calibration preserved server-side",
+    "current_author_approval_guard": true,
+    "responsive_browser_width": 320
+  },
   "diagnostic_increment": {
     "code_checkpoint": "a96af51",
     "status": "verified_local",
@@ -37,7 +51,7 @@
   "deployment": "not_performed",
   "github_push": "not_performed",
   "remaining": [
-    "complete task/rubric/evaluation successor editor",
+    "source instruction authoring beyond the constrained diagnostic successor editor",
     "explicit two-profile capability migration and People/Limits actions",
     "qualified profile/credential dispatch and shared multi-model spending groups",
     "qualified external framework adapters and managed cloud credentials",

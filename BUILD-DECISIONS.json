@@ -136,7 +136,9 @@
     "local_credential_store": "dedicated random wrapping key and authenticated scope-bound encrypted blobs under owner-only .local/workspace-secrets; PostgreSQL metadata and immutable versions",
     "cloud_credential_entry": "disabled pending managed secret-store adapter and provisioning authority",
     "framework_profiles": "metadata-only registered Harbor/LangSmith/Semantic Kernel configurations; no SDK installs, tracing or dispatch on save",
-    "inference_authority": "no new paid-call authority; existing controls remain enforced"
+    "inference_authority": "no new paid-call authority; existing controls remain enforced",
+    "diagnostic_successor_editor": "Separate current-version editor for task title/capabilities/rubric binding, rubric labels/weights/threshold and protocol policies/limits. Canonical immutable successor, compare-and-swap and idempotency; previous approvals and frozen runs remain bound to their original revisions. Saving moves current resource to an unapproved draft. Source assets, private references, anchors, calibration and execution bindings preserved server-side; source instruction changes require a new import.",
+    "successor_authorship": "Only scoped revision author or Admin may append; Admin override audited. Approval and optional recommendation self-authorship use the current immutable revision author, not the original resource creator. No approval or live dispatch occurs on save."
   },
   "note": "Pending values are not consent. The build agent must not fill user approvals from inference. Dependency/default choices are proposals; live keys never belong in this file."
 }
