@@ -40,13 +40,13 @@
     "anvil-keycloak-db-password": "projects/adi-anvil-mvp-2026/secrets/anvil-keycloak-db-password"
   },
   "last_deployment": {
-    "commit": "bae6260",
-    "image_tag": "bae6260-1793406451",
+    "commit": "4693f00",
+    "image_tag": "4693f00-1793412536",
     "load_balancer_ip": "34.36.217.66",
     "web_origin": "https://anvil-34-36-217-66.sslip.io",
     "oidc_issuer": "https://auth-34-36-217-66.sslip.io/realms/anvil",
     "vm": "anvil-mvp-v1",
-    "verified_at": "2026-10-31T00:32:45+00:00",
+    "verified_at": "2026-10-31T02:13:59+00:00",
     "smoke": [
       "api_health",
       "oidc_discovery",

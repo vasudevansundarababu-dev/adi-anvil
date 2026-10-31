@@ -1,6 +1,6 @@
 # Build status
 
-v0.2.1 disabled cloud preparation in progress. User authorized code and existing-host
+v0.2.1 disabled cloud preparation deployed and verified. User authorized code and existing-host
 deployment preparation only; no key/authority values, paid activation/calls, new IAM,
 credentials, identities or approvers. Separate Harbor cloud admission defaults false;
 legacy cloud live/email remain forbidden. Read-only private directory mounts reach API
@@ -11,7 +11,18 @@ from provider setup; explicit current values required. See
 Passed so far:181 unit,90 isolated integration (188.66s), production/type/lint/contracts,
 API UID10001/root-worker empty read-only mount rehearsal and Compose mount isolation.
 Full8-browser regression passed (1.4m); final production/type/lint/contract check passed.
-Disabled existing-host rollout pending.
+Disabled existing-host rollout passed API/database/TLS/OIDC/web/private-admin smoke.
+Release code checkpoint `4693f00f0aec1eb54bd212ac27a658f918ec0867`; authorized existing-host
+rollout completed as `4693f00-1793412536`, Cloud Build
+`3c163d82-a103-4757-9683-7b1166c9734e` SUCCESS (us-west1). No paid activation or inputs supplied.
+Post-upgrade evidence `artifacts/test-runs/cloud-v021-disabled.json`: version0.2.1,
+legacy live=false, Harbor live=false, absent key/authority, API UID10001/root Harbor UID0,
+private directories UID10001/mode0700 and read-only mounts on API/Harbor only. Normal
+worker/web have neither private mount; API has no Docker socket. Historical, approval and
+paid-ledger fingerprints all match before; paid-call records0. Verification command:
+`python3 /private/tmp/anvil-v021-verify.py` (read-only metadata/fingerprint checks, retained
+sanitized output above). Local Python's missing CA store failed the first final HTTPS
+probe; system curl with certificate validation passed. No TLS checks were disabled.
 Saved historical/paid-ledger pre-upgrade fingerprints in ignored
 `artifacts/test-runs/cloud-before-v021-fingerprints.json`. No paid calls made.
 First browser attempt caught a legacy test expecting an auto-filled historical model; the

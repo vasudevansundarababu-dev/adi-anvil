@@ -4,11 +4,11 @@ Frontier Evaluation & Diagnostics Platform
 
 The v0.2.0 increment adds the [Praxis → Harbor workbench](docs/runbooks/praxis-harbor.md),
 immutable single-stage/staged task packages, retained software-check analysis and gated
-model-run preparation. Version0.2.0 is deployed; authenticated import/build passed, while
+model-run preparation. The workbench is deployed; authenticated import/build passed, while
 deployed execution awaits independent Product Owner approval. See
 [current build status](BUILD-STATUS.md). Synthetic check scores are not model performance.
 
-The v0.2.1 [cloud admission handoff](docs/runbooks/harbor-cloud-admission.md) prepares empty
+The deployed v0.2.1 [cloud admission handoff](docs/runbooks/harbor-cloud-admission.md) prepares empty
 private file mounts and a separate disabled Harbor admission flag. It supplies no keys,
 paid authority or live activation; current model/pricing/budget and real approvals remain
 separate requirements.
