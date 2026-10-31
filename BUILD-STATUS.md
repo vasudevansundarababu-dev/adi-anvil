@@ -1,5 +1,18 @@
 # Build status
 
+Design-only request: prepared product spec
+`docs/product/20-MODEL-CONFIGURATION-AND-HARBOR-OBSERVABILITY-SPEC.md` and a separate
+interactive review prototype for Admin Models & keys → Harbor model selection → run
+comparison/observable trajectories → user journey. OpenAI/Claude/Gemini multiple profiles,
+write-only credential-store proposal, exact-version multi-model groups, shared cap and
+failure/unknown accounting are specified. No application code, credential provisioning,
+IAM, live calls or deployment changes in this design increment. Current app remains0.2.1.
+Prototype checked in a local browser: navigation, metadata-only save, disabled key entry,
+missing-key selection, cap/readiness preview and task-failure/unknown trajectory details.
+All profiles/results are simulated. Secret-store backend/IAM scope and Anvil policy changes
+require review before implementation; existing Anvil paid gates are not implicitly removed
+by the separate Praxis Admin-only request.
+
 v0.2.1 disabled cloud preparation deployed and verified. User authorized code and existing-host
 deployment preparation only; no key/authority values, paid activation/calls, new IAM,
 credentials, identities or approvers. Separate Harbor cloud admission defaults false;
