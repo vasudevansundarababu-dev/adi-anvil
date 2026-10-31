@@ -240,6 +240,15 @@ def dev():
         ([str(PY), "-m", "anvil.worker"], "anvil.worker"),
         (["pnpm", "--filter", "@anvil/web", "dev"], "pnpm"),
     ]
+    runtime = env()
+    if runtime.get("ANVIL_HARBOR_WORKER_ENABLED") == "synthetic-checks-only":
+        if runtime.get("ANVIL_ENV") != "local" or not runtime.get("ANVIL_HARBOR_DOCKER_HOST"):
+            raise SystemExit(
+                "Dedicated Harbor startup requires local mode and an explicit Docker host"
+            )
+        if not (LOCAL / "harbor-venv/bin/harbor").is_file():
+            raise SystemExit("Pinned local Harbor executable missing; no worker was started")
+        commands.append(([str(PY), "-m", "anvil.harbor_worker"], "anvil.harbor_worker"))
     procs, handles = [], []
     try:
         for i, (cmd, marker) in enumerate(commands):

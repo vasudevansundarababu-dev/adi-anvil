@@ -1,0 +1,1007 @@
+'use client';
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import HarborWorkbench from './HarborWorkbench';
+import ModelProfiles from './ModelProfiles';
+import FrameworkProfiles from './FrameworkProfiles';
+import {
+  comparable,
+  dateTime,
+  money,
+  Page,
+  shortId,
+  synthetic,
+  workspaceApi as api,
+  WorkspaceRun,
+  WorkspaceTask,
+} from '../lib/workspace';
+import styles from './ModernWorkspace.module.css';
+
+type Project = { id: string; name: string; roles: string[] };
+type User = { id: string; name: string; projects: Project[] };
+const navigation = [
+  ['overview', 'Overview'],
+  ['tasks', 'Tasks'],
+  ['runs', 'Runs'],
+  ['models', 'Models & keys'],
+  ['frameworks', 'Frameworks'],
+  ['people', 'People'],
+  ['limits', 'Limits & usage'],
+];
+const runTabs = [
+  'Dashboard',
+  'Results',
+  'Failure modes',
+  'Trajectories',
+  'Task & evaluations',
+  'Usage',
+];
+
+export default function ModernWorkspace() {
+  const pathname = usePathname();
+  return <WorkspaceView key={pathname.split('/')[2] || 'default'} />;
+}
+
+function WorkspaceView() {
+  const router = useRouter(),
+    pathname = usePathname(),
+    query = useSearchParams();
+  const parts = pathname.split('/'),
+    section = parts[3] || 'overview';
+  const [user, setUser] = useState<User | null>(null),
+    [ready, setReady] = useState(false);
+  const [error, setError] = useState(''),
+    [loading, setLoading] = useState(false),
+    [dark, setDark] = useState(false);
+  const [tasks, setTasks] = useState<Page<WorkspaceTask> | null>(null),
+    [runs, setRuns] = useState<Page<WorkspaceRun> | null>(null);
+  const [detail, setDetail] = useState<WorkspaceRun | null>(null),
+    [selected, setSelected] = useState<string[]>([]);
+  const [tab, setTab] = useState('Dashboard'),
+    [prepare, setPrepare] = useState(false),
+    [members, setMembers] = useState<{ id: string; name: string; role: string }[]>([]);
+  const project =
+    user?.projects.find((p) => p.id === parts[2]) || (parts[2] ? undefined : user?.projects[0]);
+  const admin = !!project?.roles.includes('admin');
+  const allowed = !!project?.roles.some((r) =>
+    ['admin', 'researcher', 'data-engineer', 'product-owner', 'advisor'].includes(r),
+  );
+  const base = project ? '/projects/' + project.id : '',
+    route = project ? '/workspace/' + project.id : '/workspace';
+  const taskFilter = query.get('task'),
+    runId = query.get('run');
+  const generation = useRef(0);
+  useEffect(() => {
+    api('/me')
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => setReady(true));
+  }, []);
+  useEffect(() => {
+    if (project && !parts[2]) router.replace('/workspace/' + project.id + '/overview');
+  }, [project, parts[2], router]);
+  const load = useCallback(async () => {
+    if (!base || !allowed) return;
+    const current = ++generation.current;
+    setLoading(true);
+    setError('');
+    setDetail(null);
+    setTasks(null);
+    setRuns(null);
+    setMembers([]);
+    try {
+      const [nextTasks, nextRuns, nextDetail, nextMembers] = await Promise.all([
+        api(base + '/workspace/tasks'),
+        api(
+          base +
+            '/workspace/runs' +
+            (taskFilter ? '?task_id=' + encodeURIComponent(taskFilter) : ''),
+        ),
+        runId ? api(base + '/workspace/runs/' + encodeURIComponent(runId)) : null,
+        section === 'people' ? api(base + '/members') : [],
+      ]);
+      if (current !== generation.current) return;
+      setTasks(nextTasks);
+      setRuns(nextRuns);
+      setDetail(nextDetail);
+      setMembers(nextMembers);
+    } catch (e) {
+      if (current === generation.current) setError((e as Error).message);
+    } finally {
+      if (current === generation.current) setLoading(false);
+    }
+  }, [base, allowed, taskFilter, runId, section]);
+  useEffect(() => {
+    void load();
+    setPrepare(false);
+    setSelected([]);
+    return () => {
+      generation.current++;
+    };
+  }, [load]);
+  useEffect(() => {
+    if (!detail || !['queued', 'running'].includes(detail.state)) return;
+    const timer = setTimeout(() => {
+      void load();
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [detail, load]);
+  function go(page: string) {
+    setTab('Dashboard');
+    router.push(route + '/' + page);
+  }
+  function openRun(run: WorkspaceRun) {
+    setTab('Dashboard');
+    router.push(
+      route + '/runs?run=' + run.id + (taskFilter ? '&task=' + encodeURIComponent(taskFilter) : ''),
+    );
+  }
+  const selectedRuns = (runs?.items || []).filter((r) => selected.includes(r.id));
+  const title = navigation.find(([key]) => key === section)?.[1] || 'Overview';
+  if (!ready)
+    return (
+      <main className={styles.login} role="status">
+        Loading your Anvil session…
+      </main>
+    );
+  if (!user)
+    return (
+      <main className={styles.login}>
+        <img src="/brand/adi-anvil-logo-v1.png" alt="ADI Anvil" />
+        <h1>One workspace for evaluation</h1>
+        <p>Configure models, work with tasks and inspect the evidence behind every run.</p>
+        <a className="button primary" href="/api/v1/auth/login">
+          Sign in with Keycloak
+        </a>
+        <a href="/">Open classic Anvil</a>
+      </main>
+    );
+  return (
+    <div className={`${styles.workspace} ${dark ? styles.night : ''}`}>
+      <aside className={styles.sidebar}>
+        <a className={styles.brand} href={route + '/overview'}>
+          ADI Anvil<small>Frontier evaluations</small>
+        </a>
+        <nav aria-label="Workspace navigation">
+          {navigation
+            .filter(([key]) => admin || !['models', 'frameworks', 'people', 'limits'].includes(key))
+            .map(([key, label], i) => (
+              <a
+                key={key}
+                href={route + '/' + key}
+                aria-current={section === key ? 'page' : undefined}
+              >
+                {i === 3 && <small>Administration</small>}
+                {label}
+              </a>
+            ))}
+        </nav>
+        <div className={styles.sidebarFoot}>
+          <span>{admin ? 'Admin includes engineering work' : 'Engineering workspace'}</span>
+          <a href={'/p/' + project?.id + '/harbor'}>Compare classic journey ↗</a>
+        </div>
+      </aside>
+      <div className={styles.body}>
+        <header className={styles.header}>
+          <div>
+            {user.projects.length > 1 ? (
+              <select
+                aria-label="Project"
+                value={project?.id || ''}
+                onChange={(e) => router.push('/workspace/' + e.target.value + '/overview')}
+              >
+                {user.projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span>{project?.name || 'No assigned project'}</span>
+            )}
+            <span className={styles.muted}> / {title}</span>
+          </div>
+          <div className={styles.actions}>
+            <span>
+              {user.name} · {admin ? 'Admin' : 'RL Engineer'}
+            </span>
+            <button onClick={() => setDark(!dark)} aria-pressed={dark}>
+              {dark ? 'Light' : 'Dark'} theme
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  await api('/auth/logout', 'POST', {});
+                  setUser(null);
+                } catch (e) {
+                  setError((e as Error).message);
+                }
+              }}
+            >
+              Sign out
+            </button>
+          </div>
+        </header>
+        <main className={styles.content}>
+          {!project || !allowed ? (
+            <section className={styles.panel}>
+              <h1>Workspace access unavailable</h1>
+              <p>This account needs an assigned engineering or Admin capability in this project.</p>
+              <a href="/">Open your classic workspace</a>
+            </section>
+          ) : (
+            <>
+              <div className={styles.pageHead}>
+                <div>
+                  <h1>
+                    {detail
+                      ? shortId(detail.id) + ' / ' + (detail.model || detail.candidate)
+                      : taskFilter && section === 'runs'
+                        ? 'Task run history'
+                        : title}
+                  </h1>
+                  <p className={styles.muted}>
+                    {detail
+                      ? detail.title + ' · Task ' + detail.task_version
+                      : section === 'runs'
+                        ? taskFilter || 'All retained Harbor executions in this project'
+                        : section === 'tasks'
+                          ? 'Import, inspect and evaluate versioned tasks.'
+                          : 'Configure once. Evaluate and inspect evidence in one workspace.'}
+                  </p>
+                </div>
+                <div className={styles.actions}>
+                  <button onClick={() => void load()} disabled={loading}>
+                    Refresh
+                  </button>
+                  {['tasks', 'runs'].includes(section) && (
+                    <button className={styles.primary} onClick={() => setPrepare(!prepare)}>
+                      {prepare ? 'Close preparation' : 'Import / prepare run'}
+                    </button>
+                  )}
+                </div>
+              </div>
+              {error && (
+                <div className={styles.error} role="alert">
+                  {error}
+                </div>
+              )}
+              {loading && <p role="status">Loading project records…</p>}
+              {prepare && (
+                <section className={styles.panel}>
+                  <HarborWorkbench
+                    base={base}
+                    api={api}
+                    canApprove={project.roles.includes('product-owner')}
+                    canPlan={project.roles.some((r) =>
+                      ['admin', 'researcher', 'product-owner'].includes(r),
+                    )}
+                    canAdmin={admin}
+                  />
+                  <p className={styles.muted}>
+                    Existing authorization and spending controls apply. Admin includes task import,
+                    package building and execution preparation.
+                  </p>
+                </section>
+              )}
+              {section === 'overview' && (
+                <Overview
+                  tasks={tasks?.items || []}
+                  runs={runs?.items || []}
+                  admin={admin}
+                  go={go}
+                  openRun={openRun}
+                />
+              )}
+              {section === 'tasks' && (
+                <section className={styles.panel}>
+                  <h2>Your tasks</h2>
+                  <p className={styles.muted}>
+                    Praxis imports and immutable Harbor packages. Diagnostic task integration is the
+                    next milestone.
+                  </p>
+                  {tasks?.items.length ? (
+                    <div className={styles.tableScroll}>
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Task</th>
+                            <th>Latest version</th>
+                            <th>Versions</th>
+                            <th>Runs</th>
+                            <th></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {tasks.items.map((t) => (
+                            <tr key={t.task_id}>
+                              <td>
+                                <strong>{t.title || t.task_id}</strong>
+                                <small>{t.task_id}</small>
+                              </td>
+                              <td>{t.task_version}</td>
+                              <td>{t.versions}</td>
+                              <td>{t.run_count}</td>
+                              <td>
+                                <a href={route + '/runs?task=' + encodeURIComponent(t.task_id)}>
+                                  View run history
+                                </a>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    !loading && (
+                      <Empty
+                        title="No imported tasks yet"
+                        text="Use Import / prepare run to bring a Praxis task into this project."
+                      />
+                    )
+                  )}
+                  {tasks?.next_cursor && (
+                    <button
+                      onClick={async () => {
+                        const current = generation.current;
+                        try {
+                          const next = await api(
+                            base +
+                              '/workspace/tasks?after=' +
+                              encodeURIComponent(tasks.next_cursor!),
+                          );
+                          if (current === generation.current)
+                            setTasks({ ...next, items: [...tasks.items, ...next.items] });
+                        } catch (e) {
+                          if (current === generation.current) setError((e as Error).message);
+                        }
+                      }}
+                    >
+                      Load more tasks
+                    </button>
+                  )}
+                </section>
+              )}
+              {section === 'runs' &&
+                (detail ? (
+                  <>
+                    <div className={styles.actions}>
+                      <a
+                        href={
+                          route +
+                          '/runs' +
+                          (taskFilter ? '?task=' + encodeURIComponent(taskFilter) : '')
+                        }
+                      >
+                        ← Run history
+                      </a>
+                      <Origin run={detail} />
+                    </div>
+                    <nav className={styles.tabs} aria-label="Run detail">
+                      {runTabs.map((t) => (
+                        <button key={t} aria-pressed={tab === t} onClick={() => setTab(t)}>
+                          {t}
+                        </button>
+                      ))}
+                    </nav>
+                    <RunDetails
+                      key={detail.id}
+                      run={detail}
+                      tab={tab}
+                      base={base}
+                      setTab={setTab}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <section className={styles.panel}>
+                      <div className={styles.pageHead}>
+                        <h2>Run history</h2>
+                        <button
+                          disabled={selected.length < 2}
+                          onClick={() => setTab(tab === 'Compare' ? 'Dashboard' : 'Compare')}
+                        >
+                          {tab === 'Compare'
+                            ? 'Close comparison'
+                            : 'Compare selected (' + selected.length + ')'}
+                        </button>
+                      </div>
+                      {runs?.items.length ? (
+                        <RunTable
+                          runs={runs.items}
+                          selected={selected}
+                          onSelect={(id) =>
+                            setSelected(
+                              selected.includes(id)
+                                ? selected.filter((x) => x !== id)
+                                : [...selected, id],
+                            )
+                          }
+                          open={openRun}
+                        />
+                      ) : (
+                        !loading && (
+                          <Empty
+                            title="No runs in this view"
+                            text="Build an immutable task package and prepare an authorized execution. No sample results are inserted here."
+                          />
+                        )
+                      )}
+                      {runs?.next_cursor && (
+                        <button
+                          onClick={async () => {
+                            const current = generation.current;
+                            try {
+                              const next = await api(
+                                base +
+                                  '/workspace/runs?after=' +
+                                  runs.next_cursor +
+                                  (taskFilter ? '&task_id=' + encodeURIComponent(taskFilter) : ''),
+                              );
+                              if (current === generation.current)
+                                setRuns({ ...next, items: [...runs.items, ...next.items] });
+                            } catch (e) {
+                              if (current === generation.current) setError((e as Error).message);
+                            }
+                          }}
+                        >
+                          Load more runs
+                        </button>
+                      )}
+                    </section>
+                    {tab === 'Compare' && <Comparison runs={selectedRuns} />}
+                  </>
+                ))}
+              {section === 'models' && admin && <ModelProfiles key={base} base={base} />}
+              {section === 'frameworks' && admin && <FrameworkProfiles key={base} base={base} />}
+              {section === 'people' && admin && (
+                <section className={styles.panel}>
+                  <h2>Project people</h2>
+                  <p className={styles.muted}>
+                    Existing grants are shown without changing historical identities. Two-profile
+                    access management is being integrated; no automatic role promotion.
+                  </p>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Person</th>
+                        <th>Current grant</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {members.map((m) => (
+                        <tr key={m.id + m.role}>
+                          <td>{m.name}</td>
+                          <td>{m.role}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </section>
+              )}
+              {section === 'limits' && admin && (
+                <section className={styles.panel}>
+                  <h2>Operating boundaries</h2>
+                  <p>
+                    No default spending amount is granted. Existing exact-run authority, pricing,
+                    data rights and cumulative reservations remain required.
+                  </p>
+                  <p>
+                    External tracing is not enabled by this workspace. Unknown dispatch outcomes
+                    retain their reservations.
+                  </p>
+                  <a href={'/p/' + project.id + '/providers'}>Inspect current provider readiness</a>
+                </section>
+              )}
+              {!admin && ['models', 'frameworks', 'people', 'limits'].includes(section) && (
+                <p role="alert">Administration is restricted to project Admins.</p>
+              )}
+            </>
+          )}
+          <footer className={styles.footer}>
+            Modern workspace · existing project data · synthetic software checks are not model
+            performance
+          </footer>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function Empty({ title, text }: { title: string; text: string }) {
+  return (
+    <div className={styles.empty}>
+      <h3>{title}</h3>
+      <p>{text}</p>
+    </div>
+  );
+}
+function Origin({ run }: { run: WorkspaceRun }) {
+  return (
+    <span className={styles.tag}>
+      {synthetic(run) ? 'Synthetic software check' : 'Model execution · unreviewed'}
+    </span>
+  );
+}
+function Stat({ label, value, note }: { label: string; value: string | number; note: string }) {
+  return (
+    <div className={styles.panel}>
+      <small>{label}</small>
+      <strong className={styles.value}>{value}</strong>
+      <small>{note}</small>
+    </div>
+  );
+}
+function Overview({
+  tasks,
+  runs,
+  admin,
+  go,
+  openRun,
+}: {
+  tasks: WorkspaceTask[];
+  runs: WorkspaceRun[];
+  admin: boolean;
+  go: (page: string) => void;
+  openRun: (r: WorkspaceRun) => void;
+}) {
+  return (
+    <div className={styles.grid}>
+      <section className={styles.panel}>
+        <h2>{admin ? 'Set up your workspace' : 'Your evaluation workspace'}</h2>
+        {(admin
+          ? [
+              ['Models & keys', 'Configure exact model IDs and inspect readiness.', 'models'],
+              ['Frameworks', 'Inspect runner, agent and tracing capabilities.', 'frameworks'],
+              ['People', 'Review assigned project access.', 'people'],
+              ['Limits & usage', 'Inspect operating boundaries.', 'limits'],
+            ]
+          : [
+              ['Tasks', 'Import and inspect versioned tasks.', 'tasks'],
+              ['Runs', 'Review retained outputs and evidence.', 'runs'],
+            ]
+        ).map(([label, note, page]) => (
+          <div key={page} className={styles.setupRow}>
+            <div>
+              <h3>{label}</h3>
+              <small>{note}</small>
+            </div>
+            <button onClick={() => go(page)}>Open</button>
+          </div>
+        ))}
+        <p className={styles.muted}>
+          {tasks.length} tasks loaded. Additional pages are available in Tasks.
+        </p>
+      </section>
+      <section className={styles.panel}>
+        <h2>Recent runs</h2>
+        {runs.length ? (
+          runs.slice(0, 5).map((r) => (
+            <div className={styles.setupRow} key={r.id}>
+              <div>
+                <h3>{r.title}</h3>
+                <small>
+                  {shortId(r.id)} · {r.state}
+                </small>
+                <Origin run={r} />
+              </div>
+              <button onClick={() => openRun(r)}>Open run</button>
+            </div>
+          ))
+        ) : (
+          <Empty
+            title="No executions yet"
+            text="Run history appears after an authorized execution is prepared."
+          />
+        )}
+      </section>
+    </div>
+  );
+}
+function RunTable({
+  runs,
+  selected,
+  onSelect,
+  open,
+}: {
+  runs: WorkspaceRun[];
+  selected: string[];
+  onSelect: (id: string) => void;
+  open: (run: WorkspaceRun) => void;
+}) {
+  return (
+    <div className={styles.tableScroll}>
+      <table>
+        <thead>
+          <tr>
+            <th>Select</th>
+            <th>Run / started</th>
+            <th>Model / task</th>
+            <th>Score</th>
+            <th>Outcome</th>
+            <th>Known cost</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {runs.map((r) => (
+            <tr key={r.id}>
+              <td>
+                <input
+                  type="checkbox"
+                  aria-label={'Select run ' + shortId(r.id)}
+                  checked={selected.includes(r.id)}
+                  onChange={() => onSelect(r.id)}
+                />
+              </td>
+              <td>
+                <strong>{shortId(r.id)}</strong>
+                <small>{dateTime(r.created_at)}</small>
+              </td>
+              <td>
+                {r.model || r.candidate}
+                <small>Task {r.task_version}</small>
+                <Origin run={r} />
+              </td>
+              <td>{r.metrics.score === null ? 'Unscored' : r.metrics.score + '/100'}</td>
+              <td>
+                {r.metrics.task_failed ? 'Task failed' : r.metrics.passed ? 'Full reward' : r.state}
+              </td>
+              <td>
+                {money(r.metrics.known_cost_micro_usd)}
+                <small>{r.metrics.cost_complete ? 'Complete' : 'Partial / unresolved'}</small>
+              </td>
+              <td>
+                <button onClick={() => open(r)}>Open run</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+function Comparison({ runs }: { runs: WorkspaceRun[] }) {
+  const [baseline, setBaseline] = useState(runs[0]?.id);
+  const base = runs.find((r) => r.id === baseline) || runs[0];
+  const eligible = comparable(runs);
+  const fields: [string, (r: WorkspaceRun) => string | number][] = [
+    ['Score', (r) => r.metrics.score ?? 'Unscored'],
+    ['Task version', (r) => r.task_version],
+    ['Execution state', (r) => r.state],
+    ['Task failures', (r) => r.metrics.task_failed],
+    ['Execution errors', (r) => r.metrics.execution_errors],
+    ['Unknown outcomes', (r) => r.metrics.unknown],
+    [
+      'Known cost',
+      (r) => money(r.metrics.known_cost_micro_usd) + (r.metrics.cost_complete ? '' : ' · partial'),
+    ],
+    [
+      'Duration',
+      (r) => (r.metrics.elapsed_seconds === null ? 'Unknown' : r.metrics.elapsed_seconds + 's'),
+    ],
+  ];
+  return (
+    <section className={styles.panel}>
+      <h2>Compare runs</h2>
+      <label>
+        Baseline{' '}
+        <select value={base?.id || ''} onChange={(e) => setBaseline(e.target.value)}>
+          {runs.map((r) => (
+            <option key={r.id} value={r.id}>
+              {shortId(r.id)} · {r.model || r.candidate}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p className={styles.notice}>
+        {eligible
+          ? 'Matching package, origin and scoring signature. No significance claim is made.'
+          : 'Different or unscored execution signatures: descriptive comparison only. Score deltas are unavailable.'}
+      </p>
+      <div className={styles.tableScroll}>
+        <table>
+          <thead>
+            <tr>
+              <th>Metric</th>
+              {runs.map((r) => (
+                <th key={r.id}>
+                  {shortId(r.id)}
+                  <small>{r.model || r.candidate}</small>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {fields.map(([name, fn]) => (
+              <tr key={name}>
+                <th>{name}</th>
+                {runs.map((r) => (
+                  <td key={r.id}>{fn(r)}</td>
+                ))}
+              </tr>
+            ))}
+            {eligible && (
+              <tr>
+                <th>Score Δ vs baseline</th>
+                {runs.map((r) => (
+                  <td key={r.id}>
+                    {((r.metrics.score || 0) - (base.metrics.score || 0)).toFixed(2)} points
+                  </td>
+                ))}
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      <p className={styles.muted}>
+        One attempt per Harbor check. Software fixtures and model executions are separate comparison
+        cohorts.
+      </p>
+    </section>
+  );
+}
+function RunDetails({
+  run,
+  tab,
+  base,
+  setTab,
+}: {
+  run: WorkspaceRun;
+  tab: string;
+  base: string;
+  setTab: (tab: string) => void;
+}) {
+  const [evidence, setEvidence] = useState<{
+      kind: string;
+      content: string;
+      sha256: string;
+    } | null>(null),
+    [error, setError] = useState(''),
+    [pending, setPending] = useState(false);
+  const m = run.metrics;
+  async function inspect(id: string) {
+    setPending(true);
+    setError('');
+    try {
+      setEvidence(await api(base + '/workspace/runs/' + run.id + '/evidence/' + id));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setPending(false);
+    }
+  }
+  if (tab === 'Dashboard')
+    return (
+      <>
+        <div className={styles.stats}>
+          <Stat
+            label="Automated score"
+            value={m.score === null ? 'Unscored' : m.score + '/100'}
+            note={m.scored + ' scored / 1 attempt'}
+          />
+          <Stat
+            label="Task outcome"
+            value={m.passed ? 'Full reward' : m.task_failed ? 'Task failed' : run.state}
+            note="Execution state and task outcome are separate"
+          />
+          <Stat
+            label="Duration"
+            value={m.elapsed_seconds === null ? 'Unknown' : m.elapsed_seconds + 's'}
+            note="Recorded runner duration"
+          />
+          <Stat
+            label="Known cost"
+            value={money(m.known_cost_micro_usd)}
+            note={m.cost_complete ? 'Complete recorded cost' : 'Partial / unresolved'}
+          />
+        </div>
+        <div className={styles.grid}>
+          <section className={styles.panel}>
+            <h2>Evaluation results</h2>
+            <Diagnostics data={run.diagnostics} />
+          </section>
+          <section className={styles.panel}>
+            <h2>What needs attention</h2>
+            <p>Task failures: {m.task_failed}</p>
+            <p>Execution errors: {m.execution_errors}</p>
+            <p>Unknown outcomes: {m.unknown}</p>
+            {run.error_code && <p>{run.error_code}</p>}
+            <div className={styles.actions}>
+              <button onClick={() => setTab('Failure modes')}>Inspect failures</button>
+              <button onClick={() => setTab('Results')}>All results</button>
+            </div>
+          </section>
+        </div>
+      </>
+    );
+  if (tab === 'Task & evaluations')
+    return (
+      <div className={styles.grid}>
+        <section className={styles.panel}>
+          <h2>Task snapshot · {run.task_version}</h2>
+          <p>
+            {String(run.actor_snapshot?.objective || 'Inspect the actor-visible snapshot below.')}
+          </p>
+          <details>
+            <summary>Actor-visible task definition</summary>
+            <pre>{JSON.stringify(run.actor_snapshot, null, 2)}</pre>
+          </details>
+          <p className={styles.muted}>Source revision {run.source_revision_id}</p>
+          <p className={styles.hash}>Source SHA-256: {run.source_sha256}</p>
+        </section>
+        <section className={styles.panel}>
+          <h2>Bound evaluation configuration</h2>
+          <pre>{JSON.stringify(run.evaluation_snapshot, null, 2)}</pre>
+          <p className={styles.muted}>
+            Historical inputs are read-only. A separate new-version editor is being built; existing
+            run evidence is never overwritten.
+          </p>
+        </section>
+      </div>
+    );
+  if (tab === 'Usage')
+    return (
+      <section className={styles.panel}>
+        <h2>Usage & accounting</h2>
+        <p>
+          Known cost: {money(m.known_cost_micro_usd)} ·{' '}
+          {m.cost_complete ? 'complete' : 'partial / unresolved'}
+        </p>
+        <p>Reserved calls: {money(m.reserved_micro_usd)}</p>
+        <p>
+          Started: {dateTime(run.started_at)}
+          <br />
+          Finished: {dateTime(run.finished_at)}
+        </p>
+        {run.calls?.length ? (
+          <pre>{JSON.stringify(run.calls, null, 2)}</pre>
+        ) : (
+          <p>No model-provider calls recorded for this execution.</p>
+        )}
+      </section>
+    );
+  if (tab === 'Failure modes')
+    return (
+      <section className={styles.panel}>
+        <h2>Failure modes & execution issues</h2>
+        <p>
+          {m.task_failed
+            ? 'Automated task constraints did not receive full reward.'
+            : m.passed
+              ? 'All executable checks received full reward.'
+              : 'No scored task outcome is available.'}
+        </p>
+        {run.error_code && <p>Runner error: {run.error_code}</p>}
+        {!!m.unknown && (
+          <p>Dispatch outcome is unresolved. No automatic retry or zero-cost assumption.</p>
+        )}
+        <Diagnostics data={run.diagnostics} />
+        <button onClick={() => setTab('Trajectories')}>Inspect observable evidence</button>
+      </section>
+    );
+  return (
+    <section className={styles.panel}>
+      <h2>{tab === 'Results' ? 'Results & retained outputs' : 'Observable trajectory'}</h2>
+      <p className={styles.muted}>{run.trajectory_limitations}</p>
+      <p>
+        Execution {run.state} ·{' '}
+        {m.score === null ? 'unscored' : 'automated score ' + m.score + '/100'}
+      </p>
+      <div className={styles.actions}>
+        {run.evidence?.map((e, i) => (
+          <button
+            key={e.artifact_id}
+            disabled={pending}
+            onClick={() => void inspect(e.artifact_id)}
+          >
+            {e.kind} · {i + 1}
+          </button>
+        ))}
+      </div>
+      {!run.evidence?.length && (
+        <Empty
+          title="No retained output evidence"
+          text="Queued, failed, canceled or unknown executions may have no output. No trajectory is generated to fill a gap."
+        />
+      )}
+      {pending && <p role="status">Loading permitted evidence…</p>}
+      {error && <p role="alert">{error}</p>}
+      {evidence && (
+        <>
+          <h3>{evidence.kind}</h3>
+          <pre>{evidence.content}</pre>
+          <p className={styles.hash}>SHA-256: {evidence.sha256}</p>
+        </>
+      )}
+      <details>
+        <summary>Recorded lifecycle timestamps</summary>
+        <p>
+          Prepared: {dateTime(run.created_at)}
+          <br />
+          Started: {dateTime(run.started_at)}
+          <br />
+          Finished: {dateTime(run.finished_at)}
+        </p>
+      </details>
+      <p className={styles.muted}>
+        Only actual retained outputs and runner evidence. Private model reasoning and restricted
+        reference content are excluded.
+      </p>
+    </section>
+  );
+}
+function Diagnostics({ data }: { data?: Record<string, unknown> | null }) {
+  if (!data) return <p className={styles.muted}>No evaluator results recorded.</p>;
+  const stages = (Array.isArray(data.stages) ? data.stages : [data]) as {
+    stage_id?: string;
+    reward?: number;
+    diagnostic_score?: number;
+    hard_failures?: string[];
+    criteria?: Record<string, { passed: boolean; weight_bps: number }>;
+  }[];
+  return (
+    <>
+      {stages.map((stage, i) => (
+        <div className={styles.diagnostic} key={stage.stage_id || i}>
+          <h3>{stage.stage_id || 'Decision'}</h3>
+          <p>
+            Reward: {stage.reward ?? 'Unknown'} · diagnostic score:{' '}
+            {stage.diagnostic_score ?? 'Unknown'}
+          </p>
+          {stage.hard_failures?.length ? (
+            <p>Hard failures: {stage.hard_failures.join(', ')}</p>
+          ) : null}
+          {stage.criteria &&
+            Object.entries(stage.criteria).map(([id, c]) => (
+              <div className={styles.criterion} key={id}>
+                <span>
+                  {id} <small>{c.weight_bps / 100}% weight</small>
+                </span>
+                <strong>{c.passed ? 'Pass' : 'Fail'}</strong>
+              </div>
+            ))}
+        </div>
+      ))}
+    </>
+  );
+}
+function Frameworks() {
+  return (
+    <>
+      <div className={styles.grid}>
+        {[
+          [
+            'Harbor',
+            'Evaluation runner',
+            'Existing pinned structured/staged adapter. Configure and run through Tasks.',
+          ],
+          [
+            'LangSmith',
+            'Tracing / evaluation',
+            'Adapter not implemented. No destination, credentials or external trace export enabled.',
+          ],
+          [
+            'Semantic Kernel',
+            'Candidate agent orchestration',
+            'Adapter not implemented. Requested compatibility remains separate from Microsoft Agent Framework.',
+          ],
+        ].map(([name, role, note]) => (
+          <section className={styles.panel} key={name}>
+            <span className={styles.tag}>{role}</span>
+            <h2>{name}</h2>
+            <p>{note}</p>
+          </section>
+        ))}
+      </div>
+      <section className={styles.panel}>
+        <h2>Platform orchestration</h2>
+        <p>
+          Anvil / LangGraph retains durable checkpoints, authorization and accounting. Adding
+          framework metadata will not install an SDK or enable execution.
+        </p>
+      </section>
+    </>
+  );
+}

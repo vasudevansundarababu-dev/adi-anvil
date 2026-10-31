@@ -1,0 +1,35 @@
+{
+  "schema_version": "anvil.modern_workspace.checkpoint.v1",
+  "date_local": "2026-10-30",
+  "timezone": "America/Chicago",
+  "status": "partial_local",
+  "branch": "codex/anvil-modern-workspace",
+  "preserved_baseline": "codex/anvil-classic-v021-comparison",
+  "nightly_window": "22:00–06:00, hourly checkpoint resumes",
+  "local_url": "http://127.0.0.1:3202/workspace",
+  "classic_url": "http://127.0.0.1:3202/",
+  "schema_version_applied": 27,
+  "tests": {
+    "production_type_lint_format_contract": "passed",
+    "unit": { "passed": 195 },
+    "browser": { "passed": 9, "seconds_approx": 90 },
+    "isolated_integration_real_synthetic_harbor": {
+      "passed": 95,
+      "skipped": 2,
+      "seconds": 162.15,
+      "skip_reason": "ANVIL_PRAXIS_EXPORT_PATH not supplied for two optional parameterizations"
+    }
+  },
+  "live_verification": "not_run_no_new_authority_or_real_keys",
+  "paid_calls_under_this_build": 0,
+  "deployment": "not_performed",
+  "github_push": "not_performed",
+  "remaining": [
+    "diagnostic task/run integration with blinded-review preservation",
+    "complete task/rubric/evaluation successor editor",
+    "explicit two-profile capability migration and People/Limits actions",
+    "qualified profile/credential dispatch and shared multi-model spending groups",
+    "qualified external framework adapters and managed cloud credentials",
+    "broader responsive and keyboard accessibility regression"
+  ]
+}

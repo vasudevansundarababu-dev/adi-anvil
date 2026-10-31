@@ -493,6 +493,9 @@ export default function Console() {
           <small>Frontier Evaluation &amp; Diagnostics Platform</small>
         </div>
         <div className="tools">
+          <a className="button" href={'/workspace/' + project?.id + '/overview'}>
+            Modern workspace
+          </a>
           <small>
             {user.name} · {project?.roles.join(', ')}
           </small>

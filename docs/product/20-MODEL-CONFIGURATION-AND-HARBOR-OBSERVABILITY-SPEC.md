@@ -1,7 +1,13 @@
 # Model configuration and Harbor run workspace
 
-Status: **design proposal for review; no implementation authorized by this document**.
+Status: user approved the combined design and launched autonomous local implementation
+on 30 October 2026. This specification describes the target; implemented scope and evidence
+are recorded in [BUILD-STATUS](../../BUILD-STATUS.md), not implied by this document.
 Date: 30 October 2026. Product: ADI Anvil — Frontier Evaluation & Diagnostics Platform.
+
+Role/navigation update: [Admin workspace and frameworks](21-ADMIN-WORKSPACE-AND-FRAMEWORKS-UX-SPEC.md)
+supersedes this draft's role layout. Admin includes all RL Engineer work and adds setup;
+framework profiles now include typed execution, agent-orchestration and tracing capabilities.
 
 User request: Admin configures OpenAI, Claude and Gemini models and their keys; Harbor
 offers those configured models and shows runs, failures and trajectories. Prepare screens,

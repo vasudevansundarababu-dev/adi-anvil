@@ -1,5 +1,65 @@
 # Build status
 
+Modern workspace autonomous build launched 30 Oct 2026 at 03:08 UTC on 31 Oct
+(22:08 America/Chicago). Initial window deadline 11:00 UTC (06:00 local). M0 branch preservation
+complete: `codex/anvil-modern-workspace`; baseline `codex/anvil-classic-v021-comparison`.
+Nightly thread automation `anvil-nightly-modern-workspace-build` active hourly during
+22:00–06:00 local, including checkpoint resumes tonight. No deadline reset on wake.
+Resume plan: `docs/build/08-MODERN-WORKSPACE-NIGHTLY.md`. Local preflight passed after
+granting access to existing Docker; Anvil infrastructure ports occupied, app ports free.
+Current next milestone: M2 diagnostic task/run integration, then M4 full versioned editor,
+two-profile migration and qualified multi-model admission/composition.
+Unrelated user edits remain excluded. Deployment and paid inference are not authorized.
+
+Nightly progress: M1 implemented modern /workspace routes alongside classic /p, scoped
+Harbor task/run pagination, persisted history, reward/coverage/failure/accounting projection,
+retained internal evidence inspection, actor/package snapshots and conservative comparison.
+M2 initial metadata slice persists multiple named model and typed framework profiles in
+PostgreSQL; additive migration026 applied locally. Admin Harbor engineering access added
+explicitly; existing PO/software and real paid decisions are not bypassed. Stale-response
+guards and project remount prevent cross-project display races. Live score deltas remain
+descriptive-only until complete execution-settings compatibility exists.
+
+M3 local slice built: encrypted credential save/rotate/revoke and exact-version model
+binding; migration027 applied locally. Dedicated random wrapping key, authenticated
+project/credential/version/provider envelope, owner-only descriptor-based filesystem access,
+directory fsync and missing-key recovery fail-closed. No raw key read endpoint; cloud writes
+blocked. Credential unit6 and integration2 passed with test-only values, including worst-case
+escaped maximum input, scope-swapped envelope rejection and missing-wrap-key recovery.
+New workspace profiles are explicitly blocked from legacy dispatch: no global key fallback.
+Current final checks: pnpm check (lint/format/types/production/OpenAPI) passed; pnpm test:unit
+195 passed. Full9-browser regression passed (1.5m), including classic, new profile/key UI,
+run history/snapshot/evidence/usage and real staged Harbor synthetic execution. With app
+and dedicated workers stopped, `ANVIL_TEST_HARBOR=1 ANVIL_HARBOR_DOCKER_HOST=<authorized
+local Unix socket> pnpm test:integration`:95 passed,2 skipped,162.15s. The skips are the two
+parameterizations requiring ANVIL_PRAXIS_EXPORT_PATH; no export path supplied. No paid
+live qualification claimed. New optional dedicated-worker registration in the local launcher
+passed startup against the existing pinned Harbor executable; no dependency installs.
+Initial browser failures were test selector issues (required-label suffix, duplicate heading),
+corrected without weakening product behavior. Retained-project security test now selects
+an originally static task and a genuinely different source instead of whichever task sorts
+first; targeted5 passed. Final regression and OpenAPI regeneration completed.
+Remaining: diagnostic-run integration, complete editor/versioning and profile migration,
+multi-model admission/composition, managed cloud credentials, qualified external framework
+adapters and broader responsive/access regression. See docs/generated/modern-workspace-nightly-report.md.
+
+Run-workspace design extension: task-level history, run dashboard, all-attempt results,
+failure modes, observable trajectories, bound task/rubric/evaluation snapshots, usage
+and baseline comparison are now included in the review prototype and spec21 section11.
+Separate “Edit as new version” editor is proposed; no historical run inputs are edited.
+Prototype syntax and browser checks passed for dashboard, version-editor preview and
+metric comparison; no console errors. Synthetic examples only; no application changes.
+
+Admin redesign proposal: see
+`docs/product/21-ADMIN-WORKSPACE-AND-FRAMEWORKS-UX-SPEC.md`. Clickable review screens
+cover Overview, Models & keys, Frameworks, People, Limits & usage, Tasks and Runs.
+Admin includes all RL Engineer capabilities within assigned projects. Framework
+configuration distinguishes Harbor execution, LangSmith tracing/evaluation and
+Semantic Kernel agent orchestration; proposed adapters are not represented as live.
+Browser checks passed for navigation, example model save, Admin capability display
+and Tasks → Runs setup; no console errors or horizontal overflow at the preview width.
+Design only: no application implementation, credentials, invitations, calls or deployment.
+
 Design-only request: prepared product spec
 `docs/product/20-MODEL-CONFIGURATION-AND-HARBOR-OBSERVABILITY-SPEC.md` and a separate
 interactive review prototype for Admin Models & keys → Harbor model selection → run

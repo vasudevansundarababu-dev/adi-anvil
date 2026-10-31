@@ -2,6 +2,15 @@
 
 Frontier Evaluation & Diagnostics Platform
 
+The modern workspace is being built on `codex/anvil-modern-workspace`. Open
+http://127.0.0.1:3202/workspace after local startup; classic `/p/{project}/...` remains
+available through **Compare classic journey**. The preserved baseline branch is
+`codex/anvil-classic-v021-comparison`. Both journeys use the same canonical local data;
+new schema changes are additive. This development branch has not been deployed.
+See the [nightly plan](docs/build/08-MODERN-WORKSPACE-NIGHTLY.md) and [current status](BUILD-STATUS.md)
+for built versus remaining capabilities; saved framework metadata is not a working SDK
+integration, and saved credentials do not enable inference.
+
 The v0.2.0 increment adds the [Praxis → Harbor workbench](docs/runbooks/praxis-harbor.md),
 immutable single-stage/staged task packages, retained software-check analysis and gated
 model-run preparation. The workbench is deployed; authenticated import/build passed, while

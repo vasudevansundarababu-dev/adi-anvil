@@ -2092,9 +2092,16 @@ def test_task_missing_duplicate_cross_source_and_unsupported_inputs(client_facto
     tasks = [
         t
         for t in client.get(base + "/tasks?limit=100").json()["data"]
-        if t["lifecycle"] == "published"
+        if t["lifecycle"] == "published" and t["content"].get("mode") == "static"
     ]
     source = tasks[0]["content"]
+    # Retained journey projects may also contain the qualified interactive marketing task.
+    # This negative specifically changes an originally static task to an unsupported mode.
+    foreign_source = next(
+        t["content"]
+        for t in tasks
+        if t["content"]["source_revision_id"] != source["source_revision_id"]
+    )
     for body in (
         {**source, "actor_artifact_ids": source["actor_artifact_ids"][:1]},
         {**source, "actor_artifact_ids": [source["actor_artifact_ids"][0]] * 2},
@@ -2108,7 +2115,7 @@ def test_task_missing_duplicate_cross_source_and_unsupported_inputs(client_facto
         {
             **source,
             "actor_artifact_ids": [
-                tasks[1]["content"]["actor_artifact_ids"][0],
+                foreign_source["actor_artifact_ids"][0],
                 source["actor_artifact_ids"][1],
             ],
         },

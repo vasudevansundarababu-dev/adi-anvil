@@ -126,5 +126,17 @@
     "reference_results": "synthetic software verification only, never model performance",
     "field_mapping_reconciliation": "new shared contract agreed with Praxis; full reconciliation with earlier Library mapping documents remains unverified"
   },
+  "modern_workspace_increment": {
+    "authorized_date": "2026-10-30",
+    "build_branch": "codex/anvil-modern-workspace",
+    "classic_baseline_branch": "codex/anvil-classic-v021-comparison",
+    "routes": "modern /workspace; classic /p preserved against the same canonical database",
+    "nightly": "22:00–06:00 America/Chicago with hourly checkpoint resumes; no per-wake deadline reset",
+    "profiles": "Admin includes scoped engineering capabilities; historical grants and paid decisions preserved",
+    "local_credential_store": "dedicated random wrapping key and authenticated scope-bound encrypted blobs under owner-only .local/workspace-secrets; PostgreSQL metadata and immutable versions",
+    "cloud_credential_entry": "disabled pending managed secret-store adapter and provisioning authority",
+    "framework_profiles": "metadata-only registered Harbor/LangSmith/Semantic Kernel configurations; no SDK installs, tracing or dispatch on save",
+    "inference_authority": "no new paid-call authority; existing controls remain enforced"
+  },
   "note": "Pending values are not consent. The build agent must not fill user approvals from inference. Dependency/default choices are proposals; live keys never belong in this file."
 }

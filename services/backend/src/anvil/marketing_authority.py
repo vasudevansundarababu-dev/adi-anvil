@@ -20,6 +20,8 @@ GRAPH_VERSION = "marketing-interactive-review-v1"
 
 def config_valid(connection):
     cfg = connection["config"]
+    if cfg.get("workspace_profile_version"):
+        return False
     return (
         connection["provider_key"] == "openai"
         and connection["model_id"] == "gpt-6-sol"

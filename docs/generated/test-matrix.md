@@ -1,5 +1,20 @@
 # Acceptance evidence matrix
 
+30 October 2026 modern workspace build: scoped implementation on a separate branch.
+Current feature evidence (full final counts in BUILD-STATUS.md):
+
+| Requirement                                | Evidence                                                                     | Status / limit                                                          |
+| ------------------------------------------ | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| MOD-01 Preserve classic journey            | modern-workspace browser; baseline Git branch                                | Passed local comparison; no deployment                                  |
+| MOD-02 Task-level Harbor history           | test_workspace integration; workspace APIs                                   | Passed; diagnostic task/run integration remains pending                 |
+| MOD-03 Honest run metrics / unknown cost   | test_workspace unit and integration                                          | Passed one-attempt Harbor projection; live comparisons descriptive only |
+| MOD-04 Bound evidence and project scope    | test_workspace integration                                                   | Passed RLS, role, bound artifact/classification/hash checks             |
+| MOD-05 Multiple model/framework profiles   | test_workspace integration; modern-workspace browser                         | Persisted metadata passed; adapters/composition not all implemented     |
+| MOD-06 Write-only local credentials        | test_workspace_secrets unit; test_workspace_credentials integration; browser | Local save/rotate/revoke passed; cloud writes disabled                  |
+| MOD-07 No legacy key substitution          | test_workspace integration                                                   | New profiles blocked from unqualified legacy dispatch                   |
+| MOD-08 Two-profile migration / full editor | No acceptance test yet                                                       | Not implemented; existing grants/history preserved                      |
+| MOD-09 Paid live verification              | Not run                                                                      | No new paid authority or real keys supplied                             |
+
 2026-09-29 ANV-BF-001 update:124 units,67 integrations and4 browser journeys pass;
 production check and fresh/repeated001–017 migrations pass. See
 [Factory report](ANV-BF-001-report.md) for requirement-specific limits. Task-profile

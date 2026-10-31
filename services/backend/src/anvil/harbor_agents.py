@@ -145,6 +145,8 @@ def readiness(c, record):
     connection = one(c, "SELECT * FROM anvil.connections WHERE id=%s", (record["connection_id"],))
     package = one(c, "SELECT * FROM anvil.harbor_packages WHERE id=%s", (record["package_id"],))
     missing = []
+    if connection and connection["config"].get("workspace_profile_version"):
+        missing.append("workspace_profile_dispatch_binding_not_qualified")
     policy = authority()
     if not harbor_live_enabled():
         missing.append("live_dispatch_disabled_in_runtime")
@@ -485,10 +487,10 @@ def routes(context, wrap, idempotent):
     @router.get("/harbor-agent-connections")
     def connections(project: UUID, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "researcher", "product-owner")
+            auth.require(roles, "admin", "researcher", "product-owner")
             return wrap(
                 c.execute(
-                    "SELECT id,provider_key,model_id,config_hash FROM anvil.connections WHERE provider_key='openai' AND status<>'revoked' ORDER BY created_at DESC LIMIT 100"
+                    "SELECT id,provider_key,model_id,config_hash FROM anvil.connections WHERE provider_key='openai' AND status<>'revoked' AND NOT(config ? 'workspace_profile_version') ORDER BY created_at DESC LIMIT 100"
                 ).fetchall(),
                 request,
             )
@@ -496,7 +498,7 @@ def routes(context, wrap, idempotent):
     @router.post("/harbor-packages/{package_id}/agent-plans")
     def create(project: UUID, package_id: UUID, body: Plan, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "researcher", "product-owner")
+            auth.require(roles, "admin", "researcher", "product-owner")
 
             def act():
                 package = one(c, "SELECT * FROM anvil.harbor_packages WHERE id=%s", (package_id,))
@@ -515,6 +517,11 @@ def routes(context, wrap, idempotent):
                 if connection["provider_key"] != "openai" or connection["model_id"] != body.model:
                     raise HTTPException(
                         422, "Select the exact model on a project OpenAI connection"
+                    )
+                if connection["config"].get("workspace_profile_version"):
+                    raise HTTPException(
+                        409,
+                        "Workspace model profiles await qualified credential/dispatch binding; the legacy global key is never substituted",
                     )
                 policy = authority()
                 config = body.model_dump(mode="json") | {
@@ -541,7 +548,7 @@ def routes(context, wrap, idempotent):
     @router.get("/harbor-agent-plans/{pid}")
     def inspect(project: UUID, pid: UUID, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "researcher", "product-owner")
+            auth.require(roles, "admin", "researcher", "product-owner")
             record = plan(c, pid)
             calls = c.execute(
                 "SELECT stage_index,status,reserved_micro_usd,actual_micro_usd,usage,request_id FROM anvil.harbor_agent_calls WHERE plan_id=%s ORDER BY stage_index",
@@ -700,7 +707,7 @@ def routes(context, wrap, idempotent):
     @router.post("/harbor-agent-plans/{pid}/launch")
     def launch(project: UUID, pid: UUID, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "researcher", "product-owner")
+            auth.require(roles, "admin", "researcher", "product-owner")
 
             def act():
                 record = plan(c, pid, True)

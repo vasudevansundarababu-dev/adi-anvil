@@ -114,7 +114,7 @@ def routes(context, wrap, idempotent):
     @router.get("/praxis-sources")
     def listing(project: UUID, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "researcher", "data-engineer", "product-owner")
+            auth.require(roles, "admin", "researcher", "data-engineer", "product-owner")
             return wrap(
                 [
                     source_public(r, c)
@@ -128,7 +128,7 @@ def routes(context, wrap, idempotent):
     @router.post("/praxis-sources")
     def intake(project: UUID, body: Import, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "researcher", "data-engineer", "product-owner")
+            auth.require(roles, "admin", "researcher", "data-engineer", "product-owner")
 
             def act():
                 received = body.payload.encode("utf-8")
@@ -192,7 +192,7 @@ def routes(context, wrap, idempotent):
     @router.post("/praxis-sources/{sid}/build")
     def build(project: UUID, sid: UUID, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "researcher", "data-engineer", "product-owner")
+            auth.require(roles, "admin", "researcher", "data-engineer", "product-owner")
 
             def act():
                 source = get(c, "praxis_sources", sid)
@@ -223,13 +223,13 @@ def routes(context, wrap, idempotent):
     @router.get("/harbor-packages/{pid}")
     def inspect(project: UUID, pid: UUID, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "researcher", "data-engineer", "product-owner")
+            auth.require(roles, "admin", "researcher", "data-engineer", "product-owner")
             return wrap(package_public(c, get(c, "harbor_packages", pid)), request)
 
     @router.get("/praxis-sources/{sid}/packages")
     def packages(project: UUID, sid: UUID, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "researcher", "data-engineer", "product-owner")
+            auth.require(roles, "admin", "researcher", "data-engineer", "product-owner")
             get(c, "praxis_sources", sid)
             return wrap(
                 [
@@ -245,7 +245,7 @@ def routes(context, wrap, idempotent):
     @router.get("/harbor-packages/{pid}/checks")
     def checks(project: UUID, pid: UUID, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "researcher", "data-engineer", "product-owner")
+            auth.require(roles, "admin", "researcher", "data-engineer", "product-owner")
             get(c, "harbor_packages", pid)
             return wrap(
                 c.execute(
@@ -291,7 +291,7 @@ def routes(context, wrap, idempotent):
     @router.post("/harbor-packages/{pid}/checks")
     def check(project: UUID, pid: UUID, body: Check, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "researcher", "product-owner")
+            auth.require(roles, "admin", "researcher", "product-owner")
 
             def act():
                 package = get(c, "harbor_packages", pid)
@@ -341,13 +341,13 @@ def routes(context, wrap, idempotent):
     @router.get("/harbor-checks/{hid}")
     def status(project: UUID, hid: UUID, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "researcher", "data-engineer", "product-owner")
+            auth.require(roles, "admin", "researcher", "data-engineer", "product-owner")
             return wrap(get(c, "harbor_checks", hid), request)
 
     @router.post("/harbor-checks/{hid}/cancel")
     def cancel(project: UUID, hid: UUID, request: Request):
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "researcher", "product-owner")
+            auth.require(roles, "admin", "researcher", "product-owner")
 
             def act():
                 row = get(c, "harbor_checks", hid)
