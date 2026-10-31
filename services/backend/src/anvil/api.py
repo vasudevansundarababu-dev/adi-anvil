@@ -32,6 +32,7 @@ from anvil.support import routes as support_routes
 from anvil.task_imports import routes as task_import_routes
 from anvil.workspace import routes as workspace_routes
 from anvil.workspace_credentials import routes as workspace_credential_routes
+from anvil.workspace_diagnostics import routes as workspace_diagnostic_routes
 
 app = FastAPI(title="ADI Anvil", version="0.2.1")
 app.add_middleware(RequestLimits)
@@ -162,6 +163,7 @@ app.include_router(task_import_routes(context, wrap, idempotent))
 app.include_router(harbor_routes(context, wrap, idempotent))
 app.include_router(workspace_routes(context, wrap, idempotent))
 app.include_router(workspace_credential_routes(context, wrap, idempotent))
+app.include_router(workspace_diagnostic_routes(context, wrap))
 app.include_router(harbor_agent_routes(context, wrap, idempotent))
 app.include_router(factory_routes(context, wrap, idempotent))
 app.include_router(plan_routes(context, wrap, idempotent))

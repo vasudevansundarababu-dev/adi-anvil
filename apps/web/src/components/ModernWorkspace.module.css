@@ -98,6 +98,11 @@
 }
 .header select {
   max-width: 280px;
+  min-width: 0;
+}
+.header > div {
+  min-width: 0;
+  max-width: 100%;
 }
 .content {
   max-width: 1500px;
@@ -404,7 +409,11 @@
     align-items: flex-start;
   }
   .header select {
+    width: 100%;
     max-width: 100%;
+  }
+  .header > div:first-child {
+    width: 100%;
   }
   .content h1 {
     font-size: 23px;

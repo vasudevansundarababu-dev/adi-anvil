@@ -1,6 +1,51 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 
+test('modern diagnostic dashboard preserves exact snapshots and finalized-only output', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Sign in with Keycloak' }).click();
+  await page.locator('#username').fill('admin-1');
+  const password = readFileSync('.local/demo-accounts.md', 'utf8')
+    .split('\n')
+    .find((l) => l.startsWith('- admin-1:'))!
+    .split('`')[1];
+  await page.locator('#password').fill(password);
+  await page.locator('#kc-login').click();
+  await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+  const journey = JSON.parse(readFileSync('artifacts/test-runs/journey.json', 'utf8'));
+  const route = '/workspace/' + journey.project_id + '/runs?kind=diagnostic&run=' + journey.run_id;
+  await page.goto(route);
+  await expect(page.getByText('Reviewed mean score', { exact: true })).toBeVisible();
+  await expect(page.getByText('6 scored / 6 created attempts', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Results', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'All diagnostic results', exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Inspect finalized output', exact: true }).first().click();
+  await expect(
+    page.getByRole('heading', { name: 'Retained finalized output', exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Task & evaluations', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Bound evaluation configuration', exact: true }),
+  ).toBeVisible();
+  await expect(page.locator('main pre').last()).toContainText('rubrics');
+  await expect(page.locator('main pre').last()).not.toContainText('reviewer_ids');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(
+    page.getByRole('heading', { name: 'Bound evaluation configuration', exact: true }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+  await page.screenshot({
+    path: 'artifacts/test-runs/modern-diagnostic-mobile.png',
+    fullPage: true,
+  });
+});
+
 test('Admin modern workspace persists model profiles and preserves classic comparison', async ({
   page,
 }) => {

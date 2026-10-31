@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import HarborWorkbench from './HarborWorkbench';
 import ModelProfiles from './ModelProfiles';
 import FrameworkProfiles from './FrameworkProfiles';
+import DiagnosticResults from './DiagnosticResults';
 import {
   comparable,
   dateTime,
@@ -71,6 +72,10 @@ function WorkspaceView() {
     route = project ? '/workspace/' + project.id : '/workspace';
   const taskFilter = query.get('task'),
     runId = query.get('run');
+  const diagnostic = query.get('kind') === 'diagnostic';
+  const tasksEndpoint = diagnostic ? 'diagnostic-tasks' : 'tasks';
+  const runsEndpoint = diagnostic ? 'diagnostic-runs' : 'runs';
+  const scopeQuery = diagnostic ? 'kind=diagnostic' : '';
   const generation = useRef(0);
   useEffect(() => {
     api('/me')
@@ -92,13 +97,14 @@ function WorkspaceView() {
     setMembers([]);
     try {
       const [nextTasks, nextRuns, nextDetail, nextMembers] = await Promise.all([
-        api(base + '/workspace/tasks'),
+        api(base + '/workspace/' + tasksEndpoint),
         api(
           base +
-            '/workspace/runs' +
+            '/workspace/' +
+            runsEndpoint +
             (taskFilter ? '?task_id=' + encodeURIComponent(taskFilter) : ''),
         ),
-        runId ? api(base + '/workspace/runs/' + encodeURIComponent(runId)) : null,
+        runId ? api(base + '/workspace/' + runsEndpoint + '/' + encodeURIComponent(runId)) : null,
         section === 'people' ? api(base + '/members') : [],
       ]);
       if (current !== generation.current) return;
@@ -111,7 +117,7 @@ function WorkspaceView() {
     } finally {
       if (current === generation.current) setLoading(false);
     }
-  }, [base, allowed, taskFilter, runId, section]);
+  }, [base, allowed, taskFilter, runId, section, tasksEndpoint, runsEndpoint]);
   useEffect(() => {
     void load();
     setPrepare(false);
@@ -129,12 +135,16 @@ function WorkspaceView() {
   }, [detail, load]);
   function go(page: string) {
     setTab('Dashboard');
-    router.push(route + '/' + page);
+    router.push(route + '/' + page + (scopeQuery ? '?' + scopeQuery : ''));
   }
   function openRun(run: WorkspaceRun) {
     setTab('Dashboard');
     router.push(
-      route + '/runs?run=' + run.id + (taskFilter ? '&task=' + encodeURIComponent(taskFilter) : ''),
+      route +
+        '/runs?run=' +
+        run.id +
+        (scopeQuery ? '&' + scopeQuery : '') +
+        (taskFilter ? '&task=' + encodeURIComponent(taskFilter) : ''),
     );
   }
   const selectedRuns = (runs?.items || []).filter((r) => selected.includes(r.id));
@@ -245,7 +255,10 @@ function WorkspaceView() {
                     {detail
                       ? detail.title + ' · Task ' + detail.task_version
                       : section === 'runs'
-                        ? taskFilter || 'All retained Harbor executions in this project'
+                        ? taskFilter ||
+                          (diagnostic
+                            ? 'Diagnostic evaluations · whole-run metrics'
+                            : 'All retained Harbor executions in this project')
                         : section === 'tasks'
                           ? 'Import, inspect and evaluate versioned tasks.'
                           : 'Configure once. Evaluate and inspect evidence in one workspace.'}
@@ -255,13 +268,23 @@ function WorkspaceView() {
                   <button onClick={() => void load()} disabled={loading}>
                     Refresh
                   </button>
-                  {['tasks', 'runs'].includes(section) && (
+                  {['tasks', 'runs'].includes(section) && !diagnostic && (
                     <button className={styles.primary} onClick={() => setPrepare(!prepare)}>
                       {prepare ? 'Close preparation' : 'Import / prepare run'}
                     </button>
                   )}
                 </div>
               </div>
+              {['overview', 'tasks', 'runs'].includes(section) && (
+                <nav className={styles.tabs} aria-label="Evaluation history source">
+                  <a className="button" href={route + '/' + section}>
+                    Harbor
+                  </a>
+                  <a className="button" href={route + '/' + section + '?kind=diagnostic'}>
+                    Diagnostic evaluations
+                  </a>
+                </nav>
+              )}
               {error && (
                 <div className={styles.error} role="alert">
                   {error}
@@ -298,8 +321,9 @@ function WorkspaceView() {
                 <section className={styles.panel}>
                   <h2>Your tasks</h2>
                   <p className={styles.muted}>
-                    Praxis imports and immutable Harbor packages. Diagnostic task integration is the
-                    next milestone.
+                    {diagnostic
+                      ? 'Versioned diagnostic tasks. History spans all revisions; metrics describe the whole run.'
+                      : 'Praxis imports and immutable Harbor packages.'}
                   </p>
                   {tasks?.items.length ? (
                     <div className={styles.tableScroll}>
@@ -324,7 +348,14 @@ function WorkspaceView() {
                               <td>{t.versions}</td>
                               <td>{t.run_count}</td>
                               <td>
-                                <a href={route + '/runs?task=' + encodeURIComponent(t.task_id)}>
+                                <a
+                                  href={
+                                    route +
+                                    '/runs?task=' +
+                                    encodeURIComponent(t.task_id) +
+                                    (scopeQuery ? '&' + scopeQuery : '')
+                                  }
+                                >
                                   View run history
                                 </a>
                               </td>
@@ -348,7 +379,9 @@ function WorkspaceView() {
                         try {
                           const next = await api(
                             base +
-                              '/workspace/tasks?after=' +
+                              '/workspace/' +
+                              tasksEndpoint +
+                              '?after=' +
                               encodeURIComponent(tasks.next_cursor!),
                           );
                           if (current === generation.current)
@@ -371,7 +404,9 @@ function WorkspaceView() {
                         href={
                           route +
                           '/runs' +
-                          (taskFilter ? '?task=' + encodeURIComponent(taskFilter) : '')
+                          '?' +
+                          scopeQuery +
+                          (taskFilter ? '&task=' + encodeURIComponent(taskFilter) : '')
                         }
                       >
                         ← Run history
@@ -435,7 +470,9 @@ function WorkspaceView() {
                             try {
                               const next = await api(
                                 base +
-                                  '/workspace/runs?after=' +
+                                  '/workspace/' +
+                                  runsEndpoint +
+                                  '?after=' +
                                   runs.next_cursor +
                                   (taskFilter ? '&task_id=' + encodeURIComponent(taskFilter) : ''),
                               );
@@ -520,7 +557,13 @@ function Empty({ title, text }: { title: string; text: string }) {
 function Origin({ run }: { run: WorkspaceRun }) {
   return (
     <span className={styles.tag}>
-      {synthetic(run) ? 'Synthetic software check' : 'Model execution · unreviewed'}
+      {run.kind === 'diagnostic'
+        ? synthetic(run)
+          ? 'Synthetic diagnostic fixture'
+          : run.origin.replaceAll('_', ' ')
+        : synthetic(run)
+          ? 'Synthetic software check'
+          : 'Model execution · unreviewed'}
     </span>
   );
 }
@@ -646,7 +689,13 @@ function RunTable({
               </td>
               <td>{r.metrics.score === null ? 'Unscored' : r.metrics.score + '/100'}</td>
               <td>
-                {r.metrics.task_failed ? 'Task failed' : r.metrics.passed ? 'Full reward' : r.state}
+                {r.kind === 'diagnostic'
+                  ? r.metrics.passed + ' / ' + r.metrics.scored + ' passed'
+                  : r.metrics.task_failed
+                    ? 'Task failed'
+                    : r.metrics.passed
+                      ? 'Full reward'
+                      : r.state}
               </td>
               <td>
                 {money(r.metrics.known_cost_micro_usd)}
@@ -668,6 +717,15 @@ function Comparison({ runs }: { runs: WorkspaceRun[] }) {
   const eligible = comparable(runs);
   const fields: [string, (r: WorkspaceRun) => string | number][] = [
     ['Score', (r) => r.metrics.score ?? 'Unscored'],
+    [
+      'Scored / created / planned',
+      (r) =>
+        r.metrics.scored +
+        ' / ' +
+        r.metrics.attempts +
+        ' / ' +
+        (r.metrics.planned ?? r.metrics.attempts),
+    ],
     ['Task version', (r) => r.task_version],
     ['Execution state', (r) => r.state],
     ['Task failures', (r) => r.metrics.task_failed],
@@ -736,8 +794,9 @@ function Comparison({ runs }: { runs: WorkspaceRun[] }) {
         </table>
       </div>
       <p className={styles.muted}>
-        One attempt per Harbor check. Software fixtures and model executions are separate comparison
-        cohorts.
+        Harbor checks have one attempt; diagnostic metrics describe the whole run. Only finalized
+        valid grades enter diagnostic score denominators. Fixture and real-execution cohorts stay
+        separate.
       </p>
     </section>
   );
@@ -777,13 +836,21 @@ function RunDetails({
       <>
         <div className={styles.stats}>
           <Stat
-            label="Automated score"
+            label={run.kind === 'diagnostic' ? 'Reviewed mean score' : 'Automated score'}
             value={m.score === null ? 'Unscored' : m.score + '/100'}
-            note={m.scored + ' scored / 1 attempt'}
+            note={m.scored + ' scored / ' + m.attempts + ' created attempts'}
           />
           <Stat
             label="Task outcome"
-            value={m.passed ? 'Full reward' : m.task_failed ? 'Task failed' : run.state}
+            value={
+              run.kind === 'diagnostic'
+                ? m.passed + ' / ' + m.scored + ' passed'
+                : m.passed
+                  ? 'Full reward'
+                  : m.task_failed
+                    ? 'Task failed'
+                    : run.state
+            }
             note="Execution state and task outcome are separate"
           />
           <Stat
@@ -800,7 +867,15 @@ function RunDetails({
         <div className={styles.grid}>
           <section className={styles.panel}>
             <h2>Evaluation results</h2>
-            <Diagnostics data={run.diagnostics} />
+            {run.kind === 'diagnostic' ? (
+              <p>
+                Scored: {m.scored}; pending: {m.pending}; canceled: {m.cancelled}; invalid:{' '}
+                {m.invalid}. Planned: {m.planned}. Whole-run metrics; finalized pass/fail scores
+                only.
+              </p>
+            ) : (
+              <Diagnostics data={run.diagnostics} />
+            )}
           </section>
           <section className={styles.panel}>
             <h2>What needs attention</h2>
@@ -825,11 +900,13 @@ function RunDetails({
             {String(run.actor_snapshot?.objective || 'Inspect the actor-visible snapshot below.')}
           </p>
           <details>
-            <summary>Actor-visible task definition</summary>
+            <summary>
+              {run.kind === 'diagnostic' ? 'Bound task metadata' : 'Actor-visible task definition'}
+            </summary>
             <pre>{JSON.stringify(run.actor_snapshot, null, 2)}</pre>
           </details>
           <p className={styles.muted}>Source revision {run.source_revision_id}</p>
-          <p className={styles.hash}>Source SHA-256: {run.source_sha256}</p>
+          <p className={styles.hash}>Binding SHA-256: {run.source_sha256}</p>
         </section>
         <section className={styles.panel}>
           <h2>Bound evaluation configuration</h2>
@@ -858,7 +935,11 @@ function RunDetails({
         {run.calls?.length ? (
           <pre>{JSON.stringify(run.calls, null, 2)}</pre>
         ) : (
-          <p>No model-provider calls recorded for this execution.</p>
+          <p>
+            {run.kind === 'diagnostic'
+              ? 'Detailed provider-call records are not projected in this view; missing usage is not zero usage.'
+              : 'No model-provider calls recorded for this execution.'}
+          </p>
         )}
       </section>
     );
@@ -867,19 +948,42 @@ function RunDetails({
       <section className={styles.panel}>
         <h2>Failure modes & execution issues</h2>
         <p>
-          {m.task_failed
-            ? 'Automated task constraints did not receive full reward.'
-            : m.passed
-              ? 'All executable checks received full reward.'
-              : 'No scored task outcome is available.'}
+          {run.kind === 'diagnostic'
+            ? m.task_failed +
+              ' finalized task failures; ' +
+              m.execution_errors +
+              ' execution errors; ' +
+              m.unknown +
+              ' unknown outcomes.'
+            : m.task_failed
+              ? 'Automated task constraints did not receive full reward.'
+              : m.passed
+                ? 'All executable checks received full reward.'
+                : 'No scored task outcome is available.'}
         </p>
         {run.error_code && <p>Runner error: {run.error_code}</p>}
         {!!m.unknown && (
           <p>Dispatch outcome is unresolved. No automatic retry or zero-cost assumption.</p>
         )}
-        <Diagnostics data={run.diagnostics} />
+        {run.kind === 'diagnostic' ? (
+          <p>
+            Scored: {m.scored}; pending: {m.pending}; canceled: {m.cancelled}; invalid: {m.invalid}.
+            Planned: {m.planned}. Whole-run metrics; finalized pass/fail scores only.
+          </p>
+        ) : (
+          <Diagnostics data={run.diagnostics} />
+        )}
         <button onClick={() => setTab('Trajectories')}>Inspect observable evidence</button>
       </section>
+    );
+  if (run.kind === 'diagnostic')
+    return (
+      <DiagnosticResults
+        key={base + run.id}
+        base={base}
+        run={run}
+        trajectory={tab === 'Trajectories'}
+      />
     );
   return (
     <section className={styles.panel}>

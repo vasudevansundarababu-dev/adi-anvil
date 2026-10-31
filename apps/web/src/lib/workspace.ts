@@ -11,8 +11,14 @@ export type Metrics = {
   known_cost_micro_usd: number | null;
   cost_complete: boolean;
   reserved_micro_usd: number;
+  planned?: number;
+  cancelled?: number;
+  invalid?: number;
+  pending?: number;
+  unscorable?: number;
 };
 export type WorkspaceRun = {
+  kind?: 'harbor' | 'diagnostic';
   id: string;
   task_id: string;
   task_version: string;
@@ -85,10 +91,17 @@ export const money = (value: number | null) =>
       }).format(value / 1_000_000);
 export const dateTime = (value: string | null) =>
   value ? new Date(value).toLocaleString() : 'Not recorded';
-export const synthetic = (run: WorkspaceRun) => run.origin === 'synthetic_software_verification';
+export const synthetic = (run: WorkspaceRun) =>
+  ['synthetic_software_verification', 'illustrative'].includes(run.origin);
 export const comparable = (runs: WorkspaceRun[]) =>
   runs.length >= 2 &&
   runs.every(
     (r) =>
-      synthetic(r) && r.metrics.scored && r.comparison_signature === runs[0].comparison_signature,
+      synthetic(r) &&
+      r.metrics.scored &&
+      (r.kind !== 'diagnostic' ||
+        ((r.metrics.planned || 0) > 0 &&
+          r.metrics.scored === r.metrics.planned &&
+          r.metrics.attempts === r.metrics.planned)) &&
+      r.comparison_signature === runs[0].comparison_signature,
   );
