@@ -3297,6 +3297,16 @@
               ],
               "title": "After"
             }
+          },
+          {
+            "name": "current_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Current Only"
+            }
           }
         ],
         "responses": {
@@ -4335,6 +4345,235 @@
                 }
               ],
               "title": "After"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project}/workspace/models/{cid}/configuration": {
+      "get": {
+        "summary": "Configuration",
+        "operationId": "configuration_api_v1_projects__project__workspace_models__cid__configuration_get",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project"
+            }
+          },
+          {
+            "name": "cid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project}/workspace/models/{cid}/versions": {
+      "post": {
+        "summary": "Successor",
+        "operationId": "successor_api_v1_projects__project__workspace_models__cid__versions_post",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project"
+            }
+          },
+          {
+            "name": "cid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelProfile"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "History",
+        "operationId": "history_api_v1_projects__project__workspace_models__cid__versions_get",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project"
+            }
+          },
+          {
+            "name": "cid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 30,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project}/workspace/models/{cid}/disable": {
+      "post": {
+        "summary": "Disable",
+        "operationId": "disable_api_v1_projects__project__workspace_models__cid__disable_post",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project"
+            }
+          },
+          {
+            "name": "cid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cid"
             }
           }
         ],
@@ -7914,6 +8153,47 @@
               }
             ],
             "title": "Credential Id"
+          },
+          "credential_version_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credential Version Id"
+          },
+          "pricing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Pricing"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "processing_terms_reviewed": {
+            "type": "boolean",
+            "title": "Processing Terms Reviewed",
+            "default": false
+          },
+          "processing_terms_reference": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500,
+                "minLength": 5,
+                "pattern": ".*\\S.*"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processing Terms Reference"
           }
         },
         "additionalProperties": false,
@@ -8432,6 +8712,51 @@
           "model_profile_ids"
         ],
         "title": "Preset"
+      },
+      "Pricing": {
+        "properties": {
+          "reference": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 5,
+            "pattern": ".*\\S.*",
+            "title": "Reference"
+          },
+          "source_url": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "format": "uri",
+            "title": "Source Url"
+          },
+          "input_micro_usd_per_million_tokens": {
+            "type": "integer",
+            "maximum": 1000000000000.0,
+            "minimum": 0.0,
+            "title": "Input Micro Usd Per Million Tokens"
+          },
+          "output_micro_usd_per_million_tokens": {
+            "type": "integer",
+            "maximum": 1000000000000.0,
+            "minimum": 0.0,
+            "title": "Output Micro Usd Per Million Tokens"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reference",
+          "source_url",
+          "input_micro_usd_per_million_tokens",
+          "output_micro_usd_per_million_tokens",
+          "expires_at"
+        ],
+        "title": "Pricing"
       },
       "ProviderConfig": {
         "properties": {

@@ -10,6 +10,7 @@ from anvil import auth
 from anvil.db import Jsonb, audit, digest, one, uid
 from anvil.schemas import Strict
 from anvil.workspace import READ_ROLES
+from anvil.workspace_models import pricing_state, selection_issues
 
 PLAN_ROLES = ("admin", "researcher", "product-owner")
 
@@ -83,6 +84,9 @@ def model(c, identifier):
         raise HTTPException(404, "Workspace model profile not found in this project")
     if row["status"] == "revoked":
         raise HTTPException(409, "A selected model profile is revoked")
+    issues = selection_issues(c, identifier)
+    if issues:
+        raise HTTPException(409, "Select an enabled current model version: " + ", ".join(issues))
     return model_snapshot(row)
 
 
@@ -111,7 +115,7 @@ def package_snapshot(row):
 def readiness(c, snapshot):
     reasons = [
         "workspace_dispatch_not_qualified",
-        "current_pricing_not_bound",
+        "reviewed_pricing_admission_not_bound",
         "exact_user_authority_not_bound",
         "processing_rights_not_bound",
         "required_run_decisions_not_bound",
@@ -146,7 +150,7 @@ def readiness(c, snapshot):
                 reasons.append("framework_binding_changed_or_unavailable")
     model_states = []
     for bound in snapshot["models"]:
-        missing = []
+        missing = selection_issues(c, bound["id"])
         current = one(c, "SELECT * FROM anvil.connections WHERE id=%s", (bound["id"],))
         if not current or current["status"] == "revoked":
             missing.append("model_revoked_or_unavailable")
@@ -155,6 +159,10 @@ def readiness(c, snapshot):
             or model_snapshot(current) != bound
         ):
             missing.append("model_configuration_changed")
+        if current:
+            state = pricing_state(current["config"])
+            if state != "current_metadata":
+                missing.append("pricing_metadata_" + state)
         if snapshot["max_output_tokens"] > bound["max_output_tokens"]:
             missing.append("selected_output_limit_exceeds_profile")
         credential = bound["credential"]

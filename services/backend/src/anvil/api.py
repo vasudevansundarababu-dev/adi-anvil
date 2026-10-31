@@ -35,6 +35,7 @@ from anvil.workspace_access import routes as workspace_access_routes
 from anvil.workspace_credentials import routes as workspace_credential_routes
 from anvil.workspace_diagnostics import routes as workspace_diagnostic_routes
 from anvil.workspace_editor import routes as workspace_editor_routes
+from anvil.workspace_models import routes as workspace_model_routes
 from anvil.workspace_preparation import routes as workspace_preparation_routes
 
 app = FastAPI(title="ADI Anvil", version="0.2.1")
@@ -168,6 +169,7 @@ app.include_router(workspace_routes(context, wrap, idempotent))
 app.include_router(workspace_credential_routes(context, wrap, idempotent))
 app.include_router(workspace_diagnostic_routes(context, wrap))
 app.include_router(workspace_editor_routes(context, wrap, idempotent))
+app.include_router(workspace_model_routes(context, wrap, idempotent))
 app.include_router(workspace_preparation_routes(context, wrap, idempotent))
 app.include_router(workspace_access_routes(context, wrap))
 app.include_router(harbor_agent_routes(context, wrap, idempotent))

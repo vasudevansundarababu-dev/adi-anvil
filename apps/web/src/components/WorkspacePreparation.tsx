@@ -109,7 +109,7 @@ function ToggleModels({
           <input
             type="checkbox"
             checked={selected.includes(m.id)}
-            disabled={m.status === 'revoked'}
+            disabled={m.status === 'revoked' || m.status === 'disabled'}
             onChange={() =>
               change(
                 selected.includes(m.id)
@@ -119,7 +119,7 @@ function ToggleModels({
             }
           />
           {m.name} · {m.provider}/{m.model_id} · {shortId(m.id)}
-          {m.status === 'revoked' ? ' · Revoked' : ''}
+          {m.status === 'revoked' ? ' · Revoked' : m.status === 'disabled' ? ' · Disabled' : ''}
         </label>
       ))}
       {!models.length && <p>No workspace model profiles loaded. Configure models first.</p>}
@@ -128,7 +128,7 @@ function ToggleModels({
 }
 
 export function ExecutionPresets({ base }: { base: string }) {
-  const models = useList<Model>(base + '/workspace/models');
+  const models = useList<Model>(base + '/workspace/models?current_only=true');
   const frameworks = useList<Framework>(base + '/workspace/frameworks');
   const presets = useList<Preset>(base + '/workspace/presets');
   const [selected, setSelected] = useState<string[]>([]),
@@ -286,6 +286,15 @@ export function ExecutionPresets({ base }: { base: string }) {
 const messages: Record<string, string> = {
   workspace_dispatch_not_qualified: 'Workspace model dispatch is not qualified.',
   current_pricing_not_bound: 'Current reviewed pricing has not been bound to this preparation.',
+  reviewed_pricing_admission_not_bound:
+    'Declared pricing still requires exact-run admission and reviewed authority.',
+  model_profile_disabled: 'This model profile is disabled for all new preparations.',
+  model_version_superseded:
+    'A newer model version exists. Create a preset with the current version.',
+  model_version_mapping_missing: 'This model version has no valid profile mapping.',
+  pricing_metadata_missing: 'Declared pricing metadata is missing.',
+  pricing_metadata_expired: 'Declared pricing metadata has expired.',
+  pricing_metadata_invalid: 'Declared pricing metadata is invalid.',
   exact_user_authority_not_bound: 'Exact user spending authority has not been bound.',
   processing_rights_not_bound: 'Reviewed processing rights have not been bound.',
   required_run_decisions_not_bound: 'Required real run decisions have not been bound.',

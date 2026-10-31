@@ -1,6 +1,6 @@
 import pytest
 
-from anvil import workspace
+from anvil import workspace_models as workspace
 from anvil import workspace_preparation as planning
 
 

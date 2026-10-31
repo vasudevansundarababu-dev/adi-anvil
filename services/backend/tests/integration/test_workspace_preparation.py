@@ -147,23 +147,17 @@ def test_exact_planning_bindings_readiness_and_zero_execution_effects(
     post(path + f"/credentials/{credential['id']}/revoke", {})
     refreshed = researcher.get(path + "/preparations/" + draft["id"]).json()["data"]
     assert "credential_revoked_or_unavailable" in refreshed["readiness"]["models"][0]["missing"]
-    # Destination drift must be detected even when an old config_hash is unchanged.
-    try:
+    # New database guard prevents destination drift, even if a caller preserves config_hash.
+    with pytest.raises(psycopg.errors.RaiseException, match="immutable"):
         with transaction(PROJECT, USERS["admin-1"]) as c:
             c.execute(
                 "UPDATE anvil.connections SET destination='https://invalid.example.test' WHERE id=%s",
                 (models[0]["id"],),
             )
-        changed = researcher.get(path + "/preparations/" + draft["id"]).json()["data"]
-        assert "model_configuration_changed" in changed["readiness"]["models"][0]["missing"]
-        assert changed["snapshot"] == draft["snapshot"]
-        post(path + "/preparations", body, 409, client=researcher)
-    finally:
-        with transaction(PROJECT, USERS["admin-1"]) as c:
-            c.execute(
-                "UPDATE anvil.connections SET destination=%s WHERE id=%s",
-                (draft["snapshot"]["models"][0]["destination"], models[0]["id"]),
-            )
+    assert (
+        researcher.get(path + "/preparations/" + draft["id"]).json()["data"]["snapshot"]
+        == draft["snapshot"]
+    )
     # Existing legacy route must continue to reject workspace profiles without any dispatch.
     post(
         BASE + f"/harbor-packages/{package['id']}/agent-plans",

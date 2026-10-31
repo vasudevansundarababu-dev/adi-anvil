@@ -8,18 +8,10 @@ from pydantic import Field
 
 from anvil import artifacts, auth
 from anvil.db import Jsonb, audit, digest, one, uid
-from anvil.providers import PROVIDERS, secret_presence
 from anvil.schemas import Strict
+from anvil.workspace_models import ModelProfile, model_public, save_model
 
 READ_ROLES = ("admin", "researcher", "data-engineer", "product-owner", "advisor")
-
-
-class ModelProfile(Strict):
-    name: str = Field(min_length=1, max_length=100, pattern=r".*\S.*")
-    provider: Literal["openai", "anthropic", "gemini"]
-    model_id: str = Field(min_length=1, max_length=200, pattern=r"^[A-Za-z0-9][A-Za-z0-9._:/@-]*$")
-    max_output_tokens: int = Field(default=4096, ge=1, le=8192)
-    credential_id: UUID | None = None
 
 
 class FrameworkProfile(Strict):
@@ -29,45 +21,6 @@ class FrameworkProfile(Strict):
         default=None, max_length=64, pattern=r"^[0-9][A-Za-z0-9.+-]*$"
     )
     tracing_project: str | None = Field(default=None, max_length=100, pattern=r"^[A-Za-z0-9._-]+$")
-
-
-def model_public(c, row):
-    workspace_profile = row["config"].get("workspace_profile_version") == 1
-    present = False
-    if not workspace_profile:
-        present, _ = secret_presence(row["provider_key"])
-    credential_state = "server_configured" if present else "missing"
-    binding = row["config"].get("workspace_credential")
-    if binding:
-        credential = one(
-            c, "SELECT * FROM anvil.workspace_credentials WHERE id=%s", (binding["id"],)
-        )
-        credential_state = "missing"
-        present = False
-        if credential:
-            credential_state = (
-                "revoked"
-                if credential["revoked_at"]
-                else "rotated"
-                if str(credential["current_version_id"]) != binding["version_id"]
-                else "configured"
-            )
-            present = credential_state == "configured"
-    return {
-        "id": row["id"],
-        "name": row["config"].get("profile_name") or row["model_id"] or row["provider_key"],
-        "provider": row["provider_key"],
-        "model_id": row["model_id"],
-        "config_hash": row["config_hash"],
-        "workspace_profile": workspace_profile,
-        "created_at": row["created_at"],
-        "credential_present": present,
-        "credential_state": credential_state,
-        "status": "revoked" if row["status"] == "revoked" else "planning_only",
-        "max_output_tokens": row["config"].get("max_output_tokens"),
-        "launch_available": False,
-        "missing": ["exact_run_readiness_required", "profile_dispatch_binding_not_qualified"],
-    }
 
 
 RUN_SELECT = """SELECT h.*,p.package_sha256,p.manifest,s.task_id,s.task_version,
@@ -262,17 +215,24 @@ def routes(context, wrap, idempotent):
         request: Request,
         limit: int = Query(50, ge=1, le=100),
         after: UUID | None = None,
+        current_only: bool = False,
     ):
         with context(request, project) as (c, user, roles):
             auth.require(roles, *READ_ROLES)
             rows = c.execute(
-                "SELECT * FROM anvil.connections WHERE (%s::uuid IS NULL OR id>%s) ORDER BY id LIMIT %s",
-                (after, after, limit + 1),
+                """SELECT c.*,CASE WHEN %s THEN COALESCE(p.id,c.id) ELSE c.id END page_cursor FROM anvil.connections c LEFT JOIN anvil.workspace_model_versions v ON v.connection_id=c.id
+                LEFT JOIN anvil.workspace_model_profiles p ON p.id=v.profile_id
+                WHERE (%s::uuid IS NULL OR (CASE WHEN %s THEN COALESCE(p.id,c.id) ELSE c.id END)>%s)
+                AND (NOT %s OR p.id IS NULL OR p.current_connection_id=c.id)
+                ORDER BY page_cursor LIMIT %s""",
+                (current_only, after, current_only, after, current_only, limit + 1),
             ).fetchall()
             return wrap(
                 {
                     "items": [model_public(c, r) for r in rows[:limit]],
-                    "next_cursor": str(rows[limit - 1]["id"]) if len(rows) > limit else None,
+                    "next_cursor": str(rows[limit - 1]["page_cursor"])
+                    if len(rows) > limit
+                    else None,
                 },
                 request,
             )
@@ -283,65 +243,7 @@ def routes(context, wrap, idempotent):
             auth.require(roles, "admin")
 
             def save():
-                cid = uid()
-                config = {
-                    "profile_name": body.name.strip(),
-                    "max_output_tokens": body.max_output_tokens,
-                    "workspace_profile_version": 1,
-                    "pricing_revision": None,
-                    "bound_micro_usd": None,
-                    "processing_terms_reviewed": False,
-                }
-                if body.credential_id:
-                    credential = one(
-                        c,
-                        "SELECT * FROM anvil.workspace_credentials WHERE id=%s FOR SHARE",
-                        (body.credential_id,),
-                    )
-                    if not credential or credential["provider"] != body.provider:
-                        raise HTTPException(
-                            404, "Matching provider credential not found in this project"
-                        )
-                    if credential["revoked_at"] or not credential["current_version_id"]:
-                        raise HTTPException(409, "Credential is revoked or has no saved version")
-                    config["workspace_credential"] = {
-                        "id": str(body.credential_id),
-                        "version_id": str(credential["current_version_id"]),
-                    }
-                checksum = digest(
-                    {
-                        "provider": body.provider,
-                        "model_id": body.model_id,
-                        "config": config,
-                        "adapter": "workspace-planning-v1",
-                    }
-                )
-                c.execute(
-                    """INSERT INTO anvil.connections(id,project_id,provider_key,model_id,destination,
-                    secret_reference,config,config_hash,created_by) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
-                    (
-                        cid,
-                        project,
-                        body.provider,
-                        body.model_id,
-                        PROVIDERS[body.provider][2],
-                        PROVIDERS[body.provider][1],
-                        Jsonb(config),
-                        checksum,
-                        user,
-                    ),
-                )
-                audit(
-                    c,
-                    project,
-                    user,
-                    "workspace.model_profile_created",
-                    cid,
-                    {"config_hash": checksum, "live_enabled": False},
-                )
-                return model_public(
-                    c, one(c, "SELECT * FROM anvil.connections WHERE id=%s", (cid,))
-                )
+                return save_model(c, project, user, body)
 
             return wrap(idempotent(c, project, user, request, body, save), request)
 

@@ -77,7 +77,9 @@ test('Admin saves a typed preset and multi-model preparation without spending de
   await page.getByLabel('Evaluation runner', { exact: false }).selectOption(runner.id);
   for (const model of models) {
     while (!(await page.getByLabel(model.name, { exact: false }).count())) {
-      const loaded = page.waitForResponse((r) => r.url().includes('/workspace/models?after='));
+      const loaded = page.waitForResponse(
+        (r) => r.url().includes('/workspace/models?') && new URL(r.url()).searchParams.has('after'),
+      );
       await page.getByRole('button', { name: 'Load more model choices', exact: true }).click();
       await loaded;
       await expect(presetRegion).toHaveAttribute('aria-busy', 'false');

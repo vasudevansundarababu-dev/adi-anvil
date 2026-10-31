@@ -90,7 +90,7 @@ def routes(context, wrap, idempotent):
                         key,
                         one(
                             c,
-                            "SELECT * FROM anvil.connections WHERE provider_key=%s ORDER BY created_at DESC LIMIT 1",
+                            "SELECT * FROM anvil.connections WHERE provider_key=%s AND NOT(config ? 'workspace_profile_version') ORDER BY created_at DESC LIMIT 1",
                             (key,),
                         ),
                     )
