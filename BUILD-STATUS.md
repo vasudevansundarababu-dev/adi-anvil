@@ -1,5 +1,40 @@
 # Build status
 
+03:00 nightly resume — model profile versions/disable/pricing verified as `62d9e60`.
+Migration030 backfills stable profile headers and immutable connection
+version mappings without changing existing connection/config hashes. Current-only CAS and
+header locking serialize successors; disable is one-way for the entire profile. Existing
+presets/preparations retain snapshots and report superseded/disabled versions separately.
+Database guards now reject workspace configuration mutation (including destination drift);
+legacy connections keep their existing rules. The earlier drift integration now proves
+DB rejection, with a pure readiness test retaining defense-in-depth drift detection.
+Admin's focused model editor supports explicit credential-version binding, version history,
+optional declared pricing/expiry/source and processing-terms references. USD prices convert
+exactly to integer micro-USD per million tokens, with no money defaults. Metadata never
+grants pricing admission, rights, provider approval or paid authority; legacy fields remain
+false/null and workspace dispatch rejection remains. Classic /providers now selects only
+legacy configurations, preserving its response shape and avoiding workspace/global-key mixing.
+Read-only review found no blocking issue. Unit221 passed; targeted version/preparation
+integration3 and added classic-compatibility integration1 passed. Final `pnpm check` passed;
+isolated `pnpm test:integration`95 passed/12 opt-in skipped (60.12s); full `pnpm test:e2e`
+14 passed (2.1m), including classic, synthetic Harbor, model versioning/disable and preparations.
+Staged whitespace/credential-pattern scans passed; comparison app is running with live flags
+disabled. No model calls, identity changes, deployment or GitHub push performed.
+First browser assertion used label text for a select; corrected to its exact accessible
+combobox role/name. Targeted browser1 passed (3.9s), including320px and pricing conversion.
+Screenshot review then moved editing above/hid the long list for a focused accessible form.
+Nightly deadline remains06:00 local /11:00 UTC; classic baseline and user edits preserved.
+Next safe slice: an internal credential-bound native SDK mock contract using installed
+OpenAI/Claude/Gemini adapters. Require explicit scoped SecretStr and httpx.MockTransport;
+no default transport or HTTP endpoint, no global key lookup and no change to live launch.
+Validate current/enabled exact model/provider/destination/config/credential, actor bytes
+and output ceilings. Cover one request/no retries, refusal/truncation/timeout/unknown usage,
+invalid JSON without repair, rotation/revocation and secret leakage. Evidence label must
+remain 'credential-bound SDK mock contract tested', never Harbor/live qualification.
+Shared spending admission and qualified real dispatch, full profile authorization/People
+actions, source authoring and M5 refinements remain incomplete. Continue safe local work;
+missing real credentials/authority block paid calls only. Preserve the same nightly deadline.
+
 02:00 nightly resume — typed presets and planning-only preparations verified as `b8d65a0`.
 Migration029 adds immutable, project-scoped presets, model
 allowlists, preparations and exact credential-version child bindings; repeated migration

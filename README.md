@@ -17,6 +17,10 @@ Frameworks also offers typed execution presets. From a Harbor task, **Prepare ev
 saves exact package/model/framework versions and shows missing readiness requirements.
 These are planning records: saving makes no model request or spending reservation, and
 launch remains unavailable until the workspace dispatch path is qualified.
+Models & keys supports **Edit as new version**, configuration history and whole-profile
+disabling. Existing preparations keep their original bindings; superseded/disabled versions
+are blocked from new preparation. Optional pricing and terms are declared metadata, with
+no automatic model request, rights approval or spending authority.
 See the [nightly plan](docs/build/08-MODERN-WORKSPACE-NIGHTLY.md) and [current status](BUILD-STATUS.md)
 for built versus remaining capabilities; saved framework metadata is not a working SDK
 integration, and saved credentials do not enable inference.

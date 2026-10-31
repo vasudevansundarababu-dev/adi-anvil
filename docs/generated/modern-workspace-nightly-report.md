@@ -1,5 +1,30 @@
 # Modern workspace nightly checkpoint — 30 October 2026
 
+03:00 continuation checkpoint `62d9e60` completes model version/disable/configuration metadata.
+Migration030 records stable profiles and immutable connection versions without rewriting
+old configurations or hashes. Current-base locking/If-Match serialize successors; provider
+changes require a new profile. One-way whole-profile disabling blocks all versions from
+new preparations; superseded bindings remain readable and gain explicit readiness reasons.
+Frozen preparations, approvals and history are preserved. Database guards now reject
+workspace configuration mutation; legacy connections retain their prior rules. The old
+destination-drift integration now tests DB rejection, with pure readiness drift coverage
+retained for defense in depth. No security assertion was weakened.
+The focused editor supports exact credential versions, declared pricing/source/expiry and
+processing-terms references. USD values convert exactly to integer rates; amounts start
+blank. Metadata grants no pricing admission, rights, approval or spending authority.
+Legacy authority fields remain false/null; priced workspace versions still fail the legacy
+dispatch guard. Classic provider cards now select legacy configurations separately.
+Repeated migration passed; `pnpm test:unit`221 passed; `pnpm check` passed; isolated
+`pnpm test:integration`95 passed/12 opt-in skipped (60.12s); full `pnpm test:e2e`14 passed
+(2.1m). Browser covers320px editing, exact six-decimal prices, save/reload, old versions and
+disable. Initial select assertion was corrected to its accessible combobox role/name.
+Screenshot review prompted a focused editor instead of placing the form below a long list.
+Staged whitespace/credential-pattern scans passed; local comparison app is ready and both
+live switches are disabled. No deployment, paid calls, identity changes or external sending.
+Next is a strictly mock-only credential-bound native SDK contract, not a live integration.
+Shared spending admission/qualified execution, full profile authorization, People actions,
+source instruction authoring and broader M5 acceptance remain incomplete.
+
 02:00 continuation checkpoint `b8d65a0` adds typed presets and exact multi-model planning preparations.
 Admin chooses a Harbor runner, built-in or unqualified Semantic Kernel candidate runtime,
 optional export-disabled LangSmith tracing and exact model allowlist. A scoped planner can
