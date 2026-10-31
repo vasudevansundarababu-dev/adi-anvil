@@ -17,6 +17,8 @@ from anvil.evaluation import routes as evaluation_routes
 from anvil.external_results import routes as external_routes
 from anvil.factory import routes as factory_routes
 from anvil.graph import routes as graph_routes
+from anvil.harbor_agents import routes as harbor_agent_routes
+from anvil.harbor_api import routes as harbor_routes
 from anvil.intake import routes as intake_routes
 from anvil.plans import routes as plan_routes
 from anvil.provider_api import routes as provider_routes
@@ -28,7 +30,7 @@ from anvil.schemas import Decision, FixtureImport, Rights, Withdrawal
 from anvil.support import routes as support_routes
 from anvil.task_imports import routes as task_import_routes
 
-app = FastAPI(title="ADI Anvil", version="0.1.0")
+app = FastAPI(title="ADI Anvil", version="0.2.0")
 app.add_middleware(RequestLimits)
 app.include_router(auth.router)
 
@@ -154,6 +156,8 @@ app.include_router(external_routes(context, wrap, idempotent))
 app.include_router(delivery_routes(context, wrap, idempotent))
 app.include_router(readiness_routes(context, wrap, idempotent))
 app.include_router(task_import_routes(context, wrap, idempotent))
+app.include_router(harbor_routes(context, wrap, idempotent))
+app.include_router(harbor_agent_routes(context, wrap, idempotent))
 app.include_router(factory_routes(context, wrap, idempotent))
 app.include_router(plan_routes(context, wrap, idempotent))
 app.include_router(support_routes(context, wrap, idempotent))
@@ -185,7 +189,14 @@ def visibility(roles, kind):
 def health():
     with transaction() as c:
         c.execute("SELECT 1")
-    return {"data": {"api": "ready", "database": "ready", "live_inference": "disabled"}}
+    return {
+        "data": {
+            "api": "ready",
+            "database": "ready",
+            "live_inference": "disabled",
+            "version": "0.2.0",
+        }
+    }
 
 
 @app.get("/api/v1/projects/{project}/members")

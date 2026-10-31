@@ -13,7 +13,8 @@ class RequestLimits:
             return await self.app(scope, receive, send)
         upload = scope["method"] == "POST" and scope["path"].endswith("/artifacts")
         manifest = scope["path"].endswith("/imports/validate")
-        limit = (26 if upload else 2 if manifest else 1) * 1024 * 1024
+        praxis = scope["method"] == "POST" and scope["path"].endswith("/praxis-sources")
+        limit = (26 if upload else 3 if praxis else 2 if manifest else 1) * 1024 * 1024
         request_id = scope.get("state", {}).get("request_id", str(uuid4()))
         lengths = [v for k, v in scope.get("headers", []) if k.lower() == b"content-length"]
         try:

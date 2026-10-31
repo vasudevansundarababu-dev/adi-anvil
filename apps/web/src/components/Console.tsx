@@ -13,6 +13,7 @@ import ReportSummary from './ReportSummary';
 import FindingComposer from './FindingComposer';
 import FixtureDelivery from './FixtureDelivery';
 import TaskImport, { DatasetRunConfiguration } from './TaskImport';
+import HarborWorkbench from './HarborWorkbench';
 import AnvilHelp from './AnvilHelp';
 import MarketingRun from './MarketingRun';
 import BenchmarkFactory from './BenchmarkFactory';
@@ -90,6 +91,7 @@ const modules = [
   'rubrics',
   'tasks',
   'factory',
+  'harbor',
   'suites',
   'protocols',
   'runs',
@@ -104,7 +106,7 @@ const modules = [
 // created by the evaluation wizard; they stay reachable from its records, not the menu.
 const groups: { label: string; modules: string[] }[] = [
   { label: 'Home', modules: ['evaluations'] },
-  { label: 'Build', modules: ['objectives', 'cases', 'tasks', 'rubrics', 'factory'] },
+  { label: 'Build', modules: ['objectives', 'cases', 'tasks', 'rubrics', 'factory', 'harbor'] },
   { label: 'Run & review', modules: ['runs', 'reviews'] },
   { label: 'Insights', modules: ['diagnostics', 'findings', 'reports', 'sales-kits'] },
   { label: 'Settings', modules: ['providers'] },
@@ -116,6 +118,7 @@ const labels: Record<string, string> = {
   rubrics: 'Rubrics',
   tasks: 'Qualification',
   factory: 'Benchmarks',
+  harbor: 'Praxis → Harbor',
   suites: 'Suites',
   protocols: 'Protocols',
   runs: 'Run console',
@@ -133,6 +136,7 @@ const notes: Record<string, string> = {
   rubrics: 'Anchored criteria and calibration evidence, bound to exact versions.',
   tasks: 'Publish only after content, research and rights reviews.',
   factory: 'Confirm task requirements, compare catalog metadata and prepare a Suite draft.',
+  harbor: 'Versioned Praxis imports and isolated synthetic software verification.',
   suites: 'Freeze exact task versions and disclose selection limits.',
   protocols: 'Bind the suite, candidates and independent reviewers.',
   runs: 'Explicit execution through the durable queue. Fixture results are illustrative.',
@@ -213,6 +217,7 @@ export default function Console() {
     'product-owner',
   );
   const visibleModules = modules.filter((module) => {
+    if (module === 'harbor') return role('researcher', 'data-engineer', 'product-owner');
     if (module === 'providers') return role('admin');
     if (module === 'reviews') return role('reviewer', 'adjudicator');
     if (module === 'diagnostics') return role('researcher', 'advisor');
@@ -243,7 +248,7 @@ export default function Console() {
     if (!base) return;
     setError('');
     try {
-      if (section === 'factory' || section === 'evaluations') {
+      if (section === 'factory' || section === 'evaluations' || section === 'harbor') {
         setRows([]);
         setPageInfo(null);
         setMembers(await api(base + '/members'));
@@ -570,7 +575,7 @@ export default function Console() {
             {message}
           </div>
         )}
-        {section !== 'factory' && section !== 'evaluations' && (
+        {!['factory', 'evaluations', 'harbor'].includes(section) && (
           <div className="toolbar">
             <div>
               <label htmlFor="search">Search this view</label>
@@ -667,6 +672,16 @@ export default function Console() {
             canAuthor={role('researcher')}
             canApprove={role('product-owner')}
             canResearch={role('researcher', 'advisor')}
+          />
+        )}
+        {section === 'harbor' && (
+          <HarborWorkbench
+            key={base}
+            base={base}
+            api={api}
+            canApprove={role('product-owner')}
+            canPlan={role('researcher', 'product-owner')}
+            canAdmin={role('admin')}
           />
         )}
         {section === 'factory' && (
@@ -1598,13 +1613,15 @@ export default function Console() {
             )}
           </div>
         )}
-        {!rows.length && !error && !['diagnostics', 'factory', 'evaluations'].includes(section) && (
-          <div className="card empty">
-            {query
-              ? 'No records match this search.'
-              : 'No records in this view yet. Start with an objective and the original synthetic cases.'}
-          </div>
-        )}
+        {!rows.length &&
+          !error &&
+          !['diagnostics', 'factory', 'evaluations', 'harbor'].includes(section) && (
+            <div className="card empty">
+              {query
+                ? 'No records match this search.'
+                : 'No records in this view yet. Start with an objective and the original synthetic cases.'}
+            </div>
+          )}
         <footer>
           ADI Anvil · Local diagnostic workspace · External inference and sending require separate
           authorization.

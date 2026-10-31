@@ -34,7 +34,7 @@ if ! blkid "$DEV" >/dev/null 2>&1; then
 fi
 mountpoint -q "$DATA" || mount -o discard,defaults "$DEV" "$DATA"
 grep -q "$DEV" /etc/fstab || echo "$DEV $DATA ext4 discard,defaults,nofail 0 2" >> /etc/fstab
-mkdir -p "$DATA"/{postgres,neo4j,artifacts,caddy}
+mkdir -p "$DATA"/{postgres,neo4j,artifacts,caddy,harbor-checks}
 chmod 700 "$DATA"
 chown 10001 "$DATA/artifacts" && chmod 700 "$DATA/artifacts"
 
@@ -69,6 +69,7 @@ chmod 755 /opt/anvil/postgres-init.sh
 cat > /opt/anvil/.env <<ENV
 ANVIL_BACKEND_IMAGE=$(md anvil-backend-image)
 ANVIL_WEB_IMAGE=$(md anvil-web-image)
+ANVIL_HARBOR_IMAGE=$(md anvil-harbor-image)
 ANVIL_WEB_HOST=$WEB_HOST
 ANVIL_AUTH_HOST=$AUTH_HOST
 ENV
@@ -76,8 +77,8 @@ ENV
 echo "== Containers"
 gcloud auth configure-docker "${REGISTRY%%/*}" --quiet >/dev/null
 cd /opt/anvil
-docker compose pull --quiet
-docker compose up -d --remove-orphans
+docker compose --profile harbor pull --quiet
+docker compose --profile harbor up -d --remove-orphans
 for _ in $(seq 1 90); do
   if docker compose exec -T api python -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8200/api/v1/health',timeout=2)" 2>/dev/null; then
     echo "Anvil API ready"

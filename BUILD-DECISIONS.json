@@ -65,9 +65,9 @@
     }
   },
   "operations": {
-    "local_integrations_only": true,
+    "local_integrations_only": false,
     "real_email_enabled": false,
-    "cloud_deployment_authorized": false,
+    "cloud_deployment_authorized": true,
     "global_installation_authorized": false,
     "work_window_hours": 8,
     "duration_and_install_scope_confirmation": "user_confirmed",
@@ -107,6 +107,21 @@
     "legacy": "unclassified; no inferred partner or synthetic ownership",
     "publication": "explicit ADI synthetic only until independent rights/privacy controls exist",
     "clearance": "author declarations do not grant reviewed rights or privacy clearance"
+  },
+  "praxis_harbor_increment": {
+    "release_version": "0.2.0",
+    "authorized_date": "2026-10-30",
+    "deployment_scope": "reuse configured adi-anvil-mvp-2026 host; no new destination or unbounded provisioning",
+    "schemas": ["praxis.anvil.task.v1", "praxis.anvil.task.v2", "praxis.anvil.export.v1"],
+    "supported_bindings": ["structured-decision-v1", "staged-decision-v1"],
+    "harbor_version": "0.25.0",
+    "worker": "dedicated Docker-host service; fixed compiler templates only; normal API/worker have no Docker socket",
+    "agent": "anvil-structured-json-v1; server-mediated OpenAI Responses; one response per stage",
+    "paid_authority_for_new_tasks": "not supplied; old MKT-LH-001 authority is not reused",
+    "paid_limits": "full run ceiling reserved in shared durable spend window before launch; bounded prompts/output/call count; unknown reservations retained; SDK retries disabled",
+    "live_cloud_flag": "remains disabled; source declarations and test identities cannot grant paid rights or approval",
+    "reference_results": "synthetic software verification only, never model performance",
+    "field_mapping_reconciliation": "new shared contract agreed with Praxis; full reconciliation with earlier Library mapping documents remains unverified"
   },
   "note": "Pending values are not consent. The build agent must not fill user approvals from inference. Dependency/default choices are proposals; live keys never belong in this file."
 }

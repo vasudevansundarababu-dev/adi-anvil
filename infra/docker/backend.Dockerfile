@@ -18,6 +18,7 @@ COPY services/backend/alembic.ini services/backend/
 COPY services/backend/alembic services/backend/alembic
 COPY services/backend/migrations services/backend/migrations
 COPY services/backend/src services/backend/src
+COPY services/harbor/src services/harbor/src
 COPY fixtures fixtures
 COPY task-packs task-packs
 COPY assets/brand assets/brand

@@ -1,0 +1,105 @@
+{
+  "$defs": {
+    "Source": {
+      "additionalProperties": false,
+      "properties": {
+        "record_id": {
+          "maxLength": 20000,
+          "minLength": 1,
+          "title": "Record Id",
+          "type": "string"
+        },
+        "record_hash": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Record Hash",
+          "type": "string"
+        },
+        "project_id": {
+          "maxLength": 20000,
+          "minLength": 1,
+          "title": "Project Id",
+          "type": "string"
+        },
+        "client_id": {
+          "maxLength": 20000,
+          "minLength": 1,
+          "title": "Client Id",
+          "type": "string"
+        },
+        "submission_time": {
+          "maxLength": 20000,
+          "minLength": 1,
+          "title": "Submission Time",
+          "type": "string"
+        },
+        "reviewer_id": {
+          "anyOf": [
+            {
+              "maxLength": 20000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Reviewer Id"
+        },
+        "review_decision_time": {
+          "anyOf": [
+            {
+              "maxLength": 20000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Review Decision Time"
+        }
+      },
+      "required": [
+        "record_id",
+        "record_hash",
+        "project_id",
+        "client_id",
+        "submission_time",
+        "reviewer_id",
+        "review_decision_time"
+      ],
+      "title": "Source",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "praxis.anvil.export.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source": {
+      "$ref": "#/$defs/Source"
+    },
+    "payload_json": {
+      "maxLength": 1048576,
+      "minLength": 1,
+      "title": "Payload Json",
+      "type": "string"
+    },
+    "payload_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Payload Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "source",
+    "payload_json",
+    "payload_sha256"
+  ],
+  "title": "Export",
+  "type": "object"
+}

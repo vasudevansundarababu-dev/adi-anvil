@@ -1,5 +1,23 @@
 # Build status
 
+2026-10-30 — **v0.2.0 verification in progress; not yet deployed.** Backend/web0.2.0,
+additive migrations001–025 applied locally; fresh/repeated migration smoke passed.
+Praxis v1/v2 import, immutable Harbor0.25 packages, staged evidence isolation,
+reference/no-op/negative checks, retained analysis and guarded agent mediation implemented.
+174 unit tests passed. Production/type/lint/format/API-contract check passed. Full isolated
+integration:89 passed (177.39s). Six baseline real-OIDC browser journeys and the new Harbor
+browser journey passed, including the history-label refresh (30.4s). Deployment checks pending. Earlier runs caught an expired historical
+mock window, a test UUID/string mismatch in sampled second grading, and interference from
+independent browser/worker activity in exact event-count tests. Repaired only the test
+fixtures and ran sequentially with the app worker stopped. No paid calls made.
+
+First real invitation created on existing GCP host: username `anvil-admin`, email
+`admin@adi-labs.ai`, roles Admin/Product Owner/Researcher. Protected temporary credential:
+`.local/invitations/anvil-admin.json`; first login forces password change. No email sent.
+The reserved username `admin` was rejected without modifying its existing identity.
+Full Library-field reconciliation and new-task paid execution remain unverified/blocked.
+Resume from the active tests and [workbench runbook](docs/runbooks/praxis-harbor.md).
+
 2026-10-01 — **Deployed to Google Cloud: https://anvil-34-36-217-66.sslip.io** (commit
 `401f98e`, project `adi-anvil-mvp-2026`, us-west1-a). The org policy
 `compute.vmExternalIpAccess` forbids VM external IPs, so per user choice the VM is private
@@ -35,7 +53,6 @@ controls. No partner fixtures, paid calls or external actions. `pnpm check` pass
 130 units,67 integrations (final rerun39.55s) and4 browser journeys passed (45.6s).
 Final web type check and formatting passed. Fresh/repeated001–018 passed in retained
 `anvil_migrationcheck_446c2001b9f4`. See the provenance report for scope and limits.
-
 
 2026-09-29 — **ANV-BF-001 scoped Factory path locally verified.** User confirmed
 executing TaskProfile/recommendation first and extending the existing registry;
@@ -193,16 +210,16 @@ Resume evidence (13:35 UTC): `pnpm check` passed production build, types, lint a
 
 Resume evidence (12:57 UTC): checkpoint `387648a` contains the verified continuation through fixture delivery, restoration and security work. Additive migration 005 adds assigned-reviewer issue flags and independent adjudicator resolutions. Expanded browser journey passed (19.0s): return-to-review and invalid-evidence resolution both exercised; invalid episode finalized with null score and invocation count one. `pnpm test:unit`: 85 passed; `pnpm test:integration`: 40 passed. `tests/migration_smoke.py` passed fresh/repeated migrations 001–005 in retained `anvil_migrationcheck_a9e959d63133`. New source formatting applied. Next: external-result import with preserved origin and no fabricated trajectories.
 
-| Milestone | State | Evidence |
-| --- | --- | --- |
-| M0 Preflight, locks, isolated scaffold | Verified local path | Independent locked offline clean-checkout install/build, named services, pinned images and safe launcher |
-| M1 Identity, API/DB, shell | Core path verified; security matrix incomplete | Real OIDC11 identities, CSRF/role/project negatives, RLS; no production identity readiness claim |
-| M2 Intake, qualification, suite/protocol | Core path verified; baseline gaps remain | Source versions/receipts, rights expiry, rubric/task reviews, frozen bindings; general uploads quarantined |
-| M3 Durable fixture evaluation + review | Core path and400-episode processing verified | Blinded double grading, dispute/invalidity, SIGKILL recovery, cancelled/unknown states;400 human reviews intentionally pending |
-| M4 Diagnostics and graph | Core bounded local path verified | Family/capability/task/episode/finding links, atomic ordering, actual outage/rebuild, restored graph and keyboard navigation |
-| M5 Report, release, Sales Kit | Core local path verified; semantic claims remain human-reviewed | Descriptive claim registry, real downloads, one-page visual QA, rights invalidation and network-free mail simulation |
-| M6 Provider adapters and authorized smoke | Mock contracts passed; live blocked/unqualified | 73 SDK transport contracts; no inference; paid gate integration incomplete |
-| M7 Verification and morning handoff | Current local evidence recorded; full acceptance partial |89 unit/64 integration, production/browser/load, independent startup and schema012 recovery passed; live/remote CI not passed |
+| Milestone                                 | State                                                           | Evidence                                                                                                                       |
+| ----------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| M0 Preflight, locks, isolated scaffold    | Verified local path                                             | Independent locked offline clean-checkout install/build, named services, pinned images and safe launcher                       |
+| M1 Identity, API/DB, shell                | Core path verified; security matrix incomplete                  | Real OIDC11 identities, CSRF/role/project negatives, RLS; no production identity readiness claim                               |
+| M2 Intake, qualification, suite/protocol  | Core path verified; baseline gaps remain                        | Source versions/receipts, rights expiry, rubric/task reviews, frozen bindings; general uploads quarantined                     |
+| M3 Durable fixture evaluation + review    | Core path and400-episode processing verified                    | Blinded double grading, dispute/invalidity, SIGKILL recovery, cancelled/unknown states;400 human reviews intentionally pending |
+| M4 Diagnostics and graph                  | Core bounded local path verified                                | Family/capability/task/episode/finding links, atomic ordering, actual outage/rebuild, restored graph and keyboard navigation   |
+| M5 Report, release, Sales Kit             | Core local path verified; semantic claims remain human-reviewed | Descriptive claim registry, real downloads, one-page visual QA, rights invalidation and network-free mail simulation           |
+| M6 Provider adapters and authorized smoke | Mock contracts passed; live blocked/unqualified                 | 73 SDK transport contracts; no inference; paid gate integration incomplete                                                     |
+| M7 Verification and morning handoff       | Current local evidence recorded; full acceptance partial        | 89 unit/64 integration, production/browser/load, independent startup and schema012 recovery passed; live/remote CI not passed  |
 
 Build agent maintains below: start/deadline, current commit, versions, last passing command, failures, pending questions, next exact action, local URLs/processes and safe resume instructions. Keep secrets and raw candidate/source content out of this file.
 

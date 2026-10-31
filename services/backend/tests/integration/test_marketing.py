@@ -1,6 +1,7 @@
 """Network-free marketing acceptance in a separate retained database, never live authority."""
 
 import json
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlsplit
 
 import psycopg
@@ -11,7 +12,7 @@ from langgraph.checkpoint.postgres import PostgresSaver
 from psycopg import sql
 from test_api_security import USERS, client_factory  # noqa: F401
 
-from anvil import cli, marketing_runtime, providers, worker
+from anvil import cli, evaluation, marketing_runtime, providers, worker
 from anvil.config import ROOT, setting
 from anvil.db import one, transaction, uid
 from anvil.marketing_authority import PRICING
@@ -208,6 +209,12 @@ def test_marketing_workflow_and_durable_dispatch(client_factory, monkeypatch):  
 
     # Isolated database + injected transport only. No approvals inserted, no secrets/network.
     monkeypatch.setattr(marketing_runtime, "require_ready", lambda c, run: {"ready": True})
+    monkeypatch.setattr(evaluation, "sampled", lambda protocol_revision_id, eid: True)
+    # Exercise accounting after the historical live authority has expired, without
+    # extending that authority or disabling the ledger's expiration check.
+    monkeypatch.setattr(
+        marketing_runtime, "PRICE_EXPIRES", datetime.now(timezone.utc) + timedelta(days=1)
+    )
     seen = []
 
     def mock_response(request):
@@ -312,7 +319,7 @@ def test_marketing_workflow_and_durable_dispatch(client_factory, monkeypatch):  
     for reviewer in ("reviewer-1", "reviewer-2"):
         # D-SIMPLE: the second grader checks only critical, borderline or sampled outputs.
         if reviewer == "reviewer-2" and not any(
-            r["id"] == episode["id"] and not r["my_review_submitted"]
+            r["id"] == str(episode["id"]) and not r["my_review_submitted"]
             for r in get("/reviews", reviewer)
         ):
             continue

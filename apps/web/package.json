@@ -1,5 +1,5 @@
 {
-  "name": "@anvil/web", "private": true, "version": "0.1.0",
+  "name": "@anvil/web", "private": true, "version": "0.2.0",
   "scripts": {"dev": "next dev --hostname 127.0.0.1 --port 3202", "build": "next build --webpack", "start": "next start --hostname 127.0.0.1 --port 3202", "check": "tsc --noEmit"},
   "dependencies": {"next": "16.3.6", "react": "19.3.0", "react-dom": "19.3.0", "tailwindcss": "4.3.3", "@tailwindcss/postcss": "4.3.3"},
   "devDependencies": {"typescript": "5.9.3", "@types/node": "^24", "@types/react": "^19", "@types/react-dom": "^19"}

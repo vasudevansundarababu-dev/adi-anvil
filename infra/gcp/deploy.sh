@@ -16,8 +16,8 @@ set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 CONFIG_JSON="$ROOT/infra/gcp/deployment.json"
-export CLOUDSDK_CONFIG="$ROOT/.local/gcloud-anvil"
-export CLOUDSDK_ACTIVE_CONFIG_NAME=anvil-mvp-v1
+export CLOUDSDK_CONFIG="${ANVIL_GCLOUD_CONFIG_DIR:-$ROOT/.local/gcloud-anvil}"
+export CLOUDSDK_ACTIVE_CONFIG_NAME="${ANVIL_GCLOUD_CONFIGURATION:-anvil-mvp-v1}"
 jq_() { python3 -c "import json,sys;print(json.load(open('$CONFIG_JSON'))$1)"; }
 PROJECT_ID=$(jq_ "['project_id']")
 REGION=$(jq_ "['region']")
@@ -37,7 +37,12 @@ SECRETS=(anvil-db-owner-password anvil-db-app-password anvil-db-worker-password 
 say() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 exists() { "$@" >/dev/null 2>&1; }
 retry() { for _ in $(seq 1 12); do "$@" >/dev/null 2>&1 && return 0; sleep 10; done; "$@"; }
-gcloud config set project "$PROJECT_ID" >/dev/null 2>&1 || true
+# Every call pins the checked-in destination; never mutate a shared CLI configuration.
+gcloud() { command gcloud --project="$PROJECT_ID" "$@"; }
+
+if [ -n "${DEPLOY_ONLY:-}" ]; then
+  gcloud compute instances describe "$VM" --zone="$ZONE" --format='value(id)' >/dev/null
+fi
 
 if [ -n "$(git -C "$ROOT" status --porcelain -- services apps infra fixtures task-packs assets)" ]; then
   echo "Uncommitted application changes; commit first so the deployed revision is recorded." >&2
@@ -51,7 +56,6 @@ if [ -z "${DEPLOY_ONLY:-}" ]; then
     ${ANVIL_ORG_ID:+--organization="$ANVIL_ORG_ID"}
   [ "$(gcloud billing projects describe "$PROJECT_ID" --format='value(billingAccountName)')" = "billingAccounts/$BILLING" ] ||
     gcloud billing projects link "$PROJECT_ID" --billing-account="$BILLING" >/dev/null
-  gcloud config set project "$PROJECT_ID" >/dev/null
   PNUM=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
 
   say "Enabling APIs"
@@ -130,9 +134,11 @@ else
 fi
 
 say "Support Bot (Claude on Vertex AI, like ADI Praxis; read-only help, no evaluation spend)"
-gcloud services enable aiplatform.googleapis.com
-retry gcloud projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:$SA" \
-  --role=roles/aiplatform.user --condition=None
+if [ -z "${DEPLOY_ONLY:-}" ]; then
+  gcloud services enable aiplatform.googleapis.com
+  retry gcloud projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:$SA" \
+    --role=roles/aiplatform.user --condition=None
+fi
 
 IP=$(gcloud compute addresses describe anvil-lb-ip --global --format='value(address)')
 WEB_HOST=anvil-${IP//./-}.sslip.io
@@ -142,7 +148,7 @@ say "Images (Cloud Build, $TAG)"
 gcloud builds submit "$ROOT" --config="$ROOT/infra/gcp/cloudbuild.yaml" --region="$REGION" \
   --substitutions="_REPO=$REPO,_TAG=$TAG"
 
-METADATA="anvil-registry=$REPO,anvil-backend-image=$REPO/backend:$TAG,anvil-web-image=$REPO/web:$TAG"
+METADATA="anvil-registry=$REPO,anvil-backend-image=$REPO/backend:$TAG,anvil-web-image=$REPO/web:$TAG,anvil-harbor-image=$REPO/harbor:$TAG"
 METADATA="$METADATA,anvil-web-host=$WEB_HOST,anvil-auth-host=$AUTH_HOST,enable-oslogin=TRUE"
 METADATA="$METADATA,anvil-support-vertex=true"
 FILES="startup-script=$ROOT/infra/gcp/startup.sh,anvil-compose=$ROOT/infra/gcp/compose.yaml"
@@ -150,6 +156,10 @@ FILES="$FILES,anvil-caddyfile=$ROOT/infra/gcp/Caddyfile,anvil-postgres-init=$ROO
 FILES="$FILES,anvil-render-config=$ROOT/infra/gcp/render_config.py"
 
 if ! exists gcloud compute instances describe "$VM" --zone="$ZONE"; then
+  if [ -n "${DEPLOY_ONLY:-}" ]; then
+    echo "Existing deployment cannot be verified; refusing to provision a replacement." >&2
+    exit 1
+  fi
   say "VM $VM ($MACHINE)"
   gcloud compute instances create "$VM" --zone="$ZONE" --machine-type="$MACHINE" \
     --network-interface=subnet=anvil-subnet,no-address \
