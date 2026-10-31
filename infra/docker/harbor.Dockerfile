@@ -1,5 +1,5 @@
 # Dedicated synthetic software-check host. API and normal worker never receive Docker access.
-ARG BACKEND_IMAGE=anvil-backend:0.2.0-local
+ARG BACKEND_IMAGE=anvil-backend:0.2.1-local
 FROM docker:29.8.0-cli@sha256:eccaacfeed644c7de222ff047483568cb988dde95476fbaaf10ea2d04921bb66 AS dockercli
 FROM ${BACKEND_IMAGE}
 USER root

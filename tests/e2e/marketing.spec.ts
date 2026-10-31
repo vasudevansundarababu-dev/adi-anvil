@@ -117,7 +117,11 @@ test('prepare the interactive marketing task and keep paid launch blocked', asyn
     .locator('article')
     .filter({ has: page.getByRole('heading', { name: 'OpenAI Responses', exact: true }) });
   await provider.getByText('Configure exact model and cost bound', { exact: true }).click();
-  await expect(provider.locator('#openai-model')).toHaveValue('gpt-6-sol');
+  await expect(provider.locator('#openai-model')).toHaveValue('');
+  // Explicit historical fixture selection; no current pricing or paid authority inferred.
+  await provider.locator('#openai-model').fill('gpt-6-sol');
+  await expect(provider.locator('#openai-pricing')).toHaveValue('');
+  await expect(provider.locator('#openai-bound')).toHaveValue('');
   await expect(provider.locator('#openai-tokens')).toHaveValue('8192');
   await provider.getByRole('button', { name: 'Save configuration', exact: true }).click();
   await expect(provider.getByText(/Configuration saved/)).toBeVisible();

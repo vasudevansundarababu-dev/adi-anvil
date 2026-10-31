@@ -67,6 +67,13 @@ services:
     depends_on: { postgres: { condition: service_healthy } }
   api:
     <<: *backend
+    env_file:
+      - '${ANVIL_DATA:-/var/lib/anvil}/config/app.env'
+      - '${ANVIL_DATA:-/var/lib/anvil}/config/harbor.env'
+    volumes:
+      - '${ANVIL_DATA:-/var/lib/anvil}/artifacts:/app/.data/artifacts'
+      - '${ANVIL_DATA:-/var/lib/anvil}/harbor-private:/app/.secrets:ro'
+      - '${ANVIL_DATA:-/var/lib/anvil}/harbor-authority:/app/.local:ro'
     depends_on:
       migrate: { condition: service_completed_successfully }
       neo4j: { condition: service_started }
@@ -81,11 +88,16 @@ services:
     image: ${ANVIL_HARBOR_IMAGE:-${ANVIL_BACKEND_IMAGE:?}}
     profiles: [harbor]
     command: [python, -m, anvil.harbor_worker]
+    env_file:
+      - '${ANVIL_DATA:-/var/lib/anvil}/config/app.env'
+      - '${ANVIL_DATA:-/var/lib/anvil}/config/harbor.env'
     # Fixed compiler templates only. No uploaded Dockerfiles, scripts or paid agents.
     volumes:
       - '${ANVIL_DATA:-/var/lib/anvil}/artifacts:/app/.data/artifacts'
       - '/var/lib/anvil/harbor-checks:/var/lib/anvil/harbor-checks'
       - '/var/run/docker.sock:/var/run/docker.sock'
+      - '${ANVIL_DATA:-/var/lib/anvil}/harbor-private:/app/.secrets:ro'
+      - '${ANVIL_DATA:-/var/lib/anvil}/harbor-authority:/app/.local:ro'
     depends_on:
       migrate: { condition: service_completed_successfully }
   web:

@@ -49,6 +49,26 @@ def test_cloud_mode_accepts_explicit_https_configuration():
     assert result.stdout.strip() == "True"
 
 
+def test_cloud_harbor_admission_is_separate_from_legacy_dispatch():
+    code = "import anvil.config as c; print(c.harbor_live_enabled())"
+    assert run_config(CLOUD, code).stdout.strip() == "False"
+    assert (
+        run_config({**CLOUD, "ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED": "true"}, code).stdout.strip()
+        == "True"
+    )
+    assert run_config({**CLOUD, "ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED": "yes"}, code).returncode != 0
+    assert (
+        run_config(
+            {
+                **CLOUD,
+                "ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED": "true",
+                "ANVIL_LIVE_PROVIDERS_ENABLED": "true",
+            }
+        ).returncode
+        != 0
+    )
+
+
 @pytest.mark.parametrize(
     "overrides",
     [

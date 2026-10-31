@@ -1,5 +1,22 @@
 # Build status
 
+v0.2.1 disabled cloud preparation in progress. User authorized code and existing-host
+deployment preparation only; no key/authority values, paid activation/calls, new IAM,
+credentials, identities or approvers. Separate Harbor cloud admission defaults false;
+legacy cloud live/email remain forbidden. Read-only private directory mounts reach API
+and dedicated Harbor worker only. Historical marketing model/price/cost defaults removed
+from provider setup; explicit current values required. See
+[secure later handoff](docs/runbooks/harbor-cloud-admission.md).
+
+Passed so far:181 unit,90 isolated integration (188.66s), production/type/lint/contracts,
+API UID10001/root-worker empty read-only mount rehearsal and Compose mount isolation.
+Full8-browser regression passed (1.4m); final production/type/lint/contract check passed.
+Disabled existing-host rollout pending.
+Saved historical/paid-ledger pre-upgrade fingerprints in ignored
+`artifacts/test-runs/cloud-before-v021-fingerprints.json`. No paid calls made.
+First browser attempt caught a legacy test expecting an auto-filled historical model; the
+test now explicitly selects its fixture model while leaving current pricing/cost empty.
+
 Actual Praxis cloud exports (7230978b) now qualified in local real Harbor, exact bytes:
 single SHA `15538a0c8a3f041a0fe46685f2c770b05e3cbcbf3f8b2c71a63f103f02133945`,
 package `263cd426a57b6f9290c3920a2ee15a605903c9cc7985b1f91a373fd82a6ec13f`;

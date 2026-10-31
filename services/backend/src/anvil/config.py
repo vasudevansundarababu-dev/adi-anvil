@@ -40,7 +40,7 @@ def https_origin(name: str, path_prefix: str = "") -> str:
 
 
 def validate_cloud():
-    """Cloud mode is explicit and narrower than local: no seeds, HTTPS only, no live/email."""
+    """HTTPS only; legacy live/email stay off. Harbor has independent admission gates."""
     https_origin("WEB_ORIGIN")
     issuer = https_origin("OIDC_ISSUER", "/realms/")
     if not issuer.rsplit("/realms/", 1)[1] or "/" in issuer.rsplit("/realms/", 1)[1]:
@@ -48,6 +48,8 @@ def validate_cloud():
     for flag in ("ANVIL_LIVE_PROVIDERS_ENABLED", "ANVIL_REAL_EMAIL_ENABLED"):
         if os.environ.get(flag, "false") != "false":
             raise RuntimeError(f"{flag} must remain false in cloud mode")
+    if os.environ.get("ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED", "false") not in {"true", "false"}:
+        raise RuntimeError("Unqualified cloud Harbor admission flag")
     if len(setting("ANVIL_SESSION_KEY")) < 32:
         raise RuntimeError("ANVIL_SESSION_KEY too short for cloud mode")
 
@@ -66,6 +68,16 @@ def environment() -> str:
 
 ENV = environment()
 CLOUD = ENV == "cloud"
+
+
+def harbor_live_enabled():
+    flag = "ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED" if CLOUD else "ANVIL_LIVE_PROVIDERS_ENABLED"
+    return os.environ.get(flag, "false") == "true"
+
+
+def private_file_owner(uid):
+    # The Docker-host worker is root; the API owns the same read-only mounted files.
+    return uid == os.getuid() or (CLOUD and os.getuid() == 0 and uid == 10001)
 
 
 def local_only():

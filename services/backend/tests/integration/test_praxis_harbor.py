@@ -385,7 +385,7 @@ def test_real_running_cancel_cleans_owned_sandbox(client_factory):
     assert row["invocation_count"] == 1
 
 
-def test_agent_plan_pins_model_and_blocks_unapproved_dispatch(client_factory):
+def test_agent_plan_pins_model_and_blocks_unapproved_dispatch(client_factory, monkeypatch):
     client, po, _, _, package = imported(client_factory)
     admin, _ = client_factory("admin-1")
     response = admin.post(
@@ -415,6 +415,28 @@ def test_agent_plan_pins_model_and_blocks_unapproved_dispatch(client_factory):
     )
     assert record["config"]["max_calls"] == 1
     assert record["config"]["max_output_tokens"] == 2048
+    from anvil import config
+
+    monkeypatch.setattr(config, "CLOUD", True)
+    monkeypatch.setenv("ANVIL_LIVE_PROVIDERS_ENABLED", "false")
+    for enabled in ("false", "true"):
+        monkeypatch.setenv("ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED", enabled)
+        current = client.get(BASE + f"/harbor-agent-plans/{record['id']}").json()["data"]
+        assert not current["ready"]
+        assert ("live_dispatch_disabled_in_runtime" in current["missing_gates"]) == (
+            enabled == "false"
+        )
+        assert (
+            "exact_user_provider_model_budget_and_current_pricing_authority"
+            in current["missing_gates"]
+        )
+        denied = client.post(
+            BASE + f"/harbor-agent-plans/{record['id']}/launch",
+            json={},
+            headers={"Idempotency-Key": uid()},
+        )
+        assert denied.status_code == 409
+    monkeypatch.setenv("ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED", "false")
     response = client.post(
         BASE + f"/harbor-agent-plans/{record['id']}/launch",
         json={},

@@ -17,8 +17,8 @@ export default function ProviderSetup({
     <details>
       <summary>Configure exact model and cost bound</summary>
       <p>
-        Secrets are supplied in the local private environment or secret file. Saving this form makes
-        no provider request.
+        Supply keys only through the approved server-side private file, never this form or a task
+        upload. Saving configuration makes no provider request and grants no spending authority.
       </p>
       <Form
         onSubmit={async (e) => {
@@ -51,7 +51,7 @@ export default function ProviderSetup({
             const result = await response.json();
             if (!response.ok) throw new Error(result.error?.message || 'Configuration failed');
             setMessage(
-              'Configuration saved. Refresh for updated readiness. Live inference remains disabled.',
+              'Configuration saved. Refresh for readiness. Saving does not enable inference; exact run approvals remain required.',
             );
           } catch (e) {
             setError((e as Error).message);
@@ -66,7 +66,7 @@ export default function ProviderSetup({
           name="model"
           required
           maxLength={200}
-          defaultValue={model || (provider === 'openai' ? 'gpt-6-sol' : '')}
+          defaultValue={model || ''}
         />
         <label htmlFor={provider + '-tokens'}>Maximum output tokens</label>
         <input
@@ -82,27 +82,16 @@ export default function ProviderSetup({
         <input
           id={provider + '-pricing'}
           name="pricing"
-          defaultValue={provider === 'openai' ? 'openai-gpt-6-sol-2026-09-28-standard-text-v1' : ''}
+          placeholder="Enter the current reviewed pricing reference"
         />
         <label htmlFor={provider + '-bound'}>Conservative request cost bound (micro USD)</label>
-        <input
-          id={provider + '-bound'}
-          name="bound"
-          type="number"
-          min={1}
-          step={1}
-          defaultValue={provider === 'openai' ? 1000000 : undefined}
-        />
+        <input id={provider + '-bound'} name="bound" type="number" min={1} step={1} />
         {provider === 'openai' && (
           <p>
-            Marketing harness: at most 100,000 UTF-8 input bytes and 8,192 output tokens per
-            response; $1 conservative reservation per call, 13 calls maximum. Pricing review expires
-            October 5, 2026.{' '}
-            <a
-              href="https://developers.openai.com/api/docs/models/gpt-6-sol"
-              target="_blank"
-              rel="noreferrer"
-            >
+            Enter the exact authorized model and current reviewed pricing. Historical marketing
+            pricing expired October 5, 2026 and does not authorize Harbor tasks. Harbor plans
+            separately bind current token rates, total spending ceiling and expiry.{' '}
+            <a href="https://openai.com/api/pricing/" target="_blank" rel="noreferrer">
               Review official model pricing
             </a>
             .

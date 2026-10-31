@@ -12,7 +12,7 @@ from mistralai.client import Mistral
 from openai import OpenAI
 from pydantic import Field
 
-from anvil.config import ROOT
+from anvil.config import CLOUD, ROOT, private_file_owner
 from anvil.schemas import Strict
 
 PROVIDERS = {
@@ -58,19 +58,24 @@ def secret_presence(provider):
     file = os.environ.get(name + "_FILE")
     if value and file:
         return False, "conflicting_secret_sources"
+    if CLOUD and provider == "openai" and value:
+        return False, "cloud_secret_requires_private_file"
     if value:
         return True, None
     if file:
-        allowed = ROOT / ".secrets" / name.lower()
-        candidate = ROOT / file
-        if candidate.is_symlink() or candidate.resolve() != allowed.resolve():
-            return False, "secret_path_not_allowlisted"
-        if not candidate.is_file():
-            return False, "secret_missing"
-        info = candidate.stat()
-        if stat.S_IMODE(info.st_mode) & 0o077 or info.st_uid != os.getuid():
-            return False, "secret_file_permissions"
-        return info.st_size > 0, None if info.st_size else "secret_empty"
+        try:
+            allowed = ROOT / ".secrets" / name.lower()
+            candidate = ROOT / file
+            if candidate.is_symlink() or candidate.resolve() != allowed.resolve():
+                return False, "secret_path_not_allowlisted"
+            if not candidate.is_file():
+                return False, "secret_missing"
+            info = candidate.stat()
+            if stat.S_IMODE(info.st_mode) & 0o077 or not private_file_owner(info.st_uid):
+                return False, "secret_file_permissions"
+            return info.st_size > 0, None if info.st_size else "secret_empty"
+        except OSError:
+            return False, "secret_unreadable"
     return False, "secret_missing"
 
 

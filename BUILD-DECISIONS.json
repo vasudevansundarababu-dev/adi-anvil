@@ -109,7 +109,7 @@
     "clearance": "author declarations do not grant reviewed rights or privacy clearance"
   },
   "praxis_harbor_increment": {
-    "release_version": "0.2.0",
+    "release_version": "0.2.1",
     "authorized_date": "2026-10-30",
     "deployment_scope": "reuse configured adi-anvil-mvp-2026 host; no new destination or unbounded provisioning",
     "schemas": ["praxis.anvil.task.v1", "praxis.anvil.task.v2", "praxis.anvil.export.v1"],
@@ -120,6 +120,9 @@
     "paid_authority_for_new_tasks": "not supplied; old MKT-LH-001 authority is not reused",
     "paid_limits": "full run ceiling reserved in shared durable spend window before launch; bounded prompts/output/call count; unknown reservations retained; SDK retries disabled",
     "live_cloud_flag": "remains disabled; source declarations and test identities cannot grant paid rights or approval",
+    "cloud_preparation": "user-authorized disabled configuration only; separate Harbor admission flag defaults false and renderer resets false; legacy cloud live/email remain forbidden",
+    "cloud_private_inputs": "empty UID10001 mode0700 host directories, read-only mounts to API and dedicated Harbor worker only; no key or authority values provisioned",
+    "future_activation": "requires fresh exact model/budget/current pricing/user authority, operator-managed private files and all existing PO/real distinct-Admin gates; no old marketing authority reuse",
     "reference_results": "synthetic software verification only, never model performance",
     "field_mapping_reconciliation": "new shared contract agreed with Praxis; full reconciliation with earlier Library mapping documents remains unverified"
   },

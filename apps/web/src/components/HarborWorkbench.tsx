@@ -366,7 +366,7 @@ function AgentPlanPanel({
     { id: string; model_id: string; provider_key: string }[]
   >([]);
   const [connection, setConnection] = useState('');
-  const [dollars, setDollars] = useState('1.00');
+  const [dollars, setDollars] = useState('');
   const [plan, setPlan] = useState<AgentPlan | null>(null);
   const [error, setError] = useState('');
   const [evidence, setEvidence] = useState('');

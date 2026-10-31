@@ -37,6 +37,11 @@ grep -q "$DEV" /etc/fstab || echo "$DEV $DATA ext4 discard,defaults,nofail 0 2" 
 mkdir -p "$DATA"/{postgres,neo4j,artifacts,caddy,harbor-checks}
 chmod 700 "$DATA"
 chown 10001 "$DATA/artifacts" && chmod 700 "$DATA/artifacts"
+# Prepare empty operator-managed locations only. Never create key/authority values.
+for private_dir in "$DATA/harbor-private" "$DATA/harbor-authority"; do
+  [ ! -L "$private_dir" ] || { echo "Refusing symlinked Harbor private directory" >&2; exit 1; }
+  install -d -o 10001 -g 0 -m 0700 "$private_dir"
+done
 
 echo "== Runtime configuration (secret values are never logged)"
 secret() { gcloud secrets versions access latest --secret="$1" --project="$PROJECT" </dev/null; }

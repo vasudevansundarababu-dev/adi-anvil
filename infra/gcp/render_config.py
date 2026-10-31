@@ -76,6 +76,15 @@ def main():
         ),
     )
     write(
+        folder / "harbor.env",
+        env_file(
+            {
+                "ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED": "false",
+                "OPENAI_API_KEY_FILE": ".secrets/openai_api_key",
+            }
+        ),
+    )
+    write(
         folder / "migrate.env",
         env_file(
             {

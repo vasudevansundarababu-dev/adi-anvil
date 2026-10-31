@@ -11,6 +11,7 @@ import io
 import os
 import secrets
 import socket
+import stat
 import tempfile
 import threading
 import zipfile
@@ -25,7 +26,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import AwareDatetime, Field
 
 from anvil import artifacts, auth, domain, providers
-from anvil.config import ROOT
+from anvil.config import ROOT, harbor_live_enabled, private_file_owner
 from anvil.db import Jsonb, audit, digest, one, transaction, uid
 from anvil.harbor_package import encoded
 from anvil.praxis_contract import Binding, matches
@@ -70,11 +71,18 @@ class Authority(Strict):
 
 def authority():
     path = ROOT / ".local/harbor-authority.json"
-    if path.is_symlink() or not path.is_file():
-        return None
     try:
+        if path.is_symlink() or not path.is_file():
+            return None
+        info = path.stat()
+        if (
+            stat.S_IMODE(info.st_mode) & 0o077
+            or not private_file_owner(info.st_uid)
+            or not 0 < info.st_size <= 16384
+        ):
+            return None
         value = Authority.model_validate_json(path.read_bytes())
-    except ValueError:
+    except (ValueError, OSError):
         return None
     now = datetime.now(timezone.utc)
     return value if value.expires_at > now and value.pricing_expires_at > now else None
@@ -138,7 +146,7 @@ def readiness(c, record):
     package = one(c, "SELECT * FROM anvil.harbor_packages WHERE id=%s", (record["package_id"],))
     missing = []
     policy = authority()
-    if os.environ.get("ANVIL_LIVE_PROVIDERS_ENABLED") != "true":
+    if not harbor_live_enabled():
         missing.append("live_dispatch_disabled_in_runtime")
     if (
         not policy
@@ -267,6 +275,9 @@ def execute_provider(model, prompt, transport=None):
         raise ValueError("Actor prompt exceeds admitted bound")
 
     name = providers.PROVIDERS["openai"][1]
+    present, error = providers.secret_presence("openai")
+    if not present:
+        raise RuntimeError(error or "provider_secret_missing")
     key = os.environ.get(name)
     if not key:
         key = (ROOT / os.environ[name + "_FILE"]).read_text().strip()

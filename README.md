@@ -8,6 +8,11 @@ model-run preparation. Version0.2.0 is deployed; authenticated import/build pass
 deployed execution awaits independent Product Owner approval. See
 [current build status](BUILD-STATUS.md). Synthetic check scores are not model performance.
 
+The v0.2.1 [cloud admission handoff](docs/runbooks/harbor-cloud-admission.md) prepares empty
+private file mounts and a separate disabled Harbor admission flag. It supplies no keys,
+paid authority or live activation; current model/pricing/budget and real approvals remain
+separate requirements.
+
 **Verified local diagnostic, Factory and provenance increments — 29 September 2026.** The real-OIDC diagnostic, task-import, marketing-preparation and Benchmark Factory journeys pass, along with the production build,130 unit tests and67 integration tests. Fresh migrations through018 pass. Uploaded sources carry immutable author declarations; non-synthetic publication awaits reviewed rights/privacy controls. Full MVP and Benchmark Factory acceptance remain partial; paid launch and external sending stay blocked. See [current build status](BUILD-STATUS.md) and the [handoff report](docs/generated/morning-report.md).
 
 ## Start

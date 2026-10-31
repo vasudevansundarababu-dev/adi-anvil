@@ -11,6 +11,7 @@ from psycopg.types.json import Jsonb
 from pydantic import ValidationError
 
 from anvil import artifacts, auth, domain, fixtures
+from anvil.config import harbor_live_enabled
 from anvil.db import audit, digest, one, transaction, uid
 from anvil.delivery import routes as delivery_routes
 from anvil.evaluation import routes as evaluation_routes
@@ -30,7 +31,7 @@ from anvil.schemas import Decision, FixtureImport, Rights, Withdrawal
 from anvil.support import routes as support_routes
 from anvil.task_imports import routes as task_import_routes
 
-app = FastAPI(title="ADI Anvil", version="0.2.0")
+app = FastAPI(title="ADI Anvil", version="0.2.1")
 app.add_middleware(RequestLimits)
 app.include_router(auth.router)
 
@@ -194,7 +195,8 @@ def health():
             "api": "ready",
             "database": "ready",
             "live_inference": "disabled",
-            "version": "0.2.0",
+            "harbor_live_dispatch": "gated" if harbor_live_enabled() else "disabled",
+            "version": "0.2.1",
         }
     }
 

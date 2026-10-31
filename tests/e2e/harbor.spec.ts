@@ -1,6 +1,21 @@
 import { test, expect, BrowserContext } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 
+test('provider preparation has no expired pricing or spending defaults', async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await login(context, 'admin-1');
+  await page.goto('/p/a0000000-0000-4000-8000-000000000002/providers');
+  await page.locator('details:has(#openai-pricing) > summary').click();
+  await expect(page.locator('#openai-pricing')).toHaveValue('');
+  await expect(page.locator('#openai-bound')).toHaveValue('');
+  await expect(
+    page.getByText('Historical marketing pricing expired', { exact: false }),
+  ).toBeVisible();
+  const health = await (await page.request.get('/api/v1/health')).json();
+  expect(health.data.harbor_live_dispatch).toBe('disabled');
+  await context.close();
+});
+
 async function login(context: BrowserContext, name: string) {
   const page = await context.newPage();
   await page.goto('/');
