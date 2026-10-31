@@ -4,6 +4,7 @@
   "timezone": "America/Chicago",
   "status": "partial_local",
   "branch": "codex/anvil-modern-workspace",
+  "code_checkpoint": "d2dfe82",
   "preserved_baseline": "codex/anvil-classic-v021-comparison",
   "nightly_window": "22:00–06:00, hourly checkpoint resumes",
   "local_url": "http://127.0.0.1:3202/workspace",

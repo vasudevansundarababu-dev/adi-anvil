@@ -1,5 +1,11 @@
 # Build status
 
+Verified initial modern-workspace code checkpoint: `d2dfe82`. Local API/database ready;
+legacy and Harbor live inference disabled. Registered app, ordinary worker, web and
+dedicated synthetic Harbor worker are running for comparison. Only unrelated AGENTS.md
+and Google Cloud runbook edits remain outside the checkpoint. Next scheduled checkpoint
+resume23:00 America/Chicago; continue the remaining milestone list below, not M0 again.
+
 Modern workspace autonomous build launched 30 Oct 2026 at 03:08 UTC on 31 Oct
 (22:08 America/Chicago). Initial window deadline 11:00 UTC (06:00 local). M0 branch preservation
 complete: `codex/anvil-modern-workspace`; baseline `codex/anvil-classic-v021-comparison`.

@@ -1,6 +1,7 @@
 # Modern workspace nightly checkpoint — 30 October 2026
 
 Status: **partial local implementation**. Autonomous build started22:08 America/Chicago;
+verified code checkpoint `d2dfe82`.
 this is the initial verified checkpoint, not a declaration that all approved screens and
 runtime integrations are complete. Nightly continuation runs hourly22:00–06:00; the
 calling Codex app and machine must be available. Each wake resumes BUILD-STATUS.md,
