@@ -1,5 +1,28 @@
 # Modern workspace nightly checkpoint — 30 October 2026
 
+Final-window handoff (31 October): see [the current morning report](modern-workspace-morning-2026-10-31.md).
+Overall status remains **partial local**. The final usability increment makes saved
+preparations read-only by default, opens a fresh form explicitly, summarizes fully loaded
+single choices, focuses readiness/model history, resets task-scope form state and surfaces
+saved-list/detail failures with retry. Credential write-response metadata stays visible
+outside the first UUID page, prefers fresher GET metadata when present and is deduplicated
+on pagination. No permission, dispatch or ledger gate changed.
+Source checkpoint `740b3b2`: final production check passed; units224 passed (3.74s);
+real synthetic Harbor integration162 passed/2 optional Praxis skips (177.40s); final
+full browser14 passed (2.2m), including injected list/detail failures and keyboard/mobile
+coverage. Fresh/repeated migrations001–030 passed inside isolated integration. The first
+final browser run was12/14: a real paginated credential visibility bug and an outage
+fixture consumed by effect remounts were repaired. Both targeted tests and the complete
+suite then passed. Read-only final review found no material blocker in the credential
+metadata repair. Staged whitespace/credential-pattern checks passed; no secrets committed.
+Backup/restore passed at schema030 with6171 artifact checksums and1194 pending reviews
+preserved; all ten workspace-table row digests match and the original database is unchanged.
+This does not test recovery of local credential files/wrap key, environment or Keycloak.
+Full shared-spend admission/mediated live execution, full profile permission migration,
+People actions, source authoring and broader M5 acceptance remain unfinished. No paid
+provider request, deployment, push, sending or identity change occurred. Historical
+checkpoint-by-checkpoint evidence follows; its smaller counts are not the final totals.
+
 04:00 continuation checkpoint `a092a7f` verifies an internal credential-bound native SDK
 mock boundary for OpenAI, Claude and Gemini. It requires a scoped Admin, current exact
 model/configuration and credential version, actor/output limits and an injected exact

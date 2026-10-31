@@ -1,5 +1,15 @@
 # ADI Anvil — current local handoff
 
+## Current: modern workspace — 31 October 2026
+
+**Partial local build.** Read the [current morning handoff](modern-workspace-morning-2026-10-31.md)
+for verified modern/classic journeys, final regression and restore evidence, local URLs
+and unfinished scope. This supersedes the schema018 summary below. Workspace schema is030;
+live multi-model dispatch/shared admission and full profile authorization remain unfinished.
+No cloud rollout or paid inference occurred in this nightly build.
+
+## Historical handoffs below
+
 Latest continuation: immutable source ownership/provenance in the existing importer,
 exact dataset lineage and run snapshots. Schema018;130 units and4 browser journeys
 passed. Non-synthetic publication remains blocked pending reviewed rights/privacy controls.

@@ -17,6 +17,8 @@ Current feature evidence (full final counts in BUILD-STATUS.md):
 | MOD-10 Typed presets / multi-model preparation | workspace_preparation unit/integration and browser | Exact immutable planning bindings, credential rotation/drift, USD conversion, scope and zero execution/accounting effects passed; live admission unimplemented |
 | MOD-11 Model versions / disable / declared pricing | workspace_models unit/integration and browser | Stable profiles, immutable configs, CAS, one-way disable, exact credential/price conversion and legacy separation passed; metadata conveys no live authority |
 | MOD-12 Scoped native SDK mock contracts | workspace_adapter_contracts unit/integration; existing provider unit matrix |57 scoped mock cases passed for OpenAI/Claude/Gemini: exact auth, no retries, refusal/truncation/unknowns, invalid JSON preservation, key echo suppression and current/scope gates. Not live, Harbor-task or structured-output qualification |
+| MOD-13 Preparation usability | workspace-preparation browser; workspace-model-versions browser | Sole complete version summaries, read-only saved readiness, explicit fresh form/blank cap, focus, task scope reset, detail/list failure retry and320/768/1440px checks; broader accessibility/cancellation acceptance partial |
+| MOD-14 Schema030 metadata recovery | backup:local, restore:test and workspace row-digest comparison | SQL/artifacts restored with original unchanged,6171 checksums/1194 pending reviews preserved; ten workspace-table digests match. Credential ciphertext/wrap-key, environment and identity-service recovery not tested |
 
 2026-09-29 ANV-BF-001 update:124 units,67 integrations and4 browser journeys pass;
 production check and fresh/repeated001–017 migrations pass. See

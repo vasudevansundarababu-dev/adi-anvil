@@ -5,7 +5,38 @@
   "status": "partial_local",
   "branch": "codex/anvil-modern-workspace",
   "code_checkpoint": "d2dfe82",
-  "latest_code_checkpoint": "a092a7f",
+  "latest_code_checkpoint": "740b3b2",
+  "final_window_handoff": {
+    "date_local": "2026-10-31",
+    "status": "partial_local",
+    "report": "docs/generated/modern-workspace-morning-2026-10-31.md",
+    "code_checkpoint": "740b3b2",
+    "verification": {
+      "production_check": "passed",
+      "unit_passed": 224,
+      "harbor_integration_passed": 162,
+      "optional_praxis_skipped": 2,
+      "integration_seconds": 177.4,
+      "browser_passed": 14,
+      "browser_minutes": 2.2,
+      "fresh_repeated_migrations": "001-030_passed",
+      "first_final_browser_attempt": "12_passed_2_failed; both_repaired",
+      "unresolved_test_failures": 0
+    },
+    "database_schema": 30,
+    "restore": {
+      "status": "passed_database_artifacts_metadata",
+      "artifact_checksums": 6171,
+      "pending_reviews_preserved": 1194,
+      "workspace_table_digests_match": 10,
+      "original_database_unchanged": true,
+      "credential_file_key_recovery": "not_tested"
+    },
+    "live_dispatch_implemented": false,
+    "live_or_harbor_model_qualification": false,
+    "external_model_requests_by_build": 0,
+    "provider_account_billing": "unknown_not_queried"
+  },
   "scoped_sdk_mock_increment": {
     "code_checkpoint": "a092a7f",
     "status": "verified_internal_mock_contract",

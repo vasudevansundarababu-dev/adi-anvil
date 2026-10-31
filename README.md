@@ -17,6 +17,9 @@ Frameworks also offers typed execution presets. From a Harbor task, **Prepare ev
 saves exact package/model/framework versions and shows missing readiness requirements.
 These are planning records: saving makes no model request or spending reservation, and
 launch remains unavailable until the workspace dispatch path is qualified.
+Saved preparations open as read-only readiness summaries. **Create another preparation**
+opens a fresh form with an empty budget; a sole fully loaded package or preset is shown
+as a version summary instead of a dropdown. Model selections remain explicit.
 Models & keys supports **Edit as new version**, configuration history and whole-profile
 disabling. Existing preparations keep their original bindings; superseded/disabled versions
 are blocked from new preparation. Optional pricing and terms are declared metadata, with

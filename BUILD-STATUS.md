@@ -1,5 +1,36 @@
 # Build status
 
+Final nightly usability checkpoint — `740b3b2`, 31 October2026. Overall **partial local**.
+Saved preparations open read-only, with explicit fresh creation/blank budget; sole complete
+package/preset choices become version summaries. Model/history and readiness focus, task-scope
+reset, loading and visible saved-list/detail retry states are browser-verified. Credential
+write metadata stays visible when UUID pagination excludes it, prefers fresher GET metadata
+and deduplicates later pages. No authentication, project/private-reference, version, review
+or spending gate changed. Classic baseline remains `3a17429c3e7bfe0314361dda5209ce890d96c8e3`.
+Final `pnpm check` passed. Units224 passed (3.74s). With all workers stopped,
+`ANVIL_TEST_HARBOR=1 ANVIL_HARBOR_DOCKER_HOST=unix:///Users/vasudevansundarababu/.docker/run/docker.sock pnpm test:integration`
+passed162/2 optional Praxis-export skips in177.40s; fresh/repeated001–030 migrations included.
+Final full `pnpm test:e2e`14 passed (2.2m). First final browser run12/14 exposed a real
+credential-page visibility issue plus a one-request outage fixture consumed by dev effect
+remounts. Both repaired; targeted1/1 and complete14 then passed without weakening assertions.
+Read-only final review found no material blocker; production check rerun on final source.
+Staged whitespace/credential-pattern scans passed. No secret/private artifact committed.
+`pnpm backup:local` / `pnpm restore:test` passed: private backup
+`.local/backups/20261031T101237Z-5eac472a`, retained restore database `anvil_restore_a4bf4e87ad55`,
+1194 pending reviews/6171 artifact checksums preserved, original unchanged. All row digests
+across ten workspace tables match at schema030. Local credential files/wrap key, environment
+and Keycloak recovery were not tested. See [current morning report](docs/generated/modern-workspace-morning-2026-10-31.md)
+and machine-readable morning/nightly reports; prior entries below are historical checkpoints.
+App restored at http://127.0.0.1:3202/workspace with classic comparison and synthetic-only
+Harbor worker; live inference/dispatch disabled. No paid calls, external sending, deployment,
+push, identity/IAM changes or installs. Unrelated AGENTS.md/cloud-runbook edits preserved.
+Next window: check writers/health first, then finish atomic shared spending admission and
+credential-mediated execution with mock transports and durable budget/access tests. That
+software remains unfinished, as do full profile authorization/People actions, source authoring
+and broader M5 acceptance. Native SDK mocks are not live/Harbor-task/structured-output
+qualification. Continue nightly automation; this is not completion. Window deadline remains
+06:00 Chicago/11:00 UTC, not reset on wake.
+
 04:00 nightly resume — internal credential-bound SDK mock contract verified as `a092a7f`.
 No HTTP route, job/ledger writer or
 availability promotion was added. Helper requires exact MockTransport, scoped Admin,
