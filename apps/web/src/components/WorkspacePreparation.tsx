@@ -46,7 +46,7 @@ type Draft = {
   readiness: { missing: string[]; models: { model_profile_id: string; missing: string[] }[] };
 };
 
-function useList<T>(path: string) {
+function useList<T>(path: string, revision = 0) {
   const [items, setItems] = useState<T[]>([]),
     [cursor, setCursor] = useState<string | null>(null),
     [error, setError] = useState(''),
@@ -79,7 +79,7 @@ function useList<T>(path: string) {
     return () => {
       generation.current++;
     };
-  }, [load]);
+  }, [load, revision]);
   return {
     items,
     error,
@@ -178,9 +178,15 @@ function ToggleModels({
   );
 }
 
-export function ExecutionPresets({ base }: { base: string }) {
+export function ExecutionPresets({
+  base,
+  frameworkRevision = 0,
+}: {
+  base: string;
+  frameworkRevision?: number;
+}) {
   const models = useList<Model>(base + '/workspace/models?current_only=true');
-  const frameworks = useList<Framework>(base + '/workspace/frameworks');
+  const frameworks = useList<Framework>(base + '/workspace/frameworks', frameworkRevision);
   const presets = useList<Preset>(base + '/workspace/presets');
   const [selected, setSelected] = useState<string[]>([]),
     [runtime, setRuntime] = useState('anvil-structured-json-v1'),
@@ -248,7 +254,25 @@ export function ExecutionPresets({ base }: { base: string }) {
         <label htmlFor="preset-name">Preset name</label>
         <input id="preset-name" name="name" required maxLength={100} />
         <label htmlFor="preset-runner">Evaluation runner</label>
-        <select id="preset-runner" name="runner" required defaultValue="">
+        <p id="preset-runner-help">
+          Select a Harbor framework profile saved in this project. OpenAI, Claude and Gemini model
+          profiles are selected below; they are not evaluation runners.
+        </p>
+        {!frameworks.loading &&
+          !frameworks.error &&
+          !frameworks.items.some((f) => f.framework === 'harbor') && (
+            <p role="status">
+              No Harbor runner profiles loaded. Above, choose Configure Harbor, enter a profile name
+              and save it. {frameworks.more ? 'Or load more framework choices below.' : ''}
+            </p>
+          )}
+        <select
+          id="preset-runner"
+          name="runner"
+          aria-describedby="preset-runner-help"
+          required
+          defaultValue=""
+        >
           <option value="" disabled>
             Select a Harbor profile
           </option>

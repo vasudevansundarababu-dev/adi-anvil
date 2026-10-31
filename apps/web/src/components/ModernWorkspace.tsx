@@ -66,6 +66,7 @@ function WorkspaceView() {
       runTabs.includes(query.get('tab') || '') ? query.get('tab')! : 'Dashboard',
     ),
     [prepare, setPrepare] = useState(false);
+  const [frameworkRevision, setFrameworkRevision] = useState(0);
   const project =
     user?.projects.find((p) => p.id === parts[2]) || (parts[2] ? undefined : user?.projects[0]);
   const capabilities = project?.workspace_access.capabilities || [];
@@ -547,8 +548,16 @@ function WorkspaceView() {
               {section === 'models' && admin && <ModelProfiles key={base} base={base} />}
               {section === 'frameworks' && admin && (
                 <>
-                  <FrameworkProfiles key={base} base={base} />
-                  <ExecutionPresets key={base + '-presets'} base={base} />
+                  <FrameworkProfiles
+                    key={base}
+                    base={base}
+                    onSaved={() => setFrameworkRevision((value) => value + 1)}
+                  />
+                  <ExecutionPresets
+                    key={base + '-presets'}
+                    base={base}
+                    frameworkRevision={frameworkRevision}
+                  />
                 </>
               )}
               {section === 'preparation' &&

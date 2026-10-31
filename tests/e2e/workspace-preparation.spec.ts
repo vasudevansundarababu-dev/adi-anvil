@@ -1,6 +1,50 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 
+test('saving a Harbor framework immediately populates the runner without resetting the preset form', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Sign in with Keycloak' }).click();
+  await page.locator('#username').fill('admin-1');
+  const password = readFileSync('.local/demo-accounts.md', 'utf8')
+    .split('\n')
+    .find((line) => line.startsWith('- admin-1:'))!
+    .split('`')[1];
+  await page.locator('#password').fill(password);
+  await page.locator('#kc-login').click();
+  await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+  const project = 'a0000000-0000-4000-8000-000000000002';
+  let saved: { id: string; framework: string; name: string } | null = null;
+  // Isolate the list from retained fixtures, but save through the real authorized API.
+  await page.route('**/workspace/frameworks', async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    if (route.request().method() === 'POST') saved = body.data;
+    else body.data = { items: saved ? [saved] : [], next_cursor: null };
+    await route.fulfill({ response, json: body });
+  });
+  await page.goto('/workspace/' + project + '/frameworks');
+  await expect(page.getByText('No Harbor runner profiles loaded.', { exact: false })).toBeVisible();
+  const runner = page.getByRole('combobox', { name: 'Evaluation runner', exact: false });
+  await expect(runner.locator('option')).toHaveCount(1);
+  await page.getByLabel('Preset name', { exact: false }).fill('Preserve this preset name');
+  await page.getByRole('button', { name: 'Configure Harbor', exact: true }).click();
+  const name = 'Browser auto-refresh runner ' + Date.now();
+  await page.getByLabel('Profile name', { exact: false }).fill(name);
+  await page.getByRole('button', { name: 'Save framework profile', exact: true }).click();
+  await expect(runner.locator('option').filter({ hasText: name })).toHaveCount(1);
+  await expect(page.getByText('No Harbor runner profiles loaded.', { exact: false })).toHaveCount(
+    0,
+  );
+  await expect(page.getByLabel('Preset name', { exact: false })).toHaveValue(
+    'Preserve this preset name',
+  );
+  expect(saved?.framework).toBe('harbor');
+  await runner.selectOption(saved!.id);
+  await expect(runner).toHaveValue(saved!.id);
+});
+
 test('Admin saves a typed preset and multi-model preparation without spending defaults or launch', async ({
   page,
 }) => {

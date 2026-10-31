@@ -20,6 +20,7 @@ Current feature evidence (full final counts in BUILD-STATUS.md):
 | MOD-13 Preparation usability | workspace-preparation browser; workspace-model-versions browser | Sole complete version summaries, read-only saved readiness, explicit fresh form/blank cap, focus, task scope reset, detail/list failure retry and320/768/1440px checks; broader accessibility/cancellation acceptance partial |
 | MOD-14 Schema030 metadata recovery | backup:local, restore:test and workspace row-digest comparison | SQL/artifacts restored with original unchanged,6171 checksums/1194 pending reviews preserved; ten workspace-table digests match. Credential ciphertext/wrap-key, environment and identity-service recovery not tested |
 | MOD-15 Harbor build feedback | harbor.spec.ts modern package build plus classic staged journey |3 shared Harbor browser checks passed: progress,503/retry,focused saved/reused result,task-scoped preparation with blank cap; no run or paid call triggered by building |
+| MOD-16 Preset runner choices refresh | workspace-preparation.spec.ts |2 browser checks passed: real Harbor save refreshes adjacent runner without reloading/remounting preset, entered name retained, clear model-versus-runner guidance; existing multi-model preparation unchanged |
 
 2026-09-29 ANV-BF-001 update:124 units,67 integrations and4 browser journeys pass;
 production check and fresh/repeated001–017 migrations pass. See

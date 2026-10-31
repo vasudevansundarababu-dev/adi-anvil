@@ -1,5 +1,21 @@
 # Build status
 
+Execution-preset runner refresh fix — 31 October2026. Runner choices accept project-scoped
+Harbor framework profiles, not provider/model profiles. FrameworkProfiles and ExecutionPresets
+previously loaded independently, so saving a framework left the adjacent runner list stale.
+Framework saves now notify the parent, which refreshes preset framework choices without
+remounting the form. Added runner help distinguishing models from frameworks and explicit
+empty/loading/error-aware Harbor setup guidance, including pagination guidance when present.
+Real local read-only inspection of the previously selected project found no framework rows;
+no profile, credential or permission was created on the user's behalf. Deterministic browser
+coverage isolates retained framework lists while saving via the real authorized API and
+proves the runner appears without reload and the entered preset name remains. Both
+`pnpm test:e2e tests/e2e/workspace-preparation.spec.ts` checks passed (8.5s), including the
+existing exact multi-model planning/readiness journey. TypeScript and scoped formatting/
+whitespace checks passed. Backend, whole-browser and production-build counts below remain
+historical evidence, not rerun for this UI-only fix. No dispatch/gate/backend changes or
+paid calls; unrelated user edits preserved.
+
 User-reported Harbor build feedback fix — 31 October2026. Read-only inspection of the
 user's local modern Runs view confirmed a persisted package/checksum despite the apparent
 no-op. Building is idempotent and does not start a run; the old UI only displayed its

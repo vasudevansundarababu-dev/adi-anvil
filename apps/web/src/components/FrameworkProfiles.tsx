@@ -37,7 +37,13 @@ const catalog = [
     'Adapter not implemented. SDK selection does not replace Anvil / LangGraph.',
   ],
 ];
-export default function FrameworkProfiles({ base }: { base: string }) {
+export default function FrameworkProfiles({
+  base,
+  onSaved,
+}: {
+  base: string;
+  onSaved?: () => void;
+}) {
   const [profiles, setProfiles] = useState<Profile[]>([]),
     [cursor, setCursor] = useState<string | null>(null),
     [editing, setEditing] = useState(false),
@@ -115,6 +121,7 @@ export default function FrameworkProfiles({ base }: { base: string }) {
                 );
                 setEditing(false);
                 await load();
+                onSaved?.();
               } catch (e) {
                 setError((e as Error).message);
               } finally {
