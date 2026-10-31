@@ -1,5 +1,40 @@
 # Build status
 
+01:00 nightly resume — profile mapping / People read transition verified as `6d272cd`.
+Migration028 records immutable, audited Admin/RL Engineer mapping evidence from existing
+active engineering/Admin grants; repeated migration passed. No identity or membership
+changes. Current-grant capabilities drive modern navigation/editor/preparation controls;
+historical snapshots never grant access. Other review/business identities show Legacy
+access instead of incorrectly being labeled RL Engineers. People now has one paginated
+row per person, with preserved duties in details and explicit unavailable management.
+Do not call this a full authorization migration: invitation, promotion and project revocation,
+full two-profile engineering permissions and review-policy consolidation remain unfinished.
+Admin is not globally assigned legacy Researcher/Data Engineer roles (hidden-reference leak).
+Read-only review found no privilege bypass. Targeted integration2 passed including actual
+hidden-reference content denial, unchanged memberships/reviews, RLS, pagination and read-only
+mapping storage. Initial test used the wrong artifact path; corrected to /content.
+`pnpm test:unit`210 passed; `pnpm check` passed; isolated `pnpm test:integration`92 passed/
+12 opt-in skipped in57.41s. Full `pnpm test:e2e`12 passed (2.0m), including genuine OIDC
+Admin/Engineer boundaries, People390px, classic provider save and staged synthetic Harbor.
+Final production check repeated after guarding canceled account-load responses in classic
+and modern shells. First browser attempt matched Next's route-announcer as well as the
+app denial; selector scoped to main content. Second attempt exposed the provider-save
+message disappearing after a late account load; canceled-load guards added. Standalone
+marketing retry correctly rejected resubmitting an already-reviewed fixture; dependency-
+ordered full suite then passed on a fresh retained journey. No data or approval reset.
+Next M4 work: typed presets and planning-only profile preparations, then complete
+the explicit profile authorization migration and People/Limits mutations under reviewed
+boundaries. No credentials or real paid authority are available; these block live dispatch
+only. Classic baseline and unrelated edits preserved. Nightly deadline remains06:00 local.
+Read-only next-step review: preserve existing harbor_agents rejection of workspace profiles
+(it uses the legacy credential path). Add immutable, project-scoped exact-version preset/
+preparation records with typed runner/runtime/tracing roles and one explicit optional group
+cap. Save must create no jobs, agent plans, calls, approvals or reservations. All unqualified
+adapters remain blocked with consolidated readiness reasons; unknown cost stays null and
+budgets start blank. Recheck rotation/revocation without rewriting snapshots. No launch
+endpoint or legacy key fallback in that bounded preparation slice.
+Local app and dedicated synthetic worker restarted; both live switches remain disabled.
+
 00:00 nightly resume — constrained M4 diagnostic successor editor verified as `9bddc3d`.
 Separate screen supports task title/capabilities/rubric binding, rubric labels/weights/
 threshold and evaluation protocol policies/limits. Save uses canonical immutable revisions,

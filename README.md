@@ -10,6 +10,9 @@ new schema changes are additive. This development branch has not been deployed.
 Tasks and Runs offer a **Diagnostic evaluations** source switch for existing diagnostic
 history, finalized result evidence and exact task/rubric/protocol snapshots. Unfinished
 grading stays blinded, and diagnostic metrics explicitly cover the whole run.
+Modern People groups each person once, with Admin/RL Engineer labels derived from current
+grants and preserved review duties available in details. Historical mapping evidence is
+recorded locally; this transition does not grant new access or implement invitations.
 See the [nightly plan](docs/build/08-MODERN-WORKSPACE-NIGHTLY.md) and [current status](BUILD-STATUS.md)
 for built versus remaining capabilities; saved framework metadata is not a working SDK
 integration, and saved credentials do not enable inference.

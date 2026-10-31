@@ -1,5 +1,24 @@
 # Modern workspace nightly checkpoint — 30 October 2026
 
+01:00 continuation checkpoint `6d272cd` adds persisted profile mapping evidence and a read-only People transition.
+People lists each active person once, with Admin/RL Engineer labels derived from current
+grants and expandable preserved duties. Non-engineering historical identities retain
+Legacy access. Migration028 is immutable/audited/project-scoped and grants the application
+SELECT only; current membership remains the authorization source. Admin never gains the
+legacy Data Engineer reference bypass. Invitations, promotions and project revocations
+are unavailable, and full two-profile authorization migration remains unfinished.
+`pnpm db:migrate` twice passed; `pnpm test:unit`210 passed; `pnpm check` passed;
+isolated `pnpm test:integration`92 passed/12 opt-in skipped (57.41s). Targeted access2
+passed after correcting a test to use the actual /artifacts/{id}/content endpoint.
+Full `pnpm test:e2e`12 passed (2.0m), including People390px, actual Admin/Engineer sign-ins,
+classic provider save, diagnostic snapshots and staged synthetic Harbor. Final production
+check repeated after guarding canceled account loads in both UI shells. The new denial
+assertion initially matched Next's route-announcer too; scoped to main content. A later
+classic save-status race prompted the canceled-load guards. A standalone marketing retry
+used an already-reviewed fixture and correctly got409; the dependency-ordered full suite
+then passed on a fresh retained journey. No data/approval reset or gate weakening.
+Local app and synthetic-only worker restarted. No deployment, identity changes or paid calls.
+
 00:00 continuation checkpoint `9bddc3d` adds a separate diagnostic successor editor. It edits public task,
 rubric and protocol fields, shows a before/after review and paginated immutable version
 history, and saves an unapproved draft through the canonical revision path. Prior approvals

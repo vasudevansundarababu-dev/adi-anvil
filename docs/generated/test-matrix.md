@@ -12,7 +12,7 @@ Current feature evidence (full final counts in BUILD-STATUS.md):
 | MOD-05 Multiple model/framework profiles   | test_workspace integration; modern-workspace browser                         | Persisted metadata passed; adapters/composition not all implemented     |
 | MOD-06 Write-only local credentials        | test_workspace_secrets unit; test_workspace_credentials integration; browser | Local save/rotate/revoke passed; cloud writes disabled                  |
 | MOD-07 No legacy key substitution          | test_workspace integration                                                   | New profiles blocked from unqualified legacy dispatch                   |
-| MOD-08 Two-profile migration / full editor | workspace_editor unit/integration and modern browser | Constrained diagnostic successor editor passed locally; full profile migration and source authoring pending |
+| MOD-08 Two-profile migration / full editor | workspace_editor and workspace_access unit/integration; modern browser | Constrained editor and current-grant profile projection verified locally; full authorization migration, People management and source authoring pending |
 | MOD-09 Paid live verification              | Not run                                                                      | No new paid authority or real keys supplied                             |
 
 2026-09-29 ANV-BF-001 update:124 units,67 integrations and4 browser journeys pass;
