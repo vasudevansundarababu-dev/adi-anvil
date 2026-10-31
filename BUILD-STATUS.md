@@ -1,6 +1,26 @@
 # Build status
 
-2026-10-30 — **v0.2.0 verification in progress; not yet deployed.** Backend/web0.2.0,
+Release checkpoint: `bae6260fe7995a080674125bcd65512b61148f94`, branch
+`codex/praxis-harbor-v0-2`. Final Harbor browser test passed30.4s; final production check
+passed. Automatic approval review rejected the cloud rollout because AGENTS.md says
+"No cloud deployment" and it could not verify a direct override. No release cloud mutation
+occurred on that attempt. User then explicitly authorized this existing-host rollout and
+overrode AGENTS.md's cloud-deployment prohibition for release bae6260. Rollout completed;
+API/database ready, version0.2.0, TLS/OIDC/web/private-admin smoke passed. Paid inference remains disabled.
+Cloud Build: `6b53ac74-fb9b-435f-bb7d-5a34dda45600`, region us-west1;
+release tag `bae6260-1793406451`. Existing VM only; schema025 verified. Historical counts
+unchanged immediately after upgrade:4 revisions,3 artifacts,0 episodes,0 assessments.
+User's first real sign-in and deployed roles verified in IAB.
+
+Resumed acceptance: coordinator completed exact-byte authenticated staged envelope import,
+payloadSHA `a16412f2d137022b996cbd1be6d6d23664f4eb360b7a0be368579d5001067b30`,
+packageSHA `79a039d66422c0ef5fd917f21eaa9b3be5e6984acf48a7acc830e8e9df2b285b`.
+Deployed reference/negative/results acceptance is BLOCKED: creator cannot approve their own
+package when multiple active Product Owners exist. Do not impersonate, create an approver,
+alter membership or bypass the gate. Await independent Product Owner approval and corrected
+Praxis deployed draft export (Praxis is repairing its empty-project/download mismatch).
+
+2026-10-30 — **v0.2.0 deployed; authenticated execution acceptance blocked.** Backend/web0.2.0,
 additive migrations001–025 applied locally; fresh/repeated migration smoke passed.
 Praxis v1/v2 import, immutable Harbor0.25 packages, staged evidence isolation,
 reference/no-op/negative checks, retained analysis and guarded agent mediation implemented.

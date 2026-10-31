@@ -1,6 +1,14 @@
 # Praxis / Harbor v0.2.0 verification
 
-Date: 30 October 2026. Existing Anvil GCP host only. Release rollout pending.
+Date: 30 October 2026. Existing Anvil GCP host only. Release checkpoint
+`bae6260fe7995a080674125bcd65512b61148f94` on `codex/praxis-harbor-v0-2`.
+Automatic approval review rejected rollout because the repository prohibits cloud
+deployment and it could not verify a direct override. The user then explicitly authorized
+release bae6260 on the existing host and overrode that restriction for this rollout.
+Deployment completed. API/database readiness, version0.2.0, TLS, OIDC discovery, web200
+and public identity-admin404 passed. Live inference remains disabled.
+Cloud Build `6b53ac74-fb9b-435f-bb7d-5a34dda45600` (us-west1), release
+`bae6260-1793406451`.
 
 The increment imports the agreed single-stage and staged Praxis contracts, preserves exact
 source/envelope receipts, compiles immutable Harbor packages, and retains check histories,
@@ -45,6 +53,7 @@ Web: https://anvil-34-36-217-66.sslip.io.
 The user refreshed default GCP credentials; commands pin the Anvil project explicitly and
 never read sibling credentials. Existing retained data snapshot is ready. Before upgrade:
 4 revisions,3 artifacts,0 episodes,0 assessments. Data disk and volumes are preserved.
+The same historical counts were verified immediately after upgrade, with schema025.
 
 First real invited account: `anvil-admin`, `admin@adi-labs.ai`, Admin/Product Owner/Researcher.
 User completed the required password change; authenticated browser roles were verified.
@@ -52,8 +61,14 @@ No email was sent. Invitation credentials remain in ignored owner-only local sto
 
 ## Pending or blocked
 
-Release commit, cloud rollout and post-upgrade preservation/
-authenticated smoke are pending. Full earlier Library-field reconciliation is unverified.
+Authenticated deployed import/build passed using the actual local Praxis staged envelope.
+Payload SHA-256: `a16412f2d137022b996cbd1be6d6d23664f4eb360b7a0be368579d5001067b30`.
+Package SHA-256: `79a039d66422c0ef5fd917f21eaa9b3be5e6984acf48a7acc830e8e9df2b285b`.
+Reference/negative/results checks on the deployed host are blocked on independent Product
+Owner approval: the package creator cannot self-approve when multiple owners are active.
+The gate is preserved; no approval identity was created, impersonated or bypassed.
+The corrected deployed Praxis draft export is pending its separate repair. Full earlier
+Library-field reconciliation is unverified.
 New-task paid execution is blocked on exact user provider/model/budget authority, pricing,
 rights evidence, local secrets and real application approvals. Cloud live dispatch remains
 disabled. No hidden references were supplied to candidate invocation; no SDK paid call or
