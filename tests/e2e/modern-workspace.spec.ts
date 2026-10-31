@@ -2,6 +2,62 @@ import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
+test('workspace profiles preserve people history and keep engineer administration restricted', async ({
+  browser,
+}) => {
+  const project = 'a0000000-0000-4000-8000-000000000002';
+  for (const username of ['admin-1', 'researcher']) {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto('/');
+    await page.getByRole('link', { name: 'Sign in with Keycloak' }).click();
+    await page.locator('#username').fill(username);
+    const password = readFileSync('.local/demo-accounts.md', 'utf8')
+      .split('\n')
+      .find((l) => l.startsWith('- ' + username + ':'))!
+      .split('`')[1];
+    await page.locator('#password').fill(password);
+    await page.locator('#kc-login').click();
+    await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+    await page.goto('/workspace/' + project + '/people');
+    if (username === 'admin-1') {
+      await expect(
+        page.getByRole('heading', { name: 'Project people', exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByText('Invitation, promotion and project-access revocation', { exact: false }),
+      ).toBeVisible();
+      const people = await (
+        await page.request.get('/api/v1/projects/' + project + '/workspace/people')
+      ).json();
+      await expect(page.locator('main tbody tr')).toHaveCount(people.data.items.length);
+      await expect(
+        page.getByRole('cell', { name: 'RL Engineer', exact: true }).first(),
+      ).toBeVisible();
+      await page.setViewportSize({ width: 390, height: 844 });
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      ).toBe(true);
+      await page.screenshot({
+        path: 'artifacts/test-runs/modern-people-mobile.png',
+        fullPage: true,
+      });
+    } else {
+      await expect(page.getByText('researcher · RL Engineer', { exact: true })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Models & keys', exact: true })).toHaveCount(0);
+      await expect(page.getByRole('main').getByRole('alert')).toHaveText(
+        'Administration is restricted to project Admins.',
+      );
+      expect(
+        (await page.request.get('/api/v1/projects/' + project + '/workspace/people')).status(),
+      ).toBe(403);
+      await page.getByRole('link', { name: 'Tasks', exact: true }).click();
+      await expect(page.getByRole('heading', { name: 'Tasks', exact: true })).toBeVisible();
+    }
+    await context.close();
+  }
+});
+
 test('separate successor editor appends a persisted draft and keeps old versions read-only', async ({
   page,
 }) => {

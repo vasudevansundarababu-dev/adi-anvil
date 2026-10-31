@@ -185,12 +185,19 @@ def logout(request: Request):
 
 @router.get("/me")
 def me(request: Request):
+    from anvil.workspace_access import project_access
+
     user = identity(request)
-    with transaction() as c:
+    with transaction(user=user["id"]) as c:
         projects = c.execute(
             """SELECT p.id,p.name,array_agg(m.role) roles FROM anvil.projects p
                              JOIN anvil.memberships m ON m.project_id=p.id
                              WHERE m.user_id=%s AND m.active GROUP BY p.id,p.name ORDER BY p.name""",
             (user["id"],),
         ).fetchall()
+        for project in projects:
+            c.execute("SELECT set_config('anvil.project',%s,true)", (str(project["id"]),))
+            project["workspace_access"] = project_access(
+                c, project["id"], user["id"], project["roles"]
+            )
     return {"data": {"id": user["id"], "name": user["name"], "projects": projects}}

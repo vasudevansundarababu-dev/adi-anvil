@@ -31,6 +31,7 @@ from anvil.schemas import Decision, FixtureImport, Rights, Withdrawal
 from anvil.support import routes as support_routes
 from anvil.task_imports import routes as task_import_routes
 from anvil.workspace import routes as workspace_routes
+from anvil.workspace_access import routes as workspace_access_routes
 from anvil.workspace_credentials import routes as workspace_credential_routes
 from anvil.workspace_diagnostics import routes as workspace_diagnostic_routes
 from anvil.workspace_editor import routes as workspace_editor_routes
@@ -166,6 +167,7 @@ app.include_router(workspace_routes(context, wrap, idempotent))
 app.include_router(workspace_credential_routes(context, wrap, idempotent))
 app.include_router(workspace_diagnostic_routes(context, wrap))
 app.include_router(workspace_editor_routes(context, wrap, idempotent))
+app.include_router(workspace_access_routes(context, wrap))
 app.include_router(harbor_agent_routes(context, wrap, idempotent))
 app.include_router(factory_routes(context, wrap, idempotent))
 app.include_router(plan_routes(context, wrap, idempotent))

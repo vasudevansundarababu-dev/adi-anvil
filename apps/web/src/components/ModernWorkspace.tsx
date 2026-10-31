@@ -7,6 +7,7 @@ import ModelProfiles from './ModelProfiles';
 import FrameworkProfiles from './FrameworkProfiles';
 import DiagnosticResults from './DiagnosticResults';
 import WorkspaceRevisionEditor from './WorkspaceRevisionEditor';
+import WorkspacePeople, { WorkspaceAccess } from './WorkspacePeople';
 import {
   comparable,
   dateTime,
@@ -20,7 +21,7 @@ import {
 } from '../lib/workspace';
 import styles from './ModernWorkspace.module.css';
 
-type Project = { id: string; name: string; roles: string[] };
+type Project = { id: string; name: string; roles: string[]; workspace_access: WorkspaceAccess };
 type User = { id: string; name: string; projects: Project[] };
 const navigation = [
   ['overview', 'Overview'],
@@ -63,14 +64,12 @@ function WorkspaceView() {
   const [tab, setTab] = useState(
       runTabs.includes(query.get('tab') || '') ? query.get('tab')! : 'Dashboard',
     ),
-    [prepare, setPrepare] = useState(false),
-    [members, setMembers] = useState<{ id: string; name: string; role: string }[]>([]);
+    [prepare, setPrepare] = useState(false);
   const project =
     user?.projects.find((p) => p.id === parts[2]) || (parts[2] ? undefined : user?.projects[0]);
-  const admin = !!project?.roles.includes('admin');
-  const allowed = !!project?.roles.some((r) =>
-    ['admin', 'researcher', 'data-engineer', 'product-owner', 'advisor'].includes(r),
-  );
+  const capabilities = project?.workspace_access.capabilities || [];
+  const admin = capabilities.includes('models.manage');
+  const allowed = capabilities.includes('workspace.read');
   const base = project ? '/projects/' + project.id : '',
     route = project ? '/workspace/' + project.id : '/workspace';
   const taskFilter = query.get('task'),
@@ -81,10 +80,20 @@ function WorkspaceView() {
   const scopeQuery = diagnostic ? 'kind=diagnostic' : '';
   const generation = useRef(0);
   useEffect(() => {
+    let active = true;
     api('/me')
-      .then(setUser)
-      .catch(() => setUser(null))
-      .finally(() => setReady(true));
+      .then((value) => {
+        if (active) setUser(value);
+      })
+      .catch(() => {
+        if (active) setUser(null);
+      })
+      .finally(() => {
+        if (active) setReady(true);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
   useEffect(() => {
     if (project && !parts[2]) router.replace('/workspace/' + project.id + '/overview');
@@ -97,9 +106,8 @@ function WorkspaceView() {
     setDetail(null);
     setTasks(null);
     setRuns(null);
-    setMembers([]);
     try {
-      const [nextTasks, nextRuns, nextDetail, nextMembers] = await Promise.all([
+      const [nextTasks, nextRuns, nextDetail] = await Promise.all([
         api(base + '/workspace/' + tasksEndpoint),
         api(
           base +
@@ -108,13 +116,11 @@ function WorkspaceView() {
             (taskFilter ? '?task_id=' + encodeURIComponent(taskFilter) : ''),
         ),
         runId ? api(base + '/workspace/' + runsEndpoint + '/' + encodeURIComponent(runId)) : null,
-        section === 'people' ? api(base + '/members') : [],
       ]);
       if (current !== generation.current) return;
       setTasks(nextTasks);
       setRuns(nextRuns);
       setDetail(nextDetail);
-      setMembers(nextMembers);
     } catch (e) {
       if (current === generation.current) setError((e as Error).message);
     } finally {
@@ -155,9 +161,7 @@ function WorkspaceView() {
     section === 'editor'
       ? 'Edit as new version'
       : navigation.find(([key]) => key === section)?.[1] || 'Overview';
-  const canEdit = !!project?.roles.some((r) =>
-    ['admin', 'researcher', 'data-engineer'].includes(r),
-  );
+  const canEdit = capabilities.includes('task_drafts.write');
   const editorHref = (id: string, returnRun = query.get('return_run') || runId || '') =>
     route +
     '/editor?kind=diagnostic&revision=' +
@@ -229,7 +233,7 @@ function WorkspaceView() {
           </div>
           <div className={styles.actions}>
             <span>
-              {user.name} · {admin ? 'Admin' : 'RL Engineer'}
+              {user.name} · {project?.workspace_access.label || 'Project access'}
             </span>
             <button onClick={() => setDark(!dark)} aria-pressed={dark}>
               {dark ? 'Light' : 'Dark'} theme
@@ -312,9 +316,7 @@ function WorkspaceView() {
                     base={base}
                     api={api}
                     canApprove={project.roles.includes('product-owner')}
-                    canPlan={project.roles.some((r) =>
-                      ['admin', 'researcher', 'product-owner'].includes(r),
-                    )}
+                    canPlan={capabilities.includes('harbor.prepare')}
                     canAdmin={admin}
                   />
                   <p className={styles.muted}>
@@ -528,31 +530,7 @@ function WorkspaceView() {
                 ))}
               {section === 'models' && admin && <ModelProfiles key={base} base={base} />}
               {section === 'frameworks' && admin && <FrameworkProfiles key={base} base={base} />}
-              {section === 'people' && admin && (
-                <section className={styles.panel}>
-                  <h2>Project people</h2>
-                  <p className={styles.muted}>
-                    Existing grants are shown without changing historical identities. Two-profile
-                    access management is being integrated; no automatic role promotion.
-                  </p>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Person</th>
-                        <th>Current grant</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {members.map((m) => (
-                        <tr key={m.id + m.role}>
-                          <td>{m.name}</td>
-                          <td>{m.role}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </section>
-              )}
+              {section === 'people' && admin && <WorkspacePeople key={base} base={base} />}
               {section === 'limits' && admin && (
                 <section className={styles.panel}>
                   <h2>Operating boundaries</h2>

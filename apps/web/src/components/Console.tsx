@@ -239,10 +239,20 @@ export default function Console() {
       : undefined);
   const base = project ? '/projects/' + project.id : '';
   useEffect(() => {
+    let active = true;
     api('/me')
-      .then(setUser)
-      .catch(() => setUser(null))
-      .finally(() => setReady(true));
+      .then((value) => {
+        if (active) setUser(value);
+      })
+      .catch(() => {
+        if (active) setUser(null);
+      })
+      .finally(() => {
+        if (active) setReady(true);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
   const reload = useCallback(async () => {
     if (!base) return;
