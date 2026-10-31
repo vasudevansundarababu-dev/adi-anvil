@@ -16,6 +16,7 @@ Current feature evidence (full final counts in BUILD-STATUS.md):
 | MOD-09 Paid live verification              | Not run                                                                      | No new paid authority or real keys supplied                             |
 | MOD-10 Typed presets / multi-model preparation | workspace_preparation unit/integration and browser | Exact immutable planning bindings, credential rotation/drift, USD conversion, scope and zero execution/accounting effects passed; live admission unimplemented |
 | MOD-11 Model versions / disable / declared pricing | workspace_models unit/integration and browser | Stable profiles, immutable configs, CAS, one-way disable, exact credential/price conversion and legacy separation passed; metadata conveys no live authority |
+| MOD-12 Scoped native SDK mock contracts | workspace_adapter_contracts unit/integration; existing provider unit matrix |57 scoped mock cases passed for OpenAI/Claude/Gemini: exact auth, no retries, refusal/truncation/unknowns, invalid JSON preservation, key echo suppression and current/scope gates. Not live, Harbor-task or structured-output qualification |
 
 2026-09-29 ANV-BF-001 update:124 units,67 integrations and4 browser journeys pass;
 production check and fresh/repeated001–017 migrations pass. See

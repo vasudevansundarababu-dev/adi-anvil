@@ -1,5 +1,33 @@
 # Build status
 
+04:00 nightly resume — internal credential-bound SDK mock contract verified as `a092a7f`.
+No HTTP route, job/ledger writer or
+availability promotion was added. Helper requires exact MockTransport, scoped Admin,
+current/enabled frozen model and exact current credential/provider binding before key
+resolution. Profile/key locks serialize metadata changes; actor UTF-8/token limits are
+checked before SDK construction. SDK request guard enforces official HTTPS host/native
+endpoint, POST and the bound auth header. No global-key fallback; Gemini mock mode is
+explicitly non-Vertex. Unsafe SDK environment overrides fail closed. Native exceptions
+are sanitized before SDK logging; response headers/body and final results are inspected
+for credential echoes, including escaped/URL-encoded material. Unscannable/oversized
+responses fail closed. Invalid JSON output is retained verbatim, never repaired.
+Evidence means credential-bound SDK mock contracts only — not live/model/Harbor-task or
+structured-output qualification. Native text SDK mode is intentionally unchanged.
+`pnpm check` passed; units224 passed; targeted scoped SDK integration57 passed (6.90s);
+full isolated integration152 passed/12 opt-in skipped (70.50s). Read-only review found no
+blocking issue. The first expanded run had3 test failures because Pydantic rejected an
+unpaired surrogate before helper entry; the corrected test mutates an already validated
+request and proves the helper's independent fail-closed check. No assertion was weakened.
+Browser14 from the previous UI checkpoint remains historical evidence, not rerun for this
+internal non-routed increment. No SDK install, external provider request, real key use, paid action,
+identity/IAM change, cloud deployment or GitHub push. Deadline remains06:00 local/11:00 UTC.
+Staged whitespace/credential-pattern scans passed. Comparison app and synthetic-only worker
+restarted; both live switches remain disabled. Unrelated user edits remain excluded.
+Next checkpoint should prioritize remaining M5 usability/regression and a candid final
+morning report within the existing deadline. Shared spending admission, actual credential-
+mediated dispatch, full profile authorization/People actions and source authoring remain
+unfinished; do not label mock contracts as completing those features or enable launch.
+
 03:00 nightly resume — model profile versions/disable/pricing verified as `62d9e60`.
 Migration030 backfills stable profile headers and immutable connection
 version mappings without changing existing connection/config hashes. Current-only CAS and

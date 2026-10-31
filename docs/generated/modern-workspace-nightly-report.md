@@ -1,5 +1,30 @@
 # Modern workspace nightly checkpoint — 30 October 2026
 
+04:00 continuation checkpoint `a092a7f` verifies an internal credential-bound native SDK
+mock boundary for OpenAI, Claude and Gemini. It requires a scoped Admin, current exact
+model/configuration and credential version, actor/output limits and an injected exact
+MockTransport. No HTTP route, worker job, spending record or availability promotion exists.
+Official host/path/POST/auth guards and one-request enforcement prevent fallback or retries;
+Gemini mock mode is explicitly non-Vertex. SDK environment overrides fail closed. Credential
+echoes are suppressed before SDK logging/normalization and again at the result boundary;
+mock-handler exceptions are sanitized. Escaped/URL-encoded echoes, malformed/oversized or
+unscannable bodies and post-validation Unicode corruption are covered. Refusal, truncation,
+ambiguous errors and missing usage stay distinct; invalid JSON is never repaired.
+`pnpm check` passed; units224 passed; targeted SDK integration57 passed (6.90s); full
+isolated integration152 passed/12 opt-in skipped (70.50s). The first expanded run failed3
+tests because Pydantic rejected a surrogate before helper entry; the corrected test mutates
+a validated object to exercise the independent guard. Read-only review found no blocking
+issue. Whitespace/credential-pattern scan passed. Browser14 from the preceding UI checkpoint
+is historical, not rerun for this non-routed increment. The local comparison app and
+synthetic-only worker were restored with both live switches disabled.
+This evidence means **credential-bound SDK mock contracts tested**, not live verification,
+exact-model compatibility, Harbor/task qualification or structured-output admission. No
+SDK install, external provider request, real key use, paid action, IAM/identity change,
+deployment, GitHub push or external sending occurred. Final-window work should prioritize
+M5 usability/regression and a candid morning report by06:00 local. Shared spending admission,
+actual mediated execution, full product-profile authorization and People actions remain
+unfinished and must not be inferred from these tests.
+
 03:00 continuation checkpoint `62d9e60` completes model version/disable/configuration metadata.
 Migration030 records stable profiles and immutable connection versions without rewriting
 old configurations or hashes. Current-base locking/If-Match serialize successors; provider
