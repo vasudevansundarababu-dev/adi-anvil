@@ -75,7 +75,14 @@ ANVIL_HARBOR_DOCKER_HOST=<authorized local socket> services/backend/.venv/bin/py
 Each file passed2 tests (single21.56s; staged23.49s). Retained local execution evidence is
 in ignored `artifacts/test-runs/praxis-harbor-<source SHA prefix>-<candidate>.json`.
 These use isolated automated software-test approval, never human or production approval.
-The prior Anvil browser session expired; sign-in was requested before deployed import.
+The user restored Anvil sign-in. Both exact cloud exports were imported, built and
+inspected through the deployed UI; source/package hashes match the local executions.
+Single package ID: `a5c31954-d9a4-4116-a629-86975952d4d3`.
+Staged package ID: `e9e77084-4216-44de-a22b-28cbcafe6357`.
+Staged initial actor view exposes only stage-commit and revealed evidence. Deployed database
+read confirms both packages unapproved,2 active owners and0 checks. Independent Product
+Owner approval remains required; no blocked self-approval attempt was repeated. Screenshot:
+`artifacts/test-runs/cloud-imports-built.png` (ignored local evidence).
 
 Authenticated deployed import/build passed using the actual local Praxis staged envelope.
 Payload SHA-256: `a16412f2d137022b996cbd1be6d6d23664f4eb360b7a0be368579d5001067b30`.
