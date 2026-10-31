@@ -61,13 +61,29 @@ No email was sent. Invitation credentials remain in ignored owner-only local sto
 
 ## Pending or blocked
 
+The corrected actual cloud downloads from Praxis7230978b passed exact-byte local
+authenticated import/build and real Docker Harbor execution:
+
+| Task         | Exact source SHA-256                                               | Package SHA-256                                                    | Reference | Deliberate hard failure |
+| ------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------ | --------- | ----------------------- |
+| Single-stage | `15538a0c8a3f041a0fe46685f2c770b05e3cbcbf3f8b2c71a63f103f02133945` | `263cd426a57b6f9290c3920a2ee15a605903c9cc7985b1f91a373fd82a6ec13f` | 1         | 0                       |
+| Staged       | `557cf87b43ba4dd6c3bb2bac6e7c558021abbf1908803bb1380f2e77015d43d4` | `5900ac88e97357fd2771e5a5bc1bc8528352bdd120bb68e5c48df6eac4c8007c` | 1         | 0                       |
+
+Targeted command: `ANVIL_TEST_HARBOR=1 ANVIL_PRAXIS_EXPORT_PATH=<exact cloud file>
+ANVIL_HARBOR_DOCKER_HOST=<authorized local socket> services/backend/.venv/bin/python
+-m pytest services/backend/tests/integration/test_praxis_harbor.py -k actual_praxis_api_export -q`.
+Each file passed2 tests (single21.56s; staged23.49s). Retained local execution evidence is
+in ignored `artifacts/test-runs/praxis-harbor-<source SHA prefix>-<candidate>.json`.
+These use isolated automated software-test approval, never human or production approval.
+The prior Anvil browser session expired; sign-in was requested before deployed import.
+
 Authenticated deployed import/build passed using the actual local Praxis staged envelope.
 Payload SHA-256: `a16412f2d137022b996cbd1be6d6d23664f4eb360b7a0be368579d5001067b30`.
 Package SHA-256: `79a039d66422c0ef5fd917f21eaa9b3be5e6984acf48a7acc830e8e9df2b285b`.
 Reference/negative/results checks on the deployed host are blocked on independent Product
 Owner approval: the package creator cannot self-approve when multiple owners are active.
 The gate is preserved; no approval identity was created, impersonated or bypassed.
-The corrected deployed Praxis draft export is pending its separate repair. Full earlier
+The corrected deployed Praxis drafts are available and qualified locally as above. Full earlier
 Library-field reconciliation is unverified.
 New-task paid execution is blocked on exact user provider/model/budget authority, pricing,
 rights evidence, local secrets and real application approvals. Cloud live dispatch remains

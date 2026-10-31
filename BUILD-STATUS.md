@@ -1,5 +1,17 @@
 # Build status
 
+Actual Praxis cloud exports (7230978b) now qualified in local real Harbor, exact bytes:
+single SHA `15538a0c8a3f041a0fe46685f2c770b05e3cbcbf3f8b2c71a63f103f02133945`,
+package `263cd426a57b6f9290c3920a2ee15a605903c9cc7985b1f91a373fd82a6ec13f`;
+staged SHA `557cf87b43ba4dd6c3bb2bac6e7c558021abbf1908803bb1380f2e77015d43d4`,
+package `5900ac88e97357fd2771e5a5bc1bc8528352bdd120bb68e5c48df6eac4c8007c`.
+Each passed reference reward1 and deliberate constraint-failure reward0:2 tests/21.56s
+single and2 tests/23.49s staged. Evidence: ignored artifacts/test-runs/praxis-harbor-
+
+<source SHA prefix>-<candidate>.json. Automated local test identities only; no human
+approval/model performance/paid-call claim. Exact-cloud deployed import awaits restored
+Anvil session (expired); user sign-in requested. Execution still needs independent PO.
+
 Release checkpoint: `bae6260fe7995a080674125bcd65512b61148f94`, branch
 `codex/praxis-harbor-v0-2`. Final Harbor browser test passed30.4s; final production check
 passed. Automatic approval review rejected the cloud rollout because AGENTS.md says
@@ -17,8 +29,8 @@ payloadSHA `a16412f2d137022b996cbd1be6d6d23664f4eb360b7a0be368579d5001067b30`,
 packageSHA `79a039d66422c0ef5fd917f21eaa9b3be5e6984acf48a7acc830e8e9df2b285b`.
 Deployed reference/negative/results acceptance is BLOCKED: creator cannot approve their own
 package when multiple active Product Owners exist. Do not impersonate, create an approver,
-alter membership or bypass the gate. Await independent Product Owner approval and corrected
-Praxis deployed draft export (Praxis is repairing its empty-project/download mismatch).
+alter membership or bypass the gate. Await independent Product Owner approval and restored
+sign-in to import the corrected Praxis deployed drafts; local exact-byte execution passed above.
 
 2026-10-30 — **v0.2.0 deployed; authenticated execution acceptance blocked.** Backend/web0.2.0,
 additive migrations001–025 applied locally; fresh/repeated migration smoke passed.

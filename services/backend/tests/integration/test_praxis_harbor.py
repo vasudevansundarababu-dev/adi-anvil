@@ -191,7 +191,8 @@ def test_real_harbor_software_check(client_factory, candidate, expected, fixture
             assert diagnostic["stages"][-1]["state_snapshot"]["final_spend"] == 600
 
 
-def test_actual_praxis_api_export(client_factory):
+@pytest.mark.parametrize("candidate,expected", [("reference", 1), ("constraint_failure", 0)])
+def test_actual_praxis_api_export(client_factory, candidate, expected):
     import os
     from pathlib import Path
 
@@ -203,7 +204,7 @@ def test_actual_praxis_api_export(client_factory):
     approve(po, package)
     response = client.post(
         BASE + f"/harbor-packages/{package['id']}/checks",
-        json={"candidate": "reference"},
+        json={"candidate": candidate},
         headers={"Idempotency-Key": uid()},
     )
     assert response.status_code == 200, response.text
@@ -219,7 +220,7 @@ def test_actual_praxis_api_export(client_factory):
     harbor_worker.process(job)
     result = client.get(BASE + f"/harbor-checks/{hid}").json()["data"]
     assert result["state"] == "succeeded", result
-    assert result["result"]["diagnostics"]["reward"] == 1
+    assert result["result"]["diagnostics"]["reward"] == expected
     evidence = {
         "verification": "actual_Praxis_API_export_with_automated_test_identities",
         "source_sha256": source["source_sha256"],
@@ -229,9 +230,12 @@ def test_actual_praxis_api_export(client_factory):
         "check_id": hid,
         "result": result["result"],
         "human_approval": False,
+        "candidate": candidate,
     }
     (
-        ROOT / "artifacts/test-runs" / ("praxis-harbor-" + source["source_sha256"][:12] + ".json")
+        ROOT
+        / "artifacts/test-runs"
+        / ("praxis-harbor-" + source["source_sha256"][:12] + "-" + candidate + ".json")
     ).write_text(json.dumps(evidence, indent=2, default=str))
 
 
