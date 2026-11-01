@@ -1,5 +1,17 @@
 # Build status
 
+Nightly checkpoint, 31 October 2026 23:11 America/Chicago (1 November 04:11 UTC):
+`pnpm test:unit` passed 250 tests (9.71s); existing Authlib deprecation warning only.
+`git diff --check` passed; classic comparison remains at 3a17429c. User edits in
+AGENTS.md and the Google Cloud runbook remain untouched. No source expansion or paid
+calls. Current user-facing Run diagnosis: group becf1a47 in project 2eb81cb7 binds a
+model version without a saved credential. This differs from the previously checked
+preparation in project ea1cc06d. Update configuration preserves model/key versions;
+it cannot adopt a newly saved model version. User has been told to bind the saved key
+and create a group selecting that version. No user configuration was silently changed.
+Earlier integration/browser/build evidence below remains valid but was not rerun at
+this checkpoint. Nightly deadline: 06:00 America/Chicago, including the DST transition.
+
 Simplified model setup, 31 October 2026 — manual pricing and processing-terms fields
 are removed from the modern model editor. Existing model/key/preset bindings remain
 usable. Anvil freezes server-managed cost estimates into new execution groups;
