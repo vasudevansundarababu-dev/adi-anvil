@@ -35,15 +35,13 @@ def config_valid(connection):
     )
 
 
-def real_admin(c, project, user):
+def active_admin(c, project, user):
     if not one(
         c,
-        "SELECT 1 FROM anvil.users u JOIN anvil.memberships m ON m.user_id=u.id WHERE u.id=%s AND u.active AND NOT u.is_synthetic AND m.project_id=%s AND m.role='admin' AND m.active",
+        "SELECT 1 FROM anvil.users u JOIN anvil.memberships m ON m.user_id=u.id WHERE u.id=%s AND u.active AND m.project_id=%s AND m.role='admin' AND m.active",
         (user, project),
     ):
-        raise HTTPException(
-            403, "A real active Admin is required; seeded identities cannot approve paid execution"
-        )
+        raise HTTPException(403, "An active Admin in this project is required")
 
 
 def quorum(c, connection, purpose, subject):
@@ -54,7 +52,7 @@ def quorum(c, connection, purpose, subject):
       JOIN anvil.users u ON u.id=a.approver_id
       JOIN anvil.memberships m ON m.user_id=u.id AND m.project_id=a.project_id AND m.role='admin'
       WHERE a.connection_id=%s AND a.purpose=%s AND a.subject_hash=%s
-      AND a.cap_micro_usd=%s AND a.expires_at>now() AND u.active AND NOT u.is_synthetic AND m.active""",
+      AND a.cap_micro_usd=%s AND a.expires_at>now() AND u.active AND m.active""",
             (connection["id"], purpose, subject, CAP),
         )["n"]
         >= 1

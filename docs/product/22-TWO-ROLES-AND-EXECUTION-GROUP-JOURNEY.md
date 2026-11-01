@@ -10,7 +10,10 @@ Admin includes engineering and administration. Admin's explicit Run action can a
 the exact run, model/key versions, rates/terms and aggregate budget; no Product Owner,
 second Admin or separate approval ceremony/file is required. Record that exact Admin
 authorization immutably and recheck active Admin membership between stages. Roles do not
-change synthetic identity provenance: test accounts are not silently made real people.
+change identity provenance. User clarification, 31 October: existing Admin accounts are
+eligible based on active project role, regardless of seeded origin. No extra account or
+invitation is required. Origin metadata remains intact and is recorded in the run audit;
+it is not a permission category and never establishes model-performance evidence.
 No paid dispatch occurs as part of building this feature. Runtime live controls, exact
 explicit budgets, rights confirmation, project and hidden-reference isolation remain.
 

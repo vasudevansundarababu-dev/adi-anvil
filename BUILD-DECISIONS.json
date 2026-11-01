@@ -49,7 +49,7 @@
     "max_initial_cases": 3,
     "repetitions_per_case_model": 1,
     "synthetic_cases_only": true,
-    "required_in_app_approvals": "Current modern policy: one real active Admin confirms exact run/model/key versions, processing rights and aggregate budget via Run; no Product Owner, second Admin or external workspace-authority file. Local build grants no live runtime activation or paid dispatch.",
+    "required_in_app_approvals": "Current modern policy: one active project Admin (including an existing seeded Admin account) confirms exact run/model/key versions, processing rights and aggregate budget via Run; no Product Owner, second Admin or external workspace-authority file. Local build grants no live runtime activation or paid dispatch.",
     "marketing_runtime": {
       "mode": "marketing_interactive_v1",
       "responses_per_episode": 13,

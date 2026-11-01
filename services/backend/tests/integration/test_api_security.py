@@ -837,7 +837,7 @@ def test_graph_declared_capability_family_and_episode_lineage():
 def test_task_cannot_relabel_source_family_or_claim_protected_fixture(client_factory):
     journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
     base = f"/api/v1/projects/{journey['project_id']}"
-    client = client_factory("researcher")[0]
+    client = client_factory("data-engineer")[0]
     # Repeated runs retain invalid drafts; start from a qualified fixture so each
     # mutation isolates its intended security invariant rather than another draft's defect.
     template = next(
@@ -1287,8 +1287,8 @@ def test_provider_and_delivery_role_and_project_boundaries(client_factory):
     assert denied >= 48
     for who in ("admin-1", "admin-2"):
         response = request(who, other + f"/connections/{connection['id']}/approvals", paid)
-        assert response.status_code == 403
-        assert "Seeded identities" in response.text
+        assert response.status_code == 409
+        assert "reviewed marketing configuration" in response.text
     assert snapshot() == before
 
 
@@ -2091,7 +2091,7 @@ def test_oversized_upload_rejected_before_artifact_storage(client_factory):
 
 
 def test_task_missing_duplicate_cross_source_and_unsupported_inputs(client_factory):
-    client, _ = client_factory()
+    client, _ = client_factory("data-engineer")
     journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
     base = f"/api/v1/projects/{journey['project_id']}"
     tasks = [

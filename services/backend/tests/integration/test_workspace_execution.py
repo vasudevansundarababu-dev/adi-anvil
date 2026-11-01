@@ -75,7 +75,7 @@ def configured(client_factory, monkeypatch, tmp_path, request):
         name: client_factory(name)[0]
         for name in [*names, "admin-1", "researcher", "advisor", "outsider"]
     }
-    admin = clients["contract-admin-a"]
+    admin = clients["admin-1"]
     researcher, po, _, source, package = imported(
         client_factory, fixture=getattr(request, "param", "synthetic-marketing.task.json")
     )
@@ -578,7 +578,46 @@ def test_uncertainty_cancellation_and_revocation_stop_remaining_models_and_retai
         )
 
 
-def test_two_roles_real_identity_and_exact_admin_budget_boundaries(configured):
+@pytest.mark.parametrize("revocation", ["user", "membership", "admin_role"])
+def test_existing_admin_authority_requires_current_active_project_admin(configured, revocation):
+    data = configured
+    launched = data["post"]("/execution-groups/" + data["group"]["id"] + "/launch")
+    first = launched["models"][0]
+    with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+        c.execute(
+            "UPDATE anvil.harbor_checks SET state='running',invocation_count=1 WHERE id=%s",
+            (first["check"]["id"],),
+        )
+    with psycopg.connect(setting("MIGRATION_DATABASE_URL")) as c:
+        if revocation == "user":
+            c.execute("UPDATE anvil.users SET active=false WHERE id=%s", (USERS["admin-1"],))
+        elif revocation == "membership":
+            c.execute(
+                "UPDATE anvil.memberships SET active=false WHERE project_id=%s AND user_id=%s AND active",
+                (cli.PROJECT, USERS["admin-1"]),
+            )
+        else:
+            c.execute(
+                "UPDATE anvil.memberships SET role='rl-engineer' WHERE project_id=%s AND user_id=%s AND active",
+                (cli.PROJECT, USERS["admin-1"]),
+            )
+    with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+        row = execution.group(c, data["group"]["id"])
+        assert execution.authority(c, row) is None
+        assert "admin_run_authorization_required" in execution.readiness(c, row)["missing"]
+    with pytest.raises(RuntimeError, match="admission_revoked"):
+        execution.decision(
+            cli.PROJECT,
+            USERS["contract-admin-a"],
+            first["plan_id"],
+            0,
+            transport=httpx.MockTransport(
+                lambda req: pytest.fail("Revoked Admin must not dispatch")
+            ),
+        )
+
+
+def test_existing_admin_and_exact_budget_boundaries(configured):
     data = configured
     post = data["post"]
     gid = data["group"]["id"]
@@ -594,7 +633,7 @@ def test_two_roles_real_identity_and_exact_admin_budget_boundaries(configured):
         "aggregate_cap_micro_usd": 1000000,
         "rights_confirmed": True,
     }
-    for name in ("admin-1", "contract-engineer"):
+    for name in ("contract-engineer",):
         post(
             "/execution-groups/" + second["id"] + "/launch",
             body,
@@ -611,9 +650,30 @@ def test_two_roles_real_identity_and_exact_admin_budget_boundaries(configured):
         {**body, "rights_confirmed": False},
         expected=409,
     )
-    launched = post("/execution-groups/" + second["id"] + "/launch", body)
+    launched = post(
+        "/execution-groups/" + second["id"] + "/launch", body, client=data["clients"]["admin-1"]
+    )
     assert launched["state"] == "launched"
     with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+        assert (
+            one(c, "SELECT is_synthetic FROM anvil.users WHERE id=%s", (USERS["admin-1"],))[
+                "is_synthetic"
+            ]
+            is True
+        )
+        authorization = one(
+            c,
+            "SELECT admin_id FROM anvil.workspace_admin_run_authorizations WHERE group_id=%s",
+            (second["id"],),
+        )
+        assert str(authorization["admin_id"]) == USERS["admin-1"]
+        event = one(
+            c,
+            "SELECT metadata FROM anvil.audit_events WHERE action='workspace.admin_run_authorized' AND target_id=%s ORDER BY occurred_at DESC LIMIT 1",
+            (second["id"],),
+        )
+        assert event["metadata"]["authorization_policy"] == "active-project-admin-v2"
+        assert event["metadata"]["actor_seeded_origin"] is True
         assert one(c, "SELECT count(*) n FROM anvil.harbor_agent_reviews")["n"] == 0
         assert one(c, "SELECT count(*) n FROM anvil.provider_approvals")["n"] == 0
         assert (

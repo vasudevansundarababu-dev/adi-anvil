@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Request
 from anvil import auth, marketing_env
 from anvil.db import audit, one, uid
 from anvil.evaluation import get_run
-from anvil.marketing_authority import CAP, PRICE_EXPIRES, binding, readiness, real_admin, scope
+from anvil.marketing_authority import CAP, PRICE_EXPIRES, active_admin, binding, readiness, scope
 from anvil.provider_api import PaidApproval
 
 router = APIRouter(prefix="/api/v1/projects/{project}")
@@ -59,7 +59,7 @@ def routes(context, wrap, idempotent):
             raise HTTPException(403, "Reauthentication required")
         with context(request, project) as (c, user, roles):
             auth.require(roles, "admin")
-            real_admin(c, project, user)
+            active_admin(c, project, user)
 
             def save():
                 run = get_run(c, rid, True)

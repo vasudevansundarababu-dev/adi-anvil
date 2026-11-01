@@ -541,9 +541,8 @@ function AgentPlanPanel({
             <details>
               <summary>Admin: provider activation or exact paid scope</summary>
               <p>
-                Each decision requires a recently authenticated real Admin. The active Admin can
-                authorize this scope; synthetic identities are rejected. Use Execution groups for
-                the simplified Run flow.
+                Each decision requires a recently authenticated project Admin. Use Execution groups
+                for the simplified Run flow.
               </p>
               <label>
                 Approval{' '}

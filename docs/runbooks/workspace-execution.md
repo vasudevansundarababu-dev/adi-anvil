@@ -10,7 +10,7 @@ modern execution groups. Those older decisions remain historical evidence.
    sends no model request and reserves no money.
 3. Creation opens the group's separate dashboard. Review the model versions, budget and
    any setup blockers. Creation fields and the group list are on other pages.
-4. A real project **Admin** selects **Run**. This action records the exact task/model/key/
+4. An authenticated project **Admin** selects **Run**. This action records the exact task/model/key/
    pricing/terms binding, processing-rights confirmation and budget; no Product Owner,
    second Admin or separate approval form/file is needed. A recent sign-in is required.
 5. The dashboard shows each model run's state and **View run dashboard** link. Individual
@@ -33,7 +33,8 @@ RL Engineer, and restricts each person to one active role per project. It preser
 identities, synthetic provenance, passwords, historical decisions and task/run bindings.
 Migration034 stores immutable project-scoped Admin authorizations and append-only
 revocations. A revocation or inactive authorizing Admin stops further dispatch. Existing
-seeded test identities remain synthetic and cannot authorize paid model processing.
+Admin accounts can authorize their exact scope regardless of seeded origin. Identity-origin
+metadata remains unchanged for audit; no new account or invitation is required.
 
 ## Runtime and exact configuration
 

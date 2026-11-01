@@ -55,7 +55,7 @@ def authority(c, row):
     record = one(
         c,
         """SELECT a.* FROM anvil.workspace_admin_run_authorizations a
-        JOIN anvil.users u ON u.id=a.admin_id AND u.active AND NOT u.is_synthetic
+        JOIN anvil.users u ON u.id=a.admin_id AND u.active
         JOIN anvil.memberships m ON m.user_id=a.admin_id AND m.project_id=a.project_id AND m.active AND m.role='admin'
         WHERE a.group_id=%s AND a.expires_at>now()
         AND NOT EXISTS(SELECT 1 FROM anvil.workspace_admin_run_revocations r WHERE r.authorization_id=a.id)""",
@@ -79,9 +79,9 @@ def authority(c, row):
 
 
 def authorize_admin(c, row, user, body):
-    from anvil.marketing_authority import real_admin
+    from anvil.marketing_authority import active_admin
 
-    real_admin(c, row["project_id"], user)
+    active_admin(c, row["project_id"], user)
     cap = row["snapshot"]["preparation"]["aggregate_cap_micro_usd"]
     if (
         body.subject_hash != row["subject_hash"]
@@ -126,6 +126,10 @@ def authorize_admin(c, row, user, body):
             "aggregate_cap_micro_usd": cap,
             "rights_confirmed": True,
             "self_authorized": str(user) == str(row["created_by"]),
+            "authorization_policy": "active-project-admin-v2",
+            "actor_seeded_origin": one(
+                c, "SELECT is_synthetic FROM anvil.users WHERE id=%s", (user,)
+            )["is_synthetic"],
         },
     )
 

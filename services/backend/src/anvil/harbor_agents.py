@@ -150,7 +150,7 @@ def admin_count(c, record, purpose, subject, policy):
         """SELECT count(DISTINCT a.approver_id) n FROM anvil.provider_approvals a
         JOIN anvil.users u ON u.id=a.approver_id JOIN anvil.memberships m ON m.user_id=u.id AND m.project_id=a.project_id
         WHERE a.connection_id=%s AND a.purpose=%s AND a.subject_hash=%s AND a.authority_reference=%s
-        AND a.cap_micro_usd=%s AND a.expires_at>now() AND u.active AND NOT u.is_synthetic AND m.active AND m.role='admin'""",
+        AND a.cap_micro_usd=%s AND a.expires_at>now() AND u.active AND m.active AND m.role='admin'""",
         (record["connection_id"], purpose, subject, policy.reference, policy.total_cap_micro_usd),
     )["n"]
 
@@ -652,10 +652,6 @@ def routes(context, wrap, idempotent):
                 ):
                     raise HTTPException(403, "An assigned Admin rights reviewer is required")
                 artifacts.read(c, body.rights_evidence_id)
-                if one(c, "SELECT is_synthetic FROM anvil.users WHERE id=%s", (user,))[
-                    "is_synthetic"
-                ]:
-                    raise HTTPException(403, "A real Admin must review paid-run rights")
                 c.execute(
                     "INSERT INTO anvil.harbor_agent_reviews(id,project_id,plan_id,approved_by,subject_hash,rationale,rights_evidence_id,self_approved,expires_at) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(plan_id,approved_by) DO NOTHING",
                     (
@@ -688,9 +684,9 @@ def routes(context, wrap, idempotent):
         if (datetime.now(timezone.utc) - identity["issued_at"]).total_seconds() > 600:
             raise HTTPException(403, "Reauthentication required")
         with context(request, project) as (c, user, roles):
-            from anvil.marketing_authority import real_admin
+            from anvil.marketing_authority import active_admin
 
-            real_admin(c, project, user)
+            active_admin(c, project, user)
 
             def act():
                 record = plan(c, pid)

@@ -196,10 +196,10 @@ def test_marketing_workflow_and_durable_dispatch(client_factory, monkeypatch):  
             "purpose": "paid_scope",
             "subject_hash": ready["subject_hash"],
             "cap_micro_usd": 100000000,
-            "authority_reference": "Synthetic identities must never activate live calls",
+            "authority_reference": "Invalid historical scope must not grant live authority",
             "expires_at": "2026-10-04T00:00:00Z",
         },
-        expected=403,
+        expected=409,
     )
     assert clients["outsider"].get(base + f"/runs/{run['id']}/marketing").status_code == 404
     assert clients["reviewer-1"].get(base + f"/runs/{run['id']}/marketing").status_code == 200

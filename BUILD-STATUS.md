@@ -1,12 +1,35 @@
 # Build status
 
+Account eligibility update, 31 October 2026 — user explicitly rejected the extra
+demo-versus-real-account requirement and authorized using the existing Admin account.
+Active project Admin membership now determines eligibility regardless of seeded origin.
+No new account/invitation, identity promotion or `is_synthetic` update is required or made.
+Modern group authorization and legacy Admin checks/counts apply this policy consistently.
+Audit records retain actor origin and `active-project-admin-v2`; output/fixture provenance
+is unchanged. Active user/membership, project boundaries, recent sign-in, exact model/key/
+version/rights/pricing/terms, explicit cap, reservation, revocation and no-retry checks remain.
+This supersedes earlier real-account-only statements in historical checkpoints/specs.
+
+Verification: 242 unit tests passed. Existing-admin execution plus marketing integration:
+13 passed (48.83s), including actual staged Docker Harbor with all three provider SDKs
+mocked; the group creator/authorizer is existing admin-1 and its origin flag stays true.
+API security plus three Admin revocation cases: 50 passed/two fixture failures (42.38s).
+Those two fixtures used an unassigned source actor after the private-binding guard;
+changed only their fixture actor to the source owner. Follow-up of those cases plus
+workspace/private-access tests: 6 passed (0.84s). The three disabled-user/membership/role
+cases confirm authorization is invalidated before dispatch. Static check/build passed.
+Full platform integration was not repeated; no real provider request was made.
+Final existing-Admin browser/preparation follow-up: 2 passed (9.3s). Actual workspace
+eligibility read check passed for admin-1 with its original origin flag unchanged;
+API/database healthy, Harbor live dispatch enabled (`gated`). No model was launched.
+
 Runtime update, 31 October 2026 — user explicitly requested enabling server live execution.
 Local `.env` now sets `ANVIL_LIVE_PROVIDERS_ENABLED=true`; Anvil restarted successfully.
 Health confirms API/database ready and Harbor live dispatch `gated` (enabled with per-run
 checks retained). The legacy `live_inference` health field remains hardcoded disabled;
 it does not describe Harbor's switch. No queued/leased jobs existed before activation;
 no model run, paid request, account promotion, cloud change or email was initiated.
-Exact Admin authorization, real identity, current model/key/pricing/terms, rights and
+Exact Admin authorization, current model/key/pricing/terms, rights and
 budget checks remain. Earlier disabled-runtime statements below describe prior checks.
 
 Current local checkpoint — 31 October 2026: the two-role and separate execution-group

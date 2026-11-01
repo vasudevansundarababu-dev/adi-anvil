@@ -153,17 +153,15 @@ def routes(context, wrap, idempotent):
             record = one(c, "SELECT * FROM anvil.connections WHERE id=%s", (cid,))
             if not record:
                 raise HTTPException(404, "Connection not found")
-            if one(c, "SELECT is_synthetic FROM anvil.users WHERE id=%s", (user,))["is_synthetic"]:
-                raise HTTPException(403, "Seeded identities cannot supply real paid authority")
             if (
                 record["config_hash"] != body.subject_hash
                 or body.expires_at.tzinfo is None
                 or body.expires_at <= datetime.now(timezone.utc)
             ):
                 raise HTTPException(409, "Approval hash or expiry invalid")
-            from anvil.marketing_authority import CAP, PRICE_EXPIRES, config_valid, real_admin
+            from anvil.marketing_authority import CAP, PRICE_EXPIRES, active_admin, config_valid
 
-            real_admin(c, project, user)
+            active_admin(c, project, user)
             if body.purpose != "activation":
                 raise HTTPException(409, "Paid scope must be approved on the exact configured run")
             if (
