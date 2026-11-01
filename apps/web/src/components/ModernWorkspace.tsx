@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import HarborWorkbench from './HarborWorkbench';
+import WorkspaceTasks from './WorkspaceTasks';
 import WorkspaceExecutionGroups from './WorkspaceExecutionGroups';
 import ModelProfiles from './ModelProfiles';
 import FrameworkProfiles from './FrameworkProfiles';
@@ -84,6 +85,9 @@ function WorkspaceView() {
   const scopeQuery = diagnostic ? 'kind=diagnostic' : '';
   const generation = useRef(0);
   useEffect(() => {
+    setDark(localStorage.getItem('anvil-workspace-theme') === 'dark');
+  }, []);
+  useEffect(() => {
     let active = true;
     api('/me')
       .then((value) => {
@@ -162,17 +166,23 @@ function WorkspaceView() {
   }
   const selectedRuns = (runs?.items || []).filter((r) => selected.includes(r.id));
   const title =
-    section === 'execution-groups'
-      ? parts[4] === 'new'
-        ? 'Create execution group'
-        : parts[4]
-          ? 'Execution group'
-          : 'Execution groups'
-      : section === 'preparation'
-        ? 'Saved preparation'
-        : section === 'editor'
-          ? 'Edit as new version'
-          : navigation.find(([key]) => key === section)?.[1] || 'Overview';
+    section === 'tasks' && parts[4]
+      ? parts[4] === 'import'
+        ? 'Import Task'
+        : parts[5] === 'run'
+          ? 'Run Task'
+          : 'View Task'
+      : section === 'execution-groups'
+        ? parts[4] === 'new'
+          ? 'Create execution group'
+          : parts[4]
+            ? 'Execution group'
+            : 'Execution groups'
+        : section === 'preparation'
+          ? 'Saved preparation'
+          : section === 'editor'
+            ? 'Edit as new version'
+            : navigation.find(([key]) => key === section)?.[1] || 'Overview';
   const canEdit = capabilities.includes('task_drafts.write');
   const editorHref = (id: string, returnRun = query.get('return_run') || runId || '') =>
     route +
@@ -247,7 +257,13 @@ function WorkspaceView() {
             <span>
               {user.name} · {project?.workspace_access.label || 'Project access'}
             </span>
-            <button onClick={() => setDark(!dark)} aria-pressed={dark}>
+            <button
+              onClick={() => {
+                localStorage.setItem('anvil-workspace-theme', dark ? 'light' : 'dark');
+                setDark(!dark);
+              }}
+              aria-pressed={dark}
+            >
               {dark ? 'Light' : 'Dark'} theme
             </button>
             <button
@@ -296,19 +312,19 @@ function WorkspaceView() {
                   </p>
                 </div>
                 <div className={styles.actions}>
-                  {['overview', 'tasks', 'runs'].includes(section) && (
+                  {['overview', 'runs'].includes(section) && (
                     <button onClick={() => void load()} disabled={loading}>
                       Refresh
                     </button>
                   )}
-                  {['tasks', 'runs'].includes(section) && !diagnostic && (
+                  {section === 'runs' && !diagnostic && (
                     <button className={styles.primary} onClick={() => setPrepare(!prepare)}>
                       {prepare ? 'Close preparation' : 'Import / prepare run'}
                     </button>
                   )}
                 </div>
               </div>
-              {['overview', 'tasks', 'runs'].includes(section) && (
+              {['overview', 'tasks', 'runs'].includes(section) && !parts[4] && (
                 <nav className={styles.tabs} aria-label="Evaluation history source">
                   <a className="button" href={route + '/' + section}>
                     Harbor
@@ -352,7 +368,18 @@ function WorkspaceView() {
                   openRun={openRun}
                 />
               )}
-              {section === 'tasks' && (
+              {section === 'tasks' && !diagnostic && (
+                <WorkspaceTasks
+                  key={base + ':' + (parts[4] || 'list') + ':' + (parts[5] || '')}
+                  base={base}
+                  sourceId={parts[4]}
+                  mode={parts[5]}
+                  groupId={query.get('group')}
+                  canPlan={capabilities.includes('harbor.prepare')}
+                  canAdmin={admin}
+                />
+              )}
+              {section === 'tasks' && diagnostic && (
                 <section className={styles.panel}>
                   <h2>Your tasks</h2>
                   <p className={styles.muted}>

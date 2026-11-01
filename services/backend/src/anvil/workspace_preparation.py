@@ -31,6 +31,8 @@ class Preparation(Strict):
     max_output_tokens: int = Field(ge=1, le=2048, strict=True)
     episode_timeout_seconds: int = Field(ge=1, le=600, strict=True)
     aggregate_cap_micro_usd: int | None = Field(default=None, gt=0, le=1000000000, strict=True)
+    trials_per_model: int = Field(default=1, ge=1, le=10, strict=True)
+    environment: Literal["package-docker"] = "package-docker"
 
 
 def unique(ids):
@@ -102,6 +104,7 @@ def package_snapshot(row):
         "compiler_version",
         "harbor_version",
         "stage_order",
+        "base_image",
     )
     return {
         "id": str(row["id"]),
@@ -206,14 +209,16 @@ def routes(context, wrap, idempotent):
         limit: int = Query(30, ge=1, le=100),
         after: UUID | None = None,
         task_id: str | None = Query(None, max_length=100),
+        source_id: UUID | None = None,
     ):
         with context(request, project) as (c, user, roles):
             auth.require(roles, *READ_ROLES)
             rows = c.execute(
                 """SELECT p.*,s.actor_spec->>'title' title FROM anvil.harbor_packages p
                 JOIN anvil.praxis_sources s ON s.id=p.source_id WHERE (%s::uuid IS NULL OR p.id>%s)
-                AND (%s::text IS NULL OR s.task_id=%s) ORDER BY p.id LIMIT %s""",
-                (after, after, task_id, task_id, limit + 1),
+                AND (%s::text IS NULL OR s.task_id=%s)
+                AND (%s::uuid IS NULL OR s.id=%s) ORDER BY p.id LIMIT %s""",
+                (after, after, task_id, task_id, source_id, source_id, limit + 1),
             ).fetchall()
             return wrap(
                 {
@@ -362,7 +367,13 @@ def routes(context, wrap, idempotent):
                     "episode_timeout_seconds": body.episode_timeout_seconds,
                     "aggregate_cap_micro_usd": body.aggregate_cap_micro_usd,
                     "execution_order": "sequential",
-                    "trials_per_model": 1,
+                    "trials_per_model": body.trials_per_model,
+                    "environment": {
+                        "id": body.environment,
+                        "name": "Harbor isolated Docker",
+                        "base_image": package["manifest"].get("base_image"),
+                        "package_sha256": package["package_sha256"],
+                    },
                 }
                 identifier, checksum = uid(), digest(snapshot)
                 c.execute(

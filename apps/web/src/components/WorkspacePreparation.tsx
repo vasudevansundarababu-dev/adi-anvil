@@ -400,15 +400,27 @@ export default function WorkspacePreparation({
   preparationId,
   open,
   createGroup = false,
+  packageId,
+  sourceId,
+  environments = [],
 }: {
   base: string;
   taskId?: string | null;
   preparationId?: string | null;
   open: (id: string) => void;
   createGroup?: boolean;
+  packageId?: string;
+  sourceId?: string;
+  environments?: { id: string; name: string; status: string }[];
 }) {
   const packages = useList<Package>(
-    base + '/workspace/packages' + (taskId ? '?task_id=' + encodeURIComponent(taskId) : ''),
+    base +
+      '/workspace/packages' +
+      (sourceId
+        ? '?source_id=' + encodeURIComponent(sourceId)
+        : taskId
+          ? '?task_id=' + encodeURIComponent(taskId)
+          : ''),
   );
   const presets = useList<Preset>(base + '/workspace/presets');
   const drafts = useList<Draft>(base + '/workspace/preparations');
@@ -525,6 +537,8 @@ export default function WorkspacePreparation({
                   aggregate_cap_micro_usd: dollars
                     ? Number(whole) * 1000000 + Number(fraction.padEnd(6, '0'))
                     : null,
+                  trials_per_model: Number(data.get('trials') || 1),
+                  environment: 'package-docker',
                 });
                 if (createGroup) {
                   const group = await api(base + '/workspace/execution-groups', 'POST', {
@@ -549,16 +563,31 @@ export default function WorkspacePreparation({
               label="Task package version"
               complete={!packages.more && !packages.error}
               loading={packages.loading}
-              choices={packages.items.map((p) => ({
-                id: p.id,
-                label:
-                  (p.title || p.manifest.task_id) +
-                  ' · ' +
-                  p.manifest.task_version +
-                  ' · ' +
-                  shortId(p.package_sha256),
-              }))}
+              choices={packages.items
+                .filter((p) => !packageId || p.id === packageId)
+                .map((p) => ({
+                  id: p.id,
+                  label:
+                    (p.title || p.manifest.task_id) +
+                    ' · ' +
+                    p.manifest.task_version +
+                    ' · ' +
+                    shortId(p.package_sha256),
+                }))}
             />
+            <label htmlFor="preparation-environment">Target environment</label>
+            <select id="preparation-environment" name="environment" defaultValue="package-docker">
+              <option value="package-docker">Harbor isolated Docker · task-bound image</option>
+              {environments.map((env) => (
+                <option key={env.id} value={env.id} disabled>
+                  {env.name} · Awaiting qualification
+                </option>
+              ))}
+            </select>
+            <p className={styles.muted}>
+              Uses the selected package’s immutable environment. Additional environments require
+              configuration.
+            </p>
             {packages.more && (
               <button
                 type="button"
@@ -615,6 +644,16 @@ export default function WorkspacePreparation({
               max={2048}
               defaultValue={2048}
             />
+            <label htmlFor="preparation-trials">Repetitions per model</label>
+            <input
+              id="preparation-trials"
+              name="trials"
+              type="number"
+              required
+              min={1}
+              max={10}
+              defaultValue={1}
+            />
             <label htmlFor="preparation-timeout">Episode time limit (seconds)</label>
             <input
               id="preparation-timeout"
@@ -640,8 +679,8 @@ export default function WorkspacePreparation({
               step={0.000001}
             />
             <p>
-              One trial per selected model, in sequence. The cap applies to the entire group. A
-              blank cap grants no spending authority.
+              Each repetition creates a separate trial, in sequence. The cap covers every model and
+              trial. A blank cap grants no spending authority.
             </p>
             <button
               disabled={

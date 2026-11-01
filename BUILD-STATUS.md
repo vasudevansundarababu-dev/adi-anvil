@@ -1,5 +1,56 @@
 # Build status
 
+Task mockup implementation, 1 November 2026 — separate Tasks library, View Task and
+Run Task pages are built on the modern branch. Library includes server search/status
+filtering, ten-row pagination, latest version, last run timestamp, run count and Run /
+View / history actions. Version viewer includes prompt/visible stages, declared tools,
+actor inputs, safe rubric descriptions/weights, verifier descriptions and immutable
+environment/package bindings. Run page keeps exact-source configuration beside real
+sanitized lifecycle/stage events, trial progress and result/trajectory links. Theme
+persists across pages. Desktop/mobile screenshots were visually inspected; fixed a
+white global-navigation background in dark mode. Current source is always selectable
+even beyond the latest100 version list. Task-context configuration refresh stays on
+Run Task and preserves the original source. Classic comparison remains unchanged.
+
+User explicitly requested repetitions now: 1–10 per model, up to80 sequential children.
+Migration035 expands ordinals and adds immutable, scoped task-environment intake.
+Each trial has a separate bound plan/check and per-model trial number; conservative
+cost sums every trial, with one atomic aggregate reservation. Existing Admin Run,
+recent-session, rights, secret revocation, private-reference and no-retry boundaries
+remain. No actual-user group was launched or key/model binding silently changed.
+
+Dockerfile folder intake is implemented for root Dockerfile plus relative companion
+text files (100 files/1MiB total/256KiB per file). Context and Dockerfile hashes bind
+the immutable source version. Uploaded bytes stay quarantined and runtime reads are
+denied. **Custom Dockerfile build/execution remains incomplete** pending scanner and
+isolated-build qualification; imported environments are labeled accordingly and cannot
+be selected for dispatch. Package-bound Harbor Docker remains runnable. User's
+harbor-lab marketing environment was inspected read-only; its apt instructions were
+not executed, no sibling files changed, and no host/provider credentials inherited.
+See docs/product/23-TASK-LIBRARY-VIEW-AND-RUN-SCREENS.md for the boundary and adapter gap.
+
+Verified: `pnpm test:unit` 263 passed (4.31s); final `pnpm check` passed backend lint /
+format150 files, frontend formatting, TypeScript, production build and generated API.
+Guarded integration: `ANVIL_TEST_HARBOR=1` with the configured local Docker socket and
+pytest test_workspace_task_pages.py, test_workspace_preparation.py,
+test_workspace_execution.py, test_workspace_managed_costs.py: 22 passed (56.30s),
+including native SDK mocks through Harbor, repetition cost multiplication, one-cap
+reservation, per-trial projections, project denial and quarantined-artifact read denial.
+Initial integration without the Docker opt-in:18 passed/1 explicitly skipped, superseded
+by the fully enabled final run. Fresh isolated databases migrate through035; existing
+local database was migrated additively without resets or volume deletion.
+
+Browser: `pnpm test:e2e tests/e2e/workspace-task-pages.spec.ts
+tests/e2e/workspace-preparation.spec.ts --timeout=45000`:3 passed (14.7s). Initial new
+test timed out because Form appends Required to accessible labels; corrected the test
+to match required-field names. Product fields were present. Screenshot evidence in
+ignored artifacts/test-runs/task-{library,view,run-configuration,run-mobile}.png uses
+explicit synthetic browser fixtures. No fake performance populated actual user data.
+Read-only parallel review found four UI issues (trial label, terminal polling,
+upload-selection remount and old version selector), all repaired. No paid calls,
+custom-image builds, deployment, push or account changes. Full-platform regression,
+backup/restore and live model qualification were not run for this increment.
+
 Nightly checkpoint, 1 November 2026 00:09 America/Chicago (05:09 UTC):
 `pnpm check` passed backend lint/format (146 files), frontend formatting, TypeScript,
 production build (classic and modern routes) and generated API contract. Existing

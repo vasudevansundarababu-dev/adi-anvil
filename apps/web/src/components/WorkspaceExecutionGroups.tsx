@@ -16,13 +16,14 @@ type Group = {
     models: { model_profile_id: string; missing: string[] }[];
   };
   models: {
+    trial: number;
     plan_id: string;
     model: { id: string; name: string; provider: string; model_id: string };
     check: { id: string; state: string; error_code: string | null } | null;
   }[];
   snapshot: {
     preparation: {
-      package: { manifest: { task_id: string; task_version: string } };
+      package: { source_id?: string; manifest: { task_id: string; task_version: string } };
       preset: { name: string };
     };
   };
@@ -44,10 +45,16 @@ export default function WorkspaceExecutionGroups({
   base,
   groupId,
   canAdmin = false,
+  expectedSourceId,
+  onUpdated,
+  createHref,
 }: {
   base: string;
   groupId?: string;
   canAdmin?: boolean;
+  expectedSourceId?: string;
+  onUpdated?: (id: string) => void;
+  createHref?: string;
 }) {
   const endpoint = base + '/workspace/execution-groups',
     href = base.replace('/projects/', '/workspace/') + '/execution-groups';
@@ -118,6 +125,16 @@ export default function WorkspaceExecutionGroups({
       (r) => r !== 'admin_run_authorization_required' || !canAdmin,
     ) ||
       selected.readiness.models.some((m) => m.missing.length > 0));
+  if (
+    selected &&
+    expectedSourceId &&
+    selected.snapshot.preparation.package.source_id !== expectedSourceId
+  )
+    return (
+      <p role="alert">
+        This execution group belongs to a different task version. Open it from Execution groups.
+      </p>
+    );
   return (
     <section
       className={styles.panel}
@@ -222,7 +239,8 @@ export default function WorkspaceExecutionGroups({
                       const next = await api(endpoint, 'POST', {
                         preparation_id: selected.preparation_id,
                       });
-                      window.location.assign(href + '/' + next.id);
+                      if (onUpdated) onUpdated(next.id);
+                      else window.location.assign(href + '/' + next.id);
                     } catch (e) {
                       setError((e as Error).message);
                       setBusy(false);
@@ -231,7 +249,7 @@ export default function WorkspaceExecutionGroups({
                 >
                   Update configuration
                 </button>
-                <a className="button" href={href + '/new'}>
+                <a className="button" href={createHref || href + '/new'}>
                   Create another group
                 </a>
               </div>
@@ -252,7 +270,9 @@ export default function WorkspaceExecutionGroups({
           <h3>Model runs</h3>
           {selected.models.map((m) => (
             <article key={m.plan_id} className={styles.panel}>
-              <h4>{m.model.name}</h4>
+              <h4>
+                {m.model.name} · Trial {m.trial || 1}
+              </h4>
               <p>
                 {m.model.provider} / {m.model.model_id}
               </p>

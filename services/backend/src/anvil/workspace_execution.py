@@ -240,8 +240,10 @@ def readiness(c, row, policy=_UNSET):
     package = one(c, "SELECT * FROM anvil.harbor_packages WHERE id=%s", (prep["package"]["id"],))
     if not package or package["package_sha256"] != prep["package"]["package_sha256"]:
         missing.append("exact_package_binding_changed")
-    for child, state in zip(plans, base["models"], strict=True):
+    model_states = {state["model_profile_id"]: state for state in base["models"]}
+    for child in plans:
         config = child["config"]
+        state = model_states[config["workspace_model"]["id"]]
         issues = [r for r in state["missing"] if r != "provider_task_adapter_not_qualified"]
         binding = config["workspace_model"]
         if binding["provider"] not in ("openai", "anthropic", "gemini"):
@@ -331,6 +333,7 @@ def public(c, row):
                 "plan_id": str(child["id"]),
                 "subject_hash": child["subject_hash"],
                 "ordinal": child["ordinal"],
+                "trial": child["config"].get("trial", 1),
                 "model": child["config"]["workspace_model"],
                 "check": check,
             }
@@ -580,11 +583,19 @@ def routes(context, wrap, idempotent):
                     "INSERT INTO anvil.workspace_execution_groups(id,project_id,preparation_id,created_by,snapshot,subject_hash) VALUES(%s,%s,%s,%s,%s,%s)",
                     (gid, project, body.preparation_id, user, Jsonb(snapshot), subject),
                 )
-                for index, bound in enumerate(prep["snapshot"]["models"]):
+                trials = prep["snapshot"].get("trials_per_model", 1)
+                members = [
+                    (index, bound, trial)
+                    for index, bound in enumerate(prep["snapshot"]["models"])
+                    for trial in range(1, trials + 1)
+                ]
+                for ordinal, (index, bound, trial) in enumerate(members):
                     pid = uid()
                     config = {
                         "workspace_execution_group": gid,
                         "workspace_model": bound,
+                        "trial": trial,
+                        "environment": prep["snapshot"].get("environment"),
                         "model": bound["model_id"],
                         "connection_hash": bound["config_hash"],
                         "package_sha256": prep["snapshot"]["package"]["package_sha256"],
@@ -613,7 +624,7 @@ def routes(context, wrap, idempotent):
                     )
                     c.execute(
                         "INSERT INTO anvil.workspace_execution_models(project_id,group_id,ordinal,plan_id) VALUES(%s,%s,%s,%s)",
-                        (project, gid, index, pid),
+                        (project, gid, ordinal, pid),
                     )
                 audit(
                     c,

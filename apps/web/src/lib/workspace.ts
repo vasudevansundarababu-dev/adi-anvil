@@ -18,6 +18,7 @@ export type Metrics = {
   unscorable?: number;
 };
 export type WorkspaceRun = {
+  trial?: number;
   kind?: 'harbor' | 'diagnostic';
   id: string;
   task_id: string;
@@ -63,6 +64,9 @@ export type WorkspaceTask = {
   run_count: number;
   versions: number;
   source_sha256: string;
+  created_at?: string;
+  last_run_at?: string | null;
+  package_built?: boolean;
 };
 export type Page<T> = { items: T[]; next_cursor: string | null; scope: string };
 

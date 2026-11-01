@@ -105,6 +105,7 @@ def public_run(c, row, detail=False):
         or (selected_model["model_id"] if selected_model else config.get("model")),
         provider=selected_model["provider"] if selected_model else ("openai" if plan else None),
         execution_group_id=config.get("workspace_execution_group"),
+        trial=config.get("trial", 1),
         origin="native_sdk_mock_verification"
         if mock_execution
         else "synthetic_software_verification"
@@ -364,6 +365,8 @@ def routes(context, wrap, idempotent):
         request: Request,
         limit: int = Query(50, ge=1, le=100),
         after: str | None = Query(None, max_length=200),
+        search: str = Query("", max_length=200),
+        status: Literal["all", "ready", "draft"] = "all",
     ):
         with context(request, project) as (c, user, roles):
             auth.require(roles, *READ_ROLES)
@@ -372,16 +375,81 @@ def routes(context, wrap, idempotent):
                 s.source_sha256,s.created_at,
                 (SELECT count(*) FROM anvil.praxis_sources v WHERE v.task_id=s.task_id) versions,
                 (SELECT count(*) FROM anvil.harbor_checks h JOIN anvil.harbor_packages p ON p.id=h.package_id
-                 JOIN anvil.praxis_sources v ON v.id=p.source_id WHERE v.task_id=s.task_id) run_count
-                FROM anvil.praxis_sources s WHERE (%s::text IS NULL OR s.task_id>%s)
+                 JOIN anvil.praxis_sources v ON v.id=p.source_id WHERE v.task_id=s.task_id) run_count,
+                (SELECT max(h.created_at) FROM anvil.harbor_checks h JOIN anvil.harbor_packages p ON p.id=h.package_id
+                 JOIN anvil.praxis_sources v ON v.id=p.source_id WHERE v.task_id=s.task_id) last_run_at,
+                EXISTS(SELECT 1 FROM anvil.harbor_packages p WHERE p.source_id=s.id) package_built
+                FROM (SELECT DISTINCT ON(task_id) * FROM anvil.praxis_sources
+                      ORDER BY task_id,created_at DESC,id DESC) s
+                WHERE (%s::text IS NULL OR s.task_id>%s)
+                AND (strpos(lower(s.task_id),lower(%s))>0 OR strpos(lower(s.actor_spec->>'title'),lower(%s))>0)
+                AND (%s='all' OR (%s='ready')=EXISTS(SELECT 1 FROM anvil.harbor_packages p WHERE p.source_id=s.id))
                 ORDER BY s.task_id,s.created_at DESC,s.id DESC LIMIT %s""",
-                (after, after, limit + 1),
+                (after, after, search, search, status, status, limit + 1),
             ).fetchall()
             return wrap(
                 {
                     "items": rows[:limit],
                     "next_cursor": rows[limit - 1]["task_id"] if len(rows) > limit else None,
                     "scope": "praxis_harbor",
+                },
+                request,
+            )
+
+    @router.get("/tasks/{sid}")
+    def task_detail(project: UUID, sid: UUID, request: Request):
+        from anvil.workspace_environments import listing as environments
+
+        with context(request, project) as (c, user, roles):
+            auth.require(roles, *READ_ROLES)
+            row = one(c, "SELECT * FROM anvil.praxis_sources WHERE id=%s", (sid,))
+            if not row:
+                raise HTTPException(404, "Task version not found in this project")
+            versions = c.execute(
+                "SELECT id,task_version,created_at FROM anvil.praxis_sources WHERE task_id=%s ORDER BY created_at DESC,id DESC LIMIT 100",
+                (row["task_id"],),
+            ).fetchall()
+            if all(version["id"] != row["id"] for version in versions):
+                versions.append(
+                    {
+                        "id": row["id"],
+                        "task_version": row["task_version"],
+                        "created_at": row["created_at"],
+                    }
+                )
+            packages = c.execute(
+                "SELECT id,package_sha256,manifest,created_at FROM anvil.harbor_packages WHERE source_id=%s ORDER BY created_at DESC,id DESC",
+                (sid,),
+            ).fetchall()
+            return wrap(
+                {
+                    "id": row["id"],
+                    "task_id": row["task_id"],
+                    "task_version": row["task_version"],
+                    "title": row["actor_spec"].get("title", row["task_id"]),
+                    "created_at": row["created_at"],
+                    "source_sha256": row["source_sha256"],
+                    "actor": row["actor_spec"],
+                    "rubric": safe_rubric(c, row),
+                    "versions": versions,
+                    "versions_limit": 100,
+                    "environments": environments(c, sid),
+                    "packages": [
+                        {
+                            "id": p["id"],
+                            "package_sha256": p["package_sha256"],
+                            "base_image": p["manifest"].get("base_image"),
+                            "binding": p["manifest"].get("binding"),
+                            "stage_count": len(p["manifest"].get("stage_order", [])),
+                            "created_at": p["created_at"],
+                        }
+                        for p in packages
+                    ],
+                    "run_count": one(
+                        c,
+                        "SELECT count(*) n FROM anvil.harbor_checks h JOIN anvil.harbor_packages p ON p.id=h.package_id JOIN anvil.praxis_sources s ON s.id=p.source_id WHERE s.task_id=%s",
+                        (row["task_id"],),
+                    )["n"],
                 },
                 request,
             )

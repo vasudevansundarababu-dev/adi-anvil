@@ -40,6 +40,7 @@ export default function HarborWorkbench({
   canAdmin,
   preparationHref,
   onPackageBuilt,
+  onSourceSelected,
 }: {
   base: string;
   api: Api;
@@ -48,6 +49,7 @@ export default function HarborWorkbench({
   canAdmin: boolean;
   preparationHref?: (taskId: string) => string;
   onPackageBuilt?: () => void;
+  onSourceSelected?: (sourceId: string) => void;
 }) {
   const [sources, setSources] = useState<Source[]>([]);
   const [selected, setSelected] = useState<Source | null>(null);
@@ -156,6 +158,7 @@ export default function HarborWorkbench({
                   payload: await file.text(),
                 });
                 setSelected(source);
+                onSourceSelected?.(source.id);
                 setPackage(null);
                 setCheck(null);
                 setSources(await api(base + '/praxis-sources'));
@@ -171,6 +174,7 @@ export default function HarborWorkbench({
           value={selected?.id || ''}
           onChange={(e) => {
             setSelected(sources.find((s) => s.id === e.target.value) || null);
+            onSourceSelected?.(e.target.value);
             setPackage(null);
             setCheck(null);
           }}
