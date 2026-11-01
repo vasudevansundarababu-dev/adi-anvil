@@ -7,6 +7,48 @@ import styles from './ModernWorkspace.module.css';
 
 export default function ModelProfiles({ base }: { base: string }) {
   const [credentials, setCredentials] = useState<CredentialMetadata[]>([]);
+  const [credentialsLoading, setCredentialsLoading] = useState(true),
+    [credentialError, setCredentialError] = useState('');
+  const credentialGeneration = useRef(0);
+  const refreshCredentials = useCallback(async () => {
+    const current = ++credentialGeneration.current;
+    setCredentialsLoading(true);
+    setCredentialError('');
+    try {
+      const values = new Map<string, CredentialMetadata>();
+      const seen = new Set<string>();
+      let after: string | null = null;
+      do {
+        const page = await api(
+          base +
+            '/workspace/credentials?limit=100' +
+            (after ? '&after=' + encodeURIComponent(after) : ''),
+        );
+        if (current !== credentialGeneration.current) return;
+        for (const item of page.items as CredentialMetadata[]) values.set(item.id, item);
+        after = page.next_cursor;
+        if (after && seen.has(after))
+          throw new Error(
+            'Credential list changed while loading. Refresh credential versions again.',
+          );
+        if (after) seen.add(after);
+      } while (after);
+      setCredentials([...values.values()]);
+    } catch (e) {
+      if (current === credentialGeneration.current) setCredentialError((e as Error).message);
+    } finally {
+      if (current === credentialGeneration.current) setCredentialsLoading(false);
+    }
+  }, [base]);
+  useEffect(() => {
+    void refreshCredentials();
+    const focus = () => void refreshCredentials();
+    window.addEventListener('focus', focus);
+    return () => {
+      credentialGeneration.current++;
+      window.removeEventListener('focus', focus);
+    };
+  }, [refreshCredentials]);
   const [models, setModels] = useState<Model[]>([]),
     [cursor, setCursor] = useState<string | null>(null),
     [editing, setEditing] = useState(false),
@@ -50,13 +92,10 @@ export default function ModelProfiles({ base }: { base: string }) {
       historyGeneration.current++;
     };
   }, [load]);
-  const credentialsChanged = useCallback(
-    (values: CredentialMetadata[]) => {
-      setCredentials(values);
-      void load();
-    },
-    [load],
-  );
+  const credentialsChanged = useCallback(() => {
+    void refreshCredentials();
+    void load();
+  }, [load, refreshCredentials]);
   async function openHistory(id: string) {
     const current = ++historyGeneration.current;
     setError('');
@@ -217,6 +256,9 @@ export default function ModelProfiles({ base }: { base: string }) {
           base={base}
           source={source}
           credentials={credentials}
+          credentialsLoading={credentialsLoading}
+          credentialError={credentialError}
+          refreshCredentials={() => void refreshCredentials()}
           cancel={() => {
             setEditing(false);
             setSource(null);

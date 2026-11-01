@@ -54,12 +54,18 @@ export default function ModelProfileEditor({
   base,
   source,
   credentials,
+  credentialsLoading,
+  credentialError,
+  refreshCredentials,
   saved,
   cancel,
 }: {
   base: string;
   source: ModelConfiguration | null;
   credentials: CredentialMetadata[];
+  credentialsLoading: boolean;
+  credentialError: string;
+  refreshCredentials: () => void;
   saved: (value: ModelConfiguration) => void;
   cancel: () => void;
 }) {
@@ -199,6 +205,7 @@ export default function ModelProfileEditor({
           <select
             name="credential_id"
             value={credential}
+            disabled={credentialsLoading}
             onChange={(e) => setCredential(e.target.value)}
           >
             <option value="">No credential · unavailable for dispatch</option>
@@ -214,6 +221,22 @@ export default function ModelProfileEditor({
             ))}
           </select>
         </label>
+        <button type="button" disabled={credentialsLoading} onClick={refreshCredentials}>
+          Refresh credential versions
+        </button>
+        {credentialsLoading && <p role="status">Refreshing credential versions…</p>}
+        {credentialError && <p role="alert">{credentialError}</p>}
+        {!credentialsLoading && !credentialError && oldBinding && (
+          <p role="status">
+            The selected key version changed or was revoked. Choose a current credential version.
+          </p>
+        )}
+        {!credentialsLoading && !credentialError && !available.length && (
+          <p>
+            No current credentials for this provider. Save a matching credential below, then
+            refresh.
+          </p>
+        )}
         <p className={styles.muted}>
           Binding is exact. Rotation does not silently replace the key in an existing model version.
           No key can be read here.
@@ -308,7 +331,10 @@ export default function ModelProfileEditor({
           Profiles remain unavailable for dispatch until adapter qualification and all exact-run
           gates are satisfied.
         </p>
-        <button className={styles.primary} disabled={busy}>
+        <button
+          className={styles.primary}
+          disabled={busy || credentialsLoading || !!credentialError || oldBinding}
+        >
           {busy ? 'Saving…' : source ? 'Save new model version' : 'Save model profile'}
         </button>
         <button type="button" disabled={busy} onClick={cancel}>

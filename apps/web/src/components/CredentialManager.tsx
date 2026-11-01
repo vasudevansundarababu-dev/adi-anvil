@@ -47,6 +47,9 @@ export default function CredentialManager({
   );
   useEffect(() => {
     void load();
+    const focus = () => void load();
+    window.addEventListener('focus', focus);
+    return () => window.removeEventListener('focus', focus);
   }, [load]);
   async function revoke(record: CredentialMetadata) {
     setBusy(true);

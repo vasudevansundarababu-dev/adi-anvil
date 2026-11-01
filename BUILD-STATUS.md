@@ -1,5 +1,19 @@
 # Build status
 
+Credential picker refresh fix, 31 October 2026 — the model editor now has **Refresh
+credential versions**, loading/error/retry feedback, and refresh on window focus.
+Credential saves/rotation/revocation refresh the picker independently of the credential
+table's current page; all paginated metadata is loaded and filtered to the selected
+provider. Latest-request guards prevent stale responses overwriting newer choices or
+updates after project unmount. Model draft fields and explicit key selection stay intact;
+rotation/revocation warns and blocks stale binding rather than silently swapping keys.
+No backend permission, credential storage or dispatch behavior changed. Verified
+`pnpm check` (lint/format, TypeScript, production build, OpenAPI) and browser credential
+refresh/model-version suites: 2 passed (9.5s). The new regression uses real authorized
+create/rotate/revoke endpoints with fake keys and deterministic paginated metadata;
+it covers save, pagination, provider filtering, rotation, focus, failed refresh/retry,
+draft retention and revocation. No model calls, paid requests or real-key reads occurred.
+
 Account eligibility update, 31 October 2026 — user explicitly rejected the extra
 demo-versus-real-account requirement and authorized using the existing Admin account.
 Active project Admin membership now determines eligibility regardless of seeded origin.
