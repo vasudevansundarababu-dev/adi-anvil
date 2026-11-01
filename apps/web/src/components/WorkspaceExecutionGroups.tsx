@@ -1,6 +1,7 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { money, shortId, workspaceApi as api } from '../lib/workspace';
+import { runBlockers } from '../lib/executionReadiness';
 import styles from './ModernWorkspace.module.css';
 type Group = {
   preparation_id: string;
@@ -48,6 +49,7 @@ export default function WorkspaceExecutionGroups({
   expectedSourceId,
   onUpdated,
   createHref,
+  onRunAttempt,
 }: {
   base: string;
   groupId?: string;
@@ -55,6 +57,7 @@ export default function WorkspaceExecutionGroups({
   expectedSourceId?: string;
   onUpdated?: (id: string) => void;
   createHref?: string;
+  onRunAttempt?: () => void;
 }) {
   const endpoint = base + '/workspace/execution-groups',
     href = base.replace('/projects/', '/workspace/') + '/execution-groups';
@@ -64,6 +67,8 @@ export default function WorkspaceExecutionGroups({
     [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
     [error, setError] = useState('');
+  const [runAttempted, setRunAttempted] = useState(false);
+  const blockerPanel = useRef<HTMLDivElement>(null);
   const reload = useCallback(
     async (after?: string) => {
       setLoading(true);
@@ -97,17 +102,29 @@ export default function WorkspaceExecutionGroups({
   }, [selected?.status, reload]);
   async function command(action: string) {
     if (!selected) return;
+    if (action === 'launch') onRunAttempt?.();
     setBusy(true);
     setError('');
     try {
+      let current = selected;
+      if (action === 'launch') {
+        current = await api(endpoint + '/' + selected.id);
+        setSelected(current);
+        if (current.state === 'launched') return;
+        if (current.state === 'draft' && runBlockers(current.readiness, canAdmin).length) {
+          setRunAttempted(true);
+          requestAnimationFrame(() => blockerPanel.current?.focus());
+          return;
+        }
+      }
       setSelected(
         await api(
-          endpoint + '/' + selected.id + '/' + action,
+          endpoint + '/' + current.id + '/' + action,
           'POST',
           action === 'launch' && canAdmin
             ? {
-                subject_hash: selected.subject_hash,
-                aggregate_cap_micro_usd: selected.readiness.aggregate_cap_micro_usd,
+                subject_hash: current.subject_hash,
+                aggregate_cap_micro_usd: current.readiness.aggregate_cap_micro_usd,
                 rights_confirmed: true,
               }
             : undefined,
@@ -119,12 +136,7 @@ export default function WorkspaceExecutionGroups({
       setBusy(false);
     }
   }
-  const blocked =
-    selected &&
-    (selected.readiness.missing.some(
-      (r) => r !== 'admin_run_authorization_required' || !canAdmin,
-    ) ||
-      selected.readiness.models.some((m) => m.missing.length > 0));
+  const blockers = selected ? runBlockers(selected.readiness, canAdmin) : [];
   if (
     selected &&
     expectedSourceId &&
@@ -193,7 +205,7 @@ export default function WorkspaceExecutionGroups({
           </p>
           <p role="status">
             {selected.state === 'draft'
-              ? blocked
+              ? blockers.length > 0
                 ? 'Setup needed'
                 : 'Ready to run'
               : describe(selected.status)}
@@ -215,6 +227,30 @@ export default function WorkspaceExecutionGroups({
           </ul>
           {selected.state === 'draft' ? (
             <>
+              {!!blockers.length && (
+                <div
+                  className={styles.error}
+                  ref={blockerPanel}
+                  tabIndex={-1}
+                  role={runAttempted ? 'alert' : 'status'}
+                >
+                  <h3>Run cannot start yet</h3>
+                  <ul>
+                    {blockers.map((reason) => (
+                      <li key={reason}>{reason}</li>
+                    ))}
+                  </ul>
+                  <p>No model request has been sent for this draft.</p>
+                  <div className={styles.actions}>
+                    {canAdmin && (
+                      <a href={base.replace('/projects/', '/workspace/') + '/models'}>
+                        Open Models & keys
+                      </a>
+                    )}
+                    <a href={createHref || href + '/new'}>Change run configuration</a>
+                  </div>
+                </div>
+              )}
               {canAdmin && (
                 <p>
                   By selecting Run, you confirm permission to process this task with the selected
@@ -224,10 +260,10 @@ export default function WorkspaceExecutionGroups({
               <div className={styles.actions}>
                 <button
                   className={styles.primary}
-                  disabled={busy || !!blocked}
+                  disabled={busy}
                   onClick={() => void command('launch')}
                 >
-                  Run
+                  {busy ? 'Checking run…' : 'Run'}
                 </button>
                 <button
                   type="button"

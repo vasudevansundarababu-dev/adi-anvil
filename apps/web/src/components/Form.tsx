@@ -55,6 +55,17 @@ export default function Form({
       {...props}
       ref={ref}
       noValidate
+      onInput={(e) => {
+        props.onInput?.(e);
+        const control = e.target;
+        if (
+          (control instanceof HTMLInputElement ||
+            control instanceof HTMLTextAreaElement ||
+            control instanceof HTMLSelectElement) &&
+          control.getAttribute('aria-invalid') === 'true'
+        )
+          validate(control);
+      }}
       onBlur={(e) => {
         if (
           e.target instanceof HTMLInputElement ||

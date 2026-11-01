@@ -60,6 +60,22 @@ def test_write_only_local_credentials_rotation_revocation_and_profile_binding(
             headers={"Idempotency-Key": uid()},
         )
         assert model.status_code == 200 and model.json()["data"]["credential_state"] == "configured"
+        assert model.json()["data"]["credential_name"] == body["name"]
+        page = researcher.get(BASE + "/workspace/models?current_only=true&limit=100").json()["data"]
+        engineer_models = page["items"]
+        while page["next_cursor"]:
+            page = researcher.get(
+                BASE + "/workspace/models",
+                params={"current_only": True, "limit": 100, "after": page["next_cursor"]},
+            ).json()["data"]
+            engineer_models.extend(page["items"])
+        assert (
+            next(item for item in engineer_models if item["id"] == model.json()["data"]["id"])[
+                "credential_name"
+            ]
+            == body["name"]
+        )
+        assert secret not in str(engineer_models) and "secret_reference" not in str(engineer_models)
         mismatch = admin.post(
             BASE + "/workspace/models",
             json={

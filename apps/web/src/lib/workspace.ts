@@ -1,3 +1,5 @@
+import { runBlockers } from './executionReadiness';
+
 export type Metrics = {
   reward: number | null;
   score: number | null;
@@ -88,7 +90,20 @@ export async function workspaceApi(path: string, method = 'GET', body?: unknown,
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   const result = await response.json();
-  if (!response.ok) throw new Error(result.error?.message || 'Unable to load this workspace');
+  if (!response.ok) {
+    const detail = result.error?.message;
+    const reasons =
+      detail && Array.isArray(detail.missing) && Array.isArray(detail.models)
+        ? runBlockers(detail, false)
+        : [];
+    throw new Error(
+      typeof detail === 'string'
+        ? detail
+        : typeof detail?.message === 'string'
+          ? [detail.message, ...reasons].join(' · ')
+          : 'Unable to load this workspace',
+    );
+  }
   return result.data;
 }
 export const shortId = (value: string) => value.slice(0, 8);

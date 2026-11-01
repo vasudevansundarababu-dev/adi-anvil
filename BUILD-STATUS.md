@@ -1,5 +1,51 @@
 # Build status
 
+Direct Run and linked-model selection, 1 November 2026 — removed Refresh tasks and
+row-level Run history from the task library beside Import Task; task-view history is
+retained. Removed Refresh preparation choices. Task Run now loads every page of current
+project models and displays each configured model with its linked key name and state,
+with search. User explicitly chose linked model/key pairs rather than per-run key
+overrides. No credential value or storage reference is exposed. One shared settings
+section applies tokens, repetitions and episode timeout to every selected model; the
+API budget remains one aggregate cap across all models/trials.
+
+Task Run is one explicit action: validate fields, freeze the selected versions and budget,
+create the group, and launch only if ready. Admin consent text remains beside Run.
+When models fall outside an older preset, an Admin creates an exact-selection preset
+using that preset's runner/integrations through the existing authorized API. Engineers
+remain constrained to their preset scope. No key/model version is silently substituted.
+Unavailable selections after a focus refresh are explicitly rejected and can be cleared.
+Missing choices use visible focused validation messages. Unready groups show a named
+Run cannot start yet panel; Run remains clickable and checks fresh readiness before
+either launching or focusing the specific blockers. Structured server reasons display
+readable messages. A failed/ambiguous launch response retains the same group; there is
+no automatic paid retry or replacement group. Already-launched groups are not relaunched.
+
+Testing found a real Form interaction issue: removing an invalid-field summary on blur
+could shift a checkbox between pointer-down and click. Invalid fields now revalidate
+while typing, clearing the summary before the next click; checkbox changes use the
+actual checked value. This shared-form change is covered by the model/key regression
+journeys. Initial test assertions also needed scoping away from Next's route announcer,
+distinct fixture names and pagination over retained model metadata; no access or budget
+assertions were removed.
+
+Verification: final `pnpm check` passed lint/format150 files, frontend formatting,
+TypeScript, production build and generated API contract. Credential/model integration:
+`pytest services/backend/tests/integration/test_workspace_credentials.py
+services/backend/tests/integration/test_workspace_models.py -q --tb=short`:3 passed
+(1.61s), including project-scoped linked-key names without secret values/references.
+Final `pnpm test:e2e tests/e2e/workspace-task-pages.spec.ts
+tests/e2e/workspace-preparation.spec.ts tests/e2e/workspace-model-versions.spec.ts
+tests/e2e/credential-refresh.spec.ts --timeout=45000`:5 passed (47.1s). Browser tests
+cover all metadata pages, a model outside the old preset, shared limits for two models /
+four trials, missing model/budget/key explanations and exactly one launch request. Ready
+launch responses are browser-only fixtures: no launch reaches the real backend/provider;
+persisted synthetic groups remain drafts. Backend dispatch/reservation logic unchanged.
+Prior263 unit/22 guarded integration results are historical, not rerun for this UI change.
+Local API restarted; runtime activation preserved. No migration, paid call, user-account
+change, deployment, push or actual-user configuration edit. Classic baseline and
+unrelated AGENTS/Google Cloud runbook edits preserved.
+
 Task mockup implementation, 1 November 2026 — separate Tasks library, View Task and
 Run Task pages are built on the modern branch. Library includes server search/status
 filtering, ten-row pagination, latest version, last run timestamp, run count and Run /

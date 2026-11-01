@@ -202,7 +202,10 @@ test('Admin saves a typed preset and multi-model preparation without spending de
   await expect(
     page.getByRole('region', { name: 'Evaluation preparation', exact: true }),
   ).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Run', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Run', exact: true })).toBeEnabled();
+  await expect(
+    page.getByRole('heading', { name: 'Run cannot start yet', exact: true }),
+  ).toBeVisible();
   await expect(
     page.getByRole('button', { name: 'Create execution group', exact: true }),
   ).toHaveCount(0);

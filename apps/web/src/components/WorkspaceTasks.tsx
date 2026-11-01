@@ -76,6 +76,7 @@ export default function WorkspaceTasks({
     [error, setError] = useState(''),
     [revision, setRevision] = useState(0);
   const [importedId, setImportedId] = useState('');
+  const [runIssue, setRunIssue] = useState('');
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -177,9 +178,6 @@ export default function WorkspaceTasks({
               ＋ Import Task
             </a>
           )}
-          <button onClick={() => setRevision(revision + 1)} disabled={loading}>
-            Refresh tasks
-          </button>
         </div>
         {error && (
           <p role="alert">
@@ -227,7 +225,6 @@ export default function WorkspaceTasks({
                         View
                       </a>
                     </div>
-                    <a href={route + '/runs?task=' + encodeURIComponent(t.task_id)}>Run history</a>
                   </td>
                 </tr>
               ))}
@@ -320,6 +317,17 @@ export default function WorkspaceTasks({
       </div>
       {run ? (
         <>
+          {runIssue && (
+            <p className={styles.error} role="alert">
+              {runIssue}
+            </p>
+          )}
+          {!groupId && (
+            <p className={styles.notice}>
+              Choose at least one model and enter a budget, then select Run. Missing settings or
+              execution blockers will be shown here.
+            </p>
+          )}
           {!canPlan ? (
             <p role="alert">Your account cannot prepare runs in this project.</p>
           ) : !pkg ? (
@@ -342,6 +350,7 @@ export default function WorkspaceTasks({
                     expectedSourceId={task.id}
                     onUpdated={(id) => router.push(taskHref(task.id) + '/run?group=' + id)}
                     createHref={taskHref(task.id) + '/run'}
+                    onRunAttempt={() => setRunIssue('')}
                   />
                 ) : (
                   <WorkspacePreparation
@@ -351,7 +360,12 @@ export default function WorkspaceTasks({
                     packageId={pkg.id}
                     environments={task.environments}
                     createGroup
-                    open={(id) => router.push(taskHref(task.id) + '/run?group=' + id)}
+                    runOnSave
+                    canAuthorizeRun={canAdmin}
+                    open={(id, issue) => {
+                      setRunIssue(issue || '');
+                      router.push(taskHref(task.id) + '/run?group=' + id);
+                    }}
                   />
                 )}
               </div>

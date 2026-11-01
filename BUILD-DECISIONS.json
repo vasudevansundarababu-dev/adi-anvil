@@ -127,6 +127,7 @@
     "field_mapping_reconciliation": "new shared contract agreed with Praxis; full reconciliation with earlier Library mapping documents remains unverified"
   },
   "modern_workspace_increment": {
+    "direct_task_run_2026_11_01": "User requested one Run action after choosing current configured models with their linked keys, plus one shared set of token/repetition/time limits and aggregate budget. Task Run freezes/preflights and launches only when ready; otherwise shows blockers. Admin-only exact-selection presets allow explicitly selected project models beyond an older preset without bypassing backend allowlists. No per-run key overrides or automatic key/version substitution. Removed task-list refresh/history and preparation refresh buttons; history retained on task viewer. No actual paid call made during implementation.",
     "task_screens_2026_11_01": "User mockup adopted as separate searchable/paged Tasks, versioned View Task tabs and Run Task configuration/events screens. Repetitions1–10 per model are immutable sequential trials under one aggregate reservation. Dockerfile plus companion-text folder intake is immutable and quarantined; custom image build/execution remains unqualified rather than silently replacing the package-bound Docker environment. Example harbor-lab environment inspected read-only; no sibling edits or installs.",
     "authorized_date": "2026-10-30",
     "build_branch": "codex/anvil-modern-workspace",

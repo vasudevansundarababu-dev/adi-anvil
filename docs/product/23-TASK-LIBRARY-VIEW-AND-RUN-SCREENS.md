@@ -23,10 +23,32 @@ themes. The editor toolbar surrounding the reference image is not application UI
 - `/tasks/{sourceId}/run`: configuration beside a recorded execution-events panel.
   Exact source package, configured framework preset, model selections, target
   environment, repetitions per model, output limit, time limit and explicit aggregate
-  USD budget. Save creates an immutable group; Admin Run explicitly authorizes its
-  bound rights and budget. Once launched, events show actual trial lifecycle, observed
+  USD budget. The task Run action creates an immutable group and, when ready,
+  launches it with the Admin's explicit rights/budget acknowledgement. Blocking
+  requirements are shown instead of a silently disabled button. Once launched,
+  events show actual trial lifecycle, observed
   stage statuses, errors, terminal score and links to results/trajectories. No invented
   sandbox messages, token-stream simulation, hidden reasoning or raw container logs.
+
+User refinement, 1 November: remove Refresh tasks and row-level Run history beside
+Import Task; retain history on the task viewer and run detail. Remove Refresh
+preparation choices. The Run picker automatically loads every page of current project
+models and shows each model with its linked saved-key name; secret values remain
+write-only. A search filters model/provider/key names. User explicitly chose linked
+keys, not per-run key overrides. Admin may select models outside the old preset;
+Anvil creates an immutable exact-selection preset using the same runner and typed
+integrations before preparing the run. The server's Admin-only preset creation and
+model allowlist checks remain in force. Engineers cannot expand their preset scope.
+Output tokens, repetitions and episode time limit apply to every model; the budget
+is one aggregate cap across all models/trials. A stale/disabled selected model must
+be reselected explicitly. No current-version or credential substitution is automatic.
+
+Run validates missing settings visibly, then freezes/preflights the selection. A ready
+selection submits one launch. An unready selection opens its saved group with specific
+blocker messages; Run stays clickable to refresh and explain them. Launch response
+errors retain the same group and show uncertain status rather than recreating scope
+or automatically retrying. Structured server failures are displayed as readable text.
+The separate Execution groups Create page still supports save-first planning.
 
 ## Repetitions and accounting
 

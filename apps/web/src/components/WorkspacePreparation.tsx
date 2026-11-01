@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Form from './Form';
 import { shortId, workspaceApi as api } from '../lib/workspace';
+import { runBlockers } from '../lib/executionReadiness';
 import styles from './ModernWorkspace.module.css';
 
 type Model = {
@@ -14,6 +15,8 @@ type Model = {
   workspace_profile?: boolean;
   status?: string;
   max_output_tokens: number;
+  credential_name?: string | null;
+  credential_state?: string;
 };
 type Framework = { id: string; name: string; framework: string };
 type Preset = {
@@ -24,6 +27,7 @@ type Preset = {
     models: Model[];
     candidate_runtime: string;
     runner: Framework;
+    candidate?: Framework | null;
     tracing: Framework | null;
   };
 };
@@ -46,7 +50,7 @@ type Draft = {
   readiness: { missing: string[]; models: { model_profile_id: string; missing: string[] }[] };
 };
 
-function useList<T>(path: string, revision = 0) {
+function useList<T>(path: string | null, revision = 0, all = false) {
   const [items, setItems] = useState<T[]>([]),
     [cursor, setCursor] = useState<string | null>(null),
     [error, setError] = useState(''),
@@ -55,14 +59,31 @@ function useList<T>(path: string, revision = 0) {
   const load = useCallback(
     async (after?: string) => {
       const current = ++generation.current;
+      if (!path) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       setError('');
       try {
-        const result = await api(
+        let result = await api(
           path + (after ? (path.includes('?') ? '&' : '?') + 'after=' + after : ''),
         );
+        const items = [...result.items];
+        const seen = new Set<string>();
+        while (all && result.next_cursor && current === generation.current) {
+          if (seen.has(result.next_cursor)) throw new Error('Model pagination did not advance.');
+          seen.add(result.next_cursor);
+          result = await api(
+            path +
+              (path.includes('?') ? '&' : '?') +
+              'after=' +
+              encodeURIComponent(result.next_cursor),
+          );
+          items.push(...result.items);
+        }
         if (current === generation.current) {
-          setItems((old) => (after ? [...old, ...result.items] : result.items));
+          setItems((old) => (after ? [...old, ...items] : items));
           setCursor(result.next_cursor);
         }
       } catch (e) {
@@ -71,7 +92,7 @@ function useList<T>(path: string, revision = 0) {
         if (current === generation.current) setLoading(false);
       }
     },
-    [path],
+    [path, all],
   );
   useEffect(() => {
     setItems([]);
@@ -80,6 +101,12 @@ function useList<T>(path: string, revision = 0) {
       generation.current++;
     };
   }, [load, revision]);
+  useEffect(() => {
+    if (!all) return;
+    const refresh = () => void load();
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, [all, load]);
   return {
     items,
     error,
@@ -144,35 +171,78 @@ function ToggleModels({
   models,
   selected,
   change,
+  showKeys = false,
+  allowedIds,
 }: {
   models: Model[];
   selected: string[];
   change: (ids: string[]) => void;
+  showKeys?: boolean;
+  allowedIds?: string[];
 }) {
+  const [search, setSearch] = useState('');
+  const visible = models.filter(
+    (m) =>
+      !showKeys ||
+      [m.name, m.provider, m.model_id, m.credential_name]
+        .join(' ')
+        .toLowerCase()
+        .includes(search.toLowerCase()),
+  );
   return (
     <fieldset>
-      <legend>Model profiles for planning</legend>
+      <legend>{showKeys ? 'Available models & linked keys' : 'Model profiles for planning'}</legend>
       <p className={styles.muted}>
         Select exact saved versions. Execution requires current bindings and explicit authorization.
       </p>
-      {models.map((m) => (
+      {showKeys && (
+        <>
+          <label>
+            Search models and keys
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Model, provider or saved key name"
+            />
+          </label>
+          <p>{selected.length} selected · Up to 8 models</p>
+        </>
+      )}
+      {visible.map((m) => (
         <label key={m.id} style={{ display: 'block' }}>
           <input
             type="checkbox"
             checked={selected.includes(m.id)}
-            disabled={m.status === 'revoked' || m.status === 'disabled'}
-            onChange={() =>
+            disabled={
+              m.status === 'revoked' ||
+              m.status === 'disabled' ||
+              (!!allowedIds && !allowedIds.includes(m.id))
+            }
+            onChange={(e) =>
               change(
-                selected.includes(m.id)
-                  ? selected.filter((id) => id !== m.id)
-                  : [...selected, m.id],
+                e.target.checked
+                  ? Array.from(new Set([...selected, m.id]))
+                  : selected.filter((id) => id !== m.id),
               )
             }
           />
           {m.name} · {m.provider}/{m.model_id} · {shortId(m.id)}
+          {showKeys && (
+            <small style={{ display: 'block', marginLeft: 24 }}>
+              Key: {m.credential_name || 'No saved key linked'}
+              {m.credential_state && m.credential_state !== 'configured'
+                ? ' · ' + m.credential_state
+                : ''}
+              {allowedIds && !allowedIds.includes(m.id)
+                ? ' · Ask an Admin to add this model to the preset'
+                : ''}
+            </small>
+          )}
           {m.status === 'revoked' ? ' · Revoked' : m.status === 'disabled' ? ' · Disabled' : ''}
         </label>
       ))}
+      {showKeys && !!models.length && !visible.length && <p>No matching models or linked keys.</p>}
       {!models.length && <p>No workspace model profiles loaded. Configure models first.</p>}
     </fieldset>
   );
@@ -403,15 +473,19 @@ export default function WorkspacePreparation({
   packageId,
   sourceId,
   environments = [],
+  runOnSave = false,
+  canAuthorizeRun = false,
 }: {
   base: string;
   taskId?: string | null;
   preparationId?: string | null;
-  open: (id: string) => void;
+  open: (id: string, issue?: string) => void;
   createGroup?: boolean;
   packageId?: string;
   sourceId?: string;
   environments?: { id: string; name: string; status: string }[];
+  runOnSave?: boolean;
+  canAuthorizeRun?: boolean;
 }) {
   const packages = useList<Package>(
     base +
@@ -423,7 +497,12 @@ export default function WorkspacePreparation({
           : ''),
   );
   const presets = useList<Preset>(base + '/workspace/presets');
-  const drafts = useList<Draft>(base + '/workspace/preparations');
+  const allModels = useList<Model>(
+    runOnSave ? base + '/workspace/models?current_only=true&limit=100' : null,
+    0,
+    true,
+  );
+  const drafts = useList<Draft>(runOnSave ? null : base + '/workspace/preparations');
   const [presetId, setPresetId] = useState(''),
     [composing, setComposing] = useState(!preparationId),
     [detailLoading, setDetailLoading] = useState(!!preparationId),
@@ -437,8 +516,22 @@ export default function WorkspacePreparation({
       ? presets.items[0].id
       : presetId;
   const preset = presets.items.find((p) => p.id === selectedPresetId);
+  const availableModels = allModels.items.filter(
+    (m) => m.workspace_profile && m.status !== 'disabled' && m.status !== 'revoked',
+  );
+  const staleSelections =
+    runOnSave && !allModels.loading
+      ? selected.filter((id) => !availableModels.some((m) => m.id === id))
+      : [];
   const composerHeading = useRef<HTMLHeadingElement>(null),
     readinessHeading = useRef<HTMLHeadingElement>(null);
+  const formError = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (error || packages.error || presets.error || allModels.error) {
+      formError.current?.focus();
+      formError.current?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [error, packages.error, presets.error, allModels.error]);
   useEffect(() => {
     setComposing(!preparationId);
   }, [preparationId]);
@@ -490,7 +583,7 @@ export default function WorkspacePreparation({
         <section
           className={styles.panel}
           aria-label="Evaluation preparation"
-          aria-busy={packages.loading || presets.loading || drafts.loading}
+          aria-busy={packages.loading || presets.loading || drafts.loading || allModels.loading}
         >
           <h2 ref={composerHeading} tabIndex={-1}>
             Configure run
@@ -499,21 +592,17 @@ export default function WorkspacePreparation({
             <p role="status">Loading preparation choices…</p>
           )}
           <p>
-            Choose the task package, preset, models and budget. Create saves the group and opens its
-            dashboard. Run starts execution from that dashboard.
+            {runOnSave ? (
+              'Select your configuration and Run. Anvil starts execution when all requirements are met, or shows exactly what needs attention.'
+            ) : (
+              <>
+                Choose the task package, preset, models and budget. Create saves the group and opens
+                its dashboard. Run starts execution from that dashboard.
+              </>
+            )}
           </p>
-          <button
-            onClick={() => {
-              void presets.reload();
-              void packages.reload();
-              void drafts.reload();
-              setRefreshKey((old) => old + 1);
-            }}
-          >
-            Refresh preparation choices
-          </button>
-          {[error, packages.error, presets.error].filter(Boolean).map((e, i) => (
-            <p role="alert" key={i}>
+          {[error, packages.error, presets.error, allModels.error].filter(Boolean).map((e, i) => (
+            <p role="alert" key={i} ref={i === 0 ? formError : undefined} tabIndex={-1}>
               {e}
             </p>
           ))}
@@ -524,12 +613,47 @@ export default function WorkspacePreparation({
               setBusy(true);
               setError('');
               try {
+                if (packages.loading || presets.loading || allModels.loading)
+                  throw new Error('Run cannot start yet: configuration choices are still loading.');
+                if (packages.error || presets.error || allModels.error)
+                  throw new Error(
+                    'Run cannot start yet: reload the configuration choices that failed to load.',
+                  );
+                if (!selected.length)
+                  throw new Error('Run cannot start yet: select at least one model.');
+                if (selected.length > 8)
+                  throw new Error('Select at most eight models for one run.');
+                if (staleSelections.length)
+                  throw new Error(
+                    'A selected model version is no longer available. Clear unavailable selections and select its current version.',
+                  );
+                if (!preset) throw new Error('Run cannot start yet: select an execution preset.');
                 const dollars = String(data.get('cap') || '');
                 if (dollars && !/^\d+(\.\d{1,6})?$/.test(dollars))
                   throw new Error('Enter a USD amount with at most six decimal places.');
                 const [whole, fraction = ''] = dollars.split('.');
+                let exactPresetId = selectedPresetId;
+                const frozen = new Map(preset.snapshot.models.map((m) => [m.id, m.config_hash]));
+                if (
+                  runOnSave &&
+                  canAuthorizeRun &&
+                  selected.some(
+                    (id) =>
+                      frozen.get(id) !== allModels.items.find((m) => m.id === id)?.config_hash,
+                  )
+                ) {
+                  const exact = await api(base + '/workspace/presets', 'POST', {
+                    name: ('Run selection · ' + preset.snapshot.name).slice(0, 100),
+                    runner_profile_id: preset.snapshot.runner.id,
+                    candidate_runtime: preset.snapshot.candidate_runtime,
+                    candidate_profile_id: preset.snapshot.candidate?.id || null,
+                    tracing_profile_id: preset.snapshot.tracing?.id || null,
+                    model_profile_ids: selected,
+                  });
+                  exactPresetId = exact.id;
+                }
                 const result = await api(base + '/workspace/preparations', 'POST', {
-                  preset_id: selectedPresetId,
+                  preset_id: exactPresetId,
                   package_id: data.get('package'),
                   model_profile_ids: selected,
                   max_output_tokens: Number(data.get('tokens')),
@@ -544,6 +668,29 @@ export default function WorkspacePreparation({
                   const group = await api(base + '/workspace/execution-groups', 'POST', {
                     preparation_id: result.id,
                   });
+                  if (runOnSave && !runBlockers(group.readiness, canAuthorizeRun).length) {
+                    try {
+                      await api(
+                        base + '/workspace/execution-groups/' + group.id + '/launch',
+                        'POST',
+                        canAuthorizeRun
+                          ? {
+                              subject_hash: group.subject_hash,
+                              aggregate_cap_micro_usd: group.readiness.aggregate_cap_micro_usd,
+                              rights_confirmed: true,
+                            }
+                          : undefined,
+                      );
+                    } catch (e) {
+                      open(
+                        group.id,
+                        'Run status could not be confirmed: ' +
+                          (e as Error).message +
+                          ' Review this saved run before retrying.',
+                      );
+                      return;
+                    }
+                  }
                   open(group.id);
                 } else {
                   setSaved(result);
@@ -629,11 +776,35 @@ export default function WorkspacePreparation({
             )}
             {preset && (
               <ToggleModels
-                models={preset.snapshot.models}
+                models={runOnSave ? availableModels : preset.snapshot.models}
                 selected={selected}
                 change={setSelected}
+                showKeys={runOnSave}
+                allowedIds={
+                  runOnSave && !canAuthorizeRun
+                    ? preset.snapshot.models.map((m) => m.id)
+                    : undefined
+                }
               />
             )}
+            {!!staleSelections.length && (
+              <p role="alert">
+                A selected model changed or became unavailable.{' '}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelected(selected.filter((id) => !staleSelections.includes(id)))
+                  }
+                >
+                  Clear unavailable selections
+                </button>
+              </p>
+            )}
+            <h3>Settings for all selected models</h3>
+            <p>
+              The output-token limit, repetitions and episode time limit apply to every selected
+              model. The API budget is one total cap across all models and repetitions.
+            </p>
             <label htmlFor="preparation-tokens">Selected maximum output tokens</label>
             <input
               id="preparation-tokens"
@@ -682,17 +853,30 @@ export default function WorkspacePreparation({
               Each repetition creates a separate trial, in sequence. The cap covers every model and
               trial. A blank cap grants no spending authority.
             </p>
+            {runOnSave && canAuthorizeRun && (
+              <p>
+                By selecting Run, you confirm permission to process this task with the selected
+                models and authorize the budget entered above.
+              </p>
+            )}
             <button
               disabled={
                 busy ||
-                !selected.length ||
-                packages.loading ||
-                presets.loading ||
-                !!packages.error ||
-                !!presets.error
+                (!runOnSave &&
+                  (!selected.length ||
+                    packages.loading ||
+                    presets.loading ||
+                    !!packages.error ||
+                    !!presets.error))
               }
             >
-              {createGroup ? 'Create execution group' : 'Save preparation'}
+              {busy && runOnSave
+                ? 'Starting run…'
+                : runOnSave
+                  ? 'Run'
+                  : createGroup
+                    ? 'Create execution group'
+                    : 'Save preparation'}
             </button>
           </Form>
         </section>

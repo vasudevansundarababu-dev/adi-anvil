@@ -90,6 +90,7 @@ def model_public(c, row):
         present, _ = secret_presence(row["provider_key"])
     credential_state = "server_configured" if present else "missing"
     binding = row["config"].get("workspace_credential")
+    credential_name = None
     if binding:
         credential = one(
             c, "SELECT * FROM anvil.workspace_credentials WHERE id=%s", (binding["id"],)
@@ -97,6 +98,7 @@ def model_public(c, row):
         present = False
         credential_state = "missing"
         if credential:
+            credential_name = credential["name"]
             credential_state = (
                 "revoked"
                 if credential["revoked_at"]
@@ -117,6 +119,7 @@ def model_public(c, row):
         "created_at": row["created_at"],
         "credential_present": present,
         "credential_state": credential_state,
+        "credential_name": credential_name,
         "credential_binding": {"id": binding["id"], "version_id": binding["version_id"]}
         if binding
         else None,
