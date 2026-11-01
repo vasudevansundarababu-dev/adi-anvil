@@ -11,7 +11,7 @@ from anvil.db import Jsonb, audit, digest, one, uid
 from anvil.schemas import Strict
 from anvil.workspace_models import ModelProfile, model_public, save_model
 
-READ_ROLES = ("admin", "researcher", "data-engineer", "product-owner", "advisor")
+READ_ROLES = ("admin", "rl-engineer")
 
 
 class FrameworkProfile(Strict):

@@ -15,16 +15,7 @@ from psycopg.rows import dict_row
 from anvil.config import CLOUD, setting
 from anvil.db import audit
 
-ROLES = {
-    "researcher",
-    "advisor",
-    "product-owner",
-    "data-engineer",
-    "reviewer",
-    "adjudicator",
-    "sales",
-    "admin",
-}
+ROLES = {"admin", "rl-engineer"}
 CAPABILITIES = {"rights_reviewer", "release_owner"}
 CLOUD_ORG = "c0000000-0000-4000-8000-000000000001"
 USERNAME = re.compile(r"^[a-z0-9][a-z0-9._-]{2,62}$")
@@ -35,10 +26,12 @@ def validate(username, email, roles, capabilities):
         raise ValueError("Username must be 3..63 lowercase letters, digits, '.', '_' or '-'")
     if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
         raise ValueError("A valid email address is required")
-    if not roles or not set(roles) <= ROLES:
+    if len(roles) != 1 or not set(roles) <= ROLES:
         raise ValueError(f"Roles must be chosen from {sorted(ROLES)}")
     if not set(capabilities) <= CAPABILITIES:
         raise ValueError(f"Capabilities must be chosen from {sorted(CAPABILITIES)}")
+    if capabilities and "admin" not in roles:
+        raise ValueError("Only Admin can hold administrative permissions")
 
 
 def admin_token(client, base):
@@ -124,7 +117,7 @@ def invite(username, email, name, project_name, roles, capabilities=(), transpor
                 "INSERT INTO anvil.memberships(project_id,user_id,role) VALUES(%s,%s,%s) ON CONFLICT DO NOTHING",
                 (project, user_id, role),
             )
-        for capability in capabilities:
+        for capability in CAPABILITIES if "admin" in roles else set():
             c.execute(
                 "INSERT INTO anvil.project_assignments(project_id,user_id,capability) VALUES(%s,%s,%s) ON CONFLICT DO NOTHING",
                 (project, user_id, capability),

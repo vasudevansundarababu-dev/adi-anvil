@@ -140,7 +140,7 @@ def test_worker_rechecks_rights_and_active_run_author():
             owner.transaction(force_rollback=True),
         ):
             owner.execute(
-                "UPDATE anvil.memberships SET active=false WHERE project_id=%s AND user_id=%s AND role='researcher'",
+                "UPDATE anvil.memberships SET active=false WHERE project_id=%s AND user_id=%s AND role='rl-engineer'",
                 (job["project_id"], episode["run_author"]),
             )
             owner.execute("SELECT set_config('anvil.project',%s,true)", (str(job["project_id"]),))

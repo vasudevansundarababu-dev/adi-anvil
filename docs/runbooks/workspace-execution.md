@@ -1,103 +1,76 @@
-# Run a prepared Harbor task in the modern workspace
+# Run tasks through execution groups
 
-The local workspace now connects a saved preparation to an execution group, the existing
-Harbor worker and per-model results. **Saving configuration is not authorization to spend.**
-Real provider/model compatibility is not claimed from software tests. No cloud rollout is
-included in this increment.
+Current policy: [two roles and separate screens](../product/22-TWO-ROLES-AND-EXECUTION-GROUP-JOURNEY.md).
+This supersedes earlier Product Owner, two-Admin and local authority-file instructions for
+modern execution groups. Those older decisions remain historical evidence.
 
-## User journey
+1. Open **Tasks** and select **Run**, or open **Execution groups → Create execution group**.
+2. On the separate Create page, select the exact task package, execution preset, model
+   versions, output/time limits and aggregate USD budget. Create saves immutable records,
+   sends no model request and reserves no money.
+3. Creation opens the group's separate dashboard. Review the model versions, budget and
+   any setup blockers. Creation fields and the group list are on other pages.
+4. A real project **Admin** selects **Run**. This action records the exact task/model/key/
+   pricing/terms binding, processing-rights confirmation and budget; no Product Owner,
+   second Admin or separate approval form/file is needed. A recent sign-in is required.
+5. The dashboard shows each model run's state and **View run dashboard** link. Individual
+   run dashboards expose captured results/failures, observed trajectories, immutable task/
+   rubric/evaluation snapshots, usage and compatible metric comparisons.
+6. **Execution groups** returns to the list. **Task → View run history** scopes retained
+   runs to that task. Saved preparation URLs remain read-only compatibility views.
 
-1. In **Models & keys**, save each exact model version with its explicit credential version,
-   output ceiling, current declared input/output prices, expiry and processing-terms reference.
-   The reference records information; it does not grant data rights or pricing authority.
-2. In **Frameworks**, configure a Harbor0.25.0 runner and an execution preset. Choose
-   **Anvil structured JSON agent**, the model allowlist and **None** for external tracing.
-   LangSmith/Semantic Kernel metadata still does not provide a qualified execution adapter.
-3. Import the exact Praxis JSON and **Build Harbor package**. Rebuilding identical input
-   reuses its immutable package. Obtain the existing exact-package software-check decision
-   from the project Product Owner; this does not authorize a paid model call.
-4. Open **Prepare evaluation**, select the package, preset and exact models, set explicit
-   output/time limits and one aggregate API cap, and save. If an old preparation has a
-   blank cap or obsolete model version, use **Create another preparation**; old snapshots
-   and their existing runs are not edited.
-5. In saved readiness, choose **Create execution group**. It freezes the preparation,
-   ordered model/config/key versions, declared prices/terms and execution-code digest.
-   Creating this draft makes no provider request and creates no spending reservation.
-6. Review the group's displayed blockers and conservative cost. The assigned real Product
-   Owner records a rights-document reference, then explicitly reviews the exact run and
-   external processing rights. Existing single-PO self-approval rules and audit remain.
-   Each of two distinct real Admins records activation and paid-scope decisions, with a
-   recent sign-in and explicit expiry. Synthetic local test identities cannot supply these
-   paid decisions. Nothing in this build changes identity grants or impersonates reviewers.
-7. After the operator binds separately approved exact authority and runtime controls below,
-   **Launch evaluation** becomes available only if every current gate passes. Launch
-   reserves the group cap once and creates each child run durably in the existing ledger.
-8. Follow **View run** for each model. Dashboard, Results, Failure modes, Trajectories,
-   Task & evaluations and Usage show the retained outcome, exact safe snapshots and costs.
-   Trajectories show recorded dispatch times/hashes/IDs, verified actor context and terminal
-   captured output. Future stage data appears only for that stage's actual recorded intent.
-   Private grading bindings/reference outputs and hidden reasoning are excluded.
-9. In **Runs**, select matching completed runs to compare metrics. Matching package, origin,
-   scoring, execution-code, output and timeout settings permit score deltas; incompatible
-   runs remain descriptive. Automated scores are not human scientific review or significance.
+## Two access roles
 
-## Operator authorization
+Admin includes RL Engineer work plus keys, model/framework configuration, access and exact
+budget authorization. RL Engineers create/import tasks, prepare execution groups, run an
+already authorized group, inspect results and perform individually assigned grading duties.
+They cannot authorize new paid scope or read unassigned private references. Grading and
+adjudication assignments are duties, not additional access roles; run authors cannot claim
+independent grading of their own run. Admin self authorization is recorded in audit.
 
-The runtime remains off by default. The build does **not** create paid authority or change
-the runtime flag. A separately approved operator records `.local/workspace-authority.json`
-with owner-only mode0600, after the user approves the exact group/provider/model/prices and
-budget. It must be a regular owner-controlled file, not a symlink. Do not include an API key.
+Migration033 archives old memberships, keeps existing Admins, migrates other members to
+RL Engineer, and restricts each person to one active role per project. It preserves all
+identities, synthetic provenance, passwords, historical decisions and task/run bindings.
+Migration034 stores immutable project-scoped Admin authorizations and append-only
+revocations. A revocation or inactive authorizing Admin stops further dispatch. Existing
+seeded test identities remain synthetic and cannot authorize paid model processing.
 
-| Field | Meaning |
-| --- | --- |
-| `reference` | Explicit `harbor:` budget-authority reference; an existing reference shares its existing spend window |
-| `project_id` | Exact local project UUID displayed in the group's snapshot details |
-| `group_subject_hash` | Exact group hash, covering task/package, ordered frozen model/config/key versions, prices, terms, limits and code |
-| `total_cap_micro_usd` | Positive integer user-authorized cumulative cap;1 USD =1,000,000 micro-USD; no inferred/default budget |
-| `expires_at` | Explicit future timestamp with timezone |
+## Runtime and exact configuration
 
-Use the existing independently gated Harbor live-runtime switch only with separate live
-authorization. Do not reuse old marketing-only authority, silently fall back to a global
-provider key, promote seeded accounts, or rewrite a group to match changed settings.
-Changing a reference/cap invalidates matching Admin decisions. Changing code, model/key
-version or price metadata requires a new preparation/group and appropriate fresh review.
-The authority file currently admits one exact group at a time; replacing it revokes further
-dispatch for older nonmatching groups. Coordinate this explicitly while runs are active.
+Live dispatch remains disabled by default and requires separately authorized runtime
+activation. Building this feature does not make paid calls or enable live flags.
+Saved provider keys and configurations alone do not authorize a run. The explicit Run
+confirmation binds a positive exact aggregate cap with an eight-hour maximum authorization
+lifetime; pricing expiry and all frozen metadata are independently rechecked before each
+stage. Changed code/model/key versions require a fresh group.
 
-Exact returned-model equality is deliberate. An alias resolving to a different returned
-model identifier, missing/malformed usage, unadmitted Anthropic cache pricing, inconsistent
-Gemini usage, a response above its admitted token/cost bound or uncertain transport becomes
-an unresolved outcome. It is not retried or silently relabeled as a successful compatible
-model. Use pinned exact model identifiers for approved validation.
+Modern runs resolve only their scoped encrypted credential version. No legacy/global
+provider-key fallback is used. Fixed native endpoints and exact returned model IDs,
+single-request limits, admitted usage and no retries/redirects remain enforced. Native
+OpenAI/Anthropic/Gemini adapters are supported; external LangSmith/Semantic Kernel adapters
+remain unqualified and explicitly blocked rather than represented as executable.
 
-## Budget, sequencing, cancellation and failure
+## Reservation, sequencing and cancellation
 
-- Launch serializes the exact group and shared authority window and reserves **one aggregate
-  cap**. A replay or concurrent launch cannot enqueue duplicates or reserve twice. The sum
-  of per-model/per-stage conservative bounds must fit both group and authority ceilings.
-- Child jobs are durable together. The database only lets a child be claimed after all
-  predecessors succeeded. A task failure with a valid retained grading result can continue;
-  operational failure, unknown dispatch or cancellation stops later dispatch.
-- Each stage rechecks current access, bindings, credential revocation/rotation, reviews,
-  code, authority/expiry and reservation. Its dispatch intent commits before network I/O.
-  Project/group/plan/check locks never span the provider request.
-- Provider credentials are resolved only inside the trusted server boundary. Fixed native
-  endpoints/auth and no-retry/redirect behavior are guarded; provider secrets never enter
-  Harbor, task archives, trajectories, audit metadata or error text.
-- **Cancel remaining runs** stops queued children and requests cancellation of active work.
-  An already dispatched request cannot be recalled. Captured billing evidence is recorded
-  even after rights/access revocation. Unknown and cancelled attempts retain their reserved
-  ceiling. There is no automatic refund, settlement or ambiguous re-dispatch.
-- The local encrypted credential files/wrap key remain separate from SQL/artifact backup.
-  Missing/invalid secret material fails closed before a provider request. Restore those
-  files securely before trying a fresh authorized operation; do not substitute another key.
+Launch atomically reserves one group cap and queues all child jobs. Concurrent/replayed
+launch cannot duplicate reservations or children. Each model executes after its predecessor
+succeeds; operational failure, unknown outcome or cancellation stops later dispatch.
+Each stage rechecks access, authorization, code, terms, prices, exact versions, secret state,
+and the retained reservation. Dispatch intent commits before provider network I/O.
 
-## Software evidence versus live verification
+Cancel stops queued work and requests cancellation of active work. It cannot recall a
+request already sent. Billing evidence is captured even if access/rights are subsequently
+revoked. Unknown and cancelled attempts retain reservations until separately reconciled;
+there is no automatic refund, ambiguous retry or silent settlement.
 
-The test path uses original synthetic tasks, fresh isolated contract databases, new
-contract-only identities and explicit native SDK MockTransport responses. The real pinned
-Harbor runner/sandbox/Gateway is exercised for staged OpenAI, Claude and Gemini paths.
-Mock calls are labeled `native_sdk_mock_verification` and `model_performance=false`.
-These tests establish software behavior, not real API access, provider availability,
-model quality, real-person approvals or paid performance. No real model call is made by
-the build. See BUILD-STATUS.md for exact final verification and remaining platform scope.
+Secrets never enter task archives, Harbor containers, trajectories, audit metadata or error
+text. SQL/artifact backup does not include local credential files/wrap key, environment or
+Keycloak recovery. Restore those separately and securely; never substitute another key.
+
+## Evidence
+
+Synthetic checks and SDK MockTransport verification are labeled separately from actual model
+performance. Predetermined outputs do not demonstrate model quality. Trajectories show only
+captured stage inputs/outputs, not invented internal reasoning. Comparisons require compatible
+task/evaluation signatures and origins. Live paid smoke tests remain not run under local
+build authorization.

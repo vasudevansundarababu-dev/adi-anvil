@@ -15,7 +15,7 @@ def imported(
     client_factory, fixture="synthetic-marketing.task.json", exact_payload=None, base=BASE
 ):
     client, _ = client_factory("researcher")
-    po, _ = client_factory("product-owner")
+    po, _ = client_factory("admin-1")
     raw = json.loads((ROOT / "contracts/praxis" / fixture).read_text())
     raw["task_id"] += "-" + uid()[:8]
     payload = exact_payload if exact_payload is not None else json.dumps(raw, indent=2)

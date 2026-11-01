@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import HarborWorkbench from './HarborWorkbench';
+import WorkspaceExecutionGroups from './WorkspaceExecutionGroups';
 import ModelProfiles from './ModelProfiles';
 import FrameworkProfiles from './FrameworkProfiles';
 import DiagnosticResults from './DiagnosticResults';
@@ -27,6 +28,7 @@ type User = { id: string; name: string; projects: Project[] };
 const navigation = [
   ['overview', 'Overview'],
   ['tasks', 'Tasks'],
+  ['execution-groups', 'Execution groups'],
   ['runs', 'Runs'],
   ['models', 'Models & keys'],
   ['frameworks', 'Frameworks'],
@@ -160,11 +162,17 @@ function WorkspaceView() {
   }
   const selectedRuns = (runs?.items || []).filter((r) => selected.includes(r.id));
   const title =
-    section === 'preparation'
-      ? 'Prepare evaluation'
-      : section === 'editor'
-        ? 'Edit as new version'
-        : navigation.find(([key]) => key === section)?.[1] || 'Overview';
+    section === 'execution-groups'
+      ? parts[4] === 'new'
+        ? 'Create execution group'
+        : parts[4]
+          ? 'Execution group'
+          : 'Execution groups'
+      : section === 'preparation'
+        ? 'Saved preparation'
+        : section === 'editor'
+          ? 'Edit as new version'
+          : navigation.find(([key]) => key === section)?.[1] || 'Overview';
   const canEdit = capabilities.includes('task_drafts.write');
   const editorHref = (id: string, returnRun = query.get('return_run') || runId || '') =>
     route +
@@ -199,13 +207,13 @@ function WorkspaceView() {
         <nav aria-label="Workspace navigation">
           {navigation
             .filter(([key]) => admin || !['models', 'frameworks', 'people', 'limits'].includes(key))
-            .map(([key, label], i) => (
+            .map(([key, label]) => (
               <a
                 key={key}
                 href={route + '/' + key}
                 aria-current={section === key ? 'page' : undefined}
               >
-                {i === 3 && <small>Administration</small>}
+                {key === 'models' && <small>Administration</small>}
                 {label}
               </a>
             ))}
@@ -288,9 +296,11 @@ function WorkspaceView() {
                   </p>
                 </div>
                 <div className={styles.actions}>
-                  <button onClick={() => void load()} disabled={loading}>
-                    Refresh
-                  </button>
+                  {['overview', 'tasks', 'runs'].includes(section) && (
+                    <button onClick={() => void load()} disabled={loading}>
+                      Refresh
+                    </button>
+                  )}
                   {['tasks', 'runs'].includes(section) && !diagnostic && (
                     <button className={styles.primary} onClick={() => setPrepare(!prepare)}>
                       {prepare ? 'Close preparation' : 'Import / prepare run'}
@@ -319,11 +329,11 @@ function WorkspaceView() {
                   <HarborWorkbench
                     base={base}
                     api={api}
-                    canApprove={project.roles.includes('product-owner')}
+                    canApprove={admin}
                     canPlan={capabilities.includes('harbor.prepare')}
                     canAdmin={admin}
                     preparationHref={(taskId) =>
-                      route + '/preparation?task=' + encodeURIComponent(taskId)
+                      route + '/execution-groups/new?task=' + encodeURIComponent(taskId)
                     }
                     onPackageBuilt={() => void load()}
                   />
@@ -386,10 +396,12 @@ function WorkspaceView() {
                                 {!diagnostic && capabilities.includes('harbor.prepare') && (
                                   <a
                                     href={
-                                      route + '/preparation?task=' + encodeURIComponent(t.task_id)
+                                      route +
+                                      '/execution-groups/new?task=' +
+                                      encodeURIComponent(t.task_id)
                                     }
                                   >
-                                    Prepare evaluation
+                                    Run
                                   </a>
                                 )}
                               </td>
@@ -560,6 +572,23 @@ function WorkspaceView() {
                   />
                 </>
               )}
+              {section === 'execution-groups' &&
+                (parts[4] === 'new' ? (
+                  <WorkspacePreparation
+                    key={base + ':new:' + (query.get('task') || 'all')}
+                    base={base}
+                    taskId={query.get('task')}
+                    createGroup
+                    open={(id) => router.push(route + '/execution-groups/' + id)}
+                  />
+                ) : (
+                  <WorkspaceExecutionGroups
+                    key={base + ':' + (parts[4] || 'list')}
+                    base={base}
+                    groupId={parts[4]}
+                    canAdmin={admin}
+                  />
+                ))}
               {section === 'preparation' &&
                 (capabilities.includes('harbor.prepare') ? (
                   <WorkspacePreparation
@@ -567,8 +596,6 @@ function WorkspaceView() {
                     base={base}
                     taskId={query.get('task')}
                     preparationId={query.get('preparation')}
-                    canReview={project.roles.includes('product-owner')}
-                    canAdmin={admin}
                     open={(id) =>
                       router.replace(
                         route +

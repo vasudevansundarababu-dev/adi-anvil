@@ -118,7 +118,7 @@ def test_exact_planning_bindings_readiness_and_zero_execution_effects(
     assert "selected_output_limit_exceeds_profile" in draft["readiness"]["models"][0]["missing"]
     if runtime == "semantic_kernel":
         assert "candidate_runtime_not_qualified" in draft["readiness"]["missing"]
-    post(path + "/preparations", body, 403, client=advisor)
+    post(path + "/preparations", body, 200, client=advisor)
     assert outsider.get(path + "/preparations/" + draft["id"]).status_code == 404
     post(path + "/preparations", {**body, "package_id": uid()}, 404, client=researcher)
     post(path + "/preparations", {**body, "model_profile_ids": [uid()]}, 422, client=researcher)

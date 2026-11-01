@@ -57,7 +57,7 @@ def quorum(c, connection, purpose, subject):
       AND a.cap_micro_usd=%s AND a.expires_at>now() AND u.active AND NOT u.is_synthetic AND m.active""",
             (connection["id"], purpose, subject, CAP),
         )["n"]
-        >= 2
+        >= 1
     )
 
 
@@ -116,12 +116,12 @@ def readiness(c, run):
         if not domain.rights_ok(c, task["content"]["source_revision_id"], operation, destination):
             missing.append("rights_" + operation)
     if not quorum(c, connection, "activation", connection["config_hash"]):
-        missing.append("two_real_admin_provider_approvals")
+        missing.append("admin_provider_authorization")
     if not quorum(c, connection, "paid_scope", subject):
-        missing.append("two_real_admin_run_approvals")
+        missing.append("admin_run_authorization")
     if not one(
         c,
-        "SELECT 1 FROM anvil.users u JOIN anvil.memberships m ON m.user_id=u.id WHERE u.id=%s AND u.active AND m.project_id=%s AND m.role='researcher' AND m.active",
+        "SELECT 1 FROM anvil.users u JOIN anvil.memberships m ON m.user_id=u.id WHERE u.id=%s AND u.active AND m.project_id=%s AND m.role IN ('admin','rl-engineer') AND m.active",
         (run["created_by"], run["project_id"]),
     ):
         missing.append("active_run_author")

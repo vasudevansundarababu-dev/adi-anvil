@@ -1,5 +1,51 @@
 # Build status
 
+Current local checkpoint — 31 October 2026: the two-role and separate execution-group
+journey is implemented on `codex/anvil-modern-workspace`. **Admin and RL Engineer only**;
+Admin includes engineering. Schema 033 archives old memberships and preserves identities;
+schema 034 records one exact Admin Run authorization. No Product Owner, second Admin,
+external group-authority file or separate modern approval forms. Historical decisions,
+private-reference assignments, immutable versions, recent sign-in, real identity, runtime
+controls and atomic budget reservation remain. Run authors cannot independently grade
+or inspect their own private review. New private bindings require prior individual access
+or source ownership; task self-assignment and hidden-as-actor relabeling cannot grant access. Admin software-check Run authorizes its exact scope.
+
+Execution groups now has separate newest-first **List → Create → View/dashboard** pages.
+Task Run links preselect the task. Create saves without spending and opens the dashboard;
+model runs link to existing result/failure/trajectory/snapshot/usage dashboards. Saved
+preparation URLs are read-only compatibility views. Classic routes/baseline remain.
+[Current spec](docs/product/22-TWO-ROLES-AND-EXECUTION-GROUP-JOURNEY.md),
+[walkthrough](docs/runbooks/workspace-execution.md), and
+[verification report](docs/generated/two-role-execution-groups-2026-10-31.md).
+
+Verification: final `pnpm check` passed; 242 unit tests passed. Full real-Harbor/mock-provider
+integration: 173 passed, one retained-data pagination-test failure, two optional Praxis-export
+skips (235.77s). Repaired that test; final workspace/access follow-up 8 passed (1.26s),
+including new populated role-history immutability coverage. Full integration was not
+repeated after that repair or the final private-binding API guard. The final privacy/editor/
+evaluation integration follow-up passed 14 tests (6.83s); API security passed 49 (44.09s). Full browser 14 passed/two duplicate-heading failures;
+corrected the heading, affected replay 2 passed; final Harbor/preparation suites 5 passed
+(47.4s). All 16 browser scenarios have passed across these runs. Final screenshot inspected;
+after the private-binding guard, the complete classic journey and preparation suites
+passed again: 3 browser tests (49.0s). Final static check/build passed after that guard.
+320/768/1440-width overflow checks pass. Backup/restore passed into retained
+`anvil_restore_663b0942d410`: 1,236 pending reviews and 6,833 artifact checksums verified;
+original DB unchanged. Schema 034/new-table hashes match, including 3,146 archived membership
+rows. Canonical authorization tables were empty; populated paid-authority recovery and
+credential files/wrap-key/environment/Keycloak recovery remain not run.
+
+API/database healthy at http://127.0.0.1:3202/workspace; both live inference and Harbor live
+dispatch disabled. Paid smoke NOT RUN; seeded identities remain synthetic. No cloud rollout,
+push, real email, IAM change, paid call, dependency install or reset occurred. Unrelated
+AGENTS.md/cloud-runbook edits and comparison branch 3a17429c are preserved. This interactive
+slice is complete locally, not a completed production platform or live model qualification.
+Next nightly: verify relevant regressions only unless new requirements arrive; do not add
+unrequested features or restore superseded role/approval requirements. Preserve the fixed
+22:00–06:00 nightly window. Broader partial areas: People management, managed cloud secrets,
+qualified external framework adapters and explicit spend reconciliation.
+
+## Earlier checkpoints (policy superseded by the current checkpoint where it differs)
+
 Interactive execution continuation — checkpoint `c3d2eb1`,31October2026. The missing
 preparation→execution-group→Harbor→results path is implemented and software-verified locally.
 Overall platform remains partial; this is not live provider/model qualification or a rollout.

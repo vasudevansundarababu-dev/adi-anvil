@@ -53,7 +53,7 @@ def new_plan(researcher, title="Constraint preservation under budget limits"):
 
 def test_wizard_single_product_owner_approval_prepares_run(client_factory):
     researcher = call(client_factory, "researcher")
-    owner = call(client_factory, "product-owner")
+    owner = call(client_factory, "admin-1")
     options = researcher("GET", "/evaluations/options")
     assert {c["id"] for c in options["cases"]} == {"MKT-001", "FIN-001", "STR-001"}
     assert options["default_graders"], "a grader is always proposed"
@@ -128,7 +128,7 @@ def test_wizard_single_product_owner_approval_prepares_run(client_factory):
             (plan["id"],),
         ).fetchall()
         assert {(str(d["reviewer_id"]), d["purpose"]) for d in decisions} == {
-            (USERS["product-owner"], "approval")
+            (USERS["admin-1"], "approval")
         }
 
     run = researcher("POST", f"/runs/{plan['run']['id']}/launch", {}, plan["run"]["row_version"])
@@ -143,7 +143,12 @@ def approved_single_episode_plan(researcher, owner, title):
     plan = researcher(
         "PATCH",
         f"/evaluations/{plan['id']}",
-        {"case_ids": ["STR-001"], "rubric": RUBRIC, "candidates": ["fixture-correct"]},
+        {
+            "case_ids": ["STR-001"],
+            "rubric": RUBRIC,
+            "candidates": ["fixture-correct"],
+            "grader_ids": [USERS["reviewer-1"], USERS["reviewer-2"]],
+        },
         plan["row_version"],
     )
     plan = researcher("POST", f"/evaluations/{plan['id']}/submit", {}, plan["row_version"])
@@ -185,7 +190,7 @@ def judgment(detail, critical):
 
 def test_second_grader_on_critical_and_owner_adjudicates_dispute(client_factory):
     researcher = call(client_factory, "researcher")
-    owner = call(client_factory, "product-owner")
+    owner = call(client_factory, "admin-1")
     graders = {name: call(client_factory, name) for name in ("reviewer-1", "reviewer-2")}
     plan, run = approved_single_episode_plan(researcher, owner, "Grading rule verification")
     eid = wait_for_review(run["id"])
@@ -229,7 +234,7 @@ def test_clear_result_is_final_after_one_grade_unless_sampled(client_factory):
     from anvil.evaluation import sampled
 
     researcher = call(client_factory, "researcher")
-    owner = call(client_factory, "product-owner")
+    owner = call(client_factory, "admin-1")
     graders = {name: call(client_factory, name) for name in ("reviewer-1", "reviewer-2")}
     plan, run = approved_single_episode_plan(researcher, owner, "Single grade verification")
     eid = wait_for_review(run["id"])
@@ -254,7 +259,7 @@ def test_clear_result_is_final_after_one_grade_unless_sampled(client_factory):
 
 def test_changes_requested_reopens_the_plan(client_factory):
     researcher = call(client_factory, "researcher")
-    owner = call(client_factory, "product-owner")
+    owner = call(client_factory, "admin-1")
     plan = new_plan(researcher, "Changes requested evaluation plan")
     plan = researcher(
         "PATCH",
@@ -294,7 +299,7 @@ def test_plan_is_project_scoped_and_role_checked(client_factory):
             "hypothesis": "Not permitted for this role at all.",
             "success_criteria": "Not permitted for this role to define at all.",
         },
-        expected=403,
+        expected=201,
     )
     reviewer = call(client_factory, "reviewer-1")
     reviewer(

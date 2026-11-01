@@ -575,7 +575,9 @@ export default function TaskImport({
               )}
             </>
           ) : (
-            <p>A Researcher can resume this import and attach the published version to a suite.</p>
+            <p>
+              An RL Engineer can resume this import and attach the published version to a suite.
+            </p>
           )}
         </div>
       )}

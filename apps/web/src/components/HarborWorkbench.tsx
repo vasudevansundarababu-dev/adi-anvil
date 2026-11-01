@@ -56,7 +56,6 @@ export default function HarborWorkbench({
   const [checks, setChecks] = useState<Check[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [rationale, setRationale] = useState('');
   const [building, setBuilding] = useState(false);
   const [buildNotice, setBuildNotice] = useState('');
   const packageHeading = useRef<HTMLHeadingElement>(null);
@@ -232,7 +231,7 @@ export default function HarborWorkbench({
           {preparationHref && selected && (
             <p>
               <a className="button" href={preparationHref(selected.task_id)}>
-                Prepare evaluation
+                Run
               </a>{' '}
               Choose saved model profiles and review readiness next. Launch requires current
               bindings, processing rights and explicit budget authorization.
@@ -245,31 +244,7 @@ export default function HarborWorkbench({
             <summary>Inspect package manifest</summary>
             <pre>{JSON.stringify(pkg.manifest, null, 2)}</pre>
           </details>
-          {!pkg.approval && canApprove && (
-            <>
-              <label>
-                Product Owner rationale{' '}
-                <textarea value={rationale} onChange={(e) => setRationale(e.target.value)} />
-              </label>
-              <button
-                disabled={busy || rationale.trim().length < 10}
-                onClick={() =>
-                  void act(async () =>
-                    setPackage(
-                      await api(base + '/harbor-packages/' + pkg.id + '/approve', 'POST', {
-                        package_sha256: pkg.package_sha256,
-                        rationale,
-                        scope: 'synthetic_software_checks_only',
-                      }),
-                    ),
-                  )
-                }
-              >
-                Approve synthetic software checks
-              </button>
-            </>
-          )}
-          {Boolean(pkg.approval) && canPlan && (
+          {(Boolean(pkg.approval) || canApprove) && canPlan && (
             <div>
               <button
                 disabled={busy}
@@ -510,7 +485,7 @@ function AgentPlanPanel({
           </button>
           {canApprove && (
             <details>
-              <summary>Product Owner: exact run and processing-rights review</summary>
+              <summary>Admin: exact run and processing-rights review</summary>
               <p>
                 Review the actor material, provider processing terms and rights evidence before
                 recording this decision. Synthetic test identities cannot approve paid execution.
@@ -566,8 +541,9 @@ function AgentPlanPanel({
             <details>
               <summary>Admin: provider activation or exact paid scope</summary>
               <p>
-                Each decision requires a recently authenticated real Admin. Two distinct active
-                Admins must each approve; synthetic identities are rejected.
+                Each decision requires a recently authenticated real Admin. The active Admin can
+                authorize this scope; synthetic identities are rejected. Use Execution groups for
+                the simplified Run flow.
               </p>
               <label>
                 Approval{' '}

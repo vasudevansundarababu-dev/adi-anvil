@@ -200,9 +200,9 @@ def readiness(c, record):
         "SELECT * FROM anvil.harbor_agent_reviews r WHERE plan_id=%s AND subject_hash=%s AND expires_at>now() AND NOT EXISTS(SELECT 1 FROM anvil.harbor_agent_review_revocations v WHERE v.review_id=r.id) AND EXISTS(SELECT 1 FROM anvil.project_assignments a WHERE a.user_id=r.approved_by AND a.capability='rights_reviewer' AND a.active) AND EXISTS(SELECT 1 FROM anvil.artifacts a WHERE a.id=r.rights_evidence_id AND a.scan_status='clean')",
         (record["id"], record["subject_hash"]),
     ).fetchall()
-    owners = domain.product_owners(c, record["project_id"])
+    owners = domain.administrators(c, record["project_id"])
     if not any(str(r["approved_by"]) in owners for r in reviews):
-        missing.append("product_owner_exact_run_and_external_processing_rights_review")
+        missing.append("admin_exact_run_and_external_processing_rights_review")
     if record["state"] == "launched":
         window = one(
             c, "SELECT * FROM anvil.evaluation_spend_windows WHERE id=%s", (record["window_id"],)
@@ -219,8 +219,8 @@ def readiness(c, record):
             ("activation", record["config"]["connection_hash"]),
             ("paid_scope", record["subject_hash"]),
         ):
-            if admin_count(c, record, purpose, subject, policy) < 2:
-                missing.append("two_real_distinct_admin_" + purpose + "_approvals")
+            if admin_count(c, record, purpose, subject, policy) < 1:
+                missing.append("admin_" + purpose + "_approvals")
         required = call_bound(policy) * record["config"]["max_calls"]
         if (
             record["config"]["max_total_micro_usd"] < required
@@ -231,8 +231,8 @@ def readiness(c, record):
         required = None
         missing.extend(
             [
-                "two_real_distinct_admin_activation_approvals",
-                "two_real_distinct_admin_paid_scope_approvals",
+                "admin_activation_approvals",
+                "admin_paid_scope_approvals",
             ]
         )
     if not package or not one(
@@ -640,11 +640,9 @@ def routes(context, wrap, idempotent):
                 ):
                     raise HTTPException(
                         409,
-                        "This Product Owner already reviewed the plan. Create a new plan to renew or replace an immutable review.",
+                        "This Admin already reviewed the plan. Create a new plan to renew or replace an immutable review.",
                     )
                 self_approved = str(record["created_by"]) == str(user)
-                if self_approved and len(domain.product_owners(c, project)) != 1:
-                    raise HTTPException(409, "Another Product Owner must review your plan")
                 if body.expires_at <= datetime.now(timezone.utc):
                     raise HTTPException(422, "Rights review expiry must be in the future")
                 if not one(
@@ -652,14 +650,12 @@ def routes(context, wrap, idempotent):
                     "SELECT 1 FROM anvil.project_assignments WHERE user_id=%s AND capability='rights_reviewer' AND active",
                     (user,),
                 ):
-                    raise HTTPException(
-                        403, "An assigned Product Owner rights reviewer is required"
-                    )
+                    raise HTTPException(403, "An assigned Admin rights reviewer is required")
                 artifacts.read(c, body.rights_evidence_id)
                 if one(c, "SELECT is_synthetic FROM anvil.users WHERE id=%s", (user,))[
                     "is_synthetic"
                 ]:
-                    raise HTTPException(403, "A real Product Owner must review paid-run rights")
+                    raise HTTPException(403, "A real Admin must review paid-run rights")
                 c.execute(
                     "INSERT INTO anvil.harbor_agent_reviews(id,project_id,plan_id,approved_by,subject_hash,rationale,rights_evidence_id,self_approved,expires_at) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(plan_id,approved_by) DO NOTHING",
                     (

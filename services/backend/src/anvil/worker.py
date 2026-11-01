@@ -46,7 +46,7 @@ def guard(c, job):
         raise RuntimeError("graph_version_mismatch")
     if not one(
         c,
-        "SELECT 1 FROM anvil.memberships WHERE project_id=%s AND user_id=%s AND role='researcher' AND active",
+        "SELECT 1 FROM anvil.memberships m JOIN anvil.users u ON u.id=m.user_id WHERE m.project_id=%s AND m.user_id=%s AND m.role IN ('admin','rl-engineer') AND m.active AND u.active",
         (job["project_id"], e["run_author"]),
     ):
         raise RuntimeError("run_authorization_revoked")

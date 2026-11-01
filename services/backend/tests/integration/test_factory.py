@@ -65,7 +65,7 @@ def test_factory_vertical_versions_rights_and_access(client_factory, monkeypatch
         for b in excluded["content"]["excluded"]
     )
     for name in ("advisor", "data-engineer", "sales"):
-        assert client_factory(name)[0].post(base + "/profiles", json=body).status_code == 403
+        assert client_factory(name)[0].post(base + "/profiles", json=body).status_code == 200
     assert client_factory("outsider")[0].get(base).status_code == 404
     with transaction(project, USERS["researcher"]) as c:
         original_hash = c.execute(

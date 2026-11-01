@@ -112,7 +112,7 @@ def test_invitation_validation_rejects_unknown_roles_and_bad_usernames():
         "('good','a@b.co',['owner'],[]),('good','a@b.co',[],[]),('good','a@b.co',['admin'],['root'])]:\n"
         "    try:\n        validate(*args)\n    except ValueError:\n        continue\n"
         "    raise SystemExit('accepted ' + repr(args))\n"
-        "validate('vasu.admin','a@b.co',['admin','researcher'],['release_owner'])\n",
+        "validate('vasu.admin','a@b.co',['admin'],['release_owner'])\n",
     )
     assert result.returncode == 0, result.stderr
 

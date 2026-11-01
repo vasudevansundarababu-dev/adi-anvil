@@ -99,9 +99,9 @@ test('modern package build shows progress, retry, saved feedback and the next st
   await expect(
     page.getByRole('heading', { name: 'Harbor package ready', exact: true }),
   ).toBeFocused();
-  await page.getByRole('link', { name: 'Prepare evaluation', exact: true }).click();
+  await page.getByRole('link', { name: 'Run', exact: true }).click();
   await expect(
-    page.getByRole('heading', { name: 'Prepare model evaluation', exact: true }),
+    page.getByRole('heading', { name: 'Create execution group', exact: true }),
   ).toBeVisible();
   await expect(page.locator('#preparation-package')).toHaveValue(first.id);
   await expect(page.getByLabel('Aggregate API budget', { exact: false })).toHaveValue('');
@@ -135,7 +135,7 @@ test('Praxis export to staged Harbor check with real OIDC and retained analysis'
   await expect(
     researcher.getByRole('button', { name: 'Run reference check', exact: true }),
   ).toHaveCount(0);
-  const owner = await login(ownerContext, 'product-owner');
+  const owner = await login(ownerContext, 'admin-1');
   await owner.goto(path);
   await expect(owner.getByLabel('Imported revision', { exact: true })).toBeVisible();
   await expect(owner.getByLabel('Imported revision', { exact: true })).toContainText(
@@ -149,14 +149,6 @@ test('Praxis export to staged Harbor check with real OIDC and retained analysis'
   await owner
     .getByLabel('Imported revision', { exact: true })
     .selectOption(sourceValue!, { timeout: 10000 });
-  await owner
-    .getByLabel('Product Owner rationale')
-    .fill(
-      'Automated browser software-check approval by a test identity. No human rights clearance.',
-    );
-  await owner
-    .getByRole('button', { name: 'Approve synthetic software checks', exact: true })
-    .click();
   await owner.getByRole('button', { name: 'Run reference check', exact: true }).click();
   await expect(owner.getByRole('heading', { name: 'Check: succeeded', exact: true })).toBeVisible({
     timeout: 60000,

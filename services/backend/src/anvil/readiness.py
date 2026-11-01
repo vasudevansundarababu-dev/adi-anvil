@@ -122,10 +122,15 @@ def require_no_declared_gaps(c, revision):
 
 
 def may_edit(c, user, roles, revision):
-    return "data-engineer" in roles or (
-        "reviewer" in roles
+    return "admin" in roles or (
+        "rl-engineer" in roles
         and bool(
             one(
+                c,
+                "SELECT 1 FROM anvil.resources r JOIN anvil.revisions v ON v.resource_id=r.id WHERE v.id=%s AND r.created_by=%s",
+                (revision, user),
+            )
+            or one(
                 c,
                 """SELECT 1 FROM anvil.resources r JOIN anvil.revisions v ON v.id=r.current_revision_id
         WHERE r.kind='task' AND r.lifecycle NOT IN ('withdrawn','revoked') AND v.content->>'source_revision_id'=%s AND v.content->>'reviewer_id'=%s""",

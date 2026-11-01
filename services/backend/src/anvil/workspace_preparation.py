@@ -12,7 +12,7 @@ from anvil.schemas import Strict
 from anvil.workspace import READ_ROLES
 from anvil.workspace_models import pricing_state, selection_issues
 
-PLAN_ROLES = ("admin", "researcher", "product-owner")
+PLAN_ROLES = ("admin", "rl-engineer")
 
 
 class Preset(Strict):

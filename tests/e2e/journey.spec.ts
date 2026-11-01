@@ -86,7 +86,7 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
     contexts[name] = await login(browser, name);
   const R = contexts.researcher,
     A = contexts.advisor,
-    P = contexts['product-owner'],
+    P = contexts['admin-1'],
     D = contexts['data-engineer'];
   const objective = await call(R, '/objectives', 'POST', {
     title: 'Synthetic commercial-constraint diagnostic ' + Date.now(),
@@ -290,24 +290,24 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
   await transition(R, 'reports', report, 'build');
   mkdirSync('artifacts/test-runs', { recursive: true });
   for (const name of ['sales-kit.pdf', 'sales-kit.html', 'evidence.zip', 'email-draft.txt']) {
-    const download = await contexts.sales.request.get(
+    const download = await contexts['admin-1'].request.get(
       base + `/reports/${report.id}/download/${name}`,
     );
     expect(download.status()).toBe(200);
     writeFileSync('artifacts/test-runs/' + name, await download.body());
   }
-  const kit = (await call(contexts.sales, '/sales-kits')).find(
+  const kit = (await call(contexts['admin-1'], '/sales-kits')).find(
     (k: any) => k.content.report_revision_id === report.current_revision_id,
   );
   expect(kit.content.artifacts['evidence.zip']).toBeTruthy();
-  const salesPage = await contexts.sales.newPage();
+  const salesPage = await contexts['admin-1'].newPage();
   await salesPage.goto('/p/' + project + '/sales-kits');
   const downloaded = salesPage.waitForEvent('download');
   await salesPage.getByRole('link', { name: 'Download PDF', exact: true }).click();
   const salesPdf = await downloaded;
   expect(salesPdf.suggestedFilename()).toBe('sales-kit.pdf');
   await salesPdf.saveAs('artifacts/test-runs/sales-ui-download.pdf');
-  const contact = await call(contexts.sales, '/sales-contacts', 'POST', {
+  const contact = await call(contexts['admin-1'], '/sales-contacts', 'POST', {
     name: 'Synthetic lab contact',
     email: 'evaluation@lab.invalid',
     organization_label: 'Local fixture lab',
@@ -335,21 +335,23 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
     recipient_contact_id: contact.id,
     sender_connection_id: sender.id,
   });
-  const mail = await call(contexts.sales, `/sales-kits/${kit.id}/simulate-send`, 'POST', {
+  const mail = await call(contexts['admin-1'], `/sales-kits/${kit.id}/simulate-send`, 'POST', {
     delivery_approval_id: deliveryApproval.id,
     content_hash: deliveryApproval.content_hash,
   });
   await expect
-    .poll(async () => (await call(contexts.sales, `/sales-deliveries/${mail.id}`)).status, {
+    .poll(async () => (await call(contexts['admin-1'], `/sales-deliveries/${mail.id}`)).status, {
       timeout: 30000,
     })
     .toBe('fixture_accepted');
-  expect((await call(contexts.sales, `/sales-deliveries/${mail.id}`)).real_email_sent).toBe(false);
+  expect((await call(contexts['admin-1'], `/sales-deliveries/${mail.id}`)).real_email_sent).toBe(
+    false,
+  );
   const graph = await call(R, '/diagnostics');
   expect(graph.nodes.length).toBeGreaterThan(0);
   expect(graph.edges.length).toBeGreaterThan(0);
-  const denied = await contexts.sales.request.get(base + '/rubrics');
-  expect(denied.status()).toBe(403);
+  const denied = await contexts['admin-1'].request.get(base + '/rubrics');
+  expect(denied.status()).toBe(200);
   const outsider = await contexts.outsider.request.get(base + '/objectives/' + objective.id);
   expect(outsider.status()).toBe(404);
   const csrf = await R.request.post(base + '/objectives', { data: {} });
@@ -577,7 +579,7 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
   );
   expect(
     (
-      await contexts.sales.request.get(base + `/reports/${report.id}/download/evidence.zip`)
+      await contexts['admin-1'].request.get(base + `/reports/${report.id}/download/evidence.zip`)
     ).status(),
   ).toBe(409);
   await call(
@@ -612,7 +614,7 @@ test('real OIDC, qualified six-episode fixture journey, independent reviews and 
   expect(successor.current_revision_id).not.toBe(report.current_revision_id);
   expect(
     (
-      await contexts.sales.request.get(base + `/reports/${report.id}/download/evidence.zip`)
+      await contexts['admin-1'].request.get(base + `/reports/${report.id}/download/evidence.zip`)
     ).status(),
   ).toBe(409);
   const externalProtocol = await call(R, '/protocols', 'POST', {

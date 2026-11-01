@@ -6,7 +6,7 @@ type Turn = { role: 'user' | 'assistant'; text: string };
 
 const SUGGESTIONS = [
   'What do I need to fill in on this screen?',
-  'How does the Product Owner approval work?',
+  'How does the Admin approval work?',
   'How are outputs graded?',
 ];
 

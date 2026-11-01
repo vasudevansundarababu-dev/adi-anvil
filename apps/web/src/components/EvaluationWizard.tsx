@@ -18,7 +18,7 @@ type Options = {
   cases: { id: string; title: string; capabilities: string[]; split: string }[];
   rubric_template: Rubric;
   reviewers: Person[];
-  product_owners: Person[];
+  admins: Person[];
   default_graders: Person[];
 };
 type Plan = {
@@ -54,7 +54,7 @@ const CANDIDATES: Record<string, string> = {
 };
 const STATE: Record<Plan['state'], string> = {
   draft: 'Draft',
-  submitted: 'Waiting for Product Owner',
+  submitted: 'Waiting for Admin',
   approved: 'Approved — ready to run',
   changes_requested: 'Changes requested',
 };
@@ -131,7 +131,7 @@ export default function EvaluationWizard({
     canAuthor &&
     current.created_by === userId &&
     ['draft', 'changes_requested'].includes(current.state);
-  const people = [...(options?.reviewers || []), ...(options?.product_owners || [])].filter(
+  const people = [...(options?.reviewers || []), ...(options?.admins || [])].filter(
     (p, i, all) => all.findIndex((q) => q.id === p.id) === i,
   );
   const name = (id: string) => people.find((p) => p.id === id)?.name || id;
@@ -188,7 +188,9 @@ export default function EvaluationWizard({
           {!plans.length && (
             <p className="empty">
               No evaluations yet.{' '}
-              {canAuthor ? 'Start one with “New evaluation”.' : 'A Researcher starts evaluations.'}
+              {canAuthor
+                ? 'Start one with “New evaluation”.'
+                : 'An Admin or RL Engineer starts evaluations.'}
             </p>
           )}
         </>
@@ -413,7 +415,7 @@ export default function EvaluationWizard({
                 <div className="banner">Before submitting: {current.missing.join('; ')}.</div>
               )}
               {current.decision_rationale && current.state !== 'approved' && (
-                <div className="banner">Product Owner: {current.decision_rationale}</div>
+                <div className="banner">Admin: {current.decision_rationale}</div>
               )}
 
               {editable && (
@@ -430,11 +432,11 @@ export default function EvaluationWizard({
                             {},
                             current.row_version,
                           ),
-                        'Submitted to the Product Owner.',
+                        'Submitted to the Admin.',
                       )
                     }
                   >
-                    Submit to Product Owner
+                    Submit to Admin
                   </button>
                 </div>
               )}
@@ -462,7 +464,7 @@ export default function EvaluationWizard({
                     );
                   }}
                 >
-                  <h4>Product Owner decision</h4>
+                  <h4>Admin decision</h4>
                   <p className="muted">
                     Approving reviews the objective, rubric, tasks, data rights, suite and protocol
                     together and prepares the run.
@@ -480,7 +482,7 @@ export default function EvaluationWizard({
                 </Form>
               )}
               {current.state === 'submitted' && !canApprove && (
-                <p className="muted">Waiting for the Product Owner’s decision.</p>
+                <p className="muted">Waiting for the Admin’s decision.</p>
               )}
 
               {current.state === 'approved' && current.run && (

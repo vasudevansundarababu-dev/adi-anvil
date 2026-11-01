@@ -83,7 +83,7 @@ test('prepare the interactive marketing task and keep paid launch blocked', asyn
       r.current_revision_id === taskRow.content.rubric_revision_id,
   );
   rubric = await api(`/rubrics/${rubric.id}/submit`, {}, rubric.row_version);
-  await login('product-owner');
+  await login('admin-1');
   for (const [operation, destination] of [
     ['managed_evaluation', 'local_fixture'],
     ['external_processing', 'openai'],
@@ -101,12 +101,12 @@ test('prepare the interactive marketing task and keep paid launch blocked', asyn
       current.row_version,
     );
   }
-  // D-SIMPLE: the Product Owner is the single approver.
-  await login('product-owner');
+  // D-SIMPLE: the Admin is the single approver.
+  await login('admin-1');
   await review('rubrics', rubric.id, 'approval');
   await login('data-engineer');
   taskRow = await api(`/tasks/${taskRow.id}/submit`, {}, taskRow.row_version);
-  await login('product-owner');
+  await login('admin-1');
   taskRow = await review('tasks', taskRow.id, 'approval');
   await login('data-engineer');
   taskRow = await api(`/tasks/${taskRow.id}/publish`, {}, taskRow.row_version);
@@ -140,7 +140,7 @@ test('prepare the interactive marketing task and keep paid launch blocked', asyn
     planned_source_count: 1,
   });
   suite = await api(`/suites/${suite.id}/submit`, {}, suite.row_version);
-  await login('product-owner');
+  await login('admin-1');
   suite = await review('suites', suite.id, 'approval');
   await login('researcher');
   suite = await api(`/suites/${suite.id}/freeze`, {}, suite.row_version);
@@ -163,7 +163,7 @@ test('prepare the interactive marketing task and keep paid launch blocked', asyn
     (p: { content: { title: string } }) => p.content.title === title,
   );
   protocol = await api(`/protocols/${protocol.id}/submit`, {}, protocol.row_version);
-  await login('product-owner');
+  await login('admin-1');
   protocol = await review('protocols', protocol.id, 'approval');
   await login('researcher');
   await page.goto(`/p/${journey.project_id}/protocols`);
@@ -187,7 +187,7 @@ test('prepare the interactive marketing task and keep paid launch blocked', asyn
   await expect(
     card.getByRole('button', { name: 'Launch paid 12-week run', exact: true }),
   ).toBeDisabled();
-  await expect(card.getByText('two real admin run approvals', { exact: true })).toBeVisible();
+  await expect(card.getByText('admin run authorization', { exact: true })).toBeVisible();
   await card
     .locator('section[aria-label="12-week marketing execution"]')
     .screenshot({ path: 'artifacts/test-runs/marketing-readiness.png' });

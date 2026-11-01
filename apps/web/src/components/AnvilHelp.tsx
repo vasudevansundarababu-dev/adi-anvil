@@ -31,7 +31,7 @@ const definitions = [
   },
   {
     keys: ['objective', 'measurable', 'approval'],
-    text: 'Describe an observable hypothesis, business context and measurement/acceptance plan. Separate Researcher, Advisor and Product Owner reviews are required. A synthetic example: assess whether a candidate preserves budget constraints across five original tasks.',
+    text: 'Describe an observable hypothesis, business context and measurement/acceptance plan. Admin and RL Engineer are the only roles. Admin can run without another approver. A synthetic example: assess whether a candidate preserves budget constraints across five original tasks.',
     field: 'hypothesis',
   },
   {

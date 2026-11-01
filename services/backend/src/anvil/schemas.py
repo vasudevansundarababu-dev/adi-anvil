@@ -20,7 +20,7 @@ class Objective(Strict):
     hypothesis: str = Field(min_length=10, max_length=5000)
     business_context: str = Field(min_length=3, max_length=5000)
     measurement_plan: str = Field(min_length=20, max_length=10000)
-    # Optional since D-SIMPLE (AGENTS.md): the project Product Owner is the single approver.
+    # Optional since D-SIMPLE (AGENTS.md): the project Admin is the single approver.
     researcher_id: UUID | None = None
     advisor_id: UUID | None = None
     product_owner_id: UUID | None = None
@@ -127,7 +127,7 @@ class Protocol(Strict):
     ] = Field(min_length=1, max_length=2)
     repetitions: Literal[1] = 1
     # D-SIMPLE grading: the first grader grades every output; the second checks critical,
-    # borderline, sampled and disputed results. A Product Owner who did not grade the output
+    # borderline, sampled and disputed results. A Admin who did not grade the output
     # fills a missing second-grader or adjudicator position.
     reviewer_ids: list[UUID] = Field(min_length=1, max_length=2)
     adjudicator_id: UUID | None = None

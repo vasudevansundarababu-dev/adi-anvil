@@ -103,7 +103,16 @@ def test_successor_is_canonical_draft_with_cas_private_field_preservation_and_hi
     outsider, _ = client_factory("outsider")
     assert outsider.get(path + "/editor").status_code == 404
     advisor, _ = client_factory("advisor")
-    assert advisor.get(path + "/editor").status_code == 403
+    assert advisor.get(path + "/editor").status_code == 200
+    assert not advisor.get(path + "/editor").json()["data"]["can_save"]
+    assert (
+        advisor.post(
+            base + f"/workspace/revisions/{newer['revision_id']}/successor",
+            json=body,
+            headers={"If-Match": str(newer["row_version"])},
+        ).status_code
+        == 403
+    )
     admin.headers.pop("X-CSRF-Token")
     assert (
         admin.post(
@@ -128,7 +137,7 @@ def test_approved_revision_decision_stays_on_old_hash_after_successor(client_fac
             {**rubric["content"], "title": "Test-only reviewed successor"},
         )
     researcher, _ = client_factory("researcher")
-    owner, _ = client_factory("product-owner")
+    owner, _ = client_factory("admin-1")
     admin, _ = client_factory("admin-1")
     submitted = researcher.post(
         base + f"/rubrics/{clone['id']}/submit",

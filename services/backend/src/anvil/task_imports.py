@@ -164,10 +164,8 @@ def routes(context, wrap, idempotent):
                 source = one(
                     c, "SELECT uploaded_by FROM anvil.artifacts WHERE id=%s", (body.artifact_id,)
                 )
-                if not source or (
-                    str(source["uploaded_by"]) != str(user) and "data-engineer" not in roles
-                ):
-                    raise HTTPException(403, "Use your own upload or ask a project Data Engineer")
+                if not source or (str(source["uploaded_by"]) != str(user) and "admin" not in roles):
+                    raise HTTPException(403, "Use your own upload or ask a project Admin")
                 source = one(
                     c,
                     "SELECT * FROM anvil.artifacts WHERE id=%s AND upload_purpose='task_import'",

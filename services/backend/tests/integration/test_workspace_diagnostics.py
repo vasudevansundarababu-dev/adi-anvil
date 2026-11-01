@@ -83,4 +83,4 @@ def test_diagnostic_history_snapshots_pagination_and_finalized_output_only(clien
     outsider, _ = client_factory("outsider")
     assert outsider.get(base + "/workspace/diagnostic-runs/" + journey["run_id"]).status_code == 404
     sales, _ = client_factory("sales")
-    assert sales.get(base + "/workspace/diagnostic-runs").status_code == 403
+    assert sales.get(base + "/workspace/diagnostic-runs").status_code == 200

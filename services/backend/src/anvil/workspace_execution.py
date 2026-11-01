@@ -2,18 +2,17 @@
 
 import hashlib
 import io
-import stat
 import zipfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 import httpx
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import AwareDatetime, Field
 
-from anvil import artifacts, auth, domain, providers, workspace_credentials
+from anvil import artifacts, auth, providers, workspace_credentials
 from anvil import harbor_agents as ha
-from anvil.config import ROOT, harbor_live_enabled, private_file_owner
+from anvil.config import harbor_live_enabled
 from anvil.db import Jsonb, audit, digest, one, project_fence, transaction, uid
 from anvil.schemas import Strict
 from anvil.task_parser import json_value
@@ -46,22 +45,94 @@ class Revocation(Strict):
     rationale: str = Field(min_length=10, max_length=2000)
 
 
-def authority():
-    path = ROOT / ".local/workspace-authority.json"
-    try:
-        if path.is_symlink() or not path.is_file():
-            return None
-        info = path.stat()
-        if (
-            stat.S_IMODE(info.st_mode) & 0o077
-            or not private_file_owner(info.st_uid)
-            or not 0 < info.st_size <= 16384
-        ):
-            return None
-        value = Authority.model_validate_json(path.read_bytes())
-        return value if value.expires_at > datetime.now(timezone.utc) else None
-    except (ValueError, OSError):
+class AdminRun(Strict):
+    subject_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+    aggregate_cap_micro_usd: int = Field(gt=0, le=1000000000, strict=True)
+    rights_confirmed: bool
+
+
+def authority(c, row):
+    record = one(
+        c,
+        """SELECT a.* FROM anvil.workspace_admin_run_authorizations a
+        JOIN anvil.users u ON u.id=a.admin_id AND u.active AND NOT u.is_synthetic
+        JOIN anvil.memberships m ON m.user_id=a.admin_id AND m.project_id=a.project_id AND m.active AND m.role='admin'
+        WHERE a.group_id=%s AND a.expires_at>now()
+        AND NOT EXISTS(SELECT 1 FROM anvil.workspace_admin_run_revocations r WHERE r.authorization_id=a.id)""",
+        (row["id"],),
+    )
+    if (
+        not record
+        or record["subject_hash"] != row["subject_hash"]
+        or record["pricing_hash"] != digest(row["snapshot"]["pricing"])
+        or record["terms_hash"] != digest(row["snapshot"]["processing_terms"])
+        or record["cap_micro_usd"] != row["snapshot"]["preparation"]["aggregate_cap_micro_usd"]
+    ):
         return None
+    return Authority(
+        reference=record["authority_reference"],
+        project_id=row["project_id"],
+        group_subject_hash=record["subject_hash"],
+        total_cap_micro_usd=record["cap_micro_usd"],
+        expires_at=record["expires_at"],
+    )
+
+
+def authorize_admin(c, row, user, body):
+    from anvil.marketing_authority import real_admin
+
+    real_admin(c, row["project_id"], user)
+    cap = row["snapshot"]["preparation"]["aggregate_cap_micro_usd"]
+    if (
+        body.subject_hash != row["subject_hash"]
+        or body.aggregate_cap_micro_usd != cap
+        or not body.rights_confirmed
+    ):
+        raise HTTPException(409, "Confirm the exact run, processing rights and saved budget")
+    existing = one(
+        c, "SELECT id FROM anvil.workspace_admin_run_authorizations WHERE group_id=%s", (row["id"],)
+    )
+    if existing:
+        if not authority(c, row):
+            raise HTTPException(
+                409, "Authorization expired or revoked; create a new execution group"
+            )
+        return
+    c.execute(
+        """INSERT INTO anvil.workspace_admin_run_authorizations
+        (id,project_id,group_id,admin_id,subject_hash,cap_micro_usd,rights_confirmed,pricing_hash,terms_hash,authority_reference,expires_at)
+        VALUES(%s,%s,%s,%s,%s,%s,true,%s,%s,%s,%s)""",
+        (
+            uid(),
+            row["project_id"],
+            row["id"],
+            user,
+            row["subject_hash"],
+            cap,
+            digest(row["snapshot"]["pricing"]),
+            digest(row["snapshot"]["processing_terms"]),
+            "harbor:admin-run-" + str(row["id"]),
+            datetime.now(timezone.utc) + timedelta(hours=8),
+        ),
+    )
+    audit(
+        c,
+        row["project_id"],
+        user,
+        "workspace.admin_run_authorized",
+        row["id"],
+        {
+            "subject_hash": row["subject_hash"],
+            "aggregate_cap_micro_usd": cap,
+            "rights_confirmed": True,
+            "self_authorized": str(user) == str(row["created_by"]),
+        },
+    )
+
+
+def recent_admin_signin(request):
+    if (datetime.now(timezone.utc) - auth.identity(request)["issued_at"]).total_seconds() > 600:
+        raise HTTPException(403, "Please sign in again to authorize this run budget")
 
 
 def group(c, identifier, lock=False):
@@ -151,29 +222,20 @@ def readiness(c, row, policy=_UNSET):
     except HTTPException:
         missing.append("initiator_access_revoked")
     if policy is _UNSET:
-        policy = authority()
+        policy = authority(c, row)
     if (
         not policy
         or str(policy.project_id) != str(row["project_id"])
         or policy.group_subject_hash != row["subject_hash"]
     ):
-        missing.append("exact_group_user_authority_required")
+        missing.append("admin_run_authorization_required")
         policy = None
     plans = children(c, row["id"])
     required = []
     states = []
-    owners = domain.product_owners(c, row["project_id"])
     package = one(c, "SELECT * FROM anvil.harbor_packages WHERE id=%s", (prep["package"]["id"],))
-    approved = one(
-        c, "SELECT * FROM anvil.harbor_approvals WHERE package_id=%s", (prep["package"]["id"],)
-    )
-    if (
-        not package
-        or package["package_sha256"] != prep["package"]["package_sha256"]
-        or not approved
-        or str(approved["approved_by"]) not in owners
-    ):
-        missing.append("exact_package_software_check_approval")
+    if not package or package["package_sha256"] != prep["package"]["package_sha256"]:
+        missing.append("exact_package_binding_changed")
     for child, state in zip(plans, base["models"], strict=True):
         config = child["config"]
         issues = [r for r in state["missing"] if r != "provider_task_adapter_not_qualified"]
@@ -192,26 +254,6 @@ def readiness(c, row, policy=_UNSET):
             issues.append("reviewed_pricing_required")
         else:
             required.append(cost)
-        review = one(
-            c,
-            """SELECT 1 FROM anvil.harbor_agent_reviews r
-            JOIN anvil.users u ON u.id=r.approved_by
-            WHERE r.plan_id=%s AND r.subject_hash=%s AND r.expires_at>now()
-            AND u.active AND NOT u.is_synthetic
-            AND NOT EXISTS(SELECT 1 FROM anvil.harbor_agent_review_revocations v WHERE v.review_id=r.id)
-            AND EXISTS(SELECT 1 FROM anvil.memberships m WHERE m.user_id=r.approved_by AND m.project_id=r.project_id AND m.role='product-owner' AND m.active)
-            AND EXISTS(SELECT 1 FROM anvil.project_assignments a WHERE a.user_id=r.approved_by AND a.project_id=r.project_id AND a.capability='rights_reviewer' AND a.active)
-            AND EXISTS(SELECT 1 FROM anvil.artifacts a WHERE a.id=r.rights_evidence_id AND a.project_id=r.project_id AND a.scan_status='clean')""",
-            (child["id"], child["subject_hash"]),
-        )
-        if not review:
-            issues.append("real_product_owner_rights_and_run_review")
-        for purpose, subject in [
-            ("activation", config["connection_hash"]),
-            ("paid_scope", child["subject_hash"]),
-        ]:
-            if not policy or ha.admin_count(c, child, purpose, subject, policy) < 2:
-                issues.append("two_real_distinct_admin_" + purpose + "_approvals")
         states.append(
             {
                 "plan_id": str(child["id"]),
@@ -597,7 +639,7 @@ def routes(context, wrap, idempotent):
         with context(request, project) as (c, user, roles):
             auth.require(roles, *PLAN_ROLES)
             rows = c.execute(
-                "SELECT * FROM anvil.workspace_execution_groups WHERE (%s::uuid IS NULL OR preparation_id=%s) AND (%s::uuid IS NULL OR id>%s) ORDER BY id LIMIT %s",
+                "SELECT * FROM anvil.workspace_execution_groups WHERE (%s::uuid IS NULL OR preparation_id=%s) AND (%s::uuid IS NULL OR (created_at,id)<(SELECT created_at,id FROM anvil.workspace_execution_groups WHERE id=%s)) ORDER BY created_at DESC,id DESC LIMIT %s",
                 (preparation_id, preparation_id, after, after, limit + 1),
             ).fetchall()
             return wrap(
@@ -614,179 +656,59 @@ def routes(context, wrap, idempotent):
             auth.require(roles, *PLAN_ROLES)
             return wrap(public(c, group(c, gid)), request)
 
-    @router.post("/execution-groups/{gid}/review")
-    def review(project: UUID, gid: UUID, body: GroupReview, request: Request):
+    @router.post("/execution-groups/{gid}/authorize")
+    def authorize(project: UUID, gid: UUID, body: AdminRun, request: Request):
+        recent_admin_signin(request)
         with context(request, project) as (c, user, roles):
-            auth.require(roles, "product-owner")
+            auth.require(roles, "admin")
 
             def act():
                 row = group(c, gid, True)
-                if (
-                    row["state"] != "draft"
-                    or row["subject_hash"] != body.subject_hash
-                    or body.expires_at <= datetime.now(timezone.utc)
-                ):
-                    raise HTTPException(
-                        409, "Review must bind an exact draft group and future expiry"
-                    )
-                if one(c, "SELECT is_synthetic FROM anvil.users WHERE id=%s", (user,))[
-                    "is_synthetic"
-                ]:
-                    raise HTTPException(
-                        403, "A real Product Owner must review paid processing rights"
-                    )
-                if not one(
-                    c,
-                    "SELECT 1 FROM anvil.project_assignments WHERE user_id=%s AND capability='rights_reviewer' AND active",
-                    (user,),
-                ):
-                    raise HTTPException(403, "Assigned rights reviewer required")
-                self_approved = str(user) == str(row["created_by"])
-                if self_approved and len(domain.product_owners(c, project)) != 1:
-                    raise HTTPException(409, "Another Product Owner must review your group")
-                artifacts.read(c, body.rights_evidence_id)
-                for child in children(c, gid):
-                    if one(
-                        c,
-                        "SELECT 1 FROM anvil.harbor_agent_reviews WHERE plan_id=%s AND approved_by=%s",
-                        (child["id"], user),
-                    ):
-                        raise HTTPException(
-                            409, "Immutable review already exists; create a new group to renew"
-                        )
-                    c.execute(
-                        "INSERT INTO anvil.harbor_agent_reviews(id,project_id,plan_id,approved_by,subject_hash,rationale,rights_evidence_id,self_approved,expires_at) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                        (
-                            uid(),
-                            project,
-                            child["id"],
-                            user,
-                            child["subject_hash"],
-                            body.rationale,
-                            body.rights_evidence_id,
-                            self_approved,
-                            body.expires_at,
-                        ),
-                    )
-                audit(
-                    c,
-                    project,
-                    user,
-                    "workspace.group_rights_and_run_reviewed",
-                    gid,
-                    {"self_approved": self_approved},
-                )
-                return public(c, group(c, gid))
-
-            return wrap(idempotent(c, project, user, request, body, act), request)
-
-    @router.post("/execution-groups/{gid}/admin-approvals")
-    def approve(project: UUID, gid: UUID, body: ha.AdminReview, request: Request):
-        from anvil.marketing_authority import real_admin
-
-        if (datetime.now(timezone.utc) - auth.identity(request)["issued_at"]).total_seconds() > 600:
-            raise HTTPException(403, "Reauthentication required")
-        with context(request, project) as (c, user, roles):
-            real_admin(c, project, user)
-
-            def act():
-                row = group(c, gid, True)
-                policy = authority()
-                if (
-                    row["state"] != "draft"
-                    or body.subject_hash != row["subject_hash"]
-                    or not policy
-                    or policy.group_subject_hash != row["subject_hash"]
-                    or str(policy.project_id) != str(project)
-                    or body.authority_reference != policy.reference
-                    or not datetime.now(timezone.utc) < body.expires_at <= policy.expires_at
-                ):
-                    raise HTTPException(
-                        409, "Exact current group authority/hash and bounded expiry required"
-                    )
-                for child in children(c, gid):
-                    subject = (
-                        child["config"]["connection_hash"]
-                        if body.purpose == "activation"
-                        else child["subject_hash"]
-                    )
-                    c.execute(
-                        "INSERT INTO anvil.provider_approvals(id,project_id,connection_id,approver_id,purpose,subject_hash,cap_micro_usd,authority_reference,expires_at) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(connection_id,purpose,subject_hash,approver_id) DO NOTHING",
-                        (
-                            uid(),
-                            project,
-                            child["connection_id"],
-                            user,
-                            body.purpose,
-                            subject,
-                            policy.total_cap_micro_usd,
-                            policy.reference,
-                            body.expires_at,
-                        ),
-                    )
-                audit(c, project, user, "workspace.group_admin_" + body.purpose, gid)
-                return public(c, group(c, gid))
-
-            return wrap(idempotent(c, project, user, request, body, act), request)
-
-    @router.post("/execution-groups/{gid}/rights-evidence")
-    def evidence(project: UUID, gid: UUID, body: Evidence, request: Request):
-        with context(request, project) as (c, user, roles):
-            auth.require(roles, "product-owner")
-
-            def act():
-                row = group(c, gid)
-                from anvil.harbor_package import encoded
-
-                aid = artifacts.store(
-                    c,
-                    project,
-                    encoded(
-                        {
-                            "group_subject_hash": row["subject_hash"],
-                            "reference": body.reference,
-                            "description": body.description,
-                            "recorded_by": str(user),
-                            "meaning": "Evidence reference only; no rights approval granted",
-                        }
-                    ),
-                    "internal",
-                    mime="application/json",
-                )
-                audit(
-                    c,
-                    project,
-                    user,
-                    "workspace.rights_evidence_recorded",
-                    gid,
-                    {"artifact_id": aid},
-                )
-                return {"artifact_id": aid}
-
-            return wrap(idempotent(c, project, user, request, body, act), request)
-
-    @router.post("/execution-groups/{gid}/revoke-review")
-    def revoke_review(project: UUID, gid: UUID, body: Revocation, request: Request):
-        with context(request, project) as (c, user, roles):
-            auth.require(roles, "product-owner")
-
-            def act():
-                row = group(c, gid, True)
-                for child in children(c, gid):
-                    for review in c.execute(
-                        "SELECT id FROM anvil.harbor_agent_reviews WHERE plan_id=%s", (child["id"],)
-                    ).fetchall():
-                        c.execute(
-                            "INSERT INTO anvil.harbor_agent_review_revocations(id,project_id,review_id,revoked_by,rationale) VALUES(%s,%s,%s,%s,%s) ON CONFLICT(review_id) DO NOTHING",
-                            (uid(), project, review["id"], user, body.rationale),
-                        )
-                audit(c, project, user, "workspace.group_review_revoked", gid)
+                if row["state"] != "draft":
+                    raise HTTPException(409, "This group has already started")
+                authorize_admin(c, row, user, body)
                 return public(c, row)
 
-            return wrap(idempotent(c, project, user, request, body, act), request)
+            return wrap(
+                idempotent(c, project, user, request, body.model_dump(mode="json"), act), request
+            )
+
+    @router.post("/execution-groups/{gid}/revoke-authorization")
+    def revoke_authorization(project: UUID, gid: UUID, body: Revocation, request: Request):
+        with context(request, project) as (c, user, roles):
+            auth.require(roles, "admin")
+
+            def act():
+                row = group(c, gid, True)
+                record = one(
+                    c,
+                    "SELECT id FROM anvil.workspace_admin_run_authorizations WHERE group_id=%s",
+                    (gid,),
+                )
+                if not record:
+                    raise HTTPException(409, "No authorization to revoke")
+                c.execute(
+                    "INSERT INTO anvil.workspace_admin_run_revocations(id,project_id,authorization_id,revoked_by,rationale) VALUES(%s,%s,%s,%s,%s) ON CONFLICT(project_id,authorization_id) DO NOTHING",
+                    (uid(), project, record["id"], user, body.rationale),
+                )
+                audit(
+                    c,
+                    project,
+                    user,
+                    "workspace.admin_run_revoked",
+                    gid,
+                    {"rationale": body.rationale},
+                )
+                return public(c, row)
+
+            return wrap(
+                idempotent(c, project, user, request, body.model_dump(mode="json"), act), request
+            )
 
     @router.post("/execution-groups/{gid}/launch")
-    def launch(project: UUID, gid: UUID, request: Request):
+    def launch(project: UUID, gid: UUID, request: Request, body: AdminRun | None = None):
+        if body is not None:
+            recent_admin_signin(request)
         with context(request, project) as (c, user, roles):
             auth.require(roles, *PLAN_ROLES)
 
@@ -794,7 +716,9 @@ def routes(context, wrap, idempotent):
                 row = group(c, gid, True)
                 if row["state"] == "launched":
                     return public(c, row)
-                policy = authority()
+                if body is not None:
+                    authorize_admin(c, row, user, body)
+                policy = authority(c, row)
                 ready = readiness(c, row, policy=policy)
                 if not ready["ready"]:
                     raise HTTPException(
@@ -808,7 +732,7 @@ def routes(context, wrap, idempotent):
                     "SELECT * FROM anvil.evaluation_spend_windows WHERE authority_reference=%s FOR UPDATE",
                     (policy.reference,),
                 )
-                current_policy = authority()
+                current_policy = authority(c, row)
                 if (
                     not current_policy
                     or current_policy != policy
@@ -885,7 +809,12 @@ def routes(context, wrap, idempotent):
                 )
                 return public(c, group(c, gid))
 
-            return wrap(idempotent(c, project, user, request, {}, act), request)
+            return wrap(
+                idempotent(
+                    c, project, user, request, body.model_dump(mode="json") if body else {}, act
+                ),
+                request,
+            )
 
     @router.post("/execution-groups/{gid}/cancel")
     def cancel(project: UUID, gid: UUID, request: Request):

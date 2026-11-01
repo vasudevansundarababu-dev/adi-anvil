@@ -158,9 +158,8 @@ export default function MarketingRun({
             <details>
               <summary>Record real Admin approval</summary>
               <p>
-                Two distinct real Admins must each approve the provider and exact run. Demo
-                identities are rejected. Sign in again within ten minutes of approval. These
-                controls do not launch a run.
+                The Admin authorizes the provider and exact run. Demo identities are rejected. Sign
+                in again within ten minutes of approval. These controls do not launch a run.
               </p>
               <Form
                 onSubmit={(e) => {

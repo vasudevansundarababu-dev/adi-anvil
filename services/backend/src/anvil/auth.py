@@ -60,7 +60,22 @@ def project_roles(c, project, user):
 
 
 def require(roles, *allowed):
-    if not roles.intersection(allowed):
+    # Legacy resource APIs still name old permission categories. They are not active
+    # membership roles and are never returned by /me or accepted for invitations.
+    admin_actions = {"admin", "product-owner", "sales"}
+    engineering_actions = {
+        "rl-engineer",
+        "researcher",
+        "data-engineer",
+        "advisor",
+        "reviewer",
+        "adjudicator",
+    }
+    requested = set(allowed)
+    permitted = (
+        "admin" in roles and bool(requested.intersection(admin_actions | engineering_actions))
+    ) or ("rl-engineer" in roles and bool(requested.intersection(engineering_actions)))
+    if not permitted:
         raise HTTPException(403, "Role does not permit this action")
 
 

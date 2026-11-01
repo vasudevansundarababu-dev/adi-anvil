@@ -5,14 +5,7 @@ from anvil.auth import require
 from anvil.db import audit, digest, one, uid
 from anvil.schemas import SCHEMAS
 
-CONTENT_ROLES = (
-    "researcher",
-    "advisor",
-    "data-engineer",
-    "reviewer",
-    "adjudicator",
-    "product-owner",
-)
+CONTENT_ROLES = ("admin", "rl-engineer")
 
 
 def get_resource(c, rid, lock=False):
@@ -46,9 +39,15 @@ def assigned(c, project, user, role):
     if not one(
         c,
         "SELECT 1 FROM anvil.memberships m JOIN anvil.users u ON u.id=m.user_id WHERE m.project_id=%s AND m.user_id=%s AND m.role=%s AND m.active AND u.active",
-        (project, user, role),
+        (project, user, "admin" if role == "admin" else "rl-engineer"),
     ):
-        raise HTTPException(422, f"Assigned {role} is not an active project member")
+        # Assignments are individual duties, not extra access roles; Admin can fill them.
+        if not one(
+            c,
+            "SELECT 1 FROM anvil.memberships m JOIN anvil.users u ON u.id=m.user_id WHERE m.project_id=%s AND m.user_id=%s AND m.role='admin' AND m.active AND u.active",
+            (project, user),
+        ):
+            raise HTTPException(422, "Assigned person is not an active project member")
 
 
 def validate_content(c, project, kind, body):
@@ -67,14 +66,17 @@ def validate_content(c, project, kind, body):
         if content.get(field):
             assigned(c, project, content[field], role)
             people.append(content[field])
-    owners = set(product_owners(c, project)) if content.get("reviewer_ids") else set()
+    owners = set(administrators(c, project)) if content.get("reviewer_ids") else set()
     for user in content.get("reviewer_ids", []):
-        # D-SIMPLE: without Reviewers, a Product Owner grades.
+        # D-SIMPLE: without Reviewers, a Admin grades.
         if str(user) not in owners:
             assigned(c, project, user, "reviewer")
         people.append(user)
-    if len(people) != len(set(people)):
-        raise HTTPException(409, "Separated assignments require distinct people")
+    graders = content.get("reviewer_ids", [])
+    if len(graders) != len(set(graders)):
+        raise HTTPException(409, "Assigned evaluators must be distinct people")
+    if content.get("adjudicator_id") in graders:
+        raise HTTPException(409, "Adjudication requires a different assigned evaluator")
     return content
 
 
@@ -161,7 +163,7 @@ def move(c, r, user, state):
     return get_resource(c, r["id"])
 
 
-# D-SIMPLE (AGENTS.md, 1 Oct 2026): the project Product Owner is the single approver.
+# D-SIMPLE (AGENTS.md, 1 Oct 2026): the project Admin is the single approver.
 APPROVABLE = {"objective", "rubric", "task", "suite", "protocol", "report"}
 RECOMMENDATIONS = {
     "research",
@@ -176,19 +178,19 @@ RECOMMENDATIONS = {
 }
 
 
-def product_owners(c, project):
+def administrators(c, project):
     return [
         str(row["user_id"])
         for row in c.execute(
             """SELECT m.user_id FROM anvil.memberships m JOIN anvil.users u ON u.id=m.user_id
-               WHERE m.project_id=%s AND m.role='product-owner' AND m.active AND u.active""",
+               WHERE m.project_id=%s AND m.role='admin' AND m.active AND u.active""",
             (project,),
         ).fetchall()
     ]
 
 
 def requirements(r):
-    return {"approval": "product-owner"} if r["kind"] in APPROVABLE else {}
+    return {"approval": "admin"} if r["kind"] in APPROVABLE else {}
 
 
 def decide(c, r, user, roles, body):
@@ -210,8 +212,6 @@ def decide(c, r, user, roles, body):
         raise HTTPException(422, "Review purpose not applicable")
     require(roles, "product-owner")
     self_approved = str(revision_author) == str(user)
-    if self_approved and len(product_owners(c, r["project_id"])) != 1:
-        raise HTTPException(409, "Another Product Owner must approve work you created")
     if one(
         c,
         "SELECT 1 FROM anvil.review_decisions WHERE revision_id=%s AND purpose='approval' AND reviewer_id=%s",

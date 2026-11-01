@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import Field
 
-from anvil import artifacts, auth, domain
+from anvil import artifacts, auth
 from anvil.db import Jsonb, audit, one, uid
 from anvil.harbor_package import compile_package
 from anvil.praxis_contract import actor_view
@@ -265,8 +265,6 @@ def routes(context, wrap, idempotent):
                 if package["package_sha256"] != body.package_sha256:
                     raise HTTPException(409, "Approval must bind the exact package hash")
                 self_approved = str(package["created_by"]) == str(user)
-                if self_approved and len(domain.product_owners(c, project)) != 1:
-                    raise HTTPException(409, "Another Product Owner must approve your package")
                 c.execute(
                     """INSERT INTO anvil.harbor_approvals(id,project_id,package_id,approved_by,rationale,self_approved,scope)
                     VALUES(%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(project_id,package_id) DO NOTHING""",
@@ -302,9 +300,26 @@ def routes(context, wrap, idempotent):
                         409, "No supported numeric hard-failure check in this package"
                     )
                 if not one(c, "SELECT 1 FROM anvil.harbor_approvals WHERE package_id=%s", (pid,)):
-                    raise HTTPException(
-                        409,
-                        "Product Owner approval for exact synthetic software checks is required",
+                    if "admin" not in roles:
+                        raise HTTPException(
+                            409,
+                            "Admin authorization for exact synthetic software checks is required",
+                        )
+                    c.execute(
+                        """INSERT INTO anvil.harbor_approvals(id,project_id,package_id,approved_by,rationale,self_approved,scope)
+                        VALUES(%s,%s,%s,%s,'Admin Run authorizes this exact software check',%s,'synthetic_software_checks_only') ON CONFLICT(project_id,package_id) DO NOTHING""",
+                        (uid(), project, pid, user, str(package["created_by"]) == str(user)),
+                    )
+                    audit(
+                        c,
+                        project,
+                        user,
+                        "harbor.admin_run_authorized",
+                        pid,
+                        {
+                            "package_sha256": package["package_sha256"],
+                            "scope": "synthetic_software_checks_only",
+                        },
                     )
                 if one(
                     c,

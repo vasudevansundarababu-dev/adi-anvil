@@ -7,8 +7,8 @@ from fastapi import APIRouter, Query, Request
 from anvil import auth
 from anvil.db import one
 
-READ_ROLES = {"admin", "researcher", "data-engineer", "product-owner", "advisor"}
-ENGINEER_ROLES = {"researcher", "data-engineer"}
+READ_ROLES = {"admin", "rl-engineer"}
+ENGINEER_ROLES = {"rl-engineer"}
 
 
 def profile_for(roles):
@@ -26,7 +26,7 @@ def capabilities_for(roles):
         capabilities.extend(["workspace.read", "tasks.read", "runs.read"])
     if {"admin", *ENGINEER_ROLES}.intersection(roles):
         capabilities.extend(["task_drafts.write", "harbor.import"])
-    if {"admin", "researcher", "product-owner"}.intersection(roles):
+    if {"admin", "rl-engineer"}.intersection(roles):
         capabilities.append("harbor.prepare")
     if "admin" in roles:
         capabilities.extend(
@@ -49,7 +49,7 @@ def access_projection(roles, mapping=None):
     )
     return {
         "profile": profile,
-        "label": {"admin": "Admin", "rl_engineer": "RL Engineer"}.get(profile, "Legacy access"),
+        "label": {"admin": "Admin", "rl_engineer": "RL Engineer"}.get(profile, "No active access"),
         "capabilities": capabilities_for(roles),
         "mapping_state": "recorded"
         if matches

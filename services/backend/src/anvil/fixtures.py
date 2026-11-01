@@ -39,7 +39,7 @@ def trusted(path):
 
 
 def load(c, project, user, body, rubric_override=None):
-    # D-SIMPLE: named reviewer/advisor are optional; the Product Owner approves the tasks.
+    # D-SIMPLE: named reviewer/advisor are optional; the Admin approves the tasks.
     named = [str(x) for x in (body.reviewer_id, body.advisor_id) if x]
     if body.reviewer_id:
         domain.assigned(c, project, body.reviewer_id, "reviewer")

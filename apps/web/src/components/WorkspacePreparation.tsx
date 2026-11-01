@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Form from './Form';
-import WorkspaceExecutionGroups from './WorkspaceExecutionGroups';
 import { shortId, workspaceApi as api } from '../lib/workspace';
 import styles from './ModernWorkspace.module.css';
 
@@ -400,15 +399,13 @@ export default function WorkspacePreparation({
   taskId,
   preparationId,
   open,
-  canReview = false,
-  canAdmin = false,
+  createGroup = false,
 }: {
   base: string;
   taskId?: string | null;
   preparationId?: string | null;
   open: (id: string) => void;
-  canReview?: boolean;
-  canAdmin?: boolean;
+  createGroup?: boolean;
 }) {
   const packages = useList<Package>(
     base + '/workspace/packages' + (taskId ? '?task_id=' + encodeURIComponent(taskId) : ''),
@@ -472,16 +469,9 @@ export default function WorkspacePreparation({
           <button onClick={() => setRefreshKey((old) => old + 1)} disabled={detailLoading}>
             Refresh readiness
           </button>
-          <button
-            onClick={() => {
-              setComposing(true);
-              setPresetId('');
-              setSelected([]);
-              setError('');
-            }}
-          >
-            Create another preparation
-          </button>
+          <a href={base.replace('/projects/', '/workspace/') + '/execution-groups/new'}>
+            Create execution group
+          </a>
         </section>
       )}
       {composing && (
@@ -491,14 +481,14 @@ export default function WorkspacePreparation({
           aria-busy={packages.loading || presets.loading || drafts.loading}
         >
           <h2 ref={composerHeading} tabIndex={-1}>
-            Prepare model evaluation
+            Configure run
           </h2>
           {(packages.loading || presets.loading || drafts.loading) && (
             <p role="status">Loading preparation choices…</p>
           )}
           <p>
-            Choose exact saved versions and review what is missing. Saving creates a preparation,
-            not a run. No model request, reservation or external trace is sent.
+            Choose the task package, preset, models and budget. Create saves the group and opens its
+            dashboard. Run starts execution from that dashboard.
           </p>
           <button
             onClick={() => {
@@ -536,8 +526,15 @@ export default function WorkspacePreparation({
                     ? Number(whole) * 1000000 + Number(fraction.padEnd(6, '0'))
                     : null,
                 });
-                setSaved(result);
-                open(result.id);
+                if (createGroup) {
+                  const group = await api(base + '/workspace/execution-groups', 'POST', {
+                    preparation_id: result.id,
+                  });
+                  open(group.id);
+                } else {
+                  setSaved(result);
+                  open(result.id);
+                }
                 await drafts.reload();
               } catch (e) {
                 setError((e as Error).message);
@@ -629,11 +626,14 @@ export default function WorkspacePreparation({
               defaultValue={300}
             />
             <label htmlFor="preparation-cap">
-              Aggregate API budget (USD, optional while planning)
+              {createGroup
+                ? 'Aggregate API budget (USD)'
+                : 'Aggregate API budget (USD, optional while planning)'}
             </label>
             <input
               id="preparation-cap"
               name="cap"
+              required={createGroup}
               type="number"
               min={0.000001}
               max={1000}
@@ -653,7 +653,7 @@ export default function WorkspacePreparation({
                 !!presets.error
               }
             >
-              Save preparation
+              {createGroup ? 'Create execution group' : 'Save preparation'}
             </button>
           </Form>
         </section>
@@ -704,7 +704,7 @@ export default function WorkspacePreparation({
               </ul>
             </div>
           ))}
-          <p>Continue below to create an execution group and review exact launch requirements.</p>
+          <p>Use Create execution group to choose the configuration for a new run.</p>
           <details>
             <summary>Exact preparation snapshot</summary>
             <pre>{JSON.stringify(saved.snapshot, null, 2)}</pre>
@@ -712,40 +712,35 @@ export default function WorkspacePreparation({
           </details>
         </section>
       )}
-      {saved && !composing && (
-        <WorkspaceExecutionGroups
-          key={base + ':' + saved.id}
-          base={base}
-          preparationId={saved.id}
-          canReview={canReview}
-          canAdmin={canAdmin}
-        />
+      {!createGroup && (
+        <section className={styles.panel} aria-labelledby="saved-preparations-heading">
+          <h2 id="saved-preparations-heading">Saved preparations</h2>
+          {drafts.loading && <p role="status">Loading saved preparations…</p>}
+          {drafts.error && (
+            <>
+              <p role="alert">{drafts.error}</p>
+              <button onClick={() => void drafts.reload()} disabled={drafts.loading}>
+                Refresh saved preparations
+              </button>
+            </>
+          )}
+          {drafts.items.map((draft) => (
+            <p key={draft.id}>
+              <button onClick={() => open(draft.id)}>
+                {draft.snapshot.preset.name} · {shortId(draft.id)} · planning only
+              </button>
+            </p>
+          ))}
+          {!drafts.loading && !drafts.error && !drafts.items.length && (
+            <p>No saved preparations.</p>
+          )}
+          {drafts.more && (
+            <button disabled={drafts.loading} onClick={() => void drafts.more?.()}>
+              Load more preparations
+            </button>
+          )}
+        </section>
       )}
-      <section className={styles.panel} aria-labelledby="saved-preparations-heading">
-        <h2 id="saved-preparations-heading">Saved preparations</h2>
-        {drafts.loading && <p role="status">Loading saved preparations…</p>}
-        {drafts.error && (
-          <>
-            <p role="alert">{drafts.error}</p>
-            <button onClick={() => void drafts.reload()} disabled={drafts.loading}>
-              Refresh saved preparations
-            </button>
-          </>
-        )}
-        {drafts.items.map((draft) => (
-          <p key={draft.id}>
-            <button onClick={() => open(draft.id)}>
-              {draft.snapshot.preset.name} · {shortId(draft.id)} · planning only
-            </button>
-          </p>
-        ))}
-        {!drafts.loading && !drafts.error && !drafts.items.length && <p>No saved preparations.</p>}
-        {drafts.more && (
-          <button disabled={drafts.loading} onClick={() => void drafts.more?.()}>
-            Load more preparations
-          </button>
-        )}
-      </section>
     </>
   );
 }

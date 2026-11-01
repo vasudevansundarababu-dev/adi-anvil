@@ -74,7 +74,7 @@ def binding(c, kit_id, contact_id, sender_id):
         if not one(
             c,
             "SELECT 1 FROM anvil.memberships m JOIN anvil.users u ON u.id=m.user_id WHERE m.project_id=%s AND m.user_id=%s AND m.role=%s AND m.active AND u.active",
-            (kit["project_id"], person, role),
+            (kit["project_id"], person, "admin" if role == "product-owner" else role),
         ):
             raise HTTPException(409, "Contact or sender authority no longer active")
     if not contact["email"].endswith(".invalid"):
@@ -117,13 +117,13 @@ def dispatch_fixture(c, job):
             raise HTTPException(409, "Approval expired")
         if not one(
             c,
-            "SELECT 1 FROM anvil.memberships m JOIN anvil.users u ON u.id=m.user_id WHERE m.project_id=%s AND m.user_id=%s AND m.role='sales' AND m.active AND u.active",
+            "SELECT 1 FROM anvil.memberships m JOIN anvil.users u ON u.id=m.user_id WHERE m.project_id=%s AND m.user_id=%s AND m.role='admin' AND m.active AND u.active",
             (job["project_id"], delivery["requested_by"]),
         ):
             raise HTTPException(403, "Requesting Sales identity no longer active")
         if not one(
             c,
-            "SELECT 1 FROM anvil.project_assignments a JOIN anvil.users u ON u.id=a.user_id JOIN anvil.memberships m ON m.project_id=a.project_id AND m.user_id=a.user_id WHERE a.user_id=%s AND a.capability='release_owner' AND a.active AND u.active AND m.role='product-owner' AND m.active",
+            "SELECT 1 FROM anvil.project_assignments a JOIN anvil.users u ON u.id=a.user_id JOIN anvil.memberships m ON m.project_id=a.project_id AND m.user_id=a.user_id WHERE a.user_id=%s AND a.capability='release_owner' AND a.active AND u.active AND m.role='admin' AND m.active",
             (approval["approved_by"],),
         ):
             raise HTTPException(403, "Release approval authority no longer active")
@@ -207,13 +207,18 @@ def routes(context, wrap, idempotent):
                 if not contact:
                     raise HTTPException(404, "Contact not found")
                 domain.etag(contact, request.headers.get("if-match"))
-                if contact["created_by"] == user:
-                    raise HTTPException(409, "Independent contact review required")
                 c.execute(
                     "UPDATE anvil.sales_contacts SET status=%s,approved_by=%s,row_version=row_version+1 WHERE id=%s",
                     (body.status, user, cid),
                 )
-                audit(c, project, user, "fixture_contact." + body.status, cid)
+                audit(
+                    c,
+                    project,
+                    user,
+                    "fixture_contact." + body.status,
+                    cid,
+                    {"self_approved": str(contact["created_by"]) == str(user)},
+                )
                 return {
                     "id": str(cid),
                     "status": body.status,
@@ -261,13 +266,18 @@ def routes(context, wrap, idempotent):
                 if not sender:
                     raise HTTPException(404, "Fixture sender not found")
                 domain.etag(sender, request.headers.get("if-match"))
-                if sender["created_by"] == user:
-                    raise HTTPException(409, "Distinct Admin required")
                 c.execute(
                     "UPDATE anvil.fixture_senders SET status='active',activated_by=%s,row_version=row_version+1 WHERE id=%s",
                     (user, sid),
                 )
-                audit(c, project, user, "fixture_sender.activated", sid)
+                audit(
+                    c,
+                    project,
+                    user,
+                    "fixture_sender.activated",
+                    sid,
+                    {"self_approved": str(sender["created_by"]) == str(user)},
+                )
                 return {
                     "id": str(sid),
                     "status": "active",
@@ -285,8 +295,6 @@ def routes(context, wrap, idempotent):
                 kit, contact, sender, h = binding(
                     c, kid, body.recipient_contact_id, body.sender_connection_id
                 )
-                if kit["created_by"] == user:
-                    raise HTTPException(409, "Independent kit release owner required")
                 aid = uid()
                 c.execute(
                     "INSERT INTO anvil.delivery_approvals(id,project_id,kit_revision_id,contact_id,sender_id,binding_hash,approved_by,expires_at) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)",

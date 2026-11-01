@@ -63,7 +63,7 @@ def score_rubric(rubric, scores, critical):
 
 # D-SIMPLE grading (AGENTS.md, 1 Oct 2026): one grader per output; a second grader checks
 # critical, borderline (within 5 points of the pass mark) and a frozen 10% sample; disputes are
-# adjudicated. A Product Owner who has not graded the output fills a missing position.
+# adjudicated. A Admin who has not graded the output fills a missing position.
 SAMPLE_PERCENT = 10
 BORDERLINE_POINTS = Decimal(5)
 
@@ -102,10 +102,12 @@ def judgments_for(c, eid):
 def grading_position(c, project, p, e, run, user):
     """What this user may do on the episode now: 'grade', 'adjudicate' or None."""
     user = str(user)
+    if str(run.get("created_by")) == user:
+        return None
     listed = [str(x) for x in p["reviewer_ids"]]
     judgments = judgments_for(c, e["id"])
     graded = {str(j["reviewer_id"]) for j in judgments}
-    owners = domain.product_owners(c, project) if user not in listed else []
+    owners = domain.administrators(c, project) if user not in listed else []
     open_for_grading = e["state"] == "awaiting_review" and not e.get("final_assessment_id")
     if open_for_grading and user not in graded:
         if not judgments:
@@ -117,13 +119,15 @@ def grading_position(c, project, p, e, run, user):
         adjudicator = p.get("adjudicator_id")
         if adjudicator and user == str(adjudicator):
             return "adjudicate"
-        if not adjudicator and user not in graded and user in domain.product_owners(c, project):
+        if not adjudicator and user not in graded and user in domain.administrators(c, project):
             return "adjudicate"
     return None
 
 
 def assigned_grader(c, project, p, e, run, user):
     user = str(user)
+    if str(run.get("created_by")) == user:
+        return False
     if user in [str(x) for x in p["reviewer_ids"]] or user == str(p.get("adjudicator_id")):
         return True
     return grading_position(c, project, p, e, run, user) is not None

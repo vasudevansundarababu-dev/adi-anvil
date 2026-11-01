@@ -5135,10 +5135,10 @@
         }
       }
     },
-    "/api/v1/projects/{project}/workspace/execution-groups/{gid}/review": {
+    "/api/v1/projects/{project}/workspace/execution-groups/{gid}/authorize": {
       "post": {
-        "summary": "Review",
-        "operationId": "review_api_v1_projects__project__workspace_execution_groups__gid__review_post",
+        "summary": "Authorize",
+        "operationId": "authorize_api_v1_projects__project__workspace_execution_groups__gid__authorize_post",
         "parameters": [
           {
             "name": "project",
@@ -5166,7 +5166,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GroupReview"
+                "$ref": "#/components/schemas/AdminRun"
               }
             }
           }
@@ -5193,126 +5193,10 @@
         }
       }
     },
-    "/api/v1/projects/{project}/workspace/execution-groups/{gid}/admin-approvals": {
+    "/api/v1/projects/{project}/workspace/execution-groups/{gid}/revoke-authorization": {
       "post": {
-        "summary": "Approve",
-        "operationId": "approve_api_v1_projects__project__workspace_execution_groups__gid__admin_approvals_post",
-        "parameters": [
-          {
-            "name": "project",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Project"
-            }
-          },
-          {
-            "name": "gid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Gid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AdminReview"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/projects/{project}/workspace/execution-groups/{gid}/rights-evidence": {
-      "post": {
-        "summary": "Evidence",
-        "operationId": "evidence_api_v1_projects__project__workspace_execution_groups__gid__rights_evidence_post",
-        "parameters": [
-          {
-            "name": "project",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Project"
-            }
-          },
-          {
-            "name": "gid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Gid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Evidence"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/projects/{project}/workspace/execution-groups/{gid}/revoke-review": {
-      "post": {
-        "summary": "Revoke Review",
-        "operationId": "revoke_review_api_v1_projects__project__workspace_execution_groups__gid__revoke_review_post",
+        "summary": "Revoke Authorization",
+        "operationId": "revoke_authorization_api_v1_projects__project__workspace_execution_groups__gid__revoke_authorization_post",
         "parameters": [
           {
             "name": "project",
@@ -5393,6 +5277,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/AdminRun"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -7642,6 +7543,33 @@
         ],
         "title": "AdminReview"
       },
+      "AdminRun": {
+        "properties": {
+          "subject_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Subject Hash"
+          },
+          "aggregate_cap_micro_usd": {
+            "type": "integer",
+            "maximum": 1000000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Aggregate Cap Micro Usd"
+          },
+          "rights_confirmed": {
+            "type": "boolean",
+            "title": "Rights Confirmed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "subject_hash",
+          "aggregate_cap_micro_usd",
+          "rights_confirmed"
+        ],
+        "title": "AdminRun"
+      },
       "Approval": {
         "properties": {
           "recipient_contact_id": {
@@ -8398,30 +8326,6 @@
         ],
         "title": "Declaration"
       },
-      "Evidence": {
-        "properties": {
-          "reference": {
-            "type": "string",
-            "maxLength": 500,
-            "minLength": 5,
-            "pattern": ".*\\S.*",
-            "title": "Reference"
-          },
-          "description": {
-            "type": "string",
-            "maxLength": 2000,
-            "minLength": 10,
-            "title": "Description"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "reference",
-          "description"
-        ],
-        "title": "Evidence"
-      },
       "Field_": {
         "properties": {
           "label": {
@@ -8617,40 +8521,6 @@
           "explanation"
         ],
         "title": "GapUpdate"
-      },
-      "GroupReview": {
-        "properties": {
-          "subject_hash": {
-            "type": "string",
-            "pattern": "^[a-f0-9]{64}$",
-            "title": "Subject Hash"
-          },
-          "rights_evidence_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Rights Evidence Id"
-          },
-          "rationale": {
-            "type": "string",
-            "maxLength": 2000,
-            "minLength": 10,
-            "title": "Rationale"
-          },
-          "expires_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Expires At"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "subject_hash",
-          "rights_evidence_id",
-          "rationale",
-          "expires_at"
-        ],
-        "title": "GroupReview"
       },
       "HTTPValidationError": {
         "properties": {

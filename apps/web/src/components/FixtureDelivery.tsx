@@ -29,8 +29,8 @@ export default function FixtureDelivery({ base, roles }: { base: string; roles: 
     [message, setMessage] = useState(''),
     [loaded, setLoaded] = useState(false);
   const admin = roles.includes('admin'),
-    sales = roles.includes('sales'),
-    owner = roles.includes('product-owner');
+    sales = roles.includes('admin'),
+    owner = roles.includes('admin');
   async function request(path: string, body?: unknown, version?: number) {
     const csrf =
       document.cookie

@@ -52,9 +52,13 @@ def test_protected_fields_and_cross_kind_fields_are_rejected():
         merge("task", {"title": "Task"}, RevisionPatch(threshold=50.0))
 
 
-def test_self_approval_tracks_actual_revision_author_after_admin_edit(monkeypatch):
+def test_admin_self_approval_records_actual_revision_authorship(monkeypatch):
     monkeypatch.setattr(domain, "get_revision", lambda *args: {"created_by": "current-author"})
-    monkeypatch.setattr(domain, "product_owners", lambda *args: ["current-author", "other-owner"])
+    monkeypatch.setattr(domain, "one", lambda *args: None)
+    monkeypatch.setattr(domain, "record_decision", lambda *args: None)
+    events = []
+    monkeypatch.setattr(domain, "audit", lambda *args: events.append(args[-1]))
+    monkeypatch.setattr(domain, "move", lambda c, r, u, state: state)
     resource = {
         "id": "resource",
         "project_id": "project",
@@ -62,17 +66,13 @@ def test_self_approval_tracks_actual_revision_author_after_admin_edit(monkeypatc
         "lifecycle": "submitted",
         "created_by": "old-author",
         "current_revision_id": "new-revision",
+        "content_hash": "a" * 64,
     }
-    with pytest.raises(HTTPException) as exc:
-        domain.decide(
-            None,
-            resource,
-            "current-author",
-            {"product-owner"},
-            Decision(
-                purpose="approval",
-                decision="approve",
-                rationale="Must enforce actual current authorship",
-            ),
-        )
-    assert exc.value.status_code == 409 and "Another Product Owner" in exc.value.detail
+    result = domain.decide(
+        None,
+        resource,
+        "current-author",
+        {"admin"},
+        Decision(purpose="approval", decision="approve", rationale="Explicit Admin self approval"),
+    )
+    assert result == "approved" and events[0]["self_approved"] is True

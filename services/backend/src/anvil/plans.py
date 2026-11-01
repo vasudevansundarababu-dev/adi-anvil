@@ -2,7 +2,7 @@
 
 Objective -> research (background, sources, benchmark research) -> tasks and data -> rubric ->
 benchmark and run. Submitting creates the rubric and task drafts and submits the objective. One
-Product Owner decision then approves every component in dependency order inside one
+Admin decision then approves every component in dependency order inside one
 transaction; the existing qualification checks, rights rules and exact version binding still
 apply to each record. Launching stays an explicit, separate action on the prepared run.
 """
@@ -118,19 +118,22 @@ def members(c, project, role):
         str(r["user_id"])
         for r in c.execute(
             """SELECT m.user_id FROM anvil.memberships m JOIN anvil.users u ON u.id=m.user_id
-               WHERE m.project_id=%s AND m.role=%s AND m.active AND u.active ORDER BY u.name""",
-            (project, role),
+               WHERE m.project_id=%s AND m.role=ANY(%s) AND m.active AND u.active ORDER BY (m.role='admin'),u.name""",
+            (
+                project,
+                ["admin"] if role in ("admin", "product-owner") else ["admin", "rl-engineer"],
+            ),
         ).fetchall()
     ]
 
 
 def default_graders(c, project, creator):
-    """Project Reviewers grade; with none, a Product Owner grades (D-SIMPLE)."""
+    """Prefer individually assigned engineers; Admin fills missing grading duties."""
     reviewers = [u for u in members(c, project, "reviewer") if u != str(creator)]
     if reviewers:
         return reviewers[:2]
-    owners = [u for u in domain.product_owners(c, project) if u != str(creator)]
-    return (owners or domain.product_owners(c, project))[:1]
+    owners = [u for u in domain.administrators(c, project) if u != str(creator)]
+    return (owners or domain.administrators(c, project))[:1]
 
 
 def view(c, plan):
@@ -205,12 +208,9 @@ def grant_rights(c, project, user, source_revision_id, plan_id):
         (project, user),
     ):
         raise HTTPException(
-            409, "Local evaluation rights need a Product Owner with the rights-reviewer capability"
+            409, "Local evaluation rights need a Admin with the rights-reviewer capability"
         )
     source = domain.get_revision(c, source_revision_id, "case")
-    owner = one(c, "SELECT created_by FROM anvil.resources WHERE id=%s", (source["resource_id"],))
-    if str(owner["created_by"]) == str(user):
-        raise HTTPException(409, "Independent rights review required for sources you imported")
     c.execute(
         """INSERT INTO anvil.rights_grants(id,project_id,source_revision_id,operation,destination,status,reviewed_by,evidence,expires_at)
            VALUES(%s,%s,%s,'managed_evaluation','local_fixture','approved',%s,%s,NULL)
@@ -221,7 +221,7 @@ def grant_rights(c, project, user, source_revision_id, plan_id):
             project,
             source_revision_id,
             user,
-            f"Local synthetic fixture evaluation approved by the Product Owner in evaluation plan {plan_id}.",
+            f"Local synthetic fixture evaluation approved by the Admin in evaluation plan {plan_id}.",
         ),
     )
     audit(
@@ -280,7 +280,7 @@ def routes(context, wrap, idempotent):
                         "threshold": template["threshold"],
                     },
                     "reviewers": people(members(c, project, "reviewer")),
-                    "product_owners": people(domain.product_owners(c, project)),
+                    "admins": people(domain.administrators(c, project)),
                     "default_graders": people(default_graders(c, project, user)),
                 },
                 request,
@@ -390,7 +390,7 @@ def routes(context, wrap, idempotent):
                 if body.grader_ids is not None:
                     graders = [str(g) for g in body.grader_ids]
                     allowed = set(members(c, project, "reviewer")) | set(
-                        domain.product_owners(c, project)
+                        domain.administrators(c, project)
                     )
                     if (
                         not graders
@@ -398,7 +398,7 @@ def routes(context, wrap, idempotent):
                         or len(set(graders)) != len(graders)
                     ):
                         raise HTTPException(
-                            422, "Graders must be distinct project Reviewers or Product Owners"
+                            422, "Graders must be distinct project Reviewers or Admins"
                         )
                     fields["grader_ids"] = graders
                 if body.candidates is not None:
@@ -453,8 +453,6 @@ def routes(context, wrap, idempotent):
                 if plan["state"] != "submitted":
                     raise HTTPException(409, "Only submitted evaluations can be decided")
                 self_approved = str(plan["created_by"]) == str(user)
-                if self_approved and len(domain.product_owners(c, project)) != 1:
-                    raise HTTPException(409, "Another Product Owner must approve work you created")
                 if body.decision == "changes_requested":
                     objective = domain.get_resource(c, plan["objective_id"], True)
                     if objective["lifecycle"] == "submitted":

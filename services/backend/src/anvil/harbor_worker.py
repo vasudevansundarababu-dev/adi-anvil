@@ -103,13 +103,19 @@ def authorized(c, job, user):
     row = one(c, "SELECT * FROM anvil.harbor_checks WHERE id=%s FOR UPDATE", (job["target_id"],))
     if not row:
         raise RuntimeError("check_missing")
-    approval = one(
-        c, "SELECT * FROM anvil.harbor_approvals WHERE package_id=%s", (row["package_id"],)
+    workspace_plan = (
+        one(c, "SELECT config FROM anvil.harbor_agent_plans WHERE id=%s", (row["agent_plan_id"],))
+        if row["agent_plan_id"]
+        else None
     )
-    if not approval or str(approval["approved_by"]) not in domain.product_owners(
-        c, job["project_id"]
-    ):
-        raise RuntimeError("approval_revoked")
+    if not workspace_plan or not workspace_plan["config"].get("workspace_execution_group"):
+        approval = one(
+            c, "SELECT * FROM anvil.harbor_approvals WHERE package_id=%s", (row["package_id"],)
+        )
+        if not approval or str(approval["approved_by"]) not in domain.administrators(
+            c, job["project_id"]
+        ):
+            raise RuntimeError("approval_revoked")
     if row["candidate"] == "agent":
         from anvil.harbor_agents import plan, readiness
 

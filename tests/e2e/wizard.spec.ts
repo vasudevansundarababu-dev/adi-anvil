@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 
-// D-SIMPLE: five-step evaluation wizard, one Product Owner approval, explicit run.
+// D-SIMPLE: five-step evaluation wizard, one Admin approval, explicit run.
 async function login(page: Page, name: string) {
   await page.context().clearCookies();
   await page.goto('/');
@@ -16,7 +16,7 @@ async function login(page: Page, name: string) {
   await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible();
 }
 
-test('five-step wizard, single Product Owner approval and run', async ({ page }) => {
+test('five-step wizard, single Admin approval and run', async ({ page }) => {
   const journey = JSON.parse(readFileSync('artifacts/test-runs/journey.json', 'utf8'));
   const title = 'Wizard acceptance ' + Date.now();
   await login(page, 'researcher');
@@ -52,10 +52,10 @@ test('five-step wizard, single Product Owner approval and run', async ({ page })
   await expect(
     page.getByRole('heading', { name: 'Step 5 · Select benchmark and run' }),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Submit to Product Owner', exact: true }).click();
-  await expect(page.getByText('Submitted to the Product Owner.')).toBeVisible();
+  await page.getByRole('button', { name: 'Submit to Admin', exact: true }).click();
+  await expect(page.getByText('Submitted to the Admin.')).toBeVisible();
 
-  await login(page, 'product-owner');
+  await login(page, 'admin-1');
   await page.goto(`/p/${journey.project_id}/evaluations`);
   await page
     .locator('article')

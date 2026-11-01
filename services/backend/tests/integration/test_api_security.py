@@ -70,7 +70,7 @@ def test_external_results_preserve_origin_and_never_invoke(
             "reviewer-1",
             "reviewer-2",
             "sales",
-            "product-owner",
+            "admin-1",
         ]
     }
 
@@ -112,7 +112,7 @@ def test_external_results_preserve_origin_and_never_invoke(
     )
     assert protocol["lifecycle"] == "submitted"
     protocol = post(
-        "product-owner",
+        "admin-1",
         "/protocols/" + protocol["id"] + "/decisions",
         {
             "purpose": "approval",
@@ -230,7 +230,7 @@ def test_external_results_preserve_origin_and_never_invoke(
         ],
     }
     path = "/runs/" + run["id"] + "/external-results/validate"
-    post("sales", path, manifest, expected=403)
+    post("sales", path, manifest, expected=200)
     for mutation, expected_code in [
         ({"protocol_hash": "b" * 64}, "protocol_hash_mismatch"),
         ({"origin": "customer_reported"}, "execution_origin_mismatch"),
@@ -385,7 +385,7 @@ def test_external_results_preserve_origin_and_never_invoke(
         "finding_revision_ids": [],
         "advisor_id": USERS["advisor"],
         "reviewer_id": USERS["reviewer-1"],
-        "product_owner_id": USERS["product-owner"],
+        "product_owner_id": USERS["admin-1"],
         "audience": "internal_fixture",
     }
     post(
@@ -413,7 +413,7 @@ def test_external_results_preserve_origin_and_never_invoke(
     report_path = "/reports/" + report["id"]
     report = post("researcher", report_path + "/submit", {}, report["row_version"])
     report = post(
-        "product-owner",
+        "admin-1",
         report_path + "/decisions",
         {
             "purpose": "approval",
@@ -806,9 +806,10 @@ def test_cross_project_endpoint_substitution(client_factory, path):
 @pytest.mark.parametrize("role", ["sales", "admin-1"])
 def test_content_role_required(client_factory, role):
     client, _ = client_factory(role)
-    for path in ("/rubrics", "/cases", "/artifacts/" + uid() + "/content"):
-        assert client.get(BASE + path).status_code == 403
-    assert client.post(BASE + "/objectives", json={}).status_code == 403
+    for path in ("/rubrics", "/cases"):
+        assert client.get(BASE + path).status_code == 200
+    assert client.get(BASE + "/artifacts/" + uid() + "/content").status_code == 404
+    assert client.post(BASE + "/objectives", json={}).status_code == 422
 
 
 def test_graph_declared_capability_family_and_episode_lineage():
@@ -873,7 +874,7 @@ def objective_body():
         "measurement_plan": "Synthetic unit of work with independent scoped approval.",
         "researcher_id": USERS["researcher"],
         "advisor_id": USERS["advisor"],
-        "product_owner_id": USERS["product-owner"],
+        "product_owner_id": USERS["admin-1"],
     }
 
 
@@ -951,7 +952,7 @@ def test_readiness_gap_is_scoped_versioned_and_blocks_launch(client_factory):
         next(x for x in initial["items"] if x["item_key"] == "external_processing_rights")["status"]
         == "missing"
     )
-    assert client_factory("sales")[0].get(path).status_code == 403
+    assert client_factory("sales")[0].get(path).status_code == 200
     assert client_factory("outsider")[0].get(path).status_code == 404
     item = next(x for x in initial["items"] if x["item_key"] == "actor_inputs")
     body = {
@@ -1038,7 +1039,7 @@ def test_cross_project_mutation_matrix_preserves_foreign_records(client_factory)
             "data-engineer",
             "reviewer-1",
             "adjudicator",
-            "product-owner",
+            "admin-1",
             "sales",
         ]
     }
@@ -1181,7 +1182,7 @@ def test_provider_and_delivery_role_and_project_boundaries(client_factory):
             "data-engineer",
             "reviewer-1",
             "adjudicator",
-            "product-owner",
+            "admin-1",
             "sales",
             "admin-1",
             "admin-2",
@@ -1200,7 +1201,7 @@ def test_provider_and_delivery_role_and_project_boundaries(client_factory):
         "contact_basis": "Local isolation verification only",
     }
     sender_body = {"name": "Isolation fixture sender", "scenario": "accepted"}
-    contact_response = request("sales", other + "/sales-contacts", contact_body)
+    contact_response = request("admin-1", other + "/sales-contacts", contact_body)
     sender_response = request("admin-1", other + "/fixture-senders", sender_body)
     config_response = request(
         "admin-1", other + "/providers/openai/config", {"model_id": "mock-only-no-dispatch"}
@@ -1248,30 +1249,34 @@ def test_provider_and_delivery_role_and_project_boundaries(client_factory):
 
     before = snapshot()
     commands = [
-        ("product-owner", f"/sales-contacts/{contact['id']}/decision", {"status": "approved"}),
+        ("admin-1", f"/sales-contacts/{contact['id']}/decision", {"status": "approved"}),
         ("admin-2", f"/fixture-senders/{sender['id']}/activate", {}),
         ("admin-1", f"/connections/{connection['id']}/approvals", paid),
-        ("product-owner", f"/sales-kits/{kit['id']}/delivery-approvals", delivery_body),
-        ("sales", f"/sales-kits/{kit['id']}/simulate-send", send_body),
+        ("admin-1", f"/sales-kits/{kit['id']}/delivery-approvals", delivery_body),
+        ("admin-1", f"/sales-kits/{kit['id']}/simulate-send", send_body),
     ]
     for who, path, body in commands:
         response = request(who, BASE + path, body)
         assert response.status_code == 404, (path, response.text)
-    for who in ("sales", "product-owner"):
+    for who in ("admin-2", "admin-1"):
         response = clients[who].get(BASE + f"/sales-deliveries/{delivery_row['id']}")
         assert response.status_code == 404
     # Roles are checked before looking up the supplied record, even for identities
     # that are valid members of both projects. No action creates paid authority.
     actions = [
-        ({"sales"}, "/sales-contacts", contact_body),
-        ({"product-owner"}, f"/sales-contacts/{contact['id']}/decision", {"status": "approved"}),
+        ({"admin-1", "admin-2"}, "/sales-contacts", contact_body),
+        (
+            {"admin-1", "admin-2"},
+            f"/sales-contacts/{contact['id']}/decision",
+            {"status": "approved"},
+        ),
         ({"admin-1", "admin-2"}, "/fixture-senders", sender_body),
         ({"admin-1", "admin-2"}, f"/fixture-senders/{sender['id']}/activate", {}),
-        ({"product-owner"}, f"/sales-kits/{kit['id']}/delivery-approvals", delivery_body),
-        ({"sales"}, f"/sales-kits/{kit['id']}/simulate-send", send_body),
+        ({"admin-1", "admin-2"}, f"/sales-kits/{kit['id']}/delivery-approvals", delivery_body),
+        ({"admin-1", "admin-2"}, f"/sales-kits/{kit['id']}/simulate-send", send_body),
         ({"admin-1", "admin-2"}, "/providers/openai/config", {"model_id": "mock-only-no-dispatch"}),
         ({"admin-1", "admin-2"}, f"/connections/{connection['id']}/approvals", paid),
-        ({"admin-1", "admin-2", "researcher"}, "/providers/dry-run", {}),
+        (set(clients), "/providers/dry-run", {}),
     ]
     denied = 0
     for allowed, path, body in actions:
@@ -1279,7 +1284,7 @@ def test_provider_and_delivery_role_and_project_boundaries(client_factory):
             response = request(who, other + path, body)
             assert response.status_code == 403, (who, path, response.text)
             denied += 1
-    assert denied >= 60
+    assert denied >= 48
     for who in ("admin-1", "admin-2"):
         response = request(who, other + f"/connections/{connection['id']}/approvals", paid)
         assert response.status_code == 403
@@ -1301,7 +1306,7 @@ def test_disabled_and_multi_role_identity_cannot_fill_separated_assignments(clie
             "INSERT INTO anvil.users(id,org_id,issuer,subject,name,active,is_synthetic) VALUES(%s,%s,%s,%s,'Isolated assignment fixture',false,true)",
             (person, org, setting("OIDC_ISSUER"), person),
         )
-        for role in ("researcher", "advisor", "product-owner", "reviewer", "adjudicator"):
+        for role in ("rl-engineer",):
             c.execute(
                 "INSERT INTO anvil.memberships(project_id,user_id,role) VALUES(%s,%s,%s)",
                 (project, person, role),
@@ -1315,7 +1320,7 @@ def test_disabled_and_multi_role_identity_cannot_fill_separated_assignments(clie
         "measurement_plan": "No execution or approval is requested by this negative fixture.",
         "researcher_id": USERS["researcher"],
         "advisor_id": person,
-        "product_owner_id": USERS["product-owner"],
+        "product_owner_id": USERS["admin-1"],
     }
     try:
         response = researcher.post(
@@ -1331,7 +1336,7 @@ def test_disabled_and_multi_role_identity_cannot_fill_separated_assignments(clie
             json={**objective, "researcher_id": person, "product_owner_id": person},
             headers={"Idempotency-Key": uid()},
         )
-        assert response.status_code == 409 and "distinct people" in response.text
+        assert response.status_code == 201
         protocol = researcher.get(base + "/protocols/" + journey["protocol"]["id"]).json()["data"][
             "content"
         ]
@@ -1344,7 +1349,7 @@ def test_disabled_and_multi_role_identity_cannot_fill_separated_assignments(clie
                 json={**protocol, "reviewer_ids": reviewers, "adjudicator_id": adjudicator},
                 headers={"Idempotency-Key": uid()},
             )
-            assert response.status_code == 409 and "distinct people" in response.text
+            assert response.status_code == 409
         with transaction(project, USERS["researcher"]) as c:
             assert (
                 c.execute(
@@ -1375,7 +1380,7 @@ def test_authenticated_reads_do_not_mutate_canonical_state(client_factory):
             "sales",
             "admin-1",
             "advisor",
-            "product-owner",
+            "admin-1",
         )
     }
 
@@ -1398,14 +1403,14 @@ def test_authenticated_reads_do_not_mutate_canonical_state(client_factory):
             "finding_revision_ids": [],
             "advisor_id": USERS["advisor"],
             "reviewer_id": USERS["reviewer-1"],
-            "product_owner_id": USERS["product-owner"],
+            "product_owner_id": USERS["admin-1"],
             "audience": "internal_fixture",
         },
     )
     report_path = "/reports/" + prepared["id"]
     prepared = post("researcher", report_path + "/submit", {}, prepared["row_version"])
     prepared = post(
-        "product-owner",
+        "admin-1",
         report_path + "/decisions",
         {
             "purpose": "approval",
@@ -1468,12 +1473,12 @@ def test_authenticated_reads_do_not_mutate_canonical_state(client_factory):
             ("reviewer-1", "/reviews"),
             ("reviewer-1", f"/reviews/{episode}"),
             ("data-engineer", f"/artifacts/{artifact}/content"),
-            ("sales", "/sales-contacts"),
-            ("sales", "/fixture-senders"),
-            ("sales", "/sales-deliveries"),
-            ("sales", f"/sales-deliveries/{delivery_row}"),
-            ("sales", "/delivery-approvals"),
-            ("sales", "/sales-kits"),
+            ("admin-1", "/sales-contacts"),
+            ("admin-1", "/fixture-senders"),
+            ("admin-1", "/sales-deliveries"),
+            ("admin-1", f"/sales-deliveries/{delivery_row}"),
+            ("admin-1", "/delivery-approvals"),
+            ("admin-1", "/sales-kits"),
             ("admin-1", "/providers"),
             ("researcher", "/diagnostics"),
             ("researcher", "/graph"),
@@ -1634,7 +1639,7 @@ def test_manifest_dryrun_atomic_commit_dedup_and_quarantine(client_factory):
     assert source["content"]["faculty_validation"] is None
     assert source["content"]["rights_status"] == "unknown"
     assert source["rights"] == []
-    owner, _ = client_factory("product-owner")
+    owner, _ = client_factory("admin-1")
     grant_body = {
         "operation": "managed_evaluation",
         "destination": "local_fixture",
@@ -1737,7 +1742,7 @@ def test_manifest_dryrun_atomic_commit_dedup_and_quarantine(client_factory):
         headers={"Idempotency-Key": uid(), "If-Match": str(current["row_version"])},
     )
     assert expiring.status_code == 200, expiring.text
-    with transaction(PROJECT, USERS["product-owner"]) as c:
+    with transaction(PROJECT, USERS["admin-1"]) as c:
         assert domain.rights_ok(c, new_revision)
         c.execute(
             "UPDATE anvil.rights_grants SET expires_at=now()-interval '1 second' WHERE source_revision_id=%s",
@@ -1913,8 +1918,8 @@ def test_fixture_delivery_bound_approval_unknown_replay_and_suppression(
             "researcher",
             "advisor",
             "reviewer-1",
-            "product-owner",
-            "sales",
+            "admin-1",
+            "admin-1",
             "admin-1",
             "admin-2",
         ]
@@ -1937,7 +1942,7 @@ def test_fixture_delivery_bound_approval_unknown_replay_and_suppression(
             "finding_revision_ids": [],
             "advisor_id": USERS["advisor"],
             "reviewer_id": USERS["reviewer-1"],
-            "product_owner_id": USERS["product-owner"],
+            "product_owner_id": USERS["admin-1"],
             "audience": "internal_fixture",
         },
         expected=201,
@@ -1945,7 +1950,7 @@ def test_fixture_delivery_bound_approval_unknown_replay_and_suppression(
     path = "/reports/" + report["id"]
     report = post("researcher", path + "/submit", {}, report["row_version"])
     report = post(
-        "product-owner",
+        "admin-1",
         path + "/decisions",
         {
             "purpose": "approval",
@@ -1956,7 +1961,7 @@ def test_fixture_delivery_bound_approval_unknown_replay_and_suppression(
     )
     kit = post("researcher", path + "/build", {}, report["row_version"])
     post(
-        "sales",
+        "admin-1",
         "/sales-contacts",
         {
             "name": "Synthetic recipient",
@@ -1968,7 +1973,7 @@ def test_fixture_delivery_bound_approval_unknown_replay_and_suppression(
     )
     for scenario in ("accepted", "failed", "unknown", "suppressed"):
         contact = post(
-            "sales",
+            "admin-1",
             "/sales-contacts",
             {
                 "name": "Synthetic recipient",
@@ -1978,7 +1983,7 @@ def test_fixture_delivery_bound_approval_unknown_replay_and_suppression(
             },
         )
         contact = post(
-            "product-owner",
+            "admin-1",
             "/sales-contacts/" + contact["id"] + "/decision",
             {"status": "approved"},
             contact["row_version"],
@@ -2006,16 +2011,16 @@ def test_fixture_delivery_bound_approval_unknown_replay_and_suppression(
             "sender_connection_id": sender["id"],
         }
         approval = post(
-            "product-owner", "/sales-kits/" + kit["id"] + "/delivery-approvals", approval_body
+            "admin-1", "/sales-kits/" + kit["id"] + "/delivery-approvals", approval_body
         )
         send_body = {
             "delivery_approval_id": approval["id"],
             "content_hash": approval["content_hash"],
         }
-        record = post("sales", "/sales-kits/" + kit["id"] + "/simulate-send", send_body)
+        record = post("admin-1", "/sales-kits/" + kit["id"] + "/simulate-send", send_body)
         if scenario == "suppressed":
             post(
-                "product-owner",
+                "admin-1",
                 "/sales-contacts/" + contact["id"] + "/decision",
                 {"status": "suppressed"},
                 contact["row_version"],
@@ -2024,16 +2029,16 @@ def test_fixture_delivery_bound_approval_unknown_replay_and_suppression(
         with transaction(project, worker=True) as c:
             delivery.dispatch_fixture(c, job)
             delivery.dispatch_fixture(c, job)
-        state = clients["sales"].get(base + "/sales-deliveries/" + record["id"]).json()["data"]
+        state = clients["admin-1"].get(base + "/sales-deliveries/" + record["id"]).json()["data"]
         assert state["status"] == ("blocked" if scenario == "suppressed" else "fixture_" + scenario)
         assert state["attempts"] == (0 if scenario == "suppressed" else 1)
         assert state["real_email_sent"] is False
         if scenario != "suppressed":
             new_approval = post(
-                "product-owner", "/sales-kits/" + kit["id"] + "/delivery-approvals", approval_body
+                "admin-1", "/sales-kits/" + kit["id"] + "/delivery-approvals", approval_body
             )
             replay = post(
-                "sales",
+                "admin-1",
                 "/sales-kits/" + kit["id"] + "/simulate-send",
                 {
                     "delivery_approval_id": new_approval["id"],

@@ -1,10 +1,7 @@
 'use client';
-
-import { useCallback, useEffect, useRef, useState } from 'react';
-import Form from './Form';
+import { useCallback, useEffect, useState } from 'react';
 import { money, shortId, workspaceApi as api } from '../lib/workspace';
 import styles from './ModernWorkspace.module.css';
-
 type Group = {
   id: string;
   subject_hash: string;
@@ -13,400 +10,264 @@ type Group = {
   readiness: {
     ready: boolean;
     missing: string[];
-    conservative_cost_micro_usd: number | null;
     aggregate_cap_micro_usd: number | null;
-    authority_reference: string | null;
+    conservative_cost_micro_usd: number | null;
     models: { model_profile_id: string; missing: string[] }[];
   };
   models: {
     plan_id: string;
-    ordinal: number;
     model: { id: string; name: string; provider: string; model_id: string };
     check: { id: string; state: string; error_code: string | null } | null;
   }[];
-  snapshot: unknown;
-  reservation_retained: boolean;
+  snapshot: {
+    preparation: {
+      package: { manifest: { task_id: string; task_version: string } };
+      preset: { name: string };
+    };
+  };
 };
 const labels: Record<string, string> = {
+  admin_run_authorization_required:
+    'Admin can authorize this configuration and budget by selecting Run.',
   live_dispatch_disabled_in_runtime: 'Live execution is disabled on this server.',
-  exact_group_user_authority_required:
-    'The operator must bind your exact model, task, pricing and budget authorization to this group.',
-  aggregate_api_cap_missing:
-    'No aggregate budget is set. Create another preparation with an explicit budget.',
-  group_cap_below_conservative_cost_or_above_authority:
-    'The group budget must cover the conservative cost and fit your authorized ceiling.',
-  exact_package_software_check_approval:
-    'The exact Harbor package needs the existing Product Owner software-check approval.',
-  real_product_owner_rights_and_run_review:
-    'A real assigned Product Owner must review this exact run and external processing rights.',
-  two_real_distinct_admin_activation_approvals:
-    'Two distinct real Admins must approve model activation.',
-  two_real_distinct_admin_paid_scope_approvals:
-    'Two distinct real Admins must approve this paid scope.',
-  pricing_metadata_missing:
-    'This frozen model version has no declared pricing. Save a new model version, preset and preparation.',
-  pricing_metadata_expired:
-    'Declared pricing has expired. Create a preparation with current pricing.',
-  reviewed_pricing_required:
-    'Current pricing must be present in the frozen configuration and explicitly authorized.',
-  processing_terms_reference_required:
-    'The model version needs a provider processing-terms reference.',
-  credential_missing: 'The model version has no credential bound to it.',
-  bound_credential_rotated:
-    'The bound key was rotated. Create a new model version, preset and preparation.',
-  model_version_superseded:
-    'A selected model version has been superseded. Create a new preparation.',
+  pricing_metadata_missing: 'Add pricing to a new version of this model profile.',
+  reviewed_pricing_required: 'Current pricing is required before running this model.',
+  credential_missing: 'Add a provider key to a new version of this model profile.',
+  processing_terms_reference_required: 'Add the provider processing-terms reference.',
   adapter_changed_create_new_execution_group:
-    'Execution code changed. Create a new group so reviews bind the current code.',
+    'Execution software changed. Create a new execution group.',
 };
-const describe = (reason: string) => labels[reason] || reason.replaceAll('_', ' ');
-
+const describe = (value: string) => labels[value] || value.replaceAll('_', ' ');
 export default function WorkspaceExecutionGroups({
   base,
-  preparationId,
-  canReview = false,
+  groupId,
   canAdmin = false,
 }: {
   base: string;
-  preparationId: string;
-  canReview?: boolean;
+  groupId?: string;
   canAdmin?: boolean;
 }) {
-  const [groups, setGroups] = useState<Group[]>([]),
+  const endpoint = base + '/workspace/execution-groups',
+    href = base.replace('/projects/', '/workspace/') + '/execution-groups';
+  const [items, setItems] = useState<Group[]>([]),
     [selected, setSelected] = useState<Group | null>(null),
     [cursor, setCursor] = useState<string | null>(null),
-    [busy, setBusy] = useState(false),
     [loading, setLoading] = useState(true),
-    [error, setError] = useState(''),
-    [evidence, setEvidence] = useState('');
-  const generation = useRef(0),
-    heading = useRef<HTMLHeadingElement>(null);
-  const route = base + '/workspace/execution-groups';
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState('');
   const reload = useCallback(
     async (after?: string) => {
-      const current = ++generation.current;
       setLoading(true);
       setError('');
       try {
-        const page = await api(
-          route + '?preparation_id=' + preparationId + (after ? '&after=' + after : ''),
+        const value = await api(
+          endpoint + (groupId ? '/' + groupId : after ? '?after=' + after : ''),
         );
-        if (current !== generation.current) return;
-        setGroups((old) => (after ? [...old, ...page.items] : page.items));
-        setCursor(page.next_cursor);
+        if (groupId) setSelected(value);
+        else {
+          setItems((old) => (after ? [...old, ...value.items] : value.items));
+          setCursor(value.next_cursor);
+        }
       } catch (e) {
-        if (current === generation.current) setError((e as Error).message);
+        setError((e as Error).message);
       } finally {
-        if (current === generation.current) setLoading(false);
+        setLoading(false);
       }
     },
-    [route, preparationId],
+    [endpoint, groupId],
   );
   useEffect(() => {
-    setGroups([]);
     setSelected(null);
+    setItems([]);
     void reload();
-    return () => {
-      generation.current++;
-    };
   }, [reload]);
   useEffect(() => {
-    if (selected?.id) {
-      heading.current?.focus();
-      setEvidence('');
-    }
-  }, [selected?.id]);
-  useEffect(() => {
     if (!selected || !['queued', 'running'].includes(selected.status)) return;
-    let active = true;
-    const timer = setInterval(
-      () =>
-        void api(route + '/' + selected.id)
-          .then((value) => {
-            if (active) setSelected(value);
-          })
-          .catch((e) => {
-            if (active) setError(e.message);
-          }),
-      2500,
-    );
-    return () => {
-      active = false;
-      clearInterval(timer);
-    };
-  }, [route, selected?.id, selected?.status]);
-  async function command(path: string, body: unknown = {}) {
+    const timer = setInterval(() => void reload(), 3000);
+    return () => clearInterval(timer);
+  }, [selected?.status, reload]);
+  async function command(action: string) {
+    if (!selected) return;
     setBusy(true);
     setError('');
     try {
-      const value = await api(route + path, 'POST', body);
-      if (value.id) setSelected(value);
-      await reload();
-      return value;
+      setSelected(
+        await api(
+          endpoint + '/' + selected.id + '/' + action,
+          'POST',
+          action === 'launch' && canAdmin
+            ? {
+                subject_hash: selected.subject_hash,
+                aggregate_cap_micro_usd: selected.readiness.aggregate_cap_micro_usd,
+                rights_confirmed: true,
+              }
+            : undefined,
+        ),
+      );
     } catch (e) {
       setError((e as Error).message);
-      return null;
     } finally {
       setBusy(false);
     }
   }
-  const workspaceRoute = base.replace('/projects/', '/workspace/');
+  const blocked =
+    selected &&
+    (selected.readiness.missing.some(
+      (r) => r !== 'admin_run_authorization_required' || !canAdmin,
+    ) ||
+      selected.readiness.models.some((m) => m.missing.length > 0));
   return (
-    <section className={styles.panel} aria-label="Evaluation execution groups">
-      <h2>Run this evaluation</h2>
-      <p>
-        Create a reviewable execution group from this saved preparation. This step makes no model
-        request and reserves no money.
-      </p>
-      <button disabled={busy} onClick={() => void command('', { preparation_id: preparationId })}>
-        Create execution group
-      </button>
-      <button disabled={busy || loading} onClick={() => void reload()}>
-        Refresh execution groups
+    <section
+      className={styles.panel}
+      aria-label={groupId ? 'Execution group dashboard' : 'Execution groups'}
+    >
+      {groupId ? (
+        <a className="button" href={href}>
+          ← Execution groups
+        </a>
+      ) : (
+        <>
+          <h2>Execution groups</h2>
+          <p>Choose a group to view its runs and results.</p>
+          <a className={'button ' + styles.primary} href={href + '/new'}>
+            Create execution group
+          </a>
+        </>
+      )}
+      <button disabled={loading || busy} onClick={() => void reload()}>
+        Refresh
       </button>
       {loading && <p role="status">Loading execution groups…</p>}
       {error && <p role="alert">{error}</p>}
-      {!loading && !groups.length && !error && (
-        <p>
-          No execution group yet. Create one to review costs, authorization and launch readiness.
-        </p>
-      )}
-      {groups.map((group) => (
-        <p key={group.id}>
-          <button
-            disabled={busy}
-            onClick={() => {
-              setSelected(group);
-              setEvidence('');
-            }}
-          >
-            {shortId(group.id)} · {group.status}
-          </button>
-        </p>
-      ))}
-      {cursor && (
-        <button disabled={loading || busy} onClick={() => void reload(cursor)}>
-          Load more execution groups
+      {!groupId && !loading && !items.length && !error && <p>No execution groups yet.</p>}
+      {!groupId &&
+        items.map((g) => (
+          <article className={styles.panel} key={g.id}>
+            <h3>
+              <a href={href + '/' + g.id}>Execution group {shortId(g.id)}</a>
+            </h3>
+            <p>
+              {g.snapshot.preparation.package.manifest.task_id} ·{' '}
+              {g.snapshot.preparation.preset.name}
+            </p>
+            <p>
+              {g.status} · {g.models.length} models · Budget{' '}
+              {g.readiness.aggregate_cap_micro_usd === null
+                ? 'not set'
+                : money(g.readiness.aggregate_cap_micro_usd)}
+            </p>
+            <a href={href + '/' + g.id}>{g.state === 'draft' ? 'Open & run' : 'View dashboard'}</a>
+          </article>
+        ))}
+      {!groupId && cursor && (
+        <button disabled={loading} onClick={() => void reload(cursor)}>
+          Load more
         </button>
       )}
-      {selected && (
-        <section aria-labelledby="execution-group-heading">
-          <h3 id="execution-group-heading" ref={heading} tabIndex={-1}>
-            Execution group · {shortId(selected.id)}
-          </h3>
+      {groupId && selected && (
+        <>
+          <h2>Execution group {shortId(selected.id)}</h2>
+          <p>
+            {selected.snapshot.preparation.package.manifest.task_id} · Task version{' '}
+            {selected.snapshot.preparation.package.manifest.task_version} ·{' '}
+            {selected.snapshot.preparation.preset.name}
+          </p>
           <p role="status">
             {selected.state === 'draft'
-              ? selected.readiness.ready
-                ? 'Ready for explicit launch'
-                : 'Setup required · no model dispatched'
-              : 'Execution ' + selected.status}
+              ? blocked
+                ? 'Setup needed'
+                : 'Ready to run'
+              : describe(selected.status)}
           </p>
           <p>
-            Aggregate budget:{' '}
+            Budget:{' '}
             {selected.readiness.aggregate_cap_micro_usd === null
               ? 'not set'
-              : money(selected.readiness.aggregate_cap_micro_usd)}
-            . Conservative cost:{' '}
+              : money(selected.readiness.aggregate_cap_micro_usd)}{' '}
+            · Estimated ceiling:{' '}
             {selected.readiness.conservative_cost_micro_usd === null
               ? 'unknown'
               : money(selected.readiness.conservative_cost_micro_usd)}
-            .
-          </p>
-          <p>
-            Models run in sequence. Unknown, cancelled or operationally failed runs stop later
-            models. Reservations remain held until separately reconciled; cancellation does not
-            release them.
           </p>
           <ul>
-            {selected.readiness.missing.map((reason) => (
-              <li key={reason}>{describe(reason)}</li>
+            {selected.readiness.missing.map((r) => (
+              <li key={r}>{describe(r)}</li>
             ))}
           </ul>
-          {selected.models.map((model) => (
-            <div key={model.plan_id}>
-              <h4>
-                {model.model.name} · {model.model.provider}/{model.model.model_id}
-              </h4>
-              <ul>
-                {selected.readiness.models
-                  .find((item) => item.model_profile_id === model.model.id)
-                  ?.missing.map((reason) => (
-                    <li key={reason}>{describe(reason)}</li>
-                  ))}
-              </ul>
-              {model.check && (
+          {selected.state === 'draft' ? (
+            <>
+              {canAdmin && (
                 <p>
-                  <a href={workspaceRoute + '/runs?run=' + model.check.id}>
-                    View run · {model.check.state}
-                  </a>
-                  {model.check.error_code ? ' · ' + describe(model.check.error_code) : ''}
+                  By selecting Run, you confirm processing rights for this task and authorize the
+                  saved model versions and budget shown above.
                 </p>
               )}
-            </div>
-          ))}
-          <button
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              try {
-                setSelected(await api(route + '/' + selected.id));
-                setError('');
-              } catch (e) {
-                setError((e as Error).message);
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            Refresh launch readiness
-          </button>
-          {selected.state === 'draft' ? (
-            <button
-              disabled={busy || !selected.readiness.ready}
-              onClick={() => void command('/' + selected.id + '/launch')}
-            >
-              Launch evaluation
-            </button>
+              <div className={styles.actions}>
+                <button
+                  className={styles.primary}
+                  disabled={busy || !!blocked}
+                  onClick={() => void command('launch')}
+                >
+                  Run
+                </button>
+                <a className="button" href={href + '/new'}>
+                  Create another group
+                </a>
+              </div>
+            </>
           ) : (
             <button
               disabled={
                 busy ||
                 !selected.models.some(
-                  (model) => model.check && ['queued', 'running'].includes(model.check.state),
+                  (m) => m.check && ['queued', 'running'].includes(m.check.state),
                 )
               }
-              onClick={() => void command('/' + selected.id + '/cancel')}
+              onClick={() => void command('cancel')}
             >
               Cancel remaining runs
             </button>
           )}
-          {selected.state === 'draft' && canReview && (
-            <details>
-              <summary>Review processing rights and this exact run</summary>
+          <h3>Model runs</h3>
+          {selected.models.map((m) => (
+            <article key={m.plan_id} className={styles.panel}>
+              <h4>{m.model.name}</h4>
               <p>
-                Review the task, provider terms and permissions. Synthetic test identities cannot
-                approve paid processing.
+                {m.model.provider} / {m.model.model_id}
               </p>
-              <Form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  const data = new FormData(e.currentTarget);
-                  const result = await command('/' + selected.id + '/rights-evidence', {
-                    reference: data.get('reference'),
-                    description: data.get('description'),
-                  });
-                  if (result) setEvidence(result.artifact_id);
-                }}
-              >
-                <label>
-                  Rights document link or reference
-                  <input name="reference" required minLength={5} maxLength={500} />
-                </label>
-                <label>
-                  Evidence description
-                  <textarea name="description" required minLength={10} maxLength={2000} />
-                </label>
-                <button disabled={busy}>Record evidence reference</button>
-              </Form>
-              <Form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const data = new FormData(e.currentTarget);
-                  void command('/' + selected.id + '/review', {
-                    subject_hash: selected.subject_hash,
-                    rights_evidence_id: evidence,
-                    rationale: data.get('rationale'),
-                    expires_at: new Date(String(data.get('expiry'))).toISOString(),
-                  });
-                }}
-              >
-                <label>
-                  Rights evidence artifact ID
-                  <input required value={evidence} onChange={(e) => setEvidence(e.target.value)} />
-                </label>
-                <label>
-                  Review rationale
-                  <textarea name="rationale" minLength={10} maxLength={2000} required />
-                </label>
-                <label>
-                  Review expiry
-                  <input name="expiry" type="datetime-local" required />
-                </label>
-                <button disabled={busy}>Approve exact rights and run scope</button>
-              </Form>
-            </details>
-          )}
-          {canReview && (
-            <details>
-              <summary>Revoke rights/run review</summary>
-              <Form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void command('/' + selected.id + '/revoke-review', {
-                    rationale: new FormData(e.currentTarget).get('rationale'),
-                  });
-                }}
-              >
-                <label>
-                  Revocation rationale
-                  <textarea name="rationale" required minLength={10} maxLength={2000} />
-                </label>
-                <button disabled={busy}>Revoke group review</button>
-              </Form>
-            </details>
-          )}
-          {selected.state === 'draft' && canAdmin && (
-            <details>
-              <summary>Admin activation and paid-scope decisions</summary>
-              <p>
-                Two distinct real Admins must each record activation and paid-scope decisions after
-                reviewing exact model versions, rates and limits. A recent sign-in is required.
-              </p>
-              <Form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const data = new FormData(e.currentTarget);
-                  void command('/' + selected.id + '/admin-approvals', {
-                    purpose: data.get('purpose'),
-                    subject_hash: selected.subject_hash,
-                    authority_reference: data.get('reference'),
-                    expires_at: new Date(String(data.get('expiry'))).toISOString(),
-                  });
-                }}
-              >
-                <label>
-                  Decision
-                  <select name="purpose">
-                    <option value="activation">Activate exact model versions</option>
-                    <option value="paid_scope">Approve this paid scope</option>
-                  </select>
-                </label>
-                <label>
-                  Authorization reference
-                  <input name="reference" required minLength={5} />
-                </label>
-                <label>
-                  Decision expiry
-                  <input name="expiry" type="datetime-local" required />
-                </label>
-                <button disabled={busy}>Record Admin decision</button>
-              </Form>
-            </details>
-          )}
+              <ul>
+                {selected.readiness.models
+                  .find((s) => s.model_profile_id === m.model.id)
+                  ?.missing.map((r) => (
+                    <li key={r}>{describe(r)}</li>
+                  ))}
+              </ul>
+              {m.check ? (
+                <>
+                  <p>
+                    {m.check.state}
+                    {m.check.error_code ? ' · ' + describe(m.check.error_code) : ''}
+                  </p>
+                  <a href={base.replace('/projects/', '/workspace/') + '/runs?run=' + m.check.id}>
+                    View run dashboard
+                  </a>
+                </>
+              ) : (
+                <p>Not started</p>
+              )}
+            </article>
+          ))}
           <details>
-            <summary>Operator authorization and exact snapshot</summary>
-            <p>
-              The operator records separately approved authority in the owner-only local
-              workspace-authority.json file. Creating a group or saving a key does not grant
-              authority. Do not place a provider key in this file.
-            </p>
-            <p>
-              Project: {base.replace('/projects/', '')} · exact group subject:{' '}
-              {selected.subject_hash}
-            </p>
+            <summary>Task, evaluations & exact configuration</summary>
             <pre>{JSON.stringify(selected.snapshot, null, 2)}</pre>
           </details>
-        </section>
+          {selected.state !== 'draft' && (
+            <p>
+              Models run in sequence. Failed, unknown or cancelled runs stop later models. Budget
+              reservations remain held until reconciled.
+            </p>
+          )}
+        </>
       )}
     </section>
   );

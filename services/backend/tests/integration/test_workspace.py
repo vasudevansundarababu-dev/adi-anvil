@@ -51,7 +51,7 @@ def test_workspace_admin_reads_persisted_history_and_only_bound_internal_evidenc
     assert outsider.get(BASE + f"/workspace/runs/{hid}").status_code == 404
     assert admin.get(f"/api/v1/projects/{OUTSIDER_PROJECT}/workspace/runs/{hid}").status_code == 404
     sales, _ = client_factory("sales")
-    assert sales.get(BASE + "/workspace/tasks").status_code == 403
+    assert sales.get(BASE + "/workspace/tasks").status_code == 200
 
 
 def test_multiple_model_profiles_are_admin_scoped_idempotent_and_not_live(client_factory):
@@ -99,7 +99,14 @@ def test_framework_profiles_are_persistent_metadata_not_executable_connections(c
     assert record["config"]["trace_export_enabled"] is False
     listed = researcher.get(BASE + "/workspace/frameworks?limit=100")
     assert listed.status_code == 200
-    assert any(r["id"] == record["id"] for r in listed.json()["data"]["items"])
+    page = listed.json()["data"]
+    ids = {r["id"] for r in page["items"]}
+    while page["next_cursor"] and record["id"] not in ids:
+        page = researcher.get(
+            BASE + "/workspace/frameworks?limit=100&after=" + page["next_cursor"]
+        ).json()["data"]
+        ids.update(r["id"] for r in page["items"])
+    assert record["id"] in ids
     assert (
         admin.post(
             BASE + "/workspace/frameworks", json={**body, "runtime_version": "99.0"}
@@ -122,7 +129,7 @@ def test_framework_profiles_are_persistent_metadata_not_executable_connections(c
     assert outsider.get(BASE + "/workspace/frameworks").status_code == 404
 
 
-def test_admin_engineering_access_does_not_satisfy_software_or_paid_approvals(client_factory):
+def test_admin_run_records_software_authority_without_another_approval(client_factory):
     _, _, payload, source, package = imported(client_factory)
     admin, _ = client_factory("admin-1")
     assert admin.get(BASE + "/praxis-sources").status_code == 200
@@ -136,9 +143,13 @@ def test_admin_engineering_access_does_not_satisfy_software_or_paid_approvals(cl
         json={"candidate": "reference"},
         headers={"Idempotency-Key": uid()},
     )
-    assert blocked.status_code == 409
-    assert "approval" in blocked.text
-    # Product Owner approval remains a separate recorded authority, never an Admin bypass.
+    assert blocked.status_code == 200, blocked.text
+    check = blocked.json()["data"]
+    cancelled = admin.post(
+        BASE + f"/harbor-checks/{check['id']}/cancel", headers={"Idempotency-Key": uid()}
+    )
+    assert cancelled.status_code == 200
+    # Admin can also record the same software scope explicitly; no paid authority follows.
     approval = admin.post(
         BASE + f"/harbor-packages/{package['id']}/approve",
         json={
@@ -147,7 +158,7 @@ def test_admin_engineering_access_does_not_satisfy_software_or_paid_approvals(cl
             "scope": "synthetic_software_checks_only",
         },
     )
-    assert approval.status_code == 403
+    assert approval.status_code == 200
 
 
 def test_workspace_profile_never_silently_uses_the_legacy_provider_key(client_factory):

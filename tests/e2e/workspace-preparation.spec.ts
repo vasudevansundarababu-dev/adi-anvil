@@ -140,10 +140,10 @@ test('Admin saves a typed preset and multi-model preparation without spending de
   const preset = (await savedPreset.json()).data;
   await expect(page.getByText('Preset saved.', { exact: false })).toBeVisible();
   await page.goto(
-    '/workspace/' + project + '/preparation?task=' + encodeURIComponent(source.task_id),
+    '/workspace/' + project + '/execution-groups/new?task=' + encodeURIComponent(source.task_id),
   );
   await expect(
-    page.getByRole('heading', { name: 'Prepare model evaluation', exact: true }),
+    page.getByRole('heading', { name: 'Create execution group', exact: true }),
   ).toBeVisible();
   await expect(page.getByLabel('Aggregate API budget', { exact: false })).toHaveValue('');
   const preparationRegion = page.getByRole('region', {
@@ -180,134 +180,55 @@ test('Admin saves a typed preset and multi-model preparation without spending de
   await choosePackage();
   await choosePreset();
   for (const model of models) await page.getByLabel(model.name, { exact: false }).check();
+  await page.getByLabel('Aggregate API budget', { exact: false }).fill('0.012345');
+  const groupResponse = page.waitForResponse(
+    (r) => r.url().endsWith('/workspace/execution-groups') && r.request().method() === 'POST',
+  );
   const preparationResponse = page.waitForResponse(
     (response) =>
       response.url().endsWith('/workspace/preparations') && response.request().method() === 'POST',
   );
-  await page.getByRole('button', { name: 'Save preparation', exact: true }).click();
+  await page.getByRole('button', { name: 'Create execution group', exact: true }).click();
   const savedResponse = await preparationResponse;
   expect(savedResponse.status()).toBe(200);
   const saved = (await savedResponse.json()).data;
   expect(saved.snapshot.models).toHaveLength(2);
-  expect(saved.snapshot.aggregate_cap_micro_usd).toBeNull();
-  expect(saved.readiness.reservation_micro_usd).toBeNull();
-  expect(saved.launch_available).toBe(false);
-  await expect(page).toHaveURL(new RegExp('preparation=' + saved.id));
-  await page.reload();
+  expect(saved.snapshot.aggregate_cap_micro_usd).toBe(12345);
+  const group = (await (await groupResponse).json()).data;
+  await expect(page).toHaveURL(new RegExp('/execution-groups/' + group.id + '$'));
   await expect(
-    page.getByRole('heading', { name: 'Preparation readiness', exact: true }),
+    page.getByRole('heading', { name: 'Execution group ' + group.id.slice(0, 8), exact: true }),
   ).toBeVisible();
-  await expect(
-    page.getByRole('heading', { name: 'Preparation readiness', exact: true }),
-  ).toBeFocused();
   await expect(
     page.getByRole('region', { name: 'Evaluation preparation', exact: true }),
   ).toHaveCount(0);
-  await expect(
-    page.getByText('An explicit aggregate API cap is missing.', { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Run', exact: true })).toBeDisabled();
   await expect(
     page.getByRole('button', { name: 'Create execution group', exact: true }),
-  ).toBeVisible();
-  const listPath = '**/workspace/preparations';
-  let interruptList = true;
-  await page.route(listPath, async (route) => {
-    if (route.request().method() === 'GET' && interruptList) {
-      await route.fulfill({
-        status: 503,
-        contentType: 'application/json',
-        body: JSON.stringify({ error: { message: 'Test-only saved-list interruption' } }),
-      });
-    } else await route.continue();
-  });
-  await page.reload();
-  await expect(page.getByRole('main').getByRole('alert')).toHaveText(
-    'Test-only saved-list interruption',
-  );
-  await expect(page.getByText('No saved preparations.', { exact: true })).toHaveCount(0);
-  interruptList = false;
-  await page.getByRole('button', { name: 'Refresh saved preparations', exact: true }).click();
-  await expect(page.getByText('Test-only saved-list interruption', { exact: true })).toHaveCount(0);
-  await page.unroute(listPath);
-  await page.getByRole('button', { name: 'Refresh readiness', exact: true }).click();
-  await expect(
-    page.getByRole('heading', { name: 'Preparation readiness', exact: true }),
-  ).toBeVisible();
-  const readinessPath = '**/workspace/preparations/' + saved.id;
-  let interruptReadiness = true;
-  await page.route(readinessPath, async (route) => {
-    if (interruptReadiness) {
-      interruptReadiness = false;
-      await route.fulfill({
-        status: 503,
-        contentType: 'application/json',
-        body: JSON.stringify({ error: { message: 'Test-only readiness interruption' } }),
-      });
-    } else await route.continue();
-  });
-  await page.getByRole('button', { name: 'Refresh readiness', exact: true }).click();
-  await expect(page.getByRole('main').getByRole('alert')).toHaveText(
-    'Test-only readiness interruption',
-  );
-  await expect(
-    page.getByRole('heading', { name: 'Preparation readiness', exact: true }),
   ).toHaveCount(0);
-  await page.unroute(readinessPath);
-  await page.getByRole('button', { name: 'Refresh readiness', exact: true }).click();
+  await page.getByRole('link', { name: '← Execution groups', exact: true }).click();
+  await expect(page).toHaveURL(new RegExp('/execution-groups$'));
   await expect(
-    page.getByRole('heading', { name: 'Preparation readiness', exact: true }),
-  ).toBeFocused();
-  await page.getByRole('button', { name: 'Create another preparation', exact: true }).focus();
-  await page.keyboard.press('Enter');
+    page.getByRole('region', { name: 'Evaluation preparation', exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Model runs', exact: true })).toHaveCount(0);
   await expect(
-    page.getByRole('heading', { name: 'Prepare model evaluation', exact: true }),
-  ).toBeFocused();
-  await expect(preparationRegion).toHaveAttribute('aria-busy', 'false');
-  await expect(page.getByLabel('Aggregate API budget', { exact: false })).toHaveValue('');
-  await choosePackage();
-  await choosePreset();
-  for (const model of models) await page.getByLabel(model.name, { exact: false }).check();
-  await page.getByLabel('Aggregate API budget', { exact: false }).fill('0.012345');
-  const boundedResponse = page.waitForResponse(
-    (r) => r.url().endsWith('/workspace/preparations') && r.request().method() === 'POST',
-  );
-  await page.getByRole('button', { name: 'Save preparation', exact: true }).click();
-  const bounded = (await (await boundedResponse).json()).data;
-  expect(bounded.snapshot.aggregate_cap_micro_usd).toBe(12345);
-  expect(bounded.id).not.toBe(saved.id);
-  const original = (
-    await (await page.request.get(base + '/workspace/preparations/' + saved.id)).json()
-  ).data;
-  expect(original.snapshot.aggregate_cap_micro_usd).toBeNull();
-  await expect(page.getByText('Aggregate budget: $0.012345.', { exact: false })).toBeVisible();
+    page.getByRole('link', { name: 'Create execution group', exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole('link', { name: 'Execution group ' + group.id.slice(0, 8), exact: true })
+    .click();
+  await expect(page.getByRole('heading', { name: 'Model runs', exact: true })).toBeVisible();
   for (const width of [320, 768, 1440]) {
     await page.setViewportSize({ width, height: 844 });
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBe(true);
   }
-  await page.setViewportSize({ width: 320, height: 844 });
-  await page.getByRole('button', { name: 'Dark theme', exact: true }).click();
-  await page.getByRole('region', { name: 'Preparation readiness', exact: true }).screenshot({
-    path: 'artifacts/test-runs/modern-preparation-mobile.png',
+  await page.setViewportSize({ width: 1440, height: 1200 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({
+    path: 'artifacts/test-runs/modern-execution-group-separated.png',
+    fullPage: false,
   });
-  const groupResponse = page.waitForResponse(
-    (r) => r.url().endsWith('/workspace/execution-groups') && r.request().method() === 'POST',
-  );
-  await page.getByRole('button', { name: 'Create execution group', exact: true }).click();
-  const group = (await (await groupResponse).json()).data;
-  expect(group.preparation_id).toBe(bounded.id);
-  expect(group.models).toHaveLength(2);
-  expect(group.reservation_retained).toBe(false);
-  expect(group.readiness.ready).toBe(false);
-  await expect(
-    page.getByRole('heading', { name: 'Execution group · ' + group.id.slice(0, 8), exact: true }),
-  ).toBeFocused();
-  await expect(page.getByRole('button', { name: 'Launch evaluation', exact: true })).toBeDisabled();
-  await expect(
-    page.getByText('Setup required · no model dispatched', { exact: true }),
-  ).toBeVisible();
-  await page
-    .getByRole('region', { name: 'Evaluation execution groups', exact: true })
-    .screenshot({ path: 'artifacts/test-runs/modern-execution-group-mobile.png' });
 });

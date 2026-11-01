@@ -129,8 +129,7 @@ const labels: Record<string, string> = {
   providers: 'Providers',
 };
 const notes: Record<string, string> = {
-  evaluations:
-    'Five steps from objective to run. One Product Owner approval covers the whole plan.',
+  evaluations: 'Five steps from objective to run. Admin can run the plan without another approver.',
   objectives: 'Define the question, measurement and scope before evaluation.',
   cases: 'Original synthetic cases. Intake, rights and readiness stay separate.',
   rubrics: 'Anchored criteria and calibration evidence, bound to exact versions.',
@@ -207,7 +206,23 @@ export default function Console() {
     [graph, setGraph] = useState<Graph | null>(null),
     [node, setNode] = useState<Graph['nodes'][number] | null>(null);
   const project = user?.projects.find((p) => p.id === parts[2]) || user?.projects[0];
-  const role = (...r: string[]) => !!project?.roles.some((x) => r.includes(x));
+  const role = (...permissions: string[]) => {
+    const knownAdmin = ['admin', 'product-owner', 'sales'];
+    const knownEngineer = [
+      'rl-engineer',
+      'researcher',
+      'data-engineer',
+      'advisor',
+      'reviewer',
+      'adjudicator',
+    ];
+    return !!project?.roles.some((current) =>
+      current === 'admin'
+        ? permissions.some((permission) => [...knownAdmin, ...knownEngineer].includes(permission))
+        : current === 'rl-engineer' &&
+          permissions.some((permission) => knownEngineer.includes(permission)),
+    );
+  };
   const contentRole = role(
     'researcher',
     'advisor',
@@ -336,7 +351,13 @@ export default function Console() {
     }
   }
   function member(role: string, name?: string) {
-    return members.find((m) => m.role === role && (!name || m.name === name))?.id || '';
+    const current = ['admin', 'product-owner', 'sales'].includes(role) ? 'admin' : 'rl-engineer';
+    return (
+      members.find((m) => m.role === current && (!name || m.name === name || m.name === role))
+        ?.id ||
+      (!name ? members.find((m) => m.role === current)?.id : '') ||
+      ''
+    );
   }
   async function openForm() {
     setForm(!form);
@@ -1487,7 +1508,7 @@ export default function Console() {
                         Approve domain content
                       </button>
                     )}
-                    {role('product-owner') && r.content.product_owner_id === user.id && (
+                    {role('admin') && (
                       <button
                         onClick={() => decision(r, r.kind === 'objective' ? 'scope' : 'audience')}
                       >
@@ -1550,7 +1571,7 @@ export default function Console() {
                               protocol_revision_id: r.current_revision_id,
                               external_origin: origin,
                             }),
-                          'Reported run prepared. A Data Engineer can validate and commit its manifest in Run console.',
+                          'Reported run prepared. An Admin can validate and commit its manifest in Run console.',
                         )
                       }
                     >

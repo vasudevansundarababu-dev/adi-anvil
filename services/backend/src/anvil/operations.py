@@ -30,18 +30,12 @@ def new_demo(name):
         for name, user in ids.items():
             if name == "outsider":
                 continue
-            role = (
-                "reviewer"
-                if name.startswith("reviewer-")
-                else "admin"
-                if name.startswith("admin-")
-                else name
-            )
+            role = "admin" if name.startswith("admin-") else "rl-engineer"
             c.execute(
                 "INSERT INTO anvil.memberships(project_id,user_id,role) VALUES(%s,%s,%s)",
                 (project, user, role),
             )
-            if name == "product-owner":
+            if role == "admin":
                 for cap in ["rights_reviewer", "release_owner"]:
                     c.execute(
                         "INSERT INTO anvil.project_assignments(project_id,user_id,capability) VALUES(%s,%s,%s)",

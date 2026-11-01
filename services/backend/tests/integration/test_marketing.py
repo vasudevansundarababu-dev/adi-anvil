@@ -59,7 +59,7 @@ def test_marketing_workflow_and_durable_dispatch(client_factory, monkeypatch):  
         del reviews
         row = post(author, f"/{collection}/{row['id']}/submit", version=row["row_version"])
         return post(
-            "product-owner",
+            "admin-1",
             f"/{collection}/{row['id']}/decisions",
             {
                 "purpose": "approval",
@@ -81,7 +81,7 @@ def test_marketing_workflow_and_durable_dispatch(client_factory, monkeypatch):  
             "measurement_plan": "Validate thirteen responses and canonical state isolation; no model performance claim.",
             "researcher_id": USERS["researcher"],
             "advisor_id": USERS["advisor"],
-            "product_owner_id": USERS["product-owner"],
+            "product_owner_id": USERS["admin-1"],
         },
         expected=201,
     )
@@ -89,7 +89,7 @@ def test_marketing_workflow_and_durable_dispatch(client_factory, monkeypatch):  
         "objectives",
         objective,
         "researcher",
-        [("researcher", "research"), ("advisor", "advisor"), ("product-owner", "scope")],
+        [("researcher", "research"), ("advisor", "advisor"), ("admin-1", "scope")],
     )
     body = {
         "case_ids": ["MKT-LH-001"],
@@ -104,7 +104,7 @@ def test_marketing_workflow_and_durable_dispatch(client_factory, monkeypatch):  
     ]:
         source = get("/cases/" + source["id"])
         post(
-            "product-owner",
+            "admin-1",
             f"/cases/{source['id']}/rights",
             {
                 "operation": operation,
@@ -187,7 +187,7 @@ def test_marketing_workflow_and_durable_dispatch(client_factory, monkeypatch):  
 
     run = prepare()
     ready = get(f"/runs/{run['id']}/marketing")["readiness"]
-    assert not ready["ready"] and "two_real_admin_run_approvals" in ready["missing_gates"]
+    assert not ready["ready"] and "admin_run_authorization" in ready["missing_gates"]
     post("researcher", f"/runs/{run['id']}/launch", version=run["row_version"], expected=409)
     post(
         "admin-1",
@@ -202,7 +202,7 @@ def test_marketing_workflow_and_durable_dispatch(client_factory, monkeypatch):  
         expected=403,
     )
     assert clients["outsider"].get(base + f"/runs/{run['id']}/marketing").status_code == 404
-    assert clients["reviewer-1"].get(base + f"/runs/{run['id']}/marketing").status_code == 403
+    assert clients["reviewer-1"].get(base + f"/runs/{run['id']}/marketing").status_code == 200
     with transaction(project, USERS["researcher"]) as c:
         assert not one(c, "SELECT 1 FROM anvil.interactive_calls")
         assert not one(c, "SELECT 1 FROM anvil.provider_approvals")

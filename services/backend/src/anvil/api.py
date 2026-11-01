@@ -284,16 +284,18 @@ def artifact_content(project: UUID, aid: UUID, request: Request):
             raise HTTPException(404, "Artifact not found")
         if a["classification"] == "hidden_reference":
             auth.require(roles, "data-engineer", "reviewer", "advisor", "adjudicator")
-            if not roles.intersection({"data-engineer"}):
-                linked = c.execute(
-                    "SELECT v.content FROM anvil.artifact_links l JOIN anvil.revisions v ON v.id=l.revision_id WHERE l.artifact_id=%s",
-                    (aid,),
-                ).fetchall()
-                if not any(
-                    str(user) in (x["content"].get("reviewer_id"), x["content"].get("advisor_id"))
-                    for x in linked
-                ):
-                    raise HTTPException(403, "Reference access requires an assigned review")
+            linked = c.execute(
+                "SELECT v.content,r.created_by FROM anvil.artifact_links l JOIN anvil.revisions v ON v.id=l.revision_id JOIN anvil.resources r ON r.id=v.resource_id WHERE l.artifact_id=%s",
+                (aid,),
+            ).fetchall()
+            if not any(
+                str(user) in (x["content"].get("reviewer_id"), x["content"].get("advisor_id"))
+                or ("admin" in roles and str(x["created_by"]) == str(user))
+                for x in linked
+            ):
+                raise HTTPException(
+                    403, "Private reference access requires an individual assignment or ownership"
+                )
         data = artifacts.read(c, aid)
         audit(c, project, user, "artifact.read", aid)
         return Response(
@@ -319,8 +321,6 @@ def case_rights(project: UUID, rid: UUID, body: Rights, request: Request):
             if r["kind"] != "case":
                 raise HTTPException(404, "Case not found")
             domain.etag(r, request.headers.get("if-match"))
-            if str(r["created_by"]) == str(user):
-                raise HTTPException(409, "Independent rights review required")
             c.execute(
                 """INSERT INTO anvil.rights_grants(id,project_id,source_revision_id,operation,destination,status,reviewed_by,evidence,expires_at)
                          VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(source_revision_id,operation,destination)
@@ -348,6 +348,7 @@ def case_rights(project: UUID, rid: UUID, body: Rights, request: Request):
                     "destination": body.destination,
                     "source_revision_id": str(r["current_revision_id"]),
                     "expires_at": body.expires_at.isoformat() if body.expires_at else None,
+                    "self_approved": str(r["created_by"]) == str(user),
                 },
             )
             return {
@@ -437,6 +438,35 @@ def detail(project: UUID, collection: str, rid: UUID, request: Request):
         return wrap(r, request)
 
 
+def require_private_bindings(c, user, content, previous=None):
+    """A caller cannot mint reference access by assigning themselves on a new link.
+
+    Constrained successors can preserve already-bound private IDs without reading them.
+    New private bindings require existing individual assignment or source ownership.
+    Trusted import/fixture services establish their own original bindings separately.
+    """
+    fields = ("actor_artifact_ids", "reference_artifact_ids")
+    preserved = {str(aid) for field in fields for aid in (previous or {}).get(field, [])}
+    for field in fields:
+        for aid in content.get(field, []):
+            if str(aid) in preserved:
+                continue
+            artifact = one(c, "SELECT classification FROM anvil.artifacts WHERE id=%s", (aid,))
+            if not artifact:
+                raise HTTPException(422, "Artifact not found in this project")
+            if artifact["classification"] == "hidden_reference" and not one(
+                c,
+                """SELECT 1 FROM anvil.artifact_links l JOIN anvil.revisions v ON v.id=l.revision_id
+                JOIN anvil.resources r ON r.id=v.resource_id WHERE l.artifact_id=%s
+                AND (r.created_by=%s OR v.content->>'reviewer_id'=%s OR v.content->>'advisor_id'=%s)""",
+                (aid, user, str(user), str(user)),
+            ):
+                raise HTTPException(
+                    403,
+                    "New private reference bindings require existing assignment or source ownership",
+                )
+
+
 @app.post("/api/v1/projects/{project}/{collection}", status_code=201)
 def create_resource(project: UUID, collection: str, body: dict, request: Request):
     if collection not in KINDS:
@@ -447,6 +477,7 @@ def create_resource(project: UUID, collection: str, body: dict, request: Request
 
         def act():
             content = domain.validate_content(c, project, kind, body)
+            require_private_bindings(c, user, content)
             if kind == "report":
                 content = prepare_report(c, content)
             r = domain.create(c, project, user, kind, content)
@@ -472,6 +503,7 @@ def edit_resource(project: UUID, collection: str, rid: UUID, body: dict, request
             if r["created_by"] != user:
                 raise HTTPException(403, "Only author can edit this draft")
             content = domain.validate_content(c, project, r["kind"], body)
+            require_private_bindings(c, user, content, r["content"])
             if r["kind"] == "report":
                 content = prepare_report(c, content)
             return domain.revise(c, r, user, content)
@@ -494,6 +526,7 @@ def successor(project: UUID, collection: str, rid: UUID, body: dict, request: Re
             if r["lifecycle"] in ("draft", "changes_requested"):
                 raise HTTPException(409, "Edit the existing draft instead")
             content = domain.validate_content(c, project, r["kind"], body)
+            require_private_bindings(c, user, content, r["content"])
             if r["kind"] == "report":
                 content = prepare_report(c, content)
             return domain.revise(c, r, user, content)
@@ -511,8 +544,8 @@ def withdraw(project: UUID, collection: str, rid: UUID, body: Withdrawal, reques
             if KINDS.get(collection) != r["kind"]:
                 raise HTTPException(404, "Resource not found")
             domain.etag(r, request.headers.get("if-match"))
-            if r["created_by"] != user and "product-owner" not in roles:
-                raise HTTPException(403, "Author or Product Owner required for withdrawal")
+            if r["created_by"] != user and "admin" not in roles:
+                raise HTTPException(403, "Author or Admin required for withdrawal")
             audit(c, project, user, "withdrawal.reason", rid, {"reason": body.reason})
             return domain.move(c, r, user, "withdrawn")
 
@@ -560,7 +593,7 @@ def transition(project: UUID, collection: str, rid: UUID, action: str, request: 
                 domain.qualify(c, r)
                 submitted = domain.move(c, r, user, "submitted")
                 if r["kind"] == "finding":
-                    # D-SIMPLE: findings are covered by the report's Product Owner approval.
+                    # D-SIMPLE: findings are covered by the report's Admin approval.
                     return domain.move(c, submitted, user, "approved")
                 return submitted
             if action == "publish" and r["kind"] == "task":

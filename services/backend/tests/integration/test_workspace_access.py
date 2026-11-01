@@ -10,6 +10,75 @@ from anvil.config import ROOT
 from anvil.db import transaction
 
 
+def test_current_roles_are_exactly_two_and_historical_memberships_are_read_only():
+    with transaction(PROJECT, USERS["admin-1"]) as c:
+        roles = {
+            r["role"]
+            for r in c.execute("SELECT role FROM anvil.memberships WHERE active").fetchall()
+        }
+        assert roles == {"admin", "rl-engineer"}
+        assert c.execute("SELECT count(*) n FROM anvil.membership_role_history").fetchone()["n"] > 0
+        assert c.execute(
+            "SELECT is_synthetic FROM anvil.users WHERE id=%s", (USERS["admin-1"],)
+        ).fetchone()["is_synthetic"]
+    with pytest.raises(psycopg.errors.InsufficientPrivilege):
+        with transaction(PROJECT, USERS["admin-1"]) as c:
+            c.execute("UPDATE anvil.membership_role_history SET was_active=false")
+
+
+def test_new_task_cannot_self_assign_unowned_private_reference(client_factory):
+    from anvil.db import one, uid
+
+    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+    project = journey["project_id"]
+    base = f"/api/v1/projects/{project}"
+    with transaction(project, USERS["researcher"]) as c:
+        task = (
+            one(
+                c,
+                "SELECT v.content FROM anvil.resources r JOIN anvil.revisions v ON v.id=r.current_revision_id WHERE r.id=%s",
+                (journey["tasks"][0]["id"],),
+            )
+            if "tasks" in journey
+            else None
+        )
+        if not task:
+            protocol = one(
+                c,
+                "SELECT content FROM anvil.revisions WHERE id=%s",
+                (journey["protocol"]["current_revision_id"],),
+            )
+            suite = one(
+                c,
+                "SELECT content FROM anvil.revisions WHERE id=%s",
+                (protocol["content"]["suite_revision_id"],),
+            )
+            task = one(
+                c,
+                "SELECT content FROM anvil.revisions WHERE id=%s",
+                (suite["content"]["task_revision_ids"][0],),
+            )
+        content = task["content"]
+        private_id = content["reference_artifact_ids"][0]
+    for name in ("sales", "admin-1"):
+        client = client_factory(name)[0]
+        assert client.get(base + f"/artifacts/{private_id}/content").status_code == 403
+        body = {
+            **content,
+            "title": "Self-assignment must not reveal a private reference",
+            "reviewer_id": USERS[name],
+            "advisor_id": USERS[name],
+        }
+        response = client.post(base + "/tasks", json=body, headers={"Idempotency-Key": uid()})
+        assert response.status_code == 403, response.text
+        # Mislabeling a hidden reference as an actor input must not bypass the guard.
+        body["actor_artifact_ids"] = [private_id, content["actor_artifact_ids"][0]]
+        body["reference_artifact_ids"] = [content["actor_artifact_ids"][1]]
+        response = client.post(base + "/tasks", json=body, headers={"Idempotency-Key": uid()})
+        assert response.status_code == 403, response.text
+        assert client.get(base + f"/artifacts/{private_id}/content").status_code == 403
+
+
 def test_people_profiles_pagination_scope_and_unchanged_grants(client_factory):
     journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
     project = journey["project_id"]
@@ -45,7 +114,7 @@ def test_people_profiles_pagination_scope_and_unchanged_grants(client_factory):
     by_id = {p["id"]: p for p in people}
     assert by_id[USERS["admin-1"]]["access"]["profile"] == "admin"
     assert by_id[USERS["researcher"]]["access"]["profile"] == "rl_engineer"
-    assert by_id[USERS["product-owner"]]["access"]["profile"] is None
+    assert by_id[USERS["product-owner"]]["access"]["profile"] == "rl_engineer"
     assert "review.approve" not in by_id[USERS["admin-1"]]["access"]["capabilities"]
     assert admin.get(base + "/workspace/people?after=invalid").status_code == 422
     assert admin.post(base + "/workspace/people", json={"profile": "admin"}).status_code == 405

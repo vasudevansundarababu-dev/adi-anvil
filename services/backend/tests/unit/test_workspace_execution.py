@@ -45,27 +45,40 @@ def test_group_cost_is_integer_conservative_and_usage_fails_closed():
         execution.billed_usage("openai", {"input_tokens": True, "output_tokens": 5})
 
 
-def test_exact_authority_file_requires_owner_only_current_file(tmp_path, monkeypatch):
-    monkeypatch.setattr(execution, "ROOT", tmp_path)
-    folder = tmp_path / ".local"
-    folder.mkdir()
-    path = folder / "workspace-authority.json"
-    assert execution.authority() is None
-    path.write_text(
-        json.dumps(
-            {
-                "reference": "harbor:contract-tests",
-                "project_id": "a0000000-0000-4000-8000-000000000002",
-                "group_subject_hash": "a" * 64,
-                "total_cap_micro_usd": 1000000,
-                "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
-            }
-        )
-    )
-    path.chmod(0o644)
-    assert execution.authority() is None
-    path.chmod(0o600)
-    assert execution.authority().total_cap_micro_usd == 1000000
+def test_authority_requires_exact_persisted_subject_cap_and_processing_terms(monkeypatch):
+    from anvil.db import digest
+
+    row = {
+        "id": "group",
+        "project_id": "a0000000-0000-4000-8000-000000000002",
+        "subject_hash": "a" * 64,
+        "snapshot": {
+            "pricing": [{"rate": 1}],
+            "processing_terms": [{"reference": "terms"}],
+            "preparation": {"aggregate_cap_micro_usd": 1000000},
+        },
+    }
+    record = {
+        "subject_hash": row["subject_hash"],
+        "pricing_hash": digest(row["snapshot"]["pricing"]),
+        "terms_hash": digest(row["snapshot"]["processing_terms"]),
+        "cap_micro_usd": 1000000,
+        "authority_reference": "harbor:admin-run-contract",
+        "expires_at": datetime.now(timezone.utc) + timedelta(hours=1),
+    }
+    monkeypatch.setattr(execution, "one", lambda *args: record)
+    assert execution.authority(None, row).total_cap_micro_usd == 1000000
+    for key, value in [
+        ("subject_hash", "b" * 64),
+        ("pricing_hash", "b" * 64),
+        ("terms_hash", "b" * 64),
+        ("cap_micro_usd", 2000000),
+    ]:
+        changed = {**record, key: value}
+        monkeypatch.setattr(execution, "one", lambda *args: changed)
+        assert execution.authority(None, row) is None
+    monkeypatch.setattr(execution, "one", lambda *args: None)
+    assert execution.authority(None, row) is None
 
 
 @pytest.mark.parametrize("provider", ["openai", "anthropic", "gemini"])

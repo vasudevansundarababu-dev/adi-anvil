@@ -429,7 +429,7 @@ export default function BenchmarkFactory({
                 {!benchmarks.length && (
                   <p>Select compatible benchmark versions to create a suite.</p>
                 )}
-                {!advisorId && <p>An active Advisor assignment is required.</p>}
+                {!advisorId && <p>An assigned project member is required.</p>}
               </Form>
               {(rec.content.below_threshold || rec.content.strategy !== 'direct_use') && (
                 <button
@@ -461,7 +461,7 @@ export default function BenchmarkFactory({
         </>
       ) : (
         <p>
-          Researcher permission is required to confirm profiles, register metadata or create suites.
+          RL Engineer access is required to confirm profiles, register metadata or create suites.
         </p>
       )}
       <h2>Existing catalog metadata</h2>

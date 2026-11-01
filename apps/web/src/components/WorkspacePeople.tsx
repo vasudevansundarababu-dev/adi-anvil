@@ -64,14 +64,11 @@ export default function WorkspacePeople({ base }: { base: string }) {
                     <td>{person.access.label}</td>
                     <td>
                       <details>
-                        <summary>Preserved duties</summary>
-                        <p>{person.preserved_duties.join(', ')}</p>
+                        <summary>Access record</summary>
+                        <p>{person.access.label}</p>
                         <p className={styles.muted}>
-                          {person.access.mapping_state === 'recorded'
-                            ? 'Existing grants mapped; history preserved.'
-                            : person.access.mapping_state === 'legacy_only'
-                              ? 'Existing review or business access; no new engineering permission.'
-                              : 'Current grants shown; mapping needs review. No permission was added.'}
+                          Current access uses Admin or RL Engineer. Prior decisions and access
+                          history are preserved.
                         </p>
                       </details>
                     </td>
