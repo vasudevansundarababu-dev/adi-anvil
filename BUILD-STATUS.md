@@ -1,5 +1,14 @@
 # Build status
 
+Runtime update, 31 October 2026 — user explicitly requested enabling server live execution.
+Local `.env` now sets `ANVIL_LIVE_PROVIDERS_ENABLED=true`; Anvil restarted successfully.
+Health confirms API/database ready and Harbor live dispatch `gated` (enabled with per-run
+checks retained). The legacy `live_inference` health field remains hardcoded disabled;
+it does not describe Harbor's switch. No queued/leased jobs existed before activation;
+no model run, paid request, account promotion, cloud change or email was initiated.
+Exact Admin authorization, real identity, current model/key/pricing/terms, rights and
+budget checks remain. Earlier disabled-runtime statements below describe prior checks.
+
 Current local checkpoint — 31 October 2026: the two-role and separate execution-group
 journey is implemented on `codex/anvil-modern-workspace`. **Admin and RL Engineer only**;
 Admin includes engineering. Schema 033 archives old memberships and preserves identities;
