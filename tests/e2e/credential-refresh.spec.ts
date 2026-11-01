@@ -24,10 +24,18 @@ test('credential versions refresh after save, pagination, rotation and window fo
     revoked_at: string | null;
   } | null = null;
   let failReads = false;
+  let failWrite = true;
   const cursor = randomUUID();
   // Deterministic paginated metadata; create/rotate/revoke still use the real authorized API.
   await page.route('**' + endpoint + '**', async (route) => {
     if (route.request().method() !== 'GET') {
+      if (failWrite) {
+        await route.fulfill({
+          status: 403,
+          json: { error: { message: 'Reauthentication required for credential changes' } },
+        });
+        return;
+      }
       const response = await route.fetch();
       expect(response.status()).toBe(200);
       saved = (await response.json()).data;
@@ -65,7 +73,8 @@ test('credential versions refresh after save, pagination, rotation and window fo
   await page.goto('/workspace/' + project + '/models');
   await page.getByRole('button', { name: 'Add model', exact: true }).click();
   const editor = page.getByRole('region', { name: 'Model configuration editor', exact: true });
-  await editor.getByLabel('Profile name', { exact: false }).fill('Keep my model draft');
+  const draftName = 'Test-only saved key model ' + Date.now();
+  await editor.getByLabel('Profile name', { exact: false }).fill(draftName);
   await editor
     .getByLabel('Exact model ID', { exact: false })
     .fill('test-only-credential-refresh-model');
@@ -77,9 +86,15 @@ test('credential versions refresh after save, pagination, rotation and window fo
   const name = 'Test-only credential refresh ' + Date.now();
   await page.getByLabel('Credential name', { exact: false }).fill(name);
   await page.getByLabel('Credential provider', { exact: false }).selectOption('openai');
-  await page
-    .getByLabel('Secret value', { exact: false })
-    .fill('test-only-not-live-' + randomUUID());
+  const fakeSecret = 'test-only-not-live-' + randomUUID();
+  await page.getByLabel('Secret value', { exact: false }).fill(fakeSecret);
+  await page.getByRole('button', { name: 'Save credential version', exact: true }).click();
+  await expect(
+    page.getByRole('region', { name: 'Project credentials', exact: true }).getByRole('alert'),
+  ).toContainText('Your previously saved key is unchanged');
+  await expect(page.getByRole('link', { name: 'Sign in again', exact: true })).toBeVisible();
+  await expect(page.getByLabel('Secret value', { exact: false })).toHaveValue(fakeSecret);
+  failWrite = false;
   await page.getByRole('button', { name: 'Save credential version', exact: true }).click();
   await expect(picker.locator('option').filter({ hasText: name })).toHaveCount(1);
   await expect(
@@ -87,6 +102,9 @@ test('credential versions refresh after save, pagination, rotation and window fo
   ).toHaveCount(0);
   const first = saved!.id + ':' + saved!.current_version_id;
   await picker.selectOption(first);
+  await expect(editor.getByRole('group', { name: 'Saved API key', exact: true })).toContainText(
+    'Saved securely: ' + name,
+  );
   async function mutate(suffix: string, body: unknown) {
     return page.evaluate(
       async ({ path, body }) => {
@@ -139,9 +157,7 @@ test('credential versions refresh after save, pagination, rotation and window fo
   await expect(picker.locator('option[value="' + thirdValue + '"]')).toHaveCount(1);
   await expect(picker).toHaveValue(secondValue);
   await picker.selectOption(thirdValue);
-  await expect(editor.getByLabel('Profile name', { exact: false })).toHaveValue(
-    'Keep my model draft',
-  );
+  await expect(editor.getByLabel('Profile name', { exact: false })).toHaveValue(draftName);
   await expect(editor.getByLabel('Exact model ID', { exact: false })).toHaveValue(
     'test-only-credential-refresh-model',
   );
@@ -149,12 +165,49 @@ test('credential versions refresh after save, pagination, rotation and window fo
   await expect(
     editor.getByRole('button', { name: 'Save model profile', exact: true }),
   ).toBeEnabled();
+  const modelResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/workspace/models') && response.request().method() === 'POST',
+  );
+  await editor.getByRole('button', { name: 'Save model profile', exact: true }).click();
+  const model = (await (await modelResponse).json()).data;
+  await page.reload();
+  const persisted = (
+    await (
+      await page.request.get(
+        '/api/v1/projects/' + project + '/workspace/models/' + model.id + '/configuration',
+      )
+    ).json()
+  ).data;
+  expect(persisted.credential_present).toBe(true);
+  expect(persisted.credential_binding).toEqual({
+    id: third.id,
+    version_id: third.current_version_id,
+  });
+  const row = page.getByRole('row').filter({ hasText: draftName });
+  const list = page.getByRole('region', { name: 'Model profile list', exact: true });
+  await expect(list).toHaveAttribute('aria-busy', 'false');
+  while (!(await row.count())) {
+    const loaded = page.waitForResponse(
+      (response) =>
+        response.url().includes('/workspace/models?') &&
+        new URL(response.url()).searchParams.has('after'),
+    );
+    await page.getByRole('button', { name: 'Load more profiles', exact: true }).click();
+    await loaded;
+    await expect(list).toHaveAttribute('aria-busy', 'false');
+  }
+  await row.getByRole('button', { name: 'Edit as new version', exact: true }).click();
+  await expect(editor.getByRole('group', { name: 'Saved API key', exact: true })).toContainText(
+    'This model version already uses this saved key',
+  );
+  expect(await page.content()).not.toContain(fakeSecret);
   await mutate('/' + saved!.id + '/revoke', {});
   await refresh.click();
   await expect(
     editor.getByText('The selected key version changed or was revoked.', { exact: false }),
   ).toBeVisible();
   await expect(
-    editor.getByRole('button', { name: 'Save model profile', exact: true }),
+    editor.getByRole('button', { name: 'Save new model version', exact: true }),
   ).toBeDisabled();
 });

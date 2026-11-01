@@ -89,6 +89,12 @@ export default function ModelProfileEditor({
   );
   const oldBinding =
     !!credential && !available.some((c) => c.id + ':' + c.current_version_id === credential);
+  const selectedCredential = available.find(
+    (c) => c.id + ':' + c.current_version_id === credential,
+  );
+  const alreadyLinked =
+    source?.credential_binding &&
+    source.credential_binding.id + ':' + source.credential_binding.version_id === credential;
   return (
     <section className={styles.panel} aria-label="Model configuration editor">
       <h2 ref={heading} tabIndex={-1}>
@@ -192,14 +198,33 @@ export default function ModelProfileEditor({
             defaultValue={source?.max_output_tokens || 4096}
           />
         </label>
-        <label>
-          API key
-          <input
-            type="password"
-            disabled
-            placeholder="Add write-only values in Credentials below"
-          />
-        </label>
+        <div role="group" aria-label="Saved API key">
+          <strong>API key storage</strong>
+          <p role="status">
+            {credentialsLoading
+              ? 'Checking saved keys…'
+              : credentialError
+                ? 'Refresh credential versions to check saved key status.'
+                : selectedCredential
+                  ? 'Saved securely: ' +
+                    selectedCredential.name +
+                    ' · version ' +
+                    selectedCredential.current_version_id?.slice(0, 8)
+                  : oldBinding
+                    ? 'The saved key binding is no longer current.'
+                    : 'No key selected for this model. Choose a saved credential version below.'}
+          </p>
+          {selectedCredential && (
+            <p>
+              {alreadyLinked
+                ? 'This model version already uses this saved key.'
+                : 'Save the model profile to link this selected key.'}
+            </p>
+          )}
+          <p className={styles.muted}>
+            Saved key values are hidden. You do not need to paste a saved key again.
+          </p>
+        </div>
         <label>
           Credential version
           <select

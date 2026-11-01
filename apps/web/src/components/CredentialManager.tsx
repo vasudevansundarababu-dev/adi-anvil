@@ -65,7 +65,7 @@ export default function CredentialManager({
     }
   }
   return (
-    <section className={styles.panel}>
+    <section className={styles.panel} aria-label="Project credentials">
       <div className={styles.pageHead}>
         <div>
           <h2>Credentials</h2>
@@ -91,6 +91,11 @@ export default function CredentialManager({
         </p>
       )}
       {error && <p role="alert">{error}</p>}
+      {error.startsWith('Sign in again before saving') && (
+        <a className="button" href="/api/v1/auth/login">
+          Sign in again
+        </a>
+      )}
       {message && <p role="status">{message}</p>}
       {credentials.length ? (
         <div className={styles.tableScroll}>
@@ -111,7 +116,13 @@ export default function CredentialManager({
                   </td>
                   <td>
                     {c.current_version_id?.slice(0, 8) || 'No version'}
-                    <small>{c.revoked_at ? 'Revoked' : 'Configured · not live-qualified'}</small>
+                    <small>
+                      {c.revoked_at
+                        ? 'Revoked'
+                        : c.current_version_id
+                          ? 'Saved securely'
+                          : 'No saved value'}
+                    </small>
                   </td>
                   <td>
                     <div className={styles.actions}>
@@ -172,7 +183,6 @@ export default function CredentialManager({
             const data = new FormData(form);
             const secret = String(data.get('secret'));
             const input = form.elements.namedItem('secret') as HTMLInputElement;
-            input.value = '';
             setBusy(true);
             setError('');
             try {
@@ -192,13 +202,19 @@ export default function CredentialManager({
                   },
                 );
               }
+              input.value = '';
               setEditor(null);
               setMessage(
-                'Credential version saved. The value cannot be read back; no model request was sent.',
+                'Key saved securely. Select its Credential version in the model editor and save the model profile to link it. The key value stays hidden.',
               );
               await load(saved);
             } catch (e) {
-              setError((e as Error).message);
+              const message = (e as Error).message;
+              setError(
+                /Reauthentication required|Sign in required/i.test(message)
+                  ? 'Sign in again before saving a new key or rotating it. Your previously saved key is unchanged.'
+                  : message,
+              );
             } finally {
               setBusy(false);
             }

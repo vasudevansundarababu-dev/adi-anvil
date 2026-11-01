@@ -22,7 +22,9 @@ test('Admin edits models as immutable versions with explicit pricing and disable
   await page.getByLabel('Profile name', { exact: false }).fill(name);
   await page.getByLabel('Exact model ID', { exact: false }).fill('test-only-model-v1');
   await page.getByLabel('Maximum output tokens', { exact: false }).fill('2048');
-  await expect(page.getByLabel('API key', { exact: true })).toBeDisabled();
+  await expect(page.getByRole('group', { name: 'Saved API key', exact: true })).toContainText(
+    'No key selected for this model',
+  );
   const initialResponse = page.waitForResponse(
     (r) => r.url().endsWith('/workspace/models') && r.request().method() === 'POST',
   );

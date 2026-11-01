@@ -1,5 +1,21 @@
 # Build status
 
+Saved-key status clarification, 31 October 2026 — read-only inspection confirmed the user's
+existing credential is persisted, decryptable by Anvil and bound to its model. No key
+value was displayed, logged or sent to a provider. The disabled blank API-key input was
+misleading: replaced it with a named **Saved securely** status and explicit saved-versus-
+selected model-binding guidance. Model list now says **Saved key linked**; credential list
+distinguishes saved/revoked/missing values. Saved values remain write-only and hidden.
+Failed credential saves retain the newly entered password-field value until success;
+expired-login failures show a Sign in again link and explain the old saved key is unchanged.
+No authentication, key storage, provider or budget policy changed. Browser regression
+now covers failed-save retry, key/model save, persistence after reload, clear saved status,
+hidden values, refresh/rotation and revocation using fake test keys. Initial affected
+browser run: 4 passed/two stale assertion failures (alert scope and updated confirmation);
+fixed those assertions, final affected replay2 passed (12.0s). Final `pnpm check` passed.
+No backend migration, paid call, actual provider validation, real-key replacement or account
+change was performed. Existing user key did not need re-entry.
+
 Credential picker refresh fix, 31 October 2026 — the model editor now has **Refresh
 credential versions**, loading/error/retry feedback, and refresh on window focus.
 Credential saves/rotation/revocation refresh the picker independently of the credential

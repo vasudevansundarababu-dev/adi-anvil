@@ -163,8 +163,13 @@ export default function ModelProfiles({ base }: { base: string }) {
                         <small>{m.model_id || 'Exact model missing'}</small>
                       </td>
                       <td>
-                        {m.credential_state ||
-                          (m.credential_present ? 'Server configured' : 'Key missing')}
+                        {m.credential_present
+                          ? 'Saved key linked'
+                          : m.credential_state === 'rotated'
+                            ? 'Key rotated · select current version'
+                            : m.credential_state === 'revoked'
+                              ? 'Key revoked'
+                              : 'No key linked'}
                       </td>
                       <td>
                         {m.status === 'disabled'

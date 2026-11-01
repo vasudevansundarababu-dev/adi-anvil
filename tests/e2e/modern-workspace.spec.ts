@@ -177,7 +177,9 @@ test('Admin modern workspace persists model profiles and preserves classic compa
   const name = 'Browser baseline ' + Date.now();
   await page.getByLabel('Profile name', { exact: false }).fill(name);
   await page.getByLabel('Exact model ID', { exact: false }).fill('example-browser-model');
-  await expect(page.getByLabel('API key', { exact: true })).toBeDisabled();
+  await expect(page.getByRole('group', { name: 'Saved API key', exact: true })).toContainText(
+    'No key selected for this model',
+  );
   await page.getByRole('button', { name: 'Save model profile', exact: true }).click();
   // Profiles are paginated; an exact persisted profile is verified through the API, too.
   await expect(page.getByText('Profile saved to this project.', { exact: false })).toBeVisible();
@@ -206,7 +208,7 @@ test('Admin modern workspace persists model profiles and preserves classic compa
   const credentialResponse = await savedCredential;
   expect(credentialResponse.status()).toBe(200);
   expect(await credentialResponse.text()).not.toContain(secret);
-  await expect(page.getByText('Credential version saved.', { exact: false })).toBeVisible();
+  await expect(page.getByText('Key saved securely.', { exact: false })).toBeVisible();
   const credentialRow = page.getByRole('row').filter({ hasText: credentialName });
   await credentialRow.getByRole('button', { name: 'Revoke', exact: true }).click();
   await expect(credentialRow.getByText('Revoked', { exact: true })).toBeVisible();
