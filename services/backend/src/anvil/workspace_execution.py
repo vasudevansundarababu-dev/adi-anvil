@@ -10,7 +10,7 @@ import httpx
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import AwareDatetime, Field
 
-from anvil import artifacts, auth, providers, workspace_credentials
+from anvil import artifacts, auth, providers, workspace_costs, workspace_credentials
 from anvil import harbor_agents as ha
 from anvil.config import harbor_live_enabled
 from anvil.db import Jsonb, audit, digest, one, project_fence, transaction, uid
@@ -168,7 +168,7 @@ def required_cost(config):
         max(
             1,
             (
-                (32768 + 1024) * price["input_micro_usd_per_million_tokens"]
+                (32768 + 1024) * workspace_costs.input_bound(price)
                 + config["max_output_tokens"] * price["output_micro_usd_per_million_tokens"]
                 + 999999
             )
@@ -246,16 +246,17 @@ def readiness(c, row, policy=_UNSET):
         binding = config["workspace_model"]
         if binding["provider"] not in ("openai", "anthropic", "gemini"):
             issues.append("provider_task_adapter_not_supported")
-        current = one(
-            c, "SELECT config FROM anvil.connections WHERE id=%s", (child["connection_id"],)
-        )
-        if not current or current["config"].get("workspace_pricing") != config["pricing"]:
-            issues.append("frozen_pricing_binding_changed")
-        if not current or not (current["config"].get("workspace_terms") or {}).get("reference"):
-            issues.append("processing_terms_reference_required")
+        current = one(c, "SELECT * FROM anvil.connections WHERE id=%s", (child["connection_id"],))
+        price = workspace_costs.for_model(current)
+        if not price:
+            issues.append("model_cost_support_unavailable")
+        elif not workspace_costs.current(price):
+            issues.append("model_cost_support_expired")
+        elif price != config["pricing"]:
+            issues.append("execution_cost_snapshot_changed")
         cost = required_cost(config)
         if cost is None:
-            issues.append("reviewed_pricing_required")
+            issues.append("execution_cost_snapshot_changed")
         else:
             required.append(cost)
         states.append(
@@ -264,7 +265,7 @@ def readiness(c, row, policy=_UNSET):
                 "model_profile_id": str(child["connection_id"]),
                 "model": binding["model_id"],
                 "provider": binding["provider"],
-                "missing": issues,
+                "missing": list(dict.fromkeys(issues)),
                 "required_micro_usd": cost,
             }
         )
@@ -480,11 +481,7 @@ def decision(project, user, plan_id, stage_index, *, transport=None):
         ):
             raise ValueError()
         price = record["config"]["pricing"]
-        actual = (
-            inputs * price["input_micro_usd_per_million_tokens"]
-            + outputs * price["output_micro_usd_per_million_tokens"]
-            + 999999
-        ) // 1000000
+        actual = workspace_costs.billed_cost(price, usage, inputs, outputs)
         if actual > bound:
             raise ValueError()
     except Exception:
@@ -573,10 +570,8 @@ def routes(context, wrap, idempotent):
                     "group_cap_is_single_reservation": True,
                 }
                 for bound in prep["snapshot"]["models"]:
-                    row = one(c, "SELECT config FROM anvil.connections WHERE id=%s", (bound["id"],))
-                    snapshot["pricing"].append(
-                        row["config"].get("workspace_pricing") if row else None
-                    )
+                    row = one(c, "SELECT * FROM anvil.connections WHERE id=%s", (bound["id"],))
+                    snapshot["pricing"].append(workspace_costs.for_model(row))
                     snapshot["processing_terms"].append(
                         row["config"].get("workspace_terms") if row else None
                     )

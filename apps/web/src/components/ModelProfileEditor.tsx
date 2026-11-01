@@ -31,25 +31,6 @@ export type ModelConfiguration = {
   } | null;
   processing_terms: { reviewed: boolean; reference: string | null } | null;
 };
-function dollars(value: number | undefined) {
-  return value === undefined
-    ? ''
-    : Math.floor(value / 1000000) + '.' + String(value % 1000000).padStart(6, '0');
-}
-function micros(value: FormDataEntryValue | null) {
-  const text = String(value || '');
-  if (!/^\d+(\.\d{1,6})?$/.test(text))
-    throw new Error('Enter prices in USD with at most six decimal places.');
-  const [whole, fraction = ''] = text.split('.');
-  const amount = Number(whole) * 1000000 + Number(fraction.padEnd(6, '0'));
-  if (!Number.isSafeInteger(amount)) throw new Error('The entered price is too large.');
-  return amount;
-}
-function localTime(value?: string) {
-  if (!value) return '';
-  const date = new Date(value);
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-}
 export default function ModelProfileEditor({
   base,
   source,
@@ -80,8 +61,6 @@ export default function ModelProfileEditor({
       ? source.credential_binding.id + ':' + source.credential_binding.version_id
       : '',
   );
-  const [pricing, setPricing] = useState(!!source?.pricing),
-    [terms, setTerms] = useState(!!source?.processing_terms?.reviewed);
   const [error, setError] = useState(''),
     [busy, setBusy] = useState(false);
   const available = credentials.filter(
@@ -122,17 +101,10 @@ export default function ModelProfileEditor({
               max_output_tokens: Number(data.get('max_output_tokens')),
               credential_id: credentialId || null,
               credential_version_id: credentialVersion || null,
-              pricing: pricing
-                ? {
-                    reference: String(data.get('pricing_reference')),
-                    source_url: String(data.get('pricing_source')),
-                    input_micro_usd_per_million_tokens: micros(data.get('input_price')),
-                    output_micro_usd_per_million_tokens: micros(data.get('output_price')),
-                    expires_at: new Date(String(data.get('pricing_expiry'))).toISOString(),
-                  }
-                : null,
-              processing_terms_reviewed: terms,
-              processing_terms_reference: String(data.get('terms_reference') || '') || null,
+              // Preserve historical metadata without requiring manual setup.
+              pricing: source?.pricing || null,
+              processing_terms_reviewed: source?.processing_terms?.reviewed || false,
+              processing_terms_reference: source?.processing_terms?.reference || null,
             };
             saved(
               await api(
@@ -265,96 +237,6 @@ export default function ModelProfileEditor({
         <p className={styles.muted}>
           Binding is exact. Rotation does not silently replace the key in an existing model version.
           No key can be read here.
-        </p>
-        <details>
-          <summary>Pricing and processing terms</summary>
-          <p>
-            Optional declared metadata only. Saving does not verify pricing, grant data-use rights
-            or authorize spending. Keep amounts blank until explicitly reviewed.
-          </p>
-          <label>
-            <input
-              type="checkbox"
-              checked={pricing}
-              onChange={(e) => setPricing(e.target.checked)}
-            />
-            Include reviewed pricing metadata
-          </label>
-          {pricing && (
-            <>
-              <label>
-                Pricing reference
-                <input
-                  name="pricing_reference"
-                  required
-                  minLength={5}
-                  maxLength={200}
-                  defaultValue={source?.pricing?.reference || ''}
-                />
-              </label>
-              <label>
-                Pricing source (HTTPS)
-                <input
-                  name="pricing_source"
-                  type="url"
-                  required
-                  maxLength={500}
-                  defaultValue={source?.pricing?.source_url || ''}
-                />
-              </label>
-              <label>
-                Input price (USD per million tokens)
-                <input
-                  name="input_price"
-                  type="number"
-                  min={0}
-                  max={1000000}
-                  step={0.000001}
-                  required
-                  defaultValue={dollars(source?.pricing?.input_micro_usd_per_million_tokens)}
-                />
-              </label>
-              <label>
-                Output price (USD per million tokens)
-                <input
-                  name="output_price"
-                  type="number"
-                  min={0}
-                  max={1000000}
-                  step={0.000001}
-                  required
-                  defaultValue={dollars(source?.pricing?.output_micro_usd_per_million_tokens)}
-                />
-              </label>
-              <label>
-                Pricing expires (local time)
-                <input
-                  name="pricing_expiry"
-                  type="datetime-local"
-                  required
-                  defaultValue={localTime(source?.pricing?.expires_at)}
-                />
-              </label>
-            </>
-          )}
-          <label>
-            <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} />I
-            reviewed this provider's processing terms
-          </label>
-          <label>
-            Processing terms reference
-            <input
-              name="terms_reference"
-              required={terms}
-              minLength={5}
-              maxLength={500}
-              defaultValue={source?.processing_terms?.reference || ''}
-            />
-          </label>
-        </details>
-        <p className={styles.muted}>
-          Profiles remain unavailable for dispatch until adapter qualification and all exact-run
-          gates are satisfied.
         </p>
         <button
           className={styles.primary}

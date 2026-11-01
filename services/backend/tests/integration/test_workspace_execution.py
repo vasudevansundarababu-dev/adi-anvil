@@ -76,8 +76,12 @@ def configured(client_factory, monkeypatch, tmp_path, request):
         for name in [*names, "admin-1", "researcher", "advisor", "outsider"]
     }
     admin = clients["admin-1"]
+    managed_costs = getattr(request, "param", None) == "managed-costs"
     researcher, po, _, source, package = imported(
-        client_factory, fixture=getattr(request, "param", "synthetic-marketing.task.json")
+        client_factory,
+        fixture="synthetic-marketing.task.json"
+        if managed_costs
+        else getattr(request, "param", "synthetic-marketing.task.json"),
     )
     approve(po, package)
     path = BASE + "/workspace"
@@ -109,11 +113,17 @@ def configured(client_factory, monkeypatch, tmp_path, request):
                 {
                     "name": "Contract " + provider,
                     "provider": provider,
-                    "model_id": "test-model",
+                    "model_id": "gpt-6-luna"
+                    if managed_costs and provider == "openai"
+                    else "test-model",
                     "max_output_tokens": 1024,
                     "credential_id": credential["id"],
-                    "processing_terms_reference": "https://contract.invalid/terms",
-                    "pricing": {
+                    "processing_terms_reference": None
+                    if managed_costs
+                    else "https://contract.invalid/terms",
+                    "pricing": None
+                    if managed_costs and provider == "openai"
+                    else {
                         "reference": "contract-rates-v1",
                         "source_url": "https://contract.invalid/rates",
                         "input_micro_usd_per_million_tokens": 1000000,
@@ -156,7 +166,8 @@ def configured(client_factory, monkeypatch, tmp_path, request):
             },
         )
 
-    approvals()
+    if not managed_costs:
+        approvals()
     return {
         "post": post,
         "clients": clients,

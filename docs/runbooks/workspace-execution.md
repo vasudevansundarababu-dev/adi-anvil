@@ -4,6 +4,13 @@ Current policy: [two roles and separate screens](../product/22-TWO-ROLES-AND-EXE
 This supersedes earlier Product Owner, two-Admin and local authority-file instructions for
 modern execution groups. Those older decisions remain historical evidence.
 
+Model setup needs the provider, model ID and saved key. Manual pricing and processing-
+terms fields have been removed; supported estimates are managed internally. Keep your
+existing model and preset. If a saved draft reports outdated configuration, select
+**Update configuration**, then review the new draft and select **Run**. Updating creates
+a new immutable group with the same preparation and budget, without starting a call.
+Unknown or expired internal cost support still blocks spending; it never becomes free.
+
 1. Open **Tasks** and select **Run**, or open **Execution groups → Create execution group**.
 2. On the separate Create page, select the exact task package, execution preset, model
    versions, output/time limits and aggregate USD budget. Create saves immutable records,
@@ -11,7 +18,7 @@ modern execution groups. Those older decisions remain historical evidence.
 3. Creation opens the group's separate dashboard. Review the model versions, budget and
    any setup blockers. Creation fields and the group list are on other pages.
 4. An authenticated project **Admin** selects **Run**. This action records the exact task/model/key/
-   pricing/terms binding, processing-rights confirmation and budget; no Product Owner,
+   cost-estimate binding, processing-rights confirmation and budget; no Product Owner,
    second Admin or separate approval form/file is needed. A recent sign-in is required.
 5. The dashboard shows each model run's state and **View run dashboard** link. Individual
    run dashboards expose captured results/failures, observed trajectories, immutable task/

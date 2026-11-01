@@ -177,8 +177,6 @@ export default function ModelProfiles({ base }: { base: string }) {
                           : m.status === 'revoked'
                             ? 'Revoked'
                             : 'Planning only'}
-                        <small>Pricing: {m.pricing_state.replaceAll('_', ' ')}</small>
-                        <small>Exact run qualification remains required</small>
                       </td>
                       <td>
                         {m.workspace_profile && (
@@ -299,9 +297,7 @@ export default function ModelProfiles({ base }: { base: string }) {
               <p>
                 {m.provider}/{m.model_id} · {m.max_output_tokens} output tokens
               </p>
-              <p>
-                Credential: {m.credential_state}. Pricing: {m.pricing_state.replaceAll('_', ' ')}.
-              </p>
+              <p>Credential: {m.credential_state}.</p>
               <pre>
                 {JSON.stringify(
                   {

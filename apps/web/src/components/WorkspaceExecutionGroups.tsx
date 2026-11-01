@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { money, shortId, workspaceApi as api } from '../lib/workspace';
 import styles from './ModernWorkspace.module.css';
 type Group = {
+  preparation_id: string;
   id: string;
   subject_hash: string;
   state: string;
@@ -30,12 +31,13 @@ const labels: Record<string, string> = {
   admin_run_authorization_required:
     'Admin can authorize this configuration and budget by selecting Run.',
   live_dispatch_disabled_in_runtime: 'Live execution is disabled on this server.',
-  pricing_metadata_missing: 'Add pricing to a new version of this model profile.',
-  reviewed_pricing_required: 'Current pricing is required before running this model.',
-  credential_missing: 'Add a provider key to a new version of this model profile.',
-  processing_terms_reference_required: 'Add the provider processing-terms reference.',
+  model_cost_support_unavailable: 'This model is not yet supported for budgeted execution.',
+  model_cost_support_expired: 'This model needs an Anvil cost-catalog update before running.',
+  execution_cost_snapshot_changed:
+    'Use Update configuration to prepare the current execution settings.',
+  credential_missing: 'Select a saved key for this model.',
   adapter_changed_create_new_execution_group:
-    'Execution software changed. Create a new execution group.',
+    'Use Update configuration to prepare this group with the current execution settings.',
 };
 const describe = (value: string) => labels[value] || value.replaceAll('_', ' ');
 export default function WorkspaceExecutionGroups({
@@ -198,8 +200,8 @@ export default function WorkspaceExecutionGroups({
             <>
               {canAdmin && (
                 <p>
-                  By selecting Run, you confirm processing rights for this task and authorize the
-                  saved model versions and budget shown above.
+                  By selecting Run, you confirm permission to process this task with the selected
+                  models and authorize the budget shown above.
                 </p>
               )}
               <div className={styles.actions}>
@@ -209,6 +211,25 @@ export default function WorkspaceExecutionGroups({
                   onClick={() => void command('launch')}
                 >
                   Run
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={async () => {
+                    setBusy(true);
+                    setError('');
+                    try {
+                      const next = await api(endpoint, 'POST', {
+                        preparation_id: selected.preparation_id,
+                      });
+                      window.location.assign(href + '/' + next.id);
+                    } catch (e) {
+                      setError((e as Error).message);
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  Update configuration
                 </button>
                 <a className="button" href={href + '/new'}>
                   Create another group

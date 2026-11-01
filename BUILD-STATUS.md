@@ -1,5 +1,27 @@
 # Build status
 
+Simplified model setup, 31 October 2026 — manual pricing and processing-terms fields
+are removed from the modern model editor. Existing model/key/preset bindings remain
+usable. Anvil freezes server-managed cost estimates into new execution groups;
+Admin Run still confirms processing rights and reserves the explicit aggregate budget.
+Draft **Update configuration** creates a new group with the same immutable preparation
+and cap, preserving the old group and making no authorization, reservation or model call.
+Managed catalog covers exact OpenAI gpt-6-luna, gpt-6-astra, gpt-6.1-sol and
+gpt-6.1-terra IDs, verified against official pricing on 1 November UTC and expiring
+8 November 02:47:35 UTC. Unknown/expired support blocks dispatch; existing declared
+rates remain compatible. This is not an automatically refreshed all-provider catalog.
+Cache-aware accounting and a conservative reservation include 30-minute cache writes;
+requests bind that TTL. Missing usage components fail closed. Historical metadata is
+preserved without requiring the user to fill it in again.
+Verification: `pnpm test:unit` 250 passed; guarded execution/managed-cost integration
+18 passed with mocked providers and local Harbor; `pnpm check` passed. Initial affected
+browser run: 3 passed, 1 test transport failure reading a response after full navigation;
+the assertion now reads the persisted group after navigation. Follow-up
+`pnpm test:e2e tests/e2e/workspace-preparation.spec.ts`: 2 passed (9.7s).
+Read-only preflight of the existing user preparation passed model setup; conservative
+estimate 5,248 microUSD is within its unchanged 90,000 microUSD cap. No real provider
+request, paid smoke, deployment or actual-user authorization was performed.
+
 Saved-key status clarification, 31 October 2026 — read-only inspection confirmed the user's
 existing credential is persisted, decryptable by Anvil and bound to its model. No key
 value was displayed, logged or sent to a provider. The disabled blank API-key input was

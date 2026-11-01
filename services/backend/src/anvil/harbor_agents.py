@@ -56,6 +56,7 @@ def code_digest():
             "artifacts.py",
             "marketing_authority.py",
             "workspace_execution.py",
+            "workspace_costs.py",
             "workspace_dispatch.py",
             "workspace_adapter_contracts.py",
             "workspace_preparation.py",

@@ -14,6 +14,7 @@ from pydantic import Field, SecretStr
 
 from anvil.config import CLOUD, ROOT, private_file_owner
 from anvil.schemas import Strict
+from anvil.workspace_costs import RATES
 
 PROVIDERS = {
     "openai": ("OpenAI Responses", "OPENAI_API_KEY", "https://api.openai.com/v1"),
@@ -222,7 +223,15 @@ def _execute_native(provider, request, transport, *, credential, structured=Fals
                     max_output_tokens=request.max_output_tokens,
                     store=False,
                     **(
-                        {"service_tier": "default", "text": {"format": {"type": "json_object"}}}
+                        {
+                            "service_tier": "default",
+                            "text": {"format": {"type": "json_object"}},
+                            **(
+                                {"prompt_cache_options": {"ttl": "30m"}}
+                                if request.model in RATES
+                                else {}
+                            ),
+                        }
                         if structured
                         else {}
                     ),

@@ -194,7 +194,7 @@ test('Admin saves a typed preset and multi-model preparation without spending de
   const saved = (await savedResponse.json()).data;
   expect(saved.snapshot.models).toHaveLength(2);
   expect(saved.snapshot.aggregate_cap_micro_usd).toBe(12345);
-  const group = (await (await groupResponse).json()).data;
+  let group = (await (await groupResponse).json()).data;
   await expect(page).toHaveURL(new RegExp('/execution-groups/' + group.id + '$'));
   await expect(
     page.getByRole('heading', { name: 'Execution group ' + group.id.slice(0, 8), exact: true }),
@@ -206,6 +206,30 @@ test('Admin saves a typed preset and multi-model preparation without spending de
   await expect(
     page.getByRole('button', { name: 'Create execution group', exact: true }),
   ).toHaveCount(0);
+  const originalGroup = group;
+  const updateResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/workspace/execution-groups') &&
+      response.request().method() === 'POST',
+  );
+  await page.getByRole('button', { name: 'Update configuration', exact: true }).click();
+  expect((await updateResponse).status()).toBe(200);
+  await expect(page).not.toHaveURL(new RegExp('/execution-groups/' + originalGroup.id + '$'));
+  await expect(page).toHaveURL(/\/execution-groups\/[a-f0-9-]+$/);
+  const updatedId = new URL(page.url()).pathname.split('/').pop();
+  group = (await (await page.request.get(base + '/workspace/execution-groups/' + updatedId)).json())
+    .data;
+  expect(group.id).not.toBe(originalGroup.id);
+  expect(group.preparation_id).toBe(originalGroup.preparation_id);
+  expect(group.snapshot.preparation).toEqual(originalGroup.snapshot.preparation);
+  expect(group.reservation_retained).toBe(false);
+  expect(group.models.every((model: { check: unknown }) => model.check === null)).toBe(true);
+  await expect(page).toHaveURL(new RegExp('/execution-groups/' + group.id + '$'));
+  const original = (
+    await (await page.request.get(base + '/workspace/execution-groups/' + originalGroup.id)).json()
+  ).data;
+  expect(original.snapshot).toEqual(originalGroup.snapshot);
+  expect(original.state).toBe('draft');
   await page.getByRole('link', { name: '← Execution groups', exact: true }).click();
   await expect(page).toHaveURL(new RegExp('/execution-groups$'));
   await expect(

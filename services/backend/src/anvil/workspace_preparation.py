@@ -6,11 +6,11 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import Field
 
-from anvil import auth
+from anvil import auth, workspace_costs
 from anvil.db import Jsonb, audit, digest, one, uid
 from anvil.schemas import Strict
 from anvil.workspace import READ_ROLES
-from anvil.workspace_models import pricing_state, selection_issues
+from anvil.workspace_models import selection_issues
 
 PLAN_ROLES = ("admin", "rl-engineer")
 
@@ -153,9 +153,11 @@ def readiness(c, snapshot):
         ):
             missing.append("model_configuration_changed")
         if current:
-            state = pricing_state(current["config"])
-            if state != "current_metadata":
-                missing.append("pricing_metadata_" + state)
+            price = workspace_costs.for_model(current)
+            if not price:
+                missing.append("model_cost_support_unavailable")
+            elif not workspace_costs.current(price):
+                missing.append("model_cost_support_expired")
         if snapshot["max_output_tokens"] > bound["max_output_tokens"]:
             missing.append("selected_output_limit_exceeds_profile")
         credential = bound["credential"]

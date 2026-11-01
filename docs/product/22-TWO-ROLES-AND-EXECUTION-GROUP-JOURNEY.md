@@ -24,6 +24,16 @@ Reviewer/grader/adjudication assignments are task duties, not additional access 
 
 ## Separate pages
 
+Model setup requires a provider, model ID and saved key, without manual pricing or
+processing-terms references. Anvil manages supported cost estimates internally and
+freezes them with each execution group. Unknown or expired cost support blocks paid
+dispatch rather than inventing a rate. Existing historical metadata remains preserved.
+Admin Run confirms permission to process the task and authorizes its explicit budget.
+For a draft using older runtime configuration, **Update configuration** creates a new
+group from the same immutable preparation and cap. It does not authorize, reserve or
+dispatch anything; the original group remains available. Existing models and presets
+do not need replacement merely to supply pricing or processing terms.
+
 1. **Execution groups**: paginated list, status, Open and Create. No creation form inline.
 2. **Create execution group**: task/package, execution preset, exact models, explicit budget
    and limits. Create saves immutable preparation/group records, makes no provider call,
