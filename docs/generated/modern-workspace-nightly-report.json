@@ -5,7 +5,16 @@
   "status": "partial_local",
   "branch": "codex/anvil-modern-workspace",
   "code_checkpoint": "d2dfe82",
-  "latest_code_checkpoint": "740b3b2",
+  "latest_code_checkpoint": "c3d2eb1",
+  "latest_interactive_execution_handoff": {
+    "date_local": "2026-10-31",
+    "source_checkpoint": "c3d2eb1",
+    "report": "docs/generated/workspace-execution-build-2026-10-31.md",
+    "status": "gated_execution_path_implemented_software_verified",
+    "database_schema": 32,
+    "live_verified": false,
+    "live_dispatch_enabled": false
+  },
   "final_window_handoff": {
     "date_local": "2026-10-31",
     "status": "partial_local",
@@ -83,7 +92,7 @@
   "nightly_window": "22:00–06:00, hourly checkpoint resumes",
   "local_url": "http://127.0.0.1:3202/workspace",
   "classic_url": "http://127.0.0.1:3202/",
-  "schema_version_applied": 30,
+  "schema_version_applied": 32,
   "model_version_increment": {
     "code_checkpoint": "62d9e60",
     "status": "verified_local",

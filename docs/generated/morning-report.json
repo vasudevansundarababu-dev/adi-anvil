@@ -1,4 +1,15 @@
 {
+  "latest_interactive_execution_handoff": {
+    "date_local": "2026-10-31",
+    "source_checkpoint": "c3d2eb1",
+    "status": "gated_execution_path_implemented_software_verified",
+    "overall_platform_status": "partial",
+    "database_schema": 32,
+    "report": "docs/generated/workspace-execution-build-2026-10-31.md",
+    "live_model_verified": false,
+    "live_dispatch_enabled": false,
+    "prior_fields_below": "historical handoffs; current execution implementation supersedes planning-only status"
+  },
   "latest_modern_workspace_handoff": {
     "date_local": "2026-10-31",
     "status": "partial",

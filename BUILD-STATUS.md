@@ -1,5 +1,47 @@
 # Build status
 
+Interactive execution continuation — checkpoint `c3d2eb1`,31October2026. The missing
+preparation→execution-group→Harbor→results path is implemented and software-verified locally.
+Overall platform remains partial; this is not live provider/model qualification or a rollout.
+Additive031/032 applied: immutable groups/children reuse existing plans/checks/jobs/calls
+and the shared spend window. Exact-group operator authority, current frozen rates/terms,
+real assigned PO rights/run review and distinct-real-Admin activation/paid decisions remain
+required. Group launch reserves one aggregate cap atomically; database claim fencing runs
+children sequentially and blocks successors after failed/cancelled/unknown predecessors.
+Scoped OpenAI/Claude/Gemini native brokers have no global key fallback, retries or redirects;
+provider keys never enter Harbor. Durable intents commit before network I/O. Current
+binding/role/rights/authority/cost gates are rechecked; unknown/cancelled caps remain held.
+Project KEY SHARE precedes worker/intention group/job/plan/check locks. State-only worker
+visibility and conditional finish preserve raced terminal cancellations byte-for-byte,
+without granting access to private result columns. Exact frozen settings, rubric labels/
+weights, recorded request-context hashes/IDs/times, hash-verified actually revealed actor
+contexts and terminal outputs feed existing dashboards and compatible metric comparison.
+Private grading bindings/references and hidden reasoning remain excluded. Mock requests,
+including unknown outcomes, retain software-only provenance; no model performance claim.
+Final `pnpm check` passed; `pnpm test:unit`238 passed (4.10s), including DEBUG log/key scans.
+Broad real-Harbor integration173 passed/2 optional Praxis-export skips (232.35s) before the
+last narrow terminal-recovery/error-detail repair. Final schema032 execution suite12 passed
+(51.90s), including concurrent/replayed launch, group cap, state-only permissions, revocation,
+no retry, cancellation/worker recovery and real staged Harbor with all three mocked SDKs.
+Full all-module integration was not repeated after that narrow repair; relevant final suite
+and full browser16 passed (2.5m). Fresh/repeated001–032 migrations passed in isolated tests.
+SQL/artifact backup `.local/backups/20261101T003814Z-462e688d` restored into retained
+`anvil_restore_a8f35c1740c5`:1213 pending reviews and6580 artifact checksums verified; all
+12 workspace-table digests match, including1 execution group/2 child bindings. Original DB
+unchanged; state-only worker grants preserved. Credential files/wrap-key, environment and
+Keycloak recovery remain not tested. [Current execution handoff](docs/generated/workspace-execution-build-2026-10-31.md)
+and [walkthrough](docs/runbooks/workspace-execution.md) supersede prior planning-only status.
+App restored at http://127.0.0.1:3202/workspace with synthetic-only worker and both live flags
+disabled. No real provider key was used, paid call made, cloud deployed, GitHub pushed,
+email sent or real identity/IAM changed. Fresh contract identities exist only in isolated
+test databases; seeded identities were not promoted. Unrelated user edits/baseline preserved.
+Next: review the completed execution flow locally. Actual paid validation still requires
+explicit exact group/provider/model/budget authority, real reviewers and runtime activation;
+do not infer it from this build request. Remaining broader platform work: full profile/
+People management, managed cloud credentials, external LangSmith/Semantic Kernel adapters,
+general non-synthetic qualification and explicit spend reconciliation. Nightly automation
+remains active; resume durable state and honor its fixed22:00–06:00 local window.
+
 Execution-preset runner refresh fix — 31 October2026. Runner choices accept project-scoped
 Harbor framework profiles, not provider/model profiles. FrameworkProfiles and ExecutionPresets
 previously loaded independently, so saving a framework left the adjacent runner list stale.

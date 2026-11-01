@@ -1,5 +1,11 @@
 # Modern workspace nightly checkpoint — 30 October 2026
 
+Interactive continuation on31October supersedes earlier planning-only status: checkpoint
+`c3d2eb1` implements guarded execution groups, native brokers and result/trajectory integration
+at schema032. [Current execution handoff](workspace-execution-build-2026-10-31.md) records
+final scoped evidence and genuine live-authority blockers. Earlier nightly counts and
+unimplemented-dispatch statements below are historical. Overall platform remains partial.
+
 Final-window handoff (31 October): see [the current morning report](modern-workspace-morning-2026-10-31.md).
 Overall status remains **partial local**. The final usability increment makes saved
 preparations read-only by default, opens a fresh form explicitly, summarizes fully loaded

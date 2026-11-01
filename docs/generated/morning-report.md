@@ -1,5 +1,13 @@
 # ADI Anvil — current local handoff
 
+## Current interactive execution update — 31 October2026
+
+The gated preparation→execution-group→Harbor→results path is now implemented and software-
+verified locally at `c3d2eb1`, schema032. See [the current execution handoff](workspace-execution-build-2026-10-31.md)
+and [walkthrough](../runbooks/workspace-execution.md). Live paid validation is not authorized
+or performed; both runtime switches remain off. Overall platform acceptance remains partial.
+The earlier nightly handoff below is historical where it describes dispatch as unimplemented.
+
 ## Current: modern workspace — 31 October 2026
 
 **Partial local build.** Read the [current morning handoff](modern-workspace-morning-2026-10-31.md)

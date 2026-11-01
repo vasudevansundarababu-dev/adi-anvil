@@ -16,7 +16,12 @@ recorded locally; this transition does not grant new access or implement invitat
 Frameworks also offers typed execution presets. From a Harbor task, **Prepare evaluation**
 saves exact package/model/framework versions and shows missing readiness requirements.
 These are planning records: saving makes no model request or spending reservation, and
-launch remains unavailable until the workspace dispatch path is qualified.
+does not launch a run. From saved readiness, **Create execution group** freezes the exact
+models, prices, terms and limits, shows computed gates, and supports existing rights/Admin
+decisions, atomic shared reservation, sequential Harbor execution, cancellation and per-model
+results. OpenAI/Claude/Gemini native brokers are software-verified with mocked SDK responses;
+live model access/compatibility is not claimed. Runtime dispatch stays off until separately
+authorized. See the [execution walkthrough](docs/runbooks/workspace-execution.md).
 Saved preparations open as read-only readiness summaries. **Create another preparation**
 opens a fresh form with an empty budget; a sole fully loaded package or preset is shown
 as a version summary instead of a dropdown. Model selections remain explicit.
@@ -25,8 +30,8 @@ disabling. Existing preparations keep their original bindings; superseded/disabl
 are blocked from new preparation. Optional pricing and terms are declared metadata, with
 no automatic model request, rights approval or spending authority.
 See the [nightly plan](docs/build/08-MODERN-WORKSPACE-NIGHTLY.md) and [current status](BUILD-STATUS.md)
-for built versus remaining capabilities; saved framework metadata is not a working SDK
-integration, and saved credentials do not enable inference.
+for built versus remaining capabilities. Saved LangSmith/Semantic Kernel metadata is not a
+qualified external adapter; saving a credential never enables inference.
 
 The v0.2.0 increment adds the [Praxis → Harbor workbench](docs/runbooks/praxis-harbor.md),
 immutable single-stage/staged task packages, retained software-check analysis and gated
