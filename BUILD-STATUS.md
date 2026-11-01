@@ -1,5 +1,14 @@
 # Build status
 
+Nightly checkpoint, 1 November 2026 00:09 America/Chicago (05:09 UTC):
+`pnpm check` passed backend lint/format (146 files), frontend formatting, TypeScript,
+production build (classic and modern routes) and generated API contract. Existing
+Authlib deprecation warning only. No source changes, provider calls, user-configuration
+changes or new blockers. The prior missing-key diagnosis remains unchanged. Unit
+evidence from the preceding checkpoint: 250 passed; integration/browser tests were
+not repeated on unchanged source. Unrelated edits remain preserved. Stop by 06:00
+local and do not extend the authorized eight-hour work window for the DST extra hour.
+
 Nightly checkpoint, 31 October 2026 23:11 America/Chicago (1 November 04:11 UTC):
 `pnpm test:unit` passed 250 tests (9.71s); existing Authlib deprecation warning only.
 `git diff --check` passed; classic comparison remains at 3a17429c. User edits in
