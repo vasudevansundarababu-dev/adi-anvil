@@ -1,5 +1,42 @@
 # Build status
 
+Credential-save feedback and history navigation, 1 November 2026 — read-only metadata
+inspection confirmed the user's current project had no credential records and its
+model versions were unlinked; no secret value was read or supplied. Found hidden save
+feedback: errors above the credential table could be out of view when pressing Save.
+The credential editor now opens with focused heading; rejected-save feedback is beside
+Save, focused/scrolled into view, with Key not saved and an explicit sign-in link when
+reauthentication is required. Entered password-field values remain available after
+failure but are never put in local/session storage. Successful saves focus a named
+Saved securely confirmation. Metadata reload failure explicitly distinguishes a saved
+key from a list refresh failure and retains the returned metadata row.
+
+Credential save/rotation now retains one idempotency key for retrying unchanged fields.
+Editing fields or starting another editor resets it; success clears it. HTTP response
+status is carried on workspace API errors without request data. Network/5xx/timeout
+errors show Save could not be confirmed rather than asserting storage failed. A browser
+regression commits a fake key through the real API, drops the response, retries the same
+request and verifies the same credential ID, visible confirmation, hidden value and
+persistence after reload. Auth/session freshness, encryption, project scoping and key
+version binding are unchanged; no actual-user key was saved or model binding changed.
+
+User's additional navigation request implemented: removed Runs from the modern sidebar.
+Comparison is inside the task Run history panel with selection guidance. Closing remains
+available after deselecting below two runs; no incompatible score deltas are enabled.
+Task-view Run history links and historical run/dashboard URLs remain valid. Classic
+comparison routes and baseline remain preserved.
+
+Browser verification: credential refresh/lost-save/model-version suites3 passed (46.0s);
+combined credential refresh/lost-save/history comparison/model-version suites4 passed
+(47.1s). Admin/RL Engineer navigation plus retained Admin/classic journey2 passed (12.6s).
+Initial lost-save replay found the retained fake record beyond the first metadata page;
+the regression now follows visible pagination after reload instead of assuming page one.
+History metric comparison uses explicitly labeled browser-only software fixtures, not
+persisted model performance. No paid model calls, real-key changes, schema migrations,
+deployment or push. Final `pnpm check` passed lint/format150 files, frontend formatting,
+TypeScript, production build and generated API contract. `git diff --check` passed.
+Classic comparison remains3a17429c; unrelated AGENTS and cloud-runbook edits preserved.
+
 Direct Run and linked-model selection, 1 November 2026 — removed Refresh tasks and
 row-level Run history from the task library beside Import Task; task-view history is
 retained. Removed Refresh preparation choices. Task Run now loads every page of current

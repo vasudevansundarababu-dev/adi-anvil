@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Form from './Form';
 import { workspaceApi as api } from '../lib/workspace';
 import styles from './ModernWorkspace.module.css';
@@ -25,7 +25,24 @@ export default function CredentialManager({
     [editor, setEditor] = useState<'new' | CredentialMetadata | null>(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
+    [saveError, setSaveError] = useState(''),
+    [saveUncertain, setSaveUncertain] = useState(false),
     [message, setMessage] = useState('');
+  const saveFeedback = useRef<HTMLDivElement>(null);
+  const confirmation = useRef<HTMLParagraphElement>(null);
+  const editorHeading = useRef<HTMLHeadingElement>(null);
+  const saveAttempt = useRef<string | null>(null);
+  useEffect(() => {
+    if (editor) {
+      editorHeading.current?.focus();
+      editorHeading.current?.scrollIntoView({ block: 'start' });
+    }
+  }, [editor]);
+  useEffect(() => {
+    const target = saveError ? saveFeedback.current : message ? confirmation.current : null;
+    target?.focus();
+    target?.scrollIntoView({ block: 'center' });
+  }, [saveError, message]);
   const load = useCallback(
     async (saved?: CredentialMetadata) => {
       try {
@@ -40,7 +57,16 @@ export default function CredentialManager({
         setEntryAvailable(result.entry_available);
         setCursor(result.next_cursor);
       } catch (e) {
-        setError((e as Error).message);
+        setError(
+          saved
+            ? 'Your key was saved, but the credential list could not refresh. ' +
+                (e as Error).message
+            : (e as Error).message,
+        );
+        if (saved) {
+          setCredentials((old) => [saved, ...old.filter((item) => item.id !== saved.id)]);
+          onChange([saved]);
+        }
       }
     },
     [base, onChange],
@@ -78,6 +104,8 @@ export default function CredentialManager({
           onClick={() => {
             setEditor(editor ? null : 'new');
             setError('');
+            setSaveError('');
+            saveAttempt.current = null;
             setMessage('');
           }}
         >
@@ -91,12 +119,11 @@ export default function CredentialManager({
         </p>
       )}
       {error && <p role="alert">{error}</p>}
-      {error.startsWith('Sign in again before saving') && (
-        <a className="button" href="/api/v1/auth/login">
-          Sign in again
-        </a>
+      {message && (
+        <p role="status" ref={confirmation} tabIndex={-1}>
+          {message}
+        </p>
       )}
-      {message && <p role="status">{message}</p>}
       {credentials.length ? (
         <div className={styles.tableScroll}>
           <table>
@@ -132,6 +159,8 @@ export default function CredentialManager({
                           setEditor(c);
                           setMessage('');
                           setError('');
+                          setSaveError('');
+                          saveAttempt.current = null;
                         }}
                       >
                         Rotate
@@ -177,6 +206,9 @@ export default function CredentialManager({
       {editor && (
         <Form
           key={typeof editor === 'string' ? editor : editor.id}
+          onInput={() => {
+            saveAttempt.current = null;
+          }}
           onSubmit={async (e) => {
             e.preventDefault();
             const form = e.currentTarget;
@@ -185,14 +217,25 @@ export default function CredentialManager({
             const input = form.elements.namedItem('secret') as HTMLInputElement;
             setBusy(true);
             setError('');
+            setSaveError('');
+            setSaveUncertain(false);
+            setMessage('');
             try {
+              const attempt = saveAttempt.current || crypto.randomUUID();
+              saveAttempt.current = attempt;
               let saved: CredentialMetadata;
               if (editor === 'new') {
-                saved = await api(base + '/workspace/credentials', 'POST', {
-                  name: String(data.get('credential_name')),
-                  provider: String(data.get('credential_provider')),
-                  secret,
-                });
+                saved = await api(
+                  base + '/workspace/credentials',
+                  'POST',
+                  {
+                    name: String(data.get('credential_name')),
+                    provider: String(data.get('credential_provider')),
+                    secret,
+                  },
+                  undefined,
+                  attempt,
+                );
               } else {
                 saved = await api(
                   base + '/workspace/credentials/' + editor.id + '/versions',
@@ -200,27 +243,37 @@ export default function CredentialManager({
                   {
                     secret,
                   },
+                  undefined,
+                  attempt,
                 );
               }
               input.value = '';
+              saveAttempt.current = null;
               setEditor(null);
               setMessage(
-                'Key saved securely. Select its Credential version in the model editor and save the model profile to link it. The key value stays hidden.',
+                'Key saved securely: ' +
+                  saved.name +
+                  '. Select its Credential version in the model editor and save the model profile to link it. The key value stays hidden.',
               );
               await load(saved);
             } catch (e) {
               const message = (e as Error).message;
-              setError(
+              const status = (e as Error & { status?: number }).status;
+              const uncertain = !status || status >= 500 || status === 408;
+              setSaveUncertain(uncertain);
+              setSaveError(
                 /Reauthentication required|Sign in required/i.test(message)
-                  ? 'Sign in again before saving a new key or rotating it. Your previously saved key is unchanged.'
-                  : message,
+                  ? 'Sign in again before saving a new key or rotating it. No new key was saved. Existing keys are unchanged.'
+                  : uncertain
+                    ? 'The connection was interrupted, so the save result is unknown. Retry without changing these fields to safely confirm the same save.'
+                    : message,
               );
             } finally {
               setBusy(false);
             }
           }}
         >
-          <h3 style={{ marginTop: 20 }}>
+          <h3 style={{ marginTop: 20 }} ref={editorHeading} tabIndex={-1}>
             {editor === 'new' ? 'New credential' : 'Rotate ' + editor.name}
           </h3>
           {editor === 'new' ? (
@@ -258,6 +311,17 @@ export default function CredentialManager({
             require a recent sign-in. Rotation invalidates profiles bound to the older version for
             future dispatch.
           </p>
+          {saveError && (
+            <div role="alert" ref={saveFeedback} tabIndex={-1} className={styles.error}>
+              <strong>{saveUncertain ? 'Save could not be confirmed' : 'Key not saved'}</strong>
+              <p>{saveError}</p>
+              {/Sign in again/i.test(saveError) && (
+                <a className="button" href="/api/v1/auth/login">
+                  Sign in again
+                </a>
+              )}
+            </div>
+          )}
           <button className={styles.primary} disabled={busy}>
             {busy ? 'Saving…' : 'Save credential version'}
           </button>

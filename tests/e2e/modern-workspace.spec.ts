@@ -208,7 +208,7 @@ test('Admin modern workspace persists model profiles and preserves classic compa
   const credentialResponse = await savedCredential;
   expect(credentialResponse.status()).toBe(200);
   expect(await credentialResponse.text()).not.toContain(secret);
-  await expect(page.getByText('Key saved securely.', { exact: false })).toBeVisible();
+  await expect(page.getByText('Key saved securely:', { exact: false })).toBeVisible();
   const credentialRow = page.getByRole('row').filter({ hasText: credentialName });
   await credentialRow.getByRole('button', { name: 'Revoke', exact: true }).click();
   await expect(credentialRow.getByText('Revoked', { exact: true })).toBeVisible();
@@ -221,7 +221,12 @@ test('Admin modern workspace persists model profiles and preserves classic compa
   await page.getByLabel('Profile name', { exact: false }).fill('Browser Harbor ' + Date.now());
   await page.getByRole('button', { name: 'Save framework profile', exact: true }).click();
   await expect(page.getByText('Framework metadata saved.', { exact: false })).toBeVisible();
-  await page.getByRole('link', { name: 'Runs', exact: true }).click();
+  await expect(
+    page
+      .getByRole('navigation', { name: 'Workspace navigation' })
+      .getByRole('link', { name: 'Runs', exact: true }),
+  ).toHaveCount(0);
+  await page.goto('/workspace/' + project + '/runs');
   await expect(page.getByRole('heading', { name: 'Run history', exact: true })).toBeVisible();
   const history = await (
     await page.request.get('/api/v1/projects/' + project + '/workspace/runs')

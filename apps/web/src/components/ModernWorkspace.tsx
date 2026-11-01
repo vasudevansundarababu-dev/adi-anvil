@@ -30,7 +30,6 @@ const navigation = [
   ['overview', 'Overview'],
   ['tasks', 'Tasks'],
   ['execution-groups', 'Execution groups'],
-  ['runs', 'Runs'],
   ['models', 'Models & keys'],
   ['frameworks', 'Frameworks'],
   ['people', 'People'],
@@ -166,23 +165,25 @@ function WorkspaceView() {
   }
   const selectedRuns = (runs?.items || []).filter((r) => selected.includes(r.id));
   const title =
-    section === 'tasks' && parts[4]
-      ? parts[4] === 'import'
-        ? 'Import Task'
-        : parts[5] === 'run'
-          ? 'Run Task'
-          : 'View Task'
-      : section === 'execution-groups'
-        ? parts[4] === 'new'
-          ? 'Create execution group'
-          : parts[4]
-            ? 'Execution group'
-            : 'Execution groups'
-        : section === 'preparation'
-          ? 'Saved preparation'
-          : section === 'editor'
-            ? 'Edit as new version'
-            : navigation.find(([key]) => key === section)?.[1] || 'Overview';
+    section === 'runs'
+      ? 'Run history'
+      : section === 'tasks' && parts[4]
+        ? parts[4] === 'import'
+          ? 'Import Task'
+          : parts[5] === 'run'
+            ? 'Run Task'
+            : 'View Task'
+        : section === 'execution-groups'
+          ? parts[4] === 'new'
+            ? 'Create execution group'
+            : parts[4]
+              ? 'Execution group'
+              : 'Execution groups'
+          : section === 'preparation'
+            ? 'Saved preparation'
+            : section === 'editor'
+              ? 'Edit as new version'
+              : navigation.find(([key]) => key === section)?.[1] || 'Overview';
   const canEdit = capabilities.includes('task_drafts.write');
   const editorHref = (id: string, returnRun = query.get('return_run') || runId || '') =>
     route +
@@ -505,11 +506,12 @@ function WorkspaceView() {
                   </>
                 ) : (
                   <>
-                    <section className={styles.panel}>
+                    <section className={styles.panel} aria-label="Run history">
                       <div className={styles.pageHead}>
-                        <h2>Run history</h2>
+                        <h2>{taskFilter ? 'Run history' : 'Retained runs'}</h2>
                         <button
-                          disabled={selected.length < 2}
+                          disabled={tab !== 'Compare' && selected.length < 2}
+                          aria-describedby="run-comparison-help"
                           onClick={() => setTab(tab === 'Compare' ? 'Dashboard' : 'Compare')}
                         >
                           {tab === 'Compare'
@@ -517,6 +519,10 @@ function WorkspaceView() {
                             : 'Compare selected (' + selected.length + ')'}
                         </button>
                       </div>
+                      <p id="run-comparison-help" className={styles.muted}>
+                        Select two or more runs from this history to compare results, metrics and
+                        failure modes.
+                      </p>
                       {runs?.items.length ? (
                         <RunTable
                           runs={runs.items}
@@ -561,8 +567,13 @@ function WorkspaceView() {
                           Load more runs
                         </button>
                       )}
+                      {tab === 'Compare' &&
+                        (selectedRuns.length >= 2 ? (
+                          <Comparison runs={selectedRuns} />
+                        ) : (
+                          <p role="status">Select at least two runs to display their comparison.</p>
+                        ))}
                     </section>
-                    {tab === 'Compare' && <Comparison runs={selectedRuns} />}
                   </>
                 ))}
               {section === 'editor' &&

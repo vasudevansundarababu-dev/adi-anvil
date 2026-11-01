@@ -72,7 +72,13 @@ export type WorkspaceTask = {
 };
 export type Page<T> = { items: T[]; next_cursor: string | null; scope: string };
 
-export async function workspaceApi(path: string, method = 'GET', body?: unknown, version?: number) {
+export async function workspaceApi(
+  path: string,
+  method = 'GET',
+  body?: unknown,
+  version?: number,
+  idempotencyKey?: string,
+) {
   const csrf =
     document.cookie
       .split('; ')
@@ -84,7 +90,7 @@ export async function workspaceApi(path: string, method = 'GET', body?: unknown,
     headers: {
       'Content-Type': 'application/json',
       'X-CSRF-Token': csrf,
-      ...(method === 'GET' ? {} : { 'Idempotency-Key': crypto.randomUUID() }),
+      ...(method === 'GET' ? {} : { 'Idempotency-Key': idempotencyKey || crypto.randomUUID() }),
       ...(version === undefined ? {} : { 'If-Match': String(version) }),
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
@@ -96,13 +102,15 @@ export async function workspaceApi(path: string, method = 'GET', body?: unknown,
       detail && Array.isArray(detail.missing) && Array.isArray(detail.models)
         ? runBlockers(detail, false)
         : [];
-    throw new Error(
+    const failure = new Error(
       typeof detail === 'string'
         ? detail
         : typeof detail?.message === 'string'
           ? [detail.message, ...reasons].join(' · ')
           : 'Unable to load this workspace',
     );
+    Object.assign(failure, { status: response.status });
+    throw failure;
   }
   return result.data;
 }

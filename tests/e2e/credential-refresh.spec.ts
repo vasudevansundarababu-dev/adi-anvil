@@ -91,7 +91,12 @@ test('credential versions refresh after save, pagination, rotation and window fo
   await page.getByRole('button', { name: 'Save credential version', exact: true }).click();
   await expect(
     page.getByRole('region', { name: 'Project credentials', exact: true }).getByRole('alert'),
-  ).toContainText('Your previously saved key is unchanged');
+  ).toContainText('No new key was saved');
+  const saveFailure = page
+    .getByRole('region', { name: 'Project credentials', exact: true })
+    .getByRole('alert');
+  await expect(saveFailure).toBeFocused();
+  await expect(saveFailure).toContainText('Key not saved');
   await expect(page.getByRole('link', { name: 'Sign in again', exact: true })).toBeVisible();
   await expect(page.getByLabel('Secret value', { exact: false })).toHaveValue(fakeSecret);
   failWrite = false;

@@ -1,5 +1,11 @@
 # Task library, task viewer and run workspace
 
+Navigation refinement, 1 November: no Runs entry in the modern sidebar. Open a task's
+Run history to select retained runs and compare their results, metrics and failure modes.
+Comparison controls and output live inside the history panel. Historical `/runs` URLs
+and dashboard deep links remain valid. Closing comparison remains possible after
+reducing the selection below two; score comparison still requires compatible evidence.
+
 User-approved reference: supplied three-panel Tasks / View Task / Run Task mockup,
 1 November 2026. The design uses existing modern workspace navigation and light/dark
 themes. The editor toolbar surrounding the reference image is not application UI.
