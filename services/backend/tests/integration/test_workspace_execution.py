@@ -1,0 +1,679 @@
+"""Paid-admission contracts in fresh isolated databases; no external provider dispatch.
+
+New contract identities simulate real flags only in those databases. Existing seeded
+identities are never promoted. All provider requests use explicit MockTransport.
+"""
+
+import json
+import os
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, timezone
+from threading import Event
+from urllib.parse import urlsplit
+
+import httpx
+import psycopg
+import pytest
+from alembic import command
+from alembic.config import Config
+from psycopg import sql
+from test_api_security import USERS
+from test_praxis_harbor import BASE, approve, imported
+from test_workspace_adapter_contracts import response_body
+
+from anvil import cli, harbor_agents, workspace_secrets
+from anvil import workspace_execution as execution
+from anvil.config import ROOT, setting
+from anvil.db import one, transaction, uid
+
+
+@pytest.fixture
+def configured(client_factory, monkeypatch, tmp_path, request):
+    target = "anvil_workspaceexec_" + uid().replace("-", "")[:12]
+    with psycopg.connect(setting("MIGRATION_DATABASE_URL"), autocommit=True) as c:
+        c.execute(sql.SQL("CREATE DATABASE {} TEMPLATE template0").format(sql.Identifier(target)))
+    for name in ("MIGRATION_DATABASE_URL", "DATABASE_URL", "WORKER_DATABASE_URL"):
+        monkeypatch.setenv(name, urlsplit(setting(name))._replace(path="/" + target).geturl())
+    with psycopg.connect(setting("MIGRATION_DATABASE_URL")) as c:
+        c.execute("CREATE SCHEMA anvil")
+    command.upgrade(Config(str(ROOT / "services/backend/alembic.ini")), "head")
+    command.upgrade(Config(str(ROOT / "services/backend/alembic.ini")), "head")
+    cli.seed()
+    monkeypatch.setattr(workspace_secrets, "ROOT", tmp_path)
+    monkeypatch.setattr(workspace_secrets, "CLOUD", False)
+    monkeypatch.setattr(execution, "ROOT", tmp_path)
+    monkeypatch.setattr(execution, "harbor_live_enabled", lambda: True)
+    # Only fresh test identities in this retained isolated database have real flags.
+    names = {
+        "contract-admin-a": "admin",
+        "contract-admin-b": "admin",
+        "contract-owner": "product-owner",
+    }
+    with psycopg.connect(setting("MIGRATION_DATABASE_URL")) as c:
+        for name, role in names.items():
+            identifier = uid()
+            monkeypatch.setitem(USERS, name, identifier)
+            c.execute(
+                "INSERT INTO anvil.users(id,org_id,issuer,subject,name,is_synthetic) VALUES(%s,%s,%s,%s,%s,false)",
+                (
+                    identifier,
+                    cli.ORG,
+                    "https://isolated-contract.invalid",
+                    identifier,
+                    "Isolated contract " + name,
+                ),
+            )
+            c.execute(
+                "INSERT INTO anvil.memberships(project_id,user_id,role) VALUES(%s,%s,%s)",
+                (cli.PROJECT, identifier, role),
+            )
+            if role == "product-owner":
+                c.execute(
+                    "INSERT INTO anvil.project_assignments(project_id,user_id,capability) VALUES(%s,%s,'rights_reviewer')",
+                    (cli.PROJECT, identifier),
+                )
+    clients = {
+        name: client_factory(name)[0]
+        for name in [*names, "admin-1", "researcher", "advisor", "outsider"]
+    }
+    admin = clients["contract-admin-a"]
+    researcher, po, _, source, package = imported(
+        client_factory, fixture=getattr(request, "param", "synthetic-marketing.task.json")
+    )
+    approve(po, package)
+    path = BASE + "/workspace"
+
+    def post(endpoint, body=None, *, client=admin, expected=200, key=None):
+        response = client.post(
+            path + endpoint, json=body or {}, headers={"Idempotency-Key": key or uid()}
+        )
+        assert response.status_code == expected, response.text
+        return response.json().get("data")
+
+    expiry = (datetime.now(timezone.utc) + timedelta(minutes=30)).isoformat()
+    framework = post("/frameworks", {"name": "Contract pinned runner", "framework": "harbor"})
+    models = []
+    credentials = []
+    for provider in ("openai", "anthropic", "gemini"):
+        credential = post(
+            "/credentials",
+            {
+                "name": "Contract key " + provider,
+                "provider": provider,
+                "secret": "test-only-not-live-" + provider + "-" + uid(),
+            },
+        )
+        credentials.append(credential)
+        models.append(
+            post(
+                "/models",
+                {
+                    "name": "Contract " + provider,
+                    "provider": provider,
+                    "model_id": "test-model",
+                    "max_output_tokens": 1024,
+                    "credential_id": credential["id"],
+                    "processing_terms_reference": "https://contract.invalid/terms",
+                    "pricing": {
+                        "reference": "contract-rates-v1",
+                        "source_url": "https://contract.invalid/rates",
+                        "input_micro_usd_per_million_tokens": 1000000,
+                        "output_micro_usd_per_million_tokens": 1000000,
+                        "expires_at": expiry,
+                    },
+                },
+            )
+        )
+    preset = post(
+        "/presets",
+        {
+            "name": "Exact contract models",
+            "runner_profile_id": framework["id"],
+            "candidate_runtime": "anvil-structured-json-v1",
+            "model_profile_ids": [m["id"] for m in models],
+        },
+    )
+    prep = post(
+        "/preparations",
+        {
+            "preset_id": preset["id"],
+            "package_id": package["id"],
+            "model_profile_ids": [m["id"] for m in models],
+            "max_output_tokens": 1024,
+            "episode_timeout_seconds": 300,
+            "aggregate_cap_micro_usd": 1000000,
+        },
+    )
+    group = post("/execution-groups", {"preparation_id": prep["id"]})
+    policy = {
+        "reference": "harbor:workspace-contract-" + uid(),
+        "project_id": cli.PROJECT,
+        "group_subject_hash": group["subject_hash"],
+        "total_cap_micro_usd": 1500000,
+        "expires_at": expiry,
+    }
+    folder = tmp_path / ".local"
+    folder.mkdir(exist_ok=True)
+    authority = folder / "workspace-authority.json"
+    authority.write_text(json.dumps(policy))
+    authority.chmod(0o600)
+    evidence = post(
+        "/execution-groups/" + group["id"] + "/rights-evidence",
+        {
+            "reference": "https://contract.invalid/rights",
+            "description": "Isolated software-contract rights reference only; not actual human clearance.",
+        },
+        client=clients["contract-owner"],
+    )
+    review = {
+        "subject_hash": group["subject_hash"],
+        "rights_evidence_id": evidence["artifact_id"],
+        "rationale": "Isolated exact-run contract review, no real rights assertion.",
+        "expires_at": expiry,
+    }
+    post("/execution-groups/" + group["id"] + "/review", review, client=clients["contract-owner"])
+
+    def approvals(group=group):
+        for name in ("contract-admin-a", "contract-admin-b"):
+            for purpose in ("activation", "paid_scope"):
+                post(
+                    "/execution-groups/" + group["id"] + "/admin-approvals",
+                    {
+                        "purpose": purpose,
+                        "subject_hash": group["subject_hash"],
+                        "authority_reference": policy["reference"],
+                        "expires_at": expiry,
+                    },
+                    client=clients[name],
+                )
+
+    approvals()
+    return {
+        "post": post,
+        "clients": clients,
+        "group": group,
+        "prep": prep,
+        "policy": policy,
+        "authority": authority,
+        "models": models,
+        "credentials": credentials,
+        "approvals": approvals,
+        "path": path,
+        "database": target,
+    }
+
+
+def test_atomic_group_reservation_sequential_claim_and_all_native_mediators(configured):
+    data = configured
+    post = data["post"]
+    gid = data["group"]["id"]
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        attempts = [
+            pool.submit(
+                post,
+                "/execution-groups/" + gid + "/launch",
+                key="concurrent-" + str(index),
+                client=data["clients"][name],
+            )
+            for index, name in enumerate(("contract-admin-a", "contract-admin-b"))
+        ]
+        results = [attempt.result() for attempt in attempts]
+    launched = results[0]
+    assert results[1]["models"] == launched["models"]
+    assert launched["state"] == "launched" and len(launched["models"]) == 3
+    replay = post("/execution-groups/" + gid + "/launch", key="different-idempotency-key")
+    assert [m["check"]["id"] for m in replay["models"]] == [
+        m["check"]["id"] for m in launched["models"]
+    ]
+    with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+        window = one(
+            c,
+            "SELECT * FROM anvil.evaluation_spend_windows WHERE authority_reference=%s",
+            (data["policy"]["reference"],),
+        )
+        assert window["reserved_micro_usd"] == 1000000
+    observed = []
+    for member in launched["models"]:
+        with transaction(worker=True) as c:
+            job = one(c, "SELECT * FROM anvil.claim_harbor_job()")
+            assert str(job["target_id"]) == member["check"]["id"]
+            assert one(c, "SELECT * FROM anvil.claim_harbor_job()") is None
+        with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+            c.execute(
+                "UPDATE anvil.harbor_checks SET state='running',invocation_count=1 WHERE id=%s",
+                (member["check"]["id"],),
+            )
+        provider = member["model"]["provider"]
+
+        def handle(req):
+            observed.append(req)
+            body = req.content.decode()
+            assert (
+                "PRIVATE-NORTHSTAR" not in body
+                and "reference_output" not in body
+                and '"reference_output"' not in body
+            )
+            return httpx.Response(
+                200, json=response_body(provider, '{"decision":"unrepaired-output"}')
+            )
+
+        output = execution.decision(
+            cli.PROJECT,
+            USERS["contract-admin-a"],
+            member["plan_id"],
+            0,
+            transport=httpx.MockTransport(handle),
+        )
+        assert json.loads(output) == {"decision": "unrepaired-output"}
+        assert (
+            execution.decision(
+                cli.PROJECT,
+                USERS["contract-admin-a"],
+                member["plan_id"],
+                0,
+                transport=httpx.MockTransport(lambda r: pytest.fail("duplicate request")),
+            )
+            == output
+        )
+        with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+            c.execute(
+                "UPDATE anvil.harbor_checks SET state='succeeded',finished_at=now() WHERE id=%s",
+                (member["check"]["id"],),
+            )
+            c.execute("UPDATE anvil.jobs SET status='succeeded' WHERE id=%s", (job["id"],))
+    assert len(observed) == 3
+    result = (
+        data["clients"]["contract-admin-a"]
+        .get(data["path"] + "/execution-groups/" + gid)
+        .json()["data"]
+    )
+    assert result["status"] == "succeeded" and result["reservation_retained"]
+    run = (
+        data["clients"]["contract-admin-a"]
+        .get(BASE + "/workspace/runs/" + launched["models"][0]["check"]["id"])
+        .json()["data"]
+    )
+    assert run["model"] == "test-model" and run["execution_group_id"] == gid
+    assert run["metrics"]["known_cost_micro_usd"] == 15
+    assert run["origin"] == "native_sdk_mock_verification"
+    assert (
+        run["calls"][0]["actor_context"]
+        and run["calls"][0]["output_text"] == '{"decision":"unrepaired-output"}'
+    )
+    assert "reference_output" not in json.dumps(run) and "PRIVATE-NORTHSTAR" not in json.dumps(run)
+
+
+def test_authority_changed_during_reservation_does_not_reserve(configured, monkeypatch):
+    data = configured
+    original = execution.authority()
+    changed = original.model_copy(update={"reference": "harbor:different-unapproved-contract"})
+    calls = []
+
+    def read():
+        calls.append(1)
+        return original if len(calls) == 1 else changed
+
+    monkeypatch.setattr(execution, "authority", read)
+    data["post"]("/execution-groups/" + data["group"]["id"] + "/launch", expected=409)
+    with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+        assert one(c, "SELECT count(*) n FROM anvil.evaluation_spend_windows")["n"] == 0
+
+
+def test_worker_result_capture_fences_project_before_check_to_avoid_cancel_deadlock(
+    configured, monkeypatch
+):
+    from anvil import harbor_worker
+
+    data = configured
+    gid = data["group"]["id"]
+    launched = data["post"]("/execution-groups/" + gid + "/launch")
+    first = launched["models"][0]
+    with transaction(worker=True) as c:
+        job = one(c, "SELECT * FROM anvil.claim_harbor_job()")
+    entered = Event()
+    original = harbor_worker.project_fence
+
+    def observed(c, project):
+        entered.set()
+        return original(c, project)
+
+    monkeypatch.setattr(harbor_worker, "project_fence", observed)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        # Simulate an idempotent cancellation command already holding project FOR UPDATE.
+        with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+            c.execute("SELECT id FROM anvil.projects WHERE id=%s FOR UPDATE", (cli.PROJECT,))
+            future = pool.submit(
+                harbor_worker.finish,
+                job,
+                USERS["contract-admin-a"],
+                "failed",
+                error="synthetic_fence_test",
+                live=True,
+            )
+            assert entered.wait(5)
+            assert not future.done()
+            # Result capture must not hold check while waiting for that project fence.
+            assert one(
+                c,
+                "SELECT id FROM anvil.harbor_checks WHERE id=%s FOR UPDATE NOWAIT",
+                (first["check"]["id"],),
+            )
+        future.result(timeout=5)
+    with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+        audit = one(
+            c,
+            "SELECT metadata FROM anvil.audit_events WHERE target_id=%s AND action='harbor.check_failed'",
+            (first["check"]["id"],),
+        )
+        assert audit["metadata"]["origin"] == "provider_dispatch_attempt_unverified"
+
+
+def test_review_revocation_after_mock_dispatch_still_captures_usage(configured):
+    data = configured
+    gid = data["group"]["id"]
+    launched = data["post"]("/execution-groups/" + gid + "/launch")
+    first = launched["models"][0]
+    with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+        c.execute(
+            "UPDATE anvil.harbor_checks SET state='running',invocation_count=1 WHERE id=%s",
+            (first["check"]["id"],),
+        )
+
+    def handler(req):
+        data["post"](
+            "/execution-groups/" + gid + "/revoke-review",
+            {"rationale": "Revoke after mock request was dispatched."},
+            client=data["clients"]["contract-owner"],
+        )
+        return httpx.Response(200, json=response_body("openai", "{}"))
+
+    execution.decision(
+        cli.PROJECT,
+        USERS["contract-admin-a"],
+        first["plan_id"],
+        0,
+        transport=httpx.MockTransport(handler),
+    )
+    with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+        call = one(
+            c,
+            "SELECT status,actual_micro_usd FROM anvil.harbor_agent_calls WHERE plan_id=%s",
+            (first["plan_id"],),
+        )
+        assert call == {"status": "completed", "actual_micro_usd": 15}
+        assert not execution.plan_readiness(c, harbor_agents.plan(c, first["plan_id"]))["ready"]
+
+
+def test_cancelled_leased_job_with_revoked_rights_preserves_terminal_evidence(
+    configured, monkeypatch
+):
+    from anvil import harbor_worker, workspace_dispatch
+
+    data = configured
+    gid = data["group"]["id"]
+    launched = data["post"]("/execution-groups/" + gid + "/launch")
+    first = launched["models"][0]
+    with transaction(worker=True) as c:
+        job = one(c, "SELECT * FROM anvil.claim_harbor_job()")
+    data["post"]("/execution-groups/" + gid + "/cancel")
+    data["post"](
+        "/execution-groups/" + gid + "/revoke-review",
+        {"rationale": "Contract cancellation and review revocation before start."},
+        client=data["clients"]["contract-owner"],
+    )
+    with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+        before = one(c, "SELECT * FROM anvil.harbor_checks WHERE id=%s", (first["check"]["id"],))
+    monkeypatch.setattr(
+        workspace_dispatch,
+        "execute",
+        lambda *args, **kwargs: pytest.fail("No broker invocation after cancellation"),
+    )
+    monkeypatch.setattr(
+        harbor_worker,
+        "argv",
+        lambda *args, **kwargs: pytest.fail("No Harbor invocation after cancellation"),
+    )
+    harbor_worker.process(job)
+    with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+        assert (
+            one(c, "SELECT * FROM anvil.harbor_checks WHERE id=%s", (first["check"]["id"],))
+            == before
+        )
+        assert (
+            one(c, "SELECT status FROM anvil.jobs WHERE id=%s", (job["id"],))["status"]
+            == "cancelled"
+        )
+        assert one(c, "SELECT count(*) n FROM anvil.harbor_agent_calls")["n"] == 0
+    with transaction(worker=True) as c:
+        assert one(c, "SELECT * FROM anvil.claim_harbor_job()") is None
+    with pytest.raises(psycopg.errors.InsufficientPrivilege):
+        with transaction(cli.PROJECT, worker=True) as c:
+            c.execute("SELECT result FROM anvil.harbor_checks LIMIT 1")
+
+
+@pytest.mark.parametrize("configured", ["synthetic-marketing-staged.task.json"], indirect=True)
+def test_real_harbor_gateway_with_mocked_provider_has_observable_result_not_model_performance(
+    configured, monkeypatch
+):
+    if os.environ.get("ANVIL_TEST_HARBOR") != "1":
+        pytest.skip("Opt-in Docker Harbor gateway test; provider remains MockTransport")
+    from anvil import harbor_worker, workspace_dispatch
+
+    data = configured
+    gid = data["group"]["id"]
+    launched = data["post"]("/execution-groups/" + gid + "/launch")
+    original = workspace_dispatch.execute
+    requests = []
+
+    def mocked(binding, secret, request, **kwargs):
+        def handle(req):
+            requests.append(req)
+            # Scripted software fixture, never an actual model-performance result.
+            text = (
+                "{}"
+                if "FUTURE-NORTHSTAR" in request.actor_text
+                else '{"channel":"search","spend_usd":1000,"evidence_id":"ev-channel-costs"}'
+            )
+            return httpx.Response(200, json=response_body(binding["provider"], text))
+
+        return original(binding, secret, request, transport=httpx.MockTransport(handle))
+
+    monkeypatch.setattr(workspace_dispatch, "execute", mocked)
+    for member in launched["models"]:
+        with transaction(worker=True) as c:
+            job = one(c, "SELECT * FROM anvil.claim_harbor_job()")
+            assert str(job["target_id"]) == member["check"]["id"]
+        harbor_worker.process(job)
+        response = data["clients"]["contract-admin-a"].get(
+            BASE + "/harbor-checks/" + member["check"]["id"]
+        )
+        check = response.json()["data"]
+        assert check["state"] == "succeeded", check
+        assert check["result"]["model_performance"] is False
+        assert check["result"]["origin"] == "native_sdk_mock_verification"
+        assert check["result"]["diagnostics"]["reward"] == 0
+        run = (
+            data["clients"]["contract-admin-a"]
+            .get(BASE + "/workspace/runs/" + member["check"]["id"])
+            .json()["data"]
+        )
+        assert (
+            run["evidence"]
+            and run["model"] == "test-model"
+            and run["origin"] == "native_sdk_mock_verification"
+        )
+        assert len(run["calls"]) == 2
+        assert "FUTURE-NORTHSTAR" not in run["calls"][0]["actor_context"]
+        assert "FUTURE-NORTHSTAR" in run["calls"][1]["actor_context"]
+        assert "PRIVATE-NORTHSTAR" not in json.dumps(run)
+    assert len(requests) == 6
+
+
+@pytest.mark.parametrize(
+    "outcome", ["timeout", "cancel", "rotation", "revoke", "individual_cancel"]
+)
+def test_uncertainty_cancellation_and_revocation_stop_remaining_models_and_retain_cap(
+    configured, outcome
+):
+    data = configured
+    post = data["post"]
+    gid = data["group"]["id"]
+    launched = post("/execution-groups/" + gid + "/launch")
+    first = launched["models"][0]
+    if outcome in ("cancel", "individual_cancel"):
+        if outcome == "cancel":
+            cancelled = post("/execution-groups/" + gid + "/cancel")
+            assert cancelled["status"] == "cancelled"
+        else:
+            with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+                c.execute(
+                    "UPDATE anvil.harbor_checks SET state='cancelled',cancel_requested=true WHERE id=%s",
+                    (first["check"]["id"],),
+                )
+                c.execute(
+                    "UPDATE anvil.jobs SET status='cancelled' WHERE target_id=%s",
+                    (first["check"]["id"],),
+                )
+            assert (
+                data["clients"]["contract-admin-a"]
+                .get(data["path"] + "/execution-groups/" + gid)
+                .json()["data"]["status"]
+                == "blocked"
+            )
+    else:
+        with transaction(worker=True) as c:
+            assert one(c, "SELECT * FROM anvil.claim_harbor_job()")
+        with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+            c.execute(
+                "UPDATE anvil.harbor_checks SET state='running',invocation_count=1 WHERE id=%s",
+                (first["check"]["id"],),
+            )
+        if outcome == "rotation":
+            post(
+                "/credentials/" + data["credentials"][0]["id"] + "/versions",
+                {"secret": "test-only-rotated-" + uid()},
+            )
+        if outcome == "revoke":
+            post(
+                "/execution-groups/" + gid + "/revoke-review",
+                {"rationale": "Contract revocation before dispatch."},
+                client=data["clients"]["contract-owner"],
+            )
+        calls = []
+
+        def handle(req):
+            calls.append(req)
+            raise httpx.ReadTimeout("synthetic timeout", request=req)
+
+        with pytest.raises(RuntimeError):
+            execution.decision(
+                cli.PROJECT,
+                USERS["contract-admin-a"],
+                first["plan_id"],
+                0,
+                transport=httpx.MockTransport(handle),
+            )
+        assert len(calls) == int(outcome == "timeout")
+        if outcome == "timeout":
+            with pytest.raises(RuntimeError, match="unknown_no_retry"):
+                execution.decision(
+                    cli.PROJECT,
+                    USERS["contract-admin-a"],
+                    first["plan_id"],
+                    0,
+                    transport=httpx.MockTransport(lambda req: pytest.fail("retry")),
+                )
+            with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+                c.execute(
+                    "UPDATE anvil.harbor_checks SET state='execution_unknown',finished_at=now() WHERE id=%s",
+                    (first["check"]["id"],),
+                )
+            run = (
+                data["clients"]["contract-admin-a"]
+                .get(BASE + "/workspace/runs/" + first["check"]["id"])
+                .json()["data"]
+            )
+            assert run["origin"] == "native_sdk_mock_verification"
+            assert run["calls"][0]["output_text"] is None
+            assert run["calls"][0]["usage"]["error_code"] == "ambiguous_dispatch"
+    with transaction(worker=True) as c:
+        assert one(c, "SELECT * FROM anvil.claim_harbor_job()") is None
+    with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+        assert (
+            one(
+                c,
+                "SELECT reserved_micro_usd FROM anvil.evaluation_spend_windows WHERE authority_reference=%s",
+                (data["policy"]["reference"],),
+            )["reserved_micro_usd"]
+            == 1000000
+        )
+
+
+def test_scope_real_identity_legacy_route_and_shared_budget_negatives(configured):
+    data = configured
+    post = data["post"]
+    gid = data["group"]["id"]
+    path = data["path"]
+    for name in ("advisor", "outsider"):
+        response = data["clients"][name].get(path + "/execution-groups/" + gid)
+        assert response.status_code in (403, 404)
+    post(
+        "/execution-groups/" + gid + "/admin-approvals",
+        {
+            "purpose": "paid_scope",
+            "subject_hash": data["group"]["subject_hash"],
+            "authority_reference": data["policy"]["reference"],
+            "expires_at": data["policy"]["expires_at"],
+        },
+        client=data["clients"]["admin-1"],
+        expected=403,
+    )
+    legacy = data["clients"]["contract-admin-a"].post(
+        BASE + "/harbor-agent-plans/" + data["group"]["models"][0]["plan_id"] + "/launch",
+        json={},
+        headers={"Idempotency-Key": uid()},
+    )
+    assert legacy.status_code == 409 and "execution group" in legacy.text
+    post("/execution-groups/" + gid + "/launch")
+    second = post("/execution-groups", {"preparation_id": data["prep"]["id"]})
+    policy = {**data["policy"], "group_subject_hash": second["subject_hash"]}
+    data["authority"].write_text(json.dumps(policy))
+    data["authority"].chmod(0o600)
+    # Reuse of activation decisions is exact connection hash/reference/cap; paid scope is new.
+    data["approvals"](second)
+    evidence = post(
+        "/execution-groups/" + second["id"] + "/rights-evidence",
+        {
+            "reference": "contract-second-reference",
+            "description": "Separate contract review for second exact group.",
+        },
+        client=data["clients"]["contract-owner"],
+    )
+    post(
+        "/execution-groups/" + second["id"] + "/review",
+        {
+            "subject_hash": second["subject_hash"],
+            "rights_evidence_id": evidence["artifact_id"],
+            "rationale": "Second isolated group contract approval.",
+            "expires_at": policy["expires_at"],
+        },
+        client=data["clients"]["contract-owner"],
+    )
+    post("/execution-groups/" + second["id"] + "/launch", expected=409)
+    with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+        assert (
+            one(
+                c,
+                "SELECT reserved_micro_usd FROM anvil.evaluation_spend_windows WHERE authority_reference=%s",
+                (policy["reference"],),
+            )["reserved_micro_usd"]
+            == 1000000
+        )
+        assert (
+            one(
+                c,
+                "SELECT count(*) n FROM anvil.workspace_execution_models WHERE group_id=%s AND check_id IS NOT NULL",
+                (second["id"],),
+            )["n"]
+            == 0
+        )

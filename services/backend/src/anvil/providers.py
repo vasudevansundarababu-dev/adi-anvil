@@ -178,6 +178,11 @@ def execute_contract(
         raise ValueError(
             "Mock transport required; live dispatch must use paid authorization service"
         )
+    return _execute_native(provider, request, transport, credential=credential)
+
+
+def _execute_native(provider, request, transport, *, credential, structured=False):
+    """Internal SDK plumbing; live callers must supply the authorized guarded broker."""
     endpoint = PROVIDERS[provider][2]
     if credential is not None and (
         not isinstance(credential, SecretStr) or not credential.get_secret_value()
@@ -216,6 +221,11 @@ def execute_contract(
                     input=[{"role": "user", "content": request.actor_text}],
                     max_output_tokens=request.max_output_tokens,
                     store=False,
+                    **(
+                        {"service_tier": "default", "text": {"format": {"type": "json_object"}}}
+                        if structured
+                        else {}
+                    ),
                 )
             elif provider == "anthropic":
                 sdk = Anthropic(
@@ -243,7 +253,17 @@ def execute_contract(
                 result = sdk.models.generate_content(
                     model=request.model,
                     contents=request.actor_text,
-                    config=types.GenerateContentConfig(max_output_tokens=request.max_output_tokens),
+                    config=types.GenerateContentConfig(
+                        max_output_tokens=request.max_output_tokens,
+                        **(
+                            {
+                                "response_mime_type": "application/json",
+                                "thinking_config": types.ThinkingConfig(thinking_budget=0),
+                            }
+                            if structured
+                            else {}
+                        ),
+                    ),
                 )
             elif provider == "mistral":
                 sdk = Mistral(

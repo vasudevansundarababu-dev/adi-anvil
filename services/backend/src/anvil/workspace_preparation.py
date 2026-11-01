@@ -113,14 +113,7 @@ def package_snapshot(row):
 
 
 def readiness(c, snapshot):
-    reasons = [
-        "workspace_dispatch_not_qualified",
-        "reviewed_pricing_admission_not_bound",
-        "exact_user_authority_not_bound",
-        "processing_rights_not_bound",
-        "required_run_decisions_not_bound",
-        "shared_spending_admission_not_implemented",
-    ]
+    reasons = ["execution_group_required"]
     if snapshot["aggregate_cap_micro_usd"] is None:
         reasons.append("aggregate_api_cap_missing")
     package = snapshot["package"]
@@ -178,7 +171,8 @@ def readiness(c, snapshot):
                 missing.append("credential_revoked_or_unavailable")
             elif str(stored["current_version_id"]) != credential["version_id"]:
                 missing.append("bound_credential_rotated")
-        missing.append("provider_task_adapter_not_qualified")
+        if bound["provider"] not in ("openai", "anthropic", "gemini"):
+            missing.append("provider_task_adapter_not_supported")
         model_states.append({"model_profile_id": bound["id"], "missing": missing})
     return {
         "state": "planning_only",

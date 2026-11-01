@@ -44,3 +44,15 @@ def audit(conn, project, user, action, target=None, metadata=None):
 
 def one(conn, sql, params=()):
     return conn.execute(sql, params).fetchone()
+
+
+def project_fence(conn, project):
+    """Harbor intent/outcome transactions lock project before group/job/plan/check rows.
+
+    KEY SHARE is compatible with audit FK checks. Do not add it to generic API
+    transactions, whose concurrent shared-to-exclusive lock upgrades could deadlock.
+    """
+    if not conn.execute(
+        "SELECT id FROM anvil.projects WHERE id=%s FOR KEY SHARE", (project,)
+    ).fetchone():
+        raise RuntimeError("project_unavailable")

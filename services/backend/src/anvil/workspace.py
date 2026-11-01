@@ -24,7 +24,7 @@ class FrameworkProfile(Strict):
 
 
 RUN_SELECT = """SELECT h.*,p.package_sha256,p.manifest,s.task_id,s.task_version,
-    s.source_sha256,s.actor_spec,s.revision_id source_revision_id
+    s.source_sha256,s.actor_spec,s.revision_id source_revision_id,s.source_artifact_id
     FROM anvil.harbor_checks h JOIN anvil.harbor_packages p ON p.id=h.package_id
     JOIN anvil.praxis_sources s ON s.id=p.source_id"""
 
@@ -61,7 +61,7 @@ def calls_for(c, row):
     if not row.get("agent_plan_id"):
         return []
     return c.execute(
-        """SELECT stage_index,status,reserved_micro_usd,actual_micro_usd,usage,
+        """SELECT stage_index,status,reserved_micro_usd,actual_micro_usd,usage,request_id,request_sha256,
         created_at,finished_at FROM anvil.harbor_agent_calls WHERE plan_id=%s
         ORDER BY stage_index""",
         (row["agent_plan_id"],),
@@ -71,7 +71,18 @@ def calls_for(c, row):
 def public_run(c, row, detail=False):
     calls = calls_for(c, row)
     result = row.get("result") or {}
-    synthetic = row["candidate"] != "agent"
+    mock_execution = bool(
+        result.get("mock_execution")
+        or any((call.get("usage") or {}).get("dispatch_origin") == "sdk_mock" for call in calls)
+    )
+    synthetic = row["candidate"] != "agent" or mock_execution
+    plan = (
+        one(c, "SELECT config FROM anvil.harbor_agent_plans WHERE id=%s", (row["agent_plan_id"],))
+        if row.get("agent_plan_id")
+        else None
+    )
+    config = plan["config"] if plan else {}
+    selected_model = config.get("workspace_model")
     projection = {
         k: row[k]
         for k in (
@@ -90,16 +101,26 @@ def public_run(c, row, detail=False):
     }
     projection.update(
         title=row["actor_spec"].get("title", row["task_id"]),
-        model=result.get("model"),
-        origin="synthetic_software_verification" if synthetic else "live_model_unreviewed",
+        model=result.get("model")
+        or (selected_model["model_id"] if selected_model else config.get("model")),
+        provider=selected_model["provider"] if selected_model else ("openai" if plan else None),
+        execution_group_id=config.get("workspace_execution_group"),
+        origin="native_sdk_mock_verification"
+        if mock_execution
+        else "synthetic_software_verification"
+        if synthetic
+        else "live_model_unreviewed",
         metrics=metrics(row, calls),
         comparison_signature=digest(
             {
                 "package": row["package_sha256"],
-                "origin": "synthetic" if synthetic else "model",
+                "origin": "sdk_mock" if mock_execution else "synthetic" if synthetic else "model",
                 "reward_version": (result.get("diagnostics") or {}).get("reward_version"),
                 "harbor": result.get("harbor_version"),
                 "execution_overlay": result.get("execution_overlay"),
+                "output_tokens": config.get("max_output_tokens"),
+                "timeout_seconds": config.get("episode_timeout_seconds"),
+                "adapter_sha256": config.get("adapter_sha256"),
             }
         ),
     )
@@ -115,7 +136,7 @@ def public_run(c, row, detail=False):
                 if e.get("kind") in {"output.json", "output.txt", "diagnostics.json"}
                 and all(k in e for k in ("artifact_id", "kind", "sha256"))
             ],
-            calls=calls,
+            calls=observed_calls(c, row, calls),
             trajectory_limitations=result.get("trajectory") or "No retained trajectory available",
             evaluation_snapshot={
                 "package_sha256": row["package_sha256"],
@@ -123,10 +144,100 @@ def public_run(c, row, detail=False):
                 "schema_version": row["manifest"].get("schema_version"),
                 "stage_order": row["manifest"].get("stage_order", []),
                 "reference_material": "Restricted; excluded from this projection",
-                "rubric": "Executable grader is bound by the immutable package hash. Full rubric editor is pending.",
+                "rubric": safe_rubric(c, row),
+                "execution_settings": {
+                    k: config.get(k)
+                    for k in (
+                        "model",
+                        "max_calls",
+                        "max_output_tokens",
+                        "episode_timeout_seconds",
+                        "request_timeout_seconds",
+                        "adapter_sha256",
+                    )
+                },
+                "selected_model": selected_model,
             },
         )
     return projection
+
+
+def safe_rubric(c, row):
+    from anvil.praxis_contract import PraxisTask
+    from anvil.praxis_export import parse_export
+    from anvil.praxis_staged import PraxisTaskV2
+    from anvil.task_parser import json_value
+
+    raw, _ = parse_export(artifacts.read(c, row["source_artifact_id"]))
+    value = json_value(raw)
+    task = (
+        PraxisTaskV2 if value.get("schema_version") == "praxis.anvil.task.v2" else PraxisTask
+    ).model_validate(value)
+
+    def criteria(rubric):
+        return [
+            {"id": item.id, "description": item.description, "weight_bps": item.weight_bps}
+            for item in rubric.criteria
+        ]
+
+    return {
+        "criteria": criteria(task.rubric),
+        "stages": [{"id": stage.id, "criteria": criteria(stage.rubric)} for stage in task.stages]
+        if task.schema_version == "praxis.anvil.task.v2"
+        else [],
+        "private_bindings": "Excluded; exact executable grading remains bound to the package hash",
+    }
+
+
+def observed_calls(c, row, calls):
+    """Reconstruct only an actually recorded intent's actor context, verified by its hash.
+
+    Grading bindings/admission bytes never leave this function. Captured output is
+    exposed only after the execution is terminal, including failed/unknown executions.
+    """
+    if not calls:
+        return []
+    import hashlib
+    import io
+    import zipfile
+
+    from anvil import harbor_agents
+    from anvil.task_parser import json_value
+
+    package = one(c, "SELECT * FROM anvil.harbor_packages WHERE id=%s", (row["package_id"],))
+    with zipfile.ZipFile(io.BytesIO(artifacts.read(c, package["package_artifact_id"]))) as archive:
+        raw = archive.read("anvil-agent/admission.json")
+    if (
+        hashlib.sha256(raw).hexdigest()
+        != package["manifest"]["files"]["anvil-agent/admission.json"]
+    ):
+        raise HTTPException(409, "Actor admission integrity mismatch")
+    admission = json_value(raw)
+    outputs = c.execute(
+        "SELECT stage_index,output_json FROM anvil.harbor_agent_calls WHERE plan_id=%s ORDER BY stage_index",
+        (row["agent_plan_id"],),
+    ).fetchall()
+    texts = {entry["stage_index"]: (entry["output_json"] or {}).get("text") for entry in outputs}
+    result = []
+    for call in calls:
+        context = None
+        try:
+            previous = [json_value(texts[index]) for index in range(call["stage_index"])]
+            prompt = harbor_agents.actor_prompt(admission, call["stage_index"], previous)
+            if hashlib.sha256(prompt.encode()).hexdigest() == call["request_sha256"]:
+                context = prompt
+        except (ValueError, TypeError, KeyError, RuntimeError):
+            pass
+        result.append(
+            {
+                **call,
+                "actor_context": context,
+                "output_text": texts.get(call["stage_index"])
+                if row["state"] not in ("queued", "running")
+                else None,
+            }
+        )
+    return result
 
 
 def routes(context, wrap, idempotent):

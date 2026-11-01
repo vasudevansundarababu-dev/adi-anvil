@@ -27,7 +27,7 @@ from pydantic import AwareDatetime, Field
 
 from anvil import artifacts, auth, domain, providers
 from anvil.config import ROOT, harbor_live_enabled, private_file_owner
-from anvil.db import Jsonb, audit, digest, one, transaction, uid
+from anvil.db import Jsonb, audit, digest, one, project_fence, transaction, uid
 from anvil.harbor_package import encoded
 from anvil.praxis_contract import Binding, matches
 from anvil.schemas import Strict
@@ -44,10 +44,24 @@ def code_digest():
         ROOT / "services/backend/src/anvil" / name
         for name in (
             "harbor_agents.py",
+            "harbor_worker.py",
             "harbor_package.py",
             "praxis_contract.py",
             "praxis_staged.py",
             "providers.py",
+            "db.py",
+            "auth.py",
+            "config.py",
+            "domain.py",
+            "artifacts.py",
+            "marketing_authority.py",
+            "workspace_execution.py",
+            "workspace_dispatch.py",
+            "workspace_adapter_contracts.py",
+            "workspace_preparation.py",
+            "workspace_models.py",
+            "workspace_credentials.py",
+            "workspace_secrets.py",
         )
     ]
     paths.append(ROOT / "services/harbor/src/anvil_harbor/agent.py")
@@ -142,6 +156,10 @@ def admin_count(c, record, purpose, subject, policy):
 
 
 def readiness(c, record):
+    if record["config"].get("workspace_execution_group"):
+        from anvil.workspace_execution import plan_readiness
+
+        return plan_readiness(c, record)
     connection = one(c, "SELECT * FROM anvil.connections WHERE id=%s", (record["connection_id"],))
     package = one(c, "SELECT * FROM anvil.harbor_packages WHERE id=%s", (record["package_id"],))
     missing = []
@@ -307,9 +325,16 @@ def execute_provider(model, prompt, transport=None):
 
 
 def decision(project, user, plan_id, stage_index, transport=execute_provider):
+    with transaction(project, user) as c:
+        workspace = plan(c, plan_id)["config"].get("workspace_execution_group")
+    if workspace:
+        from anvil.workspace_execution import decision as workspace_decision
+
+        return workspace_decision(project, user, plan_id, stage_index)
     if type(stage_index) is not int or stage_index < 0:
         raise RuntimeError("unsupported_stage")
     with transaction(project, user) as c:
+        project_fence(c, project)
         record = plan(c, plan_id, True)
         check = one(c, "SELECT * FROM anvil.harbor_checks WHERE id=%s", (record["check_id"],))
         ready = readiness(c, record)
@@ -402,6 +427,7 @@ def decision(project, user, plan_id, stage_index, transport=execute_provider):
             raise ValueError()
     except (ValueError, TypeError, RecursionError):
         with transaction(project, worker=True) as c:
+            project_fence(c, project)
             c.execute(
                 "UPDATE anvil.harbor_agent_calls SET status='execution_unknown',finished_at=now() WHERE id=%s",
                 (cid,),
@@ -409,6 +435,7 @@ def decision(project, user, plan_id, stage_index, transport=execute_provider):
             audit(c, project, user, "harbor.agent_dispatch_unknown", cid)
         raise RuntimeError("provider_output_or_usage_unknown_no_retry") from None
     with transaction(project, worker=True) as c:
+        project_fence(c, project)
         c.execute(
             "UPDATE anvil.harbor_agent_calls SET status='completed',output_json=%s,usage=%s,request_id=%s,actual_micro_usd=%s,finished_at=now() WHERE id=%s",
             (
@@ -572,6 +599,8 @@ def routes(context, wrap, idempotent):
 
             def act():
                 record = plan(c, pid)
+                if record["config"].get("workspace_execution_group"):
+                    raise HTTPException(409, "Use the execution-group review controls")
                 rationale = body.get("rationale")
                 if (
                     set(body) != {"rationale"}
@@ -600,6 +629,8 @@ def routes(context, wrap, idempotent):
 
             def act():
                 record = plan(c, pid, True)
+                if record["config"].get("workspace_execution_group"):
+                    raise HTTPException(409, "Use the execution-group review controls")
                 if body.subject_hash != record["subject_hash"]:
                     raise HTTPException(409, "Review must bind exact plan")
                 if one(
@@ -667,6 +698,8 @@ def routes(context, wrap, idempotent):
 
             def act():
                 record = plan(c, pid)
+                if record["config"].get("workspace_execution_group"):
+                    raise HTTPException(409, "Use the execution-group Admin controls")
                 policy = authority()
                 expected = (
                     record["config"]["connection_hash"]
@@ -711,6 +744,10 @@ def routes(context, wrap, idempotent):
 
             def act():
                 record = plan(c, pid, True)
+                if record["config"].get("workspace_execution_group"):
+                    raise HTTPException(
+                        409, "Launch this workspace plan through its execution group"
+                    )
                 if record["check_id"]:
                     return {"check_id": record["check_id"]}
                 ready = readiness(c, record)

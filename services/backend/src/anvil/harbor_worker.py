@@ -1,6 +1,6 @@
-"""Dedicated Docker-host adapter. Only fixed, network-free synthetic oracle/nop checks.
+"""Dedicated Docker-host adapter: synthetic checks and explicitly admitted mediated agents.
 
-Never use this worker for a paid agent: Harbor does not inherit Anvil spend mediation.
+Provider calls stay in the bounded server gateway; Harbor never receives provider keys.
 The normal app/worker containers receive neither Docker socket nor this opt-in process.
 """
 
@@ -11,11 +11,12 @@ import shutil
 import signal
 import subprocess
 import time
+from contextlib import contextmanager
 from pathlib import Path
 
 from anvil import artifacts, auth, domain
 from anvil.config import ROOT
-from anvil.db import Jsonb, audit, one, transaction
+from anvil.db import Jsonb, audit, one, project_fence, transaction
 from anvil.harbor_package import HARBOR_VERSION, apply_check_overlay, unpack
 
 
@@ -80,8 +81,11 @@ def child_environment(home):
     return env
 
 
+@contextmanager
 def scoped(job, user):
-    return transaction(job["project_id"], user)
+    with transaction(job["project_id"], user) as c:
+        project_fence(c, job["project_id"])
+        yield c
 
 
 def lease(c, job):
@@ -95,7 +99,7 @@ def lease(c, job):
 
 def authorized(c, job, user):
     roles = auth.project_roles(c, job["project_id"], user)
-    auth.require(roles, "researcher", "product-owner")
+    auth.require(roles, "admin", "researcher", "product-owner")
     row = one(c, "SELECT * FROM anvil.harbor_checks WHERE id=%s FOR UPDATE", (job["target_id"],))
     if not row:
         raise RuntimeError("check_missing")
@@ -117,11 +121,20 @@ def authorized(c, job, user):
 
 def finish(job, user, state, result=None, error=None, live=False):
     with transaction(job["project_id"], worker=True) as c:
+        project_fence(c, job["project_id"])
         lease(c, job)
-        c.execute(
-            "UPDATE anvil.harbor_checks SET state=%s,result=%s,error_code=%s,finished_at=now() WHERE id=%s",
+        changed = one(
+            c,
+            "UPDATE anvil.harbor_checks SET state=%s,result=%s,error_code=%s,finished_at=now() WHERE id=%s AND state IN ('queued','running') RETURNING id",
             (state, Jsonb(result) if result else None, error, job["target_id"]),
         )
+        if not changed:
+            c.execute(
+                "UPDATE anvil.jobs SET status='cancelled',error_code='already_terminal' WHERE id=%s",
+                (job["id"],),
+            )
+            audit(c, job["project_id"], user, "harbor.terminal_result_preserved", job["target_id"])
+            return
         c.execute(
             "UPDATE anvil.jobs SET status=%s,error_code=%s WHERE id=%s",
             (
@@ -142,7 +155,12 @@ def finish(job, user, state, result=None, error=None, live=False):
             job["target_id"],
             {
                 "error_code": error,
-                "origin": "live_model_attempt" if live else "synthetic_software_verification",
+                "origin": (result or {}).get("origin")
+                or (
+                    "provider_dispatch_attempt_unverified"
+                    if live
+                    else "synthetic_software_verification"
+                ),
                 "model_performance": bool(result and result.get("model_performance")),
             },
         )
@@ -279,6 +297,8 @@ def process(job):
                 record = plan(c, row["agent_plan_id"])
                 model = record["config"]["model"]
                 run_timeout = 180 + 120 * record["config"]["max_calls"]
+                if record["config"].get("workspace_execution_group"):
+                    run_timeout = record["config"]["episode_timeout_seconds"]
             gateway = Gateway(job["project_id"], user, row["agent_plan_id"])
             env["ANVIL_HARBOR_GATEWAY_SOCKET"] = gateway.path
             env["ANVIL_HARBOR_GATEWAY_TOKEN"] = gateway.token
@@ -372,6 +392,14 @@ def process(job):
         evidence = []
         with scoped(job, user) as c:
             lease(c, job)
+            mock_execution = bool(
+                row.get("agent_plan_id")
+                and one(
+                    c,
+                    "SELECT 1 FROM anvil.harbor_agent_calls WHERE plan_id=%s AND usage->>'dispatch_origin'='sdk_mock' LIMIT 1",
+                    (row["agent_plan_id"],),
+                )
+            )
             for path in [
                 *files,
                 *sorted(results.rglob("output.json")),
@@ -385,7 +413,9 @@ def process(job):
                     path.read_bytes(),
                     "internal",
                     mime="text/plain" if path.name == "output.txt" else "application/json",
-                    origin="adi_executed" if row["candidate"] == "agent" else "illustrative",
+                    origin="adi_executed"
+                    if row["candidate"] == "agent" and not mock_execution
+                    else "illustrative",
                 )
                 evidence.append(
                     {
@@ -399,6 +429,7 @@ def process(job):
             if row["candidate"] == "agent"
             else "synthetic_software_verification",
             "model_performance": row["candidate"] == "agent",
+            "mock_execution": mock_execution,
             "model": model,
             "agent_plan_id": str(row["agent_plan_id"]) if row["agent_plan_id"] else None,
             "harbor_version": HARBOR_VERSION,
@@ -415,6 +446,12 @@ def process(job):
             if row["candidate"] == "agent"
             else "Software feasibility check; no model capability conclusion",
         }
+        if mock_execution:
+            result.update(
+                origin="native_sdk_mock_verification",
+                model_performance=False,
+                analysis="Mocked SDK and Harbor software verification; no real model performance measured",
+            )
         finish(job, user, "succeeded", result, live=row["candidate"] == "agent")
     except Exception as exc:
         if child and child.poll() is None:

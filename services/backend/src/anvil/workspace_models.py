@@ -127,7 +127,7 @@ def model_public(c, row):
         else "planning_only",
         "max_output_tokens": row["config"].get("max_output_tokens"),
         "launch_available": False,
-        "missing": ["exact_run_readiness_required", "profile_dispatch_binding_not_qualified"],
+        "missing": ["exact_execution_group_admission_required"],
         "profile_id": header["id"] if header else None,
         "version": header["version_no"] if header else None,
         "profile_row_version": header["row_version"] if header else None,

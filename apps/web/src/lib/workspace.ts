@@ -47,6 +47,12 @@ export type WorkspaceRun = {
     status: string;
     usage: unknown;
     actual_micro_usd: number | null;
+    request_sha256?: string;
+    request_id?: string | null;
+    created_at?: string;
+    finished_at?: string | null;
+    actor_context?: string | null;
+    output_text?: string | null;
   }[];
 };
 export type WorkspaceTask = {
@@ -88,17 +94,20 @@ export const money = (value: number | null) =>
     : new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
-        maximumFractionDigits: 4,
+        maximumFractionDigits: 6,
       }).format(value / 1_000_000);
 export const dateTime = (value: string | null) =>
   value ? new Date(value).toLocaleString() : 'Not recorded';
 export const synthetic = (run: WorkspaceRun) =>
-  ['synthetic_software_verification', 'illustrative'].includes(run.origin);
+  ['synthetic_software_verification', 'illustrative', 'native_sdk_mock_verification'].includes(
+    run.origin,
+  );
 export const comparable = (runs: WorkspaceRun[]) =>
   runs.length >= 2 &&
   runs.every(
     (r) =>
-      synthetic(r) &&
+      r.origin === runs[0].origin &&
+      (r.kind === 'diagnostic' || r.state === 'succeeded') &&
       r.metrics.scored &&
       (r.kind !== 'diagnostic' ||
         ((r.metrics.planned || 0) > 0 &&

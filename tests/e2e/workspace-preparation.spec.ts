@@ -207,8 +207,8 @@ test('Admin saves a typed preset and multi-model preparation without spending de
     page.getByText('An explicit aggregate API cap is missing.', { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole('button', { name: 'Launch unavailable', exact: true }),
-  ).toBeDisabled();
+    page.getByRole('button', { name: 'Create execution group', exact: true }),
+  ).toBeVisible();
   const listPath = '**/workspace/preparations';
   let interruptList = true;
   await page.route(listPath, async (route) => {
@@ -291,4 +291,23 @@ test('Admin saves a typed preset and multi-model preparation without spending de
   await page.getByRole('region', { name: 'Preparation readiness', exact: true }).screenshot({
     path: 'artifacts/test-runs/modern-preparation-mobile.png',
   });
+  const groupResponse = page.waitForResponse(
+    (r) => r.url().endsWith('/workspace/execution-groups') && r.request().method() === 'POST',
+  );
+  await page.getByRole('button', { name: 'Create execution group', exact: true }).click();
+  const group = (await (await groupResponse).json()).data;
+  expect(group.preparation_id).toBe(bounded.id);
+  expect(group.models).toHaveLength(2);
+  expect(group.reservation_retained).toBe(false);
+  expect(group.readiness.ready).toBe(false);
+  await expect(
+    page.getByRole('heading', { name: 'Execution group · ' + group.id.slice(0, 8), exact: true }),
+  ).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Launch evaluation', exact: true })).toBeDisabled();
+  await expect(
+    page.getByText('Setup required · no model dispatched', { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole('region', { name: 'Evaluation execution groups', exact: true })
+    .screenshot({ path: 'artifacts/test-runs/modern-execution-group-mobile.png' });
 });

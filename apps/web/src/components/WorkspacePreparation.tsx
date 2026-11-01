@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Form from './Form';
+import WorkspaceExecutionGroups from './WorkspaceExecutionGroups';
 import { shortId, workspaceApi as api } from '../lib/workspace';
 import styles from './ModernWorkspace.module.css';
 
@@ -153,7 +154,7 @@ function ToggleModels({
     <fieldset>
       <legend>Model profiles for planning</legend>
       <p className={styles.muted}>
-        Select exact saved versions. All remain unavailable for dispatch until qualified.
+        Select exact saved versions. Execution requires current bindings and explicit authorization.
       </p>
       {models.map((m) => (
         <label key={m.id} style={{ display: 'block' }}>
@@ -239,7 +240,7 @@ export function ExecutionPresets({
               tracing_profile_id: data.get('tracing') || null,
               model_profile_ids: selected,
             });
-            setMessage('Preset saved. Model execution remains unavailable until qualified.');
+            setMessage('Preset saved. Prepare a task to review costs and launch requirements.');
             form.reset();
             setSelected([]);
             setRuntime('anvil-structured-json-v1');
@@ -286,9 +287,7 @@ export function ExecutionPresets({
         </select>
         <label htmlFor="preset-runtime">Candidate runtime</label>
         <select id="preset-runtime" value={runtime} onChange={(e) => setRuntime(e.target.value)}>
-          <option value="anvil-structured-json-v1">
-            Anvil structured agent · binding qualification pending
-          </option>
+          <option value="anvil-structured-json-v1">Anvil structured JSON agent</option>
           <option value="semantic_kernel">Semantic Kernel · adapter unavailable</option>
         </select>
         {runtime === 'semantic_kernel' && (
@@ -359,6 +358,8 @@ export function ExecutionPresets({
 }
 
 const messages: Record<string, string> = {
+  execution_group_required:
+    'Create an execution group below to review costs, authorization and launch readiness.',
   workspace_dispatch_not_qualified: 'Live execution for workspace profiles is not available yet.',
   current_pricing_not_bound: 'Current reviewed pricing has not been bound to this preparation.',
   reviewed_pricing_admission_not_bound: 'Pricing still needs review for this exact evaluation.',
@@ -399,11 +400,15 @@ export default function WorkspacePreparation({
   taskId,
   preparationId,
   open,
+  canReview = false,
+  canAdmin = false,
 }: {
   base: string;
   taskId?: string | null;
   preparationId?: string | null;
   open: (id: string) => void;
+  canReview?: boolean;
+  canAdmin?: boolean;
 }) {
   const packages = useList<Package>(
     base + '/workspace/packages' + (taskId ? '?task_id=' + encodeURIComponent(taskId) : ''),
@@ -699,13 +704,22 @@ export default function WorkspacePreparation({
               </ul>
             </div>
           ))}
-          <button disabled>Launch unavailable</button>
+          <p>Continue below to create an execution group and review exact launch requirements.</p>
           <details>
             <summary>Exact preparation snapshot</summary>
             <pre>{JSON.stringify(saved.snapshot, null, 2)}</pre>
             <small>Binding {saved.subject_hash}</small>
           </details>
         </section>
+      )}
+      {saved && !composing && (
+        <WorkspaceExecutionGroups
+          key={base + ':' + saved.id}
+          base={base}
+          preparationId={saved.id}
+          canReview={canReview}
+          canAdmin={canAdmin}
+        />
       )}
       <section className={styles.panel} aria-labelledby="saved-preparations-heading">
         <h2 id="saved-preparations-heading">Saved preparations</h2>

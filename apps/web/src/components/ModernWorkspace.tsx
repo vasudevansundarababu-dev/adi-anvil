@@ -567,6 +567,8 @@ function WorkspaceView() {
                     base={base}
                     taskId={query.get('task')}
                     preparationId={query.get('preparation')}
+                    canReview={project.roles.includes('product-owner')}
+                    canAdmin={admin}
                     open={(id) =>
                       router.replace(
                         route +
@@ -1094,6 +1096,43 @@ function RunDetails({
     <section className={styles.panel}>
       <h2>{tab === 'Results' ? 'Results & retained outputs' : 'Observable trajectory'}</h2>
       <p className={styles.muted}>{run.trajectory_limitations}</p>
+      {tab === 'Trajectories' && !!run.calls?.length && (
+        <ol aria-label="Observed stage events">
+          {run.calls.map((call) => (
+            <li key={call.stage_index}>
+              <h3>
+                Stage {call.stage_index + 1} · {call.status.replaceAll('_', ' ')}
+              </h3>
+              <p>
+                Intent recorded: {dateTime(call.created_at || null)}. Outcome captured:{' '}
+                {dateTime(call.finished_at || null)}.
+              </p>
+              <p>Request ID: {call.request_id || 'not captured'}</p>
+              <details>
+                <summary>Actor context actually supplied</summary>
+                {call.actor_context ? (
+                  <pre>{call.actor_context}</pre>
+                ) : (
+                  <p>Verified context is unavailable; no reconstruction is shown.</p>
+                )}
+                <small>Actor-context SHA-256: {call.request_sha256}</small>
+              </details>
+              <details>
+                <summary>Captured final output</summary>
+                {call.output_text !== null && call.output_text !== undefined ? (
+                  <pre>{call.output_text}</pre>
+                ) : (
+                  <p>No terminal captured output is available. Unknown dispatch is not retried.</p>
+                )}
+              </details>
+              <details>
+                <summary>Usage and finish status</summary>
+                <pre>{JSON.stringify(call.usage, null, 2)}</pre>
+              </details>
+            </li>
+          ))}
+        </ol>
+      )}
       <p>
         Execution {run.state} ·{' '}
         {m.score === null ? 'unscored' : 'automated score ' + m.score + '/100'}

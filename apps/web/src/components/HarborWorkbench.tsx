@@ -234,8 +234,8 @@ export default function HarborWorkbench({
               <a className="button" href={preparationHref(selected.task_id)}>
                 Prepare evaluation
               </a>{' '}
-              Choose saved model profiles and review readiness next. Live workspace launch remains
-              unavailable.
+              Choose saved model profiles and review readiness next. Launch requires current
+              bindings, processing rights and explicit budget authorization.
             </p>
           )}
           <p>
