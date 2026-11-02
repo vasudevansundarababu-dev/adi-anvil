@@ -162,8 +162,18 @@ def validate_bundle(task, value):
     if any(outcomes != {True, False} for outcomes in guard_outcomes.values()):
         raise ValueError("Every runtime/both rule requires positive and denied-action assertions")
     for rule in bundle.rules:
-        if any(f not in fixtures or rule.source_id not in fixtures[f].covers for f in rule.tests):
-            raise ValueError("Rule test mapping is missing coverage: " + rule.source_id)
+        for fixture_id in rule.tests:
+            fixture = fixtures.get(fixture_id)
+            if fixture is None or (
+                rule.source_id not in fixture.covers
+                and rule.source_id not in fixture.expected_checks
+            ):
+                raise ValueError("Rule test mapping is missing coverage: " + rule.source_id)
+            # Assertion keys are executable coverage. Reconcile a redundant documentary
+            # covers omission only when the referenced fixture already asserts this rule.
+            # Never create an assertion, expected outcome, fixture or rule reference.
+            if rule.source_id not in fixture.covers:
+                fixture.covers.append(rule.source_id)
         outcomes = {
             f.expected_checks[rule.source_id]
             for f in bundle.fixtures
@@ -213,6 +223,11 @@ def generation_prompt(task, tool_contracts=None):
         "Generate positive AND negative assertions for every rule, empty output reward zero, "
         "and a prohibited-action hard-failure fixture. All criteria/constraint IDs exactly match source. "
         "Rules map to fixture IDs; do not return fixture expected checks as evaluator code. "
+        "For each rules entry, tests contains exact fixtures[].id values, NOT Python function names "
+        "or rule IDs. Every referenced fixture must list that source_id in covers AND include its "
+        "boolean assertion in expected_checks. Include both a passing and a failing assertion "
+        "for each source rule. Before returning, cross-check every rules[].tests reference "
+        "against fixtures[].id, covers and expected_checks; all three must agree. "
         "Scoring is computed by the server from checks and source weights, not by your code.\n"
         + json.dumps(Bundle.model_json_schema())
         + "\nSOURCE\n"

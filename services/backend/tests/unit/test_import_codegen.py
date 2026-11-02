@@ -137,6 +137,14 @@ def test_generated_contract_and_notebook_private_projection(path):
         assert files.read("evaluation/verifiers/rules.py").decode() == bundle.code
         assert b"expected_reward_bps" not in files.read("instruction.md")
         assert "tests/emit_grade.py" in files.namelist()
+        assert (
+            files.read("environment/Dockerfile").decode() == "FROM " + manifest["base_image"] + "\n"
+        )
+        compose = files.read("environment/docker-compose.yaml").decode()
+        assert "network_mode: none" in compose and "no-new-privileges:true" in compose
+        assert "read_only: true" in compose and "10001:10001" in compose
+        assert "evaluation/verifiers/rules.py" not in compose
+        assert task.evaluation_private.canary not in files.read("instruction.md").decode()
 
 
 @pytest.mark.parametrize(
@@ -161,6 +169,42 @@ def test_missing_rule_semantics_and_coverage_do_not_pass():
     value["unresolved"] = ["No evidence for required accounting rule"]
     with pytest.raises(ValueError, match="Needs clarification"):
         validate_bundle(task, value)
+
+
+@pytest.mark.parametrize("failure", ["unknown_fixture", "missing_assertion"])
+def test_rule_test_mapping_requires_real_declared_coverage(failure):
+    task = parse((ROOT / "contracts/praxis/golden-v3/01-marketing.task.json").read_bytes())
+    value = fixture_bundle(task)
+    rule = value["rules"][0]
+    if failure == "unknown_fixture":
+        rule["tests"] = ["test_budget_python_function"]
+    else:
+        fixture = next(f for f in value["fixtures"] if f["id"] == rule["tests"][0])
+        fixture["expected_checks"].pop(rule["source_id"])
+        fixture["covers"].remove(rule["source_id"])
+    with pytest.raises(ValueError, match="Rule test mapping is missing coverage: M-BUDGET"):
+        validate_bundle(task, value)
+
+
+def test_existing_assertion_reconciles_documentary_coverage_without_inventing_checks():
+    task = parse((ROOT / "contracts/praxis/golden-v3/01-marketing.task.json").read_bytes())
+    value = fixture_bundle(task)
+    fixture = next(f for f in value["fixtures"] if f["id"] == "M-OVER-LIMIT")
+    original_checks = dict(fixture["expected_checks"])
+    fixture["covers"].remove("M-BUDGET")
+    bundle = validate_bundle(task, value)
+    repaired = next(f for f in bundle.fixtures if f.id == fixture["id"])
+    assert "M-BUDGET" in repaired.covers
+    assert repaired.expected_checks == original_checks
+    assert len(bundle.fixtures) == len(value["fixtures"])
+
+
+def test_generation_prompt_explains_cross_field_fixture_references():
+    task = parse((ROOT / "contracts/praxis/golden-v3/01-marketing.task.json").read_bytes())
+    prompt = generation_prompt(task)
+    assert "NOT Python function names" in prompt
+    assert "covers AND include" in prompt
+    assert task.evaluation_private.canary not in prompt
 
 
 def test_private_input_values_are_not_sent_to_generator_or_notebook():

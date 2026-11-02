@@ -1,5 +1,21 @@
 # Build status
 
+## Live import coverage repair — 2 November 2026
+
+User reported cloud generation failure for M-BUDGET after $0.071888 accounted cost.
+Read-only inspection of retained revision8047a75d confirms its rule references
+over_limits, whose expected_checks already contains M-BUDGET but documentary covers
+omits it. Validation now reconciles that redundant omission only from an existing
+explicit assertion; no expected outcome, fixture, code or business rule is invented.
+Unknown test references and references with neither declared nor asserted coverage
+remain rejected; positive/negative assertion and isolated execution checks remain.
+Generation prompt explicitly explains fixture-ID/covers/assertion consistency.
+309 units passed before the additional Docker packaging assertions; full check passed
+before the final coverage reconciliation edit. Final reruns, all3 golden end-to-end
+checks, cloud rollout and real model evaluations remain pending. Do not call this
+deployed or the golden live journey complete. Dockerfile/Compose already emitted by
+the package compiler; tests now verify pinned image and isolation files explicitly.
+
 ## Gemini qualification follow-up — 2 November 2026
 
 Official Gemini3.8 Flash supports LOW/MEDIUM/HIGH thinking levels; the existing
