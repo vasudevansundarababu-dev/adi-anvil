@@ -41,7 +41,7 @@ sign-in/identity/email. It is not a production identity or payment qualification
 
 ## Versions and evidence
 
-Anvil corrective image `556689f-1793654382` was inspected running in API, web and Harbor
+Anvil Benchmarks image `b0eec40-1793655919` was inspected running in API, web and Harbor
 worker containers. The deployed Gemini success/503/504 MockTransport proof and native
 Harbor roundtrip use zero provider calls and persist no fake model results. See
 [current build status](../../BUILD-STATUS.md) for live results and limitations.

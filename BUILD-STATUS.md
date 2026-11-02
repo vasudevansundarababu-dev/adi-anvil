@@ -1,5 +1,26 @@
 # Build status
 
+## Benchmarks live verification — 2 November 2026, 3:58 PM Chicago
+
+Application checkpoint `b0eec40` deployed to the existing host as
+`b0eec40-1793655919`; Cloud Build `7e6ac130-886d-4491-a6c3-d349e7561b7d`
+succeeded. Exact running API/web/Harbor images verified. Authenticated live browser
+verified modern Benchmarks navigation, six executable task candidates, catalog/profile
+controls and truthful missing diagnostic-prerequisite guidance. Full Factory workflow
+was verified locally, not fabricated in this hosted Harbor-only project.
+
+Deployed SDK success/503/504 controlled proofs and native Harbor/tool/private-grader
+roundtrip passed: zero provider calls, zero database writes, no model performance
+claim. Original Harbor-only gate restored after idle checks; ordinary live inference
+and real email remain disabled. Post-rollout unknown rows, all spend windows and call
+totals are identical to pre-rollout; six unknown reservations retained. Fingerprint:
+`2edf9746ba0cba77823dde6751cf7767f05de05a9bf15680091299b3d3a297a9`.
+No additional diagnostic or ambiguous-request retry. Gemini remains unverified.
+
+Both repositories have local reviewable check-ins; no push by this task. Praxis docs
+checkpoint `b289d215` additionally requires professor/guide verification for every
+sample before publication. Unrelated edits and existing demo videos preserved.
+
 ## Modern Benchmarks / YC documentation — 2 November 2026
 
 User requested the missing modern Benchmarks page, module definitions/distinctive
