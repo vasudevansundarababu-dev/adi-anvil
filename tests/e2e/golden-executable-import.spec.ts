@@ -52,6 +52,12 @@ test('all three golden exports import without exposing private oracles or claimi
       }),
     ).toBeVisible();
     await expect(page.getByRole('button', { name: 'Run', exact: true })).toHaveCount(0);
+    await expect(
+      page.getByText('Choose at least one model and enter a budget', { exact: false }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole('heading', { name: 'Make this task executable', exact: true }),
+    ).toBeVisible();
   }
 });
 

@@ -1,5 +1,16 @@
 # Build status
 
+## Run page generation handoff fix — 1 November 2026
+
+Fixed misleading model/budget guidance on tasks without a validated package. The Run
+page now shows the executable-generation report and actions directly, explains why no
+execution group can yet be created, and reloads package choices when polling observes
+a Ready revision. Existing task sources link to their own package builder. No run or
+paid generation was started, and no execution admission controls changed. Verified:
+`pnpm exec playwright test tests/e2e/golden-executable-import.spec.ts` (2 passed,
+including all three golden imports/Run pages), web `tsc --noEmit`, scoped Prettier,
+and `git diff --check` passed.
+
 ## Spec24 final local acceptance — 1 November 2026
 
 The full local executable-import pipeline is implemented. All three golden files pass

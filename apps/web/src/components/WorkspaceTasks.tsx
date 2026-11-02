@@ -345,7 +345,7 @@ export default function WorkspaceTasks({
               {runIssue}
             </p>
           )}
-          {!groupId && (
+          {!groupId && pkg && (
             <p className={styles.notice}>
               Choose at least one model and enter a budget, then select Run. Missing settings or
               execution blockers will be shown here.
@@ -362,12 +362,21 @@ export default function WorkspaceTasks({
               </h3>
               <p>
                 {task.actor.schema_version === 'praxis.anvil.task.v3'
-                  ? 'Generate and validate this task from its View page. The import report shows missing settings, tool problems or failing tests.'
+                  ? 'Run cannot start because this task has no validated executable package. Complete generation below; model selection and execution-group creation will appear automatically when it is ready.'
                   : 'This task version has no Harbor package yet.'}
               </p>
-              <a className="button" href={route + '/tasks/import'}>
-                Open import & package builder
-              </a>
+              {task.actor.schema_version === 'praxis.anvil.task.v3' ? (
+                <ExecutableImport
+                  base={base}
+                  sourceId={task.id}
+                  sourceSha={task.source_sha256}
+                  onReady={() => setRevision((value) => value + 1)}
+                />
+              ) : (
+                <a className="button" href={taskHref(task.id)}>
+                  Open task & package builder
+                </a>
+              )}
             </section>
           ) : (
             <div className={ui.runLayout}>

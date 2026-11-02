@@ -54,6 +54,12 @@ export default function ExecutableImport({
     setLoaded(true);
   }, [base, sourceId]);
   const current = family?.revisions?.[0];
+  const readyCallback = useRef(onReady);
+  readyCallback.current = onReady;
+  const readyRevision = family?.ready_revision_id;
+  useEffect(() => {
+    if (readyRevision) readyCallback.current?.();
+  }, [readyRevision]);
   const active = ['queued', 'generating', 'validating'].includes(current?.state);
   useEffect(() => {
     let live = true;
