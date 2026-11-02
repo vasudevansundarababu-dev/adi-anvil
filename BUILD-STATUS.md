@@ -1,5 +1,48 @@
 # Build status
 
+## Accounting fix cloud rollout — 2 November 2026
+
+User explicitly requested deployment and completion of the three golden evaluations
+within the original shared50USD cap. Release4e11331-1793649052 is running in the
+API, web, ordinary worker and Harbor worker; Cloud Build
+d1bc1b42-4ee3-40f6-be70-0586e75a02a0 passed. Initial rollout failed on full VM boot
+disk. Removed only inventoried obsolete Anvil application image caches (recoverable
+from Artifact Registry), retaining running/prior rollback releases, all golden
+environments, containers and volumes.18GB free; resumed the same metadata startup,
+which exited0. API/database/TLS/OIDC ready; public Keycloak Admin remains404.
+No new paid request has been made during this rollout. After qualification, restored
+the previously authorized Harbor-only flag. API/database ready, Harbor gated;
+ordinary inference and email remain disabled.
+
+Deployed native tool-agent/process/gateway/private grading protocol smoke passed
+with0 provider calls and0 database writes. Accounting witness passes on cloud.
+All three actual retained generated bundles passed their Docker tool contracts,
+fixtures, source QA and native Harbor smoke: Marketing10 fixtures/7 QA/2 tools;
+KYC6 fixtures/7 QA/4 tools; Fraud5 fixtures/7 QA/4 tools. These are software checks,
+with0 provider calls/0 DB writes, not completed paid model comparisons. Logs:
+`/private/tmp/anvil-accounting-rollout-resume.log`,
+`/private/tmp/anvil-accounting-running-images.log`,
+`/private/tmp/anvil-accounting-golden-smoke.log`,
+`/private/tmp/anvil-accounting-native-smoke.log`.
+
+Read-only ledger confirms all golden sources have exactly3 unknown provider calls,
+total request bounds1.5744USD, actual costs unknown. Other15 original trials are
+cancelled. Original reservations/history remain unchanged. Continuation allocation:
+at most15.90USD per task (47.70USD total); plus1.5744USD prior unknown exposure gives
+49.2744USD maximum. Saved new drafts do not constitute paid launch or performance.
+
+New drafts: Marketing6ad5d00e-54f5-43b2-85b5-3a7593105c1a,
+KYC595b95ab-490f-44b9-9988-b0e2631c7db0,
+Fraud373c126f-1a13-40d7-a79b-f969f8748b65. Three exact approved models, two trials
+each,2048 output tokens/10 steps/300s,15.90USD per group. Marketing UI readiness
+passes; Run returns `Please sign in again to authorize this run budget`.
+Fresh user sign-out/sign-in requested only after final qualification. No bypass,
+paid retry, request settlement or unknown reservation release performed. Source
+fix4e11331 pushed to existing codex/anvil-modern-workspace branch; no main merge.
+Next: after actual fresh user sign-in, launch saved Marketing draft and verify the
+first provider response before launching the other two. Stop on another unknown;
+preserve all evidence and never relaunch the three original uncertain requests.
+
 ## OpenAI usage accounting repair — 2 November 2026
 
 All three cloud golden imports are Ready, but real evaluation comparisons are
