@@ -11,6 +11,13 @@ GCP applications. No new reviewer accounts or passwords are created by this guid
 
 ## Anvil
 
+Without an account, choose **Request access or password help** on the signed-out
+workspace page. Enter your email, choose **Open email request**, then send the
+prefilled email to **admin@adi-labs.ai** from your email app. This link needs a
+configured email app; otherwise email the administrator directly. Do not include
+passwords. An administrator reviews the request and arranges access manually;
+the link does not send mail, verify email ownership or reset a password itself.
+
 1. Open the workspace and use your assigned Anvil/Keycloak account when prompted.
 2. Select a project you are assigned to. Inspect Tasks and existing run results first.
 3. For a paid diagnostic, confirm the exact saved model, task/package and displayed cap.
@@ -26,6 +33,11 @@ Google Cloud CLI sign-in are separate. Refreshing GCP credentials does not refre
 Anvil authorization.
 
 ## Praxis
+
+The console and partner login pages offer the same **Request access or password
+help** link. Enter your email, open the prefilled request and send it from your email
+app to **admin@adi-labs.ai**. No account is created automatically. Candidate Google
+sign-in is separate and is not a Praxis password-reset flow.
 
 1. Open the console and sign in with your assigned console account. An existing
    session may open Home immediately. A temporary password requires the user to choose

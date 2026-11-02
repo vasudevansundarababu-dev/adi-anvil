@@ -5,6 +5,11 @@ authors and exports tasks; Anvil validates, qualifies, executes and inspects the
 “Distinctive” describes concrete product behavior, not an unverified market comparison.
 This guide covers the modern workspace; dated results belong in [BUILD-STATUS](../../BUILD-STATUS.md).
 
+Signed-out access: **Request access or password help** prepares an email to
+**admin@adi-labs.ai** containing the visitor's entered email address. The visitor sends
+it from their email app. Account provisioning and password recovery remain manual;
+this is not a server email service or an automatic password-reset flow.
+
 | Module | Definition and user outcome | Distinctive implemented features | Boundary |
 | --- | --- | --- | --- |
 | Overview | Project landing page for configuration readiness and recent evaluations. | Project-scoped records; Harbor and diagnostic-history sources; links to exact run dashboards. | Summary counts are operational records, not benchmark validity claims. |

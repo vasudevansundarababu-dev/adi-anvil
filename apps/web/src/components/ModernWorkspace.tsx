@@ -25,6 +25,7 @@ import {
 } from '../lib/workspace';
 import styles from './ModernWorkspace.module.css';
 import { providerFailure } from '../lib/providerFailure';
+import AccessRequest from './AccessRequest';
 
 type Project = { id: string; name: string; roles: string[]; workspace_access: WorkspaceAccess };
 type User = { id: string; name: string; projects: Project[] };
@@ -209,6 +210,7 @@ function WorkspaceView() {
         <a className="button primary" href="/api/v1/auth/login">
           Sign in with Keycloak
         </a>
+        <AccessRequest />
       </main>
     );
   return (

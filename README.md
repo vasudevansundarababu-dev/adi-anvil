@@ -14,6 +14,11 @@ immutable task, rubric, code, model and environment versions.
 [hosted URLs and sign-in](docs/runbooks/reviewer-sign-in.md) ·
 [current review evidence](docs/generated/yc-review-2026-11-02.md).
 
+Need a reviewer account or password help? On the signed-out workspace page choose
+**Request access or password help**, enter your email and open the prefilled request
+to **admin@adi-labs.ai**. Send it from your email app; administrators arrange access
+manually. The website does not send the email or create an account automatically.
+
 **Import task → generate & validate → choose evaluation models → Run → inspect results → compare runs.**
 
 The modern workspace is the application entry point. Admins configure models, credentials,

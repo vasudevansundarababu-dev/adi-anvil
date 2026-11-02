@@ -1,5 +1,21 @@
 # Build status
 
+## Reviewer access request link — 2 November 2026
+
+User chose a prefilled email link instead of a server email service. The signed-out
+Anvil workspace now offers **Request access or password help** with a required email
+field and an encoded request addressed only to admin@adi-labs.ai. The disclosure says
+the visitor must send it from their email app; manual provisioning/recovery remains
+unchanged. No password is collected, account created, email sent or auth gate changed.
+README, module guide and reviewer sign-in guide include this behavior. No new dependencies.
+
+Validation: Anvil TypeScript passed; actual local browser checked expansion, empty
+email validation and correct product/email/recipient encoding using synthetic data.
+Praxis console equivalent passed TypeScript and an isolated production build and was
+inspected in the browser; partner login shares the same component. No paid calls.
+Cloud rollout and final branch publication follow this source checkpoint. Praxis
+rollout currently needs renewal of its existing Google Cloud CLI sign-in.
+
 ## GitHub check-ins for YC submission — 2 November 2026
 
 User requested completed GitHub check-ins and submission URLs. Published reviewed
