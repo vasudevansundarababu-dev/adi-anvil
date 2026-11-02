@@ -435,11 +435,23 @@ def public(c, row):
     }
 
 
-def decision(project, user, plan_id, stage_index, *, transport=None):
+def request_timeout_seconds(binding, episode_seconds):
+    """New-plan latency policy; never mutates frozen plans or increases token/spend caps."""
+    ceiling = (
+        180 if binding["provider"] == "gemini" and binding["model_id"] == "gemini-3.8-flash" else 90
+    )
+    return min(ceiling, episode_seconds)
+
+
+def decision(project, user, plan_id, stage_index, *, transport=None, remaining_seconds=None):
     from anvil import workspace_dispatch
 
     if type(stage_index) is not int or stage_index < 0:
         raise RuntimeError("unsupported_stage")
+    if remaining_seconds is not None and (
+        type(remaining_seconds) is not int or not 1 <= remaining_seconds <= 600
+    ):
+        raise RuntimeError("agent_timeout")
     if transport is not None and type(transport) is not httpx.MockTransport:
         raise ValueError("Only an explicit MockTransport test override is supported")
     dispatch_origin = "sdk_mock" if transport is not None else "provider"
@@ -537,7 +549,10 @@ def decision(project, user, plan_id, stage_index, *, transport=None):
         model=binding["model_id"],
         actor_text=prompt,
         max_output_tokens=record["config"]["max_output_tokens"],
-        timeout_seconds=record["config"]["request_timeout_seconds"],
+        timeout_seconds=min(
+            record["config"]["request_timeout_seconds"],
+            remaining_seconds if remaining_seconds is not None else 600,
+        ),
     )
     result = None
     try:
@@ -690,8 +705,8 @@ def routes(context, wrap, idempotent):
                             len(prep["snapshot"]["package"]["manifest"]["stage_order"]),
                         ),
                         "max_output_tokens": prep["snapshot"]["max_output_tokens"],
-                        "request_timeout_seconds": min(
-                            90, prep["snapshot"]["episode_timeout_seconds"]
+                        "request_timeout_seconds": request_timeout_seconds(
+                            bound, prep["snapshot"]["episode_timeout_seconds"]
                         ),
                         "episode_timeout_seconds": prep["snapshot"]["episode_timeout_seconds"],
                         "pricing": snapshot["pricing"][index],

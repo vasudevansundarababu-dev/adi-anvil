@@ -9,6 +9,11 @@ immutable task, rubric, code, model and environment versions.
 
 ## Product journey
 
+**YC review:** [modules and distinctive features](docs/product/MODULE-GUIDE.md) ·
+[30-day product and SME taskbank roadmap](docs/build/11-30-DAY-ROADMAP.md) ·
+[hosted URLs and sign-in](docs/runbooks/reviewer-sign-in.md) ·
+[current review evidence](docs/generated/yc-review-2026-11-02.md).
+
 **Import task → generate & validate → choose evaluation models → Run → inspect results → compare runs.**
 
 The modern workspace is the application entry point. Admins configure models, credentials,
@@ -22,6 +27,11 @@ run admission also checks credentials, configuration, access and budget. No hidd
 reference answers or private evaluator code are given to the candidate model.
 
 ## Architecture
+
+For a product review, start with the [module definitions and distinctive features](docs/product/MODULE-GUIDE.md).
+It explains Overview, Tasks, import generation, notebook editing, execution groups,
+Benchmarks, run analysis/comparison, Models & keys, Frameworks, People and Limits & usage,
+including each module's implemented behavior and limitations.
 
 ```mermaid
 flowchart LR
@@ -87,6 +97,9 @@ performance**. See BUILD-STATUS for exact current counts, failures and not-run c
 
 ## Hosted deployment
 
+Use the [verified URLs and sign-in steps](docs/runbooks/reviewer-sign-in.md) for both
+Anvil and Praxis. That guide distinguishes current checks from historical release evidence.
+
 See the [verified YC release report](docs/generated/yc-release-2026-11-01.md) for exact
 deployed revisions, backups, test evidence and remaining live-test limitations.
 
@@ -106,3 +119,9 @@ software verification and generated-package readiness do not establish paid mode
 No API keys, passwords or private datasets belong in this repository.
 Notebook editing is a download/Colab-or-Jupyter/upload workflow with server revalidation;
 it does not provision hosted notebook runtimes. Only supplied qualified environments run.
+
+Benchmarks integrates the existing TaskProfile/catalog/recommendation workflow into the
+modern workspace. Catalog registration is metadata only, and the matching path remains
+limited to qualified static synthetic diagnostics. Full expert TaskBanks and the
+Anvil → Praxis SME review → Anvil results API loop are planned in the 30-day roadmap.
+The roadmap targets 200–500 expert-authored samples per domain; these are not current counts.

@@ -69,6 +69,7 @@ export default function BenchmarkFactory({
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
     [message, setMessage] = useState('');
+  const [loaded, setLoaded] = useState(false);
   async function load() {
     const [ts, os, ps, bs] = await Promise.all([
       api(base + '/tasks?limit=100'),
@@ -80,6 +81,7 @@ export default function BenchmarkFactory({
     setObjectives(os.filter((r: Resource) => r.lifecycle === 'approved'));
     setProfiles(ps);
     setCatalog(bs);
+    setLoaded(true);
   }
   useEffect(() => {
     void load().catch((e) => setError(e.message));
@@ -131,6 +133,14 @@ export default function BenchmarkFactory({
       <button disabled={busy} onClick={() => void act(load)}>
         Refresh factory
       </button>
+      {loaded && (!objectives.length || !tasks.length) && (
+        <p role="status">
+          Profile matching needs an approved diagnostic objective and published diagnostic task
+          revisions. This project does not yet have both prerequisites. Harbor imports remain
+          available in the task inventory; they are not automatically converted into static
+          diagnostic catalog entries.
+        </p>
+      )}
       <label htmlFor="factory-saved-profile">Saved confirmed profile (Optional)</label>
       <select
         id="factory-saved-profile"
@@ -407,7 +417,7 @@ export default function BenchmarkFactory({
                     setMessage(
                       'Suite draft saved: ' +
                         s.id +
-                        '. Continue with independent review and freezing in Suites.',
+                        '. Exact benchmark and task versions are retained. Review and release remain separate from this metadata workflow.',
                     );
                   });
                 }}

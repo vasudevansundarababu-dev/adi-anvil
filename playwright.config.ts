@@ -3,7 +3,6 @@ export default defineConfig({
   testDir: 'tests/e2e',
   // Retired classic UI journeys remain in Git history; the shipped app is modern-only.
   testIgnore: [
-    '**/factory.spec.ts',
     '**/harbor.spec.ts',
     '**/journey.spec.ts',
     '**/marketing.spec.ts',

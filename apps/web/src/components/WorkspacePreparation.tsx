@@ -845,6 +845,11 @@ export default function WorkspacePreparation({
               max={600}
               defaultValue={300}
             />
+            <p>
+              New Gemini 3.8 Flash groups allow up to 180 seconds per request; other models use 90
+              seconds. Requests remain bounded by the episode time left. Existing saved groups
+              retain their original limits. No automatic retry is performed.
+            </p>
             <label htmlFor="preparation-cap">
               {createGroup
                 ? 'Aggregate API budget (USD)'

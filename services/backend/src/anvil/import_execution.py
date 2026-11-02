@@ -74,11 +74,15 @@ def loop(project, user, record, package, container, *, heartbeat=lambda: None, t
     with Environment(task, existing=container) as environment:
         for step in range(min(task.max_steps, record["config"]["max_calls"])):
             heartbeat()
-            if time.monotonic() - started > min(
-                task.timeout_seconds, record["config"]["episode_timeout_seconds"]
-            ):
+            remaining = int(
+                min(task.timeout_seconds, record["config"]["episode_timeout_seconds"])
+                - (time.monotonic() - started)
+            )
+            if remaining < 1:
                 raise RuntimeError("agent_timeout")
-            text = decision(project, user, record["id"], step, transport=transport)
+            text = decision(
+                project, user, record["id"], step, transport=transport, remaining_seconds=remaining
+            )
             from anvil.task_parser import json_value
 
             action = json_value(text.encode())

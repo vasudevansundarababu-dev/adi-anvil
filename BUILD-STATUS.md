@@ -1,6 +1,75 @@
 # Build status
 
+## Modern Benchmarks / YC documentation — 2 November 2026
+
+User requested the missing modern Benchmarks page, module definitions/distinctive
+features for both apps, a30-day product/SME recruitment roadmap and check-ins. Added
+modern navigation and `/p/{project}/factory` redirect, reusing the existing Factory
+API/registry. The page separates actual Harbor task candidates from static diagnostic
+catalog metadata; confirmed profiles, registration, recommendation, Suite and gap
+drafts retain exact versions and server authorization. No full expert TaskBank,
+benchmark release, new rights or model performance is implied. Contract:
+docs/build/10-MODERN-BENCHMARK-INTEGRATION.md.
+
+YC entry point: README → docs/product/MODULE-GUIDE.md, verified reviewer sign-in guide,
+docs/generated/yc-review-2026-11-02.md and docs/build/11-30-DAY-ROADMAP.md. The roadmap
+plans the Anvil→Praxis SME review assignment→Anvil results API, not implemented by this
+increment. Target200–500 independently expert-authored samples per Marketing/Banking/
+Commerce taskbank; existing KYC/AML/fraud goldens are synthetic reference points.
+Wharton/Harvard via Bodhium and Banking-network channels are proposed recruiting routes,
+not confirmed faculty participation, partnerships or endorsements. No outreach sent.
+Praxis documentation-only checkpoint eeb4baea is on its current
+codex/praxis-tester-fixes branch; no branch switch or unrelated app change by this task.
+
+One-time5PM America/Chicago demo-recording wakeup scheduled for2November; actual
+recording must be verified, not assumed. Script: docs/build/12-YC-DEMO-PLAN.md.
+
+Gemini diagnostic556689f is deployed as556689f-1793654382; Cloud Build
+99d8ea3c-935d-4781-b43b-f97551a03a04 succeeded. Exact running API/web/Harbor images,
+API/database/TLS/OIDC and public Admin404 verified. Deployed success/503/504 SDK mocks
+and native Harbor/tool/private-grader smoke passed with0 provider calls/0 fake model
+results. After explicit user approval and actual fresh sign-in, exactly one
+agent-initiated Marketing diagnostic ran: group25b42364-41f8-4bb0-adea-d72c5fbf4d80,
+check515b13dc-7885-4aa1-a63c-c524af8df369, cap0.35USD (below approved0.50), estimated
+ceiling0.33024. First and only call returned HTTP504/DEADLINE_EXCEEDED in89.495s;
+actualcostnull,33024microUSD retained. Four original unknown rows were identical
+before/after. No retry. Then user-created group8248cb16 produced Astra/Claude successes
+and Gemini503/UNAVAILABLE in7.002s; it too remains unknown with reservation retained.
+Latest read-only total:53completed/730919microUSD actual +6unknown/1673472microUSD
+bounds =2.404391USD, below the existing50USD. No agent-launched extra diagnostic.
+
+Local timeout mitigation: newly created exact Gemini3.8Flash plans allow180s/request
+instead of90; each tool-agent call is clamped to the episode time remaining. Other
+models keep90s; old plans, tokens/calls/budgets and no-retry behavior are unchanged.
+Run dashboards and task logs explain safe HTTP503/504 evidence rather than only the
+generic Harbor wrapper. No live recovery claim; longer timeouts do not repair503.
+
+Verification so far:348 unit tests passed;2 Node UI policy tests passed; Factory API
+1 passed; combined execution/Factory16 passed/1 optional native skip; modern Factory
+browser1 passed/6.2s including redirect, full workflow and saved-profile reload.
+Final related browser suites:4 passed (45.9s): Benchmarks full flow, run comparison,
+framework/preset state and multi-model preparation without launch. Full three-golden
+native import/Harbor/notebook roundtrip:1 passed (301.73s), covering3 task imports,
+controlled native evaluation trials and notebook successors. No external model calls.
+Final exact-source `pnpm check` passed lint/format/types/production build/API contract.
+Initial integration attempt was blocked by local DB permissions; approved local rerun
+passed. Initial format check failed on2Python/3TS files; formatting repaired via
+apply_patch and production check subsequently passed. Existing Authlib/Alembic/Node
+module-type warnings remain nonfatal. No secret/raw-log/private-data check-in, cloud
+paid retry or automatic unknown-reservation release occurred.
+
 ## Gemini diagnostic hardening — 2 November 2026
+
+Local source checkpoint556689f saved; secret scan460 tracked files/zero findings.
+Corrective deployment and new paid test remain NOT RUN. Automatic approval review
+rejected the cross-chat request to deploy556689f and run a new Gemini3.8Flash diagnostic:
+the exact production deployment and new0.50USD diagnostic cap require explicit user
+confirmation. No indirect execution or alternate paid path was attempted. User asked
+to approve this exact existing-host rollout/test while retaining all unknown bounds
+inside the unchanged50USD total. Do not dispatch until that answer and normal run
+admission succeed. Latest read-only aggregate:47 completed calls/646810microUSD actual,
+4 unknown calls/1607424microUSD reserved; unknown actuals remain null. Outstanding
+group reservations must also be checked before any newly admitted diagnostic.
 
 User requested repair/testing without replaying unknown request96fd0ad0 or increasing
 the existing50USD budget. Read-only deployed evidence confirms its first request ended

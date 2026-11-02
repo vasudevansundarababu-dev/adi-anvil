@@ -16,6 +16,7 @@ import {
 } from '../lib/workspace';
 import styles from './ModernWorkspace.module.css';
 import ui from './WorkspaceTasks.module.css';
+import { providerFailure } from '../lib/providerFailure';
 
 type Actor = {
   schema_version?: string;
@@ -806,6 +807,9 @@ function ExecutionLog({
               </p>
             ))}
             {r.error_code && <p>Execution issue: {r.error_code}</p>}
+            {r.calls?.map((call, index) =>
+              providerFailure(call.usage) ? <p key={index}>{providerFailure(call.usage)}</p> : null,
+            )}
             {r.finished_at && (
               <p>
                 Finished: {dateTime(r.finished_at)} ·{' '}

@@ -10,6 +10,33 @@ from anvil import providers, workspace_dispatch, workspace_execution
 
 
 @pytest.mark.parametrize(
+    "provider,model,episode,expected",
+    [
+        ("gemini", "gemini-3.8-flash", 300, 180),
+        ("gemini", "gemini-3.8-flash", 45, 45),
+        ("gemini", "another-model", 300, 90),
+        ("openai", "gpt-6-astra", 300, 90),
+        ("anthropic", "claude-opus-5-5", 300, 90),
+    ],
+)
+def test_new_plan_timeout_policy_is_model_specific_and_episode_bounded(
+    provider, model, episode, expected
+):
+    assert (
+        workspace_execution.request_timeout_seconds(
+            {"provider": provider, "model_id": model}, episode
+        )
+        == expected
+    )
+
+
+@pytest.mark.parametrize("remaining", [0, -1, True, 601, 1.5])
+def test_expired_or_invalid_episode_budget_blocks_before_dispatch(remaining):
+    with pytest.raises(RuntimeError, match="agent_timeout"):
+        workspace_execution.decision(None, None, None, 0, remaining_seconds=remaining)
+
+
+@pytest.mark.parametrize(
     "status,rpc", [(500, "INTERNAL"), (503, "UNAVAILABLE"), (504, "DEADLINE_EXCEEDED")]
 )
 def test_gemini_server_error_retains_safe_evidence_without_retry(status, rpc):

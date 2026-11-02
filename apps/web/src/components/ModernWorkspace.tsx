@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import HarborWorkbench from './HarborWorkbench';
 import WorkspaceTasks from './WorkspaceTasks';
+import WorkspaceBenchmarks from './WorkspaceBenchmarks';
 import WorkspaceExecutionGroups from './WorkspaceExecutionGroups';
 import ModelProfiles from './ModelProfiles';
 import FrameworkProfiles from './FrameworkProfiles';
@@ -23,12 +24,14 @@ import {
   WorkspaceTask,
 } from '../lib/workspace';
 import styles from './ModernWorkspace.module.css';
+import { providerFailure } from '../lib/providerFailure';
 
 type Project = { id: string; name: string; roles: string[]; workspace_access: WorkspaceAccess };
 type User = { id: string; name: string; projects: Project[] };
 const navigation = [
   ['overview', 'Overview'],
   ['tasks', 'Tasks'],
+  ['benchmarks', 'Benchmarks'],
   ['execution-groups', 'Execution groups'],
   ['models', 'Models & keys'],
   ['frameworks', 'Frameworks'],
@@ -594,6 +597,16 @@ function WorkspaceView() {
                   <p>Open an exact task, rubric or evaluation version from a run snapshot.</p>
                 ))}
               {section === 'models' && admin && <ModelProfiles key={base} base={base} />}
+              {section === 'benchmarks' && (
+                <WorkspaceBenchmarks
+                  key={base}
+                  base={base}
+                  route={route}
+                  userId={user.id}
+                  canWrite={canEdit}
+                  tasks={tasks?.items || []}
+                />
+              )}
               {section === 'frameworks' && admin && (
                 <>
                   <FrameworkProfiles
@@ -1018,6 +1031,9 @@ function RunDetails({
             <p>Execution errors: {m.execution_errors}</p>
             <p>Unknown outcomes: {m.unknown}</p>
             {run.error_code && <p>{run.error_code}</p>}
+            {run.calls?.map((call, index) =>
+              providerFailure(call.usage) ? <p key={index}>{providerFailure(call.usage)}</p> : null,
+            )}
             <div className={styles.actions}>
               <button onClick={() => setTab('Failure modes')}>Inspect failures</button>
               <button onClick={() => setTab('Results')}>All results</button>
@@ -1132,6 +1148,9 @@ function RunDetails({
                 : 'No scored task outcome is available.'}
         </p>
         {run.error_code && <p>Runner error: {run.error_code}</p>}
+        {run.calls?.map((call, index) =>
+          providerFailure(call.usage) ? <p key={index}>{providerFailure(call.usage)}</p> : null,
+        )}
         {!!m.unknown && (
           <p>Dispatch outcome is unresolved. No automatic retry or zero-cost assumption.</p>
         )}

@@ -10,6 +10,7 @@ export default async function Page({
     providers: 'models',
     people: 'people',
     runs: 'runs',
+    factory: 'benchmarks',
   };
   redirect(
     '/workspace/' + encodeURIComponent(project) + '/' + (destinations[section[0]] || 'overview'),

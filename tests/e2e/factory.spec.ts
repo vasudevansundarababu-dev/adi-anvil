@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 
-test('task profile, deterministic recommendation, suite and gap drafts', async ({ page }) => {
+test('modern Benchmarks integrates profiles, recommendations, suite and gap drafts', async ({
+  page,
+}) => {
   const journey = JSON.parse(readFileSync('artifacts/test-runs/journey.json', 'utf8'));
   await page.goto('/');
   await page.getByRole('link', { name: 'Sign in with Keycloak' }).click();
@@ -14,7 +16,17 @@ test('task profile, deterministic recommendation, suite and gap drafts', async (
   await page.locator('#kc-login').click();
   await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible();
   await page.goto(`/p/${journey.project_id}/factory`);
+  await expect(page).toHaveURL(new RegExp(`/workspace/${journey.project_id}/benchmarks$`));
+  await expect(
+    page
+      .getByRole('navigation', { name: 'Workspace navigation' })
+      .getByRole('link', { name: 'Benchmarks', exact: true }),
+  ).toHaveAttribute('href', `/workspace/${journey.project_id}/benchmarks`);
   await expect(page.getByRole('heading', { name: 'Benchmarks', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Executable task candidates' })).toBeVisible();
+  await expect(
+    page.getByText(/importing one does not register or publish a benchmark/),
+  ).toBeVisible();
   await expect(
     page.locator('#factory-objective option').filter({ hasText: journey.objective.content.title }),
   ).toHaveCount(1);
@@ -44,6 +56,10 @@ test('task profile, deterministic recommendation, suite and gap drafts', async (
   await page.getByRole('button', { name: 'Recommend benchmarks', exact: true }).click();
   await page.getByRole('button', { name: 'Create benchmark from gaps', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Benchmark gap draft saved');
+  const savedProfile = await page.locator('#factory-saved-profile').inputValue();
+  await page.reload();
+  await page.locator('#factory-saved-profile').selectOption(savedProfile);
+  await expect(page.locator('#factory-capabilities')).toHaveValue('uncovered-capability');
   await page.getByRole('button', { name: 'Anvil Help', exact: true }).click();
   await page.getByRole('button', { name: 'How are benchmark matches ranked?' }).click();
   await expect(page.getByText(/Matching uses hard interface/)).toBeVisible();
