@@ -1,5 +1,53 @@
 # Build status
 
+## Claude repair rollout resumed — 2 November 2026
+
+The user's initial GCP sign-in confirmation still left Anvil's isolated credential
+store unable to refresh. Started an account-pinned OAuth flow against the absolute
+Anvil configuration directory; user completed Google's identity verification.
+Verification code transferred directly to the waiting CLI without chat disclosure;
+temporary private transfer file deleted. Same existing account/project, no IAM or
+sibling credential changes. Refreshed cloud reads succeeded.
+
+Read-only predeployment ledger:37 completed golden-source requests cost449023
+microUSD;3 original unknown requests retain1574400 microUSD with actual cost null.
+All prior new groups show two Astra successes, one known Claude failure and three
+cancelled trials; no dispatching request. Original unknowns/history/reservations
+unchanged. Exact evidence `/private/tmp/anvil-claude-budget-before.log`.
+
+Deployed clean source0f63334 as0f63334-1793652009, Cloud Build
+bcd3323a-90d9-4310-b1f5-759cab46861f; log
+`/private/tmp/anvil-claude-format-deploy.log`. Cloud Build, exact API/web/ordinary
+worker/Harbor images, API/database/TLS/OIDC, web307 and public Keycloak Admin404
+passed. VM boot disk14GB free. Deployed Claude native JSON-schema SDK software
+proof passed nested-action preservation and one controlled request,0 provider calls/
+0 DB writes. Native tool-agent/gateway/private grading roundtrip passed, including
+the separate0.375 software grading witness; no fake model result persisted.
+All three actual generated packages requalified: Marketing10 fixtures/7 source QA/
+2 tool contracts; KYC6/7/4; Fraud5/7/4. Native Harbor passed for each. Logs:
+`/private/tmp/anvil-cloud-claude-format-smoke.log`,
+`/private/tmp/anvil-claude-golden-cloud-smoke.log`,
+`/private/tmp/anvil-claude-native-cloud-smoke.log`.
+Restored the previously authorized Harbor-only gated flag after qualification;
+API/database ready, Harbor gated, ordinary inference/email disabled. Paid comparison
+incomplete. Marketing saved group shows Ready to run. Automatic approval review
+rejected Run because actual fresh Anvil Admin sign-in after the final rollout was
+not confirmed. Google verification refreshed GCP only. No indirect workaround or
+provider dispatch attempted. User asked to sign out/in to Anvil and confirm; use
+the three saved matched groups after that confirmation, without another deployment.
+
+Valid cross-model comparison binds the adapter digest. A repaired matched baseline
+must use fresh groups, preserving previous results. Allocation15USD/task,45USD total
+plus0.449023USD known costs plus1.5744USD unknown bounds =47.023423USD maximum,
+within the user's unchanged50USD ceiling. Forms prepared with exact approved three
+models,2 repetitions,2048 output tokens,10 steps and300s. Saved against repaired
+runtime: Marketing ca4d3b45-efdd-4d45-89a5-e548d342e95b;
+KYC9ac40a4a-f284-431c-8736-29b98ce9f8dc;
+Frauda2f3216a-424b-404c-b63d-474307a30617.
+No further paid request until qualification and normal recent
+Admin sign-in admission. First verify Marketing's repaired Claude/Gemini path before
+launching the other two groups. Never retry original unknowns or pool adapter versions.
+
 ## Live comparison progress and Claude format repair — 2 November 2026
 
 Fresh user sign-in admitted all three saved15.90USD groups through the actual Run
