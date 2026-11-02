@@ -1,5 +1,26 @@
 # Build status
 
+## YC founder briefs — 2 November 2026
+
+Replaced the technical YC summaries with one-page founder briefs for Anvil and Praxis,
+emphasizing business context, scale, provenance, integrity, expert-authored rules/rubrics/
+constraints, rigorous planned SME verification and documented task review. Prior reports
+are preserved as separate technical evidence appendices. Working Marketing/Banking
+examples are distinguished from targeted expert taskbanks and full verification.
+Retired Federal Reserve/RBI officials are proposed expert reviewers where engaged;
+no institutional endorsement or confirmed participation is invented. Compliance checks
+are planned source/jurisdiction-linked specialist review, not guaranteed legal certification.
+Prammana and Thinking Machines are planned beyond December2026, not implemented or
+confirmed partnerships. PDF review copies are exactly one page each, rendered and
+visually inspected; no runtime code, cloud deployment or paid call in this doc update.
+Demo plan point6 now shows the successful Gemini trial rather than presenting503/504
+as unresolved. Added a timed founder narration script emphasizing business context,
+scale and trust, with visible mockup and roadmap boundaries. User requests own-voice
+narration; no custom voice-generation tool is available. Await the user's own audio
+recording for synchronization; no voice track or completed recording is claimed.
+User set the final demo length to exactly3:00. The demo plan and narration now use a
+180second edit timeline with approximately370 spoken words and transition allowance.
+
 ## Newly authorized ten-cent Gemini diagnostic — 2 November 2026
 
 User explicitly approved one new `gemini-3.8-flash` diagnostic capped at0.10USD within

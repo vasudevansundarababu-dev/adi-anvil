@@ -6,7 +6,8 @@ implementation boundaries. Then review the 30-day roadmap and YC evidence summar
 ## Anvil
 
 - [Module definitions and distinctive features](product/MODULE-GUIDE.md)
-- [YC review and verification evidence](generated/yc-review-2026-11-02.md)
+- [One-page YC founder brief](generated/yc-review-2026-11-02.md)
+- [Separate technical evidence appendix](generated/yc-technical-evidence-2026-11-02.md)
 - [30-day roadmap: 3 November–2 December](build/11-30-DAY-ROADMAP.md)
 - [Verified hosted URLs and login steps for both apps](runbooks/reviewer-sign-in.md)
 - [5 PM Chicago demo recording plan](build/12-YC-DEMO-PLAN.md)
@@ -14,8 +15,11 @@ implementation boundaries. Then review the 30-day roadmap and YC evidence summar
 ## Praxis
 
 The companion repository contains `docs/MODULE-GUIDE.md`, `docs/YC-REVIEW.md`,
-`docs/30-DAY-ROADMAP.md` and `docs/REVIEWER-SIGN-IN.md`. The downloadable review bundle
+`docs/30-DAY-ROADMAP.md` and `docs/REVIEWER-SIGN-IN.md`. `YC-REVIEW.md` is now the
+one-page founder brief; `YC-TECHNICAL-EVIDENCE-2026-11-02.md` preserves the prior
+technical report. The downloadable review bundle
 includes these under `Praxis/`, alongside the Anvil documents under `Anvil/`.
+PDF review copies for both founder briefs are included under `Founder-Briefs/`.
 
 ## Decisions to review
 
