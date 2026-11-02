@@ -3,6 +3,23 @@ from uuid import uuid4
 from anvil import harbor_worker
 
 
+def test_linux_process_identity_needs_no_ps_and_distinguishes_pid_reuse(tmp_path):
+    proc = tmp_path / "proc"
+    process = proc / "123"
+    process.mkdir(parents=True)
+    boot = proc / "sys/kernel/random"
+    boot.mkdir(parents=True)
+    (boot / "boot_id").write_text("boot-a")
+    fields = ["S"] + ["0"] * 18 + ["456"]
+    (process / "stat").write_text("123 (worker (with spaces)) " + " ".join(fields))
+    first = harbor_worker.linux_process_identity(123, proc)
+    assert first == "linux:boot-a:123:456"
+    fields[19] = "789"
+    (process / "stat").write_text("123 (worker) " + " ".join(fields))
+    assert harbor_worker.linux_process_identity(123, proc) != first
+    assert harbor_worker.linux_process_identity(999, proc) == ""
+
+
 def test_cloud_trial_uses_operator_work_volume_without_writing_authority_mount(
     tmp_path, monkeypatch
 ):

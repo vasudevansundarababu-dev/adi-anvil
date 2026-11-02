@@ -1,5 +1,18 @@
 # Build status
 
+## Cloud native process tracking — 2 November 2026
+
+Fresh sign-in admitted saved Marketing group5acd39e7. Native agent failed during
+process tracking; workspace contains task/runtime.log but no process.json. Confirmed
+cloud slim image has no ps utility, while /proc is available. Process identity now
+uses Linux boot ID/PID/start tick without an external binary, retaining ps fallback
+for local non-Linux hosts. PID-reuse regression,313 units and full production check
+passed. A cloud native tool-agent/gateway/empty-output grading software smoke has been
+prepared with a controlled done action, zero provider calls and no database writes;
+must pass before requesting another live launch. This is not model performance.
+No completed real evaluation claim. Source imports remain Ready. Latest failed
+trial f7a223b7 is under read-only provider-ledger verification before recovery.
+
 ## Cloud live-trial work-volume repair — 2 November 2026
 
 Deployed850c7a1-1793643419 after backup anvil-pre-workdir-20261102 completed.

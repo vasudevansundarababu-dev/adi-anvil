@@ -213,7 +213,23 @@ def cleanup_sandboxes(workspace, env):
                 subprocess.run(command, env=env, capture_output=True, timeout=30, check=True)
 
 
+def linux_process_identity(pid, proc_root=Path("/proc")):
+    try:
+        stat = (proc_root / str(pid) / "stat").read_text()
+        boot = (proc_root / "sys/kernel/random/boot_id").read_text().strip()
+    except FileNotFoundError:
+        return ""
+    # comm can contain whitespace and parentheses; fields after the final ') '
+    # begin at field3. Field22 is the process start tick, stable across exec.
+    fields = stat.rpartition(") ")[2].split()
+    if len(fields) < 20 or not fields[19].isdigit() or not boot:
+        raise RuntimeError("process_identity_unavailable")
+    return "linux:" + boot + ":" + str(pid) + ":" + fields[19]
+
+
 def process_identity(pid):
+    if Path("/proc/self/stat").is_file():
+        return linux_process_identity(pid)
     result = subprocess.run(
         ["ps", "-p", str(pid), "-o", "lstart=", "-o", "command="], capture_output=True, timeout=5
     )
