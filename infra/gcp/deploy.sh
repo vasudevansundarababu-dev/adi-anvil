@@ -151,6 +151,16 @@ gcloud builds submit "$ROOT" --config="$ROOT/infra/gcp/cloudbuild.yaml" --region
 METADATA="anvil-registry=$REPO,anvil-backend-image=$REPO/backend:$TAG,anvil-web-image=$REPO/web:$TAG,anvil-harbor-image=$REPO/harbor:$TAG"
 METADATA="$METADATA,anvil-web-host=$WEB_HOST,anvil-auth-host=$AUTH_HOST,enable-oslogin=TRUE"
 METADATA="$METADATA,anvil-support-vertex=true"
+METADATA="$METADATA,anvil-golden-image=$REPO/golden-tools:$TAG"
+METADATA="$METADATA,anvil-import-generation-enabled=${ANVIL_IMPORT_GENERATION_ENABLED:-false}"
+if [ -n "${ANVIL_GENERATION_SECRET_RESOURCE:-}" ]; then
+  METADATA="$METADATA,anvil-generation-secret-resource=$ANVIL_GENERATION_SECRET_RESOURCE"
+fi
+METADATA="${METADATA//,/|}"
+if [ -n "${ANVIL_INSTALLATION_ADMIN_IDS:-}" ]; then
+  METADATA="$METADATA|anvil-installation-admin-ids=$ANVIL_INSTALLATION_ADMIN_IDS"
+fi
+METADATA="^|^$METADATA"
 FILES="startup-script=$ROOT/infra/gcp/startup.sh,anvil-compose=$ROOT/infra/gcp/compose.yaml"
 FILES="$FILES,anvil-caddyfile=$ROOT/infra/gcp/Caddyfile,anvil-postgres-init=$ROOT/infra/gcp/postgres-init.sh"
 FILES="$FILES,anvil-render-config=$ROOT/infra/gcp/render_config.py"

@@ -158,7 +158,7 @@ test('modern diagnostic dashboard preserves exact snapshots and finalized-only o
   });
 });
 
-test('Admin modern workspace persists model profiles and preserves classic comparison', async ({
+test('Admin modern workspace persists model profiles and keeps navigation modern-only', async ({
   page,
 }) => {
   await page.goto('/');
@@ -259,11 +259,10 @@ test('Admin modern workspace persists model profiles and preserves classic compa
   await expect(
     page.getByRole('heading', { name: 'Usage & accounting', exact: true }),
   ).toBeVisible();
-  await page.getByRole('link', { name: 'Compare classic journey', exact: false }).click();
   await expect(
-    page.getByRole('heading', { name: 'Praxis → Harbor', exact: true, level: 1 }),
-  ).toBeVisible();
-  await page.getByRole('link', { name: 'Modern workspace', exact: true }).click();
+    page.getByRole('link', { name: 'Compare classic journey', exact: false }),
+  ).toHaveCount(0);
+  await page.goto('/workspace/' + project + '/overview');
   await expect(
     page.getByRole('heading', { name: 'Set up your workspace', exact: true }),
   ).toBeVisible();

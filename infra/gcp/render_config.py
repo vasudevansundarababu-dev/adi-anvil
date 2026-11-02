@@ -51,6 +51,23 @@ def main():
                 "ANVIL_FIXTURE_MODE": "true",
                 "ANVIL_LIVE_PROVIDERS_ENABLED": "false",
                 "ANVIL_REAL_EMAIL_ENABLED": "false",
+                "ANVIL_IMPORT_GENERATION_ENABLED": os.environ.get(
+                    "ANVIL_IMPORT_GENERATION_ENABLED", "false"
+                ),
+                **(
+                    {
+                        "ANVIL_GENERATION_SECRET_RESOURCE": os.environ[
+                            "ANVIL_GENERATION_SECRET_RESOURCE"
+                        ]
+                    }
+                    if os.environ.get("ANVIL_GENERATION_SECRET_RESOURCE")
+                    else {}
+                ),
+                **(
+                    {"ANVIL_INSTALLATION_ADMIN_IDS": os.environ["ANVIL_INSTALLATION_ADMIN_IDS"]}
+                    if os.environ.get("ANVIL_INSTALLATION_ADMIN_IDS")
+                    else {}
+                ),
                 "WEB_ORIGIN": web,
                 "OIDC_ISSUER": issuer,
                 "OIDC_CLIENT_ID": "anvil-web",

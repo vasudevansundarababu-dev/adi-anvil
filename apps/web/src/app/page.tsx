@@ -1,4 +1,4 @@
-import Console from '../components/Console';
+import { redirect } from 'next/navigation';
 export default function Page() {
-  return <Console />;
+  redirect('/workspace');
 }

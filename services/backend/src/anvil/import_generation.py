@@ -259,7 +259,7 @@ def routes(context, wrap, idempotent):
                     403,
                     "Installation settings access must be assigned by the operator; project Admin does not grant global credential access",
                 )
-            if CLOUD:
+            if CLOUD and not os.environ.get("ANVIL_GENERATION_SECRET_RESOURCE"):
                 raise HTTPException(
                     409,
                     "Managed global secret storage must be configured before cloud credential entry",

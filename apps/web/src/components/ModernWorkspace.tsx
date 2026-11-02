@@ -206,7 +206,6 @@ function WorkspaceView() {
         <a className="button primary" href="/api/v1/auth/login">
           Sign in with Keycloak
         </a>
-        <a href="/">Open classic Anvil</a>
       </main>
     );
   return (
@@ -231,7 +230,6 @@ function WorkspaceView() {
         </nav>
         <div className={styles.sidebarFoot}>
           <span>{admin ? 'Admin includes engineering work' : 'Engineering workspace'}</span>
-          <a href={'/p/' + project?.id + '/harbor'}>Compare classic journey ↗</a>
         </div>
       </aside>
       <div className={styles.body}>
@@ -286,7 +284,7 @@ function WorkspaceView() {
             <section className={styles.panel}>
               <h1>Workspace access unavailable</h1>
               <p>This account needs an assigned engineering or Admin capability in this project.</p>
-              <a href="/">Open your classic workspace</a>
+              <a href="/workspace">Choose an available workspace</a>
             </section>
           ) : (
             <>
@@ -661,7 +659,7 @@ function WorkspaceView() {
                     External tracing is not enabled by this workspace. Unknown dispatch outcomes
                     retain their reservations.
                   </p>
-                  <a href={'/p/' + project.id + '/providers'}>Inspect current provider readiness</a>
+                  <a href={route + '/models'}>Inspect current provider readiness</a>
                 </section>
               )}
               {!admin && ['models', 'frameworks', 'people', 'limits'].includes(section) && (

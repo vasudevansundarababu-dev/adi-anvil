@@ -74,6 +74,7 @@ services:
       - '${ANVIL_DATA:-/var/lib/anvil}/artifacts:/app/.data/artifacts'
       - '${ANVIL_DATA:-/var/lib/anvil}/harbor-private:/app/.secrets:ro'
       - '${ANVIL_DATA:-/var/lib/anvil}/harbor-authority:/app/.local:ro'
+      - '${ANVIL_DATA:-/var/lib/anvil}/secret-index:/app/.data/secret-index'
     depends_on:
       migrate: { condition: service_completed_successfully }
       neo4j: { condition: service_started }
@@ -88,6 +89,8 @@ services:
     image: ${ANVIL_HARBOR_IMAGE:-${ANVIL_BACKEND_IMAGE:?}}
     profiles: [harbor]
     command: [python, -m, anvil.harbor_worker]
+    environment:
+      TMPDIR: /var/lib/anvil/import-tmp
     env_file:
       - '${ANVIL_DATA:-/var/lib/anvil}/config/app.env'
       - '${ANVIL_DATA:-/var/lib/anvil}/config/harbor.env'
@@ -95,9 +98,12 @@ services:
     volumes:
       - '${ANVIL_DATA:-/var/lib/anvil}/artifacts:/app/.data/artifacts'
       - '/var/lib/anvil/harbor-checks:/var/lib/anvil/harbor-checks'
+      - '/var/lib/anvil/import-tmp:/var/lib/anvil/import-tmp'
       - '/var/run/docker.sock:/var/run/docker.sock'
       - '${ANVIL_DATA:-/var/lib/anvil}/harbor-private:/app/.secrets:ro'
       - '${ANVIL_DATA:-/var/lib/anvil}/harbor-authority:/app/.local:ro'
+      - '${ANVIL_DATA:-/var/lib/anvil}/secret-index:/app/.data/secret-index:ro'
+      - '${ANVIL_DATA:-/var/lib/anvil}/import-worker-home:/app/.local/import-worker-home'
     depends_on:
       migrate: { condition: service_completed_successfully }
   web:

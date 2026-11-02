@@ -37,6 +37,8 @@ grep -q "$DEV" /etc/fstab || echo "$DEV $DATA ext4 discard,defaults,nofail 0 2" 
 mkdir -p "$DATA"/{postgres,neo4j,artifacts,caddy,harbor-checks}
 chmod 700 "$DATA"
 chown 10001 "$DATA/artifacts" && chmod 700 "$DATA/artifacts"
+install -d -o 10001 -g 0 -m 0700 "$DATA/secret-index" "$DATA/import-worker-home"
+install -d -o 10001 -g 0 -m 0700 "$DATA/import-tmp"
 # Prepare empty operator-managed locations only. Never create key/authority values.
 for private_dir in "$DATA/harbor-private" "$DATA/harbor-authority"; do
   [ ! -L "$private_dir" ] || { echo "Refusing symlinked Harbor private directory" >&2; exit 1; }
@@ -60,6 +62,9 @@ KEYCLOAK_DB_PASSWORD anvil-keycloak-db-password
 MAP
 mkdir -p /opt/anvil
 md anvil-render-config > /opt/anvil/render_config.py
+export ANVIL_IMPORT_GENERATION_ENABLED="$(md anvil-import-generation-enabled 2>/dev/null || echo false)"
+export ANVIL_GENERATION_SECRET_RESOURCE="$(md anvil-generation-secret-resource 2>/dev/null || true)"
+export ANVIL_INSTALLATION_ADMIN_IDS="$(md anvil-installation-admin-ids 2>/dev/null || true)"
 if [ "$(md anvil-support-vertex 2>/dev/null || true)" = "true" ]; then
   export ANVIL_SUPPORT_VERTEX_PROJECT="$PROJECT"
 fi
@@ -81,6 +86,11 @@ ENV
 
 echo "== Containers"
 gcloud auth configure-docker "${REGISTRY%%/*}" --quiet >/dev/null
+GOLDEN_IMAGE=$(md anvil-golden-image 2>/dev/null || true)
+if [ -n "$GOLDEN_IMAGE" ]; then
+  docker pull "$GOLDEN_IMAGE" --quiet >/dev/null
+fi
+docker pull python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e --quiet >/dev/null
 cd /opt/anvil
 docker compose --profile harbor pull --quiet
 docker compose --profile harbor up -d --remove-orphans

@@ -1,5 +1,29 @@
 # Build status
 
+## YC existing-target release underway — 1 November 2026
+
+Both GCP authentications verified. User authorized public repositories and rollout;
+only installation code generation may spend (gpt-6.1-sol,$10/import), evaluations off.
+Modern-only entry/legacy redirects implemented; classic Git baseline preserved. Added
+scope-bound Secret Manager generation storage with private locator indexes, workload
+identity, fixed secret resource and per-secret version-add/access grants. Shared worker
+temporary path supports host Docker bind mounts without granting API Docker access.
+Verified301 units,4 focused real-browser journeys, web TypeScript, production pnpm check,
+secret scan and shell syntax. Praxis121 shared +452 API tests and typechecks passed;
+expired-session null guard and explicit skip-demo-setup added. Both pre-release backups
+completed: Praxis SQL1793593073237 SUCCESSFUL; Anvil snapshot anvil-pre-yc-20261101 READY.
+Cloud generation secret resource created, no key value logged/published. Rollout/key
+transfer and final deployed verification remain pending. No paid smoke calls authorized.
+
+## Next authorized scope: YC public release — 1 November 2026
+
+User confirmed public Anvil/Praxis GitHub repositories, rollout to existing GCP targets
+and budgets, modern-only Anvil journey, concise architecture/test READMEs, and generation
+only (gpt-6.1-sol,$10/import) with secure cloud key transfer. Paid evaluation remains off.
+See docs/build/09-YC-PUBLIC-RELEASE.md for exact decisions and release gates. Both GCP
+logins require browser reauthentication; GitHub works. Nightly automation updated to
+this scope. No repository visibility change, push or cloud mutation performed yet.
+
 ## Nightly regression checkpoint — 1 November 2026, 22:05 America/Chicago
 
 Resumed completed modern-workspace scope at8f53891; no feature expansion. Tonight's

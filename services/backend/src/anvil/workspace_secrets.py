@@ -6,7 +6,7 @@ import stat
 from contextlib import contextmanager
 from uuid import UUID, uuid4
 
-from cryptography.fernet import Fernet, InvalidToken
+from cryptography.fernet import Fernet
 
 from anvil.config import CLOUD, ROOT
 
@@ -110,6 +110,10 @@ def wrapping_cipher(directory_fd, create=False):
 def save(value, binding):
     """Append a ciphertext blob. An uncommitted database write may leave an inert orphan."""
     try:
+        if CLOUD:
+            from anvil import cloud_secrets
+
+            return cloud_secrets.save(value, binding)
         with opened_store(create=True) as fd:
             cipher = wrapping_cipher(fd, create=True)
             identifier = str(uuid4())
@@ -118,7 +122,7 @@ def save(value, binding):
             )
             write_private(identifier, cipher.encrypt(payload), fd)
             return identifier
-    except (OSError, ValueError, StoreUnavailable):
+    except Exception:
         raise StoreUnavailable(
             "Local credential store unavailable; no credential was activated"
         ) from None
@@ -126,11 +130,15 @@ def save(value, binding):
 
 def load(identifier, binding):
     try:
+        if CLOUD:
+            from anvil import cloud_secrets
+
+            return cloud_secrets.load(identifier, binding)
         name = str(UUID(str(identifier)))
         with opened_store() as fd:
             value = json.loads(wrapping_cipher(fd).decrypt(read_private(name, fd)))
         if value.get("binding") != binding or not isinstance(value.get("secret"), str):
             raise StoreUnavailable("Credential binding mismatch")
         return value["secret"]
-    except (OSError, ValueError, InvalidToken, StoreUnavailable):
+    except Exception:
         raise StoreUnavailable("Local credential version unavailable") from None

@@ -99,5 +99,7 @@ if __name__ == "__main__":
         output / "anvil-golden-tools-1.0.0.tar",
     ]
     (output / "SHA256SUMS").write_text(
-        "".join(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n" for path in delivered)
+        "".join(
+            f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n" for path in delivered
+        )
     )
