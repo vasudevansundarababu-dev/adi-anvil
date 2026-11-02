@@ -25,6 +25,15 @@ test('modern Benchmarks integrates profiles, recommendations, suite and gap draf
   await expect(
     page.getByRole('heading', { name: 'Benchmarks', level: 1, exact: true }),
   ).toBeVisible();
+  const previewWrites: string[] = [];
+  page.on('request', (request) => {
+    if (
+      request.url().includes('/api/v1/projects/') &&
+      !['GET', 'HEAD'].includes(request.method())
+    ) {
+      previewWrites.push(request.method() + ' ' + request.url());
+    }
+  });
   await expect(page.getByText('Interactive mockup', { exact: true })).toBeVisible();
   await expect(page.getByRole('complementary', { name: 'UI mockup disclosure' })).toContainText(
     'No live benchmark execution',
@@ -71,6 +80,13 @@ test('modern Benchmarks integrates profiles, recommendations, suite and gap draf
   await page.screenshot({ path: 'artifacts/test-runs/benchmark-detail-dark.png', fullPage: true });
   await page.getByRole('button', { name: 'Light theme', exact: true }).click();
   await page.getByRole('button', { name: '← Back to benchmarks', exact: true }).click();
+  await page.getByRole('link', { name: 'Commerce', exact: true }).click();
+  await expect(page).toHaveURL(new RegExp('/benchmarks/commerce$'));
+  await page.getByRole('button', { name: 'Re-run in Anvil', exact: true }).scrollIntoViewIfNeeded();
+  await expect(page.getByRole('complementary', { name: 'UI mockup disclosure' })).toBeVisible();
+  await page.screenshot({ path: 'artifacts/test-runs/benchmark-mockup-disclosure-scrolled.png' });
+  await page.getByRole('button', { name: '← Back to benchmarks', exact: true }).click();
+  expect(previewWrites).toEqual([]);
   await page.goto(`/workspace/${journey.project_id}/benchmarks/catalog`);
   await expect(page.getByRole('region', { name: 'Executable task candidates' })).toBeVisible();
   await expect(

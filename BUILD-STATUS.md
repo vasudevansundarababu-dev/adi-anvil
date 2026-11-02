@@ -22,7 +22,11 @@ production build, generated API contract); final browser journey passed 1 test i
 9.3s, including prominent mockup disclosure and retained catalog behavior. Screenshots
 `benchmark-library-final.png`, `benchmark-detail-light.png`, `benchmark-detail-dark.png`
 under ignored `artifacts/test-runs` inspected. Secret scan: 471 tracked files, 0 findings.
-Host publication is pending; no new provider requests or reservation changes.
+Additional final mock-only browser checks passed (1 test, 10.8s): all three domain
+routes, sticky disclosure visible after scrolling, no project mutation requests from
+mock controls, and both light/dark screenshots. Host publication is pending; no new
+provider requests or reservation changes. UI-only web image build uses source e3f2772;
+backend and Harbor worker will retain their exact running containers.
 
 ## Benchmark design correction — 2 November 2026
 
