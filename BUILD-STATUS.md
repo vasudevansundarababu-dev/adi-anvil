@@ -1,5 +1,26 @@
 # Build status
 
+## Gemini model-name hypothesis checked — 2 November 2026
+
+User suspected a model-name error. Google's current model documentation lists the
+stable ID `gemini-3.8-flash`, structured output and LOW/MEDIUM/HIGH thinking support.
+The deployed SDK already sends that exact ID and LOW thinking for structured calls.
+An authenticated, single read-only GET to
+`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash`, using the
+credential bound to failed check `a551120f-ce02-4094-97f0-2bda86b313ea`, returned HTTP200,
+name `models/gemini-3.8-flash`, `generateContent` supported, input limit1048576 and
+output limit65536. Zero inference requests, zero database writes. No secret/raw
+provider error body printed. The model-name/access hypothesis is ruled out for that
+credential at this check; this does not establish generation availability/recovery.
+
+Current evidence remains Google503/UNAVAILABLE and504/DEADLINE_EXCEEDED from prior
+generation. No justified source fix identified from this model-name investigation;
+do not silently substitute models, add inference retries or release unknown holds.
+The previously authorized single diagnostic is exhausted. A fresh paid diagnostic
+requires new explicit exact-model/budget authority through existing app controls.
+References: https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash and
+https://ai.google.dev/gemini-api/docs/api-errors.
+
 ## Approved two-page benchmark mockup — 2 November 2026
 
 User clarified the exact 11:30 AM reference, confirmed the recovered comparison mockup,
