@@ -40,6 +40,8 @@ export default function ExecutableImport({
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [seconds, setSeconds] = useState(0);
   const [code, setCode] = useState('');
   const [artifactJson, setArtifactJson] = useState('');
   const [editing, setEditing] = useState(false);
@@ -61,6 +63,32 @@ export default function ExecutableImport({
     if (readyRevision) readyCallback.current?.();
   }, [readyRevision]);
   const active = ['queued', 'generating', 'validating'].includes(current?.state);
+  const stages = [
+    ['queued', 'Waiting for the generation worker'],
+    ['validate_source', 'Checking the imported task'],
+    ['generate', 'Generating executable Python with the configured model'],
+    ['validate_environment_tools_and_grading', 'Testing verifiers, constraints and Docker tools'],
+    ['package_smoke', 'Running Harbor package checks'],
+    ['ready', 'Ready to run'],
+  ];
+  const stage =
+    current?.state === 'ready'
+      ? 'ready'
+      : current?.report?.stage ||
+        (current?.state === 'generating'
+          ? 'generate'
+          : current?.state === 'validating'
+            ? 'validate_environment_tools_and_grading'
+            : 'queued');
+  const stageIndex = Math.max(
+    0,
+    stages.findIndex(([id]) => id === stage),
+  );
+  useEffect(() => {
+    if (!active && !starting) return;
+    const timer = window.setInterval(() => setSeconds((value) => value + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [active, starting]);
   useEffect(() => {
     let live = true;
     load().catch((e) => {
@@ -76,6 +104,11 @@ export default function ExecutableImport({
     return () => window.clearInterval(timer);
   }, [active, load]);
   async function action(path: string, body: unknown = {}) {
+    const generation = path.endsWith('/generate');
+    if (generation) {
+      setStarting(true);
+      setSeconds(0);
+    }
     setBusy(true);
     setError('');
     try {
@@ -102,6 +135,7 @@ export default function ExecutableImport({
       }
     } finally {
       setBusy(false);
+      setStarting(false);
     }
   }
   const revisionBase =
@@ -111,6 +145,40 @@ export default function ExecutableImport({
       <h3>Make this task executable</h3>
       {error && <p role="alert">{error}</p>}
       {!loaded && !error && <p role="status">Loading import state…</p>}
+      {(starting || active || current) && (
+        <div aria-label="Live generation progress" aria-live="polite">
+          <p role="status">
+            {starting
+              ? 'Submitting import generation…'
+              : active
+                ? 'Import generation in progress'
+                : current?.state === 'ready'
+                  ? 'Import generation complete'
+                  : 'Import generation stopped'}
+            {(starting || active) && ` · ${seconds}s elapsed`}
+          </p>
+          {(starting || active) && <progress aria-label="Import generation is running" />}
+          <ol>
+            {stages.map(([id, label], index) => (
+              <li key={id} aria-current={!starting && index === stageIndex ? 'step' : undefined}>
+                {starting
+                  ? 'Pending'
+                  : index < stageIndex || current?.state === 'ready'
+                    ? 'Completed'
+                    : index === stageIndex
+                      ? active
+                        ? 'In progress'
+                        : 'Stopped'
+                      : 'Pending'}
+                : {label}
+              </li>
+            ))}
+          </ol>
+          {(starting || active) && (
+            <p>Updates automatically every two seconds. Checks may take several minutes.</p>
+          )}
+        </div>
+      )}
       {settings && (
         <p>
           Generation model:{' '}

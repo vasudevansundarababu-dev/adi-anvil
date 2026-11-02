@@ -191,6 +191,14 @@ def process(job, *, transport=None):
     bundle = None
     stage = "validate_source"
 
+    def progress(step):
+        with transaction(job["project_id"], user) as c:
+            row = guarded(c, job, user)
+            c.execute(
+                "UPDATE anvil.executable_import_revisions SET report=report || %s WHERE id=%s",
+                (Jsonb({"stage": step}), row["id"]),
+            )
+
     def heartbeat():
         with transaction(job["project_id"], user) as c:
             guarded(c, job, user)
@@ -212,6 +220,7 @@ def process(job, *, transport=None):
     renewal_thread = threading.Thread(target=renewal, daemon=True)
     renewal_thread.start()
     try:
+        progress("validate_source")
         with transaction(job["project_id"], user) as c:
             revision = guarded(c, job, user)
             if revision["state"] not in {"queued", "generating", "validating"}:
@@ -245,6 +254,7 @@ def process(job, *, transport=None):
                 raise RuntimeError("dispatch_outcome_unknown")
         if bundle is None:
             stage = "generate"
+            progress(stage)
             prompt = generation_prompt(task)
             if len(prompt.encode()) > 100000:
                 raise ValueError("Generation source exceeds bounded prompt size; split the task")
@@ -427,11 +437,13 @@ def process(job, *, transport=None):
             # Retain typed but invalid code/mappings for a user to inspect and fix.
             bundle = validate_bundle(task, value)
         stage = "validate_environment_tools_and_grading"
+        progress(stage)
         heartbeat()
         from anvil.import_sandbox import validate
 
         report = validate(task, bundle, heartbeat)
         stage = "package_smoke"
+        progress(stage)
         report["harbor_smoke"] = native_smoke(task, bundle, revision["id"])
         heartbeat()
         manifest, data = package(task, bundle, report, revision["id"])

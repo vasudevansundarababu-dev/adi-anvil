@@ -1,5 +1,15 @@
 # Build status
 
+## Live import progress — 1 November 2026
+
+Import & generate now immediately displays submission activity, elapsed time, and an
+automatically polled stage checklist. The worker persists safe stage names for source
+validation, generation, isolated verifier/tool qualification and native Harbor smoke
+checks; completion or failure remains explicit. No fabricated percentage or private
+fixture values are streamed. Restarted only the idle registered Harbor/import worker.
+Verified:298 unit tests,2 golden browser journeys including simulated live-stage polling
+through completion, web TypeScript, scoped Prettier and Ruff passed. No paid calls.
+
 ## Run page generation handoff fix — 1 November 2026
 
 Fixed misleading model/budget guidance on tasks without a validated package. The Run

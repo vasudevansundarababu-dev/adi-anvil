@@ -148,6 +148,19 @@ test('generated-import UI safely retries a lost response and downloads its noteb
   await expect(
     page.getByRole('link', { name: 'Download review notebook', exact: true }),
   ).toBeVisible();
+  await expect(page.getByText('Import generation complete', { exact: true })).toBeVisible();
+  family.revisions[0] = {
+    id: revisionId,
+    state: 'validating',
+    report: { stage: 'package_smoke' },
+  };
+  family.ready_revision_id = null;
+  await page.reload();
+  await expect(page.getByText('Import generation in progress', { exact: false })).toBeVisible();
+  await expect(page.getByText('In progress: Running Harbor package checks')).toBeVisible();
+  family.revisions[0].state = 'ready';
+  family.ready_revision_id = revisionId;
+  await expect(page.getByText('Import generation complete', { exact: true })).toBeVisible();
   expect(keys).toHaveLength(2);
   expect(keys[0]).toBe(keys[1]);
   const download = page.waitForEvent('download');
