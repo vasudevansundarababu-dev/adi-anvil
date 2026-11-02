@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { workspaceApi as api } from '../lib/workspace';
 import styles from './ModernWorkspace.module.css';
+import taskStyles from './WorkspaceTasks.module.css';
 
 const reasons: Record<string, string> = {
   paid_generation_not_enabled:
@@ -150,6 +151,18 @@ export default function ExecutableImport({
   return (
     <section className={styles.panel} aria-label="Executable import progress">
       <h3>Make this task executable</h3>
+      <p
+        className={`${taskStyles.badge} ${family?.ready_revision_id ? taskStyles.ready : current && !active && !starting ? taskStyles.failed : taskStyles.draft}`}
+        role="status"
+      >
+        {family?.ready_revision_id
+          ? 'Ready to run · Validated executable available'
+          : active || starting
+            ? 'Not ready to run · Generation in progress'
+            : current
+              ? 'Not ready to run · Generation needs attention'
+              : 'Not ready to run · Start generation below'}
+      </p>
       {error && <p role="alert">{error}</p>}
       {!loaded && !error && <p role="status">Loading import state…</p>}
       {(loaded || starting) && (

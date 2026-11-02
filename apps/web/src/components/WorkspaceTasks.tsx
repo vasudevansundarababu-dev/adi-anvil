@@ -217,7 +217,7 @@ export default function WorkspaceTasks({
                     <span className={`${ui.badge} ${t.package_built ? ui.ready : ui.draft}`}>
                       {t.package_built
                         ? t.source_schema_version === 'praxis.anvil.task.v3'
-                          ? 'Ready'
+                          ? 'Ready to run'
                           : 'Package built'
                         : t.source_schema_version === 'praxis.anvil.task.v3'
                           ? t.import_state?.replaceAll('_', ' ') || 'Needs generation'
@@ -240,8 +240,11 @@ export default function WorkspaceTasks({
                   <td>
                     <div className={ui.rowActions}>
                       {canPlan && (
-                        <a className={`button ${ui.run}`} href={taskHref(t.id) + '/run'}>
-                          Run
+                        <a
+                          className={`button ${t.package_built ? ui.run : ''}`}
+                          href={taskHref(t.id) + '/run'}
+                        >
+                          {t.package_built ? 'Run' : 'Complete setup'}
                         </a>
                       )}
                       <a className="button" href={taskHref(t.id)}>
@@ -313,6 +316,11 @@ export default function WorkspaceTasks({
       </div>
       <div className={styles.pageHead}>
         <div>
+          <span className={`${ui.badge} ${pkg ? ui.ready : ui.draft}`} role="status">
+            {pkg
+              ? 'Ready to run · Executable package validated'
+              : 'Not ready to run · Generation and validation required'}
+          </span>
           <h2 className={ui.title}>
             {run ? 'Run: ' : ''}
             {task.title}
@@ -328,8 +336,8 @@ export default function WorkspaceTasks({
             </a>
           ) : (
             canPlan && (
-              <a className={`button ${ui.run}`} href={taskHref(task.id) + '/run'}>
-                ▶ Run task
+              <a className={`button ${pkg ? ui.run : ''}`} href={taskHref(task.id) + '/run'}>
+                {pkg ? '▶ Run task' : 'Complete run setup'}
               </a>
             )
           )}

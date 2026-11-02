@@ -1,5 +1,13 @@
 # Build status
 
+Task readiness visibility: green badges now explicitly mean a validated executable is
+available (Ready to run); ungenerated/active tasks use amber Not ready indicators and
+failed generation uses red. Unprepared tasks use neutral Complete setup links instead
+of green Run buttons. Detail/Run/import views expose readiness separately from progress.
+Run admission still checks model credentials, server controls and budget; package
+readiness does not bypass those checks. Verified web TypeScript, golden browser tests
+(2 passed, all three ungenerated tasks), formatting and diff checks.
+
 Live-progress visibility follow-up: the checklist is now visible before generation
 starts, labelled Live import progress, and receives focus/scroll when submission starts.
 Previously it appeared only once starting/active/revision state existed. Verified web

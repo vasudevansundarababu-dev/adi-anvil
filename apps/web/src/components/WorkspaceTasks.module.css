@@ -67,12 +67,16 @@
   margin-bottom: 8px;
 }
 .ready {
-  background: var(--mw-soft);
-  color: var(--mw-accent);
+  background: #dcfce7;
+  color: #14532d;
 }
 .draft {
-  background: #71591622;
-  color: var(--mw-ink);
+  background: #fef3c7;
+  color: #78350f;
+}
+.failed {
+  background: #fee2e2;
+  color: #7f1d1d;
 }
 .rowActions {
   display: flex;

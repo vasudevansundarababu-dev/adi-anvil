@@ -47,7 +47,10 @@ test('all three golden exports import without exposing private oracles or claimi
     await expect(page.getByText('anvil-golden-tools:1.0.0', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Rubrics', exact: true }).click();
     expect(await page.locator('main').innerText()).not.toContain(payload.evaluation_private.canary);
-    await page.getByRole('link', { name: 'Run task', exact: false }).click();
+    await page.getByRole('link', { name: 'Complete run setup', exact: true }).click();
+    await expect(
+      page.getByText('Not ready to run · Generation and validation required', { exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByRole('heading', {
         name: 'Complete executable generation first',
