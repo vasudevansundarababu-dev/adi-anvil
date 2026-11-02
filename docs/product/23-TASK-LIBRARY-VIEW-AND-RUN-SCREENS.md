@@ -1,5 +1,10 @@
 # Task library, task viewer and run workspace
 
+The next import/compiler target is documented in
+[executable Harbor import specification](24-PRAXIS-HARBOR-EXECUTABLE-IMPORT-SPEC.md).
+It is design only, including supplied images, generated checks and notebook editing;
+the implementation limitations recorded below still apply until that increment is built.
+
 Navigation refinement, 1 November: no Runs entry in the modern sidebar. Open a task's
 Run history to select retained runs and compare their results, metrics and failure modes.
 Comparison controls and output live inside the history panel. Historical `/runs` URLs

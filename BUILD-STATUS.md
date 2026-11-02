@@ -1,5 +1,23 @@
 # Build status
 
+Executable-import design handoff, 1 November 2026 — user requested final specification,
+journey and screen modifications after sequential clarification. Consolidated in
+docs/product/24-PRAXIS-HARBOR-EXECUTABLE-IMPORT-SPEC.md. Confirmed Harbor-only execution,
+model generation of verifiers/guardrails/fixtures from descriptions; supplied Docker
+images and safe tool probes; multi-step tool agent; one installation-wide generation
+model and one Admin-default cumulative cap per import including regenerations; separate
+evaluation models/budgets; Admin/RL Engineer edit/test/regenerate; Colab preferred with
+JupyterLab alternative; successor drafts with automatic revalidation; no human approval
+or Mark ready gate for testing. Automatic Ready requires the required checks to pass.
+Colab/runtime feasibility checked against Google's official runtime/FAQ documentation;
+the spec distinguishes notebook editing from authoritative controlled-image validation.
+No application implementation, model call, notebook/cloud provisioning, IAM change or
+deployment was performed for this handoff. This new expansion remains documentation
+until the user launches implementation; earlier nightly authority covers the existing
+approved slice/regressions, not automatically this new generation/tool/notebook work.
+Application limitations in earlier checkpoints remain accurate. Existing user edits
+and classic comparison preserved. Documentation checks only; no runtime test claim.
+
 Credential-save feedback and history navigation, 1 November 2026 — read-only metadata
 inspection confirmed the user's current project had no credential records and its
 model versions were unlinked; no secret value was read or supplied. Found hidden save
