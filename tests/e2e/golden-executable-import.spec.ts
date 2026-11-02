@@ -35,6 +35,9 @@ test('all three golden exports import without exposing private oracles or claimi
       page.getByRole('heading', { name: 'Make this task executable', exact: true }),
     ).toBeVisible();
     await expect(
+      page.getByRole('heading', { name: 'Live import progress', exact: true }),
+    ).toBeVisible();
+    await expect(
       page.getByRole('button', { name: 'Build Harbor package', exact: true }),
     ).toHaveCount(0);
     await expect(page.getByLabel('Environment folder', { exact: true })).toHaveCount(0);

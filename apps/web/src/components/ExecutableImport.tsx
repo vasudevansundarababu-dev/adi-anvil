@@ -42,6 +42,13 @@ export default function ExecutableImport({
   const [busy, setBusy] = useState(false);
   const [starting, setStarting] = useState(false);
   const [seconds, setSeconds] = useState(0);
+  const progressPanel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (starting) {
+      progressPanel.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      progressPanel.current?.focus({ preventScroll: true });
+    }
+  }, [starting]);
   const [code, setCode] = useState('');
   const [artifactJson, setArtifactJson] = useState('');
   const [editing, setEditing] = useState(false);
@@ -145,8 +152,14 @@ export default function ExecutableImport({
       <h3>Make this task executable</h3>
       {error && <p role="alert">{error}</p>}
       {!loaded && !error && <p role="status">Loading import state…</p>}
-      {(starting || active || current) && (
-        <div aria-label="Live generation progress" aria-live="polite">
+      {(loaded || starting) && (
+        <div
+          ref={progressPanel}
+          tabIndex={-1}
+          aria-label="Live generation progress"
+          aria-live="polite"
+        >
+          <h4>Live import progress</h4>
           <p role="status">
             {starting
               ? 'Submitting import generation…'
@@ -154,14 +167,16 @@ export default function ExecutableImport({
                 ? 'Import generation in progress'
                 : current?.state === 'ready'
                   ? 'Import generation complete'
-                  : 'Import generation stopped'}
+                  : current
+                    ? 'Import generation stopped'
+                    : 'Source imported · Waiting to start generation'}
             {(starting || active) && ` · ${seconds}s elapsed`}
           </p>
           {(starting || active) && <progress aria-label="Import generation is running" />}
           <ol>
             {stages.map(([id, label], index) => (
               <li key={id} aria-current={!starting && index === stageIndex ? 'step' : undefined}>
-                {starting
+                {starting || !current
                   ? 'Pending'
                   : index < stageIndex || current?.state === 'ready'
                     ? 'Completed'

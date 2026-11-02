@@ -1,5 +1,10 @@
 # Build status
 
+Live-progress visibility follow-up: the checklist is now visible before generation
+starts, labelled Live import progress, and receives focus/scroll when submission starts.
+Previously it appeared only once starting/active/revision state existed. Verified web
+TypeScript and golden browser tests (2 passed); no model request was made.
+
 ## Live import progress — 1 November 2026
 
 Import & generate now immediately displays submission activity, elapsed time, and an
