@@ -24,7 +24,10 @@ test('modern Benchmarks integrates profiles, recommendations, suite and gap draf
   ).toHaveAttribute('href', `/workspace/${journey.project_id}/benchmarks`);
   await expect(page.getByRole('heading', { name: 'Benchmarks', exact: true })).toBeVisible();
   await expect(page.getByText('Interactive mockup', { exact: true })).toBeVisible();
-  await page.screenshot({ path: 'artifacts/test-runs/benchmark-preview-library.png', fullPage: true });
+  await page.screenshot({
+    path: 'artifacts/test-runs/benchmark-preview-library.png',
+    fullPage: true,
+  });
   await page.getByRole('combobox', { name: 'Domain', exact: true }).selectOption('Commerce');
   await expect(
     page.getByRole('heading', { name: 'Commerce operations', exact: true }),
