@@ -1,5 +1,30 @@
 # Build status
 
+## Gemini qualification follow-up — 2 November 2026
+
+Official Gemini3.8 Flash supports LOW/MEDIUM/HIGH thinking levels; the existing
+structured adapter's zero thinking-budget request was not an appropriate3.8 control.
+For exact gemini-3.8-flash only, use SDK ThinkingLevel.LOW and retain2048 output ceiling,
+thought-token accounting, exact returned-model binding and one-attempt transport.
+Wire-contract regression accepts the SDK's protobuf field spelling and rejects any
+thinking-budget override. First assertion expected camelCase while installed SDK
+uses thinking_level; corrected the test, not the runtime security checks.
+Passed305 units and full pnpm check/production build. No dependency or SDK install.
+This is compatibility qualification, not a successful live Gemini call.
+
+Anvil025cbff is deployed, protected snapshot anvil-pre-live-demo-20261102 READY,
+generation key metadata probe200 confirms gpt-6.1-sol and gpt-6-astra available,
+zero inference calls. On the new Harbor image all3 golden environments passed their
+2/4/4 tool contracts,7 verifier fixtures and7 held-out QA cases each plus native nop
+smokes, zero model calls. Harbor-only runtime is gated; ordinary inference/email off.
+All3 attempted generation submissions were refused by the fresh-sign-in gate; no
+import revision or paid request exists. All3 evaluation credentials remain absent.
+User asked to sign in and save keys; actionable input email sent to admin@adi-labs.ai.
+Gemini stable pin approval is separately pending. Do not weaken recent authentication,
+admission or exact model binding to meet11:00CST (17:00UTC). Overall evaluation ceiling
+is50USD across3 task groups,2 repetitions/model,18 trials; each agent run can contain
+multiple provider calls, bounded by10 steps and the aggregate caps, not18 API requests.
+
 ## YC live-demo preparation — 2 November 2026
 
 User authorized daytime work toward 11:00 America/Chicago, existing-target releases,

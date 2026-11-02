@@ -11,6 +11,36 @@ from anvil import providers, workspace_dispatch
 from anvil import workspace_execution as execution
 
 
+def test_gemini_38_uses_supported_low_thinking_with_same_output_bound():
+    model = "gemini-3.8-flash"
+    calls = []
+
+    def handle(req):
+        calls.append(req)
+        data = success("gemini")
+        data["modelVersion"] = model
+        return httpx.Response(200, json=data)
+
+    result = workspace_dispatch.execute(
+        {
+            "provider": "gemini",
+            "model_id": model,
+            "destination": providers.PROVIDERS["gemini"][2],
+            "max_output_tokens": 2048,
+        },
+        SecretStr("fake-gemini-key"),
+        providers.ActorRequest(model=model, actor_text="ACTOR_ONLY", max_output_tokens=2048),
+        transport=httpx.MockTransport(handle),
+    )
+    assert len(calls) == 1 and result.status == "completed"
+    assert result.model_returned == model
+    config = json.loads(calls[0].content)["generationConfig"]
+    assert config["maxOutputTokens"] == 2048
+    thinking = config["thinkingConfig"]
+    assert thinking.get("thinkingLevel", thinking.get("thinking_level")) == "LOW"
+    assert not {"thinkingBudget", "thinking_budget"}.intersection(thinking)
+
+
 def test_group_cost_is_integer_conservative_and_usage_fails_closed():
     config = {
         "pricing": {

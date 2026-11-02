@@ -267,7 +267,11 @@ def _execute_native(provider, request, transport, *, credential, structured=Fals
                         **(
                             {
                                 "response_mime_type": "application/json",
-                                "thinking_config": types.ThinkingConfig(thinking_budget=0),
+                                "thinking_config": (
+                                    types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW)
+                                    if request.model == "gemini-3.8-flash"
+                                    else types.ThinkingConfig(thinking_budget=0)
+                                ),
                             }
                             if structured
                             else {}
