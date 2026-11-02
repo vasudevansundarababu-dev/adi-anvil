@@ -10,11 +10,14 @@ explicit assertion; no expected outcome, fixture, code or business rule is inven
 Unknown test references and references with neither declared nor asserted coverage
 remain rejected; positive/negative assertion and isolated execution checks remain.
 Generation prompt explicitly explains fixture-ID/covers/assertion consistency.
-309 units passed before the additional Docker packaging assertions; full check passed
-before the final coverage reconciliation edit. Final reruns, all3 golden end-to-end
-checks, cloud rollout and real model evaluations remain pending. Do not call this
-deployed or the golden live journey complete. Dockerfile/Compose already emitted by
-the package compiler; tests now verify pinned image and isolation files explicitly.
+Final309 units and full pnpm check/production build passed. All11 import-pipeline
+integration checks passed in334.98s: all3 goldens generated,7+7 grading/withheld cases
+each, native Harbor smokes,18 controlled-provider evaluation trials and3 notebook
+successors. First integration attempt omitted Docker opt-in/socket and failed; rerun
+used ANVIL_TEST_HARBOR=1 and the verified existing local Unix socket, with no security
+control removed. Cloud rollout and real model evaluations remain pending. Do not call
+this deployed or the golden live journey complete. Dockerfile/Compose already emitted
+by the compiler; tests verify pinned image and isolation files explicitly.
 
 ## Gemini qualification follow-up — 2 November 2026
 
