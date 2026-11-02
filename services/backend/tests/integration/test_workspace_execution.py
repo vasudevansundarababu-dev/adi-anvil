@@ -589,6 +589,66 @@ def test_uncertainty_cancellation_and_revocation_stop_remaining_models_and_retai
         )
 
 
+def test_unknown_response_retains_safe_reconciliation_metadata_without_retry(configured):
+    data = configured
+    launched = data["post"]("/execution-groups/" + data["group"]["id"] + "/launch")
+    first = launched["models"][0]
+    with transaction(worker=True) as c:
+        assert one(c, "SELECT * FROM anvil.claim_harbor_job()")
+    with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+        c.execute(
+            "UPDATE anvil.harbor_checks SET state='running',invocation_count=1 WHERE id=%s",
+            (first["check"]["id"],),
+        )
+    calls = []
+
+    def handle(req):
+        calls.append(req)
+        body = response_body("openai", '{"untrusted":"PRIVATE-OUTPUT"}')
+        body.update(
+            id="resp_reconciliation",
+            model="different-exact-model",
+            usage={
+                "input_tokens": 10,
+                "output_tokens": 2,
+                "total_tokens": 12,
+                "input_tokens_details": {
+                    "cached_tokens": 0,
+                    "cache_write_tokens": 2,
+                    "cache_write_tokens_details": {"ttl_30m_tokens": 2, "ttl_12h_tokens": 0},
+                },
+            },
+        )
+        return httpx.Response(200, json=body)
+
+    with pytest.raises(RuntimeError, match="unknown_no_retry"):
+        execution.decision(
+            cli.PROJECT,
+            USERS["contract-admin-a"],
+            first["plan_id"],
+            0,
+            transport=httpx.MockTransport(handle),
+        )
+    with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+        row = one(c, "SELECT * FROM anvil.harbor_agent_calls WHERE plan_id=%s", (first["plan_id"],))
+        assert row["status"] == "execution_unknown" and row["actual_micro_usd"] is None
+        assert row["reserved_micro_usd"] > 0 and row["request_id"] == "resp_reconciliation"
+        evidence = row["usage"]["provider_evidence"]
+        assert evidence["model_returned"] == "different-exact-model"
+        assert evidence["token_usage"]["input_tokens"] == 10
+        assert "PRIVATE-OUTPUT" not in json.dumps(row["usage"])
+        assert row["output_json"] is None
+    with pytest.raises(RuntimeError, match="unknown_no_retry"):
+        execution.decision(
+            cli.PROJECT,
+            USERS["contract-admin-a"],
+            first["plan_id"],
+            0,
+            transport=httpx.MockTransport(lambda req: pytest.fail("retry")),
+        )
+    assert len(calls) == 1
+
+
 @pytest.mark.parametrize("revocation", ["user", "membership", "admin_role"])
 def test_existing_admin_authority_requires_current_active_project_admin(configured, revocation):
     data = configured

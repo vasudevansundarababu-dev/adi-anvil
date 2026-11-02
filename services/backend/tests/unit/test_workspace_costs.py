@@ -90,3 +90,46 @@ def test_unknown_or_invalid_usage_is_never_a_free_success(details):
         costs.billed_cost(
             costs.managed("openai", "gpt-6-luna"), {"input_tokens_details": details}, 10, 20
         )
+
+
+def test_documented_cache_lifetime_breakdown_prices_only_admitted_30m_writes():
+    price = costs.managed("openai", "gpt-6-astra")
+    usage = {
+        "input_tokens_details": {
+            "cached_tokens": 4000,
+            "cache_write_tokens": 7000,
+            "cache_write_tokens_details": {"ttl_30m_tokens": 7000, "ttl_12h_tokens": 0},
+        }
+    }
+    assert costs.billed_cost(price, usage, 12000, 20) == 102500
+    assert costs.billed_cost(price, usage, 12000, 20) <= required_cost(
+        {"pricing": price, "max_output_tokens": 2048, "max_calls": 1}
+    )
+
+
+@pytest.mark.parametrize(
+    "breakdown",
+    [
+        {},
+        {"ttl_30m_tokens": 2},
+        {"ttl_30m_tokens": True, "ttl_12h_tokens": 0},
+        {"ttl_30m_tokens": -1, "ttl_12h_tokens": 3},
+        {"ttl_30m_tokens": 1, "ttl_12h_tokens": 0},
+        {"ttl_30m_tokens": 1, "ttl_12h_tokens": 1},
+        {"ttl_30m_tokens": 2, "ttl_12h_tokens": 0, "extra": 0},
+    ],
+)
+def test_unbalanced_unknown_or_unadmitted_cache_lifetimes_stay_blocked(breakdown):
+    with pytest.raises(ValueError):
+        costs.billed_cost(
+            costs.managed("openai", "gpt-6-astra"),
+            {
+                "input_tokens_details": {
+                    "cached_tokens": 0,
+                    "cache_write_tokens": 2,
+                    "cache_write_tokens_details": breakdown,
+                }
+            },
+            10,
+            20,
+        )

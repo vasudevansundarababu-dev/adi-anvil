@@ -200,6 +200,63 @@ def billed_usage(provider, usage):
     return inputs, outputs
 
 
+def provider_evidence(result):
+    """Retain reconciliation metadata, never response text, prompts or raw errors."""
+    if result is None:
+        return {}
+
+    def identifier(value):
+        return (
+            value
+            if isinstance(value, str)
+            and 0 < len(value) <= 200
+            and all(c.isascii() and (c.isalnum() or c in "-_.:/") for c in value)
+            else None
+        )
+
+    usage = result.usage if isinstance(result.usage, dict) else {}
+    counters = {}
+    for key in (
+        "input_tokens",
+        "output_tokens",
+        "total_tokens",
+        "prompt_token_count",
+        "candidates_token_count",
+        "thoughts_token_count",
+        "total_token_count",
+        "cache_creation_input_tokens",
+        "cache_read_input_tokens",
+    ):
+        if type(usage.get(key)) is int and 0 <= usage[key] <= 1000000000:
+            counters[key] = usage[key]
+    for key, allowed in (
+        ("input_tokens_details", ("cached_tokens", "cache_write_tokens")),
+        ("output_tokens_details", ("reasoning_tokens",)),
+    ):
+        detail = usage.get(key)
+        if isinstance(detail, dict):
+            counters[key] = {
+                k: detail[k]
+                for k in allowed
+                if type(detail.get(k)) is int and 0 <= detail[k] <= 1000000000
+            }
+            if key == "input_tokens_details" and isinstance(
+                detail.get("cache_write_tokens_details"), dict
+            ):
+                parts = detail["cache_write_tokens_details"]
+                counters[key]["cache_write_tokens_details"] = {
+                    k: parts[k]
+                    for k in ("ttl_30m_tokens", "ttl_12h_tokens")
+                    if type(parts.get(k)) is int and 0 <= parts[k] <= 1000000000
+                }
+    return {
+        "model_returned": identifier(result.model_returned),
+        "request_id": identifier(result.request_id),
+        "status": identifier(result.status),
+        "token_usage": counters,
+    }
+
+
 _UNSET = object()
 
 
@@ -505,17 +562,30 @@ def decision(project, user, plan_id, stage_index, *, transport=None):
             "dispatch_not_confirmed_no_retry",
             "broker_configuration_blocked",
             "broker_request_blocked",
+            "malformed_provider_response",
+            "empty_or_malformed_output",
         }
         error_code = (
             result.error_code
             if result and result.error_code in safe_errors
             else "response_model_or_usage_not_admitted"
         )
+        evidence = provider_evidence(result)
         with transaction(project, worker=True) as c:
             project_fence(c, project)
             c.execute(
-                "UPDATE anvil.harbor_agent_calls SET status='execution_unknown',usage=%s,finished_at=now() WHERE id=%s",
-                (Jsonb({"dispatch_origin": dispatch_origin, "error_code": error_code}), cid),
+                "UPDATE anvil.harbor_agent_calls SET status='execution_unknown',usage=%s,request_id=%s,finished_at=now() WHERE id=%s",
+                (
+                    Jsonb(
+                        {
+                            "dispatch_origin": dispatch_origin,
+                            "error_code": error_code,
+                            "provider_evidence": evidence,
+                        }
+                    ),
+                    evidence.get("request_id"),
+                    cid,
+                ),
             )
             audit(
                 c,

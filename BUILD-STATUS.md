@@ -1,5 +1,33 @@
 # Build status
 
+## OpenAI usage accounting repair — 2 November 2026
+
+All three cloud golden imports are Ready, but real evaluation comparisons are
+NOT complete. Each task dispatched one Astra request and stopped with
+`response_model_or_usage_not_admitted`; all three outcomes remain unknown.
+Read-only cloud verification confirmed the other 15 trials cancelled, with no
+Claude or Gemini dispatch. Original reservations remain intact; actual charges
+and request IDs are unavailable. Scoped provider log inspection did not recover
+the three responses. Do not retry or retroactively classify these calls.
+
+The documented nested cache-write lifetime breakdown reproduced a parser
+rejection. The repair validates exact counter types, totals and admitted 30-minute
+pricing, rejects unadmitted lifetimes, and retains only safe response/model/token
+metadata for future reconciliation failures. It does not relax exact model
+binding, budget reservation or the unknown-outcome no-retry gate. This is
+consistent with the observed failure, not proof of the lost original payloads.
+
+Validation: 323 unit tests passed; 16 workspace execution integration tests
+passed (53.88s), including unknown metadata privacy and no-retry regression;
+`pnpm check` passed; Ruff check/format passed for all five changed Python files.
+Evidence: `/private/tmp/anvil-usage-unit.log`,
+`/private/tmp/anvil-usage-integration.log`, `/private/tmp/anvil-usage-check.log`,
+and `/private/tmp/anvil-live-call-status.log` (local, not committed).
+Repair is local pending rollout; cloud remains c2d9792. Next: deploy the reviewed
+repair with no active requests, then resolve authorization/accounting for a new
+diagnostic before any further paid dispatch. Never release unknown reservations
+or substitute a successful fixture result for a real model result.
+
 ## Cloud native process tracking — 2 November 2026
 
 Deployed c2d9792-1793644383; Cloud Build65946f59-c809-4980-8b4d-3a1792792c1e

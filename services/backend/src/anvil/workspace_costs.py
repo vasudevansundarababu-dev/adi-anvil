@@ -107,12 +107,23 @@ def billed_cost(price, usage, inputs, outputs):
         if any(
             value not in (0, None)
             for key, value in details.items()
-            if key not in ("cached_tokens", "cache_write_tokens")
+            if key not in ("cached_tokens", "cache_write_tokens", "cache_write_tokens_details")
         ):
             raise ValueError("unsupported_usage_components")
         cached, writes = details.get("cached_tokens"), details.get("cache_write_tokens")
         if any(type(n) is not int or n < 0 for n in (cached, writes)) or cached + writes > inputs:
             raise ValueError("cache_usage_unknown")
+        breakdown = details.get("cache_write_tokens_details")
+        if breakdown is not None:
+            if (
+                not isinstance(breakdown, dict)
+                or set(breakdown) != {"ttl_30m_tokens", "ttl_12h_tokens"}
+                or any(type(n) is not int or n < 0 for n in breakdown.values())
+                or sum(breakdown.values()) != writes
+            ):
+                raise ValueError("cache_usage_unknown")
+            if breakdown["ttl_12h_tokens"] or price.get("cache_ttl") != "30m":
+                raise ValueError("unadmitted_cache_lifetime")
         input_charge = (
             (inputs - cached - writes) * price["input_micro_usd_per_million_tokens"]
             + cached * price["cached_input_micro_usd_per_million_tokens"]
