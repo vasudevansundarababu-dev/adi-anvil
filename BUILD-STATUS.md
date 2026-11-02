@@ -1,5 +1,40 @@
 # Build status
 
+## Live comparison progress and Claude format repair — 2 November 2026
+
+Fresh user sign-in admitted all three saved15.90USD groups through the actual Run
+UI at20:08–20:09UTC. Exact Astra model/usage accounting now succeeds with the
+documented cache breakdown. Both Astra repetitions completed on all three tasks.
+Marketing trial2a2d5a0c dashboard verified100/100, complete recorded0.049853USD,
+real read_data/save_result trajectory, output artifact and immutable task/rubric/
+generated-code/environment/model snapshots. This is a real model result on an
+original synthetic task, not a fixture performance claim or broad benchmark.
+
+First Claude trial in each group failed. Marketing request costs are known
+(0.028456USD), with both calls completed, not unknown. Read-only runner diagnosis:
+first response is a tool action; second is744 bytes of non-JSON text. Existing
+Anthropic adapter omits structured mode while OpenAI/Gemini request JSON output.
+All remaining nine queued trials were cancelled through the normal UI; all six
+Astra successes and three Claude failures remain immutable. No automatic retry.
+
+Local repair uses Claude's documented native output_config.format closed JSON
+schema with a single serialized-JSON string field, accommodating arbitrary nested
+task dictionaries without adding private evaluator schemas or forced tool use
+(unsupported by Opus5.5). Deterministic decoding accepts only an exact valid object;
+never extracts an action from prose, changes grading, or alters refusal/truncation,
+usage, model binding, budgets or one-attempt transport. Tests:332 units and full
+pnpm check passed. Execution integration16 passed in55.87s. Full three-golden
+import/native-Harbor controlled-response regression is running. Not deployed/live-proven.
+
+GCP credential refresh now fails with reauthentication required. User asked to run
+Anvil's own scoped gcloud login; do not substitute sibling credentials. Continue
+local checks while blocked. Current deployed release remains4e11331, healthy and
+Harbor gated. No rollout until no active provider calls and credentials restored.
+After repair qualification, run only the remaining authorized Claude/Gemini trials
+in explicitly bounded groups; preserve all failed/unknown history and verify total
+known cost plus unresolved bounds plus new caps stays<=50USD. Do not rerun Astra
+or the three original unknown requests. Full three-model comparison is incomplete.
+
 ## Accounting fix cloud rollout — 2 November 2026
 
 User explicitly requested deployment and completion of the three golden evaluations

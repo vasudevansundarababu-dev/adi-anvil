@@ -1,8 +1,9 @@
 """Provider-specific SDK contracts. No production dispatch without authority."""
 
+import json
 import os
 import stat
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import httpx
 from anthropic import Anthropic
@@ -247,6 +248,28 @@ def _execute_native(provider, request, transport, *, credential, structured=Fals
                     model=request.model,
                     messages=[{"role": "user", "content": request.actor_text}],
                     max_tokens=request.max_output_tokens,
+                    **(
+                        {
+                            "output_config": {
+                                "format": {
+                                    "type": "json_schema",
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "json": {
+                                                "type": "string",
+                                                "description": "Serialize the single JSON object requested by the user as this string. Preserve all nested fields and values. No prose or code fences.",
+                                            }
+                                        },
+                                        "required": ["json"],
+                                        "additionalProperties": False,
+                                    },
+                                }
+                            }
+                        }
+                        if structured
+                        else {}
+                    ),
                 )
             elif provider == "gemini":
                 sdk = genai.Client(
@@ -304,7 +327,20 @@ def _execute_native(provider, request, transport, *, credential, structured=Fals
                     messages=[{"role": "user", "content": request.actor_text}],
                     max_tokens=request.max_output_tokens,
                 )
-            return normalized(provider, result.model_dump(mode="json", warnings=False))
+            outcome = normalized(provider, result.model_dump(mode="json", warnings=False))
+            if structured and provider == "anthropic" and outcome.status == "completed":
+                # A closed string envelope supports arbitrary caller JSON without
+                # restricting task-specific dictionary keys or exposing private schemas.
+                # Only decode exact valid JSON; never extract an action from prose.
+                try:
+                    envelope = json.loads(outcome.text)
+                    if isinstance(envelope, dict) and set(envelope) == {"json"}:
+                        payload = json.loads(envelope["json"])
+                        if isinstance(payload, dict):
+                            outcome = replace(outcome, text=json.dumps(payload, allow_nan=False))
+                except (ValueError, TypeError):
+                    pass  # Retain malformed output for the caller's existing failure handling.
+            return outcome
         except Exception as exc:
             # Never expose exception strings: SDK errors may include credentials/raw body.
             name = type(exc).__name__
