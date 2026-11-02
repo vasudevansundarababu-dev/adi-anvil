@@ -1,5 +1,42 @@
 # Build status
 
+## Newly authorized ten-cent Gemini diagnostic — 2 November 2026
+
+User explicitly approved one new `gemini-3.8-flash` diagnostic capped at0.10USD within
+the existing50USD budget, no retries, preserve all unknown requests/reservations.
+Preflight:53completed calls/730919microUSD actual,6unknown/1673472microUSD reserved,
+no active jobs/checks; actual+unknown bounds+new cap=2.504391USD. Unknown fingerprint
+`2edf9746ba0cba77823dde6751cf7767f05de05a9bf15680091299b3d3a297a9`.
+
+Current saved Gemini profiles had been changed to `gemini-2.0-flash`. Preserved both;
+created separate exact `gemini-3.8-flash` profile (connection3ee319c8), using the existing
+anvil-gemini credential version5b949216. No key rotation, provider substitution or
+changes to old plans. Initial Run was blocked by Sign in required; ledger call rows,
+unknown rows and spend windows were identical afterward. User then confirmed signed in.
+
+Launched once via normal UI at4:22:53PM Chicago: group
+`4a7a2820-60ef-43df-be4e-81af262613a7`, check
+`5f18d49e-bd8c-4417-950e-c83d36717220`, synthetic GOLDEN-MARKETING1.1.0. One model,
+one repetition, one maximum agent step/call,2048output tokens,300s episode,180s request
+timeout,0.10USD cap, estimated0.033024USD ceiling. This is a bounded provider diagnostic,
+not a general model-performance qualification.
+
+**Succeeded** at4:23:39PM Chicago. Exactly one provider-origin call, no retry:
+`a7929dd9-a95a-4d68-92b0-d32dc741cf3f`,22:23:07.061176→22:23:23.271008UTC,
+returned model `gemini-3.8-flash`, finishSTOP. Prompt1177 + candidate58 + thought1963
+=3198total tokens; billed output2021, actual8462microUSD (**0.008462USD**), below0.10USD.
+Generated verifier reported100/100, no hard failures, all five Marketing checks passed;
+this is synthetic single-trial evidence, not expert calibration or a ranking claim.
+The previous failures remain unreconciled; success does not establish their cause or
+eliminate future service errors. No source change or provider retry was needed for
+this new successful trial; the existing180s request/LOW thinking configuration was used.
+
+Postflight:54completed/739381microUSD actual +6unknown/1673472microUSD bounds =
+2.412853USD, below the unchanged50USD. All six original unknown rows, fingerprint and
+every pre-existing spend window are byte-for-byte/field-equal to preflight. No active
+jobs/checks remain. Screenshot `artifacts/test-runs/gemini-ten-cent-success.png`.
+This one-new-diagnostic authorization is now exhausted; do not launch another call.
+
 ## Gemini model-name hypothesis checked — 2 November 2026
 
 User suspected a model-name error. Google's current model documentation lists the
