@@ -1,5 +1,30 @@
 # Build status
 
+## Gemini diagnostic hardening — 2 November 2026
+
+User requested repair/testing without replaying unknown request96fd0ad0 or increasing
+the existing50USD budget. Read-only deployed evidence confirms its first request ended
+after89.68s under a90s request deadline, with provider_error_after_dispatch and no
+retained HTTP status, response, usage or provider request ID. This proves a provider5xx
+path, not the exact5xx or a confirmed timeout cause. Original request/state and33024
+microUSD unknown reservation remain unchanged. No provider call made by this local fix.
+
+Provider5xx results now retain only integer HTTP500–599 and allowlisted Gemini RPC
+status labels. Reconciliation preserves these bounded fields, excludes messages/raw
+bodies and keeps execution_unknown, actual cost null and no automatic retry. Existing
+historical records are not rewritten. This is diagnostic hardening, not yet a claim
+that live Gemini service availability is repaired. Existing Gemini3.8LOW thinking and
+token ceilings are unchanged; official current docs confirmLOW is supported.
+
+Verification: focused provider/execution/error suites94 passed; full `pnpm test:unit`
+338 passed (4.45s); isolated `test_workspace_execution.py`15 passed/1 skipped (13.18s),
+the optional native Harbor test was not opted in. Ruff check/format and scoped diff
+checks passed. Existing Authlib/Alembic deprecations remain. Exact integration command:
+`python3 -c 'import scripts.local as l; l.run([str(l.PY),"-m","pytest","services/backend/tests/integration/test_workspace_execution.py","-q"],env=l.env())'`.
+Cloud/live verification remains pending coordinated deployment and a separate newly
+authorized bounded diagnostic. No unknown retry, original-ledger release, model switch,
+budget increase or unrelated source modification is permitted by this checkpoint.
+
 ## Claude repair rollout resumed — 2 November 2026
 
 The user's initial GCP sign-in confirmation still left Anvil's isolated credential

@@ -249,12 +249,23 @@ def provider_evidence(result):
                     for k in ("ttl_30m_tokens", "ttl_12h_tokens")
                     if type(parts.get(k)) is int and 0 <= parts[k] <= 1000000000
                 }
-    return {
+    evidence = {
         "model_returned": identifier(result.model_returned),
         "request_id": identifier(result.request_id),
         "status": identifier(result.status),
         "token_usage": counters,
     }
+    http_status = usage.get("provider_http_status")
+    if type(http_status) is int and 500 <= http_status <= 599:
+        evidence["provider_http_status"] = http_status
+    if usage.get("provider_status") in (
+        "INTERNAL",
+        "UNAVAILABLE",
+        "DEADLINE_EXCEEDED",
+        "UNKNOWN",
+    ):
+        evidence["provider_status"] = usage["provider_status"]
+    return evidence
 
 
 _UNSET = object()

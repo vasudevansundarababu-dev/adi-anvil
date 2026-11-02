@@ -354,7 +354,26 @@ def _execute_native(provider, request, transport, *, credential, structured=Fals
             if status == 429:
                 return Result("failed_operational", error_code="rate_limited")
             if status and status >= 500:
-                return Result("execution_unknown", error_code="provider_error_after_dispatch")
+                # Keep bounded protocol codes for diagnosis, never provider messages,
+                # headers or raw error bodies (which can contain submitted secrets).
+                diagnostic = {}
+                if type(status) is int and 500 <= status <= 599:
+                    diagnostic["provider_http_status"] = status
+                raw = observed.get("body")
+                error = raw.get("error") if isinstance(raw, dict) else None
+                rpc_status = error.get("status") if isinstance(error, dict) else None
+                if provider == "gemini" and rpc_status in (
+                    "INTERNAL",
+                    "UNAVAILABLE",
+                    "DEADLINE_EXCEEDED",
+                    "UNKNOWN",
+                ):
+                    diagnostic["provider_status"] = rpc_status
+                return Result(
+                    "execution_unknown",
+                    usage=diagnostic or None,
+                    error_code="provider_error_after_dispatch",
+                )
             # Mistral's generated schema requires usage even when a transport omits it.
             # Preserve usable final text while explicitly retaining unknown usage/cost.
             raw = observed.get("body")
