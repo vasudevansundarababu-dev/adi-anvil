@@ -1,5 +1,13 @@
 # Build status
 
+## README review entry points — 2 November 2026
+
+Both READMEs now start their review navigation with an explicit YC review section:
+one-page YC founder summary, module definitions/features and 30-day product/expert
+taskbank roadmap, plus hosted URLs/sign-in instructions. Existing document paths
+preserved. All relative README links and Git whitespace checks passed. Documentation
+only: no runtime deployment, provider call or email needed. Unrelated edits excluded.
+
 ## Reviewer access request link — 2 November 2026
 
 User chose a prefilled email link instead of a server email service. The signed-out

@@ -7,17 +7,22 @@ results. Praxis authors and exports tasks; Anvil validates the source, generates
 verifiers and constraints, qualifies the supplied environment, and records runs against
 immutable task, rubric, code, model and environment versions.
 
-## Product journey
+## YC review
 
-**YC review:** [modules and distinctive features](docs/product/MODULE-GUIDE.md) ·
-[30-day product and SME taskbank roadmap](docs/build/11-30-DAY-ROADMAP.md) ·
-[hosted URLs and sign-in](docs/runbooks/reviewer-sign-in.md) ·
-[current review evidence](docs/generated/yc-review-2026-11-02.md).
+Start with these three documents:
+
+- [YC summary — one-page founder brief](docs/generated/yc-review-2026-11-02.md)
+- [Module guide — definitions and distinctive features](docs/product/MODULE-GUIDE.md)
+- [30-day roadmap — product delivery and expert taskbanks](docs/build/11-30-DAY-ROADMAP.md)
+
+[Hosted application URLs and sign-in steps](docs/runbooks/reviewer-sign-in.md).
 
 Need a reviewer account or password help? On the signed-out workspace page choose
 **Request access or password help**, enter your email and open the prefilled request
 to **admin@adi-labs.ai**. Send it from your email app; administrators arrange access
 manually. The website does not send the email or create an account automatically.
+
+## Product journey
 
 **Import task → generate & validate → choose evaluation models → Run → inspect results → compare runs.**
 
