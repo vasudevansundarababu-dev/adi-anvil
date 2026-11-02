@@ -10,8 +10,12 @@ make no API calls, persist no records and dispatch no models. Existing canonical
 remains under Connected workflow. This is a new interpretation of the product UX spec;
 the earlier intended visual reference has not yet been located or supplied.
 
-TypeScript, production web build and formatting checks passed. Browser interaction and
-deployment verification are pending; no additional paid inference is authorized.
+TypeScript, production web build and formatting checks passed. Browser journey passed
+(1 test, 7.9s): domain filtering, suite selection/summary and complete connected Factory
+workflow including reload. Initial browser launch was restricted; approved rerun found
+two mismatched test selectors, corrected to observed accessible roles/names. Screenshot:
+`artifacts/test-runs/benchmark-preview-library.png`. Deployment verification is pending;
+no additional paid inference is authorized.
 
 ## Benchmarks live verification — 2 November 2026, 3:58 PM Chicago
 

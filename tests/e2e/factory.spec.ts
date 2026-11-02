@@ -24,7 +24,8 @@ test('modern Benchmarks integrates profiles, recommendations, suite and gap draf
   ).toHaveAttribute('href', `/workspace/${journey.project_id}/benchmarks`);
   await expect(page.getByRole('heading', { name: 'Benchmarks', exact: true })).toBeVisible();
   await expect(page.getByText('Interactive mockup', { exact: true })).toBeVisible();
-  await page.getByLabel('Domain', { exact: true }).selectOption('Commerce');
+  await page.screenshot({ path: 'artifacts/test-runs/benchmark-preview-library.png', fullPage: true });
+  await page.getByRole('combobox', { name: 'Domain', exact: true }).selectOption('Commerce');
   await expect(
     page.getByRole('heading', { name: 'Commerce operations', exact: true }),
   ).toBeVisible();
@@ -32,7 +33,7 @@ test('modern Benchmarks integrates profiles, recommendations, suite and gap draf
     page.getByRole('heading', { name: 'Banking decision intelligence', exact: true }),
   ).toHaveCount(0);
   await page.getByRole('button', { name: '+ Add to suite', exact: true }).click();
-  await page.getByRole('button', { name: '4 Suite composer', exact: true }).click();
+  await page.getByRole('button', { name: /Suite composer$/ }).click();
   await expect(
     page.getByText('2 selected preview benchmarks · 500 illustrative samples'),
   ).toBeVisible();
