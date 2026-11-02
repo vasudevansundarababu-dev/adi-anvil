@@ -2,6 +2,17 @@
 
 ## Cloud live-trial work-volume repair — 2 November 2026
 
+Deployed850c7a1-1793643419 after backup anvil-pre-workdir-20261102 completed.
+Cloud Build d6d2704a-a25a-4c4e-b6da-f70ecced29db succeeded; API/web/Harbor worker
+actual image tags verified running850c7a1. API/database/TLS/OIDC ready; ordinary live
+inference disabled, Harbor-only gate restored after verifying no generation active.
+All3 new comparison groups saved with exact approved3 models,2 repetitions,2048 output
+tokens,10 steps,300s and16.66USD each (49.98USD combined). Marketing5acd39e7,
+KYCce3b108d,Fraud208d45b3. Paid launch blocked by normal600s recent-sign-in check;
+fresh user sign-in requested. No paid evaluation result is claimed. Do not create
+replacement groups or reset caps; use these saved groups after actual reauthentication.
+Earlier zero-provider-call failure/cancelled children and reservations remain retained.
+
 All3 golden sources are now Ready in cloud with real generation; Marketing reused
 retained code at0.071888USD, KYC generated/qualified, Fraud generated at0.052005USD
 and qualified. Saved keys verified; Astra/Gemini immutable versions corrected to
