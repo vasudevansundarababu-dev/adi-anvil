@@ -28,8 +28,16 @@ def store(
     aid = uid()
     folder = storage_root() / str(project)
     folder.mkdir(parents=True, exist_ok=True, mode=0o700)
+    # The dedicated Docker worker runs as root; the API runs as the artifact-volume
+    # owner. Keep artifacts owner-only without making worker-created files unreadable
+    # to that same trusted application identity.
+    owner = storage_root().stat().st_uid
+    if os.geteuid() == 0 and folder.stat().st_uid != owner:
+        os.chown(folder, owner, -1)
     path = folder / aid
     with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb") as f:
+        if os.geteuid() == 0 and os.fstat(f.fileno()).st_uid != owner:
+            os.fchown(f.fileno(), owner, -1)
         f.write(data)
     c.execute(
         "INSERT INTO anvil.artifacts(id,project_id,object_key,sha256,byte_size,mime_type,classification,scan_status,origin) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)",

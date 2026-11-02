@@ -2,6 +2,15 @@
 
 ## Live import coverage repair — 2 November 2026
 
+927d82e coverage repair deployed as927d82e-1793641835; Cloud Build
+d74a48a4-8d2f-4557-8995-254905b2eb8d succeeded, startup/API/TLS/OIDC checks passed.
+Backup anvil-pre-coverage-20261102 completed. UI Test again exposed a separate
+PermissionError: two root-worker artifacts were0600 UID0, API UID10001. Existing
+project artifacts otherwise UID10001/0600. Root writer now preserves artifact-volume
+owner, keeping files0600/folders0700; non-root writers never chown.311 units and full
+production check passed. Narrow repair of the two existing root-owned project files
+authorized; no content/hash/database modifications. Ownership rollout/retest pending.
+
 User reported cloud generation failure for M-BUDGET after $0.071888 accounted cost.
 Read-only inspection of retained revision8047a75d confirms its rule references
 over_limits, whose expected_checks already contains M-BUDGET but documentary covers
