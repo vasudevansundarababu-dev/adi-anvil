@@ -1,5 +1,29 @@
 # Build status
 
+## Approved two-page benchmark mockup — 2 November 2026
+
+User clarified the exact 11:30 AM reference, confirmed the recovered comparison mockup,
+then requested the library screenshot as page one and domain clicks into page two.
+Final instruction explicitly keeps this UI-only; full functionality is deferred.
+Both pages carry a persistent, prominent UI MOCKUP disclosure for all viewers and
+recording; the comparison table additionally says Mock data. No production write
+workflow is linked from the preview.
+Library + `/benchmarks/{banking,marketing,commerce}` previews share workspace light/dark
+tokens, teal actions and stable model colors. Comparison, protocol, heatmap, failure
+inspection and review-loop controls display illustrative details only. No model calls,
+record writes, automatic SME assignments, GDPVal integration or fake live results.
+GDPVal stays Planned with the earlier user target before 11 December. Existing catalog
+is preserved separately at `/benchmarks/catalog`, with no mockup action into writes.
+
+The intermediate library-only image `259ec26-1793656925` built successfully but was
+not deployed after the reference clarification. Browser checks for the two-page flow
+and light/dark themes passed. Final `pnpm check` passed (lint, formatting, TypeScript,
+production build, generated API contract); final browser journey passed 1 test in
+9.3s, including prominent mockup disclosure and retained catalog behavior. Screenshots
+`benchmark-library-final.png`, `benchmark-detail-light.png`, `benchmark-detail-dark.png`
+under ignored `artifacts/test-runs` inspected. Secret scan: 471 tracked files, 0 findings.
+Host publication is pending; no new provider requests or reservation changes.
+
 ## Benchmark design correction — 2 November 2026
 
 User rejected the catalog-first page as unlike the intended UI and explicitly requested

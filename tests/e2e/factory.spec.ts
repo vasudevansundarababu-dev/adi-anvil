@@ -22,31 +22,56 @@ test('modern Benchmarks integrates profiles, recommendations, suite and gap draf
       .getByRole('navigation', { name: 'Workspace navigation' })
       .getByRole('link', { name: 'Benchmarks', exact: true }),
   ).toHaveAttribute('href', `/workspace/${journey.project_id}/benchmarks`);
-  await expect(page.getByRole('heading', { name: 'Benchmarks', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Benchmarks', level: 1, exact: true }),
+  ).toBeVisible();
   await expect(page.getByText('Interactive mockup', { exact: true })).toBeVisible();
+  await expect(page.getByRole('complementary', { name: 'UI mockup disclosure' })).toContainText(
+    'No live benchmark execution',
+  );
   await page.screenshot({
-    path: 'artifacts/test-runs/benchmark-preview-library.png',
+    path: 'artifacts/test-runs/benchmark-library-final.png',
     fullPage: true,
   });
-  await page.getByRole('combobox', { name: 'Domain', exact: true }).selectOption('Commerce');
-  await expect(
-    page.getByRole('heading', { name: 'Commerce operations', exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole('heading', { name: 'Banking decision intelligence', exact: true }),
-  ).toHaveCount(0);
-  await page.getByRole('button', { name: '+ Add to suite', exact: true }).click();
-  await page.getByRole('button', { name: /Suite composer$/ }).click();
-  await expect(
-    page.getByText('2 selected preview benchmarks · 500 illustrative samples'),
-  ).toBeVisible();
-  await page.getByRole('button', { name: 'Preview suite summary', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('Nothing was saved, approved or dispatched');
+  await page.getByRole('link', { name: 'Banking', exact: true }).click();
+  await expect(page).toHaveURL(new RegExp('/benchmarks/banking$'));
+  await expect(page.getByRole('complementary', { name: 'UI mockup disclosure' })).toBeVisible();
+  await expect(page.getByText('DESIGN PREVIEW', { exact: true })).toBeVisible();
   await page.screenshot({
-    path: 'artifacts/test-runs/benchmark-preview-suite.png',
+    path: 'artifacts/test-runs/benchmark-morning-design.png',
     fullPage: true,
   });
-  await page.getByRole('button', { name: 'Connected workflow', exact: true }).click();
+  await page.getByRole('button', { name: 'View planned scope', exact: true }).click();
+  const detail = page.getByRole('region', { name: 'Benchmark preview detail' });
+  await expect(detail).toContainText('No GDPVal tasks, scores or runs are connected');
+  await page.getByRole('button', { name: 'Close benchmark detail' }).click();
+  await page.getByRole('button', { name: 'Gemini', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Gemini · trial preview' })).toBeVisible();
+  await expect(page.getByText(/not derived from your Astra, Claude or Gemini/)).toBeVisible();
+  await page
+    .getByRole('navigation', { name: 'Benchmark result views' })
+    .getByRole('button', { name: 'Overview', exact: true })
+    .click();
+  await page.getByRole('button', { name: 'Constraint violation 3' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Constraint violation', exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Re-run in Anvil', exact: true }).click();
+  await expect(detail).toContainText('No run has started');
+  await page.getByRole('button', { name: 'Published references', exact: true }).click();
+  await expect(page.getByText(/No external reference results are loaded/)).toBeVisible();
+  await page.getByRole('button', { name: '← Back to benchmarks', exact: true }).click();
+  await page.getByRole('link', { name: 'Marketing', exact: true }).click();
+  await expect(page).toHaveURL(new RegExp('/benchmarks/marketing$'));
+  await expect(page.getByText('12-week product launch · Pilot v1.0')).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Model comparison', exact: true })).toBeVisible();
+  await page.screenshot({ path: 'artifacts/test-runs/benchmark-detail-light.png', fullPage: true });
+  await page.getByRole('button', { name: 'Dark theme', exact: true }).click();
+  await page.screenshot({ path: 'artifacts/test-runs/benchmark-detail-dark.png', fullPage: true });
+  await page.getByRole('button', { name: 'Light theme', exact: true }).click();
+  await page.getByRole('button', { name: '← Back to benchmarks', exact: true }).click();
+  await page.goto(`/workspace/${journey.project_id}/benchmarks/catalog`);
   await expect(page.getByRole('region', { name: 'Executable task candidates' })).toBeVisible();
   await expect(
     page.getByText(/importing one does not register or publish a benchmark/),
@@ -82,7 +107,6 @@ test('modern Benchmarks integrates profiles, recommendations, suite and gap draf
   await expect(page.getByRole('status')).toContainText('Benchmark gap draft saved');
   const savedProfile = await page.locator('#factory-saved-profile').inputValue();
   await page.reload();
-  await page.getByRole('button', { name: 'Connected workflow', exact: true }).click();
   await page.locator('#factory-saved-profile').selectOption(savedProfile);
   await expect(page.locator('#factory-capabilities')).toHaveValue('uncovered-capability');
   await page.getByRole('button', { name: 'Anvil Help', exact: true }).click();

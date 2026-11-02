@@ -4,12 +4,16 @@ Authorized 2 November 2026. Extend the existing workspace and Benchmark Factory;
 do not create a second catalog or an execution/approval bypass.
 
 User correction on 2 November: the initial catalog-first presentation did not match
-the intended UI. The default page now presents an interactive **Design preview** with
-domain benchmark cards, search/filter, definitions, task profile, illustrative fit
-recommendations and suite composition. All preview counts/definitions/scores are mock
-data; no preview action persists or dispatches. **Connected workflow** retains the
-real API behavior below. The original visual reference remains unconfirmed; this
-preview follows the written Benchmark Factory UX specification.
+the intended UI. The morning reference was recovered from the 11:30 AM chat and
+explicitly confirmed by the user. Final direction: the attached library screenshot is
+page one; Banking/Marketing/Commerce links open page two, using the morning comparison
+dashboard (model table, evaluation protocol, coverage heatmap, failures and review loop).
+Both pages follow the workspace light/dark palette and consistent model colors.
+All preview counts/definitions/scores are mock data; no preview action persists or
+dispatches. GDPVal remains Planned, target before 11 December 2026, with no integration.
+User explicitly deferred full functionality to a later build. Existing canonical
+catalog remains at `/workspace/{project}/benchmarks/catalog` for prior supported flows;
+the mockup provides no action into that write workflow.
 
 - **BENCH-MOD-01:** Benchmarks appears in modern project navigation for authorized
   Admin/RL Engineer users; former `/p/{project}/factory` bookmarks redirect here.

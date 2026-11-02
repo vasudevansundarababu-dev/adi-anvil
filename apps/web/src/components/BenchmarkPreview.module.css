@@ -184,6 +184,14 @@
   line-height: 1.35;
   margin: 9px 0;
 }
+.card a {
+  color: inherit;
+  text-decoration: none;
+}
+.card a:hover {
+  color: var(--mw-accent);
+  text-decoration: underline;
+}
 .card > p {
   font-size: 13px;
   min-height: 60px;

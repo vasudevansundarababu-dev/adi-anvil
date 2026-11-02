@@ -25,6 +25,29 @@
   --mw-soft: #25463f;
   color-scheme: dark;
 }
+.mockupBanner {
+  position: sticky;
+  top: 8px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  padding: 14px 18px;
+  border: 2px solid #a66b00;
+  border-radius: 9px;
+  background: #fff0bd;
+  color: #4c3100;
+  box-shadow: 0 3px 10px #00000012;
+}
+.mockupBanner strong {
+  font-size: 18px;
+  letter-spacing: 1px;
+}
+.mockupBanner span {
+  font-size: 13px;
+  font-weight: 600;
+}
 .sidebar {
   background: #10243b;
   color: #eef5fb;

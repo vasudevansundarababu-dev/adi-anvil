@@ -11,9 +11,11 @@ recording has begun until an output file exists and is inspected.
    acceptance and exact-byte approved export. Clearly label demo/simulated identity.
 3. Anvil: import source, inspect hidden/actor boundary, generated verifier/guardrail
    artifacts, qualified task version and notebook successor workflow.
-4. Benchmarks: actual loaded task candidates; confirmed TaskProfile; deterministic
-   catalog recommendation, pinned Suite draft and gap explanation. Say that this is
-   metadata matching, not a released expert benchmark or a complete TaskBank.
+4. Benchmarks: show the explicitly labeled UI MOCKUP library, then click a domain
+   into the comparison/protocol/coverage/failure dashboard. Keep the sticky mockup
+   disclosure visible in the recording. All dashboard values are illustrative;
+   full functionality is deferred. GDPVal is Planned, not connected. Do not describe
+   mock scores, trial counts, costs or durations as actual execution evidence.
 5. Banking references: synthetic multi-hop KYC/AML and fraud-window cases. Inspect
    existing Astra/Claude results, criterion scores and observable trajectories.
 6. Show the honest Gemini operational result: HTTP504 deadline / HTTP503 unavailable,

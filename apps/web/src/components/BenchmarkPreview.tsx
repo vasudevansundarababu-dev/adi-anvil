@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import BenchmarkDashboard from './BenchmarkDashboard';
 import styles from './BenchmarkPreview.module.css';
 
 const benchmarks = [
@@ -44,11 +46,14 @@ const benchmarks = [
 const stages = ['Benchmark library', 'Task profile', 'Recommendations', 'Suite composer'] as const;
 
 export default function BenchmarkPreview() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const libraryPath = pathname.split('/').slice(0, 4).join('/');
+  const active = benchmarks.find((b) => b.id === pathname.split('/')[4]);
   const [stage, setStage] = useState<(typeof stages)[number]>('Benchmark library');
   const [domain, setDomain] = useState('All domains');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<string[]>(['banking']);
-  const [detail, setDetail] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
   const [objective, setObjective] = useState(
     'Evaluate evidence-based banking decisions under policy constraints',
@@ -65,6 +70,15 @@ export default function BenchmarkPreview() {
     );
     setNotice('Preview selection updated. No benchmark or run has been saved.');
   }
+  if (active)
+    return (
+      <>
+        <div>
+          <button onClick={() => router.push(libraryPath)}>← Back to benchmarks</button>
+        </div>
+        <BenchmarkDashboard key={active.id} title={active.name} domain={active.domain} />
+      </>
+    );
   return (
     <div className={styles.preview}>
       <div className={styles.notice}>
@@ -157,9 +171,11 @@ export default function BenchmarkPreview() {
                   <span className={styles.tag}>Illustrative draft</span>
                 </div>
                 <small className={styles.eyebrow}>
-                  {b.domain} · v{b.version}
+                  <a href={libraryPath + '/' + b.id}>{b.domain}</a> · v{b.version}
                 </small>
-                <h3>{b.name}</h3>
+                <h3>
+                  <a href={libraryPath + '/' + b.id}>{b.name}</a>
+                </h3>
                 <p>{b.description}</p>
                 <div className={styles.chips}>
                   {b.capabilities.map((c) => (
@@ -177,27 +193,13 @@ export default function BenchmarkPreview() {
                   </div>
                 </div>
                 <div className={styles.cardActions}>
-                  <button
-                    onClick={() => setDetail(detail === b.id ? null : b.id)}
-                    aria-expanded={detail === b.id}
-                  >
-                    {detail === b.id ? 'Hide details' : 'View benchmark'}
+                  <button onClick={() => router.push(libraryPath + '/' + b.id)}>
+                    View benchmark
                   </button>
                   <button aria-pressed={selected.includes(b.id)} onClick={() => toggle(b.id)}>
                     {selected.includes(b.id) ? '✓ In suite' : '+ Add to suite'}
                   </button>
                 </div>
-                {detail === b.id && (
-                  <div className={styles.detail}>
-                    <strong>Definition and release requirements</strong>
-                    <p>{b.gap}</p>
-                    <p>
-                      Proposed runner: Harbor. Metrics: rubric criteria, constraint violations and
-                      task completion. Expert authorship, professor/guide verification, rights
-                      review and smoke qualification are pending. This mock draft cannot run.
-                    </p>
-                  </div>
-                )}
               </article>
             ))}
           </div>

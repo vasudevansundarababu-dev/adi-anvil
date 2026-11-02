@@ -4,7 +4,7 @@ import BenchmarkFactory from './BenchmarkFactory';
 import AnvilHelp from './AnvilHelp';
 import { workspaceApi, WorkspaceTask } from '../lib/workspace';
 import styles from './ModernWorkspace.module.css';
-import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import BenchmarkPreview from './BenchmarkPreview';
 
 export default function WorkspaceBenchmarks({
@@ -20,19 +20,17 @@ export default function WorkspaceBenchmarks({
   canWrite: boolean;
   tasks: WorkspaceTask[];
 }) {
-  const [view, setView] = useState<'preview' | 'connected'>('preview');
+  const connected = usePathname().split('/')[4] === 'catalog';
   return (
     <>
-      <div className={styles.tabs} aria-label="Benchmark page mode">
-        <button aria-pressed={view === 'preview'} onClick={() => setView('preview')}>
-          Design preview
-        </button>
-        <button aria-pressed={view === 'connected'} onClick={() => setView('connected')}>
-          Connected workflow
-        </button>
-      </div>
-      {view === 'preview' ? (
-        <BenchmarkPreview />
+      {!connected ? (
+        <>
+          <aside className={styles.mockupBanner} aria-label="UI mockup disclosure">
+            <strong>UI MOCKUP</strong>
+            <span>Illustrative data · No live benchmark execution · Functionality planned</span>
+          </aside>
+          <BenchmarkPreview />
+        </>
       ) : (
         <>
           <section className={styles.panel} aria-label="Benchmark scope">
@@ -94,7 +92,7 @@ export default function WorkspaceBenchmarks({
           </section>
         </>
       )}
-      <AnvilHelp screen="factory" />
+      {connected && <AnvilHelp screen="factory" />}
     </>
   );
 }
