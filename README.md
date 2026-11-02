@@ -87,7 +87,12 @@ performance**. See BUILD-STATUS for exact current counts, failures and not-run c
 
 ## Hosted deployment
 
+See the [verified YC release report](docs/generated/yc-release-2026-11-01.md) for exact
+deployed revisions, backups, test evidence and remaining live-test limitations.
+
 [Anvil workspace](https://anvil-34-36-217-66.sslip.io/workspace).
+Use the [cloud-ready golden imports](contracts/praxis/golden-v3-cloud/README.md) on this host;
+the original local set binds a different, local-only image identity.
 Sign in with your assigned invited account. Existing users/data are preserved.
 See [GCP deployment configuration](infra/gcp/deployment.json) and [release plan](docs/build/09-YC-PUBLIC-RELEASE.md)
 for the last verified version and rollout evidence. Source publication does not prove deployment.

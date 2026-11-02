@@ -176,7 +176,10 @@ test('Admin modern workspace persists model profiles and keeps navigation modern
   await page.getByRole('button', { name: 'Add model', exact: true }).click();
   const name = 'Browser baseline ' + Date.now();
   await page.getByLabel('Profile name', { exact: false }).fill(name);
-  await page.getByLabel('Exact model ID', { exact: false }).fill('example-browser-model');
+  await page
+    .getByRole('region', { name: 'Model configuration editor' })
+    .getByLabel('Exact model ID', { exact: false })
+    .fill('example-browser-model');
   await expect(page.getByRole('group', { name: 'Saved API key', exact: true })).toContainText(
     'No key selected for this model',
   );

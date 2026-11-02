@@ -94,7 +94,7 @@ services:
     env_file:
       - '${ANVIL_DATA:-/var/lib/anvil}/config/app.env'
       - '${ANVIL_DATA:-/var/lib/anvil}/config/harbor.env'
-    # Fixed compiler templates only. No uploaded Dockerfiles, scripts or paid agents.
+    # Qualified supplied images and restricted generated graders; no paid evaluation agents.
     volumes:
       - '${ANVIL_DATA:-/var/lib/anvil}/artifacts:/app/.data/artifacts'
       - '/var/lib/anvil/harbor-checks:/var/lib/anvil/harbor-checks'

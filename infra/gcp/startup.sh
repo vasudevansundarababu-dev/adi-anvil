@@ -45,6 +45,9 @@ for private_dir in "$DATA/harbor-private" "$DATA/harbor-authority"; do
   install -d -o 10001 -g 0 -m 0700 "$private_dir"
 done
 
+# The read-only authority mount must contain the nested worker-home mount point.
+install -d -o 10001 -g 0 -m 0700 "$DATA/harbor-authority/import-worker-home"
+
 echo "== Runtime configuration (secret values are never logged)"
 secret() { gcloud secrets versions access latest --secret="$1" --project="$PROJECT" </dev/null; }
 while read -r var name; do

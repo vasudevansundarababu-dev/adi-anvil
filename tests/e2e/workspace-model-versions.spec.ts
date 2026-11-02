@@ -40,8 +40,14 @@ test('Admin edits models without manual pricing or terms and disables future sel
   await page.goto('/workspace/' + project + '/models');
   await page.getByRole('button', { name: 'Add model', exact: true }).click();
   await page.getByLabel('Profile name', { exact: false }).fill(name);
-  await page.getByLabel('Exact model ID', { exact: false }).fill('test-only-model-v1');
-  await page.getByLabel('Maximum output tokens', { exact: false }).fill('2048');
+  await page
+    .getByRole('region', { name: 'Model configuration editor' })
+    .getByLabel('Exact model ID', { exact: false })
+    .fill('test-only-model-v1');
+  await page
+    .getByRole('region', { name: 'Model configuration editor' })
+    .getByLabel('Maximum output tokens', { exact: false })
+    .fill('2048');
   await expect(page.getByRole('group', { name: 'Saved API key', exact: true })).toContainText(
     'No key selected for this model',
   );
@@ -72,8 +78,15 @@ test('Admin edits models without manual pricing or terms and disables future sel
   await expect(
     page.getByRole('heading', { name: 'Edit model as new version', exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole('combobox', { name: 'Provider', exact: true })).toBeDisabled();
-  await page.getByLabel('Exact model ID', { exact: false }).fill('test-only-model-v2');
+  await expect(
+    page
+      .getByRole('region', { name: 'Model configuration editor' })
+      .getByRole('combobox', { name: 'Provider', exact: true }),
+  ).toBeDisabled();
+  await page
+    .getByRole('region', { name: 'Model configuration editor' })
+    .getByLabel('Exact model ID', { exact: false })
+    .fill('test-only-model-v2');
   await expect(page.getByText('Pricing and processing terms', { exact: true })).toHaveCount(0);
   await expect(page.getByLabel('Pricing reference', { exact: false })).toHaveCount(0);
   await expect(page.getByLabel('Processing terms reference', { exact: false })).toHaveCount(0);

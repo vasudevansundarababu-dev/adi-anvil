@@ -15,8 +15,12 @@ Models & keys → Standard import generation model → configure provider, exact
 write-only key, whole-import cap and call/token bounds. Saving makes no request.
 An explicit `ANVIL_IMPORT_GENERATION_ENABLED=true` server setting and enabled saved
 configuration are both required for paid generation. This build does not enable them.
-Keys use Anvil's encrypted local store. Cloud credential entry is blocked until its
-managed secret-store adapter is configured; this is not a cloud deployment claim.
+Local keys use Anvil's encrypted private store. Cloud generation credentials use a
+designated pre-provisioned Secret Manager secret with workload identity, append-only
+versions and a private locator index. Each load verifies the exact credential/configuration
+binding. The YC host has this adapter configured; cloud evaluation credentials and paid
+evaluation remain disabled. Operators must provision the designated secret and per-secret
+permissions before enabling this adapter on another host.
 
 Known standard OpenAI models use the existing server-managed cost catalog. Other
 models require operator-verified rate/expiry support. Prices are spending controls,

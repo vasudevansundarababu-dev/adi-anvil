@@ -11,7 +11,8 @@
 # Uses only Anvil's own gcloud credential directory (.local/gcloud-anvil), never sibling ones.
 #
 # Stack on the VM: Caddy (host router, HTTP from the load balancer only) -> Next.js web + FastAPI
-# API, LangGraph worker, PostgreSQL 17, Neo4j 5, Keycloak 26 (production mode). SSH is IAP-only. Live model dispatch and real email stay disabled (cloud mode refuses them).
+# API, LangGraph worker, PostgreSQL 17, Neo4j 5, Keycloak 26 (production mode). SSH is IAP-only.
+# Paid evaluation and real email stay off; separately authorized capped generation can use Secret Manager.
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
@@ -183,6 +184,10 @@ else
   say "Rolling VM forward to $TAG"
   gcloud compute instances add-metadata "$VM" --zone="$ZONE" --metadata="$METADATA" --metadata-from-file="$FILES"
   gcloud compute ssh "$VM" --zone="$ZONE" --tunnel-through-iap --command='sudo google_metadata_script_runner startup'
+  # The metadata runner can return successfully after a child startup failure.
+  # Never certify the old healthy release as the requested rollout.
+  gcloud compute ssh "$VM" --zone="$ZONE" --tunnel-through-iap \
+    --command="test \"\$(sudo docker inspect adi-anvil-api-1 --format '{{.Config.Image}}')\" = '$REPO/backend:$TAG' && test \"\$(sudo docker inspect adi-anvil-web-1 --format '{{.Config.Image}}')\" = '$REPO/web:$TAG' && test \"\$(sudo docker inspect adi-anvil-harbor-worker-1 --format '{{.Config.Image}}')\" = '$REPO/harbor:$TAG' && test \"\$(sudo docker inspect adi-anvil-harbor-worker-1 --format '{{.State.Status}}')\" = running"
 fi
 
 if [ -z "${DEPLOY_ONLY:-}" ]; then
@@ -241,7 +246,7 @@ d["architecture"]["service_account_email"] = f"anvil-vm@{d['project_id']}.iam.gs
 d["secret_resource_references"] = {n: f"projects/{d['project_id']}/secrets/{n}" for n in [
     "anvil-db-owner-password", "anvil-db-app-password", "anvil-db-worker-password",
     "anvil-neo4j-password", "anvil-session-key", "anvil-oidc-client-secret",
-    "anvil-keycloak-admin-password", "anvil-keycloak-db-password"]}
+    "anvil-keycloak-admin-password", "anvil-keycloak-db-password", "anvil-import-generation"]}
 d["last_deployment"] = {
     "commit": commit, "image_tag": tag, "load_balancer_ip": ip,
     "web_origin": f"https://{web}", "oidc_issuer": f"https://{auth}/realms/anvil",

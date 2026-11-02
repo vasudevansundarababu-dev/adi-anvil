@@ -1,5 +1,31 @@
 # Build status
 
+## YC release complete — 1 November 2026 (America/Chicago)
+
+Anvil application ec210a9 (`ec210a9-1793593400`) is deployed on the existing host;
+API/web/Harbor images independently match the new tag and run. Modern-only root,
+legacy redirects, TLS/OIDC/login-form checks passed. Managed generation credential
+transferred by stdin directly to Secret Manager and bound readback verified; cloud
+gpt-6.1-sol cap exactly$10/import. Local$20 setting unchanged. Runtime generation=true,
+paid evaluation=false. All3 cloud v1.1.0 goldens passed actual MCP/tool contracts,
+7 generated fixtures +7 held-out QA each and native Harbor nop smoke (zero model calls).
+Final modern browser suite14 passed in1.0m after fixing two ambiguous test selectors;
+301 units and production checks passed. See docs/generated/yc-release-2026-11-01.md.
+
+Praxis ddc8446b /yc-ddc8446b-20261101 deployed to all four existing services, migration
+praxis-migrate-2qpbs succeeded, existing users/data preserved with demo setup skipped.
+Version, console/candidate availability and `/readyz` DB/Redis checks passed.121 shared,
+452 API tests and typechecks passed. Both repositories PUBLIC; reviewed release branches
+pushed explicitly, README/architecture/test docs updated. Praxis default main received
+documentation only, without changing its default-branch setting or merging application
+history. Backup receipts: SQL1793593073237 SUCCESSFUL; anvil-pre-yc-20261101 READY.
+Classic Git comparison remains untouched; unrelated AGENTS/cloud-runbook edits and SDK/
+video artifacts preserved. First Anvil startup/pull failed; retry and nested mount repair
+succeeded, and image-identity checks now prevent falsely certifying an old healthy version.
+No paid model smoke calls, email, data reset or volume deletion. Authenticated cloud user
+workflow/live model quality remains not-run; use assigned account for sign-in.
+Requested rollout is complete: future night checkpoints should not repeatedly redeploy.
+
 ## YC existing-target release underway — 1 November 2026
 
 Both GCP authentications verified. User authorized public repositories and rollout;
