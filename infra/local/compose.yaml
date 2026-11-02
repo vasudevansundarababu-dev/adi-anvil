@@ -1,7 +1,7 @@
 name: adi-anvil
 services:
   postgres:
-    image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
+    image: postgres:18.6-bookworm@sha256:5c4783a8cc3f0074912164f94dfa1be4e043438f0f707cf968d7af9a0d31a2c8
     environment:
       POSTGRES_DB: anvil_local
       POSTGRES_USER: anvil_migration
