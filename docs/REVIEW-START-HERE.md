@@ -37,6 +37,9 @@ PDF review copies for both founder briefs are included under `Founder-Briefs/`.
    subsequently reported that all models are working; that broader report is not a
    new independent verification of every run by this task.
 
-Code and documents are committed locally on the existing codex branches. GitHub
-publication remains separate from this review bundle. Unrelated working-tree edits,
-credentials, raw logs, SDK downloads and private videos are excluded.
+Reviewed code and documents are now published to the existing public GitHub branches:
+[Anvil](https://github.com/vasudevansundarababu-dev/adi-anvil) and
+[Praxis](https://github.com/vasudevansundarababu-dev/adi-praxis/tree/codex/praxis-tester-fixes).
+Anvil's default branch is `codex/anvil-modern-workspace`; the Praxis link deliberately
+selects the reviewed branch rather than its older `main`. Unrelated working-tree edits,
+credentials, raw logs, SDK downloads and private voice recordings/videos are excluded.

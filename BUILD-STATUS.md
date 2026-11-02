@@ -1,5 +1,17 @@
 # Build status
 
+## GitHub check-ins for YC submission — 2 November 2026
+
+User requested completed GitHub check-ins and submission URLs. Published reviewed
+Anvil commits throughfd71b95 to existing `codex/anvil-modern-workspace` (its default
+branch), and Praxis docs throughbb1c16d8 to existing `codex/praxis-tester-fixes`.
+Both repositories are already PUBLIC; no visibility/default-branch change, main merge
+or force push. This publication note is included in the final Anvil follow-up check-in.
+Tracked-file secret scan:479files,0findings; generic credential-URL matches remain
+previously reviewed templates/test defaults. Private voice/video/transcript artifacts,
+SDK downloads and unrelated working-tree edits are excluded. No new test or deployment
+was needed for this publication-only step; prior validation evidence is preserved.
+
 ## Founder voice synchronized — 2 November 2026
 
 User supplied their own narration and authorized synchronization with an exact3:00
