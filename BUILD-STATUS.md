@@ -1,5 +1,33 @@
 # Build status
 
+## YC live-demo preparation — 2 November 2026
+
+User authorized daytime work toward 11:00 America/Chicago, existing-target releases,
+real golden evaluations with gpt-6-astra, claude-opus-5-5 and Gemini Flash latest,
+two repetitions/model/task, one combined evaluation cap of $50 (18 planned runs).
+Generation retains its separately authorized gpt-6.1-sol $10/whole-import cap.
+Gemini alias must resolve and bind a concrete supported version before comparison;
+do not silently admit an unknown price/version. No live evaluation has run yet.
+
+Cloud project credential storage implemented using the existing fixed Secret Manager
+resource and workload grants: exact disjoint generation/project binding shapes,
+canonical project/credential/version IDs, provider checks, immutable private locators,
+no plaintext index, readback binding checks; existing Admin/project/recent-signin gates
+preserved. No new IAM or public credential endpoint. Added verified standard Opus5.5
+and Gemini3.8 Flash cost support; aliases remain unpriced until resolved/pinned.
+Sources: https://platform.claude.com/docs/en/about-claude/pricing and
+https://ai.google.dev/gemini-api/docs/pricing (2 November); no cache/fast-mode controls
+introduced. Existing cache/usage guards and budget reservation remain in effect.
+
+Passed: 304 units, three credential API integration tests (including managed-cloud
+write/readback metadata, rotation and access denial), production pnpm check/build.
+First integration attempt could not reach DB under restricted execution; authorized
+local-DB rerun passed. A renderer experiment failed its disabled-by-default regression
+and was withdrawn; deploy still defaults all paid dispatch off, with separate explicit
+runtime activation only after user-approved models/cap and application admission.
+Formatting failures corrected before final check. Deployment and paid checks pending.
+Preserved unrelated AGENTS/runbook edits, generated next-env and existing demo video.
+
 ## YC release complete — 1 November 2026 (America/Chicago)
 
 Anvil application ec210a9 (`ec210a9-1793593400`) is deployed on the existing host;

@@ -119,6 +119,7 @@ def test_write_only_local_credentials_rotation_revocation_and_profile_binding(
 
 
 def test_cloud_credential_writes_fail_closed(client_factory, monkeypatch):
+    monkeypatch.delenv("ANVIL_GENERATION_SECRET_RESOURCE", raising=False)
     monkeypatch.setattr(workspace_credentials, "CLOUD", True)
     admin, _ = client_factory("admin-1")
     result = admin.post(
@@ -130,3 +131,64 @@ def test_cloud_credential_writes_fail_closed(client_factory, monkeypatch):
         },
     )
     assert result.status_code == 409 and "cloud-test-only-secret" not in result.text
+
+
+def test_cloud_credential_api_preserves_write_only_scope_and_rotation(
+    client_factory, monkeypatch, tmp_path
+):
+    import os
+
+    from anvil import cloud_secrets
+
+    os.chmod(tmp_path, 0o700)
+    monkeypatch.setattr(workspace_credentials, "CLOUD", True)
+    monkeypatch.setattr(workspace_secrets, "CLOUD", True)
+    monkeypatch.setenv("ANVIL_CLOUD_SECRET_INDEX", str(tmp_path))
+    resource = "projects/123456/secrets/anvil-import-generation"
+    monkeypatch.setenv("ANVIL_GENERATION_SECRET_RESOURCE", resource)
+    payloads = {}
+
+    def request(method, path, body=None):
+        if method == "POST":
+            version = resource + "/versions/" + str(len(payloads) + 1)
+            payloads[version] = body
+            return {"name": version}
+        version = path.removesuffix(":access")
+        return {"name": version, **payloads[version]}
+
+    monkeypatch.setattr(cloud_secrets, "request", request)
+    admin, _ = client_factory("admin-1")
+    engineer, _ = client_factory("researcher")
+    path = BASE + "/workspace/credentials"
+    secret = "fake-cloud-credential-" + uid()
+    body = {"name": "Cloud boundary test", "provider": "anthropic", "secret": secret}
+    assert engineer.post(path, json=body).status_code == 403
+    assert admin.get(path).json()["data"]["entry_available"]
+    created = admin.post(path, json=body)
+    assert created.status_code == 200, created.text
+    record = created.json()["data"]
+    cid, version = record["id"], record["current_version_id"]
+    assert secret not in created.text + admin.get(path).text
+    with transaction(PROJECT, USERS["admin-1"]) as c:
+        assert workspace_credentials.resolve(c, cid, version).get_secret_value() == secret
+        assert secret not in str(
+            c.execute(
+                "SELECT metadata FROM anvil.audit_events WHERE target_id=%s", (cid,)
+            ).fetchall()
+        )
+    assert secret not in "".join(p.read_text() for p in tmp_path.iterdir())
+    rotated = admin.post(
+        path + f"/{cid}/versions",
+        json={"secret": "fake-rotated-key"},
+        headers={"Idempotency-Key": uid()},
+    )
+    assert rotated.status_code == 200
+    with transaction(PROJECT, USERS["admin-1"]) as c:
+        try:
+            workspace_credentials.resolve(c, cid, version)
+            raise AssertionError("Old cloud version resolved")
+        except workspace_secrets.StoreUnavailable:
+            pass
+    assert (
+        admin.post(path + f"/{cid}/revoke", headers={"Idempotency-Key": uid()}).status_code == 200
+    )

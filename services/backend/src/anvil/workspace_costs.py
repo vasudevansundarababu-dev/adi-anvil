@@ -36,6 +36,34 @@ def current(price):
 
 
 def managed(provider, model):
+    if provider == "gemini" and model == "gemini-3.8-flash":
+        return {
+            "source_kind": "anvil_managed_gemini",
+            "reference": "anvil-gemini-standard-2026-11-02-v1",
+            "source_url": "https://ai.google.dev/gemini-api/docs/pricing",
+            "verified_at": "2026-11-02T14:32:00+00:00",
+            "provider": provider,
+            "model_id": model,
+            "expires_at": "2026-11-09T14:32:00+00:00",
+            "input_micro_usd_per_million_tokens": 750000,
+            "output_micro_usd_per_million_tokens": 3750000,
+            "service_tier": "default",
+        }
+    if provider == "anthropic" and model == "claude-opus-5-5":
+        # Global standard pricing, no cache controls admitted by the broker.
+        # billed_usage rejects nonzero cache usage rather than undercounting it.
+        return {
+            "source_kind": "anvil_managed_anthropic",
+            "reference": "anvil-anthropic-standard-2026-11-02-v1",
+            "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+            "verified_at": "2026-11-02T14:40:00+00:00",
+            "provider": provider,
+            "model_id": model,
+            "expires_at": "2026-11-09T14:40:00+00:00",
+            "input_micro_usd_per_million_tokens": 4000000,
+            "output_micro_usd_per_million_tokens": 20000000,
+            "service_tier": "default",
+        }
     rates = RATES.get(model) if provider == "openai" else None
     if not rates:
         return None

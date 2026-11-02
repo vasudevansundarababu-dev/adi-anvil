@@ -114,8 +114,8 @@ export default function CredentialManager({
       </div>
       {!entryAvailable && (
         <p>
-          Cloud key entry awaits the managed secret-store adapter. Existing private server
-          configuration remains separate.
+          Managed credential storage is not configured on this server. Ask your installation
+          administrator to complete setup.
         </p>
       )}
       {error && <p role="alert">{error}</p>}

@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import Field, SecretStr, field_validator
 
-from anvil import auth, workspace_secrets
+from anvil import auth, cloud_secrets, workspace_secrets
 from anvil.config import CLOUD
 from anvil.db import audit, one, uid
 from anvil.schemas import Strict
@@ -64,10 +64,8 @@ def routes(context, wrap, idempotent):
 
     def write_access(request, roles):
         auth.require(roles, "admin")
-        if CLOUD:
-            raise HTTPException(
-                409, "Cloud credential entry awaits the managed secret-store adapter"
-            )
+        if CLOUD and not cloud_secrets.available():
+            raise HTTPException(409, "Managed cloud credential storage is not configured")
         identity = auth.identity(request)
         if (datetime.now(timezone.utc) - identity["issued_at"]).total_seconds() > 600:
             raise HTTPException(403, "Reauthentication required for credential changes")
@@ -86,7 +84,7 @@ def routes(context, wrap, idempotent):
         try:
             reference = workspace_secrets.save(body.secret.get_secret_value(), binding)
         except workspace_secrets.StoreUnavailable:
-            raise HTTPException(503, "Local credential store unavailable") from None
+            raise HTTPException(503, "Credential store unavailable") from None
         c.execute(
             "INSERT INTO anvil.workspace_credential_versions(id,project_id,credential_id,secret_reference,created_by) VALUES(%s,%s,%s,%s,%s)",
             (vid, project, identifier, reference, user),
@@ -123,7 +121,7 @@ def routes(context, wrap, idempotent):
             return wrap(
                 {
                     "items": [public(r) for r in rows[:limit]],
-                    "entry_available": not CLOUD,
+                    "entry_available": not CLOUD or cloud_secrets.available(),
                     "next_cursor": str(rows[limit - 1]["id"]) if len(rows) > limit else None,
                 },
                 request,

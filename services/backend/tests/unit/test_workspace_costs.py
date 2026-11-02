@@ -1,7 +1,36 @@
 import pytest
 
 from anvil import workspace_costs as costs
-from anvil.workspace_execution import required_cost
+from anvil.workspace_execution import billed_usage, required_cost
+
+
+def test_opus_standard_rates_fit_reservation_and_cache_remains_fail_closed():
+    price = costs.managed("anthropic", "claude-opus-5-5")
+    assert costs.current(price)
+    usage = {"input_tokens": 1000, "output_tokens": 100}
+    inputs, outputs = billed_usage("anthropic", usage)
+    assert costs.billed_cost(price, usage, inputs, outputs) == 6000
+    assert costs.billed_cost(price, usage, inputs, outputs) <= required_cost(
+        {"pricing": price, "max_output_tokens": 2048, "max_calls": 1}
+    )
+    assert costs.managed("anthropic", "claude-opus-5-5-unknown") is None
+    with pytest.raises(ValueError, match="cache"):
+        billed_usage("anthropic", {**usage, "cache_read_input_tokens": 100})
+
+
+def test_gemini_standard_rates_include_thinking_and_do_not_admit_mutable_alias():
+    price = costs.managed("gemini", "gemini-3.8-flash")
+    usage = {
+        "prompt_token_count": 1000,
+        "candidates_token_count": 100,
+        "thoughts_token_count": 100,
+        "total_token_count": 1200,
+    }
+    inputs, outputs = billed_usage("gemini", usage)
+    assert outputs == 200
+    assert costs.billed_cost(price, usage, inputs, outputs) == 1500
+    assert costs.current(price)
+    assert costs.managed("gemini", "gemini-flash-latest") is None
 
 
 def test_managed_rates_are_exact_expiring_and_do_not_use_a_fake_zero_default():

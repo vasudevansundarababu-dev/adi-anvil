@@ -1,4 +1,4 @@
-"""Installation generation credentials in a pre-provisioned GCP Secret Manager secret.
+"""Bound generation and project credentials in a pre-provisioned GCP secret.
 
 Local immutable indexes contain version locators only, never keys. VM workload identity
 authenticates requests; no service-account file or SDK credential is accepted.
@@ -22,6 +22,32 @@ def resource():
     if not re.fullmatch(r"projects/[0-9]+/secrets/anvil-import-generation", value):
         raise ValueError("Managed generation secret is not configured")
     return value
+
+
+def available():
+    try:
+        resource()
+        return True
+    except ValueError:
+        return False
+
+
+def validate_binding(binding):
+    if (
+        set(binding) == {"scope", "settings_id", "provider"}
+        and binding.get("scope") == "installation_import_generation"
+        and isinstance(binding.get("settings_id"), str)
+        and binding["settings_id"]
+        and binding.get("provider") in {"openai", "anthropic", "gemini"}
+    ):
+        return
+    if set(binding) != {"project_id", "credential_id", "version_id", "provider"}:
+        raise ValueError("Unsupported evaluation credential binding")
+    for key in ("project_id", "credential_id", "version_id"):
+        if str(UUID(binding[key])) != binding[key]:
+            raise ValueError("Invalid evaluation credential binding")
+    if binding["provider"] not in {"openai", "anthropic", "gemini", "langsmith"}:
+        raise ValueError("Unsupported evaluation credential provider")
 
 
 def request(method, path, body=None):
@@ -54,8 +80,7 @@ def index():
 
 
 def save(value, binding):
-    if binding.get("scope") != "installation_import_generation":
-        raise ValueError("Cloud evaluation credential entry is disabled")
+    validate_binding(binding)
     identifier = str(uuid4())
     data = json.dumps({"id": identifier, "binding": binding, "secret": value}).encode()
     if len(data) > 32768:
@@ -83,8 +108,7 @@ def save(value, binding):
 
 
 def load(identifier, binding):
-    if binding.get("scope") != "installation_import_generation":
-        raise ValueError("Cloud evaluation credential entry is disabled")
+    validate_binding(binding)
     name = str(UUID(str(identifier)))
     fd = index()
     try:
