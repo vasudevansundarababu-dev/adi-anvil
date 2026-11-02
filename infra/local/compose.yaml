@@ -15,7 +15,7 @@ services:
       timeout: 3s
       retries: 30
   neo4j:
-    image: neo4j:5.26.12-community@sha256:9f75e8df4325a24f00fdd7a8c0bcce650a58375049b1058e496e8b43d6c36b37
+    image: neo4j:5.26.32-community@sha256:249a1ec6e3c52d82101a5ed33d6ed2b5ed5b0017b21a28c0bfebc335e87fb177
     environment:
       NEO4J_AUTH: neo4j/${ANVIL_NEO4J_PASSWORD:?Run setup first}
       NEO4J_server_memory_heap_initial__size: 256m
