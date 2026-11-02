@@ -1,5 +1,20 @@
 # Build status
 
+## Live generation clarification repair — 1 November 2026
+
+The Marketing live model requested tool-response semantics and harness responsibilities
+missing from the prompt. Added isolated safe-tool preflight before paid dispatch: actual
+MCP result shapes plus bounded operational status/path markers reach generation; business
+response values, prohibited tools and private QA remain excluded. Prompt now specifies
+parsed asset inputs, completed/denied events, result-vs-envelope, harness reset/persistence
+and no invented scoring IDs. Missing business semantics still block; unresolved is never
+silently cleared. Added privacy/prohibited-tool regression. Verified299 unit tests,
+`test_import_pipeline.py::test_all_three_goldens_generate_validate_publish_and_notebook_roundtrip`
+(1 passed in291.81s, covering all3 goldens,18 native Harbor trials and3 notebook successors,
+controlled providers), web TypeScript, Ruff/format/Prettier/diff checks. Restarted only
+idle import worker; app HTTP200. No live retry initiated or spending limit changed.
+User's current binding allows20 calls,2 used; old clarification reports remain historical.
+
 Generation-limit diagnosis: the user's Marketing import spent $0.066990 of $10 but
 exhausted its configured one-call limit. Its first live response requested clarification
 about tool response schemas; it did not produce a Ready package. Split future call-limit

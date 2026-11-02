@@ -76,6 +76,7 @@ export default function ExecutableImport({
   const stages = [
     ['queued', 'Waiting for the generation worker'],
     ['validate_source', 'Checking the imported task'],
+    ['inspect_tool_contracts', 'Inspecting supplied Docker tool response contracts'],
     ['generate', 'Generating executable Python with the configured model'],
     ['validate_environment_tools_and_grading', 'Testing verifiers, constraints and Docker tools'],
     ['package_smoke', 'Running Harbor package checks'],

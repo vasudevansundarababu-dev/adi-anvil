@@ -18,6 +18,47 @@ from anvil.import_codegen import (
 from anvil.praxis_executable import parse
 
 
+def test_generation_preflight_withholds_business_values_and_never_calls_prohibited_tools(
+    monkeypatch,
+):
+    from anvil import import_sandbox
+
+    task = parse((ROOT / "contracts/praxis/golden-v3/01-marketing.task.json").read_bytes())
+    called = []
+
+    class Environment:
+        def __init__(self, task):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def call(self, tool, arguments):
+            called.append(tool)
+            return {
+                "status": "saved",
+                "path": "output.json",
+                "business_value": "DO-NOT-PROMPT",
+                "amount": 99123,
+            }
+
+    monkeypatch.setattr(import_sandbox, "Environment", Environment)
+    contracts = import_sandbox.tool_result_contracts(task)
+    encoded = json.dumps(contracts)
+    assert "DO-NOT-PROMPT" not in encoded and "99123" not in encoded
+    assert "send_campaign" not in called
+    assert contracts["save_result"]["operational_markers"] == {
+        "status": "saved",
+        "path": "output.json",
+    }
+    prompt = generation_prompt(task, contracts)
+    assert "NOT the MCP response envelope" in prompt
+    assert task.evaluation_private.canary not in prompt
+
+
 def fixture_bundle(task):
     cases = task.evaluation_private.fixtures
     generated_cases = []

@@ -174,7 +174,7 @@ def validate_bundle(task, value):
     return bundle
 
 
-def generation_prompt(task):
+def generation_prompt(task, tool_contracts=None):
     # Private supplied QA oracle is withheld: generated consistency fixtures are independent.
     source = task.model_dump(exclude={"evaluation_private"})
     source["inputs"] = [
@@ -189,6 +189,14 @@ def generation_prompt(task):
         "evaluate(inputs, output, events) returns {source_rule_id: bool} for ALL rules, "
         "including constraints. inputs maps actor asset paths to parsed JSON/string. "
         "events is a list of {tool,arguments,status}; output is dict or None. "
+        "The trusted harness parses JSON assets, creates fresh disposable environments for probes, "
+        "checks MCP schemas and output.json persistence, and captures events with completed/denied status. "
+        "These are harness responsibilities, not missing business requirements. Do not implement a JSON parser. "
+        "probe receives the parsed structured tool result, NOT the MCP response envelope. "
+        "Tools need not return success=true or status=ok; use the observed result contract when supplied. "
+        "Only declared criterion/constraint IDs receive scores; unscored workflow instructions do not need invented IDs. "
+        "Do not add constraints for absent external tools. Record non-blocking explanations in assumptions; "
+        "unresolved is only for business facts or tool semantics actually needed but still unavailable. "
         "guard(tool, arguments, inputs, events) returns {allowed: bool, violations: [rule_id]} "
         "and checks ALL runtime/both constraints before side effects. Prohibited tool attempts fail. "
         "probe(tool, result) returns a boolean that checks the tool probe's expected_description, not just response type. "
@@ -209,6 +217,8 @@ def generation_prompt(task):
         + json.dumps(Bundle.model_json_schema())
         + "\nSOURCE\n"
         + json.dumps(source, ensure_ascii=False)
+        + "\nOBSERVED TOOL RESULT CONTRACTS (isolated supplied-image preflight; shapes and operational status/path markers only, not business values)\n"
+        + json.dumps(tool_contracts or {}, ensure_ascii=False)
     )
 
 

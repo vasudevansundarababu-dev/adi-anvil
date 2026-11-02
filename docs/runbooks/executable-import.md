@@ -27,6 +27,11 @@ Admin Run authorization and aggregate budget.
 ## Import and fix
 
 Tasks → Import Task → upload a golden export → inspect source summary → Import & generate.
+Before a generation request, Anvil runs declared safe probes in fresh supplied-image
+containers and supplies observed response shapes and operational status/path markers to
+the generator. It excludes response business values and never invokes prohibited tools.
+The prompt explicitly assigns JSON parsing, disposable reset and output persistence to
+the trusted harness; unscored workflow instructions do not create new rubric IDs.
 The dedicated Docker worker generates artifacts, checks Python syntax/allowed operations,
 tests every rubric/constraint, resolves the supplied image, handshakes MCP servers,
 compares actual tool schemas, runs declared safe probes in fresh instances, and exercises

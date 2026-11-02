@@ -253,9 +253,14 @@ def process(job, *, transport=None):
                 # Restart after durable dispatch intent is always unknown, never re-invoked.
                 raise RuntimeError("dispatch_outcome_unknown")
         if bundle is None:
+            stage = "inspect_tool_contracts"
+            progress(stage)
+            from anvil.import_sandbox import tool_result_contracts
+
+            tool_contracts = tool_result_contracts(task, heartbeat)
             stage = "generate"
             progress(stage)
-            prompt = generation_prompt(task)
+            prompt = generation_prompt(task, tool_contracts)
             if len(prompt.encode()) > 100000:
                 raise ValueError("Generation source exceeds bounded prompt size; split the task")
             reservation = (

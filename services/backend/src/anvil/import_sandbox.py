@@ -380,6 +380,62 @@ class Environment:
             self.temporary.cleanup()
 
 
+def tool_result_contracts(task, heartbeat=lambda: None):
+    """Observe safe disposable probes; expose shapes, never probe data/expected answers."""
+
+    def shape(value, depth=0):
+        if depth > 12:
+            raise ValueError("Tool result exceeds contract nesting limit")
+        if isinstance(value, dict):
+            return {
+                "type": "object",
+                "properties": {k: shape(v, depth + 1) for k, v in value.items()},
+                "required": list(value),
+            }
+        if isinstance(value, list):
+            items = list(
+                {
+                    json.dumps(shape(v, depth + 1), sort_keys=True): shape(v, depth + 1)
+                    for v in value
+                }.values()
+            )
+            return {"type": "array", "items": {"anyOf": items} if items else {}}
+        return {
+            "type": "null"
+            if value is None
+            else "boolean"
+            if isinstance(value, bool)
+            else "number"
+            if isinstance(value, (int, float))
+            else "string"
+        }
+
+    contracts = {}
+    for server in task.mcp_servers:
+        for tool in server.tools:
+            if tool.effect == "prohibited":
+                continue
+            if not tool.probe or not tool.probe.safe_in_disposable_environment:
+                raise ValueError("Tool is not safely testable: " + tool.id)
+            heartbeat()
+            with Environment(task) as environment:
+                for setup in tool.probe.setup_calls:
+                    heartbeat()
+                    environment.call(setup.tool, setup.arguments)
+                result = environment.call(tool.id, tool.probe.arguments)
+                contracts[tool.id] = {
+                    "result_schema": shape(result),
+                    "operational_markers": {
+                        key: value
+                        for key, value in result.items()
+                        if key in {"status", "path"}
+                        and isinstance(value, str)
+                        and len(value) <= 160
+                    },
+                }
+    return contracts
+
+
 def validate(task, bundle, heartbeat=lambda: None):
     inputs = input_values(task, private=True)
     fixtures = []
