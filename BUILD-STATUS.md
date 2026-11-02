@@ -24,9 +24,13 @@ production build, generated API contract); final browser journey passed 1 test i
 under ignored `artifacts/test-runs` inspected. Secret scan: 471 tracked files, 0 findings.
 Additional final mock-only browser checks passed (1 test, 10.8s): all three domain
 routes, sticky disclosure visible after scrolling, no project mutation requests from
-mock controls, and both light/dark screenshots. Host publication is pending; no new
-provider requests or reservation changes. UI-only web image build uses source e3f2772;
-backend and Harbor worker will retain their exact running containers.
+mock controls, and both light/dark screenshots. UI-only web image
+`e3f2772-1793657471` is deployed; Cloud Build
+`89d5fa10-9e6d-4b24-b420-413c94f16827` succeeded. Exact web image/running state and
+unchanged API/Harbor container identities verified. Authenticated live browser verified
+library→Banking comparison, prominent UI MOCKUP/Mock data labels and GDPVal Planned.
+API/database readiness passed. Pre/post unknown rows, spend windows, call totals and
+runtime gates are identical. No provider request or reservation change by this rollout.
 
 ## Benchmark design correction — 2 November 2026
 
