@@ -1,13 +1,24 @@
 {
   "schema_version": "anvil.build_decisions.v1",
   "handoff_version": "1.1",
+  "yc_release_2026_11_01": {
+    "status": "deployed_and_verified",
+    "authorization": "User explicitly authorized public Anvil/Praxis repositories, existing-target GCP rollouts, modern-only Anvil UI and secure saved generation-key transfer.",
+    "anvil_application_commit": "ec210a9",
+    "praxis_application_commit": "ddc8446b",
+    "generation": "OpenAI gpt-6.1-sol, cloud whole-import cap10USD; local settings unchanged",
+    "paid_evaluation_enabled": false,
+    "classic_ui": "Retired from application entry points; historical comparison Git branch and all data preserved",
+    "evidence": "docs/generated/yc-release-2026-11-01.md",
+    "model_performance_claim": false
+  },
   "repository": {
     "name": "ADI-Anvil",
     "local_path": "/Users/vasudevansundarababu/Code-Repo/ADI-Anvil",
-    "visibility": "private",
+    "visibility": "public",
     "local_first_confirmed": true,
-    "github_owner": null,
-    "remote_publish_authorized": false
+    "github_owner": "vasudevansundarababu-dev",
+    "remote_publish_authorized": true
   },
   "target": {
     "diagnostic_journey": true,

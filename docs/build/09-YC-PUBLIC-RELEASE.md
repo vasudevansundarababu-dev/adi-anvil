@@ -20,21 +20,21 @@ Preserve unrelated edits, all application data and the classic Git comparison br
 - README and linked architecture, source map, tests, local setup, deployed login and
   limitations documentation must be clear, concise and verified for both repositories.
 
-## Current blockers and readiness
+## Completed readiness
 
-GitHub CLI is authenticated as the confirmed repository owner. Anvil has no remote;
-Praxis origin is `https://github.com/vasudevansundarababu-dev/adi-praxis.git`.
-Both GCP credential refresh checks failed with reauthentication required. User must
-complete browser sign-in before cloud inspection/rollout can continue. Anvil uses
+Both public GitHub repositories now exist with the reviewed release branches and
+updated READMEs. Both GCP logins were refreshed and verified. Anvil uses
 `.local/gcloud-anvil` / configuration `anvil-mvp-v1`; Praxis uses its existing CLI login.
 Do not substitute sibling credential stores. Existing CLI binary can be shared;
 credentials must remain separately selected.
 
-Anvil cloud managed-secret adapter and image availability must be implemented/verified;
-the local code-generation result is not proof of cloud compatibility. Previous release
-metadata and URLs are historical until the new commit is deployed and checked.
-YC documentation drafts are in ignored `.local/yc-preparation`. Praxis documentation
-checkpoint is3a20e1f3. Reconcile all drafts with final implementation before publishing.
+Anvil's managed-secret adapter and registry image were deployed and independently
+verified. All three cloud golden successors passed actual tool probes, isolated grading
+and native Harbor software smoke checks without model calls. Both applications' exact
+deployed images/versions, backups and limitations are recorded in
+[the release report](../generated/yc-release-2026-11-01.md). Reviewer documentation has
+been reconciled with this evidence. Existing assigned accounts/data remain intact.
+This requested rollout is complete; do not automatically repeat it at later checkpoints.
 
 ## Delivery gates
 
