@@ -48,7 +48,7 @@
     "commit": "185059c",
     "image_tag": "185059c-1793661384",
     "cloud_build_id": "d428f882-b191-429a-9e10-15cb840dafb2",
-    "verified_at": "2026-11-02T23:23:00+00:00",
+    "verified_at": "2026-11-02T23:21:34+00:00",
     "scope": "login access-request email link; prior benchmark mockup retained",
     "backend_and_harbor_containers_unchanged": true,
     "smoke": ["public_login_assets", "encoded_mailto_local_browser", "authenticated_workspace", "api_health"]
