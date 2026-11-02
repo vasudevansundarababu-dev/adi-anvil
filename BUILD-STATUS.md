@@ -1,5 +1,19 @@
 # Build status
 
+## Cloud live-trial work-volume repair — 2 November 2026
+
+All3 golden sources are now Ready in cloud with real generation; Marketing reused
+retained code at0.071888USD, KYC generated/qualified, Fraud generated at0.052005USD
+and qualified. Saved keys verified; Astra/Gemini immutable versions corrected to
+the exact approved IDs. Harbor preset with all3 models saved. First Marketing group
+fcb9472c failed on trial1 before any provider call (read-only ledger query returns
+zero call rows). Other5 trials cancelled through normal UI; failed evidence retained.
+Readiness and exact binding pass, but tool-agent execution hardcodes read-only
+/app/.local/harbor-checks instead of configured /var/lib/anvil/harbor-checks.
+Shared work-directory helper now used by both trial paths. Cloud read-only-authority
+regression,312 units and full production check passed. Deployment and live recovery
+pending; do not describe this as18 completed paid trials. No ambiguous dispatch retry.
+
 ## Live import coverage repair — 2 November 2026
 
 927d82e coverage repair deployed as927d82e-1793641835; Cloud Build

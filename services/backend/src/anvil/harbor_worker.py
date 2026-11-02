@@ -238,6 +238,12 @@ def recover_child(workspace):
             os.killpg(pid, signal.SIGKILL)
 
 
+def check_workspace(check_id):
+    return Path(os.environ.get("ANVIL_HARBOR_WORK_ROOT", ROOT / ".local/harbor-checks")) / str(
+        check_id
+    )
+
+
 def process(job):
     with transaction(job["project_id"], worker=True) as c:
         owner = one(
@@ -250,9 +256,7 @@ def process(job):
     gateway = None
     model = None
     run_timeout = 300
-    workspace = Path(os.environ.get("ANVIL_HARBOR_WORK_ROOT", ROOT / ".local/harbor-checks")) / str(
-        job["target_id"]
-    )
+    workspace = check_workspace(job["target_id"])
     try:
         with scoped(job, user) as c:
             lease(c, job)

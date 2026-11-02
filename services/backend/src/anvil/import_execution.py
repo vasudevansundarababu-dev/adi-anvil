@@ -229,6 +229,7 @@ def process(job, user, row, package):
     from anvil.harbor_package import unpack
     from anvil.harbor_worker import (
         authorized,
+        check_workspace,
         child_environment,
         finish,
         lease,
@@ -239,7 +240,7 @@ def process(job, user, row, package):
 
     gateway = None
     child = None
-    workspace = ROOT / ".local/harbor-checks" / str(row["id"])
+    workspace = check_workspace(row["id"])
     try:
         with scoped(job, user) as c:
             lease(c, job)
