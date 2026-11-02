@@ -1,0 +1,627 @@
+{
+  "$defs": {
+    "Asset": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "media_type": {
+          "enum": [
+            "application/json",
+            "text/plain",
+            "text/csv"
+          ],
+          "title": "Media Type",
+          "type": "string"
+        },
+        "visibility": {
+          "enum": [
+            "actor",
+            "evaluation_private"
+          ],
+          "title": "Visibility",
+          "type": "string"
+        },
+        "content": {
+          "maxLength": 262144,
+          "title": "Content",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "path",
+        "media_type",
+        "visibility",
+        "content",
+        "sha256"
+      ],
+      "title": "Asset",
+      "type": "object"
+    },
+    "Call": {
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Tool",
+          "type": "string"
+        },
+        "arguments": {
+          "additionalProperties": true,
+          "title": "Arguments",
+          "type": "object"
+        }
+      },
+      "required": [
+        "tool",
+        "arguments"
+      ],
+      "title": "Call",
+      "type": "object"
+    },
+    "Constraint": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 20000,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "phase": {
+          "enum": [
+            "runtime",
+            "final",
+            "both"
+          ],
+          "title": "Phase",
+          "type": "string"
+        },
+        "hard_fail": {
+          "title": "Hard Fail",
+          "type": "boolean"
+        },
+        "penalty_bps": {
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Penalty Bps",
+          "type": "integer"
+        },
+        "prohibited_tools": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Prohibited Tools",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "phase",
+        "hard_fail",
+        "penalty_bps",
+        "prohibited_tools"
+      ],
+      "title": "Constraint",
+      "type": "object"
+    },
+    "Criterion": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 20000,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "weight_bps": {
+          "maximum": 10000,
+          "minimum": 1,
+          "title": "Weight Bps",
+          "type": "integer"
+        },
+        "phase": {
+          "enum": [
+            "dense",
+            "terminal"
+          ],
+          "title": "Phase",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "weight_bps",
+        "phase"
+      ],
+      "title": "Criterion",
+      "type": "object"
+    },
+    "Environment": {
+      "additionalProperties": false,
+      "properties": {
+        "image_reference": {
+          "maxLength": 250,
+          "minLength": 1,
+          "title": "Image Reference",
+          "type": "string"
+        },
+        "digest": {
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "title": "Digest",
+          "type": "string"
+        },
+        "digest_kind": {
+          "enum": [
+            "oci_manifest",
+            "docker_image_id"
+          ],
+          "title": "Digest Kind",
+          "type": "string"
+        },
+        "network": {
+          "const": "none",
+          "title": "Network",
+          "type": "string"
+        },
+        "seed": {
+          "maximum": 2147483647,
+          "minimum": 0,
+          "title": "Seed",
+          "type": "integer"
+        },
+        "cpus": {
+          "maximum": 4,
+          "minimum": 1,
+          "title": "Cpus",
+          "type": "integer"
+        },
+        "memory_mb": {
+          "maximum": 4096,
+          "minimum": 128,
+          "title": "Memory Mb",
+          "type": "integer"
+        },
+        "reset_description": {
+          "maxLength": 20000,
+          "minLength": 1,
+          "title": "Reset Description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "image_reference",
+        "digest",
+        "digest_kind",
+        "network",
+        "seed",
+        "cpus",
+        "memory_mb",
+        "reset_description"
+      ],
+      "title": "Environment",
+      "type": "object"
+    },
+    "Fixture": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "good",
+            "bad",
+            "empty",
+            "guardrail",
+            "boundary"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "output": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Output"
+        },
+        "observed_calls": {
+          "items": {
+            "$ref": "#/$defs/Call"
+          },
+          "maxItems": 100,
+          "title": "Observed Calls",
+          "type": "array"
+        },
+        "expected_reward_bps": {
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Expected Reward Bps",
+          "type": "integer"
+        },
+        "expected_checks": {
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "title": "Expected Checks",
+          "type": "object"
+        },
+        "covers": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Covers",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "output",
+        "observed_calls",
+        "expected_reward_bps",
+        "expected_checks",
+        "covers"
+      ],
+      "title": "Fixture",
+      "type": "object"
+    },
+    "PrivateEvaluation": {
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "const": "synthetic_test_oracle",
+          "title": "Classification",
+          "type": "string"
+        },
+        "canary": {
+          "maxLength": 100,
+          "minLength": 10,
+          "title": "Canary",
+          "type": "string"
+        },
+        "fixtures": {
+          "items": {
+            "$ref": "#/$defs/Fixture"
+          },
+          "maxItems": 30,
+          "minItems": 4,
+          "title": "Fixtures",
+          "type": "array"
+        }
+      },
+      "required": [
+        "classification",
+        "canary",
+        "fixtures"
+      ],
+      "title": "PrivateEvaluation",
+      "type": "object"
+    },
+    "Probe": {
+      "additionalProperties": false,
+      "properties": {
+        "arguments": {
+          "additionalProperties": true,
+          "title": "Arguments",
+          "type": "object"
+        },
+        "expected_description": {
+          "maxLength": 20000,
+          "minLength": 1,
+          "title": "Expected Description",
+          "type": "string"
+        },
+        "safe_in_disposable_environment": {
+          "const": true,
+          "title": "Safe In Disposable Environment",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "arguments",
+        "expected_description",
+        "safe_in_disposable_environment"
+      ],
+      "title": "Probe",
+      "type": "object"
+    },
+    "Server": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "transport": {
+          "const": "stdio",
+          "title": "Transport",
+          "type": "string"
+        },
+        "protocol_version": {
+          "const": "2025-06-18",
+          "title": "Protocol Version",
+          "type": "string"
+        },
+        "command": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Command",
+          "type": "array"
+        },
+        "tools": {
+          "items": {
+            "$ref": "#/$defs/Tool"
+          },
+          "maxItems": 30,
+          "minItems": 1,
+          "title": "Tools",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "transport",
+        "protocol_version",
+        "command",
+        "tools"
+      ],
+      "title": "Server",
+      "type": "object"
+    },
+    "Tool": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 20000,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "input_schema": {
+          "additionalProperties": true,
+          "title": "Input Schema",
+          "type": "object"
+        },
+        "output_schema": {
+          "additionalProperties": true,
+          "title": "Output Schema",
+          "type": "object"
+        },
+        "effect": {
+          "enum": [
+            "read_only",
+            "workspace_write",
+            "prohibited"
+          ],
+          "title": "Effect",
+          "type": "string"
+        },
+        "probe": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Probe"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "input_schema",
+        "output_schema",
+        "effect",
+        "probe"
+      ],
+      "title": "Tool",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "praxis.anvil.task.v3",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "task_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+      "title": "Task Id",
+      "type": "string"
+    },
+    "task_version": {
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "title": "Task Version",
+      "type": "string"
+    },
+    "revision_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+      "title": "Revision Id",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 20000,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "domain": {
+      "enum": [
+        "marketing",
+        "kyc_aml",
+        "fraud"
+      ],
+      "title": "Domain",
+      "type": "string"
+    },
+    "objective": {
+      "maxLength": 20000,
+      "minLength": 1,
+      "title": "Objective",
+      "type": "string"
+    },
+    "instructions": {
+      "maxLength": 20000,
+      "minLength": 1,
+      "title": "Instructions",
+      "type": "string"
+    },
+    "inputs": {
+      "items": {
+        "$ref": "#/$defs/Asset"
+      },
+      "maxItems": 100,
+      "minItems": 1,
+      "title": "Inputs",
+      "type": "array"
+    },
+    "output_path": {
+      "const": "output.json",
+      "title": "Output Path",
+      "type": "string"
+    },
+    "output_schema": {
+      "additionalProperties": true,
+      "title": "Output Schema",
+      "type": "object"
+    },
+    "environment": {
+      "$ref": "#/$defs/Environment"
+    },
+    "mcp_servers": {
+      "items": {
+        "$ref": "#/$defs/Server"
+      },
+      "maxItems": 5,
+      "minItems": 1,
+      "title": "Mcp Servers",
+      "type": "array"
+    },
+    "criteria": {
+      "items": {
+        "$ref": "#/$defs/Criterion"
+      },
+      "maxItems": 30,
+      "minItems": 1,
+      "title": "Criteria",
+      "type": "array"
+    },
+    "constraints": {
+      "items": {
+        "$ref": "#/$defs/Constraint"
+      },
+      "maxItems": 30,
+      "minItems": 1,
+      "title": "Constraints",
+      "type": "array"
+    },
+    "pass_threshold_bps": {
+      "maximum": 10000,
+      "minimum": 1,
+      "title": "Pass Threshold Bps",
+      "type": "integer"
+    },
+    "max_steps": {
+      "maximum": 100,
+      "minimum": 1,
+      "title": "Max Steps",
+      "type": "integer"
+    },
+    "timeout_seconds": {
+      "maximum": 1800,
+      "minimum": 1,
+      "title": "Timeout Seconds",
+      "type": "integer"
+    },
+    "evaluation_private": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PrivateEvaluation"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "provenance": {
+      "additionalProperties": true,
+      "title": "Provenance",
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema_version",
+    "task_id",
+    "task_version",
+    "revision_id",
+    "title",
+    "domain",
+    "objective",
+    "instructions",
+    "inputs",
+    "output_path",
+    "output_schema",
+    "environment",
+    "mcp_servers",
+    "criteria",
+    "constraints",
+    "pass_threshold_bps",
+    "max_steps",
+    "timeout_seconds",
+    "provenance"
+  ],
+  "title": "TaskV3",
+  "type": "object"
+}

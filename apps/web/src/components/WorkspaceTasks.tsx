@@ -17,13 +17,20 @@ import styles from './ModernWorkspace.module.css';
 import ui from './WorkspaceTasks.module.css';
 
 type Actor = {
+  schema_version?: string;
+  instructions?: string;
   objective?: string;
   stages?: { id: string; instruction: string; completion: string }[];
   evidence?: { id: string; content: string }[];
   actions?: { id: string; description: string }[];
   deliverables?: { id: string; description: string; path: string }[];
   constraints?: { id: string; description: string }[];
-  environment?: { binding: string; initial_state: unknown };
+  environment?: {
+    binding: string;
+    initial_state?: unknown;
+    image_reference?: string;
+    image_digest?: string;
+  };
 };
 type Task = {
   id: string;
@@ -76,6 +83,7 @@ export default function WorkspaceTasks({
     [error, setError] = useState(''),
     [revision, setRevision] = useState(0);
   const [importedId, setImportedId] = useState('');
+  const [descriptionFirst, setDescriptionFirst] = useState(false);
   const [runIssue, setRunIssue] = useState('');
   useEffect(() => {
     let active = true;
@@ -129,11 +137,16 @@ export default function WorkspaceTasks({
           canPlan={canPlan}
           canAdmin={canAdmin}
           preparationHref={(id) => route + '/execution-groups/new?task=' + encodeURIComponent(id)}
-          onSourceSelected={setImportedId}
+          onSourceSelected={(id, schema) => {
+            setImportedId(id);
+            setDescriptionFirst(schema === 'praxis.anvil.task.v3');
+          }}
         />
         {importedId && (
           <>
-            <EnvironmentImport key={importedId} base={base} sourceId={importedId} />
+            {!descriptionFirst && (
+              <EnvironmentImport key={importedId} base={base} sourceId={importedId} />
+            )}
             <a className="button" href={taskHref(importedId)}>
               View imported task
             </a>
@@ -201,7 +214,11 @@ export default function WorkspaceTasks({
                 <tr key={t.id}>
                   <td>
                     <span className={`${ui.badge} ${t.package_built ? ui.ready : ui.draft}`}>
-                      {t.package_built ? 'Package built' : 'Needs package'}
+                      {t.package_built
+                        ? 'Package built'
+                        : t.source_schema_version === 'praxis.anvil.task.v3'
+                          ? 'Needs generation'
+                          : 'Needs package'}
                     </span>
                     <strong>{t.title || t.task_id}</strong>
                     <small>{t.task_id}</small>
@@ -332,8 +349,16 @@ export default function WorkspaceTasks({
             <p role="alert">Your account cannot prepare runs in this project.</p>
           ) : !pkg ? (
             <section className={styles.panel}>
-              <h3>Build a package first</h3>
-              <p>This task version has no Harbor package yet.</p>
+              <h3>
+                {task.actor.schema_version === 'praxis.anvil.task.v3'
+                  ? 'Executable generation is not available yet'
+                  : 'Build a package first'}
+              </h3>
+              <p>
+                {task.actor.schema_version === 'praxis.anvil.task.v3'
+                  ? 'The new export contract is validated and saved. Generation and supplied-image tool-agent qualification are still being implemented; this task is not runnable yet.'
+                  : 'This task version has no Harbor package yet.'}
+              </p>
               <a className="button" href={route + '/tasks/import'}>
                 Open import & package builder
               </a>
@@ -428,6 +453,7 @@ export default function WorkspaceTasks({
               <section className={styles.panel}>
                 <h3>Task prompt & horizon specification</h3>
                 <p className={ui.prompt}>{task.actor.objective}</p>
+                {task.actor.instructions && <p className={ui.prompt}>{task.actor.instructions}</p>}
                 {task.actor.stages?.map((s) => (
                   <article className={ui.card} key={s.id}>
                     <h4>{s.id}</h4>
@@ -441,7 +467,11 @@ export default function WorkspaceTasks({
                 <dl className={ui.environment}>
                   <div>
                     <dt>Docker image</dt>
-                    <dd>{pkg?.base_image || 'Build a package to bind its image'}</dd>
+                    <dd>
+                      {pkg?.base_image ||
+                        task.actor.environment?.image_reference ||
+                        'Build a package to bind its image'}
+                    </dd>
                   </div>
                   <div>
                     <dt>Task binding</dt>
@@ -463,7 +493,7 @@ export default function WorkspaceTasks({
                     <small>Context SHA-256: {env.context_sha256}</small>
                   </article>
                 ))}
-                {canPlan && (
+                {canPlan && task.actor.schema_version !== 'praxis.anvil.task.v3' && (
                   <EnvironmentImport
                     base={base}
                     sourceId={task.id}

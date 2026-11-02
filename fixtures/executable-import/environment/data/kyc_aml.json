@@ -1,0 +1,41 @@
+{
+  "applicant": "nexus",
+  "ubo_threshold_bps": 2500,
+  "entities": {
+    "nexus": {
+      "evidence_id": "FILING-NEXUS",
+      "owners": {
+        "orion": 5000,
+        "mira": 2500,
+        "dale": 2500
+      }
+    },
+    "orion": {
+      "evidence_id": "FILING-ORION",
+      "owners": {
+        "ada": 6000,
+        "ben": 4000
+      }
+    },
+    "mira": {
+      "evidence_id": "FILING-MIRA",
+      "owners": {
+        "ben": 10000
+      }
+    }
+  },
+  "people": {
+    "ada": {
+      "name": "Ada Example",
+      "sanctioned": false
+    },
+    "ben": {
+      "name": "Ben Example",
+      "sanctioned": true
+    },
+    "dale": {
+      "name": "Dale Example",
+      "sanctioned": false
+    }
+  }
+}

@@ -13,6 +13,7 @@ from anvil.harbor_package import compile_package
 from anvil.praxis_contract import actor_view
 from anvil.praxis_export import parse_export
 from anvil.schemas import Strict
+from anvil.task_parser import json_value
 
 
 class Import(Strict):
@@ -51,6 +52,16 @@ def source_public(row, c=None):
             "created_at",
         )
     }
+    if row["actor_spec"].get("schema_version") == "praxis.anvil.task.v3":
+        result["executable_import"] = {
+            "state": "source_validated",
+            "ready": False,
+            "missing": [
+                "generation_pipeline_not_implemented",
+                "supplied_image_tool_agent_not_qualified",
+            ],
+            "model_calls": "not_started",
+        }
     if c is not None:
         result["export_receipts"] = [
             {
@@ -136,7 +147,16 @@ def routes(context, wrap, idempotent):
                     raise HTTPException(422, "Praxis export exceeds 1 MiB")
                 try:
                     raw, envelope = parse_export(received)
-                    task, _, _ = compile_package(raw)
+                    value = json_value(raw)
+                    if (
+                        isinstance(value, dict)
+                        and value.get("schema_version") == "praxis.anvil.task.v3"
+                    ):
+                        from anvil.praxis_executable import parse
+
+                        task = parse(raw)
+                    else:
+                        task, _, _ = compile_package(raw)
                 except ValueError as exc:
                     raise HTTPException(422, str(exc)) from None
                 checksum = hashlib.sha256(raw).hexdigest()
@@ -197,6 +217,11 @@ def routes(context, wrap, idempotent):
             def act():
                 source = get(c, "praxis_sources", sid)
                 raw = artifacts.read(c, source["source_artifact_id"])
+                if json_value(raw).get("schema_version") == "praxis.anvil.task.v3":
+                    raise HTTPException(
+                        409,
+                        "Description-first import is validated and saved, but executable generation/tool-agent qualification is not implemented yet. No package or model call was created.",
+                    )
                 _, manifest, package = compile_package(raw)
                 checksum = hashlib.sha256(package).hexdigest()
                 old = one(

@@ -469,7 +469,10 @@ def test_agent_plan_pins_model_and_blocks_unapproved_dispatch(client_factory, mo
         },
         headers={"Idempotency-Key": uid()},
     )
-    assert response.status_code == 403
+    # Existing Admin identities are eligible under the user's two-role policy;
+    # fabricated scope/authority must still fail rather than create an approval.
+    assert response.status_code == 409
+    assert "Exact current user authority, scope hash and expiry required" in response.text
 
 
 def test_real_harbor_agent_with_explicit_stub_gateway(tmp_path, monkeypatch):

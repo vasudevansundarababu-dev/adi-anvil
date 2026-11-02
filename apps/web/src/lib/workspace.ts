@@ -59,6 +59,7 @@ export type WorkspaceRun = {
   }[];
 };
 export type WorkspaceTask = {
+  source_schema_version?: string;
   id: string;
   task_id: string;
   task_version: string;

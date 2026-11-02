@@ -1,0 +1,49 @@
+{
+  "window_start": "2026-01-01T12:00:00Z",
+  "window_end": "2026-01-01T13:00:00Z",
+  "threshold_cents": 1000000,
+  "transactions": [
+    {
+      "id": "T001",
+      "account": "A",
+      "direction": "in",
+      "amount_cents": 600000,
+      "time": "2026-01-01T12:05:00Z"
+    },
+    {
+      "id": "T002",
+      "account": "A",
+      "direction": "in",
+      "amount_cents": 700000,
+      "time": "2026-01-01T12:15:00Z"
+    },
+    {
+      "id": "T003",
+      "account": "A",
+      "direction": "out",
+      "amount_cents": 100000,
+      "time": "2026-01-01T12:20:00Z"
+    },
+    {
+      "id": "T004",
+      "account": "B",
+      "direction": "in",
+      "amount_cents": 20000,
+      "time": "2026-01-01T12:25:00Z"
+    },
+    {
+      "id": "T005",
+      "account": "A",
+      "direction": "in",
+      "amount_cents": 999900,
+      "time": "2026-01-01T11:59:00Z"
+    },
+    {
+      "id": "T006",
+      "account": "A",
+      "direction": "in",
+      "amount_cents": 5000000,
+      "time": "2026-01-01T13:00:00Z"
+    }
+  ]
+}

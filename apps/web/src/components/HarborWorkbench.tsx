@@ -8,6 +8,7 @@ type Source = {
   task_version: string;
   source_sha256: string;
   actor_spec: unknown;
+  executable_import?: { state: string; ready: boolean; missing: string[] };
   export_receipts?: {
     id: string;
     record_id: string;
@@ -49,7 +50,7 @@ export default function HarborWorkbench({
   canAdmin: boolean;
   preparationHref?: (taskId: string) => string;
   onPackageBuilt?: () => void;
-  onSourceSelected?: (sourceId: string) => void;
+  onSourceSelected?: (sourceId: string, schema?: string) => void;
 }) {
   const [sources, setSources] = useState<Source[]>([]);
   const [selected, setSelected] = useState<Source | null>(null);
@@ -158,7 +159,7 @@ export default function HarborWorkbench({
                   payload: await file.text(),
                 });
                 setSelected(source);
-                onSourceSelected?.(source.id);
+                onSourceSelected?.(source.id, source.actor_spec?.schema_version);
                 setPackage(null);
                 setCheck(null);
                 setSources(await api(base + '/praxis-sources'));
@@ -173,8 +174,12 @@ export default function HarborWorkbench({
           disabled={busy}
           value={selected?.id || ''}
           onChange={(e) => {
-            setSelected(sources.find((s) => s.id === e.target.value) || null);
-            onSourceSelected?.(e.target.value);
+            const source = sources.find((s) => s.id === e.target.value) || null;
+            setSelected(source);
+            onSourceSelected?.(
+              e.target.value,
+              (source?.actor_spec as { schema_version?: string })?.schema_version,
+            );
             setPackage(null);
             setCheck(null);
           }}
@@ -202,27 +207,38 @@ export default function HarborWorkbench({
               <pre>{JSON.stringify(selected.export_receipts, null, 2)}</pre>
             </details>
           )}
-          <button
-            disabled={busy}
-            onClick={() =>
-              void act(async () => {
-                ++packageRequest.current;
-                setBuildNotice('');
-                setBuilding(true);
-                try {
-                  setPackage(
-                    await api(base + '/praxis-sources/' + selected.id + '/build', 'POST', {}),
-                  );
-                  setBuildNotice('Harbor package is ready. Building does not start a run.');
-                  onPackageBuilt?.();
-                } finally {
-                  setBuilding(false);
-                }
-              })
-            }
-          >
-            {building ? 'Building Harbor package…' : 'Build Harbor package'}
-          </button>
+          {selected.executable_import ? (
+            <div role="status">
+              <h3>Executable source validated</h3>
+              <p>
+                This description-first task is saved. Generation and supplied-image tool-agent
+                qualification are the next implementation milestones; no executable package or model
+                call has been created.
+              </p>
+            </div>
+          ) : (
+            <button
+              disabled={busy}
+              onClick={() =>
+                void act(async () => {
+                  ++packageRequest.current;
+                  setBuildNotice('');
+                  setBuilding(true);
+                  try {
+                    setPackage(
+                      await api(base + '/praxis-sources/' + selected.id + '/build', 'POST', {}),
+                    );
+                    setBuildNotice('Harbor package is ready. Building does not start a run.');
+                    onPackageBuilt?.();
+                  } finally {
+                    setBuilding(false);
+                  }
+                })
+              }
+            >
+              {building ? 'Building Harbor package…' : 'Build Harbor package'}
+            </button>
+          )}
         </>
       )}
       {pkg && (

@@ -1,5 +1,62 @@
 # Build status
 
+Spec24 implementation launched, 1 November 2026 — user explicitly started implementation
+and requested at least3 complete shared Praxis/Anvil golden export files. Initial contract /
+import / conformance slice built; full spec24 remains partial. Added strict
+`praxis.anvil.task.v3` under unchanged exact-byte `praxis.anvil.export.v1`, JSON Schema,
+safe relative assets with byte hashes/strict embedded JSON, description-first rules,
+supplied image digest/kind, MCP schemas/probes and optional private QA fixtures. Actual
+prose-only sources need not provide fixtures: generating them is a later pipeline step.
+Source payloads cannot choose generation credentials/caps or destination project scope.
+
+Delivered contracts/praxis/golden-v3/{01-marketing,02-kyc_aml,03-fraud}.export.json and
+readable .task.json companions, with original fictional inputs, public tool contracts,
+runtime/final constraints, grading rules and21 private expected-outcome cases. Every
+criterion/constraint has both passing and failing assertions. Explicit actor allowlist
+excludes private oracles, expected rewards, probes and canaries. No reference answers
+are supplied to the scripted candidate; its solutions compute from public MCP observations.
+New v3 source intake persists/idempotently reloads real source/lineage records and renders
+View Task safely. UI says Source validated / Needs generation, not Ready. Legacy Build
+rejects v3 with an actionable409 until general generation/qualification exists. Existing
+v1/v2 remain supported; no arbitrary source code executes on import.
+
+Supplied local fixture image anvil-golden-tools:1.0.0 was built from the existing pinned
+Python base with stdlib-only MCP services and public synthetic inputs. No dependency/SDK
+installation, cloud push or host/provider secrets. Its actual Docker image ID is frozen
+in the exports and distinguished from a pullable OCI digest. Native Harbor rehearsals
+verify startup, actual advertised MCP schemas, tool observations, derived outputs and
+guardrail denials, with grading injected after actor execution. Trusted reference
+compiler/evaluator are explicitly software fixtures, NOT production model-generated code.
+Generalized image initialization/read-only mounts/independent probes remain worker work.
+
+Download artifacts: artifacts/golden-harbor-imports/praxis-anvil-golden-v3.zip (exports,
+schema, reference sources, manifest and report) plus separate43MiB supplied-image tar.
+Delivery artifacts are ignored; source fixtures/schema/scripts are versioned. No claim
+that this local image has been published or is already available to GCP/Praxis runtime.
+Praxis repository was not modified; the shared README/schema/goldens are the exporter target.
+
+Verification: `pnpm test:unit`279 passed (4.49s). Real import/backward-compatibility suite
+with ANVIL_TEST_HARBOR=1:18 passed/2 skipped (112.60s); two actual-Praxis-export-byte
+fixtures require external files not supplied to that legacy test and are not passed.
+An old negative test expected seeded Admin ineligibility403; updated it to assert409
+and the exact missing-authority message under the user's already-approved Admin policy.
+No application authorization logic was weakened. `scripts/verify_golden_imports.py --native`
+with explicit Docker opt-in:3 tasks,21 oracle cases,9 actual Harbor trials passed
+(positive1.0/empty0.0/guardrail0.0 per task). All are synthetic software checks, not model
+performance. UI suites golden-executable-import/workspace-task-pages/workspace-preparation:
+4 passed (48.1s), including all three real uploads, hidden-oracle exclusion, accurate
+not-ready feedback and existing run journeys. Final `pnpm check` passed lint/format156
+files, frontend formatting, types, production build and API contract. No paid call,
+new schema migration, real-user key/budget change, deployment, email or GitHub push.
+
+Next incomplete spec24 milestone: installation-wide generation model/credential and
+whole-import ledger, then model-generated artifact validation and supplied-image/tool
+qualification. Actual live generation requires an Admin-configured exact model/key/cap;
+none is invented from this build authorization. Continue safe local/mock implementation,
+then bounded multi-step candidate execution and Colab/Jupyter round trip. Source-validated
+v3 imports must remain non-runnable until those requirements are implemented and pass.
+Classic baseline and unrelated AGENTS/cloud-runbook edits remain preserved.
+
 Executable-import design handoff, 1 November 2026 — user requested final specification,
 journey and screen modifications after sequential clarification. Consolidated in
 docs/product/24-PRAXIS-HARBOR-EXECUTABLE-IMPORT-SPEC.md. Confirmed Harbor-only execution,

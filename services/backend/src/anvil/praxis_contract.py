@@ -178,6 +178,10 @@ def grade(task: PraxisTask, output: dict):
 
 
 def actor_view(task: PraxisTask):
+    if task.schema_version == "praxis.anvil.task.v3":
+        from anvil.praxis_executable import actor_view as executable_actor
+
+        return executable_actor(task)
     if task.schema_version == "praxis.anvil.task.v2":
         from anvil.praxis_staged import actor_view_v2
 

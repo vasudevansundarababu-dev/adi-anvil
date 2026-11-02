@@ -1,0 +1,26 @@
+{
+  "budget_cents": 800000,
+  "production_cents": 200000,
+  "max_channel_percent": 60,
+  "min_funded_channels": 2,
+  "channels": [
+    {
+      "id": "search",
+      "evidence_id": "channel-search",
+      "cpc_cents": 200,
+      "lead_rate": 0.1
+    },
+    {
+      "id": "linkedin",
+      "evidence_id": "channel-linkedin",
+      "cpc_cents": 400,
+      "lead_rate": 0.2
+    },
+    {
+      "id": "reddit",
+      "evidence_id": "channel-reddit",
+      "cpc_cents": 100,
+      "lead_rate": 0.05
+    }
+  ]
+}

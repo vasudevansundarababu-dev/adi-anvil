@@ -171,6 +171,18 @@ def safe_rubric(c, row):
 
     raw, _ = parse_export(artifacts.read(c, row["source_artifact_id"]))
     value = json_value(raw)
+    if value.get("schema_version") == "praxis.anvil.task.v3":
+        from anvil.praxis_executable import TaskV3
+
+        task = TaskV3.model_validate(value)
+        return {
+            "criteria": [
+                {"id": c.id, "description": c.description, "weight_bps": c.weight_bps}
+                for c in task.criteria
+            ],
+            "stages": [],
+            "private_bindings": "Excluded; generation not yet implemented",
+        }
     task = (
         PraxisTaskV2 if value.get("schema_version") == "praxis.anvil.task.v2" else PraxisTask
     ).model_validate(value)
@@ -372,7 +384,7 @@ def routes(context, wrap, idempotent):
             auth.require(roles, *READ_ROLES)
             rows = c.execute(
                 """SELECT DISTINCT ON (s.task_id) s.id,s.task_id,s.task_version,s.actor_spec->>'title' title,
-                s.source_sha256,s.created_at,
+                s.source_sha256,s.created_at,s.actor_spec->>'schema_version' source_schema_version,
                 (SELECT count(*) FROM anvil.praxis_sources v WHERE v.task_id=s.task_id) versions,
                 (SELECT count(*) FROM anvil.harbor_checks h JOIN anvil.harbor_packages p ON p.id=h.package_id
                  JOIN anvil.praxis_sources v ON v.id=p.source_id WHERE v.task_id=s.task_id) run_count,
