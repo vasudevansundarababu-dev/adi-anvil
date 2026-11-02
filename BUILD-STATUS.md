@@ -1,5 +1,22 @@
 # Build status
 
+## Founder voice synchronized — 2 November 2026
+
+User supplied their own narration and authorized synchronization with an exact3:00
+final demo. Exported `artifacts/demo-video/three-minute-2026-11-02/Praxis-Anvil-3min-with-your-voice.mp4`:
+H.2641920×1080/30fps/5400frames +AAC48kHz mono; both streams and container180.000s.
+Source audio200.254667s decoded; shortened20.254667s of low-energy pauses in33 edits,
+protecting locally aligned words by120ms. No speed or pitch change. Screen chapters
+retimed to actual narration; Benchmarks approximately2:07.68–2:26.50 remains labeled
+UI MOCKUP throughout. Original audio and silent-master hashes unchanged.
+
+Local Whisper timing only; recording not uploaded to a transcription service, no
+paid-provider calls. The isolated local decoder needed PyAV16.1.0 rather than19 for
+compatibility; no application dependencies changed. Full final A/V decode passed;
+sampled encoded frames inspected. Final levels-17.31LUFS/-1.22dBTP; no clipping.
+Private recordings/transcripts/captures excluded from Git. Voiced output SHA256:
+`3f57e02576edea3bc146c589baa32195ab70fab0a011901d5f074142188282e9`.
+
 ## Three-minute screen master prepared — 2 November 2026
 
 User is recording own-voice narration and requested independent preparation of the
