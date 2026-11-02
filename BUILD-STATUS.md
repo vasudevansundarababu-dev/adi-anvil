@@ -13,8 +13,18 @@ Validation: Anvil TypeScript passed; actual local browser checked expansion, emp
 email validation and correct product/email/recipient encoding using synthetic data.
 Praxis console equivalent passed TypeScript and an isolated production build and was
 inspected in the browser; partner login shares the same component. No paid calls.
-Cloud rollout and final branch publication follow this source checkpoint. Praxis
-rollout currently needs renewal of its existing Google Cloud CLI sign-in.
+Both source commits published: Anvil185059c and Praxis77691856. Cloud builds passed:
+Anvil d428f882-b191-429a-9e10-15cb840dafb2; Praxis809b7044-1e9c-49ba-aeed-4e60e3479a19.
+Anvil web185059c-1793661384 deployed with exact API/Harbor container identities unchanged;
+public login assets and API/database health verified. Existing authenticated browser
+session preserved; signed-out interaction checked locally, not a fresh hosted login.
+After user-renewed Google Cloud sign-in, Praxis web77691856-access-20261102 deployed as
+praxis-web-00017-2rh with100%traffic. Public console and partner login verified; actual
+hosted partner browser checked recipient/product/entered-email encoding. API and worker
+revision IDs unchanged. No email app launched, real email sent or new account created.
+README/module-guide links on both published branches and local Markdown links verified.
+Review ZIP refreshed to17files including both READMEs. Secret scan481tracked files,
+0findings. Private recordings/screenshots, generated files and unrelated edits excluded.
 
 ## GitHub check-ins for YC submission — 2 November 2026
 

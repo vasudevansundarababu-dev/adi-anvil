@@ -45,13 +45,13 @@
     "anvil-keycloak-db-password": "projects/adi-anvil-mvp-2026/secrets/anvil-keycloak-db-password"
   },
   "last_web_deployment": {
-    "commit": "e3f2772",
-    "image_tag": "e3f2772-1793657471",
-    "cloud_build_id": "89d5fa10-9e6d-4b24-b420-413c94f16827",
-    "verified_at": "2026-11-02T22:15:00+00:00",
-    "scope": "benchmark UI mockup only",
+    "commit": "185059c",
+    "image_tag": "185059c-1793661384",
+    "cloud_build_id": "d428f882-b191-429a-9e10-15cb840dafb2",
+    "verified_at": "2026-11-02T23:23:00+00:00",
+    "scope": "login access-request email link; prior benchmark mockup retained",
     "backend_and_harbor_containers_unchanged": true,
-    "smoke": ["mockup_library", "domain_dashboard", "persistent_mockup_disclosure", "api_health"]
+    "smoke": ["public_login_assets", "encoded_mailto_local_browser", "authenticated_workspace", "api_health"]
   },
   "last_deployment": {
     "commit": "b0eec40",
