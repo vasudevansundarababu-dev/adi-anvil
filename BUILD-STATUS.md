@@ -1,5 +1,28 @@
 # Build status
 
+## Three-minute screen master prepared — 2 November 2026
+
+User is recording own-voice narration and requested independent preparation of the
+screen demo. Prepared `artifacts/demo-video/three-minute-2026-11-02/` with16 current
+authenticated app captures, labeled title/roadmap cards, a180second storyboard and
+`Praxis-Anvil-3min-screen-only.mp4` (1920×1080,30fps,no audio). This is an edited screen
+walkthrough assembled from actual captures, not an uncut live task recording.
+No provider call, generation, approval or task mutation. Source footage preserved.
+
+Praxis template/rules/human gate and guideline review show the synthetic-demo boundary.
+Current KYC history independently displayed three successful user-created trials:
+dbcbd33b/Astra,cb229f3c/Gemini,9f42d26e/Claude, each100/100 with complete cost.
+Same-package comparison makes no significance claim. Separate Gemini0.008462USD
+diagnostic is shown as existing evidence, not replayed. Benchmarks120–145s carries
+a permanent editorial UI MOCKUP label plus the app disclosure; roadmap145–180s is
+explicitly Planned/Proposed. Own audio and final voiced synchronization remain pending.
+Final master verified180.000s,1920×1080,30fps,zero audio tracks; full decode passed
+without errors and sampled exported frames were visually inspected, including the
+full comparison table and persistent mockup labels. SHA256:
+`56375f71f6a6b3760dd6d76831052b84cbdb6c1478eac9d08b8e339f6c2523e5`.
+The5PM one-time follow-up now checks this completed screen master and only resumes
+voice synchronization if the user's audio is available; no duplicate capture.
+
 ## YC founder briefs — 2 November 2026
 
 Replaced the technical YC summaries with one-page founder briefs for Anvil and Praxis,
