@@ -25,15 +25,31 @@ never extracts an action from prose, changes grading, or alters refusal/truncati
 usage, model binding, budgets or one-attempt transport. Tests:332 units and full
 pnpm check passed. Execution integration16 passed in55.87s. Full three-golden
 import/native-Harbor controlled-response regression is running. Not deployed/live-proven.
+Initial full golden regression failed with TimeoutExpired during notebook successor
+environment validation (212.63s); no test containers remained. An isolated rerun with
+unchanged limits passed all11 checks, including all3 golden imports,18 native
+controlled-response evaluation trials and3 ready notebook successors. The earlier
+timeout remains recorded as an environment failure, not silently erased. First log at
+`/private/tmp/anvil-claude-format-golden-integration.log`; rerun log at
+`/private/tmp/anvil-claude-format-golden-rerun.log`. Source repair0f63334 is checkpointed
+and pushed; clean release checkout `/private/tmp/anvil-claude-format-release`.
 
 GCP credential refresh now fails with reauthentication required. User asked to run
 Anvil's own scoped gcloud login; do not substitute sibling credentials. Continue
-local checks while blocked. Current deployed release remains4e11331, healthy and
+local checks while blocked. Actionable login instructions emailed to the previously
+authorized admin@adi-labs.ai address, without secrets. Current deployed release remains4e11331, healthy and
 Harbor gated. No rollout until no active provider calls and credentials restored.
 After repair qualification, run only the remaining authorized Claude/Gemini trials
 in explicitly bounded groups; preserve all failed/unknown history and verify total
 known cost plus unresolved bounds plus new caps stays<=50USD. Do not rerun Astra
 or the three original unknown requests. Full three-model comparison is incomplete.
+
+Comparison qualification caveat: the immutable comparison signature includes the
+adapter code digest. Old Astra results cannot silently be pooled with results from
+the repaired Claude adapter. Preserve this check. Before any further dispatch,
+reconcile the exact known costs and select a bounded, genuinely comparable protocol;
+if a new matched baseline is needed, explain that change rather than claiming an
+old/new cross-adapter comparison is valid. Original unknown requests are never retried.
 
 ## Accounting fix cloud rollout — 2 November 2026
 
