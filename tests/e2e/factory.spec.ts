@@ -23,6 +23,26 @@ test('modern Benchmarks integrates profiles, recommendations, suite and gap draf
       .getByRole('link', { name: 'Benchmarks', exact: true }),
   ).toHaveAttribute('href', `/workspace/${journey.project_id}/benchmarks`);
   await expect(page.getByRole('heading', { name: 'Benchmarks', exact: true })).toBeVisible();
+  await expect(page.getByText('Interactive mockup', { exact: true })).toBeVisible();
+  await page.getByLabel('Domain', { exact: true }).selectOption('Commerce');
+  await expect(
+    page.getByRole('heading', { name: 'Commerce operations', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Banking decision intelligence', exact: true }),
+  ).toHaveCount(0);
+  await page.getByRole('button', { name: '+ Add to suite', exact: true }).click();
+  await page.getByRole('button', { name: '4 Suite composer', exact: true }).click();
+  await expect(
+    page.getByText('2 selected preview benchmarks · 500 illustrative samples'),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Preview suite summary', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('Nothing was saved, approved or dispatched');
+  await page.screenshot({
+    path: 'artifacts/test-runs/benchmark-preview-suite.png',
+    fullPage: true,
+  });
+  await page.getByRole('button', { name: 'Connected workflow', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Executable task candidates' })).toBeVisible();
   await expect(
     page.getByText(/importing one does not register or publish a benchmark/),
@@ -58,6 +78,7 @@ test('modern Benchmarks integrates profiles, recommendations, suite and gap draf
   await expect(page.getByRole('status')).toContainText('Benchmark gap draft saved');
   const savedProfile = await page.locator('#factory-saved-profile').inputValue();
   await page.reload();
+  await page.getByRole('button', { name: 'Connected workflow', exact: true }).click();
   await page.locator('#factory-saved-profile').selectOption(savedProfile);
   await expect(page.locator('#factory-capabilities')).toHaveValue('uncovered-capability');
   await page.getByRole('button', { name: 'Anvil Help', exact: true }).click();

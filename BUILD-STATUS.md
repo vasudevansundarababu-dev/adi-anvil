@@ -1,5 +1,18 @@
 # Build status
 
+## Benchmark design correction — 2 November 2026
+
+User rejected the catalog-first page as unlike the intended UI and explicitly requested
+a mocked-up Benchmarks page. Added a default interactive design preview: domain cards,
+search/filter, definition details, task-profile form, illustrative ranked recommendations
+and suite composition. Every count/fit score is explicitly mock data; preview actions
+make no API calls, persist no records and dispatch no models. Existing canonical Factory
+remains under Connected workflow. This is a new interpretation of the product UX spec;
+the earlier intended visual reference has not yet been located or supplied.
+
+TypeScript, production web build and formatting checks passed. Browser interaction and
+deployment verification are pending; no additional paid inference is authorized.
+
 ## Benchmarks live verification — 2 November 2026, 3:58 PM Chicago
 
 Application checkpoint `b0eec40` deployed to the existing host as
