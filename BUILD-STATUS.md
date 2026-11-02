@@ -2,6 +2,21 @@
 
 ## Cloud native process tracking — 2 November 2026
 
+Deployed c2d9792-1793644383; Cloud Build65946f59-c809-4980-8b4d-3a1792792c1e
+and API/TLS/OIDC startup passed. Final-source import integration rerun:11 passed
+in335.33s, including all3 goldens/18 controlled trials. Actual deployed native
+tool-agent smoke passed Linux process identity, gateway callback, real container,
+empty-output grading and a separate nonzero0.375 software grading wire witness.
+Both standalone checks made0 provider calls and0 database writes, with
+model_performance=false; no fake evaluation result persisted. Harbor-only gate
+restored after no active generation; API/database ready, ordinary inference off.
+Both prior failed trials have0 provider-call rows; remaining trials cancelled.
+Current saved groups: Marketing30bbd998, KYCce3b108d, Fraud208d45b3, each16.66USD.
+Run attempt blocked by automatic approval review because fresh sign-in after final
+deployment was not confirmed and the600s authorization window may have expired.
+No workaround/indirect dispatch attempted. Fresh user sign-in required; paid model
+comparison remains incomplete. Do not redeploy/restart once requests are active.
+
 Fresh sign-in admitted saved Marketing group5acd39e7. Native agent failed during
 process tracking; workspace contains task/runtime.log but no process.json. Confirmed
 cloud slim image has no ps utility, while /proc is available. Process identity now

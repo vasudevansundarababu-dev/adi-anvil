@@ -99,7 +99,10 @@ for the last verified version and rollout evidence. Source publication does not 
 
 The existing host uses Compute Engine, a private VM, HTTPS load balancer, PostgreSQL,
 Neo4j, Keycloak, and a dedicated Harbor worker. Generation is separately authorized for
-OpenAI gpt-6.1-sol at a $10 whole-import cap. Paid evaluation and real email remain disabled
-for this YC rollout. No API keys, passwords or private datasets belong in this repository.
+OpenAI gpt-6.1-sol at a $10 whole-import cap. Harbor evaluation remains gated by exact
+model/key versions, current Admin authorization and reserved budgets; ordinary live
+inference and real email remain disabled. See BUILD-STATUS for measured readiness:
+software verification and generated-package readiness do not establish paid model performance.
+No API keys, passwords or private datasets belong in this repository.
 Notebook editing is a download/Colab-or-Jupyter/upload workflow with server revalidation;
 it does not provision hosted notebook runtimes. Only supplied qualified environments run.
