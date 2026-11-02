@@ -31,6 +31,16 @@ def package():
     files["verification-report.json"] = (
         ROOT / "artifacts/test-runs/golden-v3-report.json"
     ).read_bytes()
+    pipeline_report = ROOT / "artifacts/test-runs/import-pipeline-e2e.json"
+    if pipeline_report.is_file():
+        pipeline = json.loads(pipeline_report.read_text())
+        assert len(pipeline) == 3 and all(
+            t["evaluation"]["trials"] == 6
+            and t["notebook_successor"] == "ready"
+            and not t["model_performance"]
+            for t in pipeline
+        )
+        files["application-pipeline-report.json"] = pipeline_report.read_bytes()
     for path in (ROOT / "fixtures/executable-import").rglob("*"):
         if path.is_file() and path.suffix != ".pyc" and "__pycache__" not in path.parts:
             files[
@@ -84,3 +94,10 @@ if __name__ == "__main__":
         check=True,
     )
     print("Supplied image archived without registry push")
+    delivered = sorted(output.glob("*.export.json")) + [
+        output / "praxis-anvil-golden-v3.zip",
+        output / "anvil-golden-tools-1.0.0.tar",
+    ]
+    (output / "SHA256SUMS").write_text(
+        "".join(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n" for path in delivered)
+    )

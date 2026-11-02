@@ -1,5 +1,44 @@
 # Build status
 
+## Spec24 final local acceptance — 1 November 2026
+
+The full local executable-import pipeline is implemented. All three golden files pass
+the application path: API intake, installation-wide generation settings, cumulative
+import charging, controlled provider SDK generation, isolated Python qualification,
+withheld private QA, supplied-image MCP probes, native Harbor execution and notebook
+successor validation. Final acceptance: **11 passed in326.40s**, including18 native
+evaluation trials (2 models ×3 repetitions ×3 tasks). Raw Harbor rewards match trusted
+grades. Also passed:298 units,49 related integration checks (2 external-file skips),
+production checks/build,6 browser journeys and21 independent oracle cases/9 native trials.
+See docs/generated/executable-import-build-report.md for commands and limitations.
+
+These are software checks with controlled model responses, not live model performance.
+No paid calls, deployment or push. Actual generation still needs installation Admin
+scope, a real standard model/key/cap and exact live-processing authority. Notebook support
+is download/manual Colab or Jupyter editing/validated return, without hosted provisioning.
+The supplied image is local, not published. Cloud credentials still require the managed
+secret-store adapter. Classic and unrelated edits are preserved.
+
+Continuation and initial-slice entries below are historical and superseded by this entry.
+
+Spec24 continuation — user requested a separate background implementation agent to
+finish the pipeline and test all three goldens. One source writer is active. Installation
+settings, cumulative generation ledger, restricted Python artifacts, supplied-image/MCP
+qualification, native bounded tool-agent trials, notebook return and artifact editing
+are implemented. Broad verification passed **49 integration /2 external-file skips**,
+**5 real-browser journeys**, **291 unit checks**, production build, and the independent
+**21 oracle cases /9 native reference trials**. The integration path includes all3
+imports,18 native Harbor evaluation trials (2 SDK-mocked providers ×3 repetitions each),
+and3 notebook-successor validations. These are software checks, not live model results.
+
+The earlier verifier-staging failures were resolved without making the candidate root
+writable: root-only executable verifier staging plus Harbor's supported automatic log
+mounts. Private generated graders execute separately. Final exact-source Admin processing
+permission and malformed-notebook checks are being rerun before the checkpoint. Testing
+readiness has no human approval gate; paid external processing still needs exact current
+Admin permission and the independent generation flag/config. No paid calls, remote push
+or deployment; prior delivered checkpoint remains35f8b60 until final checks finish.
+
 Spec24 implementation launched, 1 November 2026 — user explicitly started implementation
 and requested at least3 complete shared Praxis/Anvil golden export files. Initial contract /
 import / conformance slice built; full spec24 remains partial. Added strict

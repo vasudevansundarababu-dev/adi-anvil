@@ -34,6 +34,7 @@ def metrics(row, calls):
     diagnostic = result.get("diagnostics") or {}
     reward = diagnostic.get("reward") if row["state"] == "succeeded" else None
     scored = isinstance(reward, (int, float)) and not isinstance(reward, bool)
+    passed = diagnostic.get("pass") if type(diagnostic.get("pass")) is bool else reward == 1
     unknown = row["state"] == "execution_unknown" or any(
         c["status"] in ("dispatching", "execution_unknown") for c in calls
     )
@@ -46,8 +47,8 @@ def metrics(row, calls):
         "score_basis": "automated_reward_0_to_100; not human-reviewed capability",
         "scored": int(scored),
         "attempts": 1,
-        "passed": int(scored and reward == 1),
-        "task_failed": int(scored and reward < 1),
+        "passed": int(scored and passed),
+        "task_failed": int(scored and not passed),
         "execution_errors": int(row["state"] == "failed"),
         "unknown": int(unknown),
         "elapsed_seconds": result.get("elapsed_seconds"),
@@ -128,13 +129,15 @@ def public_run(c, row, detail=False):
     if detail:
         projection.update(
             diagnostics=result.get("diagnostics"),
+            observable_trajectory=result.get("observable_trajectory", []),
             actor_snapshot=row["actor_spec"],
             source_sha256=row["source_sha256"],
             source_revision_id=row["source_revision_id"],
             evidence=[
                 {k: e[k] for k in ("artifact_id", "kind", "sha256")}
                 for e in result.get("evidence", [])
-                if e.get("kind") in {"output.json", "output.txt", "diagnostics.json"}
+                if e.get("kind")
+                in {"output.json", "output.txt", "diagnostics.json", "trajectory.json"}
                 and all(k in e for k in ("artifact_id", "kind", "sha256"))
             ],
             calls=observed_calls(c, row, calls),
@@ -144,6 +147,9 @@ def public_run(c, row, detail=False):
                 "harbor_version": result.get("harbor_version"),
                 "schema_version": row["manifest"].get("schema_version"),
                 "stage_order": row["manifest"].get("stage_order", []),
+                "generated_revision_id": row["manifest"].get("revision_id"),
+                "generated_bundle_sha256": row["manifest"].get("bundle_sha256"),
+                "image_digest": row["manifest"].get("image_digest"),
                 "reference_material": "Restricted; excluded from this projection",
                 "rubric": safe_rubric(c, row),
                 "execution_settings": {
@@ -235,8 +241,16 @@ def observed_calls(c, row, calls):
     for call in calls:
         context = None
         try:
-            previous = [json_value(texts[index]) for index in range(call["stage_index"])]
-            prompt = harbor_agents.actor_prompt(admission, call["stage_index"], previous)
+            if package["manifest"].get("binding") == "mcp-tool-agent-v1":
+                from anvil.import_execution import actor_prompt
+
+                record = one(
+                    c, "SELECT * FROM anvil.harbor_agent_plans WHERE id=%s", (row["agent_plan_id"],)
+                )
+                prompt = actor_prompt(c, record, package, call["stage_index"])
+            else:
+                previous = [json_value(texts[index]) for index in range(call["stage_index"])]
+                prompt = harbor_agents.actor_prompt(admission, call["stage_index"], previous)
             if hashlib.sha256(prompt.encode()).hexdigest() == call["request_sha256"]:
                 context = prompt
         except (ValueError, TypeError, KeyError, RuntimeError):
@@ -385,6 +399,7 @@ def routes(context, wrap, idempotent):
             rows = c.execute(
                 """SELECT DISTINCT ON (s.task_id) s.id,s.task_id,s.task_version,s.actor_spec->>'title' title,
                 s.source_sha256,s.created_at,s.actor_spec->>'schema_version' source_schema_version,
+                (SELECT r.state FROM anvil.executable_imports i JOIN anvil.executable_import_revisions r ON r.id=i.current_revision_id WHERE i.source_id=s.id) import_state,
                 (SELECT count(*) FROM anvil.praxis_sources v WHERE v.task_id=s.task_id) versions,
                 (SELECT count(*) FROM anvil.harbor_checks h JOIN anvil.harbor_packages p ON p.id=h.package_id
                  JOIN anvil.praxis_sources v ON v.id=p.source_id WHERE v.task_id=s.task_id) run_count,
@@ -527,7 +542,8 @@ def routes(context, wrap, idempotent):
                     e
                     for e in (row.get("result") or {}).get("evidence", [])
                     if e.get("artifact_id") == str(aid)
-                    and e.get("kind") in {"output.json", "output.txt", "diagnostics.json"}
+                    and e.get("kind")
+                    in {"output.json", "output.txt", "diagnostics.json", "trajectory.json"}
                 ),
                 None,
             )

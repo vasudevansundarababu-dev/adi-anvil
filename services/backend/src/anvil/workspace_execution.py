@@ -408,18 +408,23 @@ def decision(project, user, plan_id, stage_index, *, transport=None):
         if len(old) != stage_index or any(r["status"] != "completed" for r in old):
             raise RuntimeError("stage_sequence_mismatch")
         package = one(c, "SELECT * FROM anvil.harbor_packages WHERE id=%s", (record["package_id"],))
-        with zipfile.ZipFile(
-            io.BytesIO(artifacts.read(c, package["package_artifact_id"]))
-        ) as archive:
-            raw = archive.read("anvil-agent/admission.json")
-        if (
-            hashlib.sha256(raw).hexdigest()
-            != package["manifest"]["files"]["anvil-agent/admission.json"]
-        ):
-            raise RuntimeError("admission_integrity_mismatch")
-        prompt = ha.actor_prompt(
-            json_value(raw), stage_index, [json_value(r["output_json"]["text"]) for r in old]
-        )
+        if package["manifest"].get("binding") == "mcp-tool-agent-v1":
+            from anvil.import_execution import actor_prompt
+
+            prompt = actor_prompt(c, record, package, stage_index)
+        else:
+            with zipfile.ZipFile(
+                io.BytesIO(artifacts.read(c, package["package_artifact_id"]))
+            ) as archive:
+                raw = archive.read("anvil-agent/admission.json")
+            if (
+                hashlib.sha256(raw).hexdigest()
+                != package["manifest"]["files"]["anvil-agent/admission.json"]
+            ):
+                raise RuntimeError("admission_integrity_mismatch")
+            prompt = ha.actor_prompt(
+                json_value(raw), stage_index, [json_value(r["output_json"]["text"]) for r in old]
+            )
         binding = record["config"]["workspace_model"]
         # Serialize current/disable/rotation changes through the durable dispatch-intent boundary.
         locked = one(
@@ -599,7 +604,10 @@ def routes(context, wrap, idempotent):
                         "model": bound["model_id"],
                         "connection_hash": bound["config_hash"],
                         "package_sha256": prep["snapshot"]["package"]["package_sha256"],
-                        "max_calls": len(prep["snapshot"]["package"]["manifest"]["stage_order"]),
+                        "max_calls": prep["snapshot"].get(
+                            "max_agent_steps",
+                            len(prep["snapshot"]["package"]["manifest"]["stage_order"]),
+                        ),
                         "max_output_tokens": prep["snapshot"]["max_output_tokens"],
                         "request_timeout_seconds": min(
                             90, prep["snapshot"]["episode_timeout_seconds"]

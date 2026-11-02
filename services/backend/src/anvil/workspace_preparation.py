@@ -33,6 +33,7 @@ class Preparation(Strict):
     aggregate_cap_micro_usd: int | None = Field(default=None, gt=0, le=1000000000, strict=True)
     trials_per_model: int = Field(default=1, ge=1, le=10, strict=True)
     environment: Literal["package-docker"] = "package-docker"
+    max_agent_steps: int | None = Field(default=None, ge=1, le=100, strict=True)
 
 
 def unique(ids):
@@ -120,7 +121,11 @@ def readiness(c, snapshot):
     if snapshot["aggregate_cap_micro_usd"] is None:
         reasons.append("aggregate_api_cap_missing")
     package = snapshot["package"]
-    if package["manifest"].get("binding") not in ("structured-decision-v1", "staged-decision-v1"):
+    if package["manifest"].get("binding") not in (
+        "structured-decision-v1",
+        "staged-decision-v1",
+        "mcp-tool-agent-v1",
+    ):
         reasons.append("task_binding_not_supported")
     if package["manifest"].get("harbor_version") != "0.25.0":
         reasons.append("package_runtime_not_supported")
@@ -368,6 +373,9 @@ def routes(context, wrap, idempotent):
                     "aggregate_cap_micro_usd": body.aggregate_cap_micro_usd,
                     "execution_order": "sequential",
                     "trials_per_model": body.trials_per_model,
+                    "max_agent_steps": min(
+                        body.max_agent_steps or 100, len(package["manifest"]["stage_order"])
+                    ),
                     "environment": {
                         "id": body.environment,
                         "name": "Harbor isolated Docker",

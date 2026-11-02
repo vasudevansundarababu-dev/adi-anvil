@@ -4,6 +4,7 @@ import CredentialManager, { CredentialMetadata } from './CredentialManager';
 import ModelProfileEditor, { ModelConfiguration as Model } from './ModelProfileEditor';
 import { workspaceApi as api, shortId } from '../lib/workspace';
 import styles from './ModernWorkspace.module.css';
+import ImportGenerationSettings from './ImportGenerationSettings';
 
 export default function ModelProfiles({ base }: { base: string }) {
   const [credentials, setCredentials] = useState<CredentialMetadata[]>([]);
@@ -112,6 +113,7 @@ export default function ModelProfiles({ base }: { base: string }) {
   }
   return (
     <>
+      <ImportGenerationSettings base={base} />
       {!editing && (
         <section className={styles.panel} aria-label="Model profile list" aria-busy={busy}>
           <div className={styles.pageHead}>

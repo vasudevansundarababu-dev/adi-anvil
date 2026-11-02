@@ -1,8 +1,8 @@
 {
   "schema_version": "praxis.anvil.task.v3",
   "task_id": "GOLDEN-FRAUD",
-  "task_version": "1.0.0",
-  "revision_id": "golden-fraud-r1",
+  "task_version": "1.0.1",
+  "revision_id": "golden-fraud-r2",
   "title": "Synthetic fraud window and guarded response",
   "domain": "fraud",
   "objective": "Complete the synthetic fraud task using supplied inputs, validated tools and declared constraints.",
@@ -133,7 +133,15 @@
               "account": "A"
             },
             "expected_description": "Return a structured success response against the disposable synthetic seed; reset after this probe.",
-            "safe_in_disposable_environment": true
+            "safe_in_disposable_environment": true,
+            "setup_calls": [
+              {
+                "tool": "freeze_account",
+                "arguments": {
+                  "account": "A"
+                }
+              }
+            ]
           }
         },
         {

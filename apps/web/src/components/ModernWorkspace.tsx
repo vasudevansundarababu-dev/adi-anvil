@@ -1128,9 +1128,9 @@ function RunDetails({
               m.unknown +
               ' unknown outcomes.'
             : m.task_failed
-              ? 'Automated task constraints did not receive full reward.'
+              ? 'The task did not meet its declared pass condition.'
               : m.passed
-                ? 'All executable checks received full reward.'
+                ? 'The task met its declared pass condition.'
                 : 'No scored task outcome is available.'}
         </p>
         {run.error_code && <p>Runner error: {run.error_code}</p>}
@@ -1160,7 +1160,35 @@ function RunDetails({
   return (
     <section className={styles.panel}>
       <h2>{tab === 'Results' ? 'Results & retained outputs' : 'Observable trajectory'}</h2>
-      <p className={styles.muted}>{run.trajectory_limitations}</p>
+      <p className={styles.muted}>
+        {run.observable_trajectory?.length
+          ? 'Recorded tool actions and observed results. Private model reasoning is not captured.'
+          : run.trajectory_limitations}
+      </p>
+      {tab === 'Trajectories' && !!run.observable_trajectory?.length && (
+        <ol aria-label="Observed tool calls">
+          {run.observable_trajectory.map((event, index) => (
+            <li key={index}>
+              <h3>
+                {index + 1}. {event.tool} · {event.status}
+              </h3>
+              {!!event.violations?.length && (
+                <p role="status">Guardrail: {event.violations.join(', ')}</p>
+              )}
+              <details>
+                <summary>Arguments and observed result</summary>
+                <pre>
+                  {JSON.stringify(
+                    { arguments: event.arguments, observation: event.observation },
+                    null,
+                    2,
+                  )}
+                </pre>
+              </details>
+            </li>
+          ))}
+        </ol>
+      )}
       {tab === 'Trajectories' && !!run.calls?.length && (
         <ol aria-label="Observed stage events">
           {run.calls.map((call) => (
@@ -1253,15 +1281,20 @@ function Diagnostics({ data }: { data?: Record<string, unknown> | null }) {
     diagnostic_score?: number;
     hard_failures?: string[];
     criteria?: Record<string, { passed: boolean; weight_bps: number }>;
+    checks?: Record<string, boolean>;
+    components_bps?: Record<string, number>;
+    penalties_bps?: Record<string, number>;
+    reward_bps?: number;
   }[];
   return (
     <>
       {stages.map((stage, i) => (
         <div className={styles.diagnostic} key={stage.stage_id || i}>
-          <h3>{stage.stage_id || 'Decision'}</h3>
+          <h3>{stage.stage_id || (stage.checks ? 'Task checks' : 'Decision')}</h3>
           <p>
             Reward: {stage.reward ?? 'Unknown'} · diagnostic score:{' '}
-            {stage.diagnostic_score ?? 'Unknown'}
+            {stage.diagnostic_score ??
+              (typeof stage.reward_bps === 'number' ? stage.reward_bps / 100 : 'Unknown')}
           </p>
           {stage.hard_failures?.length ? (
             <p>Hard failures: {stage.hard_failures.join(', ')}</p>
@@ -1274,6 +1307,24 @@ function Diagnostics({ data }: { data?: Record<string, unknown> | null }) {
                 </span>
                 <strong>{c.passed ? 'Pass' : 'Fail'}</strong>
               </div>
+            ))}
+          {stage.checks &&
+            Object.entries(stage.checks).map(([id, passed]) => (
+              <div className={styles.criterion} key={id}>
+                <span>
+                  {id}
+                  {typeof stage.components_bps?.[id] === 'number' && (
+                    <small> {stage.components_bps[id] / 100} points earned</small>
+                  )}
+                </span>
+                <strong>{passed ? 'Pass' : 'Fail'}</strong>
+              </div>
+            ))}
+          {stage.penalties_bps &&
+            Object.entries(stage.penalties_bps).map(([id, points]) => (
+              <p key={id}>
+                Penalty {id}: −{points / 100} points
+              </p>
             ))}
         </div>
       ))}

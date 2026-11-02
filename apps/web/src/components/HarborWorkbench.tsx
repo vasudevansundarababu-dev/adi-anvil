@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import ExecutableImport from './ExecutableImport';
 
 type Source = {
   id: string;
@@ -208,14 +209,12 @@ export default function HarborWorkbench({
             </details>
           )}
           {selected.executable_import ? (
-            <div role="status">
-              <h3>Executable source validated</h3>
-              <p>
-                This description-first task is saved. Generation and supplied-image tool-agent
-                qualification are the next implementation milestones; no executable package or model
-                call has been created.
-              </p>
-            </div>
+            <ExecutableImport
+              base={base}
+              sourceId={selected.id}
+              sourceSha={selected.source_sha256}
+              onReady={onPackageBuilt}
+            />
           ) : (
             <button
               disabled={busy}
@@ -250,7 +249,14 @@ export default function HarborWorkbench({
           <p>This immutable package is saved. Building the same source again reuses it.</p>
           {preparationHref && selected && (
             <p>
-              <a className="button" href={preparationHref(selected.task_id)}>
+              <a
+                className="button"
+                href={
+                  selected.executable_import
+                    ? base.replace('/projects/', '/workspace/') + '/tasks/' + selected.id + '/run'
+                    : preparationHref(selected.task_id)
+                }
+              >
                 Run
               </a>{' '}
               Choose saved model profiles and review readiness next. Launch requires current
@@ -264,7 +270,7 @@ export default function HarborWorkbench({
             <summary>Inspect package manifest</summary>
             <pre>{JSON.stringify(pkg.manifest, null, 2)}</pre>
           </details>
-          {(Boolean(pkg.approval) || canApprove) && canPlan && (
+          {!selected?.executable_import && (Boolean(pkg.approval) || canApprove) && canPlan && (
             <div>
               <button
                 disabled={busy}
@@ -312,7 +318,7 @@ export default function HarborWorkbench({
           )}
         </>
       )}
-      {pkg && canPlan && (
+      {pkg && canPlan && !selected?.executable_import && (
         <AgentPlanPanel
           base={base}
           api={api}

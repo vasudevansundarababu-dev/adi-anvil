@@ -44,6 +44,13 @@ export type WorkspaceRun = {
   source_sha256?: string;
   source_revision_id?: string;
   trajectory_limitations?: string;
+  observable_trajectory?: {
+    tool: string;
+    arguments: unknown;
+    status: string;
+    observation?: unknown;
+    violations?: string[];
+  }[];
   evidence?: { artifact_id: string; kind: string; sha256: string }[];
   calls?: {
     stage_index: number;
@@ -60,6 +67,7 @@ export type WorkspaceRun = {
 };
 export type WorkspaceTask = {
   source_schema_version?: string;
+  import_state?: string | null;
   id: string;
   task_id: string;
   task_version: string;

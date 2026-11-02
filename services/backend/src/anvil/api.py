@@ -20,6 +20,7 @@ from anvil.factory import routes as factory_routes
 from anvil.graph import routes as graph_routes
 from anvil.harbor_agents import routes as harbor_agent_routes
 from anvil.harbor_api import routes as harbor_routes
+from anvil.import_generation import routes as import_generation_routes
 from anvil.intake import routes as intake_routes
 from anvil.plans import routes as plan_routes
 from anvil.provider_api import routes as provider_routes
@@ -167,6 +168,7 @@ app.include_router(delivery_routes(context, wrap, idempotent))
 app.include_router(readiness_routes(context, wrap, idempotent))
 app.include_router(task_import_routes(context, wrap, idempotent))
 app.include_router(harbor_routes(context, wrap, idempotent))
+app.include_router(import_generation_routes(context, wrap, idempotent))
 app.include_router(workspace_routes(context, wrap, idempotent))
 app.include_router(workspace_credential_routes(context, wrap, idempotent))
 app.include_router(workspace_diagnostic_routes(context, wrap))

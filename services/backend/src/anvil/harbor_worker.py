@@ -291,6 +291,11 @@ def process(job):
             )
             if not executable.is_file():
                 raise RuntimeError("harbor_runtime_unavailable")
+        if package["manifest"].get("binding") == "mcp-tool-agent-v1":
+            from anvil.import_execution import process as process_tool_trial
+
+            process_tool_trial(job, user, row, package)
+            return
         workspace.mkdir(parents=True, exist_ok=False, mode=0o700)
         task_dir, results = workspace / "task", workspace / "results"
         unpack(archive, task_dir, package["package_sha256"])
@@ -502,6 +507,10 @@ def process(job):
 
 
 def tick():
+    from anvil.import_worker import tick as import_tick
+
+    if import_tick():
+        return True
     with transaction(worker=True) as c:
         job = one(c, "SELECT * FROM anvil.claim_harbor_job()")
     if not job:

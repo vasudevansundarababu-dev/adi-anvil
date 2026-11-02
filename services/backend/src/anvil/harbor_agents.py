@@ -47,6 +47,8 @@ def code_digest():
             "harbor_worker.py",
             "harbor_package.py",
             "praxis_contract.py",
+            "praxis_executable.py",
+            "task_parser.py",
             "praxis_staged.py",
             "providers.py",
             "db.py",
@@ -63,9 +65,14 @@ def code_digest():
             "workspace_models.py",
             "workspace_credentials.py",
             "workspace_secrets.py",
+            "import_codegen.py",
+            "import_execution.py",
+            "import_sandbox.py",
+            "import_generation.py",
         )
     ]
     paths.append(ROOT / "services/harbor/src/anvil_harbor/agent.py")
+    paths.append(ROOT / "services/harbor/src/anvil_harbor/tool_agent.py")
     return digest(
         {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
     )

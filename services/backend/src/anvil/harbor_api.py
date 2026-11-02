@@ -57,11 +57,30 @@ def source_public(row, c=None):
             "state": "source_validated",
             "ready": False,
             "missing": [
-                "generation_pipeline_not_implemented",
-                "supplied_image_tool_agent_not_qualified",
+                "standard_generation_configuration_and_validation_required",
             ],
             "model_calls": "not_started",
         }
+        if c is not None:
+            family = one(
+                c,
+                "SELECT current_revision_id,ready_revision_id FROM anvil.executable_imports WHERE source_id=%s",
+                (row["id"],),
+            )
+            if family:
+                current = one(
+                    c,
+                    "SELECT state FROM anvil.executable_import_revisions WHERE id=%s",
+                    (family["current_revision_id"],),
+                )
+                result["executable_import"].update(
+                    state=current["state"],
+                    ready=bool(family["ready_revision_id"]),
+                    model_calls="see_import_ledger",
+                    missing=[]
+                    if family["ready_revision_id"]
+                    else ["generation_or_validation_required"],
+                )
     if c is not None:
         result["export_receipts"] = [
             {
@@ -114,7 +133,9 @@ def package_public(c, row):
         "package_sha256": row["package_sha256"],
         "manifest": manifest,
         "approval": approval,
-        "live_execution": "blocked_unmetered_agent_adapter",
+        "live_execution": "requires_explicit_evaluation_run_authority"
+        if manifest.get("binding") == "mcp-tool-agent-v1"
+        else "blocked_unmetered_agent_adapter",
         "qualification": "software_checks_only; not model performance or rights clearance",
     }
 
@@ -220,7 +241,7 @@ def routes(context, wrap, idempotent):
                 if json_value(raw).get("schema_version") == "praxis.anvil.task.v3":
                     raise HTTPException(
                         409,
-                        "Description-first import is validated and saved, but executable generation/tool-agent qualification is not implemented yet. No package or model call was created.",
+                        "Description-first sources use Import & generate on the task page. That workflow freezes the generation model/cap and validates generated code and supplied tools before Ready; this legacy Build action makes no model call.",
                     )
                 _, manifest, package = compile_package(raw)
                 checksum = hashlib.sha256(package).hexdigest()
@@ -318,6 +339,11 @@ def routes(context, wrap, idempotent):
 
             def act():
                 package = get(c, "harbor_packages", pid)
+                if package["manifest"].get("binding") == "mcp-tool-agent-v1":
+                    raise HTTPException(
+                        409,
+                        "Use Test again in the generated import panel for software validation, or Run Task for model trials. Legacy fixed-template checks do not execute generated packages.",
+                    )
                 if body.candidate == "constraint_failure" and not package["manifest"].get(
                     "constraint_failure_supported"
                 ):

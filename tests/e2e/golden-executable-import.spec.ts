@@ -32,7 +32,7 @@ test('all three golden exports import without exposing private oracles or claimi
     const value = (await response.json()).data;
     expect(value.executable_import.ready).toBe(false);
     await expect(
-      page.getByRole('heading', { name: 'Executable source validated', exact: true }),
+      page.getByRole('heading', { name: 'Make this task executable', exact: true }),
     ).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Build Harbor package', exact: true }),
@@ -47,10 +47,104 @@ test('all three golden exports import without exposing private oracles or claimi
     await page.getByRole('link', { name: 'Run task', exact: false }).click();
     await expect(
       page.getByRole('heading', {
-        name: 'Executable generation is not available yet',
+        name: 'Complete executable generation first',
         exact: true,
       }),
     ).toBeVisible();
     await expect(page.getByRole('button', { name: 'Run', exact: true })).toHaveCount(0);
   }
+});
+
+test('generated-import UI safely retries a lost response and downloads its notebook from the API', async ({
+  page,
+}) => {
+  // Controlled UI response states only. Real backend/native generation is covered by
+  // test_import_pipeline.py; these interceptions make no paid request or persisted Ready claim.
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Sign in with Keycloak' }).click();
+  await page.locator('#username').fill('admin-1');
+  const password = readFileSync('.local/demo-accounts.md', 'utf8')
+    .split('\n')
+    .find((line) => line.startsWith('- admin-1:'))!
+    .split('`')[1];
+  await page.locator('#password').fill(password);
+  await page.locator('#kc-login').click();
+  await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+  const project = 'a0000000-0000-4000-8000-000000000002';
+  const response = await page.request.get(
+    '/api/v1/projects/' + project + '/workspace/tasks?search=GOLDEN-MARKETING',
+  );
+  const source = (await response.json()).data.items.find(
+    (t: any) => t.task_id === 'GOLDEN-MARKETING',
+  );
+  expect(source).toBeTruthy();
+  const settingsId = '10000000-0000-4000-8000-000000000001';
+  const importId = '10000000-0000-4000-8000-000000000002';
+  const revisionId = '10000000-0000-4000-8000-000000000003';
+  let family: any = null;
+  const keys: string[] = [];
+  await page.route('**/workspace/import-generation/settings', (route) =>
+    route.fulfill({
+      json: {
+        data: {
+          configured: true,
+          can_configure: false,
+          can_authorize_processing: true,
+          paid_generation_enabled: false,
+          id: settingsId,
+          provider: 'openai',
+          model_id: 'software-ui-fixture',
+          default_cap_micro_usd: 1000,
+        },
+      },
+    }),
+  );
+  await page.route('**/workspace/tasks/' + source.id + '/executable-import', (route) =>
+    route.fulfill({ json: { data: family } }),
+  );
+  await page.route('**/workspace/tasks/' + source.id + '/generate', async (route) => {
+    keys.push(route.request().headers()['idempotency-key']);
+    expect(route.request().postDataJSON().source_sha256).toBe(source.source_sha256);
+    if (keys.length === 1) {
+      await route.abort('failed');
+      return;
+    }
+    family = {
+      id: importId,
+      source_id: source.id,
+      settings_id: settingsId,
+      current_revision_id: revisionId,
+      ready_revision_id: revisionId,
+      cap_micro_usd: 1000,
+      charged_micro_usd: 0,
+      reserved_micro_usd: 0,
+      remaining_micro_usd: 1000,
+      generation_model: { provider: 'openai', model_id: 'software-ui-fixture' },
+      revisions: [{ id: revisionId, state: 'ready', kind: 'generate', report: {} }],
+    };
+    await route.fulfill({ json: { data: family } });
+  });
+  await page.route(
+    '**/workspace/executable-imports/' + importId + '/revisions/' + revisionId + '/notebook',
+    (route) =>
+      route.fulfill({
+        contentType: 'application/x-ipynb+json',
+        headers: { 'Content-Disposition': 'attachment; filename="anvil-review.ipynb"' },
+        body: JSON.stringify({ nbformat: 4, nbformat_minor: 5, metadata: {}, cells: [] }),
+      }),
+  );
+  await page.goto('/workspace/' + project + '/tasks/' + source.id);
+  const generate = page.getByRole('button', { name: 'Import & generate', exact: true });
+  await generate.click();
+  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(generate).toBeEnabled();
+  await generate.click();
+  await expect(
+    page.getByRole('link', { name: 'Download review notebook', exact: true }),
+  ).toBeVisible();
+  expect(keys).toHaveLength(2);
+  expect(keys[0]).toBe(keys[1]);
+  const download = page.waitForEvent('download');
+  await page.getByRole('link', { name: 'Download review notebook', exact: true }).click();
+  expect((await download).suggestedFilename()).toBe('anvil-review.ipynb');
 });

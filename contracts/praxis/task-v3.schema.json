@@ -355,6 +355,12 @@
           "const": true,
           "title": "Safe In Disposable Environment",
           "type": "boolean"
+        },
+        "setup_calls": {
+          "items": { "$ref": "#/$defs/ProbeSetup" },
+          "maxItems": 10,
+          "title": "Setup Calls",
+          "type": "array"
         }
       },
       "required": [
@@ -363,6 +369,16 @@
         "safe_in_disposable_environment"
       ],
       "title": "Probe",
+      "type": "object"
+    },
+    "ProbeSetup": {
+      "additionalProperties": false,
+      "properties": {
+        "tool": { "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$", "title": "Tool", "type": "string" },
+        "arguments": { "additionalProperties": true, "title": "Arguments", "type": "object" }
+      },
+      "required": ["tool", "arguments"],
+      "title": "ProbeSetup",
       "type": "object"
     },
     "Server": {

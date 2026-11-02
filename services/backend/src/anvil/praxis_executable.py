@@ -62,10 +62,16 @@ class Environment(Model):
         return self
 
 
+class ProbeSetup(Model):
+    tool: Identifier
+    arguments: dict
+
+
 class Probe(Model):
     arguments: dict
     expected_description: Text
     safe_in_disposable_environment: Literal[True]
+    setup_calls: list[ProbeSetup] = Field(default_factory=list, max_length=10)
 
 
 class Tool(Model):
@@ -193,6 +199,17 @@ class TaskV3(Model):
             if not set(constraint.prohibited_tools) <= tool_ids:
                 raise ValueError("Unknown prohibited tool")
         for tool in tools:
+            if tool.effect == "prohibited" and not any(
+                c.phase in ("runtime", "both") and tool.id in c.prohibited_tools
+                for c in self.constraints
+            ):
+                raise ValueError("Prohibited tools require a runtime constraint mapping")
+            if tool.probe and any(
+                call.tool not in tool_ids
+                or next(t for t in tools if t.id == call.tool).effect == "prohibited"
+                for call in tool.probe.setup_calls
+            ):
+                raise ValueError("Probe setup must reference a declared non-prohibited tool")
             if (
                 tool.input_schema.get("type") != "object"
                 or tool.output_schema.get("type") != "object"

@@ -26,15 +26,19 @@ tasks. The export is the preferred shared Praxis handoff. JSON Schema is
 - The environment includes an actual inspected image digest **and digest kind**. The
   local fixture ID is not claimed to be a registry-pullable OCI digest or available in GCP.
 - `evaluation_private` contains authoritative QA expectations for this golden set. It
-  is optional for normal prose-only imports, where Anvil will generate test cases later.
+  is optional for normal prose-only imports, where Anvil generates its own consistency cases.
   It must never enter candidate prompts, tools, actor files or notebook exports by default.
 - Installation generation model/key/cap and evaluation model/budget selections are Anvil
   policy. A Praxis payload cannot override them. Source project/client/review IDs are
   unverified lineage metadata and never choose the destination project or grant approval.
-- Anvil accepts these as validated, immutable sources now, with isolated actor projections.
-  General description-to-code generation, global generation settings, production MCP agent
-  qualification and notebook editing remain subsequent spec24 milestones. Upload does
-  **not** falsely mark them Ready or create a paid request.
+- Anvil retains the exact source and actor projection. **Import & generate** uses the
+  installation generation model and one cumulative import cap, then validates generated
+  Python, fixtures, supplied-image tools and a native Harbor smoke trial. Upload alone
+  does **not** mark Ready or create a paid request. Code/notebook edits create successor
+  drafts and rerun server checks; source QA oracles stay separate from generated cases.
+- Fraud revision1.0.1 explicitly declares its safe probe setup (freeze before escalation).
+  This preserves the tool's state-transition contract instead of guessing setup actions.
+  Earlier imported1.0.0 sources retain their original bytes and bindings.
 
 Every source has safe tool probes, output structure, written requirements, weights,
 runtime/final constraints, source/input hashes, supplied image information and private

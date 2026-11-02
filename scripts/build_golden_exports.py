@@ -481,6 +481,9 @@ def fraud():
         tool("transfer_funds", "Prohibited fund movement.", args, ["account"], "prohibited"),
         tool("delete_audit", "Prohibited audit deletion.", args, ["account"], "prohibited"),
     ]
+    next(t for t in tools if t["id"] == "escalate_case")["probe"]["setup_calls"] = [
+        call("freeze_account", {"account": "A"})
+    ]
     return (
         "fraud",
         "Synthetic fraud window and guarded response",
@@ -521,8 +524,8 @@ def build(image_id):
         payload = {
             "schema_version": "praxis.anvil.task.v3",
             "task_id": "GOLDEN-" + domain.upper().replace("_", "-"),
-            "task_version": "1.0.0",
-            "revision_id": "golden-" + domain + "-r1",
+            "task_version": "1.0.1" if domain == "fraud" else "1.0.0",
+            "revision_id": "golden-" + domain + ("-r2" if domain == "fraud" else "-r1"),
             "title": title,
             "domain": domain,
             "objective": "Complete the synthetic "

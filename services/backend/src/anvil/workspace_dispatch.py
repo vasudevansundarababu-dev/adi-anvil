@@ -14,7 +14,7 @@ from anvil import providers
 from anvil.workspace_adapter_contracts import ENV_OVERRIDES, bytes_echo, contains_secret
 
 
-def execute(binding, secret, request, *, transport=None):
+def execute(binding, secret, request, *, transport=None, generation=False):
     provider = binding["provider"]
     key = secret.get_secret_value()
     origin = "sdk_mock" if type(transport) is httpx.MockTransport else "provider"
@@ -31,8 +31,10 @@ def execute(binding, secret, request, *, transport=None):
     if (
         request.model != binding["model_id"]
         or binding["destination"] != providers.PROVIDERS[provider][2]
-        or not 1 <= len(request.actor_text.encode("utf-8")) <= 32768
-        or not 1 <= request.max_output_tokens <= min(2048, binding["max_output_tokens"])
+        or not 1 <= len(request.actor_text.encode("utf-8")) <= (100000 if generation else 32768)
+        or not 1
+        <= request.max_output_tokens
+        <= min(8192 if generation else 2048, binding["max_output_tokens"])
         or contains_secret((request.actor_text, request.model), key)
     ):
         return outcome("failed_operational", "broker_request_blocked")

@@ -662,6 +662,7 @@ export default function WorkspacePreparation({
                     ? Number(whole) * 1000000 + Number(fraction.padEnd(6, '0'))
                     : null,
                   trials_per_model: Number(data.get('trials') || 1),
+                  max_agent_steps: data.get('steps') ? Number(data.get('steps')) : null,
                   environment: 'package-docker',
                 });
                 if (createGroup) {
@@ -824,6 +825,15 @@ export default function WorkspacePreparation({
               min={1}
               max={10}
               defaultValue={1}
+            />
+            <label htmlFor="preparation-steps">Maximum agent steps per trial</label>
+            <input
+              id="preparation-steps"
+              name="steps"
+              type="number"
+              min={1}
+              max={100}
+              placeholder="Use task horizon"
             />
             <label htmlFor="preparation-timeout">Episode time limit (seconds)</label>
             <input

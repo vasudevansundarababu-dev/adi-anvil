@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import HarborWorkbench from './HarborWorkbench';
+import ExecutableImport from './ExecutableImport';
 import WorkspacePreparation from './WorkspacePreparation';
 import WorkspaceExecutionGroups from './WorkspaceExecutionGroups';
 import {
@@ -53,7 +54,7 @@ type Task = {
   environments: { id: string; name: string; status: string; context_sha256: string }[];
 };
 type Criterion = { id: string; description: string; weight_bps: number };
-const tabs = ['Task', 'MCP / Tool calls', 'Input files', 'Rubrics', 'Verifiers'];
+const tabs = ['Task', 'MCP / Tool calls', 'Input files', 'Rubrics', 'Constraints', 'Verifiers'];
 
 export default function WorkspaceTasks({
   base,
@@ -215,13 +216,18 @@ export default function WorkspaceTasks({
                   <td>
                     <span className={`${ui.badge} ${t.package_built ? ui.ready : ui.draft}`}>
                       {t.package_built
-                        ? 'Package built'
+                        ? t.source_schema_version === 'praxis.anvil.task.v3'
+                          ? 'Ready'
+                          : 'Package built'
                         : t.source_schema_version === 'praxis.anvil.task.v3'
-                          ? 'Needs generation'
+                          ? t.import_state?.replaceAll('_', ' ') || 'Needs generation'
                           : 'Needs package'}
                     </span>
                     <strong>{t.title || t.task_id}</strong>
                     <small>{t.task_id}</small>
+                    {t.package_built && t.import_state && t.import_state !== 'ready' && (
+                      <small>Newer draft: {t.import_state.replaceAll('_', ' ')}</small>
+                    )}
                   </td>
                   <td>
                     {t.task_version}
@@ -351,12 +357,12 @@ export default function WorkspaceTasks({
             <section className={styles.panel}>
               <h3>
                 {task.actor.schema_version === 'praxis.anvil.task.v3'
-                  ? 'Executable generation is not available yet'
+                  ? 'Complete executable generation first'
                   : 'Build a package first'}
               </h3>
               <p>
                 {task.actor.schema_version === 'praxis.anvil.task.v3'
-                  ? 'The new export contract is validated and saved. Generation and supplied-image tool-agent qualification are still being implemented; this task is not runnable yet.'
+                  ? 'Generate and validate this task from its View page. The import report shows missing settings, tool problems or failing tests.'
                   : 'This task version has no Harbor package yet.'}
               </p>
               <a className="button" href={route + '/tasks/import'}>
@@ -406,6 +412,9 @@ export default function WorkspaceTasks({
         </>
       ) : (
         <>
+          {task.actor.schema_version === 'praxis.anvil.task.v3' && (
+            <ExecutableImport base={base} sourceId={task.id} sourceSha={task.source_sha256} />
+          )}
           <section className={`${styles.panel} ${ui.summary}`} aria-label="Task summary">
             <dl>
               <div>
@@ -515,8 +524,9 @@ export default function WorkspaceTasks({
             <section className={styles.panel}>
               <h3>Declared task actions</h3>
               <p className={styles.muted}>
-                These are task-defined actions. No external MCP server is connected by importing a
-                task.
+                {task.actor.schema_version === 'praxis.anvil.task.v3'
+                  ? 'These tools must pass startup, interface and safe-probe checks in the supplied image before Ready. See the import validation report above.'
+                  : 'These are task-defined actions. No external MCP server is connected by importing a task.'}
               </p>
               {task.actor.actions?.length ? (
                 task.actor.actions.map((a) => (
@@ -562,7 +572,7 @@ export default function WorkspaceTasks({
               </p>
             </section>
           )}
-          {tab === 'Verifiers' && (
+          {tab === 'Constraints' && (
             <section className={styles.panel}>
               <h3>Verification constraints</h3>
               {task.actor.constraints?.map((c) => (
@@ -571,9 +581,15 @@ export default function WorkspaceTasks({
                   <p>{c.description}</p>
                 </article>
               ))}
+            </section>
+          )}
+          {tab === 'Verifiers' && (
+            <section className={styles.panel}>
+              <h3>Generated verification code</h3>
               <p>
-                Executable verifiers are immutable in the package. Results appear after a trial is
-                evaluated.
+                {task.actor.schema_version === 'praxis.anvil.task.v3'
+                  ? 'Use Inspect / edit generated Python in the import panel above to view rules.py and its source mappings. Save new draft & test reruns automated validation; previous Ready packages stay available.'
+                  : 'This package uses the fixed structured verifier. Results appear after a trial is evaluated.'}
               </p>
             </section>
           )}
