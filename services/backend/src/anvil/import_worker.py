@@ -295,9 +295,10 @@ def process(job, *, transport=None):
                     "SELECT count(*) n FROM anvil.import_generation_calls WHERE import_id=%s",
                     (family["id"],),
                 )["n"]
+                if count >= config["max_calls"]:
+                    raise RuntimeError("generation_call_limit_reached")
                 if (
-                    count >= config["max_calls"]
-                    or family["charged_micro_usd"] + family["reserved_micro_usd"] + reservation
+                    family["charged_micro_usd"] + family["reserved_micro_usd"] + reservation
                     > family["cap_micro_usd"]
                 ):
                     raise RuntimeError("whole_import_cap_exhausted")
@@ -457,7 +458,7 @@ def process(job, *, transport=None):
             else "cancelled"
             if code == "cancelled"
             else "budget_paused"
-            if code == "whole_import_cap_exhausted"
+            if code in {"whole_import_cap_exhausted", "generation_call_limit_reached"}
             else "needs_clarification"
             if code.startswith("Needs clarification")
             else "generation_failed"

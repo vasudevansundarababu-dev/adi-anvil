@@ -15,7 +15,9 @@ const reasons: Record<string, string> = {
   project_admin_processing_permission_required:
     'An Admin needs to start generation for this exact source and configuration. Local editing and testing remain available.',
   whole_import_cap_exhausted:
-    'This import reached its budget or generation-call limit. Manual editing and testing do not spend model budget.',
+    'An import limit was reached: check both Maximum generation calls per import and the remaining request budget. Money remaining does not mean calls remain. Manual editing and testing do not spend model budget.',
+  generation_call_limit_reached:
+    'This import reached its maximum number of generation calls, even if money remains. An Admin can increase Maximum generation calls per import in Models & keys, then use the updated generation configuration here. The original dollar cap and spending history are preserved.',
   dispatch_outcome_unknown:
     'The response or usage could not be confirmed. The reservation remains held and the request is not retried automatically.',
   generation_refused: 'The configured generation model refused the request.',

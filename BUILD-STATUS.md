@@ -1,5 +1,11 @@
 # Build status
 
+Generation-limit diagnosis: the user's Marketing import spent $0.066990 of $10 but
+exhausted its configured one-call limit. Its first live response requested clarification
+about tool response schemas; it did not produce a Ready package. Split future call-limit
+errors from budget-limit errors; retained legacy reports explain both. No cap/call-limit
+changes or retry made.298 unit checks, Ruff, scoped Prettier and diff checks passed.
+
 Task readiness visibility: green badges now explicitly mean a validated executable is
 available (Ready to run); ungenerated/active tasks use amber Not ready indicators and
 failed generation uses red. Unprepared tasks use neutral Complete setup links instead
