@@ -1,5 +1,18 @@
 # Build status
 
+## Nightly regression checkpoint — 1 November 2026, 22:05 America/Chicago
+
+Resumed completed modern-workspace scope at8f53891; no feature expansion. Tonight's
+deadline remains2 November06:00 America/Chicago. Passed `pnpm test:unit` (299, one
+existing Authlib warning), `pnpm --filter @anvil/web exec tsc --noEmit`, and
+`pnpm exec playwright test tests/e2e/golden-executable-import.spec.ts tests/e2e/task-run-history-comparison.spec.ts`
+(3 passed in17.0s). Classic comparison remains3a17429c3e7bfe0314361dda5209ce890d96c8e3.
+Preserved unrelated AGENTS/cloud-runbook edits and untracked user-requested demo-video
+artifacts. No paid dispatch, cloud change, push, service restart or new live-result claim.
+Full production rebuild/native integration not repeated this checkpoint: native3-golden
+acceptance just passed in291.81s; active local app and separately authorized user generation
+settings were left intact. No new actionable failure or user action from this checkpoint.
+
 ## Live generation clarification repair — 1 November 2026
 
 The Marketing live model requested tool-response semantics and harness responsibilities
