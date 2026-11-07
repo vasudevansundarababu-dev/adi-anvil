@@ -17,7 +17,7 @@ from anvil.benchmark_archive import validate_archive
 from anvil.benchmark_bundle import actor_view, canonical_path
 from anvil.harbor_package import HARBOR_VERSION
 
-COMPILER_VERSION = "anvil-sme-artifact-1.0.0"
+COMPILER_VERSION = "anvil-sme-artifact-1.0.1"
 FIXTURE_IMAGE = "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e"
 
 
@@ -131,7 +131,7 @@ def _compose(task):
                     "volumes": [
                         {
                             "type": "bind",
-                            "source": "${CONTEXT_DIR}/actor/runtime_pack/" + task.id,
+                            "source": "./actor/runtime_pack/" + task.id,
                             "target": "/workspace/inputs",
                             "read_only": True,
                         }
@@ -166,6 +166,11 @@ def compile_task(source, receipt, task_id, binding, destination: Path, *, signer
         "environment": task.environment.model_dump(),
         "tools": [tool.model_dump() for tool in task.tools],
         "outputs": [out.model_dump() for out in task.outputs],
+        "private_files": [
+            file.model_dump()
+            for file in manifest.files
+            if file.path.startswith(f"eval_pack/{task.id}/")
+        ],
         "evaluator": asdict(binding),
     }
     binding_hash = hashlib.sha256(rfc8785.dumps(bindings)).hexdigest()
@@ -191,7 +196,9 @@ def compile_task(source, receipt, task_id, binding, destination: Path, *, signer
                 + json.dumps(COMPILER_VERSION)
                 + "\n[agent]\ntimeout_sec = "
                 + str(task.timeout_seconds)
-                + '.0\nuser = "10001"\n[verifier]\ntimeout_sec = 60.0\nuser = "10001"\nenvironment_mode = "separate"\n[environment]\ndocker_image = '
+                + '.0\nuser = "10001"\n[verifier]\ntimeout_sec = 60.0\nuser = "10001"\nnetwork_mode = "no-network"\nenvironment_mode = "separate"\n[verifier.environment]\ndocker_image = '
+                + json.dumps(task.environment.image_reference)
+                + '\ncpus = 1\nmemory_mb = 2048\nnetwork_mode = "no-network"\n[environment]\ndocker_image = '
                 + json.dumps(task.environment.image_reference)
                 + "\nbuild_timeout_sec = 60.0\ncpus = "
                 + str(task.environment.cpus)
