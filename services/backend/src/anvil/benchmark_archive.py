@@ -1,4 +1,4 @@
-"""Bounded gzip/USTAR inspection. Members are hashed, never extracted or executed."""
+"""Bounded gzip/USTAR inspection; optional inert actor staging is private until validated."""
 
 import gzip
 import hashlib
@@ -88,7 +88,12 @@ def validate_archive(
     max_expanded=MAX_EXPANDED_BYTES,
     max_file=MAX_FILE_BYTES,
     max_members=5000,
+    _actor_sinks: dict[str, BinaryIO] | None = None,
 ) -> ValidatedArchive:
+    if _actor_sinks is not None and any(
+        not name.startswith("runtime_pack/") for name in _actor_sinks
+    ):
+        raise ArchiveError("nonactor_staging_sink")
     compressed = CountingInput(source, max_compressed)
     members, raw_manifest, signature_raw = {}, None, None
     try:
@@ -126,6 +131,8 @@ def validate_archive(
                 while remaining:
                     chunk = _exact(expanded, min(remaining, CHUNK))
                     member_hash.update(chunk)
+                    if _actor_sinks is not None and info.name in _actor_sinks:
+                        _actor_sinks[info.name].write(chunk)
                     if info.name in {"manifest.json", "signature.json"}:
                         metadata.append(chunk)
                     remaining -= len(chunk)

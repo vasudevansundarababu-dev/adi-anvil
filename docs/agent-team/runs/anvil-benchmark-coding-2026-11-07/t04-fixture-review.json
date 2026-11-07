@@ -1,0 +1,22 @@
+{
+  "scope": "one exact original fictional-points-v1 manifest only; software conformance, not production or SME approval",
+  "reviewer": "OpenHands Coding agent",
+  "actual_human_reference": "User Ok following cb29dbc explicit pinned-image/evaluator-native prerequisite request; verbatim in approval-log.jsonl",
+  "source_commit": "08121a212424d1bb8c5ce3fbff5ae85cc1aeb2e2",
+  "manifest_canonical_sha256": "0ba5dcced76a7865486a302d11976229642b254054ce717f9acd81ecc262e290",
+  "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+  "evaluator_implementation_sha256": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+  "policy_sha256": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+  "actor_tool_sha256": "a2f4197652df6a03503b18b1c20fa195f5cd596c47b450322ac958aab1af138d",
+  "observed_at": "2026-11-07T20:10:49.626249+00:00",
+  "review_observations": [
+    "oracle is exact integer equality over declared rules; no imports/network/exec/process/file access",
+    "actor tool is stdlib line-JSON MCP initialize/list/call/ping; integer n1..1000; no oracle reads or code execution",
+    "runtime must still enforce line/stream/call/time/memory/PID/output caps; tool source alone does not prove limits",
+    "initial descriptor binds full original manifest, all task/criteria/calibration bytes, implementation/policy/tool/image; any changed source must be reviewed again",
+    "signature and individual source-review gates remain separate; original unsigned source remains quarantined",
+    "no installation trust root, product evaluator DB login, real human identity or real-source rights created",
+    "existing registry ID contains unreviewed as immutable source metadata; separate review record applies only to this exact fictional binding, not source relabeling"
+  ],
+  "status": "bounded fixture code review complete; native G1-G5 and trial qualification pending"
+}

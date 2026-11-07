@@ -1,6 +1,6 @@
 # Benchmark Coding progress
 
-Status: T00/T01/T02/T03 complete at the focused Coding-foundation level. T04 is pending its approved native-image/evaluator prerequisite; see next-gate section below. No full benchmark completion or QA/release approval. Coding only; stop for human review before QA or deployment.
+Status: T00/T01/T02/T03 complete at the focused Coding-foundation level. User confirmed local-only pinned fictional native scope with Ok. T04A compiler/sealing verified; T04B native trials and persistent qualification still in progress. No full benchmark completion or QA/release approval. Coding only; stop for human review before QA or deployment.
 
 ## Revision and authority
 
@@ -76,3 +76,12 @@ Proposed next action for PO confirmation: authorize a local-only native fictiona
 Until that prerequisite is resolved, T04 has not started and dependent T05–T10 are not claimed implemented. The next work is an explicit prerequisite review, not a request to invent Bodhium criteria/model IDs/budgets. All15 original approved artifacts were re-hashed unchanged at this checkpoint. Current Coding checkpoint source hash index: `t03-source.sha256`; recovered r6 baseline commit/tree above remain distinct from new code.
 
 Initial local intake policy chosen explicitly for review: 4 simultaneous installation uploads, 2/project; 1GiB retained private objects/project and20,000 objects; gzip/canonical regular-only USTAR. Limits do not certify suitability for actual partner exhibits. Rejected complete originals are retained privately; incomplete owned staging is removed; no retention purge/deletion job is introduced. Public trust roots are external installation configuration, reloaded per inspection; no product secret reuse or trust root installation occurred. A verified receipt means source integrity at import, not rights/completeness/qualification/readiness.
+
+
+## T04 active — actual native-scope confirmation and compiler checkpoint
+
+The user replied `Ok` to the explicit cb29dbc native fixture/evaluator scope proposal. This resolves that narrow permission prerequisite only; the earlier pending wording is historical, not current. Verbatim approval is appended to `approval-log.jsonl`; `t04-fixture-review.json` records Coding review of the exact source08121a2 fictional oracle/tool/policy/manifest. It does not change the original source metadata, install trust roots or create SME review/rights/paid authority.
+
+T04A: new deterministic actor-only ZIP compiler with signed-source/current-trust/complete manifest/image/tool/evaluator checks; generated private material absent; fixed safe Harbor task profile and fail-closed separate-verifier stub. Regular bounded immutable output seals bind hashes/absence and deny symlink/hardlink/nonregular aliases. New17 tests pass; combined217 focused backend tests pass; lint/format pass. Independent Harbor0.25.0 installed workspace-locally from existing lock. Approved pinned base pulled only into dedicated daemon; actual narrow non-root/read-only/no-network preflight passes. Probe container is retained, not deleted. No application/ordinary worker gains Docker access.
+
+Next: T04B real Harbor positive/empty/guardrail trials and G1–G5 checks using scoped native plugins and separate evaluator; add durable qualification/build hooks before declaring T04 complete. Private evaluator assets must never enter actor container or its host mounts, even in mode0700. No production/QA/provider work authorized. Exact source hashes and checked limits: `t04a-source.sha256` / `t04a-checks.json`.
