@@ -1,0 +1,73 @@
+{
+  "task": "T03 bounded private archive intake",
+  "status": "complete at focused Coding stage; no native qualification, model performance, QA or release claim",
+  "parent_checkpoint": "ac5373bf0a6e52cae8ab8725072721fe96c3a4bd",
+  "observed_at": "2026-11-07T19:38:46.304318+00:00",
+  "approved_originals_verified_unchanged": 15,
+  "migration_head": "043",
+  "migration_upgrade_and_repeat": "passed on dedicated fresh PostgreSQL17.6 target; no shared/deployed database",
+  "tests": {
+    "focused_backend_passed": 200,
+    "failed": 0,
+    "skipped": 0,
+    "real_postgresql_http_filesystem_concurrency_checks": 44,
+    "new_archive_checks": 26,
+    "new_narrow_stream_checks": 7,
+    "public_trust_file_checks": 9,
+    "legacy_request_limit_checks": 6,
+    "existing_node_policy_checks_passed": 12
+  },
+  "warnings": [
+    "existing Authlib deprecation",
+    "existing Node MODULE_TYPELESS_PACKAGE_JSON advisory"
+  ],
+  "behavior": [
+    "exact benchmark POST raw streaming only; legacy buffering unchanged",
+    "authenticated RL Engineer/Admin plus individual source-review assignment; CSRF and Idempotency-Key",
+    "bounded byte/member/metadata validation before accepted receipt, no extraction/execution",
+    "complete malformed originals retained privately with safe audit only; aborted partials removed",
+    "private original/raw-manifest/canonical-manifest hashes and archive hash agreement",
+    "same original returns same receipt; immutable source version/repacked bytes conflict409",
+    "atomic receipt/summary/event record with safe role/project-scoped status and errors",
+    "external public installation roots only; absent roots quarantine; current revocation reloaded",
+    "default disabled unless ANVIL_BENCHMARK_ENABLED=true",
+    "project private retention and source concurrency limits prevent unbounded sequential/parallel upload growth",
+    "legacy reserve/reconcile still succeeds through ownership registry; zero provider calls"
+  ],
+  "initial_local_policy": {
+    "encoding": "gzip with regular-file-only canonical USTAR; no GNU/PAX/directory/special/link members",
+    "compressed_bytes": 104857600,
+    "expanded_bytes": 524288000,
+    "per_member_bytes": 52428800,
+    "members_including_manifest_signature": 5000,
+    "upload_slots_installation": 4,
+    "upload_slots_project": 2,
+    "private_retention_bytes_project": 1073741824,
+    "retained_objects_project": 20000,
+    "trust_config": "optional ANVIL_BENCHMARK_TRUST_POLICY public JSON, no product credentials; no installation trust policy created",
+    "deployment": "none; new feature flag is off by default"
+  },
+  "next_gate": {
+    "task": "T04",
+    "approved_plan_prerequisite": "T03 + approved fictional environment/evaluator image; native G2 cannot be self-certified",
+    "current_source": "fixture README explicitly denies pull/run/qualification authority; evaluator registry fictional-arithmetic-unreviewed",
+    "proposed_next_step": "human approval of exact pinned fixture base plus reviewed Anvil-authored software-only evaluator binding/native local Docker scope, or supply another reviewed binding; do not waive G2 or proceed to dependent tasks"
+  },
+  "not_run": [
+    "native Harbor/Docker fixture execution",
+    "full QA/acceptance/browser/security journeys",
+    "actual Bodhium exhibits and complete semantic criteria",
+    "candidate/judge/provider model evaluations",
+    "deployment/release preparation"
+  ],
+  "tools_note": "apply_patch executable absent; exact editing tool/Python used without installing tools or changing package-manager/system config",
+  "commands": {
+    "migrations": "ANVIL_ENV=local WEB_ORIGIN=http://127.0.0.1:3202 ANVIL_LIVE_PROVIDERS_ENABLED=false ANVIL_REAL_EMAIL_ENABLED=false MIGRATION_DATABASE_URL=\"postgresql://anvil_migration@/anvil_local?host=%2Fworkspace%2Fanvil-recovered%2F.local%2Fbm-pg-socket\" services/backend/.venv/bin/python -m anvil.cli migrate",
+    "backend": "Use exact local DSNs/feature flags in BENCHMARK-PROGRESS.md; services/backend/.venv/bin/python -m pytest services/backend/tests/benchmark/test_canonical_bindings.py services/backend/tests/benchmark/test_private_storage.py services/backend/tests/benchmark/test_benchmark_imports.py services/backend/tests/unit/test_checkpoint_secret_scan.py services/backend/tests/unit/test_benchmark_bundle.py services/backend/tests/unit/test_benchmark_archive.py services/backend/tests/unit/test_benchmark_stream_limits.py services/backend/tests/unit/test_benchmark_trust.py services/backend/tests/unit/test_praxis_harbor.py services/backend/tests/unit/test_praxis_executable.py services/backend/tests/unit/test_readiness_reason_codes.py services/backend/tests/unit/test_request_limits.py -q",
+    "node": "node --test tests/provider_failure.mjs tests/readiness_catalog.mjs",
+    "openapi": "services/backend/.venv/bin/python -m anvil.cli contracts",
+    "lint": "services/backend/.venv/bin/ruff check services/backend/src/anvil/benchmark*.py services/backend/src/anvil/request_limits.py services/backend/src/anvil/artifacts.py services/backend/src/anvil/api.py services/backend/tests/benchmark services/backend/tests/unit/test_benchmark*.py services/backend/tests/unit/test_checkpoint_secret_scan.py services/backend/alembic/versions/039*.py services/backend/alembic/versions/040*.py services/backend/alembic/versions/041*.py services/backend/alembic/versions/042*.py services/backend/alembic/versions/043*.py",
+    "secrets": "python3 scripts/secret_scan.py",
+    "whitespace": "git diff --check"
+  }
+}

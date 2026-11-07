@@ -4,6 +4,7 @@ import fcntl
 import hashlib
 import io
 import os
+import re
 import stat
 import tempfile
 from dataclasses import dataclass
@@ -67,14 +68,21 @@ def stage_private(
 
 
 def stage_private_stream(
-    project, source: BinaryIO, classification: str, mime="application/octet-stream"
+    project,
+    source: BinaryIO,
+    classification: str,
+    mime="application/octet-stream",
+    *,
+    retained_limit=1024 * 1024 * 1024,
 ) -> PreparedPrivate:
     if classification not in PRIVATE_CLASSES:
         raise ValueError("Expected benchmark private access class")
     project = str(UUID(str(project)))
     folder = _folder(vault_root(), project, classification)
     digest, byte_size = hashlib.sha256(), 0
-    descriptor = os.open(folder / ".write.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+    descriptor = os.open(
+        folder.parent / ".write.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600
+    )
     with os.fdopen(descriptor, "rb+") as lock:
         info = os.fstat(lock.fileno())
         if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_mode & 0o077:
@@ -94,6 +102,38 @@ def stage_private_stream(
                 os.fsync(stream.fileno())
                 hexadecimal = digest.hexdigest()
                 path = folder / hexadecimal
+                if not path.exists():
+                    total, count = 0, 0
+                    for access in PRIVATE_CLASSES:
+                        directory = folder.parent / access
+                        if not directory.exists():
+                            continue
+                        info = directory.lstat()
+                        if (
+                            not stat.S_ISDIR(info.st_mode)
+                            or info.st_uid != os.geteuid()
+                            or info.st_mode & 0o077
+                        ):
+                            raise RuntimeError("Unsafe retained private directory")
+                        with os.scandir(directory) as entries:
+                            for entry in entries:
+                                if entry.name == ".write.lock" or entry.name.startswith(
+                                    ".staging-"
+                                ):
+                                    continue
+                                info = entry.stat(follow_symlinks=False)
+                                if not re.fullmatch(
+                                    r"[a-f0-9]{64}", entry.name
+                                ) or not stat.S_ISREG(info.st_mode):
+                                    raise RuntimeError("Unsafe retained private object")
+                                total += info.st_size
+                                count += 1
+                                if total + byte_size > retained_limit or count >= 20000:
+                                    raise HTTPException(
+                                        429, "Project private artifact retention limit reached"
+                                    )
+                    if byte_size > retained_limit:
+                        raise HTTPException(429, "Project private artifact retention limit reached")
                 try:
                     os.link(temporary, path, follow_symlinks=False)
                 except FileExistsError:

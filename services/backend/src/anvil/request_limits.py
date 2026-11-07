@@ -1,7 +1,12 @@
 """Bound request bytes before multipart/JSON parsing, including chunked requests."""
 
 import json
+import re
 from uuid import uuid4
+
+
+class RequestBodyTooLarge(ValueError):
+    pass
 
 
 class RequestLimits:
@@ -14,7 +19,19 @@ class RequestLimits:
         upload = scope["method"] == "POST" and scope["path"].endswith("/artifacts")
         manifest = scope["path"].endswith("/imports/validate")
         praxis = scope["method"] == "POST" and scope["path"].endswith("/praxis-sources")
-        limit = (26 if upload else 3 if praxis else 2 if manifest else 1) * 1024 * 1024
+        streaming = (
+            scope["method"] == "POST"
+            and re.fullmatch(
+                r"/api/v1/projects/[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}/workspace/benchmarks/imports",
+                scope["path"],
+            )
+            is not None
+        )
+        limit = (
+            (100 if streaming else 26 if upload else 3 if praxis else 2 if manifest else 1)
+            * 1024
+            * 1024
+        )
         request_id = scope.get("state", {}).get("request_id", str(uuid4()))
         lengths = [v for k, v in scope.get("headers", []) if k.lower() == b"content-length"]
         try:
@@ -25,6 +42,18 @@ class RequestLimits:
             return await self.reject(send, 400, "Invalid Content-Length", request_id)
         if declared > limit:
             return await self.reject(send, 413, "Request exceeds size limit", request_id)
+        if streaming:
+            size = 0
+
+            async def streaming_receive():
+                nonlocal size
+                message = await receive()
+                size += len(message.get("body", b""))
+                if size > limit:
+                    raise RequestBodyTooLarge("Benchmark upload exceeds size limit")
+                return message
+
+            return await self.app(scope, streaming_receive, send)
         chunks, size = [], 0
         while True:
             message = await receive()

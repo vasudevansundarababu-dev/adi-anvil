@@ -1,4 +1,5 @@
 import hashlib
+import io
 import os
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -15,7 +16,13 @@ from psycopg.rows import dict_row
 
 from anvil import artifacts
 from anvil.api import app
-from anvil.benchmark_storage import bind_private, read_private, stage_private, store_private
+from anvil.benchmark_storage import (
+    bind_private,
+    read_private,
+    stage_private,
+    stage_private_stream,
+    store_private,
+)
 from anvil.db import transaction
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -396,3 +403,16 @@ def test_private_storage_rejects_tampering_and_nonregular_aliases(lab, tamper):
         with pytest.raises(HTTPException) as exc:
             read_private(c, aid)
         assert exc.value.status_code == (403 if tamper == "symlink" else 409)
+
+
+def test_project_private_retention_limit_cannot_be_bypassed_by_class(lab):
+    stage_private_stream(lab["project"], io.BytesIO(b"A" * 50), "benchmark_raw", retained_limit=80)
+    with pytest.raises(HTTPException) as exc:
+        stage_private_stream(
+            lab["project"], io.BytesIO(b"B" * 40), "benchmark_eval", retained_limit=80
+        )
+    assert exc.value.status_code == 429
+    duplicate = stage_private_stream(
+        lab["project"], io.BytesIO(b"A" * 50), "benchmark_raw", retained_limit=80
+    )
+    assert duplicate.byte_size == 50

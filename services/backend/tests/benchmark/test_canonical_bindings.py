@@ -8,6 +8,8 @@ import pytest
 from test_private_storage import connection
 from test_private_storage import lab as storage_lab
 
+from anvil import budget
+
 lab = storage_lab
 
 TABLES = [
@@ -306,3 +308,33 @@ def test_concurrent_legacy_and_benchmark_window_claim_has_one_owner(lab, compari
             (lab["project"], window),
         ).fetchone()["category"]
         assert results[owner] == "committed"
+
+
+def test_existing_legacy_reserve_and_reconcile_still_work_with_window_registry(lab, comparison):
+    window = str(uuid4())
+    with connection() as c:
+        c.execute(
+            "INSERT INTO anvil.evaluation_spend_windows(id,project_id,cap_micro_usd,end_at,status,authority_reference) VALUES(%s,%s,100,now()+interval '1 hour','active','software-only ledger; no provider call')",
+            (window, lab["project"]),
+        )
+    with connection("anvil_app", lab["project"], lab["engineer"]) as c:
+        c.execute(
+            "INSERT INTO anvil.run_budgets(project_id,run_id,window_id,cap_micro_usd) VALUES(%s,%s,%s,100)",
+            (lab["project"], comparison["run"], window),
+        )
+        reservation = budget.reserve(
+            c, lab["project"], window, comparison["run"], 40, "synthetic-ledger-" + str(uuid4())
+        )
+        assert reservation["status"] == "reserved"
+        settled = budget.reconcile(c, lab["project"], reservation["id"], actual=25)
+        assert settled["status"] == "settled"
+        global_window = c.execute(
+            "SELECT reserved_micro_usd,settled_micro_usd FROM anvil.evaluation_spend_windows WHERE id=%s",
+            (window,),
+        ).fetchone()
+        assert global_window == {"reserved_micro_usd": 0, "settled_micro_usd": 25}
+        local_window = c.execute(
+            "SELECT reserved_micro_usd,settled_micro_usd FROM anvil.run_budgets WHERE run_id=%s",
+            (comparison["run"],),
+        ).fetchone()
+        assert local_window == global_window

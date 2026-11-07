@@ -11,6 +11,7 @@ from psycopg.types.json import Jsonb
 from pydantic import ValidationError
 
 from anvil import artifacts, auth, domain, fixtures
+from anvil.benchmark_api import routes as benchmark_routes
 from anvil.config import harbor_live_enabled
 from anvil.db import audit, digest, one, transaction, uid
 from anvil.delivery import routes as delivery_routes
@@ -167,6 +168,7 @@ app.include_router(external_routes(context, wrap, idempotent))
 app.include_router(delivery_routes(context, wrap, idempotent))
 app.include_router(readiness_routes(context, wrap, idempotent))
 app.include_router(task_import_routes(context, wrap, idempotent))
+app.include_router(benchmark_routes(context, wrap, idempotent))
 app.include_router(harbor_routes(context, wrap, idempotent))
 app.include_router(import_generation_routes(context, wrap, idempotent))
 app.include_router(workspace_routes(context, wrap, idempotent))

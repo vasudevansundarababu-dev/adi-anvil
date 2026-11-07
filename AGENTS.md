@@ -20,3 +20,5 @@
 - Resume active benchmark Coding from `BENCHMARK-PROGRESS.md`; approved originals and append-only approvals live in the dated agent-team runs. Progress authorization is session-specific, not a standing permission grant.
 - SME bundle v1 is separate from legacy task/export validators. Fictional FX fixtures test software only; they are not Bodhium data or model performance.
 - New benchmark-private classes must use the disjoint explicitly configured vault, never generic artifact storage/downloads. Dedicated SQL tests are under `services/backend/tests/benchmark/`; they require a real isolated PostgreSQL target and must not use shared/deployed services.
+
+- Benchmark raw intake is feature-disabled by default; only its exact project POST route streams without the legacy body buffer. Do not raise legacy limits. Complete originals/manifests live in benchmark_raw; source authenticity is never execution authority. Staging/hashing/quota checks precede SQL row locks.
