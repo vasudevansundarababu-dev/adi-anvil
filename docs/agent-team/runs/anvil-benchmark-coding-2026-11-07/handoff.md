@@ -1,3 +1,55 @@
+# Interim Coding handoff — T03 checkpoint; native prerequisite review pending
+
+- Work ID: `anvil-benchmark-coding-2026-11-07`.
+- Repository/workspace/branch: `vasudevansundarababu-dev/adi-anvil`, `/workspace/anvil-recovered`, `codex/anvil-agent-team-2026-11-06`.
+- Exact product source checkpoint: `08121a212424d1bb8c5ce3fbff5ae85cc1aeb2e2`; tree `3223b6b50a01ba90354458084b1063b812b8bb91`. Draft PR16 remains draft. The following handoff-only commit may change documentation, not this product source.
+- From role / next allowed party: Coding → Product Owner prerequisite/code review. No QA/DevOps transition.
+- Recovered original r6 commit `15e35f12725a89be6e507b2eb73d4433e666dd76`, exact tree `18fca788310f91a35a54df39392a37c026ae16b1`; all504 files/modes recovered. Original worker SHA256 `ec5afade0e41600fc3eb29d9a857d58887f94c7e49b5d9fc46979eef3c6ab113` rechecked from the recovered commit. New code is not mislabeled as the pristine release.
+
+## Inputs, outputs and actual authority
+
+Approved original specification, architecture, plan, BM01..12 traceability/threat model and all15 input artifacts remain byte-identical. Exact hashes: `approved-input-snapshot.json`; actual sequential human authority: append-only `approval-log.jsonl` (Coding, later verified Anvil-only commit/push/draft visibility, Bodhium testing confirmation). Original source and historical recovery inputs have not been overwritten.
+
+Current outputs: root `BENCHMARK-PROGRESS.md` / `BUILD-STATUS.md`, `t00-source-verification.json`, task-bound T01/T02/T03 checks and source hashes; this run's regenerated `artifact-index.json` / `SHA256SUMS` bind current documents. Original design handoff is untouched. Raw logs/input archives and credentials remain excluded from Git.
+
+## Changes / requirement coverage
+
+T00 exact recovery, T01 strict independent SME contract/fictional fixtures, T02 private/canonical/financial persistence, T03 bounded private streaming receipts are implemented at the focused Coding level. They contribute to source/import/immutability/private-isolation portions of BM01/BM02/BM03/BM04/BM09/BM12; no whole requirement is certified accepted. The approved BM01..12 acceptance matrix is unchanged and still requires later actual observed evidence.
+
+T03 includes raw upload/status/errors, current role+project+source-assignment+CSRF+idempotency checks, default-off feature, gzip/USTAR/path/member/size limits, immutable originals/canonical manifest bindings, external public roots/quarantine, bounded concurrent/retained storage, private rejected originals and owned partial cleanup. Legacy intake and readiness semantics remain versioned/unchanged. New migrations039–043 are forward-only; dedicated evaluator role remains NOLOGIN/unprovisioned for a real service. No candidate/judge key or trusted imported evaluator was installed.
+
+## Evidence — focused Coding, not QA
+
+- Passed: complete original source identity, all15 approved input hashes, all15 T03 source hashes.
+- Passed: **200 backend checks**, including44 real PostgreSQL/HTTP/filesystem/concurrency checks; exact configured Node policy suite12; migration upgrade/repeat through043; changed-source lint/format and whitespace; secret scan617 tracked files, zero findings.
+- Final failed/skipped: **0**. Intentional red tests preceded fixes; only existing Authlib/Node advisory warnings remain.
+- Not run: native Harbor/image/runtime qualification, full acceptance/QA/browser/security journeys, actual Bodhium scoring, candidate/judge calls and deployment. Historical r6 reports retain their original blocked/not-run native/acceptance limits; no new deployment verification is claimed.
+- Exact commands/environment/coverage and safe policy choices: `t03-checks.json` plus `BENCHMARK-PROGRESS.md`. Isolated PostgreSQL Docker remains no-network/no ports with private Unix socket; no shared service/credential/volume was used or deleted.
+
+## Open prerequisite / proposed next allowed scope
+
+Approved T04 explicitly requires a reviewed fictional environment/evaluator image. Current fixture README says image metadata is not pull/run/qualification authority and `fictional-arithmetic-unreviewed` is not an installation-reviewed evaluator. The earlier dependency/DB blocker is resolved; this is the next different prerequisite, not a retroactive claim that source/DB recovery failed.
+
+Please confirm local-only native fictional qualification with the existing pinned Python base `python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e` and a reviewed Anvil-authored fictional evaluator binding, or provide another reviewed exact binding. The proposed scope uses only the dedicated isolated daemon and must still prove G2 isolation. It does not authorize paid calls or make the unsigned source trusted. No missing Bodhium criteria, source rights, model/judge IDs or budgets are invented.
+
+T04 has not started. T05–T10 dependent feature work is not implemented; full benchmark Coding is incomplete. No independent QA/release handoff is being requested or certified. Human Coding review remains mandatory before any QA role/full acceptance, even after future work is completed.
+
+## Prohibited and decision
+
+No Praxis/Mac/shared-backend change, old-sandbox mutation, secret copy/read, cloud/IAM/deployment change, paid model/judge evaluation, QA/DevOps role, merge, destructive reset/volume deletion or automatic acceptance. No authority is granted by this agent-written document. Commit/push applies only to the specific already-authorized Anvil branch and draft progress PR.
+
+Decision: **CODING INCOMPLETE — T00–T03 CHECKPOINTED; PENDING HUMAN NATIVE-PREREQUISITE REVIEW; NOT READY FOR QA OR DEPLOYMENT.**
+
+- Actual architecture/plan/Coding/checkpoint authorization: recorded verbatim in `approval-log.jsonl`.
+- New native fixture/evaluator prerequisite approval reference/time: **not supplied**.
+- Human code-review / QA authorization reference/time: **not supplied**.
+
+_Prepared by OpenHands on behalf of the Product Owner; this is not human approval._
+
+---
+
+## Historical T00-only handoff below — superseded status, bytes retained
+
 # Coding recovery handoff — waiting for local environment confirmation
 
 - Work ID: `anvil-benchmark-coding-2026-11-07`.

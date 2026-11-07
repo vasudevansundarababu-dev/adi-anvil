@@ -1,3 +1,19 @@
+# Current interim Coding report — T00–T03 implemented; T04 prerequisite pending
+
+Product source revision `08121a212424d1bb8c5ce3fbff5ae85cc1aeb2e2`, tree `3223b6b50a01ba90354458084b1063b812b8bb91`; source/check bindings `t03-source.sha256` and `t03-checks.json`. Current status and exact resume commands are in `BENCHMARK-PROGRESS.md` and current `handoff.md`. The report below is preserved historical T00 evidence; its former no-code/no-environment/no-push statements are superseded only by later actual approvals and checked work, not rewritten as past success.
+
+- Completed now: T00 full exact recovery; T01 strict independent SME contract and original arithmetic fixtures; T02 additive private/canonical/financial foundation; T03 bounded private stream/status/error receipts, exact-byte idempotency/quarantine, atomic safe projections, quotas and cleanup. Product feature defaults off.
+- Passed now:200 focused backend checks (44 real isolatedDB/HTTP/filesystem/concurrency),12 configured Node policy checks, migration043 upgrade/repeat, lint/format/whitespace/source hashes and scanner617 files/no findings. Final failures/skips0; old advisory warnings only. Approved15 inputs unchanged.
+- Not claimed: complete BM01..12 acceptance, native Harbor isolation, real Bodhium results, model/judge performance, full QA or deploy readiness. No cloud/shared/Praxis/Mac/paid call actions.
+- Pending T04: approved native fixture image plus reviewed installation evaluator binding, then actual G2 proof. Fixture metadata is explicitly unqualified/unreviewed. Proposed exact local-only prerequisite review is in handoff/progress; do not bypass it or fabricate review authority.
+- Current actual approvals are append-only in `approval-log.jsonl`; no next-role or native prerequisite approval is fabricated. Normal per-step commits/pushes and one draft PR16 are explicitly authorized and recorded; original recovery/code/approval inputs stay preserved.
+
+_Prepared by OpenHands on behalf of the Product Owner; not human approval or a QA result._
+
+---
+
+## Historical T00 report below — superseded status, bytes retained
+
 # Coding-stage report — T00 recovered; benchmark implementation not started
 
 ## Approved task and input revisions
