@@ -1,0 +1,24 @@
+{
+  "observed_at": "2026-11-07T18:47:35.784066+00:00",
+  "status": "real_postgres_ready",
+  "server_version": "17.6 Debian 17.6-2.pgdg12+1",
+  "daemon_socket": ".local/benchmark-docker/docker.sock",
+  "database_socket": ".local/bm-pg-socket",
+  "container_name": "anvil-benchmark-postgres-20261107",
+  "container_id": "44c9b2c8a81f6e17ed5fbcb8707c1536b95cf5721be75720baa57aee64b94e18",
+  "image": "postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3",
+  "source": "infra/local/compose.yaml",
+  "network": "none",
+  "listen_addresses": "empty (Unix only)",
+  "database_name": "anvil_benchmark",
+  "data": "new owned tmpfs; no existing volume",
+  "host_runtime_directory_mode": "0700",
+  "ordinary_application_docker_access": false,
+  "private_key_or_password_copied": false,
+  "notes": [
+    "Initial unprivileged daemon info failed because dedicated socket is root-owned; verified via sudo client. Shared permissions unchanged.",
+    "Local trust applies only inside network-disabled test container/private socket; not an authentication change to any existing/deployed service.",
+    "Daemon startup attempted an absent nftables cleanup; no shared Docker daemon used; no cloud operations.",
+    "Do not run infra/local full bootstrap/Keycloak or use deployed backend for these isolated SQL checks."
+  ]
+}

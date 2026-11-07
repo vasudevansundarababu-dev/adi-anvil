@@ -1,6 +1,6 @@
 # Benchmark Coding progress
 
-Status: T00 and T01 complete; T02 blocked on a real isolated PostgreSQL test target. Coding only; stop for human review before QA or deployment.
+Status: T00 and T01 complete; T02 starting against a verified isolated real PostgreSQL target. Coding only; stop for human review before QA or deployment.
 
 ## Revision and authority
 
@@ -26,7 +26,7 @@ GitHub read-only checks: correct repository/branch; remote branch initially `8cd
 
 Draft progress PRs now skip the full fixture job; non-draft PR/main behavior is preserved. No QA role or full acceptance is authorized by opening the draft. Do not mark it ready, merge, force-push or deploy.
 
-Previous pushed checkpoint: `5345518b49df01c7f10caf1b4fd696bd61b3141f`. Draft PR: https://github.com/vasudevansundarababu-dev/adi-anvil/pull/16. Current checkpoint ID: `git log -1 --format=%H -- BENCHMARK-PROGRESS.md`.
+Previous pushed checkpoint: `9a82eab7b88bea8d6b5da5d29da92dd7f7735daf` (T01). Initial checkpoint: `5345518b49df01c7f10caf1b4fd696bd61b3141f`. Draft PR: https://github.com/vasudevansundarababu-dev/adi-anvil/pull/16. Current checkpoint ID: `git log -1 --format=%H -- BENCHMARK-PROGRESS.md`.
 
 ## Completed tasks and focused results
 
@@ -40,8 +40,9 @@ Previous pushed checkpoint: `5345518b49df01c7f10caf1b4fd696bd61b3141f`. Draft PR
 ## Work in progress / remaining
 
 - Completed workspace-local Python3.12.15 + locked backend environment, pnpm10.34.5 + locked frontend environment. Added and locked only RFC8785 canonicalization dependency0.1.4; no global/source/config changes. Earlier setup-confirmation blocker is superseded.
-- T02 blocked: Docker socket is absent/daemon is not running; `postgres`/`initdb` binaries are absent. Need an explicitly isolated real PostgreSQL target to run authorization/RLS negative tests before private schema/access changes. Do not use mocks, shared deployed backend, or global daemon/socket/security workarounds. T03 and later dependent tasks wait.
-- Continue safe independent T01 hardening/publication guard checks while T02 is blocked; do not skip its prerequisites.
+- T02 environment prerequisite resolved after initial preflight: dedicated Docker daemon under `.local/benchmark-docker/` and source-pinned PostgreSQL17.6 container `anvil-benchmark-postgres-20261107`, no network/ports, fresh tmpfs data, private Unix socket `.local/bm-pg-socket`. No shared backend/socket/volume/credentials or cloud resource used. API/worker still have no Docker socket. Container remains isolated; no deletion performed. Real SQL connection/version verified. Run dedicated Docker client with sudo against this exact socket only, not global Docker config or socket permission changes.
+- Publication guard completed: one-line token-boundary correction avoids `task-readiness` false positives; actual scanner CLI in real temporary Git repositories still detects token shapes/forbidden private paths without printing values. New scanner tests3/3; combined focused backend set108/108; repository scan no findings. No mocks.
+- T02 is next: real DB authorization-negative tests first, additive schema/private-access changes second. Do not skip assignment, membership, service-role or private-vault constraints.
 - Routine contract choices: ASCII canonical payload paths (Unicode content is supported), bounded integer point profile, UTC export seconds, no implied signature-to-execution/rights authority. Unsigned fixtures stay quarantined; image/evaluator metadata stays unqualified/unreviewed.
 - T04–T10 follow dependency/qualification gates. Do not claim native/Docker/provider behavior without observing it.
 - T11 independent QA, T12 release preparation and T13 live acceptance remain separately gated; no auto-transition.
