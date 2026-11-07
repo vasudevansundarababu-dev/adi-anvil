@@ -1,0 +1,104 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "item-001": {
+      "type": "integer"
+    },
+    "item-002": {
+      "type": "integer"
+    },
+    "item-003": {
+      "type": "integer"
+    },
+    "item-004": {
+      "type": "integer"
+    },
+    "item-005": {
+      "type": "integer"
+    },
+    "item-006": {
+      "type": "integer"
+    },
+    "item-007": {
+      "type": "integer"
+    },
+    "item-008": {
+      "type": "integer"
+    },
+    "item-009": {
+      "type": "integer"
+    },
+    "item-010": {
+      "type": "integer"
+    },
+    "item-011": {
+      "type": "integer"
+    },
+    "item-012": {
+      "type": "integer"
+    },
+    "item-013": {
+      "type": "integer"
+    },
+    "item-014": {
+      "type": "integer"
+    },
+    "item-015": {
+      "type": "integer"
+    },
+    "item-016": {
+      "type": "integer"
+    },
+    "item-017": {
+      "type": "integer"
+    },
+    "item-018": {
+      "type": "integer"
+    },
+    "item-019": {
+      "type": "integer"
+    },
+    "item-020": {
+      "type": "integer"
+    },
+    "item-021": {
+      "type": "integer"
+    },
+    "item-022": {
+      "type": "integer"
+    },
+    "item-023": {
+      "type": "integer"
+    },
+    "item-024": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "item-001",
+    "item-002",
+    "item-003",
+    "item-004",
+    "item-005",
+    "item-006",
+    "item-007",
+    "item-008",
+    "item-009",
+    "item-010",
+    "item-011",
+    "item-012",
+    "item-013",
+    "item-014",
+    "item-015",
+    "item-016",
+    "item-017",
+    "item-018",
+    "item-019",
+    "item-020",
+    "item-021",
+    "item-022",
+    "item-023",
+    "item-024"
+  ],
+  "type": "object"
+}

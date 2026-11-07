@@ -1,0 +1,23 @@
+{
+  "protocol_version": "2025-06-18",
+  "tools": [
+    {
+      "description": "Square a fixture integer",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "n": {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "n"
+        ],
+        "type": "object"
+      },
+      "name": "square"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # Benchmark Coding progress
 
-Status: T00 complete; T01 next. Coding only; stop for human review before QA or deployment.
+Status: T00 and T01 complete; T02 blocked on a real isolated PostgreSQL test target. Coding only; stop for human review before QA or deployment.
 
 ## Revision and authority
 
@@ -26,17 +26,23 @@ GitHub read-only checks: correct repository/branch; remote branch initially `8cd
 
 Draft progress PRs now skip the full fixture job; non-draft PR/main behavior is preserved. No QA role or full acceptance is authorized by opening the draft. Do not mark it ready, merge, force-push or deploy.
 
+Previous pushed checkpoint: `5345518b49df01c7f10caf1b4fd696bd61b3141f`. Draft PR: https://github.com/vasudevansundarababu-dev/adi-anvil/pull/16. Current checkpoint ID: `git log -1 --format=%H -- BENCHMARK-PROGRESS.md`.
+
 ## Completed tasks and focused results
 
 - T00 complete, fully verified above.
+- T01 complete: strict SME v1 metadata/schema, actor/private dependency closure, exact points, RFC8785 + real Ed25519 external trust/expiry/revocation/quarantine checks; original fictional 24/6/51 fixtures and private test oracles. No intake/execution/qualification API exists yet.
+- Focused backend new/legacy checks: 105 passed (65 new T01 tests), including private projection, malformed inputs, actual oracle and stdio subprocess. Ruff/format and versioned JSON Prettier pass. Full deterministic fixture/schema two-step recipe reproduces all recorded hashes. See `t01-checks.json`.
 - Focused existing tests: `node --test tests/provider_failure.mjs tests/readiness_catalog.mjs` → 12 passed, 0 failed, 0 skipped.
 - Original approved run's 15 files remain unchanged; source whitespace/integrity checks pass.
 - Historical recovery/Coding report and source-bound handoff saved in the new Coding run.
 
 ## Work in progress / remaining
 
-- Install workspace-local Python3.12 + locked backend environment and pnpm10.34.5 + locked frontend environment. Autonomous continuation now permits routine isolated setup; earlier setup-confirmation blocker is superseded.
-- T01 strict SME bundle contract and original labeled fictional fixtures, then T02 private schema/access foundation and T03 streaming intake only once prerequisites/checks hold.
+- Completed workspace-local Python3.12.15 + locked backend environment, pnpm10.34.5 + locked frontend environment. Added and locked only RFC8785 canonicalization dependency0.1.4; no global/source/config changes. Earlier setup-confirmation blocker is superseded.
+- T02 blocked: Docker socket is absent/daemon is not running; `postgres`/`initdb` binaries are absent. Need an explicitly isolated real PostgreSQL target to run authorization/RLS negative tests before private schema/access changes. Do not use mocks, shared deployed backend, or global daemon/socket/security workarounds. T03 and later dependent tasks wait.
+- Continue safe independent T01 hardening/publication guard checks while T02 is blocked; do not skip its prerequisites.
+- Routine contract choices: ASCII canonical payload paths (Unicode content is supported), bounded integer point profile, UTC export seconds, no implied signature-to-execution/rights authority. Unsigned fixtures stay quarantined; image/evaluator metadata stays unqualified/unreviewed.
 - T04–T10 follow dependency/qualification gates. Do not claim native/Docker/provider behavior without observing it.
 - T11 independent QA, T12 release preparation and T13 live acceptance remain separately gated; no auto-transition.
 - Authentic Bodhium cases, exhibits, 81 actual criteria/oracles/tolerances, rights, exact models/judge and budgets remain absent. Do not invent them; fictional fixtures demonstrate software behavior only.
