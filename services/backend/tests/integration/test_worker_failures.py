@@ -13,8 +13,7 @@ from anvil.db import one, transaction, uid
 from anvil.evaluation import GRAPH_VERSION
 
 
-def prepared_job(graph_version, protocol_overrides=None):
-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+def prepared_job(journey, graph_version, protocol_overrides=None):
     project = journey["project_id"]
     user = json.loads((ROOT / ".local/demo-identities.json").read_text())["researcher"]
     rid, eid, jid, token = uid(), uid(), uid(), uid()
@@ -50,8 +49,9 @@ def prepared_job(graph_version, protocol_overrides=None):
 
 
 @pytest.mark.parametrize("limit", ["output", "elapsed"])
-def test_fixture_capture_limits_are_operational_not_candidate_failure(monkeypatch, limit):
+def test_fixture_capture_limits_are_operational_not_candidate_failure(monkeypatch, limit, journey):
     job = prepared_job(
+        journey,
         GRAPH_VERSION,
         {"max_output_tokens": 1} if limit == "output" else {"episode_timeout_seconds": 1},
     )
@@ -77,8 +77,8 @@ def test_fixture_capture_limits_are_operational_not_candidate_failure(monkeypatc
         ] == ("fixture_output_limit" if limit == "output" else "fixture_capture_timeout")
 
 
-def test_stale_worker_token_cannot_mutate_or_invoke():
-    job = prepared_job(GRAPH_VERSION)
+def test_stale_worker_token_cannot_mutate_or_invoke(journey):
+    job = prepared_job(journey, GRAPH_VERSION)
     with transaction(job["project_id"], worker=True) as c:
         with pytest.raises(RuntimeError, match="lease_lost"):
             worker.guard(c, {**job, "lease_token": uid()})
@@ -90,8 +90,8 @@ def test_stale_worker_token_cannot_mutate_or_invoke():
         c.execute("UPDATE anvil.episodes SET state='cancelled' WHERE id=%s", (job["target_id"],))
 
 
-def test_runtime_bindings_and_checkpoint_thread_are_immutable():
-    job = prepared_job(GRAPH_VERSION)
+def test_runtime_bindings_and_checkpoint_thread_are_immutable(journey):
+    job = prepared_job(journey, GRAPH_VERSION)
     with transaction(job["project_id"], worker=True) as c:
         episode = one(c, "SELECT * FROM anvil.episodes WHERE id=%s", (job["target_id"],))
         for query, value in [
@@ -115,8 +115,8 @@ def test_runtime_bindings_and_checkpoint_thread_are_immutable():
         c.execute("UPDATE anvil.episodes SET state='cancelled' WHERE id=%s", (episode["id"],))
 
 
-def test_worker_rechecks_rights_and_active_run_author():
-    job = prepared_job(GRAPH_VERSION)
+def test_worker_rechecks_rights_and_active_run_author(journey):
+    job = prepared_job(journey, GRAPH_VERSION)
     with transaction(job["project_id"], worker=True) as c:
         episode = worker.guard(c, job)
         task = one(
@@ -152,8 +152,8 @@ def test_worker_rechecks_rights_and_active_run_author():
         c.execute("UPDATE anvil.episodes SET state='cancelled' WHERE id=%s", (episode["id"],))
 
 
-def test_expired_lease_cannot_commit_even_with_matching_token():
-    job = prepared_job(GRAPH_VERSION)
+def test_expired_lease_cannot_commit_even_with_matching_token(journey):
+    job = prepared_job(journey, GRAPH_VERSION)
     with transaction(job["project_id"], worker=True) as c:
         c.execute(
             "UPDATE anvil.jobs SET lease_until=now()-interval '1 second' WHERE id=%s", (job["id"],)
@@ -169,9 +169,9 @@ def test_expired_lease_cannot_commit_even_with_matching_token():
     [("validate_authorization", 0), ("invoke_fixture_capture_output", 1)],
 )
 def test_abrupt_fixture_worker_exit_recovers_without_duplicate_invocation(
-    monkeypatch, crash_stage, expected_captures
+    monkeypatch, crash_stage, expected_captures, journey
 ):
-    job = prepared_job(GRAPH_VERSION)
+    job = prepared_job(journey, GRAPH_VERSION)
     child = subprocess.run(
         [
             sys.executable,
@@ -215,8 +215,10 @@ def test_abrupt_fixture_worker_exit_recovers_without_duplicate_invocation(
         )
 
 
-def test_graph_version_mismatch_is_operational_invalidity_not_candidate_failure(monkeypatch):
-    job = prepared_job("unsupported-test-graph-version")
+def test_graph_version_mismatch_is_operational_invalidity_not_candidate_failure(
+    monkeypatch, journey
+):
+    job = prepared_job(journey, "unsupported-test-graph-version")
     original = worker.one
 
     def claim(c, query, params=()):
@@ -238,8 +240,8 @@ def test_graph_version_mismatch_is_operational_invalidity_not_candidate_failure(
         )
 
 
-def test_cancelled_durable_review_cannot_be_resumed(monkeypatch):
-    job = prepared_job(GRAPH_VERSION)
+def test_cancelled_durable_review_cannot_be_resumed(monkeypatch, journey):
+    job = prepared_job(journey, GRAPH_VERSION)
     claimed = [job]
     original = worker.one
     monkeypatch.setattr(
@@ -278,13 +280,14 @@ def test_cancelled_durable_review_cannot_be_resumed(monkeypatch):
         )
 
 
-def test_episode_updates_enqueue_canonical_graph_projection():
-    job = prepared_job(GRAPH_VERSION)
+def test_episode_updates_enqueue_canonical_graph_projection(journey):
+    job = prepared_job(journey, GRAPH_VERSION)
+    # Count only rows this transaction wrote; the shared project has concurrent outbox writers.
+    own = "SELECT count(*) n FROM anvil.graph_outbox WHERE xmin = pg_current_xact_id()::xid"
     with transaction(job["project_id"], worker=True) as c:
-        before = one(c, "SELECT count(*) n FROM anvil.graph_outbox")["n"]
+        assert one(c, own)["n"] == 0
         c.execute("UPDATE anvil.episodes SET state='cancelled' WHERE id=%s", (job["target_id"],))
-        after = one(c, "SELECT count(*) n FROM anvil.graph_outbox")["n"]
-        assert after == before + 1
+        assert one(c, own)["n"] == 1
         c.execute("UPDATE anvil.episodes SET state='cancelled' WHERE id=%s", (job["target_id"],))
-        assert one(c, "SELECT count(*) n FROM anvil.graph_outbox")["n"] == after
+        assert one(c, own)["n"] == 1
         c.execute("UPDATE anvil.jobs SET status='cancelled' WHERE id=%s", (job["id"],))

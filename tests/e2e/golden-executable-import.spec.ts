@@ -148,7 +148,7 @@ test('generated-import UI safely retries a lost response and downloads its noteb
   await page.goto('/workspace/' + project + '/tasks/' + source.id);
   const generate = page.getByRole('button', { name: 'Import & generate', exact: true });
   await generate.click();
-  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(page.getByRole('alert').filter({ hasText: 'Failed to fetch' })).toBeVisible();
   await expect(generate).toBeEnabled();
   await generate.click();
   await expect(
@@ -172,4 +172,47 @@ test('generated-import UI safely retries a lost response and downloads its noteb
   const download = page.waitForEvent('download');
   await page.getByRole('link', { name: 'Download review notebook', exact: true }).click();
   expect((await download).suggestedFilename()).toBe('anvil-review.ipynb');
+});
+
+test('golden ungenerated tasks show plain-language import explanations on list and detail', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Sign in with Keycloak' }).click();
+  await page.locator('#username').fill('researcher');
+  const password = readFileSync('.local/demo-accounts.md', 'utf8')
+    .split('\n')
+    .find((line) => line.startsWith('- researcher:'))!
+    .split('`')[1];
+  await page.locator('#password').fill(password);
+  await page.locator('#kc-login').click();
+  await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+  const project = 'a0000000-0000-4000-8000-000000000002';
+  const rawCode = /\b[a-z]+(_[a-z]+)+\b/;
+  const payload = JSON.parse(
+    JSON.parse(readFileSync('contracts/praxis/golden-v3/01-marketing.export.json', 'utf8'))
+      .payload_json,
+  );
+  await page.goto('/workspace/' + project + '/tasks');
+  await page.getByLabel('Search tasks', { exact: false }).fill(payload.title);
+  const row = page.getByRole('row').filter({ hasText: payload.title }).first();
+  await expect(row).toBeVisible();
+  const cell = row.getByRole('cell').first();
+  await expect(cell).toContainText('Needs generation');
+  await expect(cell).toContainText(
+    'No validated executable yet. Open the task to start generation.',
+  );
+  const text = (await cell.innerText()).replace(payload.task_id, '');
+  expect(text).not.toMatch(rawCode);
+  expect(text).not.toContain(payload.evaluation_private.canary);
+  await row.getByRole('link', { name: 'View', exact: true }).click();
+  await expect(page.getByRole('heading', { name: payload.title, exact: true })).toBeVisible();
+  await expect(
+    page
+      .getByRole('status')
+      .filter({ hasText: 'Not ready to run · Generation and validation required' }),
+  ).toHaveText('Not ready to run · Generation and validation required');
+  await expect(
+    page.getByRole('heading', { name: 'Make this task executable', exact: true }),
+  ).toBeVisible();
 });

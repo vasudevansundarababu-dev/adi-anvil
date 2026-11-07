@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Form from './Form';
 import { shortId, workspaceApi as api } from '../lib/workspace';
 import { runBlockers } from '../lib/executionReadiness';
+import { describeReason } from '../lib/readinessCatalog';
+import ReasonList from './ReasonList';
 import styles from './ModernWorkspace.module.css';
 
 type Model = {
@@ -426,44 +428,6 @@ export function ExecutionPresets({
   );
 }
 
-const messages: Record<string, string> = {
-  execution_group_required:
-    'Create an execution group below to review costs, authorization and launch readiness.',
-  workspace_dispatch_not_qualified: 'Live execution for workspace profiles is not available yet.',
-  current_pricing_not_bound: 'Current reviewed pricing has not been bound to this preparation.',
-  reviewed_pricing_admission_not_bound: 'Pricing still needs review for this exact evaluation.',
-  model_profile_disabled: 'This model profile is disabled for all new preparations.',
-  model_version_superseded:
-    'A newer model version exists. Create a preset with the current version.',
-  model_version_mapping_missing: 'This model version has no valid profile mapping.',
-  pricing_metadata_missing: 'Declared pricing metadata is missing.',
-  pricing_metadata_expired: 'Declared pricing metadata has expired.',
-  pricing_metadata_invalid: 'Declared pricing metadata is invalid.',
-  exact_user_authority_not_bound: 'No spending authorization is attached to this preparation.',
-  processing_rights_not_bound: 'No processing-rights decision is attached to this preparation.',
-  required_run_decisions_not_bound: 'Required run approvals are not attached to this preparation.',
-  shared_spending_admission_not_implemented:
-    'Shared spending controls are not ready for these models.',
-  aggregate_api_cap_missing: 'An explicit aggregate API cap is missing.',
-  candidate_runtime_not_qualified: 'The selected candidate runtime is not qualified.',
-  external_tracing_not_qualified_export_disabled:
-    'External tracing is not qualified; export stays disabled.',
-  credential_missing: 'Credential missing.',
-  credential_revoked_or_unavailable: 'Credential revoked or unavailable.',
-  bound_credential_rotated:
-    'The bound credential was rotated. Create a new model version and preset.',
-  provider_task_adapter_not_qualified: 'Provider/task adapter not qualified.',
-  model_revoked_or_unavailable: 'Model profile revoked or unavailable.',
-  model_configuration_changed: 'Model configuration changed.',
-  selected_output_limit_exceeds_profile:
-    'Selected output limit exceeds this model profile ceiling.',
-  task_binding_not_supported: 'This task binding is not supported by the planned adapter.',
-  package_runtime_not_supported: 'The package runtime does not match the pinned Harbor version.',
-  package_agent_admission_missing:
-    'Rebuild this package with the current agent admission compiler.',
-  framework_binding_changed_or_unavailable: 'A bound framework version changed or is unavailable.',
-};
-
 export default function WorkspacePreparation({
   base,
   taskId,
@@ -564,6 +528,12 @@ export default function WorkspacePreparation({
       active = false;
     };
   }, [base, preparationId, refreshKey]);
+  const workspace = base.replace('/projects/', '/workspace/');
+  const destinations = saved && {
+    workspace,
+    configure: workspace + '/execution-groups/new',
+    share: workspace + '/preparation?preparation=' + encodeURIComponent(saved.id),
+  };
   return (
     <>
       {!composing && (
@@ -896,7 +866,7 @@ export default function WorkspacePreparation({
           </Form>
         </section>
       )}
-      {saved && (
+      {saved && destinations && (
         <section className={styles.panel} aria-labelledby="preparation-readiness-heading">
           <h2 id="preparation-readiness-heading" ref={readinessHeading} tabIndex={-1}>
             Preparation readiness
@@ -923,23 +893,24 @@ export default function WorkspacePreparation({
             .
           </p>
           <p>Conservative cost: unknown. Reservation: not created. External tracing: disabled.</p>
-          <ul>
-            {saved.readiness.missing.map((reason) => (
-              <li key={reason}>{messages[reason] || reason}</li>
-            ))}
-          </ul>
+          <ReasonList
+            items={saved.readiness.missing.map((reason) => describeReason(reason, canAuthorizeRun))}
+            canAdmin={canAuthorizeRun}
+            to={destinations}
+          />
           {saved.snapshot.models.map((m) => (
             <div key={m.id}>
               <h3>
                 {m.name} · {m.provider}/{m.model_id}
               </h3>
-              <ul>
-                {saved.readiness.models
-                  .find((state) => state.model_profile_id === m.id)
-                  ?.missing.map((reason) => (
-                    <li key={reason}>{messages[reason] || reason}</li>
-                  ))}
-              </ul>
+              <ReasonList
+                items={(
+                  saved.readiness.models.find((state) => state.model_profile_id === m.id)
+                    ?.missing || []
+                ).map((reason) => describeReason(reason, canAuthorizeRun))}
+                canAdmin={canAuthorizeRun}
+                to={destinations}
+              />
             </div>
           ))}
           <p>Use Create execution group to choose the configuration for a new run.</p>

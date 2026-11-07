@@ -1,23 +1,82 @@
-import json
+from urllib.parse import urlsplit
 
 import psycopg
 import pytest
+from alembic import command
+from alembic.config import Config
+from psycopg import sql
 from test_api_security import USERS
 
 from anvil import auth
-from anvil.cli import PROJECT
-from anvil.config import ROOT
-from anvil.db import transaction
+from anvil.cli import ORG, PROJECT
+from anvil.config import ROOT, setting
+from anvil.db import transaction, uid
+
+# Pre-028 legacy grants: (user, role, active). Migrations 028 and 033 must record them.
+LEGACY_GRANTS = [
+    ("admin-1", "admin", True),
+    ("researcher", "researcher", True),
+    ("researcher", "reviewer", True),
+    ("data-engineer", "data-engineer", True),
+    ("advisor", "advisor", True),
+    ("reviewer-1", "reviewer", False),
+]
 
 
-def test_current_roles_are_exactly_two_and_historical_memberships_are_read_only():
+@pytest.fixture
+def legacy_migrated(monkeypatch):
+    """A fresh, uniquely named database holding legacy grants, migrated through 028 and 033."""
+    target = "anvil_migrationhistory_" + uid().replace("-", "")[:12]
+    admin_url = setting("MIGRATION_DATABASE_URL")
+    with psycopg.connect(admin_url, autocommit=True) as c:
+        c.execute(sql.SQL("CREATE DATABASE {} TEMPLATE template0").format(sql.Identifier(target)))
+    try:
+        for name in ("MIGRATION_DATABASE_URL", "DATABASE_URL", "WORKER_DATABASE_URL"):
+            monkeypatch.setenv(name, urlsplit(setting(name))._replace(path="/" + target).geturl())
+        alembic = Config(str(ROOT / "services/backend/alembic.ini"))
+        with psycopg.connect(setting("MIGRATION_DATABASE_URL")) as c:
+            c.execute("CREATE SCHEMA anvil")
+        command.upgrade(alembic, "027")
+        with psycopg.connect(setting("MIGRATION_DATABASE_URL")) as c:
+            c.execute("INSERT INTO anvil.organizations VALUES(%s,'Legacy fixture lab')", (ORG,))
+            c.execute(
+                "INSERT INTO anvil.projects(id,org_id,name) VALUES(%s,%s,'Legacy fixture')",
+                (PROJECT, ORG),
+            )
+            for name in {user for user, _, _ in LEGACY_GRANTS}:
+                c.execute(
+                    "INSERT INTO anvil.users(id,org_id,issuer,subject,name) VALUES(%s,%s,'https://legacy-fixture.invalid',%s,%s)",
+                    (USERS[name], ORG, USERS[name], name),
+                )
+            for name, role, active in LEGACY_GRANTS:
+                c.execute(
+                    "INSERT INTO anvil.memberships(project_id,user_id,role,active) VALUES(%s,%s,%s,%s)",
+                    (PROJECT, USERS[name], role, active),
+                )
+        command.upgrade(alembic, "head")
+        yield
+    finally:
+        with psycopg.connect(admin_url, autocommit=True) as c:
+            c.execute(
+                sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(sql.Identifier(target))
+            )
+
+
+def test_current_roles_are_exactly_two_and_historical_memberships_are_read_only(
+    legacy_migrated,
+):
     with transaction(PROJECT, USERS["admin-1"]) as c:
         roles = {
             r["role"]
             for r in c.execute("SELECT role FROM anvil.memberships WHERE active").fetchall()
         }
         assert roles == {"admin", "rl-engineer"}
-        assert c.execute("SELECT count(*) n FROM anvil.membership_role_history").fetchone()["n"] > 0
+        history = c.execute(
+            "SELECT user_id,legacy_role,was_active FROM anvil.membership_role_history"
+        ).fetchall()
+        assert {(str(h["user_id"]), h["legacy_role"], h["was_active"]) for h in history} == {
+            (USERS[name], role, active) for name, role, active in LEGACY_GRANTS
+        }
         assert c.execute(
             "SELECT is_synthetic FROM anvil.users WHERE id=%s", (USERS["admin-1"],)
         ).fetchone()["is_synthetic"]
@@ -26,10 +85,9 @@ def test_current_roles_are_exactly_two_and_historical_memberships_are_read_only(
             c.execute("UPDATE anvil.membership_role_history SET was_active=false")
 
 
-def test_new_task_cannot_self_assign_unowned_private_reference(client_factory):
+def test_new_task_cannot_self_assign_unowned_private_reference(client_factory, journey):
     from anvil.db import one, uid
 
-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
     project = journey["project_id"]
     base = f"/api/v1/projects/{project}"
     with transaction(project, USERS["researcher"]) as c:
@@ -79,8 +137,7 @@ def test_new_task_cannot_self_assign_unowned_private_reference(client_factory):
         assert client.get(base + f"/artifacts/{private_id}/content").status_code == 403
 
 
-def test_people_profiles_pagination_scope_and_unchanged_grants(client_factory):
-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+def test_people_profiles_pagination_scope_and_unchanged_grants(client_factory, journey):
     project = journey["project_id"]
     base = f"/api/v1/projects/{project}"
     admin, _ = client_factory("admin-1")
@@ -141,10 +198,15 @@ def test_people_profiles_pagination_scope_and_unchanged_grants(client_factory):
     assert admin.get(base + f"/artifacts/{private['id']}/content").status_code == 403
 
 
-def test_recorded_mapping_is_read_only_scoped_and_audited():
+def test_recorded_mapping_is_read_only_scoped_and_audited(legacy_migrated):
     with transaction(PROJECT, USERS["admin-1"]) as c:
         rows = c.execute("SELECT * FROM anvil.workspace_profile_mappings").fetchall()
-        assert rows
+        # Migration 028 maps active admin, researcher and data-engineer grants only.
+        assert {str(row["user_id"]): row["profile"] for row in rows} == {
+            USERS["admin-1"]: "admin",
+            USERS["researcher"]: "rl_engineer",
+            USERS["data-engineer"]: "rl_engineer",
+        }
         assert all(str(row["project_id"]) == str(PROJECT) for row in rows)
         assert c.execute(
             "SELECT count(*) count FROM anvil.audit_events WHERE action='workspace.profile_mapping_recorded'"

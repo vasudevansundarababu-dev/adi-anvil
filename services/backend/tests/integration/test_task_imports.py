@@ -1,18 +1,56 @@
 import json
 import subprocess
 import sys
+from urllib.parse import urlsplit
 
 import psycopg
 import pytest
+from alembic import command
+from alembic.config import Config
+from journey_support import provision_journey
+from langgraph.checkpoint.postgres import PostgresSaver
+from psycopg import sql
 from test_api_security import USERS, client_factory  # noqa: F401
 
-from anvil import ingestion, task_imports
-from anvil.config import ROOT
+from anvil import cli, ingestion, task_imports
+from anvil.config import ROOT, setting
 from anvil.db import one, transaction, uid
 
 
-def test_import_publish_versions_run_and_resume(client_factory, monkeypatch):  # noqa: F811
-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+@pytest.fixture
+def owned_journey(monkeypatch):
+    """A synthetic journey in a fresh, uniquely named database that no worker polls.
+
+    The test leases and processes its own ingestion chunks and checks exact checkpoints, so
+    a background worker on the shared database must not be able to claim its jobs.
+    """
+    target = "anvil_taskimporttest_" + uid().replace("-", "")[:12]
+    admin_url = setting("MIGRATION_DATABASE_URL")
+    with psycopg.connect(admin_url, autocommit=True) as c:
+        c.execute(sql.SQL("CREATE DATABASE {} TEMPLATE template0").format(sql.Identifier(target)))
+    try:
+        for key in ("MIGRATION_DATABASE_URL", "DATABASE_URL", "WORKER_DATABASE_URL"):
+            monkeypatch.setenv(key, urlsplit(setting(key))._replace(path="/" + target).geturl())
+        with psycopg.connect(setting("MIGRATION_DATABASE_URL"), autocommit=True) as c:
+            c.execute("CREATE SCHEMA anvil")
+            command.upgrade(Config(str(ROOT / "services/backend/alembic.ini")), "head")
+            c.execute("SET search_path TO anvil_checkpoints")
+            PostgresSaver(c).setup()
+            c.execute(
+                "GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA anvil_checkpoints TO anvil_worker"
+            )
+            c.execute("GRANT USAGE ON ALL SEQUENCES IN SCHEMA anvil_checkpoints TO anvil_worker")
+        cli.seed()
+        yield provision_journey()
+    finally:
+        with psycopg.connect(admin_url, autocommit=True) as c:
+            c.execute(
+                sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(sql.Identifier(target))
+            )
+
+
+def test_import_publish_versions_run_and_resume(client_factory, monkeypatch, owned_journey):  # noqa: F811
+    journey = owned_journey
     project = journey["project_id"]
     base = f"/api/v1/projects/{project}"
     client, _ = client_factory("researcher")

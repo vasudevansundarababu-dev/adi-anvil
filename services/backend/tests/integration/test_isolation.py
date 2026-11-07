@@ -65,9 +65,9 @@ def test_runtime_roles_are_nonowners_without_bypass():
             ).fetchone()["tableowner"] not in ("anvil_app", "anvil_worker")
 
 
-def test_web_role_cannot_access_checkpoints_and_worker_cannot_read_private_references():
+def test_web_role_cannot_access_checkpoints_and_worker_cannot_read_private_references(journey):
     users = json.loads((ROOT / ".local/demo-identities.json").read_text())
-    project = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())["project_id"]
+    project = journey["project_id"]
     with transaction(project, users["data-engineer"]) as c:
         reference = c.execute(
             "SELECT id FROM anvil.artifacts WHERE classification='hidden_reference' LIMIT 1"

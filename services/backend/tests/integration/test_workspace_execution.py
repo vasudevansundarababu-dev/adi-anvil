@@ -755,3 +755,78 @@ def test_existing_admin_and_exact_budget_boundaries(configured):
             )["n"]
             == 1
         )
+
+
+def _effects(c):
+    return {
+        table: one(c, "SELECT count(*) n FROM anvil." + table)["n"]
+        for table in ("evaluation_spend_windows", "harbor_checks", "jobs")
+    }
+
+
+def test_readiness_reads_and_blocked_launches_have_no_provider_or_spend_effects(
+    configured, monkeypatch
+):
+    from anvil import workspace_dispatch
+
+    # A real provider call would spend money; any dispatch attempt fails the test instead.
+    monkeypatch.setattr(
+        workspace_dispatch,
+        "execute",
+        lambda *a, **k: pytest.fail("readiness must not dispatch a provider request"),
+    )
+    data = configured
+    post, path, clients = data["post"], data["path"], data["clients"]
+    blocked = post("/execution-groups", {"preparation_id": data["prep"]["id"]})
+    assert "admin_run_authorization_required" in blocked["readiness"]["missing"]
+    with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+        before = _effects(c)
+    for name in ("contract-admin-a", "contract-engineer"):
+        for endpoint in (
+            "/preparations/" + data["prep"]["id"],
+            "/execution-groups/" + blocked["id"],
+            "/execution-groups",
+        ):
+            assert clients[name].get(path + endpoint).status_code == 200, endpoint
+    for name in ("contract-engineer", "contract-admin-a"):
+        response = clients[name].post(
+            path + "/execution-groups/" + blocked["id"] + "/launch",
+            headers={"Idempotency-Key": uid()},
+        )
+        assert response.status_code == 409, response.text
+        error = response.json()["error"]["message"]
+        assert error["message"] == "Execution blocked; no model dispatched"
+        assert error["ready"] is False
+        assert "admin_run_authorization_required" in error["missing"]
+    forged = clients["contract-engineer"].post(
+        path + "/execution-groups/" + blocked["id"] + "/launch",
+        json={
+            "subject_hash": blocked["subject_hash"],
+            "aggregate_cap_micro_usd": 1000000,
+            "rights_confirmed": True,
+        },
+        headers={"Idempotency-Key": uid()},
+    )
+    assert forged.status_code in (403, 409), forged.text
+    with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
+        assert _effects(c) == before
+        assert (
+            one(
+                c,
+                "SELECT state FROM anvil.workspace_execution_groups WHERE id=%s",
+                (blocked["id"],),
+            )["state"]
+            == "draft"
+        )
+
+
+def test_readiness_is_not_visible_outside_the_project(configured):
+    data = configured
+    outsider = data["clients"]["outsider"]
+    for endpoint in (
+        "/preparations/" + data["prep"]["id"],
+        "/execution-groups/" + data["group"]["id"],
+    ):
+        response = outsider.get(data["path"] + endpoint)
+        assert response.status_code in (403, 404), endpoint
+        assert "missing" not in response.text and "readiness" not in response.text

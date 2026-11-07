@@ -1,15 +1,11 @@
-import json
-
 import psycopg
 import pytest
 from test_api_security import USERS, client_factory  # noqa: F401
 
-from anvil.config import ROOT
 from anvil.db import transaction, uid
 
 
-def test_factory_vertical_versions_rights_and_access(client_factory, monkeypatch):  # noqa: F811
-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+def test_factory_vertical_versions_rights_and_access(client_factory, monkeypatch, journey):  # noqa: F811
     project = journey["project_id"]
     base = f"/api/v1/projects/{project}/factory"
     researcher = client_factory("researcher")[0]

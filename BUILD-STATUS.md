@@ -1,5 +1,23 @@
 # Build status
 
+## Task-readiness explanations: coding increment, uncommitted, not approved — 6 November 2026
+
+Work ID `anvil-task-readiness-explanations-2026-11-06`. These changes are uncommitted on `codex/anvil-agent-team-2026-11-06` (base `8cdc8a8`) and await review. The UI now shows plain-language task-readiness reasons from one shared catalog. The catalog is checked against the backend reason codes by `contracts/readiness/reason-codes.v1.json` and a parity unit test. The Admin-only "Open Models & keys" condition is unchanged, and import states are explained on the task list and detail pages.
+
+Results:
+- Unit tests passed: 350.
+- The catalog and UI-policy Node tests passed: 7 and 9.
+- Ruff and Prettier passed. tsc passed.
+- `next build` passed earlier in this increment; it was not rerun after the final detail-page change.
+- The OpenAPI contract is unchanged.
+- The new no-spend integration tests passed: 2.
+- The three planned browser specs passed: 8 tests, 3 of them new.
+- The full integration suite FAILED: 143 passed, 42 failed, 19 skipped. 40 of the 42 also fail on unchanged HEAD. The other 2 passed when run alone. That is comparative evidence, not proof that the failures are unrelated.
+
+Live providers were off and no spend occurred. No push or deployment was made.
+
+Sandbox deviations are recorded in the run's `implementation-report.md`: a generated Keycloak container and volume were deleted, and the Docker socket was temporarily set to 666 before being restored to 660. Product Owner sign-off on the D-COPY wording is still pending.
+
 ## README review entry points — 2 November 2026
 
 Both READMEs now start their review navigation with an explicit YC review section:

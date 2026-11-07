@@ -1,14 +1,10 @@
-import json
-
 from test_api_security import USERS
 
 from anvil import artifacts
-from anvil.config import ROOT
 from anvil.db import transaction, uid
 
 
-def test_diagnostic_history_snapshots_pagination_and_finalized_output_only(client_factory):
-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+def test_diagnostic_history_snapshots_pagination_and_finalized_output_only(client_factory, journey):
     project = journey["project_id"]
     base = f"/api/v1/projects/{project}"
     admin, _ = client_factory("admin-1")

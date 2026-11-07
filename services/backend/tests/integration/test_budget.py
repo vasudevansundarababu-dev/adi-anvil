@@ -2,33 +2,24 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 
-import pytest
 from fastapi import HTTPException
 
 from anvil.budget import reconcile, reserve
-from anvil.cli import PROJECT as DEFAULT_PROJECT
 from anvil.config import ROOT
 from anvil.db import one, transaction, uid
 
 
-def test_concurrent_shared_ceiling_and_unknown_reservation():
-    evidence = ROOT / "artifacts/test-runs/journey.json"
-    project = (
-        json.loads(evidence.read_text()).get("project_id", DEFAULT_PROJECT)
-        if evidence.exists()
-        else DEFAULT_PROJECT
-    )
+def test_concurrent_shared_ceiling_and_unknown_reservation(journey):
+    project = journey["project_id"]
     user = json.loads((ROOT / ".local/demo-identities.json").read_text())["researcher"]
     window = uid()
     with transaction(project, user) as c:
         protocol = one(
             c,
-            "SELECT current_revision_id FROM anvil.resources WHERE kind='protocol' AND lifecycle='approved' LIMIT 1",
+            "SELECT current_revision_id FROM anvil.resources WHERE id=%s AND kind='protocol' AND lifecycle='approved'",
+            (journey["protocol"]["id"],),
         )
-        if not protocol:
-            pytest.fail(
-                "Run fixture E2E before budget integration: approved protocol prerequisite missing"
-            )
+        assert protocol, "the provisioned journey protocol must be approved"
         runs = [uid(), uid()]
         c.execute(
             "INSERT INTO anvil.evaluation_spend_windows(id,project_id,cap_micro_usd,end_at,status,authority_reference) VALUES(%s,%s,100,%s,'active','synthetic ledger concurrency test - no dispatch authority')",

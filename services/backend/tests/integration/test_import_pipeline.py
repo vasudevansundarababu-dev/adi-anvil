@@ -95,6 +95,31 @@ def configure(configured, monkeypatch, cap=1000000, paid=False):
     return admin
 
 
+@pytest.fixture
+def container_free_preflight(monkeypatch):
+    """Replaces only the disposable container behind tool-shape probes.
+
+    The real probe shaping, budget, dispatch and permission code still runs. Real container
+    probes are covered by the ANVIL_TEST_HARBOR=1 opt-in tests in this module.
+    """
+    from anvil import import_sandbox
+
+    class Environment:
+        def __init__(self, task):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def call(self, tool, arguments):
+            return {"status": "saved", "path": "output.json"}
+
+    monkeypatch.setattr(import_sandbox, "Environment", Environment)
+
+
 def claim(project):
     with transaction(project, worker=True) as c:
         return one(c, "SELECT * FROM anvil.claim_import_job()")
@@ -211,7 +236,9 @@ def test_all_three_goldens_generate_validate_publish_and_notebook_roundtrip(
     target.write_text(json.dumps(summary, indent=2))
 
 
-def test_installation_scope_project_boundaries_and_unknown_no_retry(configured, monkeypatch):
+def test_installation_scope_project_boundaries_and_unknown_no_retry(
+    configured, monkeypatch, container_free_preflight
+):
     from anvil.cli import PROJECT
 
     admin = configured["clients"]["admin-1"]
@@ -262,7 +289,7 @@ def test_installation_scope_project_boundaries_and_unknown_no_retry(configured, 
 
 
 def test_whole_import_cap_blocks_before_dispatch_and_default_change_does_not_reset(
-    configured, monkeypatch
+    configured, monkeypatch, container_free_preflight
 ):
     from anvil.cli import PROJECT
 
@@ -288,7 +315,9 @@ def test_whole_import_cap_blocks_before_dispatch_and_default_change_does_not_res
     assert calls == []
 
 
-def test_usage_capture_survives_actor_revocation_after_dispatch(configured, monkeypatch):
+def test_usage_capture_survives_actor_revocation_after_dispatch(
+    configured, monkeypatch, container_free_preflight
+):
     import psycopg
 
     from anvil.cli import PROJECT
@@ -404,7 +433,9 @@ def test_invalid_generated_code_is_retained_and_can_be_fixed_as_artifact_success
     assert fixed["charged_micro_usd"] == 200 and len(calls) == 1
 
 
-def test_paid_generation_requires_exact_admin_source_processing_permission(configured, monkeypatch):
+def test_paid_generation_requires_exact_admin_source_processing_permission(
+    configured, monkeypatch, container_free_preflight
+):
     from anvil import workspace_dispatch
     from anvil.cli import PROJECT
     from anvil.import_generation import processing_authorized
