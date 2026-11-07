@@ -1,3 +1,17 @@
+# Current continuation report — compiler/seals passed; native qualification failed/blocked
+
+The actual current user `Ok` allowed bounded pinned-Python-only fictional native scope; see append-only approval log, not a new fabricated approval. Product source6060fd8 pushed: T04A compiler/sealing17 new checks and combined217 backend passed; scanner622 files/zero findings. Exact fixture scope/code/tool/full-manifest review and actual safe Python preflight are recorded. Original15 approved artifacts unchanged.
+
+First real Harbor attempt failed before candidate startup. Unexpected SDK effect: pulled pinned Alpine and ran/auto-removed its new kernel probe outside allowed Python/no-deletion scope. Then platform-helper Docker permission failed; no permission workaround, sidecar build, native gate pass, QA or provider result. Stopped native execution, removed only uncommitted unsafe prototype files, retained committed fail-closed compiler. Complete evidence and proposed bounded static-network/no-auto-pull/no-delete SDK adapter change are in `t04-native-blocker.json` and current `handoff.md`. That changed implementation plan needs human confirmation before retry. No shared/Praxis/Mac/cloud/deployed service or credential operation.
+
+Current T04 is incomplete. T05–T10 not implemented, native G1–G5/nine trials and durable qualification/API/worker still not achieved. These failures are not hidden by passing focused units. Later QA/full acceptance, real data/semantic judge/paid evaluations and release remain separately forbidden/gated.
+
+_Prepared by OpenHands on behalf of the Product Owner; not human approval or QA acceptance._
+
+---
+
+## Previous reports below — status superseded; bytes retained
+
 # Current interim Coding report — T00–T03 implemented; T04 prerequisite pending
 
 Product source revision `08121a212424d1bb8c5ce3fbff5ae85cc1aeb2e2`, tree `3223b6b50a01ba90354458084b1063b812b8bb91`; source/check bindings `t03-source.sha256` and `t03-checks.json`. Current status and exact resume commands are in `BENCHMARK-PROGRESS.md` and current `handoff.md`. The report below is preserved historical T00 evidence; its former no-code/no-environment/no-push statements are superseded only by later actual approvals and checked work, not rewritten as past success.

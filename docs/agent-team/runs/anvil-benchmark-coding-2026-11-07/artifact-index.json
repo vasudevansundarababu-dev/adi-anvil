@@ -1,18 +1,18 @@
 {
-  "status": "T00_T03_focused_coding_complete_T04_native_prerequisite_pending",
-  "observed_at": "2026-11-07T19:41:20.634321+00:00",
-  "product_source_commit": "08121a212424d1bb8c5ce3fbff5ae85cc1aeb2e2",
-  "product_source_tree": "3223b6b50a01ba90354458084b1063b812b8bb91",
+  "status": "T04A_focused_pass_T04B_native_failed_stopped_pending_adapter_plan_review",
+  "observed_at": "2026-11-07T20:25:34.517331+00:00",
+  "product_source_commit": "6060fd8ab2b2c174b0bee837634089139dd696ea",
   "recovered_commit": "15e35f12725a89be6e507b2eb73d4433e666dd76",
   "recovered_tree": "18fca788310f91a35a54df39392a37c026ae16b1",
   "release_source_files_verified_at_t00": 504,
   "approved_originals_unchanged": true,
-  "history_note": "Initial T00-only handoff/report bytes remain embedded below current status; prior exact indexes remain in authorized Git history. No raw logs or credentials added. Local-only tap hash is historical evidence, not a committed log.",
+  "native_failure_not_waived": true,
+  "history_note": "Current run metadata only; task source indexes bind their respective exact recorded commits, not current source. Historical handoff/report bytes preserved below superseding headings. Local-only logs/archives/credentials not committed.",
   "entries": [
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/approval-log.jsonl",
-      "sha256": "36929bc6e125c6f3dd25e8539315ffeb0dea3c99a5eb4b795ae2143dd0015d2a",
-      "bytes": 4227
+      "sha256": "24dfa5d945bc8cbbc897ab39fb433b08046a10d4d7c7dc117d097f0da81c1539",
+      "bytes": 5260
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/approved-input-snapshot.json",
@@ -42,8 +42,8 @@
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/handoff.md",
-      "sha256": "ccdb7136fc92ff004e570a4ab786072f28387fc01729ed77d7f1fb295514375c",
-      "bytes": 11322
+      "sha256": "d271f118891d9d245753308a4d0bb0802e49e10d0dc6f1d189e5abebddf77aa5",
+      "bytes": 15051
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/historical-documents-verified.json",
@@ -62,8 +62,8 @@
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/implementation-report.md",
-      "sha256": "06ca1a58d82895d49375617bdfe736d92e43af79e9b747c1ad1bbdc76459bc07",
-      "bytes": 11117
+      "sha256": "351165f5221cf21efed8340d628cc2589fa970303bf6df0eaccc373dcf73b244",
+      "bytes": 12832
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/isolated-database-evidence.json",
@@ -134,6 +134,26 @@
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t03a-source.sha256",
       "sha256": "1934a6d1c07e963f46845d212a01e788cd0b2c19e1b25487fcfe0b5d6d003065",
       "bytes": 348
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04-fixture-review.json",
+      "sha256": "4d161001bf4103bdec3281e2308ebd95828ef4e337a301d9080a6af6b86601aa",
+      "bytes": 1966
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04-native-blocker.json",
+      "sha256": "b8708e481b7b4068f33754bfd261c35ec613a0d6ea3679e79b5e7aa0a91a1425",
+      "bytes": 4792
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04a-checks.json",
+      "sha256": "930ff6acdc04800cdc0dc276598c5c373c1a1f23f4e04ebeea073bf4ec50058a",
+      "bytes": 1646
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04a-source.sha256",
+      "sha256": "d0be698ee67e00fe70d6f7ee5e7179d03db5c949b1a716a105e657a0178d7b0c",
+      "bytes": 350
     }
   ]
 }

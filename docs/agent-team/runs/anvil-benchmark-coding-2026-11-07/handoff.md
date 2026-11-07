@@ -1,3 +1,29 @@
+# Current interim Coding handoff — T04A passed; native SDK failure requires plan review
+
+Product source checkpoint `6060fd8ab2b2c174b0bee837634089139dd696ea` is pushed to existing draft PR16. The current user `Ok` approved the bounded native scope proposed in the cb29dbc handoff; actual quote is in append-only `approval-log.jsonl`. That prerequisite is resolved, not being requested again.
+
+Completed this continuation: exact fictional implementation/tool/policy/full-manifest source review; actor-only deterministic compiler; immutable regular bounded output seals. New17 unit tests and combined217 backend checks passed. Independently locked Harbor0.25.0 installed locally; approved pinned Python base ran actual UID10001/read-only/no-network/no-key/no-socket preflight. This is NOT native G2/complete T04/QA or a model-quality result.
+
+**Native attempt failed:** first requested positive FX-002 Harbor trial failed before candidate/evaluator startup (1 failed/8 deselected). The pinned SDK automatically pulled Alpine and ran/auto-removed a kernel probe with `--rm`, outside the Python-only/no-deletion boundary. This unexpected effect is reported candidly, not retroactively approved. SDK then failed on an internal default Docker CLI bypassing the scoped operator command. No sidecar build completed, no native qualification passed, no socket permission was loosened. Read-only dedicated daemon evidence confirms the new probe events; no shared/existing container was removed. Existing isolated PostgreSQL and retained Python probe remain intact, Alpine image cached. No product/provider credential was used or copied.
+
+Containment: stopped native execution; discarded only three new uncommitted adapter/backend/test prototypes; no native product entrypoint shipped. Kept T04A source and source-bound focused evidence. `t04-native-blocker.json` binds exact observation, SDK hashes, owned local log paths and proposed plan. Logs remain ignored/local; no raw log or secret added to Git. No retries or wider permissions.
+
+**Proposed changed implementation scope — pending human confirmation:** keep Harbor0.25.0; implement/test a narrow Anvil adapter for constant no-network only. It must reject implicit image pulls/builds and SDK probe/egress-sidecar behavior, use only preloaded approved Python for separate actor/evaluator, reject cleanup deletion and stale session reuse, retain stopped containers and route every SDK helper to the explicit isolated operator command. No patch to site-packages/global configs/socket permissions. Then retry actual nine trials plus complete G1–G5; all evidence remains Failed/Blocked until observed. No scientific/security requirement is removed.
+
+Current exact commands/results/source hashes: `t04a-checks.json` / `t04a-source.sha256`; approved source review: `t04-fixture-review.json`; progress and resume: root `BENCHMARK-PROGRESS.md`. All15 original approved documents remain unchanged. Historical source indexes below are bound to their recorded old revisions, not claims unchanged across later Coding. Run metadata index is refreshed for this checkpoint.
+
+Decision: **T04 INCOMPLETE — NATIVE EXECUTION STOPPED PENDING SDK ADAPTER-PLAN REVIEW; NOT READY FOR QA/DEPLOYMENT.** T05–T10 not implemented. Existing T11 QA/human review, release and live/Bodhium gates are unchanged.
+
+- Actual original Coding/native-scope approvals: recorded in `approval-log.jsonl`.
+- New SDK adapter-plan confirmation reference/time: **not supplied**.
+- Human final code-review / QA authorization: **not supplied**.
+
+_Prepared by OpenHands on behalf of the Product Owner. This is not human approval._
+
+---
+
+## Earlier interim and historical handoffs below — status superseded; bytes retained
+
 # Interim Coding handoff — T03 checkpoint; native prerequisite review pending
 
 - Work ID: `anvil-benchmark-coding-2026-11-07`.

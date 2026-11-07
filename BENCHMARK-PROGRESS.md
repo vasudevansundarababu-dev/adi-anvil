@@ -1,6 +1,6 @@
 # Benchmark Coding progress
 
-Status: T00/T01/T02/T03 complete at the focused Coding-foundation level. User confirmed local-only pinned fictional native scope with Ok. T04A compiler/sealing verified; T04B native trials and persistent qualification still in progress. No full benchmark completion or QA/release approval. Coding only; stop for human review before QA or deployment.
+Status: T00/T01/T02/T03 complete at the focused Coding-foundation level. User confirmed local-only pinned fictional native scope with Ok. T04A compiler/sealing verified; first T04B native attempt failed before candidate startup. Native work stopped pending review of explicit SDK policy adapter change; see t04-native-blocker.json. No full benchmark completion or QA/release approval. Coding only; stop for human review before QA or deployment.
 
 ## Revision and authority
 
@@ -85,3 +85,14 @@ The user replied `Ok` to the explicit cb29dbc native fixture/evaluator scope pro
 T04A: new deterministic actor-only ZIP compiler with signed-source/current-trust/complete manifest/image/tool/evaluator checks; generated private material absent; fixed safe Harbor task profile and fail-closed separate-verifier stub. Regular bounded immutable output seals bind hashes/absence and deny symlink/hardlink/nonregular aliases. New17 tests pass; combined217 focused backend tests pass; lint/format pass. Independent Harbor0.25.0 installed workspace-locally from existing lock. Approved pinned base pulled only into dedicated daemon; actual narrow non-root/read-only/no-network preflight passes. Probe container is retained, not deleted. No application/ordinary worker gains Docker access.
 
 Next: T04B real Harbor positive/empty/guardrail trials and G1–G5 checks using scoped native plugins and separate evaluator; add durable qualification/build hooks before declaring T04 complete. Private evaluator assets must never enter actor container or its host mounts, even in mode0700. No production/QA/provider work authorized. Exact source hashes and checked limits: `t04a-source.sha256` / `t04a-checks.json`.
+
+
+## T04B observed SDK-policy failure — native execution stopped
+
+The new bounded human approval is valid and no longer missing. However the first real Harbor trial exposed previously uninspected SDK behavior: its no-network constructor automatically pulled pinned Alpine3.23.4 and ran a `--rm` kernel-probe container. This exceeded the approved Python-only/no-deletion boundary. Dedicated daemon event summaries verify only this new probe was created/destroyed; Python preflight and existing isolated PostgreSQL remain intact. No shared/cloud/Mac/Praxis/credential operation occurred. The extra image remains cached, not deleted.
+
+Next the SDK tried its egress sidecar setup, but a hardcoded default Docker CLI in platform detection bypassed the configured scoped operator command and got socket permission denied. No sidecar image build or candidate/evaluator trial started. Result1 failed/8 deselected; **zero native qualification passes**. This is not fixed by loosening permissions or pretending a skipped test passed.
+
+Stopped native work. Discarded only three newly authored uncommitted prototype files; no runnable native backend/Harbor entrypoint was shipped. Committed T04A remains independently verified217 focused backend checks, compiler/regular-file seals only, and the package's external-verifier stub fails closed. Actual safe preflight is not G2 or full T04 qualification.
+
+Proposed changed implementation plan needs confirmation: a narrowly reviewed Anvil-owned Harbor adapter for constant `network_mode=none` only; reject implicit pulls/builds, Alpine probes, dynamic/egress-sidecar behavior and container deletion; both actor/evaluator use only preloaded approved Python; fresh session collision checks; all SDK helper commands use scoped operator CLI; stopped trial containers retained. Actual read-only/non-root/cap/mount/no-egress/cgroup and G1–G5 must still be observed, never waived. No installed-package/global/socket permission change. See `t04-native-blocker.json` for exact evidence, known effects and remaining checks. T04 incomplete; T05–T10 not started; QA/paid/deployment remain prohibited.
