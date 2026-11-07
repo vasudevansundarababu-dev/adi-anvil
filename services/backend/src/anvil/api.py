@@ -286,6 +286,8 @@ def artifact_content(project: UUID, aid: UUID, request: Request):
         a = one(c, "SELECT * FROM anvil.artifacts WHERE id=%s", (aid,))
         if not a:
             raise HTTPException(404, "Artifact not found")
+        if a["classification"] in artifacts.BENCHMARK_PRIVATE_CLASSES:
+            raise HTTPException(403, "Private benchmark artifacts are not available on this route")
         if a["classification"] == "hidden_reference":
             auth.require(roles, "data-engineer", "reviewer", "advisor", "adjudicator")
             linked = c.execute(

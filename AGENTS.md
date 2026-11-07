@@ -14,3 +14,9 @@
 - After each milestone run relevant tests, repair regressions, update BUILD-STATUS.md and record evidence. Resume from that file after interruption; do not restart the repository.
 - Do not spawn subagents or new user tasks unless explicitly authorized. One writer is the default.
 - Stop on completion, a genuine authority/environment blocker with no safe independent work, or the approved work-window end. Leave a candid morning report with passed/failed/blocked/not-run tests, exact commands and remaining work. Never mark a blocked live smoke test as passed.
+
+## Benchmark source conventions
+
+- Resume active benchmark Coding from `BENCHMARK-PROGRESS.md`; approved originals and append-only approvals live in the dated agent-team runs. Progress authorization is session-specific, not a standing permission grant.
+- SME bundle v1 is separate from legacy task/export validators. Fictional FX fixtures test software only; they are not Bodhium data or model performance.
+- New benchmark-private classes must use the disjoint explicitly configured vault, never generic artifact storage/downloads. Dedicated SQL tests are under `services/backend/tests/benchmark/`; they require a real isolated PostgreSQL target and must not use shared/deployed services.

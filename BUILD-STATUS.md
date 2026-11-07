@@ -1,3 +1,7 @@
+## Benchmark Coding checkpoint — 2026-11-07
+
+Active isolated source: `codex/anvil-agent-team-2026-11-06`; resume from `BENCHMARK-PROGRESS.md` and Coding run `docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/`. Exact recovered r6 commit/tree verified. T00/T01 complete; T02A private foundation verified (migrations039/040), T02B+ still pending. Focused126 backend checks and12 Node policy checks pass; no full QA/native qualification/paid model/judge/deployment claim. Historical evidence below remains historical. Human approval is recorded append-only; approved design15 files unchanged. Keep draft PR16 draft and stop for human Coding review before QA/merge/deployment.
+
 # Build status
 
 ## Task-readiness explanations: coding increment, uncommitted, not approved — 6 November 2026

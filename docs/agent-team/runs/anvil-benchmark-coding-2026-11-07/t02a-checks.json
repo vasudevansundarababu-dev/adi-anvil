@@ -1,0 +1,34 @@
+{
+  "subtask": "T02A private receipt/vault/evaluator foundation",
+  "plan_task_status": "T02 in progress; typed comparison/cell/score/spend foundation still pending",
+  "parent_checkpoint": "a6b415e89cfe3b438f8f80356b91fcfa89b2215f",
+  "observed_at": "2026-11-07T19:03:01.025191+00:00",
+  "database": "actual isolated PostgreSQL17.6; no network; private Unix socket",
+  "migration_head": "040",
+  "migration_result": "fresh recovered001\u2013038 then additive039/040; repeated head upgrade passed; no prior SQL modified",
+  "focused_new_database_tests": 18,
+  "focused_combined_backend_tests": 126,
+  "result": "all passed; existing Authlib deprecation warning",
+  "tested": [
+    "FORCE RLS and non-bypass evaluator role",
+    "individual assignment, revoked/expired grants and inactive user",
+    "cross-project/ordinary-worker private denial",
+    "generic HTTP/read/store private denial",
+    "composite project FK and immutable receipt",
+    "content addressing and eight concurrent duplicate writers",
+    "leased evaluator exact job/fence/input scope and revocation",
+    "symlink/hardlink/mode/content integrity denial",
+    "legacy artifact metadata/read compatibility",
+    "ordinary worker excludes all benchmark_ job kinds"
+  ],
+  "not_claimed": [
+    "whole T02 complete",
+    "separate evaluator service operating or provisioned credentials",
+    "candidate/evaluator container/mount G2 qualification",
+    "streaming intake or compiler",
+    "Bodhium/model performance",
+    "QA or deployment acceptance"
+  ],
+  "formatting": "ruff lint/format pass for touched Python",
+  "approved_input_integrity": "all15 hashes unchanged"
+}
