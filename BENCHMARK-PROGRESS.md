@@ -1,6 +1,6 @@
 # Benchmark Coding progress
 
-Status: T00/T01/T02 complete at the Coding-foundation level; T03 bounded intake is next. No full benchmark completion or QA/release approval. Coding only; stop for human review before QA or deployment.
+Status: T00/T01/T02 complete at the Coding-foundation level; T03A parser/staging verified, T03 HTTP/receipt work remains in progress. No full benchmark completion or QA/release approval. Coding only; stop for human review before QA or deployment.
 
 ## Revision and authority
 
@@ -26,7 +26,7 @@ GitHub read-only checks: correct repository/branch; remote branch initially `8cd
 
 Draft progress PRs now skip the full fixture job; non-draft PR/main behavior is preserved. No QA role or full acceptance is authorized by opening the draft. Do not mark it ready, merge, force-push or deploy.
 
-Previous pushed checkpoint: `a829c49d837ac3e412963c45a6d22c0e67389453` (T02A private foundation). Earlier publication/database checkpoint: `a6b415e89cfe3b438f8f80356b91fcfa89b2215f`. T01: `9a82eab7b88bea8d6b5da5d29da92dd7f7735daf`. Initial checkpoint: `5345518b49df01c7f10caf1b4fd696bd61b3141f`. Draft PR: https://github.com/vasudevansundarababu-dev/adi-anvil/pull/16. Current checkpoint ID: `git log -1 --format=%H -- BENCHMARK-PROGRESS.md`.
+Previous pushed checkpoint: `b83ad212b697e50d9e9cb17a6528330552f408aa` (complete T02 foundations). T02A: `a829c49d837ac3e412963c45a6d22c0e67389453`. Earlier publication/database checkpoint: `a6b415e89cfe3b438f8f80356b91fcfa89b2215f`. T01: `9a82eab7b88bea8d6b5da5d29da92dd7f7735daf`. Initial checkpoint: `5345518b49df01c7f10caf1b4fd696bd61b3141f`. Draft PR: https://github.com/vasudevansundarababu-dev/adi-anvil/pull/16. Current checkpoint ID: `git log -1 --format=%H -- BENCHMARK-PROGRESS.md`.
 
 ## Completed tasks and focused results
 
@@ -44,7 +44,8 @@ Previous pushed checkpoint: `a829c49d837ac3e412963c45a6d22c0e67389453` (T02A pri
 - Publication guard completed: one-line token-boundary correction avoids `task-readiness` false positives; actual scanner CLI in real temporary Git repositories still detects token shapes/forbidden private paths without printing values. New scanner tests3/3; combined focused backend set108/108; repository scan no findings. No mocks.
 - T02A complete: additive039/040 + wrappers; private receipt/append-only assignments/revocations/evaluator bindings/fenced-job inputs; separate owner-only content-addressed vault; generic store/read/HTTP deny private classes; ordinary worker excludes benchmark job kinds. All18 real SQL/HTTP/concurrency/filesystem checks pass; combined focused backend126/126. Migration repeat pass. Source hashes/commands and limits in `t02a-checks.json` / `t02a-source.sha256`.
 - T02B complete: exact typed membership/qualification/comparison/cell/attempt/evaluator-call/criterion/score/review/spend/capacity/dispatch relationships in041. Separate immutable window ownership042 prevents legacy/benchmark reuse in both orders and actual simultaneous transactions without late finance row-lock inversion. New9 real DB tests pass; real DB total27; focused backend135/135; migration repeat at042 passes. See `t02b-checks.json` and source hashes. These are persistence foundations, not implemented scheduling/grading/admission.
-- Next T03: bounded streaming archive intake, strict member/file integrity validation, private original retention, exact-byte receipt idempotency/conflicts and safe status/error API. Tests first, legacy buffering/intake unchanged. No source intake/compilation/execution endpoint exists at this checkpoint.
+- T03A verified: new gzip/canonical USTAR regular-only incremental inspector, no extraction/execution; strict member/hash/size/header/alias/trailer checks, bounded gzip metadata complexity. Explicit conservative new format policy (GNU/PAX/directory headers unsupported) recorded in `t03a-checks.json`, not a partner compatibility claim. Private vault stage accepts streams in64KiB chunks. New26 archive tests pass; combined focused167 including old6 middleware checks and27 DB tests.
+- T03B next: narrow raw streaming HTTP route (no legacy buffers enlarged), private spool/quota/disconnect behavior, immutable exact-byte receipts/conflicts, separate original/canonical metadata and safe status/error API. T03 NOT complete; no HTTP intake/compilation/execution endpoint yet. Tests first; all new original archives stay private.
 - Evaluator DB role is NOLOGIN/no bypass/no memberships. A later approved service identity/login/credential/mount scope remains unprovisioned; job-scoped SQL tests do not prove container G2 qualification. No private root mounted to an application/ordinary worker in this runtime. Stage/hashes precede DB row locks; binding phase is SQL-only. Private root must be explicitly configured and disjoint from generic artifact root; no default/fallback.
 - Routine contract choices: ASCII canonical payload paths (Unicode content is supported), bounded integer point profile, UTC export seconds, no implied signature-to-execution/rights authority. Unsigned fixtures stay quarantined; image/evaluator metadata stays unqualified/unreviewed.
 - T04–T10 follow dependency/qualification gates. Do not claim native/Docker/provider behavior without observing it.

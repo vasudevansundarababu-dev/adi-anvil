@@ -2,11 +2,13 @@
 
 import fcntl
 import hashlib
+import io
 import os
 import stat
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from typing import BinaryIO
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -61,14 +63,17 @@ class PreparedPrivate:
 def stage_private(
     project, data: bytes, classification: str, mime="application/octet-stream"
 ) -> PreparedPrivate:
+    return stage_private_stream(project, io.BytesIO(data), classification, mime)
+
+
+def stage_private_stream(
+    project, source: BinaryIO, classification: str, mime="application/octet-stream"
+) -> PreparedPrivate:
     if classification not in PRIVATE_CLASSES:
         raise ValueError("Expected benchmark private access class")
     project = str(UUID(str(project)))
-    if len(data) > 500 * 1024 * 1024:
-        raise ValueError("Private object exceeds limit")
-    digest = hashlib.sha256(data).hexdigest()
     folder = _folder(vault_root(), project, classification)
-    path = folder / digest
+    digest, byte_size = hashlib.sha256(), 0
     descriptor = os.open(folder / ".write.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
     with os.fdopen(descriptor, "rb+") as lock:
         info = os.fstat(lock.fileno())
@@ -79,9 +84,16 @@ def stage_private(
         with tempfile.NamedTemporaryFile(dir=folder, prefix=".staging-", delete=False) as stream:
             temporary = Path(stream.name)
             try:
-                stream.write(data)
+                while chunk := source.read(65536):
+                    byte_size += len(chunk)
+                    if byte_size > 500 * 1024 * 1024:
+                        raise ValueError("Private object exceeds limit")
+                    digest.update(chunk)
+                    stream.write(chunk)
                 stream.flush()
                 os.fsync(stream.fileno())
+                hexadecimal = digest.hexdigest()
+                path = folder / hexadecimal
                 try:
                     os.link(temporary, path, follow_symlinks=False)
                 except FileExistsError:
@@ -93,9 +105,13 @@ def stage_private(
                             or info.st_nlink != 1
                             or info.st_uid != os.geteuid()
                             or info.st_mode & 0o077
-                            or info.st_size != len(data)
-                            or existing.read() != data
+                            or info.st_size != byte_size
                         ):
+                            raise HTTPException(409, "Private object integrity mismatch")
+                        old_hash = hashlib.sha256()
+                        while chunk := existing.read(65536):
+                            old_hash.update(chunk)
+                        if old_hash.hexdigest() != hexadecimal:
                             raise HTTPException(409, "Private object integrity mismatch")
             finally:
                 temporary.unlink()
@@ -108,9 +124,9 @@ def stage_private(
         uid(),
         project,
         classification,
-        digest,
-        len(data),
-        f"benchmark-vault/{project}/{classification}/{digest}",
+        hexadecimal,
+        byte_size,
+        f"benchmark-vault/{project}/{classification}/{hexadecimal}",
         mime,
     )
 
