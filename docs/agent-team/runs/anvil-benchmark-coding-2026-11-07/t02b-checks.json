@@ -1,0 +1,35 @@
+{
+  "task": "T02",
+  "status": "canonical private persistence/access foundation complete for subsequent Coding stages",
+  "parent_checkpoint": "a829c49d837ac3e412963c45a6d22c0e67389453",
+  "observed_at": "2026-11-07T19:14:54.498641+00:00",
+  "new_subtask": "T02B canonical relationships and exclusive window ownership",
+  "migration_head": "042",
+  "new_real_database_tests": 9,
+  "real_database_tests_total": 27,
+  "focused_backend_total": 135,
+  "result": "all passed; existing Authlib warning only",
+  "tests": [
+    "FORCE RLS/no ordinary worker grants on all typed tables",
+    "canonical runs/protocol identity and revision-kind checks",
+    "composite project and comparison predecessor FKs",
+    "immutable bindings/score projections",
+    "separate candidate/judge windows",
+    "bidirectional legacy/benchmark window exclusivity",
+    "simultaneous legacy-vs-benchmark claim commits exactly one ownership"
+  ],
+  "implementation_notes": [
+    "Resources/revisions/runs/workspace groups and financial ledger reused; no parallel editable catalog or monetary counter.",
+    "New window-ownership registry serializes via unique index rather than acquiring a late finance row lock; ownership survives closure.",
+    "Candidate capacity has three active slot indexes, monotonic generation identity, held/unknown quarantine and immutable fence binding. Actual scheduling/admission not implemented yet.",
+    "Outcome/evaluator/criterion/score/review/dispatch tables are persistence only; no claim that grading or provider evaluation is implemented."
+  ],
+  "not_run": [
+    "independent QA/full regression",
+    "native container qualification",
+    "paid/live/model/judge evaluation",
+    "deployment"
+  ],
+  "input_integrity": "all15 approved design hashes and historical001\u2013038 unchanged",
+  "next": "T03 bounded streaming/archive integrity/receipt APIs, tests first; no private mounts to ordinary worker"
+}
