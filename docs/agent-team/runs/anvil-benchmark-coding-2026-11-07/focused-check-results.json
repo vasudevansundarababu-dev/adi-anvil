@@ -1,0 +1,26 @@
+{
+  "focused_checks": [
+    {
+      "command": "node --test tests/provider_failure.mjs tests/readiness_catalog.mjs",
+      "exit_code": 0,
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "classification": "Focused Coding-stage historical readiness regressions; not full QA or benchmark acceptance",
+      "evidence": "focused-readiness-check.tap"
+    },
+    {
+      "command": "sha256sum -c ../historical-run/finalization-evidence/code-manifest-r6.sha256",
+      "working_directory": "/workspace/anvil-recovered/recovery-evidence/r6-original/verified-source",
+      "entries_verified": 30,
+      "failed": 0,
+      "classification": "Source integrity check, not an application test"
+    }
+  ],
+  "backend_tests": "Not run: supported environment/dependencies absent",
+  "builds": "Not run: locked backend/frontend setup not installed",
+  "full_qa": "Not invoked; requires human review first",
+  "product_provider_calls": false,
+  "deployment": false,
+  "initial_check_transport_note": "First terminal invocation lost its shell due to a top-level exit; not relied on. Focused Node check rerun successfully with captured reliable exit status."
+}

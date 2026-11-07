@@ -1,0 +1,69 @@
+[
+  {
+    "name": "branch",
+    "http_status": 200,
+    "data": {
+      "name": "codex/anvil-agent-team-2026-11-06",
+      "sha": "8cdc8a84784c7ae52d7bbb88f36193b387aedb60",
+      "protected": false
+    }
+  },
+  {
+    "name": "workflows",
+    "http_status": 200,
+    "data": {
+      "total_count": 2,
+      "workflows": [
+        {
+          "id": 404123255,
+          "node_id": "W_kwDOVfrSks4YFm53",
+          "name": "Local fixture verification",
+          "path": ".github/workflows/local-fixture.yml",
+          "state": "active",
+          "created_at": "2026-11-01T22:23:44.000-06:00",
+          "updated_at": "2026-11-01T22:23:44.000-06:00",
+          "url": "https://api.github.com/repos/vasudevansundarababu-dev/adi-anvil/actions/workflows/404123255",
+          "html_url": "https://github.com/vasudevansundarababu-dev/adi-anvil/blob/codex/anvil-modern-workspace/.github/workflows/local-fixture.yml",
+          "badge_url": "https://github.com/vasudevansundarababu-dev/adi-anvil/workflows/Local%20fixture%20verification/badge.svg"
+        },
+        {
+          "id": 404122880,
+          "node_id": "W_kwDOVfrSks4YFm0A",
+          "name": "Dependabot Updates",
+          "path": "dynamic/dependabot/dependabot-updates",
+          "state": "active",
+          "created_at": "2026-11-01T22:23:01.000-06:00",
+          "updated_at": "2026-11-01T22:23:01.000-06:00",
+          "url": "https://api.github.com/repos/vasudevansundarababu-dev/adi-anvil/actions/workflows/404122880",
+          "html_url": "https://github.com/vasudevansundarababu-dev/adi-anvil/actions/workflows/dependabot/dependabot-updates",
+          "badge_url": "https://github.com/vasudevansundarababu-dev/adi-anvil/actions/workflows/dependabot/dependabot-updates/badge.svg"
+        }
+      ]
+    }
+  },
+  {
+    "name": "hooks",
+    "http_status": 200,
+    "data": []
+  },
+  {
+    "name": "deployments",
+    "http_status": 200,
+    "data": []
+  },
+  {
+    "name": "open_prs",
+    "http_status": 200,
+    "data": []
+  },
+  {
+    "name": "repository",
+    "http_status": 200,
+    "data": {
+      "full_name": "vasudevansundarababu-dev/adi-anvil",
+      "default_branch": "codex/anvil-modern-workspace",
+      "private": false,
+      "archived": false
+    }
+  }
+]

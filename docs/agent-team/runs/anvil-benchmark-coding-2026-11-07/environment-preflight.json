@@ -1,0 +1,19 @@
+{
+  "observed_at": "2026-11-07T18:24:00.768656+00:00",
+  "working_root": "/workspace/anvil-recovered",
+  "backend_requires": "Python >=3.12,<3.13",
+  "available_python": "Python 3.13.15",
+  "uv_version": "uv 0.13.5 (x86_64-unknown-linux-musl)",
+  "node_version": "v24.22.1",
+  "pnpm_available": false,
+  "backend_venv_present": false,
+  "modules": {
+    "pytest": false,
+    "pydantic": false,
+    "cryptography": false,
+    "fastapi": false,
+    "psycopg": false
+  },
+  "dependency_installation_performed": false,
+  "status": "Blocked pending confirmation of isolated dependency installation; do not borrow old/Praxis credentials or environments"
+}

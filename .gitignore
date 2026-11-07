@@ -25,3 +25,10 @@ artifacts/morning-demo/
 .DS_Store
 
 # Commit original synthetic fixtures, source, specifications and lockfiles.
+
+/recovery-evidence/*
+!/recovery-evidence/r6-original/
+/recovery-evidence/r6-original/*
+!/recovery-evidence/r6-original/release-r6.patch
+!/recovery-evidence/r6-original/historical-run/
+/docs/agent-team/runs/**/*.tap

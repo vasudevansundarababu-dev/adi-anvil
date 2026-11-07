@@ -1,0 +1,33 @@
+{
+  "release_commit_recovered": "15e35f12725a89be6e507b2eb73d4433e666dd76",
+  "release_tree_verified": "18fca788310f91a35a54df39392a37c026ae16b1",
+  "base_parent": "8cdc8a84784c7ae52d7bbb88f36193b387aedb60",
+  "files_verified_against_release_tree": 504,
+  "additional_historical_files_restored": [
+    "BUILD-STATUS.md",
+    "contracts/readiness/reason-codes.v1.json",
+    "services/backend/tests/integration/conftest.py",
+    "services/backend/tests/integration/journey_support.py",
+    "services/backend/tests/integration/test_api_security.py",
+    "services/backend/tests/integration/test_budget.py",
+    "services/backend/tests/integration/test_factory.py",
+    "services/backend/tests/integration/test_finalization_concurrency.py",
+    "services/backend/tests/integration/test_import_pipeline.py",
+    "services/backend/tests/integration/test_isolation.py",
+    "services/backend/tests/integration/test_task_imports.py",
+    "services/backend/tests/integration/test_worker_failures.py",
+    "services/backend/tests/integration/test_workspace_access.py",
+    "services/backend/tests/integration/test_workspace_diagnostics.py",
+    "services/backend/tests/integration/test_workspace_editor.py",
+    "services/backend/tests/integration/test_workspace_execution.py",
+    "services/backend/tests/unit/test_readiness_reason_codes.py",
+    "tests/e2e/golden-executable-import.spec.ts",
+    "tests/e2e/workspace-preparation.spec.ts",
+    "tests/e2e/workspace-task-pages.spec.ts",
+    "tests/readiness_catalog.mjs"
+  ],
+  "new_commits_created": false,
+  "branch_head_unchanged": "8cdc8a84784c7ae52d7bbb88f36193b387aedb60",
+  "source_origin": "Original release patch and compressed Git commit object read through old Anvil sandbox file GET; no old runtime command, credential file or cloud access",
+  "all_264_build_archive_files_match": true
+}

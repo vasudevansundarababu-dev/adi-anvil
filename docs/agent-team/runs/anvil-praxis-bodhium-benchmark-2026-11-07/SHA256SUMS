@@ -1,0 +1,16 @@
+44196cae04b7a399fb70da8d4577345b2cf95ee6a14daa41f3d8c8f2b4921cbc  docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/approved-specification.txt
+3c02f95ba28a03240a1bc8ae375d024b2d77cb4e33a6f601007cbaf58b20d07c  docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/approval-record.md
+e7a471372a4fb103b1aba9423285f2a3439977a655a39dd3570f2aacc1bdf694  docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/recovery-report.md
+f8060cf3355b629e7990ca5cd2db568355e49ac84f8d44d3a5d3753db60ba603  docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/recovery-inventory.json
+cedfb20d5b3160dcfee2e91f729e237063e16c714eb70dbef52cc7c59e173031  docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/production-source-manifest.jsonl
+c200d135bd9dbe171b63e13833349a6486d09adff17c5c27daf870d46c6cf68a  docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/architecture.md
+6486299f60ec6f58f2acf21b02137cff5402eb4a13a6df01701a30f9b2c58668  docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/contract-design.md
+2ca9cb927254ea2450da4b2c63813993e24fb17da4bc575e52a99fbaf77db673  docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/threat-model.md
+b8608c8225231c9a0581ed32959dbac8ad18aa56ce970bae49ef093483bc209f  docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/requirements-to-test.md
+1cdf87e4d48bc483a2e5116509e83d07b35f2652b95c032635b98bbe0e3f9749  docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/implementation-plan.md
+ecdc1f430664d342ae34fce68c8de4af1c356b0b08b57a87e64f787848f87069  docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/verification-record.json
+d193e6ce2fc9c57ce7d081a2c37446dc5e5916260b6072819ee88ff9761caedb  docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/execution-evidence-index.json
+3463919dbb1aace19c9d18ae1aa01fd5d118c17b4883c69d7aea335e8f7b04df  docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/handoff.md
+17f34a7831f029782ee3b28b5b6944ac7be82d1899ed29f476e5b7580d27b8ec  recovery-evidence/inputs/Anvil-Benchmark-Architecture-Planning-Handoff.txt
+5679da027619c50f4a2418514805c2b38730888ce45fa2ed3c7a4f42ec29d8fe  recovery-evidence/inputs/anvil-r6-cloud-build-source.tgz
+8e1ae48cccac03166098fa55d0274eaf713466412addbe29b2f8522f16bbedf9  docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/artifact-index.json

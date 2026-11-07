@@ -1,0 +1,24 @@
+{
+  "observed_at": "2026-11-07T18:19:20.850958+00:00",
+  "queries": [
+    {
+      "path": "deployment-evidence/manifest-r6.json",
+      "http_status": 404
+    },
+    {
+      "path": "deployment-evidence/source-manifest-r6.json",
+      "http_status": 404
+    },
+    {
+      "path": "manifest-r6.json",
+      "http_status": 404
+    },
+    {
+      "path": "handoff.md",
+      "http_status": 200,
+      "bytes": 3355,
+      "sha256": "f9a43bed4d75a8e0d58ac87445e96cb29e51ffc9350cc56ca4c3464d5af8e581",
+      "expected_r6_manifest_match": false
+    }
+  ]
+}
