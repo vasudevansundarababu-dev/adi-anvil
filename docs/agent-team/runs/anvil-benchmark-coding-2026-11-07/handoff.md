@@ -1,3 +1,39 @@
+# Current interim Coding handoff — restricted native scope passed, T04 still incomplete
+
+- Work ID: `anvil-benchmark-coding-2026-11-07`; Anvil-only `/workspace/anvil-recovered`, existing branch `codex/anvil-agent-team-2026-11-06` and draft PR16.
+- Product source: `fbfcbb868256b809bae252709dccb2eef3900e66`, tree `b04544b27ace0c0d6b4adf9e0b29e4576b02b382`. The following evidence-only checkpoint does not change product source. Recovered original r6 remains `15e35f12725a89be6e507b2eb73d4433e666dd76` / `18fca788310f91a35a54df39392a37c026ae16b1`.
+- Actual authority: user **Yes** to9f2dcc3 handoff; append-only `human_restricted_harbor_adapter_plan_approval`. No retroactive approval of original Alpine probe effect.
+- From role / next party: Coding → Product Owner code review, **not QA**. Decision: **PENDING HUMAN REVIEW; T04 overall incomplete**.
+
+## Completed bounded scope and observed evidence
+
+Implemented a pinned Harbor0.25 static-none adapter: no implicit image pulls/builds/kernel probes, no deletion, no stale-session reuse; explicit dedicated socket/empty private client config. Separate actor/evaluator, actor-private mount checks, real stdio tool/schema validation and bounded output snapshots. Candidate is stopped before host sealing and evaluator startup. Compiler version1.0.1 uses correct task-relative binds and binds all private rules/calibration digests; no legacy format/API/limit or source fixture change.
+
+Passed final focused Coding checks: **nine real native trials**, three stale-package/private-data negatives, four actual memory/PID/stdio/tree-timeout tests, seven adapter guards, existing217 backend regressions and12 Node policy checks. No final failure/skip. Positive fictional points24/6/51, all six empty/guardrail cases0; no model or Bodhium performance claim. Native receipts use in-memory test signing keys, not an installed production trust root. All18 final matrix containers stopped/retained; no volume/container deletion. G1..G5 coverage is explicitly mapped to approved architecture definitions in `t04b-checks.json`.
+
+Exact sources/commands/results: `t04b-source.sha256`, `t04b-commands.md`, `t04b-checks.json`. Source commit/tree, package/manifest/private-file/compiler/adapter/qualification/seal digests and native receipt hashes are bound there. Raw logs/input packages/runtime tokens remain ignored/local. Current `artifact-index.json` / `SHA256SUMS` bind this evidence folder; historical task indexes still refer to their respective recorded revisions. Original15 approved inputs are verified unchanged.
+
+## Failed attempts, scope exceptions and operational caveats
+
+Original stock SDK Alpine pull/`--rm` violation remains in `t04-native-blocker.json`, not erased or approved. During this continuation an early prebuilt debug bind resolved unset `CONTEXT_DIR` to `/actor/runtime_pack/FX-002`, outside the owned trial; tools were missing and the candidate was stopped/retained. No user data/key was copied and no cleanup there was attempted. Final task-relative binds require an existing in-trial directory **before** Compose startup. Compose warnings/JSON parsing, absent evaluator cwd and missing tmpfs output capture were also caught and fixed before final passes.
+
+A top-level shell exit reset the terminal and dedicated daemon, losing only the owned ephemeral test DB. Same isolated daemon/container restarted, own test roles/schema replayed to043 without credential bootstrap/deletion. Existing restored vault mode2770 correctly failed22 regression checks; no security guard was weakened or old vault changed. A fresh owner-only test vault passed217/217. Retained Docker events are a bounded sample (256 events), **not a complete audit window**; no pull/build/delete/destroy in that sample. Command guards and scoped code paths are the policy mechanism. All earlier failures are listed in `t04b-checks.json`; no shared/Praxis/Mac/deployed service or site-packages/socket permissions changed.
+
+## Remaining work and proposed next boundary
+
+**Not implemented:** remaining T04 durable build/qualification hooks, persisted gate evidence/staleness and current-policy product admission. Local runner receipts cannot grant product readiness. T05–T10 remain unstarted. No broad imported-image/evaluator/network qualification, actual Bodhium data/semantic exhibits, judge/model IDs/budget/rights invented. No QA/full acceptance/browser/model/judge calls/deployment/merge.
+
+Proposed next bounded Coding work for review: remaining T04 durable pipeline and truthful blocked/stale states, preserving all isolation/approval gates, before dependent features. Do not start a QA/DevOps agent or mark PR ready automatically.
+
+- Human final code-review / next-scope approval: **not supplied**.
+- QA/deployment/paid-call authority: **not supplied**.
+
+_Prepared by OpenHands, an AI agent, on behalf of the Product Owner; this is not human approval._
+
+---
+
+## Earlier handoffs — superseded status, historical bytes retained
+
 # Current interim Coding handoff — T04A passed; native SDK failure requires plan review
 
 Product source checkpoint `6060fd8ab2b2c174b0bee837634089139dd696ea` is pushed to existing draft PR16. The current user `Ok` approved the bounded native scope proposed in the cb29dbc handoff; actual quote is in append-only `approval-log.jsonl`. That prerequisite is resolved, not being requested again.

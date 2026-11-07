@@ -1,0 +1,736 @@
+{
+  "task": "T04B restricted adapter and native fictional qualification",
+  "stage": "Focused Coding conformance only; not QA/product readiness/full T04",
+  "observed_at": "2026-11-07T22:08:26.051380+00:00",
+  "product_source_commit": "fbfcbb868256b809bae252709dccb2eef3900e66",
+  "product_source_tree": "b04544b27ace0c0d6b4adf9e0b29e4576b02b382",
+  "human_authority": "approval-log.jsonl human_restricted_harbor_adapter_plan_approval; actual Yes to 9f2dcc3 handoff",
+  "results": {
+    "native_matrix_passed": 9,
+    "pre_dispatch_stale_digest_membership_checks_passed": 3,
+    "actual_resource_stdin_checks_passed": 4,
+    "adapter_unit_checks_passed": 7,
+    "existing_focused_backend_regressions_passed": 217,
+    "existing_node_policy_checks_passed": 12,
+    "final_failed": 0,
+    "final_skipped": 0,
+    "all_18_matrix_containers_stopped_and_retained": true
+  },
+  "runtime": {
+    "harbor": "0.25.0",
+    "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+    "daemon": "dedicated .local/benchmark-docker/docker.sock only",
+    "model_judge_provider_calls": 0,
+    "site_packages_or_shared_permissions_changed": false,
+    "containers_deleted": false
+  },
+  "gates": {
+    "G1": "Integrity/completeness: existing strict signature/file/criterion-max tests pass; all nine source/hash-bound native profiles on exact preloaded image, all81 fictional criteria/24-6-51 maxima exercised. Ephemeral test signer is NOT installed trust authority.",
+    "G2": "Actual separate actor/evaluator with private canary/access attempts; no evaluator assets/log-verifier/socket/key/DB mount or env in actor; actor stopped before separate evaluation. Fictional static-none profile only.",
+    "G3": "Observed effective UID10001, read-only root, cap-drop/no-new-privileges, no metadata/public egress and no Docker socket; exact cpu/memory/pids cgroups.",
+    "G4": "Exact supplied-image stdio schema/digest and real tool calls24/6/51; actual cgroup memory OOM/PID exhaustion, oversized/timed-out stdio and whole owned process-tree shutdown; containers retained.",
+    "G5": "Actual fresh read-only inputs, empty output scratch and isolated home/tmpfs; bounded regular-file capture, actor stopped then immutable sealed outputs, hash checked by separate evaluator. Existing link/nonregular/size/tamper negatives pass. Six empty/guardrail cases score0; fixture machinery only."
+  },
+  "native_receipts": [
+    {
+      "adapter_sha256": "dff6a86c5b0e1de95e5438309c724f2395acf80d8d48d79ae9012b712652d293",
+      "binding_sha256": "51d456e0ec3593858ca79346531d094210c6e7c86f1b5c560d1cbde657ba3bea",
+      "candidate_container": "4d06cd59b75994dcf01f19e5dbfdb62a13a21c64c33ca3688d77e2e91beeac3b",
+      "candidate_mounts_private": false,
+      "candidate_stopped_before_evaluation": true,
+      "compiled_archive_sha256": "75ced6b5b3fba252ed7764bec2734b5f3f751459be3f4f841a795e9ed2a1c6fa",
+      "compiler_source_sha256": "0848f50fda8b1d6772f8bba067dc580cbbe4c1bf2c0a72dac56b8ab953609112",
+      "control_checks": {
+        "fresh_actor": true,
+        "non_root_readonly_no_egress_cgroups": true
+      },
+      "denied_tool_calls": 0,
+      "evaluator_container": "e41bfeaf6fd0302f909f53866e98ae0e7fcb568053aa596862b579ec13ece7fe",
+      "evaluator_mounts_actor": false,
+      "forbidden_access_attempts_denied": 4,
+      "harbor_version": "0.25.0",
+      "manifest_sha256": "0ba5dcced76a7865486a302d11976229642b254054ce717f9acd81ecc262e290",
+      "mode": "empty",
+      "origin": "original_synthetic_software_conformance",
+      "points": 0,
+      "possible_points": 24,
+      "private_file_bindings": [
+        {
+          "byte_size": 1935,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-001/rules.json",
+          "sha256": "fb55a6eef47308734433253814e7107f2cfb5eee7cd2d04439d6fd15da1b315f",
+          "task_id": "FX-001",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 255,
+          "media_type": "text/plain",
+          "path": "eval_pack/FX-001/evaluator.py",
+          "sha256": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+          "task_id": "FX-001",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 222,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-001/policy.json",
+          "sha256": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+          "task_id": "FX-001",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 1223,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-001/calibration.json",
+          "sha256": "a2158c255d12773ee34db904d302e8f5576616309a19b1717a55bcba1f775008",
+          "task_id": "FX-001",
+          "visibility": "evaluation_private"
+        }
+      ],
+      "provider_calls": 0,
+      "qualification_sha256": "771a582aab0062b50e53d73669d13c79b5dec6d52b31c295a1dcb4b9d4a11fcb",
+      "seal_sha256": "dd90483464bd25900f0e92653010c957cbfca47a51595b2f35784bfad98d3ff4",
+      "source_authenticity": "isolated_test_signer_not_product_authority",
+      "task_id": "FX-001",
+      "tool_calls": 0,
+      "local_receipt_path": ".local/benchmark-native/d3005ed8439d45c08ce6983b2f1301a7/native-receipt.json",
+      "receipt_sha256": "a804c8b641a71bfb7da6d2c0add6ccbb7c7a21996dda6429a7bf48143e4bbbdf"
+    },
+    {
+      "adapter_sha256": "dff6a86c5b0e1de95e5438309c724f2395acf80d8d48d79ae9012b712652d293",
+      "binding_sha256": "51d456e0ec3593858ca79346531d094210c6e7c86f1b5c560d1cbde657ba3bea",
+      "candidate_container": "fa54e24e7b1081b22476fad7b4ccc22e01f334ca8cc77b9c574f51b7a0ba49d6",
+      "candidate_mounts_private": false,
+      "candidate_stopped_before_evaluation": true,
+      "compiled_archive_sha256": "75ced6b5b3fba252ed7764bec2734b5f3f751459be3f4f841a795e9ed2a1c6fa",
+      "compiler_source_sha256": "0848f50fda8b1d6772f8bba067dc580cbbe4c1bf2c0a72dac56b8ab953609112",
+      "control_checks": {
+        "fresh_actor": true,
+        "non_root_readonly_no_egress_cgroups": true
+      },
+      "denied_tool_calls": 1,
+      "evaluator_container": "5efde985af5909da39c743476a94576fcf6165f1277ef926aa339170118ac966",
+      "evaluator_mounts_actor": false,
+      "forbidden_access_attempts_denied": 4,
+      "harbor_version": "0.25.0",
+      "manifest_sha256": "0ba5dcced76a7865486a302d11976229642b254054ce717f9acd81ecc262e290",
+      "mode": "guardrail",
+      "origin": "original_synthetic_software_conformance",
+      "points": 0,
+      "possible_points": 24,
+      "private_file_bindings": [
+        {
+          "byte_size": 1935,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-001/rules.json",
+          "sha256": "fb55a6eef47308734433253814e7107f2cfb5eee7cd2d04439d6fd15da1b315f",
+          "task_id": "FX-001",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 255,
+          "media_type": "text/plain",
+          "path": "eval_pack/FX-001/evaluator.py",
+          "sha256": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+          "task_id": "FX-001",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 222,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-001/policy.json",
+          "sha256": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+          "task_id": "FX-001",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 1223,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-001/calibration.json",
+          "sha256": "a2158c255d12773ee34db904d302e8f5576616309a19b1717a55bcba1f775008",
+          "task_id": "FX-001",
+          "visibility": "evaluation_private"
+        }
+      ],
+      "provider_calls": 0,
+      "qualification_sha256": "771a582aab0062b50e53d73669d13c79b5dec6d52b31c295a1dcb4b9d4a11fcb",
+      "seal_sha256": "c42bd556afbb7e4e87b39e67d7a2c774cd081213eaeace5a359b2a3b4424e56a",
+      "source_authenticity": "isolated_test_signer_not_product_authority",
+      "task_id": "FX-001",
+      "tool_calls": 0,
+      "local_receipt_path": ".local/benchmark-native/4cc0d840544e481683953dfd5839540b/native-receipt.json",
+      "receipt_sha256": "e63fdacc3f843a4022bbf5dbbcc6e91f1d03db215a0cab27ed9bb045f6be504f"
+    },
+    {
+      "adapter_sha256": "dff6a86c5b0e1de95e5438309c724f2395acf80d8d48d79ae9012b712652d293",
+      "binding_sha256": "51d456e0ec3593858ca79346531d094210c6e7c86f1b5c560d1cbde657ba3bea",
+      "candidate_container": "2b772ce2f35a8873f9938d1554bebd64ce5c0065a1ce37a23c25d6a82d974975",
+      "candidate_mounts_private": false,
+      "candidate_stopped_before_evaluation": true,
+      "compiled_archive_sha256": "75ced6b5b3fba252ed7764bec2734b5f3f751459be3f4f841a795e9ed2a1c6fa",
+      "compiler_source_sha256": "0848f50fda8b1d6772f8bba067dc580cbbe4c1bf2c0a72dac56b8ab953609112",
+      "control_checks": {
+        "fresh_actor": true,
+        "non_root_readonly_no_egress_cgroups": true
+      },
+      "denied_tool_calls": 0,
+      "evaluator_container": "4e82ff5c0b581ff6e6d081419e799b733a0339612f8fda42ca82ce35a2c33767",
+      "evaluator_mounts_actor": false,
+      "forbidden_access_attempts_denied": 4,
+      "harbor_version": "0.25.0",
+      "manifest_sha256": "0ba5dcced76a7865486a302d11976229642b254054ce717f9acd81ecc262e290",
+      "mode": "positive",
+      "origin": "original_synthetic_software_conformance",
+      "points": 24,
+      "possible_points": 24,
+      "private_file_bindings": [
+        {
+          "byte_size": 1935,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-001/rules.json",
+          "sha256": "fb55a6eef47308734433253814e7107f2cfb5eee7cd2d04439d6fd15da1b315f",
+          "task_id": "FX-001",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 255,
+          "media_type": "text/plain",
+          "path": "eval_pack/FX-001/evaluator.py",
+          "sha256": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+          "task_id": "FX-001",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 222,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-001/policy.json",
+          "sha256": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+          "task_id": "FX-001",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 1223,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-001/calibration.json",
+          "sha256": "a2158c255d12773ee34db904d302e8f5576616309a19b1717a55bcba1f775008",
+          "task_id": "FX-001",
+          "visibility": "evaluation_private"
+        }
+      ],
+      "provider_calls": 0,
+      "qualification_sha256": "771a582aab0062b50e53d73669d13c79b5dec6d52b31c295a1dcb4b9d4a11fcb",
+      "seal_sha256": "93211106d0da8b9b5ce85cb1a3958812840bf87fe6687b418c960f781ee209c0",
+      "source_authenticity": "isolated_test_signer_not_product_authority",
+      "task_id": "FX-001",
+      "tool_calls": 24,
+      "local_receipt_path": ".local/benchmark-native/cf18eb92e33b444391e5d7a186aa7552/native-receipt.json",
+      "receipt_sha256": "7a9f6f2b3b96b66aac8c25ba46294bd033f31a6b37a3cfe1b6fb0477034f28c9"
+    },
+    {
+      "adapter_sha256": "dff6a86c5b0e1de95e5438309c724f2395acf80d8d48d79ae9012b712652d293",
+      "binding_sha256": "007c0d5779e9ee36703e4dea69e340a109e862e9ba24e8eb860c7cfe7874e851",
+      "candidate_container": "5c02d58baade9f4e716c5c2037638aa09f02c9dd96c35c525aaa22f06555eddc",
+      "candidate_mounts_private": false,
+      "candidate_stopped_before_evaluation": true,
+      "compiled_archive_sha256": "705060eea60c3b2bc4d396f61d28f67f3d06011879f2b240099d34cb35af4434",
+      "compiler_source_sha256": "0848f50fda8b1d6772f8bba067dc580cbbe4c1bf2c0a72dac56b8ab953609112",
+      "control_checks": {
+        "fresh_actor": true,
+        "non_root_readonly_no_egress_cgroups": true
+      },
+      "denied_tool_calls": 0,
+      "evaluator_container": "9c2d69dd2200c85505bdc9f2e1e9b30aa4ea23401f976f306b6101e6a5adbf7e",
+      "evaluator_mounts_actor": false,
+      "forbidden_access_attempts_denied": 4,
+      "harbor_version": "0.25.0",
+      "manifest_sha256": "0ba5dcced76a7865486a302d11976229642b254054ce717f9acd81ecc262e290",
+      "mode": "empty",
+      "origin": "original_synthetic_software_conformance",
+      "points": 0,
+      "possible_points": 6,
+      "private_file_bindings": [
+        {
+          "byte_size": 480,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-002/rules.json",
+          "sha256": "b4b4753f4c77cd2dd2964eb5437777f2f9f70d73c851f8eca14b3697686940df",
+          "task_id": "FX-002",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 255,
+          "media_type": "text/plain",
+          "path": "eval_pack/FX-002/evaluator.py",
+          "sha256": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+          "task_id": "FX-002",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 222,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-002/policy.json",
+          "sha256": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+          "task_id": "FX-002",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 488,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-002/calibration.json",
+          "sha256": "0863a6ec94c488538d684a7d71a05f8c9bcb204713a2ee0e7e3ada2d0a20bf34",
+          "task_id": "FX-002",
+          "visibility": "evaluation_private"
+        }
+      ],
+      "provider_calls": 0,
+      "qualification_sha256": "771a582aab0062b50e53d73669d13c79b5dec6d52b31c295a1dcb4b9d4a11fcb",
+      "seal_sha256": "dd90483464bd25900f0e92653010c957cbfca47a51595b2f35784bfad98d3ff4",
+      "source_authenticity": "isolated_test_signer_not_product_authority",
+      "task_id": "FX-002",
+      "tool_calls": 0,
+      "local_receipt_path": ".local/benchmark-native/fbeb0f0ba0f84213be6e080e45d64ba3/native-receipt.json",
+      "receipt_sha256": "027edca5ddef17596a12d0140dd52159bdb66c1a43f27ef77ea4ab58ff9deb03"
+    },
+    {
+      "adapter_sha256": "dff6a86c5b0e1de95e5438309c724f2395acf80d8d48d79ae9012b712652d293",
+      "binding_sha256": "007c0d5779e9ee36703e4dea69e340a109e862e9ba24e8eb860c7cfe7874e851",
+      "candidate_container": "0aa590c994a8d3c86ccc3b8940cc2dea5b02addafd9936d52e010719f83f3e16",
+      "candidate_mounts_private": false,
+      "candidate_stopped_before_evaluation": true,
+      "compiled_archive_sha256": "705060eea60c3b2bc4d396f61d28f67f3d06011879f2b240099d34cb35af4434",
+      "compiler_source_sha256": "0848f50fda8b1d6772f8bba067dc580cbbe4c1bf2c0a72dac56b8ab953609112",
+      "control_checks": {
+        "fresh_actor": true,
+        "non_root_readonly_no_egress_cgroups": true
+      },
+      "denied_tool_calls": 1,
+      "evaluator_container": "6c1f7def9ea7f3e78dda380b12f031256cd141ce6f770b47013fc2bae87d5f26",
+      "evaluator_mounts_actor": false,
+      "forbidden_access_attempts_denied": 4,
+      "harbor_version": "0.25.0",
+      "manifest_sha256": "0ba5dcced76a7865486a302d11976229642b254054ce717f9acd81ecc262e290",
+      "mode": "guardrail",
+      "origin": "original_synthetic_software_conformance",
+      "points": 0,
+      "possible_points": 6,
+      "private_file_bindings": [
+        {
+          "byte_size": 480,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-002/rules.json",
+          "sha256": "b4b4753f4c77cd2dd2964eb5437777f2f9f70d73c851f8eca14b3697686940df",
+          "task_id": "FX-002",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 255,
+          "media_type": "text/plain",
+          "path": "eval_pack/FX-002/evaluator.py",
+          "sha256": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+          "task_id": "FX-002",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 222,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-002/policy.json",
+          "sha256": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+          "task_id": "FX-002",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 488,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-002/calibration.json",
+          "sha256": "0863a6ec94c488538d684a7d71a05f8c9bcb204713a2ee0e7e3ada2d0a20bf34",
+          "task_id": "FX-002",
+          "visibility": "evaluation_private"
+        }
+      ],
+      "provider_calls": 0,
+      "qualification_sha256": "771a582aab0062b50e53d73669d13c79b5dec6d52b31c295a1dcb4b9d4a11fcb",
+      "seal_sha256": "e859dae8fc2043450c39478aad5c85f4bbbfb8ed53f336652b1ef4c5b90f83fa",
+      "source_authenticity": "isolated_test_signer_not_product_authority",
+      "task_id": "FX-002",
+      "tool_calls": 0,
+      "local_receipt_path": ".local/benchmark-native/fb7915aa7af54df4820bd31560c5ed56/native-receipt.json",
+      "receipt_sha256": "960008f242113e524a6d34450c65bf0f809c805bd38f805471c9d2d6736a540b"
+    },
+    {
+      "adapter_sha256": "dff6a86c5b0e1de95e5438309c724f2395acf80d8d48d79ae9012b712652d293",
+      "binding_sha256": "007c0d5779e9ee36703e4dea69e340a109e862e9ba24e8eb860c7cfe7874e851",
+      "candidate_container": "a12b2a331403caa9dacebe7101ce2bcb013a3abe82eaf4c3f9f5a70db119e629",
+      "candidate_mounts_private": false,
+      "candidate_stopped_before_evaluation": true,
+      "compiled_archive_sha256": "705060eea60c3b2bc4d396f61d28f67f3d06011879f2b240099d34cb35af4434",
+      "compiler_source_sha256": "0848f50fda8b1d6772f8bba067dc580cbbe4c1bf2c0a72dac56b8ab953609112",
+      "control_checks": {
+        "fresh_actor": true,
+        "non_root_readonly_no_egress_cgroups": true
+      },
+      "denied_tool_calls": 0,
+      "evaluator_container": "555768e02ca6967e8bd77cce61a4e7215699de2421da0f83f93470f91bf62fef",
+      "evaluator_mounts_actor": false,
+      "forbidden_access_attempts_denied": 4,
+      "harbor_version": "0.25.0",
+      "manifest_sha256": "0ba5dcced76a7865486a302d11976229642b254054ce717f9acd81ecc262e290",
+      "mode": "positive",
+      "origin": "original_synthetic_software_conformance",
+      "points": 6,
+      "possible_points": 6,
+      "private_file_bindings": [
+        {
+          "byte_size": 480,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-002/rules.json",
+          "sha256": "b4b4753f4c77cd2dd2964eb5437777f2f9f70d73c851f8eca14b3697686940df",
+          "task_id": "FX-002",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 255,
+          "media_type": "text/plain",
+          "path": "eval_pack/FX-002/evaluator.py",
+          "sha256": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+          "task_id": "FX-002",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 222,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-002/policy.json",
+          "sha256": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+          "task_id": "FX-002",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 488,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-002/calibration.json",
+          "sha256": "0863a6ec94c488538d684a7d71a05f8c9bcb204713a2ee0e7e3ada2d0a20bf34",
+          "task_id": "FX-002",
+          "visibility": "evaluation_private"
+        }
+      ],
+      "provider_calls": 0,
+      "qualification_sha256": "771a582aab0062b50e53d73669d13c79b5dec6d52b31c295a1dcb4b9d4a11fcb",
+      "seal_sha256": "da24f7fc2f9f8de54e2bb7d241a1402f85cd706a59f28bddbd91dd2e182eaa2b",
+      "source_authenticity": "isolated_test_signer_not_product_authority",
+      "task_id": "FX-002",
+      "tool_calls": 6,
+      "local_receipt_path": ".local/benchmark-native/f6abfed97bda4873b54f660f92727094/native-receipt.json",
+      "receipt_sha256": "19fecda43cb4b4ff64f00bacb71059378b06c07540a251a130a6471cc386f762"
+    },
+    {
+      "adapter_sha256": "dff6a86c5b0e1de95e5438309c724f2395acf80d8d48d79ae9012b712652d293",
+      "binding_sha256": "c421eefcf288c925d1e887f2e9705e9fd0d2abda1b8a50e4dcbe9ee7e15e12f9",
+      "candidate_container": "e76575b6297d046dedd4456244297aa5017d7cc117bcada07eef639a383c3de8",
+      "candidate_mounts_private": false,
+      "candidate_stopped_before_evaluation": true,
+      "compiled_archive_sha256": "a90689d4eded1903ec393f7323233f47ddc88c01048ec6a636bc140ff1168508",
+      "compiler_source_sha256": "0848f50fda8b1d6772f8bba067dc580cbbe4c1bf2c0a72dac56b8ab953609112",
+      "control_checks": {
+        "fresh_actor": true,
+        "non_root_readonly_no_egress_cgroups": true
+      },
+      "denied_tool_calls": 0,
+      "evaluator_container": "e54b4c3fd5a8e310460ece02e9b0d75e02b17f3831ebe7f86fa06edb293ffa2a",
+      "evaluator_mounts_actor": false,
+      "forbidden_access_attempts_denied": 4,
+      "harbor_version": "0.25.0",
+      "manifest_sha256": "0ba5dcced76a7865486a302d11976229642b254054ce717f9acd81ecc262e290",
+      "mode": "empty",
+      "origin": "original_synthetic_software_conformance",
+      "points": 0,
+      "possible_points": 51,
+      "private_file_bindings": [
+        {
+          "byte_size": 4142,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-003/rules.json",
+          "sha256": "bff5ac30f858c49965ad7b52db321798e0c97d2ee09b506a4b4dabaf68a6c8f3",
+          "task_id": "FX-003",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 255,
+          "media_type": "text/plain",
+          "path": "eval_pack/FX-003/evaluator.py",
+          "sha256": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+          "task_id": "FX-003",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 222,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-003/policy.json",
+          "sha256": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+          "task_id": "FX-003",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 2350,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-003/calibration.json",
+          "sha256": "3273db732a4aaade3cdae8831cd0e45a0dc1615888dea2899c4d0be4634f1b9f",
+          "task_id": "FX-003",
+          "visibility": "evaluation_private"
+        }
+      ],
+      "provider_calls": 0,
+      "qualification_sha256": "771a582aab0062b50e53d73669d13c79b5dec6d52b31c295a1dcb4b9d4a11fcb",
+      "seal_sha256": "dd90483464bd25900f0e92653010c957cbfca47a51595b2f35784bfad98d3ff4",
+      "source_authenticity": "isolated_test_signer_not_product_authority",
+      "task_id": "FX-003",
+      "tool_calls": 0,
+      "local_receipt_path": ".local/benchmark-native/d6c59846c8d2484a8284494b8d9ea599/native-receipt.json",
+      "receipt_sha256": "0fd72f82005d94fc9bb1f604b372e59deeeff9042b55bfad5428f26093f8d17e"
+    },
+    {
+      "adapter_sha256": "dff6a86c5b0e1de95e5438309c724f2395acf80d8d48d79ae9012b712652d293",
+      "binding_sha256": "c421eefcf288c925d1e887f2e9705e9fd0d2abda1b8a50e4dcbe9ee7e15e12f9",
+      "candidate_container": "dddbcb3a9939209c7e970d35b3957fff9c8ddd106f2fefc9d3e0057a5a783e88",
+      "candidate_mounts_private": false,
+      "candidate_stopped_before_evaluation": true,
+      "compiled_archive_sha256": "a90689d4eded1903ec393f7323233f47ddc88c01048ec6a636bc140ff1168508",
+      "compiler_source_sha256": "0848f50fda8b1d6772f8bba067dc580cbbe4c1bf2c0a72dac56b8ab953609112",
+      "control_checks": {
+        "fresh_actor": true,
+        "non_root_readonly_no_egress_cgroups": true
+      },
+      "denied_tool_calls": 1,
+      "evaluator_container": "9d69003ad87d1d47d0aea858f3b9158ef89fa5190a58c8f7bec4d6fd41ce73e5",
+      "evaluator_mounts_actor": false,
+      "forbidden_access_attempts_denied": 4,
+      "harbor_version": "0.25.0",
+      "manifest_sha256": "0ba5dcced76a7865486a302d11976229642b254054ce717f9acd81ecc262e290",
+      "mode": "guardrail",
+      "origin": "original_synthetic_software_conformance",
+      "points": 0,
+      "possible_points": 51,
+      "private_file_bindings": [
+        {
+          "byte_size": 4142,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-003/rules.json",
+          "sha256": "bff5ac30f858c49965ad7b52db321798e0c97d2ee09b506a4b4dabaf68a6c8f3",
+          "task_id": "FX-003",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 255,
+          "media_type": "text/plain",
+          "path": "eval_pack/FX-003/evaluator.py",
+          "sha256": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+          "task_id": "FX-003",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 222,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-003/policy.json",
+          "sha256": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+          "task_id": "FX-003",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 2350,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-003/calibration.json",
+          "sha256": "3273db732a4aaade3cdae8831cd0e45a0dc1615888dea2899c4d0be4634f1b9f",
+          "task_id": "FX-003",
+          "visibility": "evaluation_private"
+        }
+      ],
+      "provider_calls": 0,
+      "qualification_sha256": "771a582aab0062b50e53d73669d13c79b5dec6d52b31c295a1dcb4b9d4a11fcb",
+      "seal_sha256": "653f640742a0e1a0b93e3e9aecedbd3ffd0524085117ec3505172fce8ceaafd4",
+      "source_authenticity": "isolated_test_signer_not_product_authority",
+      "task_id": "FX-003",
+      "tool_calls": 0,
+      "local_receipt_path": ".local/benchmark-native/08998195d2ae434aadd37bb00975823e/native-receipt.json",
+      "receipt_sha256": "a62acf150b956c80165b89481948d47208df395f0de13bb221cfc6ae7ce6bb1f"
+    },
+    {
+      "adapter_sha256": "dff6a86c5b0e1de95e5438309c724f2395acf80d8d48d79ae9012b712652d293",
+      "binding_sha256": "c421eefcf288c925d1e887f2e9705e9fd0d2abda1b8a50e4dcbe9ee7e15e12f9",
+      "candidate_container": "f217ed42c36272a98053ca6bc2a396cca9834f58313481ba759e6752a6704253",
+      "candidate_mounts_private": false,
+      "candidate_stopped_before_evaluation": true,
+      "compiled_archive_sha256": "a90689d4eded1903ec393f7323233f47ddc88c01048ec6a636bc140ff1168508",
+      "compiler_source_sha256": "0848f50fda8b1d6772f8bba067dc580cbbe4c1bf2c0a72dac56b8ab953609112",
+      "control_checks": {
+        "fresh_actor": true,
+        "non_root_readonly_no_egress_cgroups": true
+      },
+      "denied_tool_calls": 0,
+      "evaluator_container": "ea924b4f9adee9d91f5fd07b72c199ed692e5caf15d23d2b55c6a87d08a7114b",
+      "evaluator_mounts_actor": false,
+      "forbidden_access_attempts_denied": 4,
+      "harbor_version": "0.25.0",
+      "manifest_sha256": "0ba5dcced76a7865486a302d11976229642b254054ce717f9acd81ecc262e290",
+      "mode": "positive",
+      "origin": "original_synthetic_software_conformance",
+      "points": 51,
+      "possible_points": 51,
+      "private_file_bindings": [
+        {
+          "byte_size": 4142,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-003/rules.json",
+          "sha256": "bff5ac30f858c49965ad7b52db321798e0c97d2ee09b506a4b4dabaf68a6c8f3",
+          "task_id": "FX-003",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 255,
+          "media_type": "text/plain",
+          "path": "eval_pack/FX-003/evaluator.py",
+          "sha256": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+          "task_id": "FX-003",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 222,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-003/policy.json",
+          "sha256": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+          "task_id": "FX-003",
+          "visibility": "evaluation_private"
+        },
+        {
+          "byte_size": 2350,
+          "media_type": "application/json",
+          "path": "eval_pack/FX-003/calibration.json",
+          "sha256": "3273db732a4aaade3cdae8831cd0e45a0dc1615888dea2899c4d0be4634f1b9f",
+          "task_id": "FX-003",
+          "visibility": "evaluation_private"
+        }
+      ],
+      "provider_calls": 0,
+      "qualification_sha256": "771a582aab0062b50e53d73669d13c79b5dec6d52b31c295a1dcb4b9d4a11fcb",
+      "seal_sha256": "5455793b36dcd1a41ffc6019de14d746f82eefea677149eb8a7a4d2230f2bf6e",
+      "source_authenticity": "isolated_test_signer_not_product_authority",
+      "task_id": "FX-003",
+      "tool_calls": 51,
+      "local_receipt_path": ".local/benchmark-native/0aa08804619f462ebeb7944ebd644c31/native-receipt.json",
+      "receipt_sha256": "8e15615eba759d943fe7a594d4e62ccc22f830bebc02ad5f51f3dbf5dd985f8d"
+    }
+  ],
+  "native_limits": [
+    {
+      "local_path": ".local/benchmark-native-limits/d21d3be85a524e4dbf3a4dc5902a863d/limits.json",
+      "sha256": "7896ab2b1f9fe720b9e8a9eb91d61b7a4dbd39adaa1ff6ead6189817c333eb28",
+      "oversize_stdio_denied": true,
+      "owned_tree_stopped": true
+    },
+    {
+      "local_path": ".local/benchmark-native-limits/f7bef1d4cd6d494d86d307c15aefdef3/limits.json",
+      "sha256": "0b8eec632130b01710c2870e8f33c557fdd874b19b74ce4009c8b1a9383cc495",
+      "pids_denied": true,
+      "children_started": 14,
+      "memory_oom_observed": true,
+      "memory_max": 134217728
+    },
+    {
+      "local_path": ".local/benchmark-native-limits/0b6f1904463b4262b37b13fde438ede1/limits.json",
+      "sha256": "15e80e223281a9d942c0236ed6dfcb88820b68f541892e6346714a16a6333d84",
+      "stdio_timeout_denied": true,
+      "owned_tree_stopped": true
+    },
+    {
+      "local_path": ".local/benchmark-native-limits/adf805de79c74ff1b37d571f2e9e3ec9/limits.json",
+      "sha256": "0d224e28548a26e3002fbca730c50d71f449c04720fb9736bb365d23d87c7bcc",
+      "owned_timeout_tree_stopped": true,
+      "retained": true
+    }
+  ],
+  "retained_event_sample": {
+    "events": 256,
+    "complete_window_audit": false,
+    "limitation": "Only bounded recent Docker history survives. No pull/build/delete/destroy observed in sample; command guards/scoped code enforce policy, not this sample alone.",
+    "counts": [
+      {
+        "type": "container",
+        "action": "create",
+        "count": 11
+      },
+      {
+        "type": "container",
+        "action": "die",
+        "count": 12
+      },
+      {
+        "type": "container",
+        "action": "exec_create",
+        "count": 53
+      },
+      {
+        "type": "container",
+        "action": "exec_die",
+        "count": 55
+      },
+      {
+        "type": "container",
+        "action": "exec_start",
+        "count": 54
+      },
+      {
+        "type": "container",
+        "action": "kill",
+        "count": 24
+      },
+      {
+        "type": "container",
+        "action": "oom",
+        "count": 1
+      },
+      {
+        "type": "container",
+        "action": "start",
+        "count": 11
+      },
+      {
+        "type": "container",
+        "action": "stop",
+        "count": 12
+      },
+      {
+        "type": "network",
+        "action": "connect",
+        "count": 11
+      },
+      {
+        "type": "network",
+        "action": "disconnect",
+        "count": 12
+      }
+    ]
+  },
+  "earlier_failed_attempts": [
+    "Original stock SDK Alpine pull/--rm remains unapproved historical failure: t04-native-blocker.json.",
+    "Strict operator rejected restored group-readable client; use new empty owner-only per-trial config, without altering old client.",
+    "SDK merges Compose warnings into stdout; now validate JSON through an owned output file.",
+    "Prebuilt CONTEXT_DIR was unset; early debug bind resolved to /actor/runtime_pack/FX-002 outside owned trial, with required tool missing. Candidate stopped/retained; no cleanup or user-file copy there. Fixed task-relative bind and pre-up existing in-trial source check.",
+    "Evaluator has no /workspace by design; use its own /tmp cwd.",
+    "Docker cp returned no tmpfs outputs, falsely yielding0. Fixed bounded regular-file capture, candidate stop, then immutable seal.",
+    "Top-level shell exit reset terminal/dedicated daemon; only owned tmpfs test DB state lost. Restarted same isolated daemon/container, recreated own test roles/schema and replayed unchanged migrations to043, no password bootstrap/deletion.",
+    "First regression retry:22 failed/195 passed because old restored vault had mode2770. Owner-only guard correctly refused. Old vault untouched; fresh owner-only test root gives217/217."
+  ],
+  "commands_file": "t04b-commands.md (reference commands; not auto-executed)",
+  "local_logs": {
+    "t04b-final-native.log": "9e4d111fe8ecb491a864029fd1e59719318227470e0c2e0604b2c9ab258bfa97",
+    "t04b-focused-regression-clean.log": "a35b1345ae41a82a3d6d79579e300227c9ddb9309bdc0b23eb119d9d8b8ecca5",
+    "t04b-node-checks.tap": "70cbdd99f3f20518bebe1fe78a6e32998f948b647489e9c803bd33fa04da4a45"
+  },
+  "remaining": [
+    "T04 durable build/qualification hooks, persisted current-policy gates and product admission remain unimplemented. Local runner receipts alone cannot enable execution.",
+    "T05-T10 not started; general imported evaluator/image/network profiles not qualified.",
+    "No QA/full acceptance/browser/Bodhium/candidate/judge/paid calls/deployment/merge."
+  ],
+  "warnings": [
+    "Existing Authlib deprecation; Node module-type advisory."
+  ],
+  "next_boundary": "Native sub-scope complete, T04 overall incomplete; human Coding review, NOT QA transition."
+}

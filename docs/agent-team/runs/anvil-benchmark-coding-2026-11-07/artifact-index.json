@@ -1,7 +1,7 @@
 {
-  "status": "T04A_focused_pass_T04B_native_failed_stopped_pending_adapter_plan_review",
-  "observed_at": "2026-11-07T20:25:34.517331+00:00",
-  "product_source_commit": "6060fd8ab2b2c174b0bee837634089139dd696ea",
+  "status": "T04B_restricted_native_conformance_pass_T04_durable_hooks_incomplete_pending_human_Coding_review",
+  "observed_at": "2026-11-07T22:10:35.742836+00:00",
+  "product_source_commit": "fbfcbb868256b809bae252709dccb2eef3900e66",
   "recovered_commit": "15e35f12725a89be6e507b2eb73d4433e666dd76",
   "recovered_tree": "18fca788310f91a35a54df39392a37c026ae16b1",
   "release_source_files_verified_at_t00": 504,
@@ -11,8 +11,8 @@
   "entries": [
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/approval-log.jsonl",
-      "sha256": "24dfa5d945bc8cbbc897ab39fb433b08046a10d4d7c7dc117d097f0da81c1539",
-      "bytes": 5260
+      "sha256": "216d6d1f61960759c634ebf29248889cb1a1e92a4592752732f07175487949df",
+      "bytes": 6013
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/approved-input-snapshot.json",
@@ -42,8 +42,8 @@
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/handoff.md",
-      "sha256": "d271f118891d9d245753308a4d0bb0802e49e10d0dc6f1d189e5abebddf77aa5",
-      "bytes": 15051
+      "sha256": "cebc6bf8916353c8f771008c840729fcf0c3daa8f605fd1ee2c04053dc2da5cd",
+      "bytes": 20018
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/historical-documents-verified.json",
@@ -62,8 +62,8 @@
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/implementation-report.md",
-      "sha256": "351165f5221cf21efed8340d628cc2589fa970303bf6df0eaccc373dcf73b244",
-      "bytes": 12832
+      "sha256": "d869bb66b45fd17c869234932f48c025bbae692dce7047dc7b082fc0f0d54523",
+      "bytes": 15876
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/isolated-database-evidence.json",
@@ -154,6 +154,22 @@
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04a-source.sha256",
       "sha256": "d0be698ee67e00fe70d6f7ee5e7179d03db5c949b1a716a105e657a0178d7b0c",
       "bytes": 350
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04b-checks.json",
+      "sha256": "7be44d2d3e26fff1205d38bc0b94214f7d83700141b27c9f5da635857ef5c153",
+      "bytes": 34011
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04b-commands.md",
+      "sha256": "902217485b2936c72f67871d3637e6ebf66747a0805b7791000daea44733f5ab",
+      "bytes": 4458
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04b-source.sha256",
+      "sha256": "5441e939315a7e180badd61e8202f7f67eb014054d8dbc5aec5449d26d933e63",
+      "bytes": 894
     }
-  ]
+  ],
+  "product_source_tree": "b04544b27ace0c0d6b4adf9e0b29e4576b02b382"
 }

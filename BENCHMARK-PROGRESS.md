@@ -1,6 +1,6 @@
 # Benchmark Coding progress
 
-Status: T00/T01/T02/T03 complete at the focused Coding-foundation level. User confirmed local-only pinned fictional native scope with Ok. T04A compiler/sealing verified; first T04B native attempt failed before candidate startup. Native work stopped pending review of explicit SDK policy adapter change; see t04-native-blocker.json. No full benchmark completion or QA/release approval. Coding only; stop for human review before QA or deployment.
+Status: T00–T03 foundations and T04A complete at focused Coding level. The user approved the restricted adapter plan with **Yes** to the 9f2dcc3 handoff. T04B now passes: nine real Harbor trials, three stale-source/private-binding negatives, four actual resource/stdio checks, seven adapter guards; existing217 backend and12 Node checks also pass. Exact product source `fbfcbb868256b809bae252709dccb2eef3900e66`, tree `b04544b27ace0c0d6b4adf9e0b29e4576b02b382`; evidence `t04b-checks.json` / `t04b-source.sha256`. **T04 overall remains incomplete**: durable build/qualification hooks and product admission are not implemented. This bounded native continuation stops for human Coding review, not QA, deployment or paid calls. Earlier failure records below remain historical, not erased.
 
 ## Revision and authority
 
@@ -96,3 +96,10 @@ Next the SDK tried its egress sidecar setup, but a hardcoded default Docker CLI 
 Stopped native work. Discarded only three newly authored uncommitted prototype files; no runnable native backend/Harbor entrypoint was shipped. Committed T04A remains independently verified217 focused backend checks, compiler/regular-file seals only, and the package's external-verifier stub fails closed. Actual safe preflight is not G2 or full T04 qualification.
 
 Proposed changed implementation plan needs confirmation: a narrowly reviewed Anvil-owned Harbor adapter for constant `network_mode=none` only; reject implicit pulls/builds, Alpine probes, dynamic/egress-sidecar behavior and container deletion; both actor/evaluator use only preloaded approved Python; fresh session collision checks; all SDK helper commands use scoped operator CLI; stopped trial containers retained. Actual read-only/non-root/cap/mount/no-egress/cgroup and G1–G5 must still be observed, never waived. No installed-package/global/socket permission change. See `t04-native-blocker.json` for exact evidence, known effects and remaining checks. T04 incomplete; T05–T10 not started; QA/paid/deployment remain prohibited.
+
+
+## T04B restricted native continuation — passed at focused Coding scope
+
+Source `fbfcbb868256b809bae252709dccb2eef3900e66`. Actual Yes to9f2dcc3 recorded;9 native +3 stale-source +4 actual limits checks passed,7 adapter guards,217 existing backend/12 Node checks passed. Earlier failures and out-of-trial debug bind are candidly retained in `t04b-checks.json`; corrected mount/capture/isolation checks precede final passes. Old restored client/vault permissions unchanged; new private per-trial/test roots. Only same owned ephemeral DB restarted/replayed after terminal reset. Raw logs/packages/tokens stay ignored.
+
+T04 overall still needs durable build/qualification/current-policy admission; no T05–T10/QA/paid/deploy work. Stop for human Coding review, keep PR16 draft. Exact commands and source hashes: `t04b-commands.md` / `t04b-source.sha256`.

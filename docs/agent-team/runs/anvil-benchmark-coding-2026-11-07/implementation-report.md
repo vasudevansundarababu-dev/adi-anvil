@@ -1,3 +1,29 @@
+# Current implementation report — T04B native conformance
+
+## Approved task and input revisions
+
+Actual user Yes to9f2dcc3 approved the restricted static-none/preloaded-only/no-delete Harbor plan and retrying the nine native trials. Original specification/design/plan hashes and15 artifacts in `approved-input-snapshot.json` remain unchanged; actual authority is append-only, not inferred from this report. Source commit `fbfcbb868256b809bae252709dccb2eef3900e66`, tree `b04544b27ace0c0d6b4adf9e0b29e4576b02b382`.
+
+## Changed behavior and requirement coverage
+
+Compiler1.0.1 corrects prebuilt relative binds and separate verifier configuration; binds private rules/calibration metadata without placing those assets in actor ZIP. New `anvil_harbor.sme` guards stock SDK hazards and mediates fixed native fixture trials; backend opt-in conformance helper snapshots/seals outputs and records source-bound evidence. No product endpoint/worker gains Docker or new execution authority. Contributions to T04/BM-03/04/11 are focused software conformance, not whole-requirement acceptance or completed durable T04. No migration, dependency lock, legacy importer/readiness/API/scoring-scale change.
+
+## Tests actually run and evidence
+
+`t04b-checks.json`, `t04b-source.sha256`, `t04b-commands.md`: native9 + stale-private/package3 + real limits4 pass; adapter7, existing backend217, Node12 pass. Final failed/skipped0. Actual cgroup OOM/PID/timeout and stdio overflow controls, real tool counts24/6/51, separate evaluator/canary negatives and immutable output checks observed. All18 final native containers are stopped/retained. No model/provider/judge calls; unsigned fictional source is not promoted to installed trust/readiness. Existing Authlib/Node advisories remain.
+
+## Failed, blocked and not-run checks
+
+Original Alpine probe failure preserved. This continuation also exposed a debug `/actor/...` bind outside trial (corrected with pre-start in-trial source checks), JSON warning contamination, absent evaluator cwd and Docker-cp/tmpfs capture failure. Terminal exit lost only ephemeral dedicated DB state; unchanged schema replayed to043. Old restored vault2770 rejected22 checks (195 passed); untouched old vault, fresh owner-only root then217/217. No fallback or permission loosening. Docker event sample is bounded, not full-history proof. See detailed handoff/check report for exact effects and local-only logs.
+
+## Compatibility, remaining risk and human review boundary
+
+Only reviewed fictional constant-no-network profile qualified. Source bindings invalidate changed package/image/tools/evaluator/compiler identity; durable persistence/admission/stale hooks still need implementation before full T04 can pass. T05–T10, QA/acceptance/browser/Bodhium/model/judge/paid/deployment work not performed. No private credential, Mac/Praxis/shared/deployed service or socket permission touched. Stop for human Coding review, not automatic QA. Draft PR16 stays draft.
+
+---
+
+## Earlier reports — superseded status, historical bytes retained
+
 # Current continuation report — compiler/seals passed; native qualification failed/blocked
 
 The actual current user `Ok` allowed bounded pinned-Python-only fictional native scope; see append-only approval log, not a new fabricated approval. Product source6060fd8 pushed: T04A compiler/sealing17 new checks and combined217 backend passed; scanner622 files/zero findings. Exact fixture scope/code/tool/full-manifest review and actual safe Python preflight are recorded. Original15 approved artifacts unchanged.
