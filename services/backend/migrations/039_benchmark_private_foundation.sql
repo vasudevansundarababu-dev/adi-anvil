@@ -1,4 +1,17 @@
-CREATE ROLE anvil_benchmark_evaluator NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOINHERIT;
+-- Roles are cluster-global, while each independently migrated database owns
+-- its own schema. Reuse only the exact restricted role; never silently repair
+-- an existing broader principal or alter another database's grants.
+DO $$ DECLARE evaluator pg_roles%ROWTYPE; BEGIN
+ BEGIN
+  CREATE ROLE anvil_benchmark_evaluator NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION;
+ EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL;
+ END;
+ SELECT * INTO STRICT evaluator FROM pg_roles WHERE rolname='anvil_benchmark_evaluator';
+ IF evaluator.rolcanlogin OR evaluator.rolsuper OR evaluator.rolbypassrls
+ OR evaluator.rolcreatedb OR evaluator.rolcreaterole OR evaluator.rolinherit
+ OR evaluator.rolreplication OR EXISTS(SELECT 1 FROM pg_auth_members WHERE member=evaluator.oid)
+ THEN RAISE EXCEPTION 'existing benchmark evaluator role is not the required restricted principal'; END IF;
+END $$;
 GRANT USAGE ON SCHEMA anvil TO anvil_benchmark_evaluator;
 
 ALTER TABLE anvil.artifacts DROP CONSTRAINT artifacts_classification_check;

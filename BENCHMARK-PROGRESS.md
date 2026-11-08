@@ -10,6 +10,10 @@ Native qualification is still blocked: preloaded images exist, but the operator 
 
 ## Historical OpenHands final handoff (preserved)
 
+### Subsequent regression repair
+
+Migration039 previously created its cluster-global evaluator role unconditionally, breaking migration of a second fresh database in the same isolated cluster. It now reuses only an exact restricted NOLOGIN/NOSUPERUSER/NOBYPASSRLS/NOCREATEDB/NOCREATEROLE/NOINHERIT/NOREPLICATION role with no outbound role membership; broader existing roles fail closed and are never repaired automatically. Nine independent adversarial role-migration checks pass on a separate dedicated test cluster. The standard integration rerun passes190, skips19 explicit native/Praxis-gated cases; prior158pass/3fail/30error/18skip and setup corrections remain recorded. This is a verified regression fix, not completion of remaining scheduler/native gates.
+
 # T05 recovery — offline Coding verified; native/SQL environment blocked
 
 Tested commit `4e64f54c368d04afcde6faa8c41cdadd9529e0d9`, tree `0c745b5b5f098f2f55ea066f8c4f8228913cfe6f`. Repair checkpoint `e0a7b5fb45dbc73c1e9d6248647a102387ea5cd8`, tree `d807b5ee4f17acdf1d8f582a356e731863ab0c66`. Recovery/publication change documentation/evidence only; product/test/lock bytes are identical, but whole Git trees are not equated. Early checkpoint4e64f54 pushed normally; all15 approved originals rehashed unchanged.
