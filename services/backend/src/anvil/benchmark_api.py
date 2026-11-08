@@ -11,6 +11,7 @@ from starlette.concurrency import run_in_threadpool
 
 from anvil import auth
 from anvil import benchmark_evaluation as evaluation
+from anvil import benchmark_execution as execution
 from anvil import benchmark_pipeline as pipeline
 from anvil.benchmark_archive import ArchiveError
 from anvil.benchmark_ingest import inspect_original, intake_file, prepare_original, spool
@@ -49,6 +50,23 @@ class EvaluatorReview(Strict):
 class Evaluate(Strict):
     registry_id: UUID
     sealed_output_artifact_id: UUID
+
+
+class Freeze(Strict):
+    expected_subject_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
+class ProtocolSlot(Strict):
+    connection_id: UUID
+    transport: Literal["offline_contract"]
+    configuration_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
+class FreezeProtocol(Strict):
+    benchmark_revision_id: UUID
+    expected_benchmark_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    slots: tuple[ProtocolSlot, ProtocolSlot, ProtocolSlot]
+    expires_at: AwareDatetime
 
 
 def _enabled():
@@ -167,6 +185,88 @@ def _record(c, project, user, prepared, result, raw_manifest, canonical):
 
 def routes(context, wrap, idempotent):
     router = APIRouter(prefix="/api/v1/projects/{project}/workspace/benchmarks")
+
+    @router.get("/library")
+    def library(project: UUID, request: Request, cursor: UUID | None = None, limit: int = 50):
+        if not 1 <= limit <= 100:
+            raise HTTPException(422, "Page size must be between 1 and 100")
+        _enabled()
+        with context(request, project) as (c, user, roles):
+            _authorize(c, project, user, roles)
+            receipts = c.execute(
+                "SELECT id FROM anvil.benchmark_bundle_receipts WHERE (%s::uuid IS NULL OR id>%s::uuid) ORDER BY id LIMIT %s",
+                (cursor, cursor, limit + 1),
+            ).fetchall()
+            items = []
+            for receipt in receipts[:limit]:
+                item = _projection(c, receipt["id"])
+                build = one(c, "SELECT id,subject_sha256 FROM anvil.benchmark_builds WHERE receipt_id=%s ORDER BY created_at DESC,id DESC LIMIT 1", (receipt["id"],))
+                item["latest_build"] = ({"build_id": str(build["id"]), "subject_sha256": build["subject_sha256"], "state": "built"} if build else None)
+                items.append(item)
+            return wrap({"items": items, "next_cursor": str(receipts[limit - 1]["id"]) if len(receipts) > limit else None}, request)
+
+    @router.get("/versions/{benchmark_revision_id}")
+    def version(project: UUID, benchmark_revision_id: UUID, request: Request):
+        _enabled()
+        with context(request, project) as (c, user, roles):
+            _authorize(c, project, user, roles)
+            return wrap(execution.version(c, benchmark_revision_id), request)
+
+    @router.post("/builds/{build_id}/freeze")
+    def freeze(project: UUID, build_id: UUID, body: Freeze, request: Request):
+        preflight(project, request)
+        with context(request, project) as (c, user, roles):
+            _authorize(c, project, user, roles)
+            build = pipeline.record(c, "benchmark_builds", build_id)
+        current = pipeline.readiness(project, user, build_id)
+        if not current["software_qualified"]:
+            raise HTTPException(409, "Current native qualification is required before freeze")
+        try:
+            _, _, parsed, _ = pipeline.source_snapshot(project, user, build["receipt_id"])
+        except (ValueError, RuntimeError, OSError) as exc:
+            raise HTTPException(409, "Frozen source is unavailable or changed") from exc
+        with context(request, project) as (c, user, roles):
+            _authorize(c, project, user, roles)
+            return wrap(idempotent(c, project, user, request, body,
+                lambda: execution.publish(c, project, user, build_id, body.expected_subject_sha256,
+                                          parsed.parsed.manifest)), request)
+
+    @router.post("/protocols")
+    def freeze_protocol(project: UUID, body: FreezeProtocol, request: Request):
+        preflight(project, request)
+        with context(request, project) as (c, user, roles):
+            _authorize(c, project, user, roles)
+            try:
+                result = idempotent(c, project, user, request, body,
+                    lambda: execution.freeze_protocol(c, project, user, body))
+            except ValueError as exc:
+                raise HTTPException(422, "Frozen benchmark protocol has inconsistent bindings") from exc
+            return wrap(result, request)
+
+    @router.get("/protocols/{protocol_revision_id}")
+    def protocol(project: UUID, protocol_revision_id: UUID, request: Request):
+        _enabled()
+        with context(request, project) as (c, user, roles):
+            _authorize(c, project, user, roles)
+            return wrap(execution.protocol(c, protocol_revision_id), request)
+
+    @router.get("/protocols/{protocol_revision_id}/readiness")
+    def protocol_readiness(project: UUID, protocol_revision_id: UUID, request: Request):
+        _enabled()
+        with context(request, project) as (c, user, roles):
+            _authorize(c, project, user, roles)
+            projection, reasons = execution.protocol_gates(c, protocol_revision_id)
+            current = execution.version(c, projection["protocol"]["benchmark_revision_id"])
+        build_readiness = pipeline.readiness(project, user, current["build_id"])
+        if not build_readiness["software_qualified"]:
+            reasons.append("qualification_stale")
+        # Cleared only when the durable/native trial profile is actually wired.
+        reasons.append("comparison_execution_not_implemented")
+        return wrap({"ready": not reasons, "subject_sha256": projection["subject_sha256"],
+                     "planned_cells": 18,
+                     "blockers": [{"code": code, "layer": "execution", "fixer": "admin",
+                                   "action": "Review exact execution prerequisites"}
+                                  for code in sorted(set(reasons))]}, request)
 
     def reject_original(project, request, prepared, code):
         with context(request, project) as (c, user, roles):

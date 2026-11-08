@@ -6,6 +6,7 @@ import { workspaceApi, WorkspaceTask } from '../lib/workspace';
 import styles from './ModernWorkspace.module.css';
 import { usePathname } from 'next/navigation';
 import BenchmarkPreview from './BenchmarkPreview';
+import BenchmarkWorkspace from './BenchmarkWorkspace';
 
 export default function WorkspaceBenchmarks({
   base,
@@ -20,10 +21,11 @@ export default function WorkspaceBenchmarks({
   canWrite: boolean;
   tasks: WorkspaceTask[];
 }) {
-  const connected = usePathname().split('/')[4] === 'catalog';
+  const section = usePathname().split('/')[4];
+  const connected = section === 'catalog';
   return (
     <>
-      {!connected ? (
+      {section === 'preview' ? (
         <>
           <aside className={styles.mockupBanner} aria-label="UI mockup disclosure">
             <strong>UI MOCKUP</strong>
@@ -31,6 +33,8 @@ export default function WorkspaceBenchmarks({
           </aside>
           <BenchmarkPreview />
         </>
+      ) : !connected ? (
+        <BenchmarkWorkspace key={base} base={base} canWrite={canWrite} />
       ) : (
         <>
           <section className={styles.panel} aria-label="Benchmark scope">

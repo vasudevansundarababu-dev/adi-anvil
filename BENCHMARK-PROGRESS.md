@@ -1,3 +1,15 @@
+# Codex continuation — T07–T10 implementation in progress
+
+2026-11-08: user authorized remaining implementation in Codex, independent Testing and DevOps staging preparation within additional USD500/month, and STOP before deployment/paid calls. Existing OpenHands coding session is Done/stopped writer; separate fixed-checkpoint read-only security review is authorized. Actual instruction and disjoint ownership: `docs/agent-team/runs/anvil-codex-transition-2026-11-08/current-execution.md`.
+
+First partial checkpoint adds immutable benchmark/protocol/scoring contracts, source-bound library/version/freeze/protocol APIs and an API-backed operational Benchmarks interface; mockup remains on explicit preview route. Matrix admission/worker/score-review integration is still being built. No launch route is exposed in this checkpoint; readiness remains blocked. This is not completed T07–T10 or staging acceptance.
+
+Development evidence on a changing tree: 744 backend units, 103 isolated benchmark SQL (19 native-related deselected), 5 actual finalization concurrency regressions, 15 new protocol/scoring contracts, 3 new publication/API gates, 22 loopback-port configuration checks, 12 Node checks, 7 separate Harbor adapter tests, frontend types/production build and one actual OIDC/import/persist/reload/cross-project browser journey pass. Counts overlap; broader integration investigation and final source-bound independent QA remain pending. Environment setup failures are preserved in `testing-baseline.md`, not hidden.
+
+Native qualification is still blocked: preloaded images exist, but the operator requires a dedicated Linux runtime unavailable on this Mac. No shared-socket workaround, old native pass claim, paid call, cloud mutation or deployment. New isolated local PostgreSQL/Keycloak/Neo4j and unused loopback ports preserve existing processes. Cloud login/read-only inventory succeeded; staging configuration remains preparatory and incomplete.
+
+## Historical OpenHands final handoff (preserved)
+
 # T05 recovery — offline Coding verified; native/SQL environment blocked
 
 Tested commit `4e64f54c368d04afcde6faa8c41cdadd9529e0d9`, tree `0c745b5b5f098f2f55ea066f8c4f8228913cfe6f`. Repair checkpoint `e0a7b5fb45dbc73c1e9d6248647a102387ea5cd8`, tree `d807b5ee4f17acdf1d8f582a356e731863ab0c66`. Recovery/publication change documentation/evidence only; product/test/lock bytes are identical, but whole Git trees are not equated. Early checkpoint4e64f54 pushed normally; all15 approved originals rehashed unchanged.

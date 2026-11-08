@@ -828,6 +828,8 @@ def routes(context, wrap, idempotent):
 
             def act():
                 row = group(c, gid, True)
+                if row["snapshot"].get("profile") == "sme-offline-comparison-v1":
+                    raise HTTPException(409, "Launch benchmark children only through their parent comparison")
                 if row["state"] == "launched":
                     return public(c, row)
                 if body is not None:
