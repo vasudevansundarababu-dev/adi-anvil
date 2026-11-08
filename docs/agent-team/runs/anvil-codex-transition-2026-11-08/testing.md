@@ -1,0 +1,43 @@
+# Independent Testing assessment and staging acceptance
+
+Assessment date: 2026-11-08. Role: separate Codex Testing agent. This assessment is read-only except for this document: no test execution, installation, runtime operation, credential access, paid calls, or cloud changes. Praxis and the original local checkout were not changed.
+
+## Cutover and evidence boundary
+
+The recoverable handoff is publication `fd48c278c267d550485d739e4b0a09f0c6d70d79` on `codex/anvil-agent-team-2026-11-06`, draft PR16. The latest OpenHands handoff identifies tested commit `4e64f54c368d04afcde6faa8c41cdadd9529e0d9`, with product/test/lock bytes unchanged from repair `e0a7b5fb45dbc73c1e9d6248647a102387ea5cd8`. Documentation changes do not make whole Git trees identical. This is a suitable source-preserving transition point; independent release readiness is not yet established.
+
+The final recovery handoff reports fresh OpenHands offline checks: 729 full unit tests, 46 gateway tests, 95 provider-loop tests, three fixed diagnostic rounds of six, 96 pricing/capture tests, 33 T06 contract tests, three private-binding negatives, seven adapter guards and 12 Node checks passed, plus bounded formatting/scanning checks. These counts overlap and must not be added. They are source-bound OpenHands Coding evidence, not independent Codex QA or tests on this Mac.
+
+Fresh T06 SQL/native 57-test and combined SQL 136-test checks, T04 native nine-test qualification and four resource probes remain blocked/not run in the replacement runtime. Earlier native/SQL observations are historical. The three fresh private-binding negatives do not launch Docker and do not establish native isolation. The final old four-resource probe has no observed result. The earlier pricing and BrokenPipe failures remain in the historical record; they must not be presented as current failures after the documented repair, or erased to imply uninterrupted green history.
+
+## Product readiness
+
+T01–T06 contain substantial backend work, but the approved plan still has consequential T07–T10 integration work: durable protocol/run scheduling and budget fencing; scoring and immutable results; public API/export projections; and the operational Benchmark UI. `WorkspaceBenchmarks.tsx` still renders an explicit illustrative mockup for the non-catalog benchmark view. Existing catalog navigation and screenshot counts do not prove a working Praxis-export-to-benchmark application.
+
+The new benchmark capability is therefore not ready for an end-to-end staging acceptance claim. An existing-application preview with unfinished benchmark features disabled is a separate, narrower deliverable and must be labeled accordingly. Neither preview nor offline checks establish authentic Bodhium acceptance or live model performance.
+
+## Test infrastructure gaps
+
+- `scripts/local.py` runs `services/backend/tests/integration` for the standard integration command. It does not include `services/backend/tests/benchmark`; schedule that suite explicitly and report it separately.
+- `.github/workflows/local-fixture.yml` deliberately skips its fixture job for draft PRs. Draft PR16 alone is not proof of a running or passing CI gate. Its commands also do not explicitly execute the benchmark suite.
+- Benchmark SQL tests require an explicitly isolated `ANVIL_BENCHMARK_TEST_DATABASE_URL` and scoped migration/app/worker/evaluator roles. Inspect the destination before execution; never use a deployed/shared database. Fresh and upgrade migration paths both need evidence.
+- Native tests are opt-in through `ANVIL_TEST_HARBOR=1` and otherwise skip. A green suite with skips is not a native pass. Use only the repository's restricted Harbor adapter and explicitly prepared dedicated runtime/images; do not invoke stock Harbor Docker probes or infer old image/runtime authority.
+- Browser coverage must exercise the actual operational benchmark workflow once implemented. Current fixture/browser suites include ignored legacy files; those ignored tests cannot be counted as exercised regression coverage.
+- Read-only Mac inventory found default Python 3.14.6, while the backend requires Python 3.12; Node 24.21.0, pnpm 10.34.5, uv 0.12.19 and Docker CLI 29.8.0 are available. CLI presence proves neither a running dedicated Docker environment nor available images/PostgreSQL. Create isolated supported environments before tests; do not borrow another checkout's dependencies, credentials or service ports.
+
+## Coding → Testing → DevOps contract
+
+1. Coding supplies an immutable commit, product/lock hashes, completed plan items and explicit exclusions, approved inputs, migration list, reproducible check commands and all failed/skipped/blocked results. Preserve approved design and existing code; document any necessary deviation. The coordinator verifies OpenHands has stopped writing before Codex product changes begin.
+2. Testing checks out that exact commit in an isolated environment, independently maps requirements to tests, and records commands, environment versions, exit status, skips and artifact locations. Any product fix goes back through Coding and invalidates affected evidence. A docs-only descendant can reuse evidence only after verifying exercised source/test/lock bytes remain identical and explicitly recording that distinction.
+3. DevOps receives the tested commit and immutable build/image identity, migration/rollback instructions, feature flags, known limitations and Testing verdict. Deploy only that identity to the verified Anvil staging target. Do not deploy a moving branch tip or use staging verification to substitute for missing tests. Any changed build/configuration requiring retest returns to Testing.
+
+## Required gates before a usable benchmark staging release
+
+1. **Scope and completion:** reconcile T07–T10 against the approved architecture/plan; classify every requirement as implemented, deferred with approval, or blocked. Expose no illustrative scores as real results. Preserve separate approval for authentic inputs, exact candidate/judge models, rights and budgets.
+2. **Independent offline checks:** supported locked backend/frontend environments; lint/format/type/build/contracts and secret scan; backend units; UI policy checks; explicitly selected benchmark tests; standard integration/regression suites. Record exact SHA and every skip. Paid HTTP boundaries remain mocked for these checks.
+3. **Database/security:** isolated fresh and upgrade migrations through the current head, repeat/idempotence and rollback rehearsal; project/user RLS, evaluator separation, private-reference denial, artifact/export redaction, route authentication/CSRF/CAS, ordinary-worker job isolation, expiry/revocation/cancellation fencing. Re-run finalization concurrency regressions and add the approved T07 admission/spend/restart races once implemented.
+4. **Native qualification:** dedicated approved runtime with pinned preloaded images and fresh owner-only vaults. Explicit native tests must actually execute: network denial, read-only/user/capability constraints, CPU/memory/PID/output/time limits, process cleanup and owned shutdown, private binding, evaluator boundaries and bounded Unix transport diagnostics. Missing prerequisites block this gate rather than causing silent skips or permission relaxation.
+5. **Real application browser journey:** sign in to staging with a permitted test user; import a fictional Praxis-format export; inspect validation errors and task detail; qualify and freeze an allowed offline protocol; create/view the model/case/repetition matrix; observe queued/running/failed/cancelled/incomplete states; view deterministic results and redacted exports; verify refresh/restart persistence and a second project's isolation. Any provider execution must remain an offline fixture until separately authorized. Verify existing task-bank/task-run journeys still work.
+6. **Staging operations:** DevOps verifies a separate Anvil staging destination and datastore/identity/storage isolation from Praxis and production, default-off live dispatch/judge features, least-privilege role provisioning, health/readiness and logs, immutable build provenance, migration backup/rollback and a bounded post-deploy smoke. Return a working URL and explicit feature/limitation list. No production or paid-call authority is inferred from staging intent.
+
+Current verdict: **source recovery suitable for cutover; independent QA and operational benchmark staging acceptance pending**. This assessment does not start QA or authorize release actions. The coordinator should sequence product completion and human review before the separate Testing and DevOps execution gates.
