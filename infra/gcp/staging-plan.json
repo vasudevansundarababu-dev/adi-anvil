@@ -27,7 +27,7 @@
     "vm": {"name": "anvil-staging", "machine_type": "e2-standard-4", "architecture": "amd64", "public_ip": false},
     "data_disk": {"name": "anvil-staging-data", "size_gb": 50, "type": "pd-balanced", "reuse_existing": false},
     "network": "anvil-staging-net",
-    "subnet": {"name": "anvil-staging-subnet", "cidr": null},
+    "subnet": {"name": "anvil-staging-subnet", "cidr": "10.21.0.0/24"},
     "router": "anvil-staging-router",
     "nat": "anvil-staging-nat",
     "firewall_rules": ["anvil-staging-lb-http", "anvil-staging-iap-ssh"],
@@ -50,6 +50,7 @@
   "application_isolation": {
     "compose_project": "adi-anvil-staging",
     "host_data_root": "/var/lib/anvil-staging",
+    "private_root_policy": "fresh_owner_only_0700_no_symlinks_verify_at_runtime",
     "postgres_database": "anvil_staging",
     "identity_database": "anvil_staging_identity",
     "database_roles": ["anvil_staging_migration", "anvil_staging_app", "anvil_staging_worker", "anvil_staging_identity"],
@@ -71,6 +72,26 @@
     "projects/adi-anvil-mvp-2026/secrets/anvil-staging-keycloak-db"
   ],
   "disabled_features": ["candidate_dispatch", "judge_dispatch", "import_generation", "vertex_support", "other_paid_support", "outbound_email"],
+  "native_test_host_proposal": {
+    "status": "not_authorized_for_provisioning",
+    "name": "anvil-staging-native",
+    "machine_type": "e2-standard-4",
+    "boot_disk": {"name": "anvil-staging-native-boot", "type": "pd-balanced", "size_gb": 30},
+    "public_ip": false,
+    "service_account": "anvil-staging-native@adi-anvil-mvp-2026.iam.gserviceaccount.com",
+    "proposed_lifetime_hours": 168,
+    "automatic_shutdown_implemented": false,
+    "docker": "dedicated_operator_daemon_not_core_or_shared_socket",
+    "database_transport": "pending_review_stage_VM_private_address_single_operator_source_TCP5432_only",
+    "provider_credentials": false,
+    "source_keys": false,
+    "archive_gib_month_allowance": 10,
+    "seven_day_increment_usd": 26.15,
+    "full_month_increment_usd": 106.37,
+    "existing_core_with_contingency_usd": 352.48,
+    "full_month_combined_envelope_usd": 458.85,
+    "pricing_status": "provisional_published_rates_final_regional_and_usage_validation_required"
+  },
   "release": {"source_sha": null, "image_digests": {}, "configuration_hash": null, "migration_ledger": null, "rollback_revision": null},
   "unresolved": ["lifetime_and_shutdown_policy", "resource_name_collision_inventory", "nonoverlapping_subnet_cidr", "hostnames_and_DNS_control", "deployment_principal_and_scoped_IAM", "build_and_runtime_cost_estimate", "new_benchmark_worker_wiring", "independent_QA_and_release_review"]
 }
