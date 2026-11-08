@@ -28,3 +28,5 @@
 
 - T04 restart history provenance is in the Coding run `t04-recovery.json`; recovered044/045 source is not proof of SQL/native qualification. Current environment blockers and exact resume are at the top of BENCHMARK-PROGRESS.md.
 - Native gateway Unix socket paths must use fresh short owner-only directories; deep trial/vault paths can exceed Linux AF_UNIX limits. Capture-contract tests use manufactured documents, not native pass evidence.
+
+- T04D exact-image authority and focused evidence live in the Coding run approval log/t04d-checks.json; that authority is session-specific.046 image/tool fields leave immutable older rows unqualified rather than backfilling history. Real lock-race tests must clear pg_stat_activity snapshots with pg_stat_clear_snapshot when polling inside a transaction.

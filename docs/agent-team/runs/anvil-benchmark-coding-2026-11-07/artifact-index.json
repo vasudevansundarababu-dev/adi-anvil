@@ -1,18 +1,18 @@
 {
-  "status": "T04_restart_recovered_hardened_software_checks_pass_SQL_native_blocked_INCOMPLETE",
-  "observed_at": "2026-11-08T03:37:17.873495+00:00",
-  "product_source_commit": "c0f98b24de4aaeb8ebc72cbd4e6f8ed3eb5d4534",
+  "status": "T04_approved_fictional_slice_focused_Coding_pass_STOP_human_review_before_T05_QA",
+  "observed_at": "2026-11-08T04:47:07.017194+00:00",
+  "product_source_commit": "38cc1513aaee1069b69392b80566d23cb45d216a",
   "recovered_commit": "15e35f12725a89be6e507b2eb73d4433e666dd76",
   "recovered_tree": "18fca788310f91a35a54df39392a37c026ae16b1",
   "release_source_files_verified_at_t00": 504,
   "approved_originals_unchanged": true,
   "native_failure_not_waived": true,
-  "history_note": "Current metadata only. Historical source indexes/evidence remain task-bound, not current passes. Local-only logs/archives unavailable in this new runtime remain referenced, not copied or invented. Current source recovery is history reconstruction, not old workspace snapshot.",
+  "history_note": "Task-bound historical evidence remains unchanged. Current actual SQL/native T04D results and hashes supersede former runtime blockers only for approved fictional scope. No next-role/code-review approval inferred.",
   "entries": [
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/approval-log.jsonl",
-      "sha256": "90859aac40bcbe3f232cbf175c96ba23c93478f6b19f1e69df2e4e2d8675c38f",
-      "bytes": 7037
+      "sha256": "37ce85a6183cde02c8ca9b305a07305c9282045c008b1b80248d27c9ecd45d9c",
+      "bytes": 8293
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/approved-input-snapshot.json",
@@ -43,8 +43,8 @@
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/handoff.md",
-      "sha256": "75f7af08d99b373ebf029e66c372468c20faa49b5456bfd1a4146c5fb1aba4f4",
-      "bytes": 23080
+      "sha256": "8b5d120659c2fd6a3671e1bf8a6b9df7d21d3b38da50af2c70df4b81946c5990",
+      "bytes": 26584
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/historical-documents-verified.json",
@@ -63,8 +63,8 @@
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/implementation-report.md",
-      "sha256": "07ff28e0bdf7089b5470d93d696bf045162ad9aadd6b00be4a34db06f103f631",
-      "bytes": 20216
+      "sha256": "d7bcacfef31248e681e93e9932e7cd51ebfe8bb02b53c9b728476ee3d837e6f8",
+      "bytes": 24533
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/isolated-database-evidence.json",
@@ -190,9 +190,30 @@
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04c-commands.md",
       "sha256": "29b30c41d7b497f1f21633c9e1a8a2c518cd0b5796070226fa8cb436ca3e914a",
       "bytes": 2935
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04d-environment.json",
+      "sha256": "4cd74bf60d9f148104981d178c6b16158df1f037d8b198cf6b869de22b7dccd0",
+      "bytes": 1364
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04d-checks.json",
+      "sha256": "75ab03fb57c71d7e3586b7d3adb6979c1ea68e863575481796030685cbbbd50a",
+      "bytes": 45524
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04d-source.sha256",
+      "sha256": "fcee938022bdf0e19e78595f18fb562169a8f29b7d374dbac7ca52ff079a4d20",
+      "bytes": 2261
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04d-commands.md",
+      "sha256": "0eb46b51303ec7b0add27fa090aa17a27745a710160028b24a30b78d9959eacd",
+      "bytes": 6807
     }
   ],
-  "product_source_tree": "c161214346de7bd19bb047e968addb93438cc14a",
+  "product_source_tree": "0fe379b77c4168bb905a76d1d83f13c3faa7ca30",
   "restart_recovery_checkpoint": "23bb8f1741156fd6d0e6f25df379a0117513e14e",
-  "native_qualification_current": false
+  "native_qualification_current": true,
+  "native_qualification_scope": "Exact reviewed fictional Python/no-network profile only, not production/general/Bodhium admission"
 }

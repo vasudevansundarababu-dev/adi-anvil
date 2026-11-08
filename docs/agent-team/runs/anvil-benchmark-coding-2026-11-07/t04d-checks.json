@@ -1,0 +1,931 @@
+{
+  "task": "T04 approved fictional local diagnostic build/qualification slice",
+  "status": "Focused Coding qualification passed; stop for human Coding review, NOT QA/general admission",
+  "observed_at": "2026-11-08T04:45:42.212035+00:00",
+  "product_source_commit": "38cc1513aaee1069b69392b80566d23cb45d216a",
+  "product_source_tree": "0fe379b77c4168bb905a76d1d83f13c3faa7ca30",
+  "native_launch_commit": "d5a97b5690c83825ae4a44fc7f1d0c88e2ca208b",
+  "native_source_binding": "All runtime/SQL/Harbor sources and exercised native test AST byte-equivalent to final source38cc151; only5 additional SQL tests/docs added. Native source hashes match current files.",
+  "actual_image_authority": "Exact user quote appended to approval-log.jsonl at22096aa; only2 exact pinned Docker Hub images pulled into dedicated daemon",
+  "tests": {
+    "combined_backend": {
+      "passed": 314,
+      "failed": 0,
+      "skipped": 0,
+      "deselected": 1,
+      "breakdown": {
+        "software": 233,
+        "sql_api": 81,
+        "new_sql_capture_immutability_race": 17
+      }
+    },
+    "native_durable_pipeline": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "deselected": 32,
+      "real_harbor_trials": 9,
+      "real_resource_probes": 4,
+      "persisted_qualifications": 3,
+      "persisted_operation_reports": 1,
+      "no_reclaim": true,
+      "execution_ready": false,
+      "stale_after_trust_revocation": true
+    },
+    "native_stale_package_private_negatives": {
+      "passed": 3,
+      "deselected": 9,
+      "native_started": false
+    },
+    "adapter_guards": {
+      "passed": 7,
+      "native_execution": false
+    },
+    "node_policies": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "migration": {
+    "main": "Fresh+repeat045 then upgrade+repeat046, actual Alembic head046",
+    "independent_target": "Fresh001-through046 and repeat046 passed on second owned non-root network-none PostgreSQL17.6, now stopped/retained",
+    "older_migrations_modified": false,
+    "legacy_045_build_rows": "New image/tool binding columns remainNULL for immutable old rows; new dependency/source bindings stale their qualification and require successor builds, no history rewrite"
+  },
+  "observed_repairs": [
+    "Two real SQL negatives initially accepted wrong image/tool-schema hashes (2 failed/9 passed). Additive046 freezes/checks those hashes, author/current review and per-operation result reuse; all negatives pass.",
+    "Real project-lock contention exposed missing review recheck after wait; worker now rechecks inside capture lock. Initial observer needed pg_stat_clear_snapshot to see current wait state.",
+    "5 extra real SQL tests prove dependency/image/tool/rights immutability and cancel-versus-terminal capture transition-once."
+  ],
+  "native_trials": [
+    {
+      "task_id": "FX-003",
+      "mode": "positive",
+      "origin": "original_synthetic_software_conformance",
+      "binding_sha256": "2f677ccee741f005a00693e5ff5c9077d4270c914c7de07f3a994c6048b69f98",
+      "compiled_archive_sha256": "a90689d4eded1903ec393f7323233f47ddc88c01048ec6a636bc140ff1168508",
+      "manifest_sha256": "0ba5dcced76a7865486a302d11976229642b254054ce717f9acd81ecc262e290",
+      "compiler_source_sha256": "0848f50fda8b1d6772f8bba067dc580cbbe4c1bf2c0a72dac56b8ab953609112",
+      "qualification_sha256": "f12fc3446b3839644b22654212173c6a55cfea8c65d70d57efa283180ab46fb6",
+      "adapter_sha256": "dff6a86c5b0e1de95e5438309c724f2395acf80d8d48d79ae9012b712652d293",
+      "native_receipt_sha256": "987cc198c598a201a942ef12d852348a7ecfc094bb0ffdb52b9998606c62ea34",
+      "seal_sha256": "5455793b36dcd1a41ffc6019de14d746f82eefea677149eb8a7a4d2230f2bf6e",
+      "points": 51,
+      "possible_points": 51,
+      "tool_calls": 51,
+      "denied_tool_calls": 0,
+      "provider_calls": 0,
+      "candidate_stopped_before_evaluation": true,
+      "candidate_mounts_private": false,
+      "evaluator_mounts_actor": false,
+      "candidate_container": "1b474b2181090219a5e5a009a7f17691a304ac7aa22e2a6e21dfe602933f5534",
+      "evaluator_container": "49f381ce232c01b10b4980c3398b266cdb27eb1d93baa53dea6db36e00d5d33a",
+      "forbidden_access_attempts_denied": 4,
+      "control_checks": {
+        "fresh_actor": true,
+        "non_root_readonly_no_egress_cgroups": true
+      }
+    },
+    {
+      "task_id": "FX-003",
+      "mode": "guardrail",
+      "origin": "original_synthetic_software_conformance",
+      "binding_sha256": "2f677ccee741f005a00693e5ff5c9077d4270c914c7de07f3a994c6048b69f98",
+      "compiled_archive_sha256": "a90689d4eded1903ec393f7323233f47ddc88c01048ec6a636bc140ff1168508",
+      "manifest_sha256": "0ba5dcced76a7865486a302d11976229642b254054ce717f9acd81ecc262e290",
+      "compiler_source_sha256": "0848f50fda8b1d6772f8bba067dc580cbbe4c1bf2c0a72dac56b8ab953609112",
+      "qualification_sha256": "f12fc3446b3839644b22654212173c6a55cfea8c65d70d57efa283180ab46fb6",
+      "adapter_sha256": "dff6a86c5b0e1de95e5438309c724f2395acf80d8d48d79ae9012b712652d293",
+      "native_receipt_sha256": "b57ff744886b2ec1ccc7c84211bcccc08ad6605a8de9c5430d184dddae80cae5",
+      "seal_sha256": "653f640742a0e1a0b93e3e9aecedbd3ffd0524085117ec3505172fce8ceaafd4",
+      "points": 0,
+      "possible_points": 51,
+      "tool_calls": 0,
+      "denied_tool_calls": 1,
+      "provider_calls": 0,
+      "candidate_stopped_before_evaluation": true,
+      "candidate_mounts_private": false,
+      "evaluator_mounts_actor": false,
+      "candidate_container": "022130cd8cf8ef92417c3a6baba10f78ac27a72528ac5dd86c711a9d3b750f49",
+      "evaluator_container": "ce0750ae588f169815ff01b29df64cdee698a3eb0cab073f33b59c9af14b0454",
+      "forbidden_access_attempts_denied": 4,
+      "control_checks": {
+        "fresh_actor": true,
+        "non_root_readonly_no_egress_cgroups": true
+      }
+    },
+    {
+      "task_id": "FX-002",
+      "mode": "guardrail",
+      "origin": "original_synthetic_software_conformance",
+      "binding_sha256": "2d4c0993d8358535ba48f7d50297a8311a34592e9c9730bd12a5303fafbc5b10",
+      "compiled_archive_sha256": "705060eea60c3b2bc4d396f61d28f67f3d06011879f2b240099d34cb35af4434",
+      "manifest_sha256": "0ba5dcced76a7865486a302d11976229642b254054ce717f9acd81ecc262e290",
+      "compiler_source_sha256": "0848f50fda8b1d6772f8bba067dc580cbbe4c1bf2c0a72dac56b8ab953609112",
+      "qualification_sha256": "f12fc3446b3839644b22654212173c6a55cfea8c65d70d57efa283180ab46fb6",
+      "adapter_sha256": "dff6a86c5b0e1de95e5438309c724f2395acf80d8d48d79ae9012b712652d293",
+      "native_receipt_sha256": "37f8628b362419cedffe9447a2d251b1dff7dae99e579c3ee053a649d8cd9235",
+      "seal_sha256": "e859dae8fc2043450c39478aad5c85f4bbbfb8ed53f336652b1ef4c5b90f83fa",
+      "points": 0,
+      "possible_points": 6,
+      "tool_calls": 0,
+      "denied_tool_calls": 1,
+      "provider_calls": 0,
+      "candidate_stopped_before_evaluation": true,
+      "candidate_mounts_private": false,
+      "evaluator_mounts_actor": false,
+      "candidate_container": "3f8a85f97e77ee409af9dd8b133c26e16507c033bc3e9e68ff80e020f53eed11",
+      "evaluator_container": "64af73198c785a89c894a110c5a407de45ce2d7d46f94dcece0e5d73289dd0e4",
+      "forbidden_access_attempts_denied": 4,
+      "control_checks": {
+        "fresh_actor": true,
+        "non_root_readonly_no_egress_cgroups": true
+      }
+    },
+    {
+      "task_id": "FX-002",
+      "mode": "empty",
+      "origin": "original_synthetic_software_conformance",
+      "binding_sha256": "2d4c0993d8358535ba48f7d50297a8311a34592e9c9730bd12a5303fafbc5b10",
+      "compiled_archive_sha256": "705060eea60c3b2bc4d396f61d28f67f3d06011879f2b240099d34cb35af4434",
+      "manifest_sha256": "0ba5dcced76a7865486a302d11976229642b254054ce717f9acd81ecc262e290",
+      "compiler_source_sha256": "0848f50fda8b1d6772f8bba067dc580cbbe4c1bf2c0a72dac56b8ab953609112",
+      "qualification_sha256": "f12fc3446b3839644b22654212173c6a55cfea8c65d70d57efa283180ab46fb6",
+      "adapter_sha256": "dff6a86c5b0e1de95e5438309c724f2395acf80d8d48d79ae9012b712652d293",
+      "native_receipt_sha256": "4e29587a549f1cfc7d02f23f14e0db296991d2ba7fdd7c50b31815ebf02ae21b",
+      "seal_sha256": "dd90483464bd25900f0e92653010c957cbfca47a51595b2f35784bfad98d3ff4",
+      "points": 0,
+      "possible_points": 6,
+      "tool_calls": 0,
+      "denied_tool_calls": 0,
+      "provider_calls": 0,
+      "candidate_stopped_before_evaluation": true,
+      "candidate_mounts_private": false,
+      "evaluator_mounts_actor": false,
+      "candidate_container": "16f7fc02be0d8096b696e0ffdfca072eb827cfc9aa12d2f2446599a0f9673e43",
+      "evaluator_container": "68f24bfd8f0969d77083cf71df2c25172f01de6fa5d87a8f90cf11d55f85de4e",
+      "forbidden_access_attempts_denied": 4,
+      "control_checks": {
+        "fresh_actor": true,
+        "non_root_readonly_no_egress_cgroups": true
+      }
+    },
+    {
+      "task_id": "FX-001",
+      "mode": "empty",
+      "origin": "original_synthetic_software_conformance",
+      "binding_sha256": "7e95ca3c15b2a0b1138dc5164c7f6d16035dae351e4d4d70fded49a859fc8924",
+      "compiled_archive_sha256": "75ced6b5b3fba252ed7764bec2734b5f3f751459be3f4f841a795e9ed2a1c6fa",
+      "manifest_sha256": "0ba5dcced76a7865486a302d11976229642b254054ce717f9acd81ecc262e290",
+      "compiler_source_sha256": "0848f50fda8b1d6772f8bba067dc580cbbe4c1bf2c0a72dac56b8ab953609112",
+      "qualification_sha256": "f12fc3446b3839644b22654212173c6a55cfea8c65d70d57efa283180ab46fb6",
+      "adapter_sha256": "dff6a86c5b0e1de95e5438309c724f2395acf80d8d48d79ae9012b712652d293",
+      "native_receipt_sha256": "4dc3246c21b8d163e6f4686eb1bd6aee950b2261089476eef14bd7e4a7eefccc",
+      "seal_sha256": "dd90483464bd25900f0e92653010c957cbfca47a51595b2f35784bfad98d3ff4",
+      "points": 0,
+      "possible_points": 24,
+      "tool_calls": 0,
+      "denied_tool_calls": 0,
+      "provider_calls": 0,
+      "candidate_stopped_before_evaluation": true,
+      "candidate_mounts_private": false,
+      "evaluator_mounts_actor": false,
+      "candidate_container": "c3be779c81261fa93e0da4e3e3fd69dd2f9c51a6483d8ac3516b3052b733c32c",
+      "evaluator_container": "4d1d709a6ebc9d425c6caba34b61d6641c0c04a6fe5de0dff81e7e6259d701ba",
+      "forbidden_access_attempts_denied": 4,
+      "control_checks": {
+        "fresh_actor": true,
+        "non_root_readonly_no_egress_cgroups": true
+      }
+    },
+    {
+      "task_id": "FX-001",
+      "mode": "positive",
+      "origin": "original_synthetic_software_conformance",
+      "binding_sha256": "7e95ca3c15b2a0b1138dc5164c7f6d16035dae351e4d4d70fded49a859fc8924",
+      "compiled_archive_sha256": "75ced6b5b3fba252ed7764bec2734b5f3f751459be3f4f841a795e9ed2a1c6fa",
+      "manifest_sha256": "0ba5dcced76a7865486a302d11976229642b254054ce717f9acd81ecc262e290",
+      "compiler_source_sha256": "0848f50fda8b1d6772f8bba067dc580cbbe4c1bf2c0a72dac56b8ab953609112",
+      "qualification_sha256": "f12fc3446b3839644b22654212173c6a55cfea8c65d70d57efa283180ab46fb6",
+      "adapter_sha256": "dff6a86c5b0e1de95e5438309c724f2395acf80d8d48d79ae9012b712652d293",
+      "native_receipt_sha256": "0026bc9986b2c535f5e58d738e0dcb2601d82ddf383d192846377b2fb8106109",
+      "seal_sha256": "93211106d0da8b9b5ce85cb1a3958812840bf87fe6687b418c960f781ee209c0",
+      "points": 24,
+      "possible_points": 24,
+      "tool_calls": 24,
+      "denied_tool_calls": 0,
+      "provider_calls": 0,
+      "candidate_stopped_before_evaluation": true,
+      "candidate_mounts_private": false,
+      "evaluator_mounts_actor": false,
+      "candidate_container": "7bc440091b36965b6595343d936d9ba2c75af8ce4c9a6976c734c17408675941",
+      "evaluator_container": "8617096fc5507d8f0518974fdd19f0d4cf4ce1af90a72685909eaed82b302a17",
+      "forbidden_access_attempts_denied": 4,
+      "control_checks": {
+        "fresh_actor": true,
+        "non_root_readonly_no_egress_cgroups": true
+      }
+    },
+    {
+      "task_id": "FX-003",
+      "mode": "empty",
+      "origin": "original_synthetic_software_conformance",
+      "binding_sha256": "2f677ccee741f005a00693e5ff5c9077d4270c914c7de07f3a994c6048b69f98",
+      "compiled_archive_sha256": "a90689d4eded1903ec393f7323233f47ddc88c01048ec6a636bc140ff1168508",
+      "manifest_sha256": "0ba5dcced76a7865486a302d11976229642b254054ce717f9acd81ecc262e290",
+      "compiler_source_sha256": "0848f50fda8b1d6772f8bba067dc580cbbe4c1bf2c0a72dac56b8ab953609112",
+      "qualification_sha256": "f12fc3446b3839644b22654212173c6a55cfea8c65d70d57efa283180ab46fb6",
+      "adapter_sha256": "dff6a86c5b0e1de95e5438309c724f2395acf80d8d48d79ae9012b712652d293",
+      "native_receipt_sha256": "792f0b622d376337df4e957080b66759011b8938c5478eca8594f3d2e5977ae9",
+      "seal_sha256": "dd90483464bd25900f0e92653010c957cbfca47a51595b2f35784bfad98d3ff4",
+      "points": 0,
+      "possible_points": 51,
+      "tool_calls": 0,
+      "denied_tool_calls": 0,
+      "provider_calls": 0,
+      "candidate_stopped_before_evaluation": true,
+      "candidate_mounts_private": false,
+      "evaluator_mounts_actor": false,
+      "candidate_container": "51e391fa39a7ad5a153c7a6965fe13cb815e4674896b3fd5f053137628596775",
+      "evaluator_container": "10db0c339b1ede3df6958998f544f7ec78797ae60f8fa7e37d190afc0301a6e1",
+      "forbidden_access_attempts_denied": 4,
+      "control_checks": {
+        "fresh_actor": true,
+        "non_root_readonly_no_egress_cgroups": true
+      }
+    },
+    {
+      "task_id": "FX-002",
+      "mode": "positive",
+      "origin": "original_synthetic_software_conformance",
+      "binding_sha256": "2d4c0993d8358535ba48f7d50297a8311a34592e9c9730bd12a5303fafbc5b10",
+      "compiled_archive_sha256": "705060eea60c3b2bc4d396f61d28f67f3d06011879f2b240099d34cb35af4434",
+      "manifest_sha256": "0ba5dcced76a7865486a302d11976229642b254054ce717f9acd81ecc262e290",
+      "compiler_source_sha256": "0848f50fda8b1d6772f8bba067dc580cbbe4c1bf2c0a72dac56b8ab953609112",
+      "qualification_sha256": "f12fc3446b3839644b22654212173c6a55cfea8c65d70d57efa283180ab46fb6",
+      "adapter_sha256": "dff6a86c5b0e1de95e5438309c724f2395acf80d8d48d79ae9012b712652d293",
+      "native_receipt_sha256": "506214b82ec888503710de91d433c90c8e1f4c40ca8650634b717072941202dd",
+      "seal_sha256": "da24f7fc2f9f8de54e2bb7d241a1402f85cd706a59f28bddbd91dd2e182eaa2b",
+      "points": 6,
+      "possible_points": 6,
+      "tool_calls": 6,
+      "denied_tool_calls": 0,
+      "provider_calls": 0,
+      "candidate_stopped_before_evaluation": true,
+      "candidate_mounts_private": false,
+      "evaluator_mounts_actor": false,
+      "candidate_container": "b0487371faf7fecab19bdc8345629daef9e06d4b395f98ef1f87f0a00d74e15b",
+      "evaluator_container": "c3cb9ab50193b8cfc4971f80fb67c6c109d4535101bf6c4bbf6ef6ce1481a4b1",
+      "forbidden_access_attempts_denied": 4,
+      "control_checks": {
+        "fresh_actor": true,
+        "non_root_readonly_no_egress_cgroups": true
+      }
+    },
+    {
+      "task_id": "FX-001",
+      "mode": "guardrail",
+      "origin": "original_synthetic_software_conformance",
+      "binding_sha256": "7e95ca3c15b2a0b1138dc5164c7f6d16035dae351e4d4d70fded49a859fc8924",
+      "compiled_archive_sha256": "75ced6b5b3fba252ed7764bec2734b5f3f751459be3f4f841a795e9ed2a1c6fa",
+      "manifest_sha256": "0ba5dcced76a7865486a302d11976229642b254054ce717f9acd81ecc262e290",
+      "compiler_source_sha256": "0848f50fda8b1d6772f8bba067dc580cbbe4c1bf2c0a72dac56b8ab953609112",
+      "qualification_sha256": "f12fc3446b3839644b22654212173c6a55cfea8c65d70d57efa283180ab46fb6",
+      "adapter_sha256": "dff6a86c5b0e1de95e5438309c724f2395acf80d8d48d79ae9012b712652d293",
+      "native_receipt_sha256": "bcfa55b30a40f291884e66f8254336173a006e67a00e33ac13a43463ad101bf4",
+      "seal_sha256": "c42bd556afbb7e4e87b39e67d7a2c774cd081213eaeace5a359b2a3b4424e56a",
+      "points": 0,
+      "possible_points": 24,
+      "tool_calls": 0,
+      "denied_tool_calls": 1,
+      "provider_calls": 0,
+      "candidate_stopped_before_evaluation": true,
+      "candidate_mounts_private": false,
+      "evaluator_mounts_actor": false,
+      "candidate_container": "243f360209b832822857fc35fa18d7e2e17f5538eba5238f273b9ab6f4f24abc",
+      "evaluator_container": "f4f2b50d6eb7529cdd77323d1656043781e334a4d93ad7f881667af5d08bc507",
+      "forbidden_access_attempts_denied": 4,
+      "control_checks": {
+        "fresh_actor": true,
+        "non_root_readonly_no_egress_cgroups": true
+      }
+    }
+  ],
+  "durable_sql": {
+    "operation_id": "b2f15328-979c-4682-8939-bf5fb70698b0",
+    "build_id": "c0930577-7c00-45a8-9720-c53bc7fbdad0",
+    "state": "passed",
+    "report_sha256": "8cb7d6e311dc03b25b6051459c188ab74bd29871b8105c7b06ecce6f2109c6b8",
+    "subject_sha256": "a00a77874f41d41e6d4ab26bfa318d25b9820df191f21aaebe9a12fd3c9c896d",
+    "qualifications": [
+      {
+        "task_id": "FX-001",
+        "qualification_id": "0a0e8015-4c05-4ccc-bfc4-99fc99ff8f26",
+        "report_sha256": "3d77a27b6ea812d443ef2560ed56278874c589b6e6d5deefa002808eeebe7bf7",
+        "binding_sha256": "7e95ca3c15b2a0b1138dc5164c7f6d16035dae351e4d4d70fded49a859fc8924",
+        "gates": {
+          "G1": "passed",
+          "G2": "passed",
+          "G3": "passed",
+          "G4": "passed",
+          "G5": "passed"
+        },
+        "limits": [
+          {
+            "children_started": 14,
+            "container": "a1a11b3dfb693c4cace75d855d76cacf7237693bc5401590c0d46c2c55ddd8dc",
+            "memory_oom_observed": true,
+            "mode": "memory_pids",
+            "pids_denied": true,
+            "retained": true
+          },
+          {
+            "container": "202dc4b7158eaefe94086ba4ecc146f058c87d5e3de2440670f2e1ae7a24d42a",
+            "mode": "tree_timeout",
+            "owned_timeout_tree_stopped": true,
+            "retained": true
+          },
+          {
+            "container": "9be34b9fe72c4852b6abb37850cf4fc0d2f0b6d05139ab7e68caa690af74be38",
+            "mode": "stdio_overflow",
+            "retained": true,
+            "stdio_overflow_denied": true
+          },
+          {
+            "container": "48cfa83a20ac2374d70baaa2ef33051e5e802f230f262d41ef435762beb004fa",
+            "mode": "stdio_timeout",
+            "retained": true,
+            "stdio_timeout_denied": true
+          }
+        ]
+      },
+      {
+        "task_id": "FX-002",
+        "qualification_id": "a63f88db-95dd-4057-a71f-24a4f0cc6be2",
+        "report_sha256": "7b0835babe35f1f1c6394ce2ebcfd5b9c68ea3b12f00fea6dc207ea64e25d064",
+        "binding_sha256": "2d4c0993d8358535ba48f7d50297a8311a34592e9c9730bd12a5303fafbc5b10",
+        "gates": {
+          "G1": "passed",
+          "G2": "passed",
+          "G3": "passed",
+          "G4": "passed",
+          "G5": "passed"
+        },
+        "limits": [
+          {
+            "children_started": 14,
+            "container": "a1a11b3dfb693c4cace75d855d76cacf7237693bc5401590c0d46c2c55ddd8dc",
+            "memory_oom_observed": true,
+            "mode": "memory_pids",
+            "pids_denied": true,
+            "retained": true
+          },
+          {
+            "container": "202dc4b7158eaefe94086ba4ecc146f058c87d5e3de2440670f2e1ae7a24d42a",
+            "mode": "tree_timeout",
+            "owned_timeout_tree_stopped": true,
+            "retained": true
+          },
+          {
+            "container": "9be34b9fe72c4852b6abb37850cf4fc0d2f0b6d05139ab7e68caa690af74be38",
+            "mode": "stdio_overflow",
+            "retained": true,
+            "stdio_overflow_denied": true
+          },
+          {
+            "container": "48cfa83a20ac2374d70baaa2ef33051e5e802f230f262d41ef435762beb004fa",
+            "mode": "stdio_timeout",
+            "retained": true,
+            "stdio_timeout_denied": true
+          }
+        ]
+      },
+      {
+        "task_id": "FX-003",
+        "qualification_id": "b871a5f7-f4f7-42c1-95fa-e9606235287d",
+        "report_sha256": "d9d634d946d81105ddb0cb935e86fc64f8d8c0a5ae76ad3e9f376c524e6318a3",
+        "binding_sha256": "2f677ccee741f005a00693e5ff5c9077d4270c914c7de07f3a994c6048b69f98",
+        "gates": {
+          "G1": "passed",
+          "G2": "passed",
+          "G3": "passed",
+          "G4": "passed",
+          "G5": "passed"
+        },
+        "limits": [
+          {
+            "children_started": 14,
+            "container": "a1a11b3dfb693c4cace75d855d76cacf7237693bc5401590c0d46c2c55ddd8dc",
+            "memory_oom_observed": true,
+            "mode": "memory_pids",
+            "pids_denied": true,
+            "retained": true
+          },
+          {
+            "container": "202dc4b7158eaefe94086ba4ecc146f058c87d5e3de2440670f2e1ae7a24d42a",
+            "mode": "tree_timeout",
+            "owned_timeout_tree_stopped": true,
+            "retained": true
+          },
+          {
+            "container": "9be34b9fe72c4852b6abb37850cf4fc0d2f0b6d05139ab7e68caa690af74be38",
+            "mode": "stdio_overflow",
+            "retained": true,
+            "stdio_overflow_denied": true
+          },
+          {
+            "container": "48cfa83a20ac2374d70baaa2ef33051e5e802f230f262d41ef435762beb004fa",
+            "mode": "stdio_timeout",
+            "retained": true,
+            "stdio_timeout_denied": true
+          }
+        ]
+      }
+    ],
+    "dependencies": {
+      "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+      "profile": "local_fictional_qualification_only",
+      "sources": {
+        "services/backend/uv.lock": "00a917be042f5204926d3149c5e9bcbf57c0717c298afe202a20799ca58d7bb3",
+        "services/harbor/requirements.lock": "612ab41777d8eb6ec2dee6c3390705130e55d9d1a216c79df34a1597c6156ec3",
+        "services/harbor/src/anvil_harbor/sme.py": "dff6a86c5b0e1de95e5438309c724f2395acf80d8d48d79ae9012b712652d293",
+        "services/backend/src/anvil/benchmark_api.py": "2038aded3dd58b7b040f6d938e9cf4a59b918cc478745ff49f202fd680f7fabf",
+        "services/backend/src/anvil/harbor_worker.py": "ba4742d24c61449a9c178ad6772fed770b2e22d324f1b5193b87d91ce6ecbef5",
+        "services/backend/src/anvil/import_sandbox.py": "b8f51769f3a76177135dd5f1da976aff9bd7257d553f697eeda9caff39f023bb",
+        "services/backend/src/anvil/benchmark_trust.py": "763a1caf9406d8b197c48c7c5608ef9bdb18b90c8f4877eb143b048baa67e69c",
+        "services/backend/src/anvil/benchmark_bundle.py": "4653305b6c4a2d9e088c1fdf7ed0455644dd81446fc5f7285f5540656062b879",
+        "services/backend/src/anvil/benchmark_archive.py": "eee83469ecaee9731ccda814ce4c365cf7ba3df09aebee5c94985cf1167573dc",
+        "services/backend/src/anvil/benchmark_storage.py": "0187bd456fc7f6d700234f24d20c8094e9a7b58fd2a8d3cb527f15ff7a6ef109",
+        "services/backend/src/anvil/benchmark_compiler.py": "0848f50fda8b1d6772f8bba067dc580cbbe4c1bf2c0a72dac56b8ab953609112",
+        "services/backend/src/anvil/benchmark_pipeline.py": "89140e95bdbe1c20f39b0bc91852141421dae7c409dd397d36e1e74985d2e8da",
+        "services/backend/src/anvil/benchmark_qualification.py": "f12fc3446b3839644b22654212173c6a55cfea8c65d70d57efa283180ab46fb6",
+        "services/backend/src/anvil/benchmark_pipeline_worker.py": "e31182231a708e70f31199ff6f5a0ec2570c07330707a8946f8663542c894df6",
+        "services/backend/migrations/040_benchmark_private_guards.sql": "53369432cfe263fb9521a6e9d05aeb5f83a9e9c998e10fdbaa786c0bf59c2de5",
+        "services/backend/migrations/046_benchmark_capture_inputs.sql": "7bc8d9c5212e8de2157aa22b614571e9cf3355afdb8eb1ec105b011f8cd5131e",
+        "services/backend/migrations/042_benchmark_window_ownership.sql": "35a57bbc75cc56c52b9a0f694dbfdfb77e68d4c6e76cfdfa5d26c7b9bde430af",
+        "services/backend/migrations/043_benchmark_import_summaries.sql": "46ea4796483e2466df8cd1694843ce0158b2235fe0cd52e1392b3da25adcd6a6",
+        "services/backend/migrations/039_benchmark_private_foundation.sql": "42de8298d665aa4b18e7990ededa734156d4923e0ee970781050858156956410",
+        "services/backend/migrations/041_benchmark_canonical_bindings.sql": "c608d6425d63943a33883d9806414fced5431f9abba38b86f0b0f74c3efba84e",
+        "services/backend/migrations/044_benchmark_qualification_pipeline.sql": "6f8ee6173a6da236d75073802ff6d8d5a2a9540fc895b1d274dcfe7cc00652c7",
+        "services/backend/migrations/045_benchmark_qualification_capture_guards.sql": "2ca62f45bbe359d27c093dc53db710c2b97edd26b2da61d3c70a963cc9b3000b"
+      },
+      "trust_sha256": "1336024b2b536703dfc4811cba1f23e6683fe504e1e2568daa0d3c47d625c2bf",
+      "fixture_files": {
+        "manifest.json": "300024bd7632d7552408da846bc1875fe73bbc5f55e3b66febc1c221c21ff3e2",
+        "eval_pack/FX-001/rules.json": "fb55a6eef47308734433253814e7107f2cfb5eee7cd2d04439d6fd15da1b315f",
+        "eval_pack/FX-002/rules.json": "b4b4753f4c77cd2dd2964eb5437777f2f9f70d73c851f8eca14b3697686940df",
+        "eval_pack/FX-003/rules.json": "bff5ac30f858c49965ad7b52db321798e0c97d2ee09b506a4b4dabaf68a6c8f3",
+        "eval_pack/FX-001/policy.json": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+        "eval_pack/FX-002/policy.json": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+        "eval_pack/FX-003/policy.json": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+        "eval_pack/FX-001/evaluator.py": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+        "eval_pack/FX-002/evaluator.py": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+        "eval_pack/FX-003/evaluator.py": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+        "runtime_pack/FX-001/prompt.md": "080f1e2fb29292ab30027f46a4d53d797609d2e917d328feff58d147b154133f",
+        "runtime_pack/FX-002/prompt.md": "5f40339bc52a2cc17e4e76d1b53f4f5bb7525f2c22d7c8d5859be11ede385f36",
+        "runtime_pack/FX-003/prompt.md": "d59340acf9f22324d2498287416d020b8ed32947956c3cf19dda420709d6bfa8",
+        "runtime_pack/FX-001/items.json": "12a36dee635c786561aa58b0c0f9d9e7ddfeb1c5bb38869efd4a53c6d7c420d8",
+        "runtime_pack/FX-001/tools.json": "52c261d91b0315037f78807c25295177998f40d28589ad670591d89f6c2e8e2d",
+        "runtime_pack/FX-002/items.json": "4887f2653cebbb185379faf032a495369250f5d3aa589363d895a16e704edda6",
+        "runtime_pack/FX-002/tools.json": "52c261d91b0315037f78807c25295177998f40d28589ad670591d89f6c2e8e2d",
+        "runtime_pack/FX-003/items.json": "425d2a9190ef001789aca99c5013822dce687ddf245eb020f473a6240cf4f881",
+        "runtime_pack/FX-003/tools.json": "52c261d91b0315037f78807c25295177998f40d28589ad670591d89f6c2e8e2d",
+        "eval_pack/FX-001/calibration.json": "a2158c255d12773ee34db904d302e8f5576616309a19b1717a55bcba1f775008",
+        "eval_pack/FX-002/calibration.json": "0863a6ec94c488538d684a7d71a05f8c9bcb204713a2ee0e7e3ada2d0a20bf34",
+        "eval_pack/FX-003/calibration.json": "3273db732a4aaade3cdae8831cd0e45a0dc1615888dea2899c4d0be4634f1b9f",
+        "runtime_pack/FX-001/tool-server.py": "a2f4197652df6a03503b18b1c20fa195f5cd596c47b450322ac958aab1af138d",
+        "runtime_pack/FX-002/tool-server.py": "a2f4197652df6a03503b18b1c20fa195f5cd596c47b450322ac958aab1af138d",
+        "runtime_pack/FX-003/tool-server.py": "a2f4197652df6a03503b18b1c20fa195f5cd596c47b450322ac958aab1af138d",
+        "runtime_pack/FX-001/output.schema.json": "3ffb0cf559d35b0c6b0b278b41ca9a1db9217cbf1eb64fff7e44e6e475ebbdec",
+        "runtime_pack/FX-002/output.schema.json": "7991446fcd2d3d6c68dd16739e89221f55f7c12538147e237e51248bee5a8855",
+        "runtime_pack/FX-003/output.schema.json": "f52c6c6bd612917b19632464ea2e71c7df1ce1e46435afa15fb2c675f0ac8b9c"
+      },
+      "harbor_version": "0.25.0",
+      "compiler_version": "anvil-sme-artifact-1.0.1"
+    }
+  },
+  "native_retention": {
+    "native_containers_stopped_retained": 22,
+    "independent_migration_db_stopped_retained": 1,
+    "main_db_running_private": 1,
+    "containers_deleted": 0,
+    "all_containers_nonroot_readonly_network_none": true,
+    "containers": [
+      {
+        "id": "0ad3b6f9408ec4cf1b1d984b3a62bc62b847ab803880e38607a5135430607b44",
+        "name": "/anvil-benchmark-postgres-fresh046-20261108",
+        "running": false,
+        "pid": 0,
+        "exit_code": 0,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3",
+        "image_id": "sha256:567d5d704a3e5a4864393b623a0d50eb1b5a4ad134cdac7cf19555cb2d8ffe9e"
+      },
+      {
+        "id": "ce0750ae588f169815ff01b29df64cdee698a3eb0cab073f33b59c9af14b0454",
+        "name": "/anvil-bm-ea60e39cfb7b4fff833f__verifier__trial-main-1",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "022130cd8cf8ef92417c3a6baba10f78ac27a72528ac5dd86c711a9d3b750f49",
+        "name": "/anvil-bm-ea60e39cfb7b4fff833f__env-main-1",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "10db0c339b1ede3df6958998f544f7ec78797ae60f8fa7e37d190afc0301a6e1",
+        "name": "/anvil-bm-e3917c65368540f7900c__verifier__trial-main-1",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "51e391fa39a7ad5a153c7a6965fe13cb815e4674896b3fd5f053137628596775",
+        "name": "/anvil-bm-e3917c65368540f7900c__env-main-1",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "49f381ce232c01b10b4980c3398b266cdb27eb1d93baa53dea6db36e00d5d33a",
+        "name": "/anvil-bm-8bfd68ad0a7849749a44__verifier__trial-main-1",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "1b474b2181090219a5e5a009a7f17691a304ac7aa22e2a6e21dfe602933f5534",
+        "name": "/anvil-bm-8bfd68ad0a7849749a44__env-main-1",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "64af73198c785a89c894a110c5a407de45ce2d7d46f94dcece0e5d73289dd0e4",
+        "name": "/anvil-bm-322961855af541f08666__verifier__trial-main-1",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "3f8a85f97e77ee409af9dd8b133c26e16507c033bc3e9e68ff80e020f53eed11",
+        "name": "/anvil-bm-322961855af541f08666__env-main-1",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "68f24bfd8f0969d77083cf71df2c25172f01de6fa5d87a8f90cf11d55f85de4e",
+        "name": "/anvil-bm-324b938be2b8467cae10__verifier__trial-main-1",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "16f7fc02be0d8096b696e0ffdfca072eb827cfc9aa12d2f2446599a0f9673e43",
+        "name": "/anvil-bm-324b938be2b8467cae10__env-main-1",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "c3cb9ab50193b8cfc4971f80fb67c6c109d4535101bf6c4bbf6ef6ce1481a4b1",
+        "name": "/anvil-bm-ae2a80fdb5bc463ea3d3__verifier__trial-main-1",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "b0487371faf7fecab19bdc8345629daef9e06d4b395f98ef1f87f0a00d74e15b",
+        "name": "/anvil-bm-ae2a80fdb5bc463ea3d3__env-main-1",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "f4f2b50d6eb7529cdd77323d1656043781e334a4d93ad7f881667af5d08bc507",
+        "name": "/anvil-bm-df7e346c0d0243d791d2__verifier__trial-main-1",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "243f360209b832822857fc35fa18d7e2e17f5538eba5238f273b9ab6f4f24abc",
+        "name": "/anvil-bm-df7e346c0d0243d791d2__env-main-1",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "4d1d709a6ebc9d425c6caba34b61d6641c0c04a6fe5de0dff81e7e6259d701ba",
+        "name": "/anvil-bm-40bc085ada7f48bca04c__verifier__trial-main-1",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "c3be779c81261fa93e0da4e3e3fd69dd2f9c51a6483d8ac3516b3052b733c32c",
+        "name": "/anvil-bm-40bc085ada7f48bca04c__env-main-1",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "8617096fc5507d8f0518974fdd19f0d4cf4ce1af90a72685909eaed82b302a17",
+        "name": "/anvil-bm-b80c18b6df484c93b813__verifier__trial-main-1",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "7bc440091b36965b6595343d936d9ba2c75af8ce4c9a6976c734c17408675941",
+        "name": "/anvil-bm-b80c18b6df484c93b813__env-main-1",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "48cfa83a20ac2374d70baaa2ef33051e5e802f230f262d41ef435762beb004fa",
+        "name": "/anvil-bm-g4-2f05a47c23744219b040",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "9be34b9fe72c4852b6abb37850cf4fc0d2f0b6d05139ab7e68caa690af74be38",
+        "name": "/anvil-bm-g4-5673ee7210ef4b8d860e",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "202dc4b7158eaefe94086ba4ecc146f058c87d5e3de2440670f2e1ae7a24d42a",
+        "name": "/anvil-bm-g4-855280e1dbf34e339929",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "a1a11b3dfb693c4cace75d855d76cacf7237693bc5401590c0d46c2c55ddd8dc",
+        "name": "/anvil-bm-g4-be23b345dec4497ca4c8",
+        "running": false,
+        "pid": 0,
+        "exit_code": 137,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "image_id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0"
+      },
+      {
+        "id": "9ede7f91b529220ea4839b2584365c993e90ec9cb00219d9665fa70e8bc74e46",
+        "name": "/anvil-benchmark-postgres-20261108",
+        "running": true,
+        "pid": 4161,
+        "exit_code": 0,
+        "network": "none",
+        "ports": {},
+        "readonly": true,
+        "user": "10001:10001",
+        "image": "postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3",
+        "image_id": "sha256:567d5d704a3e5a4864393b623a0d50eb1b5a4ad134cdac7cf19555cb2d8ffe9e"
+      }
+    ]
+  },
+  "event_sample": {
+    "retained_events": 256,
+    "complete_audit": false,
+    "counts": [
+      {
+        "type": "container",
+        "action": "exec_die",
+        "count": 58
+      },
+      {
+        "type": "container",
+        "action": "kill",
+        "count": 21
+      },
+      {
+        "type": "network",
+        "action": "disconnect",
+        "count": 11
+      },
+      {
+        "type": "container",
+        "action": "stop",
+        "count": 11
+      },
+      {
+        "type": "container",
+        "action": "die",
+        "count": 11
+      },
+      {
+        "type": "container",
+        "action": "create",
+        "count": 10
+      },
+      {
+        "type": "network",
+        "action": "connect",
+        "count": 10
+      },
+      {
+        "type": "container",
+        "action": "start",
+        "count": 10
+      },
+      {
+        "type": "container",
+        "action": "exec_create",
+        "count": 57
+      },
+      {
+        "type": "container",
+        "action": "exec_start",
+        "count": 57
+      }
+    ],
+    "limitation": "Docker retains bounded recent256 events, not full-window proof. No destroy/delete/build/pull observed in retained sample; exact operator pulls recorded separately. Empty client configurations/runtime guards enforce no implicit pulls/builds/deletion."
+  },
+  "other_checks": {
+    "original_approved_artifacts": "15 byte-identical to1b4f412",
+    "ruff_check": "Passed15 Python files",
+    "ruff_format": "Passed15 Python files",
+    "secret_scan": "646 tracked files/0 findings at source checkpoint; final docs rescanned",
+    "openapi": "No route/DTO changes since c0f98b2 snapshot; not regenerated unnecessarily"
+  },
+  "safety": {
+    "fictional_software_only": true,
+    "model_performance": false,
+    "paid_provider_judge_calls": 0,
+    "application_flags_default_off": true,
+    "shared_services_or_socket_changes": false,
+    "Praxis_Mac_cloud_auth_changes": false,
+    "new_QA_role_or_full_acceptance": false,
+    "merge_deployment": false
+  },
+  "remaining_gates": [
+    "Human review of this exact Coding source before any next scope",
+    "T05-T10 not started; general imported images/evaluator profiles remain unqualified",
+    "Actual Bodhium exhibits/81 criteria/calibration/rights/model/judge/budgets absent; execution remains Blocked, never fabricated",
+    "QA/full acceptance/live evaluation/deployment require separate approval"
+  ],
+  "operational_notes": [
+    "Main isolated tmpfs test DB/daemon left running to preserve SQL evidence; not an application service. All22 native containers and second DB stopped/retained. No volume/container deletion.",
+    "One long combined setup/event-read terminal call reported soft timeout; follow-up actual DB/head/process/container states verified. No daemon reset, ambiguous dispatch retry or native test rerun occurred.",
+    "Existing Authlib deprecation and Docker --time advisory remain. Raw logs/dependencies/private exhibits/runtime config/secrets stay ignored."
+  ],
+  "local_log_sha256": {
+    "postgres-pull.log": "4c4c5d4b7f381226f81a230a29b39ac0e1ba129b507ab2c5cef88a8e2b7d905d",
+    "python-pull.log": "d6a48d80a74e5eb41a96ead559c7712e3800078bf5b419edf6797b6ce7bd5ad1",
+    "sql-initial.log": "c3890555f5207bf9afa648af3688b7e36264fb16cd12f46db98861d073d2a84d",
+    "capture-negatives-before.log": "dcf8557b8bbbed31bd814295d40d27fce0b73f86fc6f2da0f5bb413650286a96",
+    "capture-negatives-after.log": "fec13c83ab713a5e7cba5d9ae371c2b5182a3a895e1471303def0e7886abdf69",
+    "capture-race-before.log": "4e5c52df1aaaacb045bf701364914310569bc0882c1c4bf9e5dfd390ab37e891",
+    "immutable-cancel-race.log": "10a8720427d4fcabf2c6d06d0059b844d74192efc3f5488be5a5babf6e358ae4",
+    "native-pipeline-first.log": "d3db7ea8b0315ddf46e4cc2c623c02840cea1ed75220e39ad785294c2b404fb7",
+    "native-stale-negatives.log": "d34877a28d282b234a16b2217ab438c2db659c501c4d3d619568a97821dec537",
+    "combined-final.log": "3622721658f3a3b402289f7f75f6790e837ceb3763096c79dc9732e6deddff5d",
+    "unit.log": "c15abb9e5f13f723c2c3f847cbd8a4218deb526406f4e86a5af8ea4a2ba621b0",
+    "adapter.log": "c9420289eba3c4c138c230b82b48957d35af62261bc5b2b1d8ac2c97305e4411",
+    "node.log": "edee5cd25f50756a3b81626dc171f0895510a9720788c3d4b066ce42654085e3",
+    "migration-fresh046.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "migration-repeat046.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

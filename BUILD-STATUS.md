@@ -1,3 +1,7 @@
+## 2026-11-08 T04D — approved fictional local slice focused-verified
+
+Source 38cc1513aaee1069b69392b80566d23cb45d216a/tree 0fe379b77c4168bb905a76d1d83f13c3faa7ca30. Actual approval unblocked exact2 image preloads; new dedicated test-only daemon and PostgreSQL17.6.314 combined backend, native durable1 containing9 actual Harbor+4 resources,3 stale negatives,7 adapter/12 Node pass; fresh/repeat046 verified.17 new SQL capture/immutability/race checks found/fixed2 image/tool holes via additive046 and review-after-lock race. Durable3 qualifications+1 report, trust-stale/notReady/no-reclaim proved.22 native containers and independent fresh046 DB stopped/retained; only main private PostgreSQL remains running for ephemeral SQL evidence. No removals/shared/Praxis/Mac/cloud/auth/paid/QA/merge/deploy. Original15 unchanged; source scanner646/0, final evidence rescanned. Exact evidence/resume in BENCHMARK-PROGRESS and Coding run t04d files. STOP human Coding review before T05–T10/QA. This is NOT general evaluator/image admission, complete benchmark or Bodhium/model performance.
+
 Current focused-tested source: `c0f98b24de4aaeb8ebc72cbd4e6f8ed3eb5d4534` (tree `c161214346de7bd19bb047e968addb93438cc14a`). Actual results/commands and blocked checks: `docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04c-checks.json` / `t04c-commands.md`. Full T04 incomplete.
 
 ## 2026-11-08 T04 restart continuation — software checks pass; native/SQL blocked

@@ -1,3 +1,25 @@
+# Current Coding handoff — approved fictional T04 slice passed; human review required
+
+- Work ID: anvil-benchmark-coding-2026-11-07 / T04D isolated continuation.
+- Repository / branch: `vasudevansundarababu-dev/adi-anvil` / `codex/anvil-agent-team-2026-11-06`; existing PR16 remains draft.
+- Final source: `38cc1513aaee1069b69392b80566d23cb45d216a`, tree `0fe379b77c4168bb905a76d1d83f13c3faa7ca30`; native launchd5a97b5 with byte-equivalent runtime/SQL/Harbor sources and identical exercised test function at final source (verified).
+- Role boundary: Coding -> HUMAN CODING REVIEW. Do not start T05–T10 or QA.
+- Input authority: actual user exact-two-image download/isolated T04 approval appended at22096aa; approved original15 specification/design/plan artifacts unchanged. No source signature/local fixture review interpreted as execution approval.
+- Outputs/hash indexes: `t04d-environment.json`, `t04d-checks.json`, `t04d-source.sha256`, `t04d-commands.md`, current report and root progress; run-level index lists exact output hashes.
+- Passed:314 combined backend (233 software+81 real SQL/API,17 new SQL negatives); separate native durable test1 with9 real Harbor trials+4 resources;3 stale package/private negatives;7 adapter;12 Node; Ruff15 files; fresh/repeat046 and045->046; original15 unchanged. No final failed/skipped executed checks. Native deliberately deselected from combined count, not double-counted.
+- Actual persistence:3 immutable qualifications/1 operation report; stored report bytes/hash bindings verified. No reclaim; ready=false without actual execution profile; trust revocation invalidates current qualification. Fictional scripted positives24/6/51 and6 negative zeros are software conformance, not model/Bodhium performance.
+- Repairs: two real image/tool capture failures fixed with additive046, old044/045 unchanged; review rechecked after actual capture-lock race. Legacy immutable045 rows without new image/tool hashes require successor build, not mutation/backfill.
+- Runtime: dedicated workspace-local VFS daemon with only approved2 digests; all containers non-root/read-only/network-none/no published ports.22 native containers +independent fresh046 DB stopped/retained; main private PostgreSQL remains running to retain ephemeral SQL evidence. No container/volume deletion, shared socket/global auth or permission changes.
+- Limitations: recent256 Docker events are a bounded sample, not full audit; full QA/browser/acceptance/general image/evaluator/real Bodhium/model/judge/paid/live release not run. Original failed SDK/recovery history retained. Main test DB is ephemeral, not a production deployment.
+- Exact resume: top of `BENCHMARK-PROGRESS.md`; verify branch/remote/draft PR and these hashes, await human review. No autonomous next task; changed source/input requires stale requalification, new owned sessions and exact setup authority, never old runtime secrets/config.
+- Prohibited: T05–T10/QA/full acceptance/paid calls/merge/deploy/Praxis/Mac/shared/cloud/auth changes, reset/force push/delete, invented approvals/results.
+- Decision: APPROVED FICTIONAL T04 CODING SLICE FOCUSED-VERIFIED; NEW CODE AWAITS HUMAN REVIEW. Not QA approval or general benchmark completion.
+- Actual human scope reference: current user image-preparation message, verbatim append-only approval-log.jsonl. Human approval of this resulting code / next role: PENDING, not supplied.
+
+---
+
+## Historical handoffs below — retained unchanged; current status above supersedes
+
 # Current Coding handoff — recovered/hardened; T04 blocked
 
 - Work ID: anvil-benchmark-coding-2026-11-07 / restart2026-11-08.

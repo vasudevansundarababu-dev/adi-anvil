@@ -1,3 +1,37 @@
+# Current implementation report — T04 approved fictional slice qualified (Coding)
+
+## Approved task and input revisions
+
+Actual user authorized only two exact pinned Docker Hub operator preloads and isolated T04 SQL/native qualification; exact quote appended22096aa. Prior approved specification/design/plan and original15 artifacts remain byte-identical. This is Coding with unchanged LLM connection, NOT QA/release or live authority.
+
+## Changed behavior and source revision
+
+Final source 38cc1513aaee1069b69392b80566d23cb45d216a/tree 0fe379b77c4168bb905a76d1d83f13c3faa7ca30; native launched atd5a97b5, with identical runtime/SQL/Harbor bytes and exercised native test function at final source (5 additional SQL tests/docs only). `t04d-source.sha256` binds files. Recovered044/045 now exercised on real PostgreSQL. New additive046 freezes image/tool-schema inputs and requires current author/review/rights, fresh operation capture and unique qualification reuse. Old migrations and immutable rows unchanged; old rows lacking new hashes cannot qualify without successor build. Worker checks source review again after capture lock.
+
+## Requirement coverage
+
+Approved local fictional T04 slice: deterministic actor-only build, exact input/source/compiler/adapter/tool/evaluator/private-rule/calibration binding, durable immutable qualifications, stale current-policy gates, G1–G5 and9 real software-conformance trials. API queues native work only, never accesses Docker. Missing actual execution profile/authority remains Blocked/ready=false. This is not general imported image/evaluator qualification, a full benchmark implementation, Bodhium or model performance.
+
+## Tests actually run and results
+
+`t04d-checks.json` / `t04d-commands.md`:314 backend (233 software+81 real SQL/API), separate1 native durable testcase containing9 actual Harbor trials/4 resources,3 stale package/private negatives,7 adapter guards,12 Node pass.17 new SQL capture/immutability/race checks. Native positives24/6/51 from real stdio square tools;6 empty/guardrail trials0. Actual3 qualifications/1 operation report persisted and hash-verified, no reclaim, trust revocation yields stale and not Ready.22 native containers stopped/retained. Fresh/repeat046 independently verified plus045->046 upgrade/repeat. Ruff check/format15 files pass; source checkpoint secret scan646/0, final evidence rescanned; all15 original artifacts unchanged. No final failed/skipped executed checks; native deliberately deselected from combined count.
+
+## Earlier failures / not-run limits
+
+2 SQL negatives initially accepted wrong image/tool hashes; fixed046, all pass. Actual project-lock contention exposed pre-lock-only review check; fixed inside-lock check. Observer initially cached PostgreSQL statistics, corrected with pg_stat_clear_snapshot; no mocked lock test. Two long setup/event reads hit tool soft timeout; follow-up head/process/receipt/container verification succeeded, no daemon reset/native retry. Docker recent256-event sample is bounded, not full audit. Existing Authlib/deprecated --time warnings remain.
+
+Full QA/browser/acceptance, general profiles, T05–T10, actual Bodhium/model/judge/paid, merge/deployment not run or authorized. Historical failed SDK/recovery records preserved, not rewritten as success.
+
+## Compatibility, operational state and human review boundary
+
+New dedicated workspace-local VFS daemon, only two exact approved images; PostgreSQL17.6 non-root/read-only/network-none/no ports/private Unix local trust. No shared socket/permissions/Praxis/Mac/cloud/auth changes or old credentials/config/dependencies copied. Main private test DB remains running to preserve ephemeral SQL evidence; independent fresh046 DB and22 native containers stopped/retained, no deletion. Features off by default; source/signature/local fixture review does not grant paid or production authority.
+
+Bounded approved fictional T04 Coding slice complete and focused-verified; STOP for human Coding review of 38cc1513aaee1069b69392b80566d23cb45d216a. PR16 stays draft. No automatic T05–T10/QA/merge/deploy transition. Real data/models/judge/rights/budgets remain missing and Blocked, not invented. Exact source/resume at top of BENCHMARK-PROGRESS.md.
+
+---
+
+## Historical reports below — unchanged; current status above supersedes
+
 # Current implementation report — T04 restart; SQL/native blocked
 
 ## Approved task and input revisions
