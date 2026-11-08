@@ -19,6 +19,7 @@ from anvil.benchmark_pipeline import (
     policy_status,
     private_metadata,
     record,
+    review_status,
     source_snapshot,
 )
 from anvil.benchmark_qualification import native_trial, resource_probe
@@ -210,6 +211,8 @@ def _finish(operation, report, task_reports, state):
         _live_claim(c, operation)
         build = record(c, "benchmark_builds", operation["build_id"])
         review = record(c, "benchmark_source_reviews", build["review_id"])
+        if state == "passed" and review_status(c, review, build["receipt_id"]):
+            raise HTTPException(409, "Source review changed before qualification capture")
         report_id = bind_private(c, report, created_by=user)
         for row, compiled, prepared in task_reports:
             artifact = bind_private(c, prepared, created_by=user)

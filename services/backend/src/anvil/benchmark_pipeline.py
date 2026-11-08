@@ -49,6 +49,7 @@ SOURCE_FILES = (
     "services/backend/migrations/043_benchmark_import_summaries.sql",
     "services/backend/migrations/044_benchmark_qualification_pipeline.sql",
     "services/backend/migrations/045_benchmark_qualification_capture_guards.sql",
+    "services/backend/migrations/046_benchmark_capture_inputs.sql",
 )
 
 
@@ -400,8 +401,19 @@ def bind_build(c, project, user, prepared):
                 ),
             )
         c.execute(
-            "INSERT INTO anvil.benchmark_build_tasks(project_id,build_id,receipt_id,task_id,source_id,package_id,binding_sha256,bindings_artifact_id) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)",
-            (project, identifier, receipt["id"], task.id, sid, pid, compiled.binding_sha256, bid),
+            "INSERT INTO anvil.benchmark_build_tasks(project_id,build_id,receipt_id,task_id,source_id,package_id,binding_sha256,bindings_artifact_id,environment_digest,tool_schema_sha256) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            (
+                project,
+                identifier,
+                receipt["id"],
+                task.id,
+                sid,
+                pid,
+                compiled.binding_sha256,
+                bid,
+                compiled.bindings["environment"]["oci_manifest_digest"],
+                checksum(rfc8785.dumps(compiled.bindings["tools"])),
+            ),
         )
     audit(
         c,

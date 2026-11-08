@@ -1,3 +1,7 @@
+# T04 SQL qualification checkpoint — native still pending
+
+Image prerequisite resolved under actual exact-image approval: new dedicated VFS daemon; only approved PostgreSQL/Python digests. Non-root/read-only/network-none PostgreSQL17.6 private Unix socket, no ports/shared services. Fresh/repeat045 and upgrade/repeat046 verified.76 actual SQL/API checks pass (1 native excluded). New12 capture negatives include two reproduced environment/tool binding holes (2 failed/9 passed before repair) and actual PostgreSQL lock-contention review-revocation race. Additive046 freezes environment/tool hashes, rejects stale/mismatched capture/reuse; old044/045 unchanged. Legacy rows lacking new hashes cannot qualify without a successor build. Worker rechecks review after capture lock. Native not yet run; T04 not complete. Exact environment `t04d-environment.json`; original15 unchanged, source checkpoint follows.
+
 # T04 image prerequisite authorized — preparing isolated qualification
 
 User explicitly approved one-time Docker Hub downloads of only the two exact pinned images into a new workspace-local dedicated test daemon. Approval appended verbatim. This supersedes the image-permission blocker below, NOT any test failure or safety gate. Starting fromc7546a6, no new SQL/native result yet. Scope remains T04 Coding; no T05–T10/QA/paid/merge/deployment/Praxis/Mac/shared changes.

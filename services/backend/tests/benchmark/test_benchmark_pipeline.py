@@ -11,6 +11,7 @@ import psycopg
 import pytest
 import rfc8785
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from test_benchmark_imports import archive, setting
 from test_private_storage import assign, connection
@@ -18,7 +19,8 @@ from test_private_storage import lab as storage_lab
 
 from anvil.api import app
 from anvil.benchmark_pipeline import claim, expire_claim, process_operation
-from anvil.benchmark_storage import bind_private, stage_private
+from anvil.benchmark_pipeline_worker import _finish
+from anvil.benchmark_storage import bind_private, read_private, stage_private
 from anvil.config import ROOT
 from anvil.db import transaction
 
@@ -503,3 +505,198 @@ def test_unassigned_same_project_admin_cannot_build_or_read_private(signed_lab):
         f"/api/v1/projects/{case['lab']['project']}/artifacts/{package['package_artifact_id']}/content"
     )
     assert response.status_code == 404
+
+
+def queued_operation(case, build):
+    response = case["admin"].post(
+        case["base"] + "/builds/" + build["build_id"] + "/qualify",
+        json={"expected_subject_sha256": build["subject_sha256"]},
+    )
+    assert response.status_code == 202, response.text
+    return response.json()["data"]
+
+
+def sql_guard_artifact(case, classification="benchmark_trace"):
+    prepared = stage_private(
+        case["lab"]["project"],
+        b"Manufactured SQL metadata guard input; NOT native evidence",
+        classification,
+    )
+    with transaction(case["lab"]["project"], case["lab"]["admin"]) as c:
+        identifier = bind_private(c, prepared, created_by=case["lab"]["admin"])
+    return prepared, identifier
+
+
+def test_sql_rejects_pass_without_complete_task_results(signed_lab):
+    case = signed_lab
+    build, _ = review_and_build(case)
+    operation = queued_operation(case, build)
+    assert claim(case["lab"]["project"], operation["operation_id"], case["lab"]["admin"])
+    _, report = sql_guard_artifact(case)
+    with connection("anvil_app", case["lab"]["project"], case["lab"]["admin"]) as c:
+        with pytest.raises(psycopg.errors.RaiseException, match="complete current qualification"):
+            c.execute(
+                "UPDATE anvil.benchmark_qualification_operations SET state='passed',report_artifact_id=%s,finished_at=now() WHERE id=%s",
+                (report, operation["operation_id"]),
+            )
+
+
+@pytest.mark.parametrize(
+    "fault", ["compiler", "environment", "tools", "private_report", "queued", "expired"]
+)
+def test_sql_rejects_mismatched_or_unleased_task_capture(signed_lab, fault):
+    case = signed_lab
+    build, _ = review_and_build(case)
+    operation = queued_operation(case, build)
+    if fault != "queued":
+        assert claim(
+            case["lab"]["project"],
+            operation["operation_id"],
+            case["lab"]["admin"],
+            lease_seconds=1 if fault == "expired" else 1800,
+        )
+    _, artifact = sql_guard_artifact(
+        case, "benchmark_eval" if fault == "private_report" else "benchmark_trace"
+    )
+    with connection() as c:
+        row = c.execute(
+            "SELECT t.*,p.package_sha256,b.dependencies FROM anvil.benchmark_build_tasks t JOIN anvil.harbor_packages p ON p.id=t.package_id JOIN anvil.benchmark_builds b ON b.id=t.build_id WHERE t.build_id=%s ORDER BY task_id LIMIT 1",
+            (build["build_id"],),
+        ).fetchone()
+    with transaction(case["lab"]["project"], case["lab"]["admin"]) as c:
+        bindings = json.loads(read_private(c, row["bindings_artifact_id"]))
+    identifier = str(uuid4())
+    with connection("anvil_app", case["lab"]["project"], case["lab"]["admin"]) as c:
+        c.execute(
+            "INSERT INTO anvil.benchmark_qualifications(id,project_id,source_id,package_id,evaluator_binding_id,package_sha256,environment_digest,compiler_sha256,tool_schema_sha256,harbor_version,outcome,report_artifact_id,reviewed_by) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,'0.25.0','passed',%s,%s)",
+            (
+                identifier,
+                case["lab"]["project"],
+                row["source_id"],
+                row["package_id"],
+                build["evaluator_binding_id"],
+                row["package_sha256"],
+                "sha256:" + "0" * 64
+                if fault == "environment"
+                else bindings["environment"]["oci_manifest_digest"],
+                "0" * 64
+                if fault == "compiler"
+                else row["dependencies"]["sources"][
+                    "services/backend/src/anvil/benchmark_compiler.py"
+                ],
+                "0" * 64
+                if fault == "tools"
+                else hashlib.sha256(rfc8785.dumps(bindings["tools"])).hexdigest(),
+                artifact,
+                case["lab"]["admin"],
+            ),
+        )
+    if fault == "expired":
+        time.sleep(1.1)
+    with connection("anvil_app", case["lab"]["project"], case["lab"]["admin"]) as c:
+        with pytest.raises(psycopg.errors.RaiseException, match="live private build"):
+            c.execute(
+                "INSERT INTO anvil.benchmark_operation_results(project_id,operation_id,build_id,task_id,source_id,package_id,qualification_id) VALUES(%s,%s,%s,%s,%s,%s,%s)",
+                (
+                    case["lab"]["project"],
+                    operation["operation_id"],
+                    build["build_id"],
+                    row["task_id"],
+                    row["source_id"],
+                    row["package_id"],
+                    identifier,
+                ),
+            )
+
+
+@pytest.mark.parametrize("fault", ["fence", "cancelled", "expired", "review_revoked"])
+def test_worker_cannot_capture_after_fence_cancel_expiry_or_revocation(signed_lab, fault):
+    case = signed_lab
+    build, _ = review_and_build(case)
+    queued = queued_operation(case, build)
+    operation = claim(
+        case["lab"]["project"],
+        queued["operation_id"],
+        case["lab"]["admin"],
+        lease_seconds=1 if fault == "expired" else 1800,
+    )
+    report, _ = sql_guard_artifact(case)
+    if fault == "fence":
+        operation["fence"] = uuid4()
+    elif fault == "cancelled":
+        assert (
+            case["admin"]
+            .post(case["base"] + "/qualification-operations/" + queued["operation_id"] + "/cancel")
+            .status_code
+            == 200
+        )
+    elif fault == "expired":
+        time.sleep(1.1)
+    else:
+        assert (
+            case["admin"]
+            .post(
+                case["base"] + "/reviews/" + build["review_id"] + "/revoke",
+                json={"target": "review", "rationale": "Manufactured SQL review revocation"},
+            )
+            .status_code
+            == 200
+        )
+    with pytest.raises(HTTPException) as error:
+        _finish(operation, report, [], "passed" if fault == "review_revoked" else "failed")
+    assert error.value.status_code == 409
+    with connection() as c:
+        assert (
+            c.execute(
+                "SELECT count(*) AS n FROM anvil.benchmark_operation_results WHERE operation_id=%s",
+                (queued["operation_id"],),
+            ).fetchone()["n"]
+            == 0
+        )
+
+
+def test_review_revocation_while_worker_waits_for_capture_lock_is_rechecked(signed_lab):
+    case = signed_lab
+    build, _ = review_and_build(case)
+    queued = queued_operation(case, build)
+    operation = claim(case["lab"]["project"], queued["operation_id"], case["lab"]["admin"])
+    report, _ = sql_guard_artifact(case)
+    application = "t04-capture-race-" + uuid4().hex
+    with setting("DATABASE_URL", os.environ["DATABASE_URL"] + "&application_name=" + application):
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            with connection() as c:
+                c.execute(
+                    "SELECT id FROM anvil.projects WHERE id=%s FOR UPDATE",
+                    (case["lab"]["project"],),
+                )
+                future = pool.submit(_finish, operation, report, [], "passed")
+                deadline = time.monotonic() + 5
+                while time.monotonic() < deadline:
+                    c.execute("SELECT pg_stat_clear_snapshot()")
+                    waiting = c.execute(
+                        "SELECT 1 FROM pg_stat_activity WHERE application_name=%s AND wait_event_type='Lock'",
+                        (application,),
+                    ).fetchone()
+                    if waiting:
+                        break
+                    time.sleep(0.02)
+                else:
+                    raise AssertionError("Real worker never reached the capture lock")
+                c.execute(
+                    "INSERT INTO anvil.benchmark_review_revocations(id,project_id,review_id,target,actor_id,rationale) VALUES(%s,%s,%s,'review',%s,'Manufactured concurrent source review revocation')",
+                    (
+                        str(uuid4()),
+                        case["lab"]["project"],
+                        build["review_id"],
+                        case["lab"]["admin"],
+                    ),
+                )
+            with pytest.raises(HTTPException) as error:
+                future.result(timeout=5)
+            assert error.value.status_code == 409
+    with connection() as c:
+        row = c.execute(
+            "SELECT state,report_artifact_id FROM anvil.benchmark_qualification_operations WHERE id=%s",
+            (queued["operation_id"],),
+        ).fetchone()
+        assert row["state"] == "running" and row["report_artifact_id"] is None
