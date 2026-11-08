@@ -6,6 +6,8 @@ export type BenchmarkReceipt = {
   exporter: string;
   bank_id: string;
   bank_version: string;
+  bank_title?: string | null;
+  source_owner?: string | null;
   manifest_sha256: string;
   source_state: string;
   signature_status: string;
@@ -26,6 +28,8 @@ export type BenchmarkVersion = {
   suite_revision_id: string;
   subject_sha256: string;
   build_id: string;
+  calibration_sha256: string;
+  task_labels?: Record<string, string | null>;
   tasks: {
     task_revision_id: string;
     source_id: string;
@@ -38,6 +42,19 @@ export type BenchmarkVersion = {
     possible_points: number;
     criterion_count: number;
   }[];
+};
+export type BenchmarkReviewPolicy = {
+  tasks: {
+    task_revision_id: string;
+    pass_threshold_percent: string;
+    critical_criterion_ids: string[];
+  }[];
+  calibration_sha256: string;
+  first_assignment_id: string;
+  second_assignment_id: string;
+  adjudicator_assignment_id: string;
+  sample_percent: 10;
+  borderline_percentage_points: 5;
 };
 export type BenchmarkProtocol = {
   protocol_revision_id: string;
@@ -58,6 +75,9 @@ export type BenchmarkComparison = {
   state: string;
   origin: string;
   planned_cells: number;
+  checkpoint_event_seq: number;
+  task_labels?: Record<string, string | null>;
+  model_slots?: { slot: number; provider: string; model_id: string }[];
   cells: {
     cell_id: string;
     task_revision_id: string;
@@ -65,9 +85,11 @@ export type BenchmarkComparison = {
     repetition: number;
     state: string;
     validity: string | null;
+    reconciled: boolean;
   }[];
   scorecard: {
     complete: boolean;
+    execution_complete: boolean;
     origin: string;
     models: {
       slot: number;
@@ -76,6 +98,20 @@ export type BenchmarkComparison = {
       planned: number;
       scored: number;
       completion: 'complete' | 'incomplete';
+      score_complete: boolean;
+      diagnostic: {
+        complete_repetition_mean: {
+          earned_points: string;
+          possible_points: string;
+          percent: string;
+        } | null;
+        complete_repetitions: {
+          repetition: number;
+          earned_points: string;
+          possible_points: string;
+          percent: string;
+        }[];
+      };
       primary: { earned_points: string; possible_points: string; percent: string } | null;
       cost: {
         candidate_micro_usd: number | null;
@@ -92,8 +128,34 @@ export const benchmarkPath = (base: string) => base + '/workspace/benchmarks';
 export async function benchmarkGet<T>(base: string, path = ''): Promise<T> {
   return workspaceApi(benchmarkPath(base) + path);
 }
+// Tokens survive a reload when session storage is available. Only an opaque
+// token and request hash are stored, never source, scores or credentials.
+const operationTokens = new Map<string, string>();
 export async function benchmarkPost<T>(base: string, path: string, body: unknown): Promise<T> {
-  return workspaceApi(benchmarkPath(base) + path, 'POST', body);
+  const endpoint = benchmarkPath(base) + path;
+  const signature = endpoint + ':' + JSON.stringify(body);
+  let token = operationTokens.get(signature);
+  if (!token) {
+    const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(signature));
+    const key =
+      'anvil:benchmark:request:' +
+      Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
+    // Another submit may have resolved the hash while this one was awaiting it.
+    token = operationTokens.get(signature);
+    try {
+      token ||= sessionStorage.getItem(key) || undefined;
+    } catch {
+      /* Page-local retry tokens still work if storage is unavailable. */
+    }
+    if (!token) token = crypto.randomUUID();
+    try {
+      sessionStorage.setItem(key, token);
+    } catch {
+      /* Do not change the user's browser storage policy. */
+    }
+    operationTokens.set(signature, token);
+  }
+  return workspaceApi(endpoint, 'POST', body, undefined, token);
 }
 export async function uploadBenchmark(
   base: string,

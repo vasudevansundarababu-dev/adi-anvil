@@ -13,12 +13,14 @@ export default function WorkspaceBenchmarks({
   route,
   userId,
   canWrite,
+  canAdmin,
   tasks,
 }: {
   base: string;
   route: string;
   userId: string;
   canWrite: boolean;
+  canAdmin: boolean;
   tasks: WorkspaceTask[];
 }) {
   const section = usePathname().split('/')[4];
@@ -34,7 +36,13 @@ export default function WorkspaceBenchmarks({
           <BenchmarkPreview />
         </>
       ) : !connected ? (
-        <BenchmarkWorkspace key={base} base={base} canWrite={canWrite} />
+        <BenchmarkWorkspace
+          key={base}
+          base={base}
+          userId={userId}
+          canWrite={canWrite}
+          canAdmin={canAdmin}
+        />
       ) : (
         <>
           <section className={styles.panel} aria-label="Benchmark scope">

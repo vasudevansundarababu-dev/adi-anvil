@@ -263,7 +263,7 @@ output=json.loads(path.read_bytes()) if path.exists() else {}
 rules=json.loads(Path('/private/rules.json').read_bytes())
 points=evaluate(rules,output)
 assert set(points)=={r['id'] for r in rules} and all(type(v) is int and v in (0,1) for v in points.values())
-print(json.dumps({'points':sum(points.values()),'possible_points':len(rules)}))
+print(json.dumps({'points':sum(points.values()),'possible_points':len(rules),'criteria':points}))
 """
 
 CAPTURE_OUTPUT = """import base64,json,os,stat,sys
@@ -486,9 +486,17 @@ def readable_projection(source, destination):
     os.chmod(destination, 0o555)
 
 
-def native_trial(package, compiled, task, private, folder, *, mode):
-    if os.environ.get("ANVIL_TEST_HARBOR") != "1" or mode not in {"positive", "empty", "guardrail"}:
+def native_trial(package, compiled, task, private, folder, *, mode, actor_driver=None):
+    started_at = time.monotonic()
+    if os.environ.get("ANVIL_TEST_HARBOR") != "1" or mode not in {
+        "positive",
+        "empty",
+        "guardrail",
+        "offline_conversation",
+    }:
         raise ValueError("Explicit local software native scope required")
+    if (mode == "offline_conversation") != (actor_driver is not None):
+        raise ValueError("An explicit reviewed offline actor driver is required")
     if hashlib.sha256(Path(package).read_bytes()).hexdigest() != compiled.archive_sha256:
         raise ValueError("Native package changed")
     folder, private = Path(folder), Path(private)
@@ -576,12 +584,17 @@ def native_trial(package, compiled, task, private, folder, *, mode):
             check_container(docker, container, actor=True, compiled=compiled)
             probe = json.loads(docker.execute(container, ["python", "-c", ACTOR_PROBE]))
             tools = StdioTools(docker, container, task)
+            conversation = None
             try:
                 items = json.loads(
                     docker.execute(container, ["cat", "/workspace/inputs/items.json"])
                 )["items"]
                 output = {}
-                if mode == "positive":
+                if mode == "offline_conversation":
+                    conversation = actor_driver(docker, container, task, tools, items)
+                    if conversation["status"] != "completed":
+                        raise ValueError("Offline candidate conversation did not complete")
+                elif mode == "positive":
                     output = {item["id"]: tools.call("square", {"n": item["n"]}) for item in items}
                 elif mode == "guardrail":
                     try:
@@ -589,7 +602,7 @@ def native_trial(package, compiled, task, private, folder, *, mode):
                     except ValueError:
                         pass
                     output = {item["id"]: -1 for item in items}
-                if mode != "empty":
+                if mode not in {"empty", "offline_conversation"}:
                     docker.execute(
                         container, ["python", "-c", WRITE_OUTPUT], data=json.dumps(output).encode()
                     )
@@ -623,6 +636,7 @@ def native_trial(package, compiled, task, private, folder, *, mode):
                 "seal": seal.manifest_sha256,
                 "calls": tools.calls,
                 "denied": tools.denied,
+                "conversation": conversation,
             }
             return {"status": "completed"}
         actor = state["/actor"]
@@ -734,6 +748,16 @@ def native_trial(package, compiled, task, private, folder, *, mode):
         },
     }
     raw = json.dumps(result, sort_keys=True, allow_nan=False).encode()
+    if mode == "offline_conversation":
+        from anvil.benchmark_atif import project, validate
+
+        result["atif"] = validate(project(actor["conversation"], name), home)
+        result["atif_validator"] = "harbor-0.25.0"
+        result["duration_ms"] = int((time.monotonic() - started_at) * 1000)
+        result["criteria"] = evaluation["criteria"]
+        result["conversation"] = actor["conversation"]
+        result["provider_calls"] = actor["conversation"]["turn_count"]
+        raw = json.dumps(result, sort_keys=True, allow_nan=False).encode()
     (folder / "native-receipt.json").write_bytes(raw)
     return {**result, "native_receipt_sha256": hashlib.sha256(raw).hexdigest()}
 

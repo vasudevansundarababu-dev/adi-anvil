@@ -503,13 +503,14 @@ def readiness(project, user, build_id):
         else "built"
     )
     blockers = reasons + ([] if qualified else ["qualification_missing"])
-    blockers.append("execution_profile_not_implemented")
+    blockers.append("protocol_required")
     return {
         "build_id": str(build_id),
         "subject_sha256": build["subject_sha256"],
         "state": state,
         "software_qualified": qualified,
         "ready": False,
+        "execution_admission": "separate_frozen_protocol",
         "scope": PROFILE,
         "blockers": [
             {

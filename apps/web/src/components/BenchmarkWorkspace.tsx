@@ -14,9 +14,14 @@ import {
   BenchmarkProtocol as Protocol,
   BenchmarkReadiness,
   BenchmarkReceipt,
+  BenchmarkReviewPolicy,
   BenchmarkVersion as Version,
 } from '../lib/benchmark';
 import styles from './ModernWorkspace.module.css';
+import BenchmarkScoreReview from './BenchmarkScoreReview';
+import BenchmarkCellEvidence from './BenchmarkCellEvidence';
+import BenchmarkHistory from './BenchmarkHistory';
+import BenchmarkRecovery from './BenchmarkRecovery';
 
 function Blockers({ items }: { items: BenchmarkBlocker[] }) {
   return items.length ? (
@@ -53,6 +58,7 @@ export function BenchmarkLibrary({
             <tr>
               <th>Task bank</th>
               <th>Version</th>
+              <th>Owner</th>
               <th>Tasks</th>
               <th>Source</th>
               <th>Status</th>
@@ -62,8 +68,13 @@ export function BenchmarkLibrary({
           <tbody>
             {items.map((item) => (
               <tr key={item.receipt_id}>
-                <td>{item.bank_id}</td>
+                <td>
+                  {item.bank_title || item.bank_id}
+                  <br />
+                  <small>{item.bank_id}</small>
+                </td>
                 <td>{item.bank_version}</td>
+                <td>{item.source_owner || 'Not recorded in this receipt'}</td>
                 <td>{item.task_count}</td>
                 <td>{item.source_classification}</td>
                 <td>{item.source_state}</td>
@@ -154,7 +165,7 @@ export function BenchmarkVersion({ version }: { version: Version }) {
         <tbody>
           {version.tasks.map((task) => (
             <tr key={task.task_revision_id}>
-              <td>{task.source_id}</td>
+              <td>{version.task_labels?.[task.task_revision_id] || task.source_id}</td>
               <td>{task.possible_points}</td>
               <td>{task.criterion_count}</td>
               <td>{task.qualification_id}</td>
@@ -172,17 +183,45 @@ export function BenchmarkVersion({ version }: { version: Version }) {
 
 export function BenchmarkProtocol({
   models,
+  base,
+  version,
   freeze,
   busy,
   canWrite,
 }: {
   models: ModelConfiguration[];
-  freeze: (ids: string[], expires: string) => Promise<void>;
+  base: string;
+  version: Version;
+  freeze: (ids: string[], expires: string, policy: BenchmarkReviewPolicy) => Promise<void>;
   busy: boolean;
   canWrite: boolean;
 }) {
   const [ids, setIds] = useState(['', '', '']);
   const [expiry, setExpiry] = useState('');
+  const [thresholds, setThresholds] = useState<Record<string, string>>({});
+  const [critical, setCritical] = useState<Record<string, string>>({});
+  const [duties, setDuties] = useState(['', '', '']);
+  const [confirmed, setConfirmed] = useState(false);
+  const [assignments, setAssignments] = useState<
+    { assignment_id: string; user_id: string; user_name?: string; expires_at: string }[]
+  >([]);
+  const [assignmentError, setAssignmentError] = useState('');
+  useEffect(() => {
+    let active = true;
+    void benchmarkGet<{ items: typeof assignments }>(base, '/review-assignments')
+      .then((result) => {
+        if (active) setAssignments(result.items);
+      })
+      .catch((failure) => {
+        if (active) setAssignmentError((failure as Error).message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [base]);
+  const distinctPeople =
+    new Set(duties.map((id) => assignments.find((item) => item.assignment_id === id)?.user_id))
+      .size === 3;
   return (
     <section className={styles.panel} aria-label="Comparison configuration">
       <h2>Configure an offline software comparison</h2>
@@ -194,7 +233,22 @@ export function BenchmarkProtocol({
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          void freeze(ids, expiry);
+          void freeze(ids, expiry, {
+            tasks: version.tasks.map((task) => ({
+              task_revision_id: task.task_revision_id,
+              pass_threshold_percent: thresholds[task.task_revision_id],
+              critical_criterion_ids: (critical[task.task_revision_id] || '')
+                .split(',')
+                .map((id) => id.trim())
+                .filter(Boolean),
+            })),
+            calibration_sha256: version.calibration_sha256,
+            first_assignment_id: duties[0],
+            second_assignment_id: duties[1],
+            adjudicator_assignment_id: duties[2],
+            sample_percent: 10,
+            borderline_percentage_points: 5,
+          });
         }}
       >
         {ids.map((value, slot) => (
@@ -220,6 +274,85 @@ export function BenchmarkProtocol({
             </select>
           </label>
         ))}
+        <fieldset disabled={busy || !canWrite}>
+          <legend>Declared review policy</legend>
+          <p>
+            Supply the task owner's thresholds and critical criterion IDs. None are inferred from
+            the code. A stable 10% sample, critical failures and results within five percentage
+            points of a threshold require a second review.
+          </p>
+          {version.tasks.map((task) => (
+            <div key={task.task_revision_id}>
+              <label>
+                Task {version.task_labels?.[task.task_revision_id] || task.source_id}: pass
+                threshold (%){' '}
+                <input
+                  required
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.00000001"
+                  value={thresholds[task.task_revision_id] || ''}
+                  onChange={(event) =>
+                    setThresholds((current) => ({
+                      ...current,
+                      [task.task_revision_id]: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                Critical criterion IDs (comma separated; empty means none declared){' '}
+                <input
+                  value={critical[task.task_revision_id] || ''}
+                  onChange={(event) =>
+                    setCritical((current) => ({
+                      ...current,
+                      [task.task_revision_id]: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+            </div>
+          ))}
+          {assignmentError && <p role="alert">{assignmentError}</p>}
+          {['First reviewer', 'Second reviewer', 'Adjudicator'].map((name, index) => (
+            <label key={name}>
+              {name}{' '}
+              <select
+                required
+                value={duties[index]}
+                onChange={(event) =>
+                  setDuties((current) =>
+                    current.map((id, position) => (position === index ? event.target.value : id)),
+                  )
+                }
+              >
+                <option value="">Choose a current individual assignment</option>
+                {assignments.map((item) => (
+                  <option key={item.assignment_id} value={item.assignment_id}>
+                    {item.user_name || item.user_id} · expires{' '}
+                    {new Date(item.expires_at).toLocaleString()}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+          {!distinctPeople && <p>Three different assigned people are required.</p>}
+          <p>
+            Calibration binding: <code>{version.calibration_sha256}</code>
+          </p>
+          <label>
+            <input
+              required
+              type="checkbox"
+              checked={confirmed}
+              onChange={(event) => setConfirmed(event.target.checked)}
+            />
+            I confirm these declared thresholds, critical criteria and reviewer duties for this
+            exact software protocol.
+          </label>
+        </fieldset>
         <label>
           Protocol expiry{' '}
           <input
@@ -232,7 +365,15 @@ export function BenchmarkProtocol({
         </label>
         <button
           disabled={
-            busy || !canWrite || new Set(ids).size !== 3 || ids.some((id) => !id) || !expiry
+            busy ||
+            !canWrite ||
+            new Set(ids).size !== 3 ||
+            ids.some((id) => !id) ||
+            !expiry ||
+            !distinctPeople ||
+            duties.some((id) => !id) ||
+            !confirmed ||
+            version.tasks.some((task) => !thresholds[task.task_revision_id])
           }
         >
           Freeze exact offline protocol
@@ -242,7 +383,13 @@ export function BenchmarkProtocol({
   );
 }
 
-export function BenchmarkMatrix({ comparison }: { comparison: BenchmarkComparison }) {
+export function BenchmarkMatrix({
+  comparison,
+  base,
+}: {
+  comparison: BenchmarkComparison;
+  base: string;
+}) {
   const tasks = [...new Set(comparison.cells.map((cell) => cell.task_revision_id))];
   return (
     <section className={styles.panel} aria-label="Comparison matrix">
@@ -257,14 +404,25 @@ export function BenchmarkMatrix({ comparison }: { comparison: BenchmarkCompariso
           <tr>
             <th>Task revision</th>
             {[1, 2, 3].map((slot) => (
-              <th key={slot}>Model slot {slot}</th>
+              <th key={slot}>
+                Model slot {slot}
+                {comparison.model_slots?.find((item) => item.slot === slot - 1) && (
+                  <>
+                    <br />
+                    <small>
+                      {comparison.model_slots.find((item) => item.slot === slot - 1)?.provider} ·{' '}
+                      {comparison.model_slots.find((item) => item.slot === slot - 1)?.model_id}
+                    </small>
+                  </>
+                )}
+              </th>
             ))}
           </tr>
         </thead>
         <tbody>
           {tasks.map((task) => (
             <tr key={task}>
-              <th scope="row">{task}</th>
+              <th scope="row">{comparison.task_labels?.[task] || task}</th>
               {[0, 1, 2].map((slot) => (
                 <td key={slot}>
                   {comparison.cells
@@ -276,6 +434,11 @@ export function BenchmarkMatrix({ comparison }: { comparison: BenchmarkCompariso
                         </summary>
                         <p>Validity: {cell.validity || 'Not established'}</p>
                         <p>Cell {cell.cell_id}</p>
+                        <BenchmarkCellEvidence
+                          base={base}
+                          runId={comparison.run_id}
+                          cellId={cell.cell_id}
+                        />
                       </details>
                     ))}
                 </td>
@@ -309,8 +472,10 @@ export function BenchmarkResults({
         <>
           <p>
             {results.complete
-              ? 'Complete scorecard'
-              : 'Incomplete comparison — primary result unavailable; no winner declared.'}
+              ? 'Complete, reviewed scorecard'
+              : results.execution_complete
+                ? 'Execution evidence is complete. Comparable primary results remain unavailable until mandatory independent review is recorded.'
+                : 'Incomplete comparison — primary result unavailable; no winner declared.'}
           </p>
           <table>
             <caption>Stored primary results</caption>
@@ -339,6 +504,44 @@ export function BenchmarkResults({
               ))}
             </tbody>
           </table>
+          <details>
+            <summary>Unranked diagnostics and measured runtime</summary>
+            <p>
+              Diagnostic means use only complete suite repetitions out of81 points. They do not
+              replace missing trials or mandatory review and do not establish model performance.
+            </p>
+            <table>
+              <caption>Complete-repetition diagnostics</caption>
+              <thead>
+                <tr>
+                  <th>Slot</th>
+                  <th>Complete repetitions</th>
+                  <th>Diagnostic mean</th>
+                  <th>Median duration</th>
+                  <th>Cost status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {results.models.map((model) => (
+                  <tr key={model.slot}>
+                    <td>{model.slot + 1}</td>
+                    <td>{model.diagnostic.complete_repetitions.length} / 2</td>
+                    <td>
+                      {model.diagnostic.complete_repetition_mean
+                        ? `${model.diagnostic.complete_repetition_mean.earned_points} / 81 (${model.diagnostic.complete_repetition_mean.percent}%)`
+                        : 'Unavailable'}
+                    </td>
+                    <td>
+                      {model.duration.median_ms == null
+                        ? 'Unknown'
+                        : `${model.duration.median_ms} ms from ${model.duration.samples} trials`}
+                    </td>
+                    <td>{model.cost.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </details>
         </>
       )}
       <p>
@@ -368,6 +571,34 @@ export function BenchmarkResults({
       >
         Download redacted CSV
       </a>
+      {' · '}
+      <a
+        href={
+          '/api/v1' +
+          benchmarkPath(base) +
+          '/comparisons/' +
+          encodeURIComponent(comparison.run_id) +
+          '/exports/report'
+        }
+      >
+        Download redacted report
+      </a>
+      {' · '}
+      <a
+        href={
+          '/api/v1' +
+          benchmarkPath(base) +
+          '/comparisons/' +
+          encodeURIComponent(comparison.run_id) +
+          '/exports/atif'
+        }
+      >
+        Download authorized Harbor trajectories
+      </a>
+      <p>
+        Private trajectory downloads require a current individual evaluation assignment. They omit
+        hidden reasoning and evaluator reference material.
+      </p>
     </section>
   );
 }
@@ -375,9 +606,13 @@ export function BenchmarkResults({
 export default function BenchmarkWorkspace({
   base,
   canWrite,
+  canAdmin,
+  userId,
 }: {
   base: string;
   canWrite: boolean;
+  canAdmin: boolean;
+  userId: string;
 }) {
   const router = useRouter(),
     pathname = usePathname(),
@@ -404,6 +639,11 @@ export default function BenchmarkWorkspace({
     versionId = query.get('version'),
     protocolId = query.get('protocol'),
     comparisonId = query.get('comparison');
+  const bankSearch = query.get('bank_search') || '',
+    sourceClass = query.get('source_class') || '';
+  const libraryFilters =
+    (bankSearch ? '&q=' + encodeURIComponent(bankSearch) : '') +
+    (sourceClass ? '&classification=' + encodeURIComponent(sourceClass) : '');
   const select = useCallback(
     (key: string, id: string) => {
       const next = new URLSearchParams();
@@ -428,7 +668,7 @@ export default function BenchmarkWorkspace({
     async (after?: string) => {
       const result = await benchmarkGet<{ items: BenchmarkReceipt[]; next_cursor: string | null }>(
         base,
-        '/library?limit=25' + (after ? '&after=' + encodeURIComponent(after) : ''),
+        '/library?limit=25' + libraryFilters + (after ? '&after=' + encodeURIComponent(after) : ''),
       );
       setItems((current) =>
         after
@@ -442,7 +682,7 @@ export default function BenchmarkWorkspace({
       );
       setCursor(result.next_cursor);
     },
-    [base],
+    [base, libraryFilters],
   );
   useEffect(() => {
     const current = ++generation.current;
@@ -458,7 +698,7 @@ export default function BenchmarkWorkspace({
         const library = await benchmarkGet<{
           items: BenchmarkReceipt[];
           next_cursor: string | null;
-        }>(base, '/library?limit=25');
+        }>(base, '/library?limit=25' + libraryFilters);
         if (current !== generation.current) return;
         setItems(library.items);
         setCursor(library.next_cursor);
@@ -523,7 +763,7 @@ export default function BenchmarkWorkspace({
     return () => {
       generation.current++;
     };
-  }, [base, receiptId, versionId, protocolId, comparisonId]);
+  }, [base, receiptId, versionId, protocolId, comparisonId, libraryFilters]);
   useEffect(() => {
     if (!comparisonId) return;
     let active = true;
@@ -576,6 +816,33 @@ export default function BenchmarkWorkspace({
         <button type="button" disabled={busy} onClick={() => void act(() => loadLibrary())}>
           Refresh library
         </button>
+        <form
+          key={bankSearch + ':' + sourceClass}
+          onSubmit={(event) => {
+            event.preventDefault();
+            const data = new FormData(event.currentTarget);
+            const filters = new URLSearchParams();
+            if (data.get('bank_search'))
+              filters.set('bank_search', String(data.get('bank_search')));
+            if (data.get('source_class'))
+              filters.set('source_class', String(data.get('source_class')));
+            router.replace(pathname + (filters.size ? '?' + filters.toString() : ''));
+          }}
+        >
+          <label>
+            Find a task bank <input name="bank_search" maxLength={100} defaultValue={bankSearch} />
+          </label>
+          <label>
+            Source classification{' '}
+            <select name="source_class" defaultValue={sourceClass}>
+              <option value="">All classifications</option>
+              <option value="original_synthetic_fixture">Original fictional fixture</option>
+              <option value="partner_restricted">Restricted partner source</option>
+              <option value="public_licensed">Public licensed source</option>
+            </select>
+          </label>
+          <button disabled={busy}>Search task banks</button>
+        </form>
       </section>
       {error && <p role="alert">{error}</p>}
       <p role="status" aria-live="polite">
@@ -597,6 +864,7 @@ export default function BenchmarkWorkspace({
           })
         }
       />
+      <BenchmarkHistory base={base} select={(id) => select('comparison', id)} />
       {receipt && (
         <section className={styles.panel} aria-label="Source and qualification">
           <h2>
@@ -659,7 +927,10 @@ export default function BenchmarkWorkspace({
                 />
                 I confirm the source processing rights documented in this evidence.
               </label>
-              <button disabled={busy || !canWrite || !rights}>Record source review</button>
+              <button disabled={busy || !canAdmin || !rights}>Record source review</button>
+              {!canAdmin && (
+                <p>A project administrator with a current assignment records source rights.</p>
+              )}
             </form>
           </details>
           <form onSubmit={submitBuild}>
@@ -679,7 +950,7 @@ export default function BenchmarkWorkspace({
               <h3>Qualification: {readiness.state || 'Pending'}</h3>
               <Blockers items={readiness.blockers} />
               <button
-                disabled={busy || !canWrite || !buildId}
+                disabled={busy || !canAdmin || !buildId}
                 onClick={() =>
                   void act(async () => {
                     const operation = await benchmarkPost<{ operation_id: string }>(
@@ -727,9 +998,11 @@ export default function BenchmarkWorkspace({
           <BenchmarkVersion version={version} />
           <BenchmarkProtocol
             models={models}
+            base={base}
+            version={version}
             busy={busy}
             canWrite={canWrite}
-            freeze={(ids, expires) =>
+            freeze={(ids, expires, policy) =>
               act(async () => {
                 const value = await benchmarkPost<Protocol>(base, '/protocols', {
                   benchmark_revision_id: version.benchmark_revision_id,
@@ -740,6 +1013,7 @@ export default function BenchmarkWorkspace({
                     configuration_sha256: models.find((model) => model.id === id)!.config_hash,
                   })),
                   expires_at: new Date(expires).toISOString(),
+                  review_policy: policy,
                 });
                 select('protocol', value.protocol_revision_id);
               })
@@ -753,7 +1027,7 @@ export default function BenchmarkWorkspace({
           <p>{protocol.protocol.origin} · two repetitions · up to three active trials</p>
           <Blockers items={readiness?.blockers || []} />
           <button
-            disabled={busy || !canWrite || !readiness?.ready}
+            disabled={busy || !canAdmin || !readiness?.ready}
             onClick={() =>
               void act(async () => {
                 const value = await benchmarkPost<BenchmarkComparison>(
@@ -786,8 +1060,22 @@ export default function BenchmarkWorkspace({
       )}
       {comparison && (
         <>
-          <BenchmarkMatrix comparison={comparison} />
+          <BenchmarkMatrix comparison={comparison} base={base} />
           <BenchmarkResults comparison={comparison} base={base} />
+          <BenchmarkScoreReview
+            key={comparison.run_id}
+            base={base}
+            runId={comparison.run_id}
+            canWrite={canWrite}
+            userId={userId}
+            comparison={comparison}
+          />
+          <BenchmarkRecovery
+            base={base}
+            comparison={comparison}
+            canAdmin={canAdmin}
+            changed={setComparison}
+          />
           <section className={styles.panel}>
             <h2>Cancel remaining work</h2>
             <p>Cancellation preserves completed evidence and ambiguous-dispatch reservations.</p>

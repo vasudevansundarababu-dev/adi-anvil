@@ -606,6 +606,7 @@ function WorkspaceView() {
                   route={route}
                   userId={user.id}
                   canWrite={canEdit}
+                  canAdmin={admin}
                   tasks={tasks?.items || []}
                 />
               )}

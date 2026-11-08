@@ -1,15 +1,51 @@
 """Immutable benchmark protocol contracts; validation never grants dispatch authority."""
 
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import AwareDatetime, Field, model_validator
 
 from anvil.benchmark_conversation import Binding, Frozen, Limits
+from anvil.config import ROOT
 from anvil.db import digest
 
 Hash = Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+CriterionId = Annotated[str, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$")]
+
+
+def runtime_sha256():
+    import hashlib
+
+    paths = (
+        "benchmark_protocol.py",
+        "benchmark_execution.py",
+        "benchmark_scheduler.py",
+        "benchmark_offline_worker.py",
+        "benchmark_offline_actor.py",
+        "benchmark_scores.py",
+        "benchmark_results.py",
+        "benchmark_conversation.py",
+        "benchmark_provider_wire.py",
+    )
+    paths += ("benchmark_review_policy.py", "benchmark_atif.py", "benchmark_reconciliation.py")
+    paths += (
+        "benchmark_qualification.py",
+        "benchmark_compiler.py",
+        "benchmark_pipeline.py",
+        "benchmark_evaluator_program.py",
+        "benchmark_storage.py",
+        "auth.py",
+    )
+    bound = {
+        name: hashlib.sha256((ROOT / "services/backend/src/anvil" / name).read_bytes()).hexdigest()
+        for name in paths
+    }
+    bound["harbor_atif"] = hashlib.sha256(
+        (ROOT / "services/harbor/src/anvil_harbor/atif.py").read_bytes()
+    ).hexdigest()
+    return digest(bound)
 
 
 class TaskBinding(Frozen):
@@ -43,6 +79,42 @@ class Spend(Frozen):
     expires_at: AwareDatetime
 
 
+class TaskReviewPolicy(Frozen):
+    task_revision_id: UUID
+    pass_threshold_percent: str = Field(
+        pattern=r"^(?:[0-9]{1,2}(?:\.[0-9]{1,8})?|100(?:\.0{1,8})?)$"
+    )
+    critical_criterion_ids: tuple[CriterionId, ...] = Field(max_length=1000)
+
+
+class ReviewPolicy(Frozen):
+    tasks: tuple[TaskReviewPolicy, TaskReviewPolicy, TaskReviewPolicy]
+    calibration_sha256: Hash
+    first_assignment_id: UUID
+    second_assignment_id: UUID
+    adjudicator_assignment_id: UUID
+    sample_percent: Literal[10] = 10
+    borderline_percentage_points: Literal[5] = 5
+
+    @model_validator(mode="after")
+    def distinct(self):
+        if (
+            len({t.task_revision_id for t in self.tasks}) != 3
+            or len(
+                {
+                    self.first_assignment_id,
+                    self.second_assignment_id,
+                    self.adjudicator_assignment_id,
+                }
+            )
+            != 3
+        ):
+            raise ValueError("Review requires exact task thresholds and three distinct duties")
+        if any(Decimal(t.pass_threshold_percent) > 100 for t in self.tasks):
+            raise ValueError("Invalid point-percent review threshold")
+        return self
+
+
 class Protocol(Frozen):
     profile: Literal["sme-comparison-v1"] = "sme-comparison-v1"
     benchmark_revision_id: UUID
@@ -53,9 +125,13 @@ class Protocol(Frozen):
     max_active_trials: Literal[3] = 3
     order_policy: Literal["task-slot-repetition-v1"] = "task-slot-repetition-v1"
     retry_policy: Literal["no-ambiguous-dispatch-retry"] = "no-ambiguous-dispatch-retry"
+    replacement_policy: Literal["no_replacements"] = "no_replacements"
+    resume_policy: Literal["untouched_queue_or_captured_only"] = "untouched_queue_or_captured_only"
     limits: Limits = Field(default_factory=Limits)
     scoring_policy_sha256: Hash
     evaluator_policy_sha256: Hash
+    runtime_sha256: Hash
+    review_policy: ReviewPolicy | None = None
     judge_binding_id: UUID | None = None
     calibration_sha256: Hash | None = None
     origin: Literal["original_synthetic_fixture", "authorized_benchmark"]
@@ -76,13 +152,17 @@ class Protocol(Frozen):
             or self.spend.judge_cap_micro_usd != 0
             or self.judge_binding_id is not None
         ):
-            raise ValueError("Offline conformance requires fictional origin and no paid spend/judge")
+            raise ValueError(
+                "Offline conformance requires fictional origin and no paid spend/judge"
+            )
         if self.judge_binding_id is not None and self.calibration_sha256 is None:
             raise ValueError("A semantic judge requires exact calibration")
         if sum(t.possible_points for t in self.tasks) != 81 or sorted(
             t.possible_points for t in self.tasks
         ) != [6, 24, 51]:
             raise ValueError("The approved primary metric requires 24/6/51 task points")
+        if any(t.criterion_count != t.possible_points for t in self.tasks):
+            raise ValueError("The initial profile requires its complete 81 one-point criteria")
         return self
 
     @property

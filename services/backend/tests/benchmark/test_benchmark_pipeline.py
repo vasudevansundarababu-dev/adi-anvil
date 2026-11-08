@@ -326,7 +326,7 @@ def test_real_native_receipts_persist_through_durable_pipeline(signed_lab):
         .json()["data"]
     )
     assert ready["software_qualified"] and not ready["ready"]
-    assert "execution_profile_not_implemented" in {item["code"] for item in ready["blockers"]}
+    assert "protocol_required" in {item["code"] for item in ready["blockers"]}
     assert (
         process_operation(case["lab"]["project"], operation["operation_id"], case["lab"]["admin"])
         == "not_claimed"

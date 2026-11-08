@@ -24,8 +24,10 @@ def test_library_records_real_import_and_latest_build_without_private_payloads(s
 def test_freeze_does_not_turn_build_or_signature_into_native_qualification(signed_lab):
     case = signed_lab
     build, _ = review_and_build(case)
-    response = case["client"].post(case["base"] + "/builds/" + build["build_id"] + "/freeze",
-                                   json={"expected_subject_sha256": build["subject_sha256"]})
+    response = case["client"].post(
+        case["base"] + "/builds/" + build["build_id"] + "/freeze",
+        json={"expected_subject_sha256": build["subject_sha256"]},
+    )
     assert response.status_code == 409, response.text
     assert "native qualification" in response.text
 
