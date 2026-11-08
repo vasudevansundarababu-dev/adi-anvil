@@ -1,3 +1,9 @@
+# T05 checkpoint recovery — independent Coding checks pending
+
+Verified local/remote/open draft PR16 exact `e0a7b5fb45dbc73c1e9d6248647a102387ea5cd8`, tree `d807b5ee4f17acdf1d8f582a356e731863ab0c66`; initially clean. Actual recovery authorization appended in Coding run approval log. Read-only platform history recovered sanitized outcomes only (`t05-recovery-history.json`), NOT byte-exact runtime/log recovery or new-runtime proof; last four-resource action has no observed result. New runtime has Python3.13 only and no restored locked venvs/dedicated daemon/images/PG. Recreate independent locked offline environments; native/SQL blocked without approved preloaded prerequisites, no implicit pull/build/load/substitution/shared socket/permission changes. No new tests passed yet. Preserve old failures and conversation. Stop human Coding review before T07/QA/paid/merge/deployment; Praxis/Mac/local changes untouched.
+
+---
+
 # Bounded T05 gateway repair — transport46/full729 passing, further qualification pending
 
 Only NativeGateway transport/server in benchmark_qualification.py and its existing gateway tests changed. Consume <=256-byte unambiguous frame before rejection; token before JSON/callback, exactsession/single-use unchanged. Absolute1s header/body deadline fenced/cancelled before callback, max4 handlers, shutdown interrupts owned sockets,1s response I/O; no provider/SDK retries.21 new tests include32 fixed split-denial schedules, duplicate/TE/Expect/auth framing negatives, truncation/oversize/stall/trickle/shutdown/capacity, valid256B frame, >1s callback and disconnected dispatched outcome no replay. Expected old-code red failures retained.46gateway tests/729fullunit pass; pricing+capture run recorded. Fixed-count diagnostics/native/SQL and source-bound final reruns pending; no final full-native/QA claims. No T07/QA/paid/runtime/SDK/shared/Praxis/Mac changes.

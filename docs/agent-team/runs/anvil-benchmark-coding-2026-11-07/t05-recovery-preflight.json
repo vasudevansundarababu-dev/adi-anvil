@@ -1,0 +1,33 @@
+{
+  "observed_at": "2026-11-08T17:19:59.289461+00:00",
+  "local_and_remote_commit": "e0a7b5fb45dbc73c1e9d6248647a102387ea5cd8",
+  "source_tree": "d807b5ee4f17acdf1d8f582a356e731863ab0c66",
+  "branch": "codex/anvil-agent-team-2026-11-06",
+  "initial_worktree": "clean",
+  "git_identity": "existing openhands <openhands@all-hands.dev>, unchanged",
+  "pr": {
+    "number": 16,
+    "state": "open",
+    "draft": true,
+    "head": "e0a7b5fb45dbc73c1e9d6248647a102387ea5cd8"
+  },
+  "runtime": {
+    "python_available": "3.13.15, outside product range",
+    "python_3_12_or_backend_venv": false,
+    "harbor_venv": false,
+    "dedicated_daemon_process_socket_or_local_image_store": false,
+    "postgres_process_or_dedicated_socket": false,
+    "shared_docker_socket_exists": false,
+    "docker_context_inspected": "default unix:///var/run/docker.sock metadata only, never connected",
+    "recreate_offline": "uv locked backend and separately pinned Harbor with Python3.12.14; no product dependency changes"
+  },
+  "blocked_now": [
+    "T06 realSQL/native57 and combined136 new-runtime checks",
+    "T04 native9+private3+resource4 new-runtime checks"
+  ],
+  "not_authorized": [
+    "new image downloads/build/load/substitute",
+    "shared runtime access"
+  ],
+  "historical_evidence": "t05-recovery-history.json; last resource probe action has no observed result; no final handoff publication recovered"
+}
