@@ -1,3 +1,7 @@
+# Verified pricing maintenance — passing reruns; final source checkpoint underway
+
+All6 exact existing catalog entries verified against10 official HTTP200 documentation GETs on2026-11-08. Actual row/model/cache/context/tier evidence in Codingrun t06-pricing-sources.json. Numeric rates and model IDs unchanged; references/verified_at refreshed only after direct verification. Existing7day TTL retained: asof2026-11-08T15:25:35.450801Z, expiry2026-11-15T15:25:35.450801Z. Deterministic optional testclock; default production real UTC/strict expiry unchanged.36 pricing/708 fullunit/57T06 (incl2native)/136combined/7adapter/12Node pass. Earlier689/1 pricing failure superseded by actual passing rerun, not deleted. Initial postchange707/1 unrelated T05 Unix wrong-auth BrokenPipe kept; focused3provider and708full reruns passed without T05/source workaround. No T07/QA/paid/merge/deploy/shared/Praxis/Mac/auth changes. Exact committed-source final rerun/evidence/handoff to follow.
+
 # Pricing maintenance/final T06 checkpoint authorized — in progress
 
 Current user authorized verified exact-model pricing maintenance and deterministic clock tests only, then finalT06 publication. Base/source verified8854f71/ca8c279, samebranch/open draftPR16, clean tree. Approval appended. No T07/QA/paid/deployment/credentials or unrelated changes. Official OpenAI pricing.md freshly retrieved; verification of dimensions/model pages and other exact catalog entries still pending. No price/provenance edit or passing rerun yet. Earlier failure evidence retained below.
