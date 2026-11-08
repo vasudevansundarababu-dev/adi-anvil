@@ -700,3 +700,76 @@ def test_review_revocation_while_worker_waits_for_capture_lock_is_rechecked(sign
             (queued["operation_id"],),
         ).fetchone()
         assert row["state"] == "running" and row["report_artifact_id"] is None
+
+
+@pytest.mark.parametrize(
+    "table,assignment",
+    [
+        ("benchmark_builds", "dependencies='{}'::jsonb"),
+        ("benchmark_build_tasks", "environment_digest='sha256:" + "0" * 64 + "'"),
+        ("benchmark_build_tasks", "tool_schema_sha256='" + "0" * 64 + "'"),
+        ("benchmark_source_reviews", "rights_confirmed=false"),
+    ],
+)
+def test_bound_build_inputs_are_immutable_in_real_sql(signed_lab, table, assignment):
+    case = signed_lab
+    build, _ = review_and_build(case)
+    key, identifier = (
+        ("build_id", build["build_id"])
+        if table == "benchmark_build_tasks"
+        else (
+            "id",
+            build["review_id"] if table == "benchmark_source_reviews" else build["build_id"],
+        )
+    )
+    with connection("anvil_app", case["lab"]["project"], case["lab"]["admin"]) as c:
+        with pytest.raises((psycopg.errors.RaiseException, psycopg.errors.InsufficientPrivilege)):
+            c.execute(f"UPDATE anvil.{table} SET {assignment} WHERE {key}=%s", (identifier,))
+
+
+def test_cancel_and_terminal_capture_race_transition_once(signed_lab):
+    case = signed_lab
+    build, _ = review_and_build(case)
+    queued = queued_operation(case, build)
+    operation = claim(case["lab"]["project"], queued["operation_id"], case["lab"]["admin"])
+    report, _ = sql_guard_artifact(case)
+
+    def finish():
+        try:
+            return _finish(operation, report, [], "failed")
+        except HTTPException as exc:
+            assert exc.status_code == 409
+            return "fenced"
+
+    def cancel():
+        response = case["admin"].post(
+            case["base"] + "/qualification-operations/" + queued["operation_id"] + "/cancel"
+        )
+        assert response.status_code == 200
+        return response.json()["data"]["state"]
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first, second = pool.submit(finish), pool.submit(cancel)
+        assert first.result(timeout=5) in {"failed", "fenced"}
+        assert second.result(timeout=5) in {"failed", "execution_unknown"}
+    with connection() as c:
+        row = c.execute(
+            "SELECT state FROM anvil.benchmark_qualification_operations WHERE id=%s",
+            (queued["operation_id"],),
+        ).fetchone()
+        assert row["state"] in {"failed", "execution_unknown"}
+        assert (
+            c.execute(
+                "SELECT count(*) AS n FROM anvil.benchmark_operation_events WHERE operation_id=%s",
+                (queued["operation_id"],),
+            ).fetchone()["n"]
+            == 3
+        )
+        assert (
+            c.execute(
+                "SELECT count(*) AS n FROM anvil.benchmark_operation_results WHERE operation_id=%s",
+                (queued["operation_id"],),
+            ).fetchone()["n"]
+            == 0
+        )
+    assert claim(case["lab"]["project"], queued["operation_id"], case["lab"]["admin"]) is None
