@@ -8,7 +8,7 @@ from anvil.config import ROOT
 from anvil.db import one, uid
 
 BENCHMARK_PRIVATE_CLASSES = frozenset(
-    {"benchmark_raw", "benchmark_eval", "benchmark_judge", "benchmark_trace"}
+    {"benchmark_raw", "benchmark_eval", "benchmark_judge", "benchmark_trace", "benchmark_sealed"}
 )
 
 

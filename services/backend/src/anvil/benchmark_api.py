@@ -10,6 +10,7 @@ from pydantic import AwareDatetime, Field, StrictBool
 from starlette.concurrency import run_in_threadpool
 
 from anvil import auth
+from anvil import benchmark_evaluation as evaluation
 from anvil import benchmark_pipeline as pipeline
 from anvil.benchmark_archive import ArchiveError
 from anvil.benchmark_ingest import inspect_original, intake_file, prepare_original, spool
@@ -37,6 +38,17 @@ class Qualify(Strict):
 class Revoke(Strict):
     rationale: str = Field(min_length=10, max_length=2000)
     target: Literal["review", "evaluator"]
+
+
+class EvaluatorReview(Strict):
+    policy_artifact_id: UUID
+    evidence_artifact_id: UUID
+    expires_at: AwareDatetime
+
+
+class Evaluate(Strict):
+    registry_id: UUID
+    sealed_output_artifact_id: UUID
 
 
 def _enabled():
@@ -407,6 +419,78 @@ def routes(context, wrap, idempotent):
                     )
                     audit(c, project, user, "benchmark.qualification_cancelled", operation_id)
                 return pipeline.operation_public(c, operation_id)
+
+            return wrap(idempotent(c, project, user, request, {}, act), request)
+
+    def evaluator_enabled():
+        _enabled()
+        if os.environ.get("ANVIL_BENCHMARK_EVALUATION_ENABLED") != "true":
+            raise HTTPException(503, "Separate benchmark evaluation is disabled")
+
+    @router.post("/evaluators/reviews")
+    def evaluator_review(project: UUID, body: EvaluatorReview, request: Request):
+        user = preflight(project, request, admin=True)
+        evaluator_enabled()
+        try:
+            prepared = evaluation.prepare_review(
+                project, user, body.policy_artifact_id, body.evidence_artifact_id
+            )
+        except (ValueError, RuntimeError, OSError) as exc:
+            raise HTTPException(409, "Evaluator review inputs unavailable or invalid") from exc
+        with context(request, project) as (c, user, roles):
+            return wrap(
+                idempotent(
+                    c,
+                    project,
+                    user,
+                    request,
+                    body,
+                    lambda: evaluation.register(c, project, user, prepared, body.expires_at),
+                ),
+                request,
+            )
+
+    @router.post("/evaluations", status_code=202)
+    def evaluate_output(project: UUID, body: Evaluate, request: Request):
+        user = preflight(project, request)
+        evaluator_enabled()
+        try:
+            prepared = evaluation.prepare_evaluation(
+                project, user, body.registry_id, body.sealed_output_artifact_id
+            )
+        except (ValueError, RuntimeError, OSError) as exc:
+            raise HTTPException(409, "Sealed evaluation inputs unavailable or invalid") from exc
+        with context(request, project) as (c, user, roles):
+            return wrap(
+                idempotent(
+                    c,
+                    project,
+                    user,
+                    request,
+                    body,
+                    lambda: evaluation.enqueue(
+                        c, project, user, prepared, request.headers["idempotency-key"]
+                    ),
+                ),
+                request,
+            )
+
+    @router.get("/evaluations/{job_id}")
+    def evaluation_status(project: UUID, job_id: UUID, request: Request):
+        with context(request, project) as (c, user, roles):
+            _authorize(c, project, user, roles)
+            return wrap(evaluation.projection(c, job_id), request)
+
+    @router.post("/evaluations/{job_id}/cancel")
+    def cancel_evaluation(project: UUID, job_id: UUID, request: Request):
+        preflight(project, request, admin=True)
+        with context(request, project) as (c, user, roles):
+
+            def act():
+                evaluation.projection(c, job_id)
+                c.execute("SELECT anvil.cancel_benchmark_evaluation(%s,%s)", (project, job_id))
+                audit(c, project, user, "benchmark.evaluation_cancelled", job_id)
+                return evaluation.projection(c, job_id)
 
             return wrap(idempotent(c, project, user, request, {}, act), request)
 
