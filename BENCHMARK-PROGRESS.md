@@ -1,3 +1,7 @@
+# Pricing maintenance/final T06 checkpoint authorized — in progress
+
+Current user authorized verified exact-model pricing maintenance and deterministic clock tests only, then finalT06 publication. Base/source verified8854f71/ca8c279, samebranch/open draftPR16, clean tree. Approval appended. No T07/QA/paid/deployment/credentials or unrelated changes. Official OpenAI pricing.md freshly retrieved; verification of dimensions/model pages and other exact catalog entries still pending. No price/provenance edit or passing rerun yet. Earlier failure evidence retained below.
+
 # Current T06 source — reviewable; STOP before T07/QA
 
 Tested `ca8c2792e849ed2c7756a08e633a73a7a5832df2`, tree `2f4fc5f2416cc3e4649ebf4899507e29bbc1fea0`.57 focused pass (33contract/24SQL INCLUDING2native),136 combined non-native backend,7adapter/12Node/Ruff11 pass; fresh/upgrade/repeat049 verified. Full units689pass/1 unchanged expired-pricing failure; **NOT fully green**. Expiry2026-11-08T02:47:35Z left fail-closed; no invented price/clock/authority. Separate reviewed maintenance outsideT06. Exact evidence/commands/hashes under Coding run t06-checks.json/t06-source.sha256/t06-commands.md; current handoff at top. No T07/QA/paid/merge/deploy. All native actor/evaluator and independent freshDB stopped/retained; fresh main private PostgreSQL running to retain tmpfs SQL evidence. No real judge/Bodhium/model-performance/production-trust claim. Earlier pending-scope/T05/T04 statements below are historical.
