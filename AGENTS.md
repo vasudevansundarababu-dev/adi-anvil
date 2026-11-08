@@ -32,3 +32,5 @@
 - T04D exact-image authority and focused evidence live in the Coding run approval log/t04d-checks.json; that authority is session-specific.046 image/tool fields leave immutable older rows unqualified rather than backfilling history. Real lock-race tests must clear pg_stat_activity snapshots with pg_stat_clear_snapshot when polling inside a transaction.
 
 - T05 offline native-tool profile is separate from live/legacy adapters; public and wire calls require exact MockTransport. Validate raw token types before SDK coercion; Gemini omits native function IDs on some replies, so retain local correlation without inventing a native response ID. T05 evidence is not native/live qualification or durable paid admission.
+
+- T06 uses private benchmark_sealed; do not move legacy benchmark_output into the vault. Exact-job evaluator claims never auto-reclaim; absent judge authority stays Blocked/unscored. Accepted T05 OpenAI pricing expired2026-11-08T02:47:35Z; never extend expiry/invent rates merely to green its time-dependent unit test. T06 focused evidence and preserved whole-unit failure are separate in t06-checks.json.

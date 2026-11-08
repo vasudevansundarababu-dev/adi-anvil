@@ -1,0 +1,269 @@
+{
+  "task": "T06 only \u2014 separate evaluator/calibration/judge boundary",
+  "status": "Reviewable T06 focused completion; STOP human Coding review. Overall full unit suite NOT green:1 unchanged expired-pricing failure.",
+  "observed_at": "2026-11-08T15:15:29.209286+00:00",
+  "source_commit": "ca8c2792e849ed2c7756a08e633a73a7a5832df2",
+  "source_tree": "2f4fc5f2416cc3e4649ebf4899507e29bbc1fea0",
+  "approved_T05_source": "bb7713fdcee6a187a99daaa04b60c8f9f8afac63",
+  "approved_T05_publication": "dfc8c3ef0d0b215d0354e8f7816eda8eafb2f0c1",
+  "approval_checkpoint": "ccf34de",
+  "intermediate_checkpoint": "442fbd3",
+  "authority": "Exact user T05 review acceptance and T06-only local/native/SQL scope appended to approval-log.jsonl; current profile unchanged, roleCoding; no automatic next role.",
+  "requirements": {
+    "BM-04": "Sealed vault and exact job input RLS; actor/evaluator separate containers, no socket/DB admin/egress",
+    "BM-07": "T06 strict criterion/Decimal/bounds/citation/output hash/typed absence; not T08 scorecards or suite aggregation",
+    "BM-08": "8 fictional software calibration cases; malformedReviewRequired/semanticBlocked, reviewed registry and immutable revocation",
+    "BM-09": "Constrained least-privilege evaluator identity/claim/fence, current review/assignment/expiry/revocation/cancel; no paid judging/admission",
+    "BM-11": "Exact private report/hash and redacted API state only; no T09 export/UI claims"
+  },
+  "results": {
+    "T06_focused": {
+      "passed": 57,
+      "unit_contracts": 33,
+      "SQL_API_filesystem": 24,
+      "native_testcases_included": 2,
+      "failed": 0,
+      "skipped": 0
+    },
+    "combined_SQL_backend": {
+      "passed": 136,
+      "deselected": 3,
+      "meaning": "T04 native1 + T06 native2 intentionally separated; includes33 T06 contract and22 nonnative T06 SQL checks; not additive to focused count"
+    },
+    "full_unit": {
+      "passed": 689,
+      "failed": 1,
+      "skipped": 0,
+      "failed_test": "test_workspace_costs.py::test_managed_rates_are_exact_expiring_and_do_not_use_a_fake_zero_default",
+      "cause": "T05 unchanged OpenAI EXPIRES2026-11-08T02:47:35Z; runtime later than expiry; test still expects current(). No price/expiry/clock/policy changed.",
+      "disposition": "Outside T06 scope; retained actual failure, not skipped or called a pass. Separate reviewed pricing/test maintenance required."
+    },
+    "adapter_guards": {
+      "passed": 7
+    },
+    "node": {
+      "passed": 12
+    },
+    "ruff": "11 changed Python files pass check/format",
+    "source_secret_scan": "669 tracked/0 findings; final evidence scanned again",
+    "migrations": "Actual fresh001\u2192049/repeat and046\u2192047\u2192048\u2192049/repeat, dedicated PostgreSQL17.6"
+  },
+  "calibration": {
+    "profile": "anvil-fictional-numeric-v1",
+    "origin": "original_synthetic_fixture",
+    "status": "passed",
+    "cases": [
+      {
+        "case": "good",
+        "expected": "2",
+        "observed": "2"
+      },
+      {
+        "case": "bad",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "case": "borderline",
+        "expected": "2",
+        "observed": "2"
+      },
+      {
+        "case": "outside",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "case": "paraphrase",
+        "expected": "2",
+        "observed": "2"
+      },
+      {
+        "case": "keyword_deception",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "case": "injection",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "case": "missing",
+        "expected": "0",
+        "observed": "0"
+      }
+    ]
+  },
+  "native": {
+    "profile": "Original fictional stdlib numeric evaluator; no learned/model performance",
+    "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+    "evaluator_receipts": [
+      {
+        "container": "ce94875656b148dd690e6536771a56d15a9a040fb3a71d2caee882f83c886db8",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "implementation_sha256": "955ddcae17adaa5b6b414ad8940f613f28f1bd8cee2fdfc058c5959614a569c7",
+        "no_actor_or_vault_mount": true,
+        "probe": {
+          "nonroot_readonly_no_credentials_no_socket_no_actor_no_egress": true
+        },
+        "report_sha256": "cb287dc5ef1552f052951e86872d6b526c66ebbed9b1349935de10aacb3fe819",
+        "receipt_sha256": "3a876d7ff002ddaeaf947f2d3f0fd40dd301e0f64c22927d86771b72ac89c2cd"
+      },
+      {
+        "container": "856c5199bb6758c4da0efdbc62a134e6aff78af98761cf27e11ea84c6c9236d4",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "implementation_sha256": "955ddcae17adaa5b6b414ad8940f613f28f1bd8cee2fdfc058c5959614a569c7",
+        "no_actor_or_vault_mount": true,
+        "probe": {
+          "nonroot_readonly_no_credentials_no_socket_no_actor_no_egress": true
+        },
+        "report_sha256": "cb287dc5ef1552f052951e86872d6b526c66ebbed9b1349935de10aacb3fe819",
+        "receipt_sha256": "e6bd49cd54a1ce6c356df4f00e4fd105b9f1785a4580512a6bb2446356915652"
+      },
+      {
+        "container": "c05065ea7ea6c5e0ac46b988412cb9e3b0f83a62cf80d2529871a6b993953e35",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "implementation_sha256": "955ddcae17adaa5b6b414ad8940f613f28f1bd8cee2fdfc058c5959614a569c7",
+        "no_actor_or_vault_mount": true,
+        "probe": {
+          "nonroot_readonly_no_credentials_no_socket_no_actor_no_egress": true
+        },
+        "report_sha256": "cb287dc5ef1552f052951e86872d6b526c66ebbed9b1349935de10aacb3fe819",
+        "receipt_sha256": "6e63f8f810b1d1162c88562f8d05366dfa3041f0b628c86118c42046450f0e69"
+      },
+      {
+        "container": "2f1348459bd24b85163149402ac9a8b859e17f0a370448b7b4285fd2cb9b5094",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "implementation_sha256": "955ddcae17adaa5b6b414ad8940f613f28f1bd8cee2fdfc058c5959614a569c7",
+        "no_actor_or_vault_mount": true,
+        "probe": {
+          "nonroot_readonly_no_credentials_no_socket_no_actor_no_egress": true
+        },
+        "report_sha256": "cb287dc5ef1552f052951e86872d6b526c66ebbed9b1349935de10aacb3fe819",
+        "receipt_sha256": "613dd0b6a879a1e6b48e16694541723918119af3ce8745c056acab11d72f49b4"
+      },
+      {
+        "container": "e6acbbede41836db070f626d8c4d69cb6bb490fa2a249ec8bb4c79926259cc6b",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "implementation_sha256": "955ddcae17adaa5b6b414ad8940f613f28f1bd8cee2fdfc058c5959614a569c7",
+        "no_actor_or_vault_mount": true,
+        "probe": {
+          "nonroot_readonly_no_credentials_no_socket_no_actor_no_egress": true
+        },
+        "report_sha256": "cb287dc5ef1552f052951e86872d6b526c66ebbed9b1349935de10aacb3fe819",
+        "receipt_sha256": "4aab55a6e6b2738ec5df5aa5adba11918b7ac08dfff436893b35d86879278f5e"
+      },
+      {
+        "container": "8d6a4ec91226c32989b5d739e137f47fb368accf659f03d9a053bf959945abf0",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "implementation_sha256": "955ddcae17adaa5b6b414ad8940f613f28f1bd8cee2fdfc058c5959614a569c7",
+        "no_actor_or_vault_mount": true,
+        "probe": {
+          "nonroot_readonly_no_credentials_no_socket_no_actor_no_egress": true
+        },
+        "report_sha256": "cb287dc5ef1552f052951e86872d6b526c66ebbed9b1349935de10aacb3fe819",
+        "receipt_sha256": "104536867ff5dbff50db878cbbae54069e1695fac1856c39eebd1c3291a3281e"
+      },
+      {
+        "container": "abcdaf91c970980de96087ad0b77c3c175aa8eb250f36afbcdbd9dc5b2503e7a",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "implementation_sha256": "955ddcae17adaa5b6b414ad8940f613f28f1bd8cee2fdfc058c5959614a569c7",
+        "no_actor_or_vault_mount": true,
+        "probe": {
+          "nonroot_readonly_no_credentials_no_socket_no_actor_no_egress": true
+        },
+        "report_sha256": "cb287dc5ef1552f052951e86872d6b526c66ebbed9b1349935de10aacb3fe819",
+        "receipt_sha256": "4463f7ca595f5b8be04796ae586a43e8a17feea19c50e1583fe0f02e2f84ab26"
+      }
+    ],
+    "actor_seal_receipts": [
+      {
+        "actor": "8ea230556990ed69ad70c0e22a4bf56158b930535fe159f5f0f4ec37251e8882",
+        "evaluator": "856c5199bb6758c4da0efdbc62a134e6aff78af98761cf27e11ea84c6c9236d4",
+        "actor_stopped_before_seal_and_evaluation": true,
+        "sealed_sha256": "41c47a91514db37b546bb799cf352eee76d489e0301d876a7420c474d3abbace",
+        "provider_calls": 0,
+        "receipt_sha256": "985c00dc59cfd6e6131edbb651c56b349b49983b791b34c454138e46de01bcd2"
+      },
+      {
+        "actor": "d5cfcf57366675f9424ddebca343efc1287805e6cbced5840c806af9381c67c9",
+        "evaluator": "8d6a4ec91226c32989b5d739e137f47fb368accf659f03d9a053bf959945abf0",
+        "actor_stopped_before_seal_and_evaluation": true,
+        "sealed_sha256": "41c47a91514db37b546bb799cf352eee76d489e0301d876a7420c474d3abbace",
+        "provider_calls": 0,
+        "receipt_sha256": "b9c97dedcb9477ec3612631e9acc394344ba4eefc69a482794db1e3d70858b46"
+      },
+      {
+        "actor": "11b149e2cf9ad51e9771ad441c6c888ce6fbf1571889050f1be78dc8bf8983ce",
+        "evaluator": "e6acbbede41836db070f626d8c4d69cb6bb490fa2a249ec8bb4c79926259cc6b",
+        "actor_stopped_before_seal_and_evaluation": true,
+        "sealed_sha256": "41c47a91514db37b546bb799cf352eee76d489e0301d876a7420c474d3abbace",
+        "provider_calls": 0,
+        "receipt_sha256": "929bdd90e51cd6196dfe52965b97eee14ed1dd5a5d8bfae22215501754ab6275"
+      }
+    ],
+    "actor_and_evaluator_sessions": "All new T06 actual actor/evaluator containers stopped/retained; no removal/stale session reuse. Every repeated check used fresh names/roots.",
+    "main_test_SQL": "Fresh T06 private PostgreSQL left running to preserve tmpfs SQL evidence; independent fresh049 PostgreSQL stopped/retained. Prior T04 containers/vault permissions untouched.",
+    "bounds": "UID10001/readonly/networknone/capsALLdropped/no-new-privileges,1CPU/256MiB/32pids evaluator; only fresh service code RO bind, no actor/vault/DB/socket mount; exact preloaded image/pullnever; actual host/metadata egress probes denied"
+  },
+  "security": [
+    "API queue-only/default-off ANVIL_BENCHMARK_EVALUATION_ENABLED; no Docker imported into ordinary API or evaluator SQL coordinator",
+    "benchmark_sealed new private vault class avoids changing old benchmark_output; generic content/download denied; exact2 input artifacts scoped only to live claimed project/job/fence",
+    "Immutable registrations bind exact code/image/policy/calibration/reviewer/expiry; current creator individual evaluation assignment/Admin reviewer checked; explicit registry revocation and true SQL-lock capture race reject late result",
+    "No arbitrary imported Python/image/import path or tool command. Only installed reviewed stdlib program, fixed pinned preloaded Python. External kindsemantic returnsBlocked with no provider credentials/SDK/network call",
+    "Reports recomputed exactly: task/policy/seal/file hash/UTF8 byte spans/quote/unique criterion coverage/Decimal points and typed absence. Operational errors stayunscored, no invented quality0; official T08 score/attempt lineage not created",
+    "Source/calibration rechecked before capture; project-before-job locks, no filesystem/process/provider I/O in SQL transactions. Worker source/code hashing and private staging occur outside locks",
+    "Worker has no broad app/worker/admin credentials; production connection requires current_user evaluator role, no automatic role/user/credential bootstrap. Tests use explicit SETROLE in fresh passwordless isolated test DB only. In-container evaluator receives no DB credential/SQL connection."
+  ],
+  "compatibility": {
+    "approved15": "Byte-identical",
+    "T05_and_legacy_provider_source_locks_Harbor": "Byte-identical",
+    "pricing_source_and_test": "Byte-identical to acceptedT05; exact hashes in t06-source.sha256",
+    "existingT04_qualification": "Historical source-bound evidence; adding API/source inputs deliberately makes older source captures stale, not execution-ready. Existing T04 tests pass on new inputs.",
+    "OpenAPI": "Generated additive evaluator-only routes/DTOs from actual application",
+    "new_dependencies": "None",
+    "defaults": "Off, no deployment config/activation"
+  },
+  "earlier_failures": [
+    "TDD collection failed before evaluator modules existed",
+    "First9 SQL fixture errors exposed that benchmark_output was legacy ordinary storage; introduced separate benchmark_sealed private class in additive048 rather than move/weaken legacy data",
+    "2/33 strict unit failures exposed Python bool-span equality and Decimal overflow; fixed canonical typed comparison and unscored malformed output",
+    "Initial combined run duplicate pytest basename collection failure; renamed unit test to evaluation_contracts. Intermediate checkpoint claim reverified42pass after correction, not a combined pass before fix.",
+    "Initial full units687pass/3fail:2 missing explicit ANVIL_FIXTURE_MODE setup, corrected local fictional flag; remaining expired-price test stillfails689/1",
+    "Long dedicated startup shell calls hit soft tool timeouts; actual independent PostgreSQL heads/repeat and retained stop states later verified, no implicit retry/native fake pass.",
+    "Existing Authlib deprecation remains, not suppressed"
+  ],
+  "not_run": {
+    "QA_full_acceptance_UI_T07_onward": "Not authorized/not started",
+    "paid_semantic_judge_live_models": "Blocked: no actual judge/model/rights/cap/calibration authority or credentials supplied/provisioned",
+    "T08_official_scores_and_T09_exports": "Not implemented in T06; only private job reports",
+    "cloud_Praxis_Mac_shared_auth_merge_deploy": "Not touched"
+  },
+  "stop": "Human review of exact T06 source. Do not extend pricing expiry/invent rates to green full-unit suite; no T07/QA/paid/merge/deploy without separate approval.",
+  "logs_sha256": {
+    "unit-contract.log": "b32958fa1aa71d75acfe6fb2a23981093b1bbe33e8195966bde22ade9b81fd57",
+    "focused-final.log": "8c2a533487f78b6539bbcefcb83bc9701b5a55e7ebc2fa09c29e52b73b196b7d",
+    "sql-native-first.log": "92c8d67268e1d96a982d4cefdb02876f6bf8b059a39bc89a8ab81233250e4ffa",
+    "sql-expanded.log": "ecab9947ee546dce8708698d07371fa0f21836bacd32bd3e6045e6e37a8b9e19",
+    "unit-before.log": "ed8523667c2f73d9842dfef8915fcdf941148e9bf25492abab67e8c05ec39b46",
+    "node.log": "61318b6d2c409f5bb9333bbb051d85d913513baea6d4e1fdf6e9a90508d19947",
+    "regression-sql.log": "f9c4a9963675f71ed03cf02d0fc481b9499a33e66d98835490e1ed2a05ee95b6",
+    "adapter.log": "c9420289eba3c4c138c230b82b48957d35af62261bc5b2b1d8ac2c97305e4411",
+    "actor-native.log": "0c2c9c68a99419189647ebc368cbec573a10dbd20d0d5f61ba89da033063a849",
+    "contracts-sql.log": "ae09a23a692bb1dacbdef8d68d4feda038a52ef2beda5384a9e3fa37a54f09f8",
+    "rls-legacy.log": "21521aa67b9d7139fb40faf6ca8a9fda9a763df1b5c71aa0b3b9381bd72af19c",
+    "migration047.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "unit-regression.log": "ef72ee8d1328fbf23b18dd9a1a3eb90968f7fbf3286dab20c3db1841bb303c39",
+    "sql-first.log": "1fb8ac878c43e36267b2068bcd271f0fdfc9acf8bdc9a07f1cae3e3aa644b62f",
+    "unit-regression-fixtures.log": "3938d1d38c89c8a98d863d4e6b6e9a15de14aef716f5957798f99cdb9d22c269",
+    "sql-second.log": "ed7a64114f2c2444f0c136e9df47244e9fdb416a14baa32d62feab02f4050f06",
+    "migration049.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "migration-fresh049.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "migration-baseline.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "non-native.log": "40221dcb4db4a19bf4de9af57bbd8c5ba81cdb9819ae0436392a9e40c62ca987",
+    "dockerd.log": "12eb8b247073b1080b380327ded4ed064ae4ef9e8f43b9ae796b2f838dcf2418",
+    "migration048.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "strict-before.log": "4e68fa0983aeb490266484e9398738d0e84a312505a832404570dbd5a351a785"
+  }
+}

@@ -1,3 +1,24 @@
+# Current handoff — T06 reviewable, STOP human Coding review
+
+- Work: anvil-benchmark-coding-2026-11-07/T06.
+- Repo/branch/source: vasudevansundarababu-dev/adi-anvil / codex/anvil-agent-team-2026-11-06 / `ca8c2792e849ed2c7756a08e633a73a7a5832df2`; tree `2f4fc5f2416cc3e4649ebf4899507e29bbc1fea0`.
+- From/next: Coding -> HUMAN T06 REVIEW, NOT QA/T07.
+- Approved inputs: T05bb7713f/dfc8c3e; exact T06 authority appendedccf34de; original15 unchanged.
+- Outputs/hashes: t06-checks.json/t06-source.sha256/t06-commands.md/current report/progress/status; run artifact-index/SHA256SUMS.
+- Implemented: fictional reviewed evaluator/calibration/registry+revoke; private sealed vault; exact-job SQL/RLS/fence/expiry/cancel/report; default-off queue API; separate pinned native evaluator, no imported code/paid judge path.
+- Passed:57 focused (33unit+24SQL INCLUDING2native),136 combined non-native backend,7adapter/12Node/Ruff11; actual upgrade/fresh/repeat049.7 evaluator+3actor stopped/retained; independent freshDB stopped, fresh mainDB running for ephemeral SQL evidence. No shared/Praxis/Mac edits.
+- FAILED: full units689pass/1 unchanged expired-price-current test. Source/test exactlyT05; expiry2026-11-08T02:47:35Z correctly fails closed. No price/expiry/clock/policy changes or skipped/false green result. Separate reviewed maintenance outsideT06 required.
+- Earlier failures: initial fixture flag/duplicate basename/output-class/bool-span/overflow repaired and recorded; initial combined collection failure not a pass.
+- Boundaries: fictional conformance, NOT real SME/Bodhium approval/performance. SemanticBlocked absent actual model/rights/cap/calibration/key. Private reports NOT T08 official scores/T07 lineage. Main SQL ephemeral; source evidence durable. Deployment DSN/role provisioning not performed; no credential fallback.
+- Proposed next allowed: read-only human source/evidence review; separately scoped decision about legacy price-test maintenance. No automatic next engineering task.
+- Prohibited: T07 onward/QA/full acceptance/paid/provider/judge/merge/deploy, Praxis/Mac/shared/cloud/auth/permission edits, implicit pulls/builds/arbitrary code/images, invented approvals/prices/performance.
+- Decision: T06 REVIEWABLE/FOCUSED PASSED, OVERALL UNIT SUITE NOT GREEN; resulting code/next scope PENDING HUMAN APPROVAL.
+- Human T06 result/next scope approval: pending, not supplied. Actual prior T06-only scope authority append-only.
+
+---
+
+## Historical handoffs retained below
+
 # Current handoff — T05 Coding complete, STOP for human review
 
 - Work ID: anvil-benchmark-coding-2026-11-07 / T05 offline provider parity.

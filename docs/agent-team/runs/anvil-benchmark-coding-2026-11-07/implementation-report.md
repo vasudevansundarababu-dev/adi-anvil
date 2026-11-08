@@ -1,3 +1,39 @@
+# Current report — T06 reviewable; human Coding review pending
+
+## Approved task and input revisions
+
+User accepted T05bb7713f/publicationdfc8c3e and explicitly authorized T06-only Coding/local SQL/native on same branch; actual quote append-onlyccf34de. Original15 unchanged; current LLM connection retained. T07 onward/QA/paid/merge/deploy not authorized.
+
+## Changed behavior and source revision
+
+Tested `ca8c2792e849ed2c7756a08e633a73a7a5832df2`, tree `2f4fc5f2416cc3e4649ebf4899507e29bbc1fea0`, rerun on committed bytes. New stdlib evaluator program, registry/queue service, least-privilege SQL coordinator and separate native test-operator adapter. Additive047–049 SQL/Alembic; default-off review/queue/status/cancel/revoke API and generated OpenAPI. New private benchmark_sealed preserves legacy benchmark_output; no dependencies, old schema edits, credentials or deployed service provisioning. T05/legacy provider/dispatch/Harbor/locks unchanged.
+
+## Requirement coverage
+
+BM04/07/08/09/11 T06 only: exact seal/task/hash/membership/UTF8 citation/unique IDs/Decimal credit/tolerance/absence recomputation;8 fictional good/bad/boundary/paraphrase/keyword/injection/missing calibration cases. Missing semantic authority yieldsBlocked/no criteria; malformed outputReviewRequired, not candidate0. Registry binds code/image/policy/calibration/reviewer/expiry plus immutable revoke. SQL claim explicitproject/job only; ordinary worker cannot claim; exactly policy+sealed artifact, no arbitrary extra input. FORCE RLS, immutable reports, source/calibration recheck, no expired/revoked/cancelled/stale capture/reclaim. Actual PostgreSQL project-lock revocation race tested. No filesystem/process/provider I/O under SQL locks. API queues only; no Docker on API or SQL coordinator. Evaluator container has no socket/DB admin/egress/actor/vault; fixed pinned program, imported arbitrary code inert.
+
+## Tests actually run, results and evidence
+
+`t06-checks.json`, `t06-source.sha256`, `t06-commands.md`: **57 focused passed** (33 contracts+24 SQL/API INCLUDING2 native); **136 combined non-native backend passed**,7 adapter/12Node/Ruff11 pass.046 upgrade/repeat049 and independent fresh001→049/repeat verified.7 evaluator+3 actor containers across fresh native checks stopped/retained. Fresh main PostgreSQL left running to preserve tmpfs SQL evidence; independent fresh049 DB stopped/retained. Actual actor5+5 stopped before hash seal and separate evaluator; exact private report bytes persisted. No T06 mocks/provider calls.
+
+## Failed, blocked and not-run checks
+
+Full units **689 passed/1 failed**, NOT green. Unchanged T05 pricing source/test expects current OpenAI rates after EXPIRES2026-11-08T02:47:35Z. No invented rates/extended expiry/clock freeze/policy change to green tests. Separate reviewed pricing/test maintenance outside T06; not a T06 regression. Earlier2 fixture setup failures corrected with required ANVIL_FIXTURE_MODE. Earlier TDD absent module/9 output-class fixture errors/bool-span+overflow2 negatives/duplicate pytest basename collection failure recorded/repaired/reverified. Initial combined command was NOT a pass; later42pass verified. Existing Authlib warning remains. Startup soft tool timeouts resolved by actual SQL heads/retained-state verification, not fake/native retry.
+
+External semantic judge/model/rights/cap/calibration/key absent; staysBlocked, no credential provision/access. No T07 admission/attempt matrix/T08 official score/T09 UI-export/QA/full acceptance/paid/merge/deploy. Numeric software calibration is not real SME judge agreement or Bodhium/model performance. Source-bound T04 receipts remain historical; changed input hashes stale correctly.
+
+## Compatibility, migrations and remaining risks
+
+Original15/T05/legacy provider/dispatch/Harbor/locks/pricing unchanged. API additive changes affect T04 input hashes by design; do not reuse old qualification. Registry/calibration are fictional software-only fixtures, not production approvals. Coordinator supports explicit constrained one-job executor; no general daemon/credential auto-setup/cloud activation. Owned retained containers, no pulls/builds/deletes/shared socket/runtime permission edits. Main SQL is ephemeral tmpfs; source/evidence durable in Git.
+
+## Human Coding handoff — STOP, not QA
+
+T06 reviewable/focused passed; overall suite has1 preserved baseline failure. Review exact `ca8c2792e849ed2c7756a08e633a73a7a5832df2` with evidence. PR16 remains draft. Resulting T06 code/next scope approval PENDING. No pricing maintenance or T07/QA/paid/deploy automatically.
+
+---
+
+## Historical reports below retained unchanged
+
 # Current implementation report — T05 offline Coding complete; human review pending
 
 ## Approved task and input revisions
