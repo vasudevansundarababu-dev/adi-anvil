@@ -1,3 +1,41 @@
+# Current implementation report — T04 restart; SQL/native blocked
+
+## Approved task and input revisions
+
+Current user explicitly re-authorized T04 Coding/recovery and normal checkpoints; exact approval is appended to `approval-log.jsonl`. Original15 approved artifacts unchanged; specification44196cae…, architecturec200d135…, plan1cdf87e4… full hashes in `approved-input-snapshot.json`. Existing LLM connection unchanged; role Coding. No next-role approval inferred.
+
+## Changed behavior and source revision
+
+Focused-tested source `c0f98b24de4aaeb8ebc72cbd4e6f8ed3eb5d4534`, tree `c161214346de7bd19bb047e968addb93438cc14a`. Recovery checkpoint23bb8f1 reconstructed11 source files from28 successful read-only edit events. `t04-recovery.json` binds provenance/initial hashes; NOT a byte-exact old workspace snapshot. Old sandbox remains ERROR, detailed cause unknown, not resumed/mutated. No private exhibits, credentials, config or dependencies copied.
+
+Recovered immutable build/review/qualification SQL044/045, queue/fence/lease/cancel worker and API DTO/routes remain WIP. Continuation hardens exact typed native/resource capture, source/private binding/digests/receipt-byte hashes and fresh actor/evaluator identity; hashes actual fictional rules/calibration/evaluator/tool payloads plus policy source; fixes real long Unix socket failure with a fresh short private gateway. OpenAPI regenerated. API does not dispatch Docker; qualification queues for explicit operator. Local fictional review grants neither production trust nor execution authority. Defaults off; readiness false.
+
+## Requirement coverage
+
+Partial T04/BM-03/04 and TM-06/08/09/14 contribution, NOT full acceptance. Actual SQL immutability, authority/cancel/lease/race guards and native G1-G5 require isolated verification. General evaluators/images/Bodhium/performance admission not implemented or inferred.
+
+## Tests actually run, results and evidence
+
+`t04c-checks.json`, `t04c-source.sha256`, `t04c-commands.md`:233 backend (173 existing +60 new),7 adapter guards,12 Node pass; final failures/skips0. New manufactured receipt documents exercise actual validators, not native outcomes. Real signature/parser/compiler/filesystem/Unix-socket paths run without mocks. Ruff lint/format15 files pass, OpenAPI generation pass, original15 byte-identical to1b4f412; source checkpoint scanner640 files/0 findings. Final evidence checkpoint rescanned separately.
+
+## Failed, blocked and not-run checks
+
+New capture tests initially27 failed/13 passed; repaired. New gateway2 tests reproduced AF_UNIX length, then inherited setgid-mode assertion; fixed only fresh owned directory mode. Dependency tests initially lacked new explicit filesystem-root parameter; final5 pass. Detailed actual earlier counts and local-log hashes in check report. Authlib deprecation remains.
+
+**Blocked/not run:** migrations044/045 fresh/repeat;44 existing SQL/HTTP/filesystem tests;21 collected pipeline tests (collection is not execution); durable native matrix/resources;045 SQL partial/forged-pass negatives still need adding/verifying. No dedicated daemon/socket or preloaded approved images exists here. Historical217 backend/9+3+4 native results do not qualify current source. Full historical SHA256SUMS also names2 excluded unavailable local-only inputs; they were not fetched/replaced/claimed reverified. Original15 tracked artifacts independently equal.
+
+## Compatibility, migrations and remaining risks
+
+Only additive044/045/new SME profile; no legacy importer limit relaxation. Recovered SQL and worker authority/fencing/capture/concurrency semantics remain unverified WIP and need real negative checks/repairs. Source changes stale earlier qualification. No app/cloud/deployed/Praxis/Mac/auth settings touched, image pull/build/load, provider/judge call, deletion, QA or deployment.
+
+## Human Coding review / resume boundary
+
+Stop at environment prerequisite, not QA. Exact approved pinned PostgreSQL17.6/Python digests and isolated resume scope at top of `BENCHMARK-PROGRESS.md`. Preload into new dedicated no-network daemon before actual SQL/native checks. No substitutes/shared target/stale sessions/socket weakening. PR16 stays draft; T04 incomplete. No T05-T10/QA/paid/merge/deploy.
+
+---
+
+## Historical reports below — retained unchanged; current status above supersedes
+
 # Current implementation report — T04B native conformance
 
 ## Approved task and input revisions

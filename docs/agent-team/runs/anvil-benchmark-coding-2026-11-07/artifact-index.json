@@ -1,18 +1,18 @@
 {
-  "status": "T04B_restricted_native_conformance_pass_T04_durable_hooks_incomplete_pending_human_Coding_review",
-  "observed_at": "2026-11-07T22:10:35.742836+00:00",
-  "product_source_commit": "fbfcbb868256b809bae252709dccb2eef3900e66",
+  "status": "T04_restart_recovered_hardened_software_checks_pass_SQL_native_blocked_INCOMPLETE",
+  "observed_at": "2026-11-08T03:37:17.873495+00:00",
+  "product_source_commit": "c0f98b24de4aaeb8ebc72cbd4e6f8ed3eb5d4534",
   "recovered_commit": "15e35f12725a89be6e507b2eb73d4433e666dd76",
   "recovered_tree": "18fca788310f91a35a54df39392a37c026ae16b1",
   "release_source_files_verified_at_t00": 504,
   "approved_originals_unchanged": true,
   "native_failure_not_waived": true,
-  "history_note": "Current run metadata only; task source indexes bind their respective exact recorded commits, not current source. Historical handoff/report bytes preserved below superseding headings. Local-only logs/archives/credentials not committed.",
+  "history_note": "Current metadata only. Historical source indexes/evidence remain task-bound, not current passes. Local-only logs/archives unavailable in this new runtime remain referenced, not copied or invented. Current source recovery is history reconstruction, not old workspace snapshot.",
   "entries": [
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/approval-log.jsonl",
-      "sha256": "216d6d1f61960759c634ebf29248889cb1a1e92a4592752732f07175487949df",
-      "bytes": 6013
+      "sha256": "90859aac40bcbe3f232cbf175c96ba23c93478f6b19f1e69df2e4e2d8675c38f",
+      "bytes": 7037
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/approved-input-snapshot.json",
@@ -33,7 +33,8 @@
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/focused-readiness-check.tap",
       "sha256": "dfdd19d474e03740f9dceb77d9bcd84f726ea07a8f8e45139dc8ee70d4050401",
       "bytes": 2096,
-      "local_only": true
+      "local_only": true,
+      "available_in_restart_runtime": false
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/github-readonly-evidence.json",
@@ -42,8 +43,8 @@
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/handoff.md",
-      "sha256": "cebc6bf8916353c8f771008c840729fcf0c3daa8f605fd1ee2c04053dc2da5cd",
-      "bytes": 20018
+      "sha256": "75f7af08d99b373ebf029e66c372468c20faa49b5456bfd1a4146c5fb1aba4f4",
+      "bytes": 23080
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/historical-documents-verified.json",
@@ -62,8 +63,8 @@
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/implementation-report.md",
-      "sha256": "d869bb66b45fd17c869234932f48c025bbae692dce7047dc7b082fc0f0d54523",
-      "bytes": 15876
+      "sha256": "07ff28e0bdf7089b5470d93d696bf045162ad9aadd6b00be4a34db06f103f631",
+      "bytes": 20216
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/isolated-database-evidence.json",
@@ -169,7 +170,29 @@
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04b-source.sha256",
       "sha256": "5441e939315a7e180badd61e8202f7f67eb014054d8dbc5aec5449d26d933e63",
       "bytes": 894
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04-recovery.json",
+      "sha256": "ef9e8b036fb279a310ef40ca53ebb300d97c189e32f81ba397b4589ecb7e070f",
+      "bytes": 9000
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04c-checks.json",
+      "sha256": "d7d1554d0cf654d1ff78ffc78de60246aefed9e3fd1e82b5a60efe82d1f971b6",
+      "bytes": 6352
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04c-source.sha256",
+      "sha256": "2ac248f01b29cae53a000679b9adca03e9c39acc07711734c71d8dbc36f95350",
+      "bytes": 2002
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04c-commands.md",
+      "sha256": "29b30c41d7b497f1f21633c9e1a8a2c518cd0b5796070226fa8cb436ca3e914a",
+      "bytes": 2935
     }
   ],
-  "product_source_tree": "b04544b27ace0c0d6b4adf9e0b29e4576b02b382"
+  "product_source_tree": "c161214346de7bd19bb047e968addb93438cc14a",
+  "restart_recovery_checkpoint": "23bb8f1741156fd6d0e6f25df379a0117513e14e",
+  "native_qualification_current": false
 }

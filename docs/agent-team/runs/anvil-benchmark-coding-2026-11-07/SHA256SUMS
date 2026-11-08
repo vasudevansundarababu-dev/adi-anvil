@@ -1,15 +1,14 @@
-216d6d1f61960759c634ebf29248889cb1a1e92a4592752732f07175487949df  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/approval-log.jsonl
+90859aac40bcbe3f232cbf175c96ba23c93478f6b19f1e69df2e4e2d8675c38f  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/approval-log.jsonl
 361b135099394e76d9849a5e9e1c8edcb037b4077ed92452cfe73f60587abf97  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/approved-input-snapshot.json
-9d82166c23f5d5140acbd705886ed704495bd351dc9f51a3190ed22425e7b4da  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/artifact-index.json
 3f3ec55a761c69a0fcac9cbe4c228f3f3d42af7ac5862c52b7a44b99e83fa07d  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/environment-preflight.json
 b5d99172915ab693e63b9edc7a8d16596fec409033275bd079a681383849dec7  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/focused-check-results.json
 dfdd19d474e03740f9dceb77d9bcd84f726ea07a8f8e45139dc8ee70d4050401  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/focused-readiness-check.tap
 622fc6cbe7273f6fe937ca130b93b51f1c094fe16df4fe6fbf7f59107a3b9d2f  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/github-readonly-evidence.json
-cebc6bf8916353c8f771008c840729fcf0c3daa8f605fd1ee2c04053dc2da5cd  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/handoff.md
+75f7af08d99b373ebf029e66c372468c20faa49b5456bfd1a4146c5fb1aba4f4  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/handoff.md
 ca8c655098633bcff2299f1ca05de1d4fc0e01b455916fddec1bc04459a33cf4  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/historical-documents-verified.json
 ff5a75389a46982281fa0ab7dbe35042b977a19ef87b0fef7d4d05e1af1af2d9  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/historical-evidence-probes.json
 8890ef940eb0edcb2f7962d0e0c0459be66f82f0e06651b5b178091aaa5fd7f4  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/historical-release-paths.json
-d869bb66b45fd17c869234932f48c025bbae692dce7047dc7b082fc0f0d54523  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/implementation-report.md
+07ff28e0bdf7089b5470d93d696bf045162ad9aadd6b00be4a34db06f103f631  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/implementation-report.md
 dd2a3f6e8ae255c60fb6253725bc0203effdf20b21271aea6c21aad3e94b205b  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/isolated-database-evidence.json
 2b69306a2e63399a478e505140631578ddba8cd960cc7cecfb13e8104beaa6af  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/old-anvil-readonly-evidence.json
 b966b893814eeb1775f6592e62919dfa4942f4d82205e2346d0a1d65ee485e64  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/push-preflight.json
@@ -31,3 +30,8 @@ d0be698ee67e00fe70d6f7ee5e7179d03db5c949b1a716a105e657a0178d7b0c  docs/agent-tea
 7be44d2d3e26fff1205d38bc0b94214f7d83700141b27c9f5da635857ef5c153  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04b-checks.json
 902217485b2936c72f67871d3637e6ebf66747a0805b7791000daea44733f5ab  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04b-commands.md
 5441e939315a7e180badd61e8202f7f67eb014054d8dbc5aec5449d26d933e63  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04b-source.sha256
+ef9e8b036fb279a310ef40ca53ebb300d97c189e32f81ba397b4589ecb7e070f  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04-recovery.json
+d7d1554d0cf654d1ff78ffc78de60246aefed9e3fd1e82b5a60efe82d1f971b6  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04c-checks.json
+2ac248f01b29cae53a000679b9adca03e9c39acc07711734c71d8dbc36f95350  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04c-source.sha256
+29b30c41d7b497f1f21633c9e1a8a2c518cd0b5796070226fa8cb436ca3e914a  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04c-commands.md
+2da06488b08ce3aad271ecb576ddd60523d28721e0631af984b628f594a090a3  docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/artifact-index.json

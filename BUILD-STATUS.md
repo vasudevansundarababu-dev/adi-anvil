@@ -1,3 +1,5 @@
+Current focused-tested source: `c0f98b24de4aaeb8ebc72cbd4e6f8ed3eb5d4534` (tree `c161214346de7bd19bb047e968addb93438cc14a`). Actual results/commands and blocked checks: `docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04c-checks.json` / `t04c-commands.md`. Full T04 incomplete.
+
 ## 2026-11-08 T04 restart continuation — software checks pass; native/SQL blocked
 
 Recovered checkpoint23bb8f1; current pipeline hardening passes233 focused backend/7 adapter/12 Node checks.60 new tests validate manufactured receipt inputs, real fictional filesystem hash changes and real authenticated Unix sockets, not native conformance. Full T04 incomplete: no fresh SQL/native execution because approved pinned PostgreSQL/Python images are not preloaded.044/045 migration/race guards require real isolated verification; admission remains blocked, features off by default. See current `BENCHMARK-PROGRESS.md` for exact prerequisite/resume. No QA/paid/deployment transition.

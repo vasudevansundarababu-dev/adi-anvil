@@ -1,3 +1,5 @@
+Current focused-tested source: `c0f98b24de4aaeb8ebc72cbd4e6f8ed3eb5d4534` (tree `c161214346de7bd19bb047e968addb93438cc14a`). Actual results/commands and blocked checks: `docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04c-checks.json` / `t04c-commands.md`. Full T04 incomplete.
+
 # T04 restart continuation — current Coding status (2026-11-08)
 
 Recovery WIP checkpoint `23bb8f1` is published on the unchanged authorized branch. Continued source hardening now passes **233 focused backend tests (173 existing unit checks +60 new capture/filesystem/socket tests),7 adapter guards and12 Node policy tests**. No current SQL/native pass is claimed. `t04-recovery.json` records11 reconstructed files/28 source edit events; old sandbox remains ERROR with no detailed cause exposed. No byte-exact old filesystem snapshot or old private runtime was recovered.

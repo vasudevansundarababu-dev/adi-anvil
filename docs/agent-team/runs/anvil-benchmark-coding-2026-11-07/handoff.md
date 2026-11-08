@@ -1,3 +1,25 @@
+# Current Coding handoff — recovered/hardened; T04 blocked
+
+- Work ID: anvil-benchmark-coding-2026-11-07 / restart2026-11-08.
+- Repository / branch: `vasudevansundarababu-dev/adi-anvil` / `codex/anvil-agent-team-2026-11-06`; draft PR16 only.
+- Focused-tested product source: `c0f98b24de4aaeb8ebc72cbd4e6f8ed3eb5d4534`, tree `c161214346de7bd19bb047e968addb93438cc14a`; recovery WIP23bb8f1. Documentation successor does not imply new test coverage.
+- From / next role: Coding -> human Coding review/prerequisite resolution -> Coding continuation only. NOT QA.
+- Input hashes: original15 unchanged; full approved specification/architecture/plan hashes in `approved-input-snapshot.json`. Actual restart approval appended verbatim.
+- Output hashes: `t04-recovery.json`, `t04c-checks.json`, `t04c-source.sha256`, `t04c-commands.md`, report; current run index records exact artifact hashes.
+- Passed:233 backend/7 adapter guards/12 Node, lint/format, OpenAPI generation;15 original artifacts byte-identical. No final failures/skips in executed focused suites. Manufactured capture documents are NOT native measurements.
+- Blocked/not run: fresh/repeat044/045 migration,44 existing SQL/HTTP/filesystem checks,21 collected pipeline tests, durable native9 trials/4 probes,045 SQL partial/forged-pass negatives to add/verify. Historical native results not reused.
+- Recovery: old sandbox ERROR; detailed cause unavailable, no restart/mutation.11 source files reconstructed from28 source-edit history events, not filesystem snapshot. No secrets/private exhibits/runtime config/dependencies copied.
+- Exact blocker: no approved images/dedicated daemon/socket in fresh runtime. Pinned PostgreSQL17.6 and Python digests at top of `BENCHMARK-PROGRESS.md`; preload into new dedicated no-network daemon. No pull/build/load/substitute/shared target or permission workaround performed.
+- Resume: `/workspace/project/adi-anvil`; verify branch/remote/PR16 draft, local locked environments; fresh owner-only vault and isolated Unix DSNs. Apply/repeat045, run existing44 +collected21 SQL/native checks, add/verify capture/race negatives, repair regressions, repeat focused checks, normal checkpoint. Do not execute old absolute paths blindly.
+- Risks: recovered SQL/worker authority/fencing/capture/concurrency unverified WIP; fictional local profile grants no production trust/rights/paid authority. Missing Bodhium inputs stay Blocked. Two excluded local-only historical original input archives unavailable/not reverified.
+- Prohibited: T05-T10, QA/full acceptance, paid candidate/judge, merge, deployment, Praxis/Mac/shared/cloud/auth changes, reset/force push/delete, invented approvals/performance.
+- Decision: T04 INCOMPLETE; STOPPED AT ENVIRONMENT PREREQUISITE. Human Coding review, NOT QA approval.
+- Actual approver/reference: user initial recovery message in current conversation; exact quotes/timestamp in append-only approval log. No approval of this new code/next role invented.
+
+---
+
+## Historical handoffs below — retained unchanged; current status above supersedes
+
 # Current interim Coding handoff — restricted native scope passed, T04 still incomplete
 
 - Work ID: `anvil-benchmark-coding-2026-11-07`; Anvil-only `/workspace/anvil-recovered`, existing branch `codex/anvil-agent-team-2026-11-06` and draft PR16.
