@@ -220,7 +220,11 @@ def store_private(
 
 
 def read_private(c, artifact_id) -> bytes:
-    artifact = one(c, "SELECT * FROM anvil.artifacts WHERE id=%s", (artifact_id,))
+    return read_private_record(one(c, "SELECT * FROM anvil.artifacts WHERE id=%s", (artifact_id,)))
+
+
+def read_private_record(artifact) -> bytes:
+    # Metadata must first be selected through scoped RLS; file I/O can then occur outside SQL.
     if artifact is None:
         raise HTTPException(404, "Private artifact not found")
     if artifact["classification"] not in PRIVATE_CLASSES:

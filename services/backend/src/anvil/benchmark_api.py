@@ -2,16 +2,41 @@
 
 import os
 from datetime import datetime, timezone
+from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request
+from pydantic import AwareDatetime, Field, StrictBool
 from starlette.concurrency import run_in_threadpool
 
 from anvil import auth
+from anvil import benchmark_pipeline as pipeline
 from anvil.benchmark_archive import ArchiveError
 from anvil.benchmark_ingest import inspect_original, intake_file, prepare_original, spool
-from anvil.benchmark_storage import bind_private
+from anvil.benchmark_storage import bind_private, read_private_record
 from anvil.db import audit, digest, one, uid
+from anvil.schemas import Strict
+
+
+class SourceReview(Strict):
+    expected_manifest_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    evidence_artifact_id: UUID
+    rights_confirmed: StrictBool
+    expires_at: AwareDatetime
+
+
+class Build(Strict):
+    expected_manifest_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    review_id: UUID
+
+
+class Qualify(Strict):
+    expected_subject_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
+class Revoke(Strict):
+    rationale: str = Field(min_length=10, max_length=2000)
+    target: Literal["review", "evaluator"]
 
 
 def _enabled():
@@ -248,5 +273,141 @@ def routes(context, wrap, idempotent):
                 },
                 request,
             )
+
+    def preflight(project, request, *, admin=False):
+        with context(request, project) as (c, user, roles):
+            _authorize(c, project, user, roles)
+            if admin:
+                auth.require(roles, "admin")
+        _enabled()
+        key = request.headers.get("idempotency-key")
+        if not key or len(key) > 200:
+            raise HTTPException(428, "Idempotency-Key required (maximum 200 characters)")
+        return user
+
+    @router.post("/imports/{receipt_id}/reviews")
+    def review_source(project: UUID, receipt_id: UUID, body: SourceReview, request: Request):
+        user = preflight(project, request, admin=True)
+        if not body.rights_confirmed:
+            raise HTTPException(422, "Explicit local fictional rights confirmation is required")
+        _, _, parsed, _ = pipeline.source_snapshot(project, user, receipt_id)
+        with context(request, project) as (c, user, roles):
+            evidence = pipeline.private_metadata(c, body.evidence_artifact_id)
+        read_private_record(evidence)
+        with context(request, project) as (c, user, roles):
+            return wrap(
+                idempotent(
+                    c,
+                    project,
+                    user,
+                    request,
+                    body,
+                    lambda: pipeline.create_review(
+                        c, project, user, receipt_id, parsed, evidence, body
+                    ),
+                ),
+                request,
+            )
+
+    @router.post("/reviews/{review_id}/revoke")
+    def revoke_review(project: UUID, review_id: UUID, body: Revoke, request: Request):
+        preflight(project, request, admin=True)
+        with context(request, project) as (c, user, roles):
+
+            def act():
+                pipeline.record(c, "benchmark_source_reviews", review_id)
+                c.execute(
+                    "INSERT INTO anvil.benchmark_review_revocations(id,project_id,review_id,target,actor_id,rationale) VALUES(%s,%s,%s,%s,%s,%s) ON CONFLICT(project_id,review_id,target) DO NOTHING",
+                    (uid(), project, review_id, body.target, user, body.rationale),
+                )
+                audit(
+                    c, project, user, "benchmark.review_revoked", review_id, {"target": body.target}
+                )
+                return {"review_id": str(review_id), "target": body.target, "revoked": True}
+
+            return wrap(idempotent(c, project, user, request, body, act), request)
+
+    @router.post("/imports/{receipt_id}/build")
+    def build(project: UUID, receipt_id: UUID, body: Build, request: Request):
+        user = preflight(project, request)
+        try:
+            prepared = pipeline.prepare_build(project, user, receipt_id, body)
+        except (RuntimeError, OSError, ValueError) as exc:
+            raise HTTPException(
+                409, "Benchmark build prerequisites are unavailable or changed"
+            ) from exc
+        with context(request, project) as (c, user, roles):
+            return wrap(
+                idempotent(
+                    c,
+                    project,
+                    user,
+                    request,
+                    body,
+                    lambda: pipeline.bind_build(c, project, user, prepared),
+                ),
+                request,
+            )
+
+    @router.get("/builds/{build_id}/readiness")
+    def build_readiness(project: UUID, build_id: UUID, request: Request):
+        with context(request, project) as (c, user, roles):
+            _authorize(c, project, user, roles)
+            pipeline.record(c, "benchmark_builds", build_id)
+        return wrap(pipeline.readiness(project, user, build_id), request)
+
+    @router.post("/builds/{build_id}/qualify", status_code=202)
+    def qualify(project: UUID, build_id: UUID, body: Qualify, request: Request):
+        user = preflight(project, request, admin=True)
+        _, blockers = pipeline.policy_status(project, user, build_id)
+        if blockers:
+            raise HTTPException(
+                409, "Current source, review, assignment and build inputs are required"
+            )
+        with context(request, project) as (c, user, roles):
+            if not one(
+                c,
+                "SELECT anvil.benchmark_private_access(%s,'benchmark_trace',%s) AS allowed",
+                (project, uid()),
+            )["allowed"]:
+                raise HTTPException(
+                    403, "A current individual evaluation-review assignment is required"
+                )
+            return wrap(
+                idempotent(
+                    c,
+                    project,
+                    user,
+                    request,
+                    body,
+                    lambda: pipeline.enqueue(
+                        c, project, user, build_id, body.expected_subject_sha256
+                    ),
+                ),
+                request,
+            )
+
+    @router.get("/qualification-operations/{operation_id}")
+    def qualification_status(project: UUID, operation_id: UUID, request: Request):
+        with context(request, project) as (c, user, roles):
+            _authorize(c, project, user, roles)
+            return wrap(pipeline.operation_public(c, operation_id), request)
+
+    @router.post("/qualification-operations/{operation_id}/cancel")
+    def cancel_qualification(project: UUID, operation_id: UUID, request: Request):
+        preflight(project, request, admin=True)
+        with context(request, project) as (c, user, roles):
+
+            def act():
+                operation = pipeline.record(c, "benchmark_qualification_operations", operation_id)
+                if operation["state"] in {"queued", "running"}:
+                    c.execute(
+                        "UPDATE anvil.benchmark_qualification_operations SET state=CASE WHEN state='queued' THEN 'cancelled' ELSE 'execution_unknown' END,finished_at=now(),safe_code='qualification_cancelled_no_retry' WHERE id=%s",
+                        (operation_id,),
+                    )
+                    audit(c, project, user, "benchmark.qualification_cancelled", operation_id)
+                return pipeline.operation_public(c, operation_id)
+
+            return wrap(idempotent(c, project, user, request, {}, act), request)
 
     return router

@@ -1,3 +1,7 @@
+## 2026-11-08 T04 restart — recovered source WIP
+
+Read-only history reconstructed11 source files above1b4f412; source compiles, SQL/native checks not yet run. Provenance `docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04-recovery.json`; current resume `BENCHMARK-PROGRESS.md`. Old sandbox ERROR cause unavailable. No QA/deployment or performance claim.
+
 ## Benchmark Coding checkpoint — 2026-11-07
 
 Active isolated source: `codex/anvil-agent-team-2026-11-06`; resume from `BENCHMARK-PROGRESS.md` and Coding run `docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/`. Source `fbfcbb868256b809bae252709dccb2eef3900e66`, tree `b04544b27ace0c0d6b4adf9e0b29e4576b02b382`. Actual Yes approved the bounded adapter plan. T04B passes9 real native trials plus7 source/resource checks and7 adapter guards;217 existing backend and12 Node checks pass. Synthetic software conformance only, not Bodhium/model performance or QA. T04 durable build/qualification/product-admission hooks remain incomplete; T05–T10 not started. See source-bound `t04b-checks.json`, exact `t04b-commands.md` and `t04b-source.sha256`; prior failed scope effects/environment retries are preserved. Original15 approved inputs unchanged. Keep PR16 draft and stop for human Coding review; no QA/merge/deployment/paid calls. Historical statuses below are not current acceptance evidence.

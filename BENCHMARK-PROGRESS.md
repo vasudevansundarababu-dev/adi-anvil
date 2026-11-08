@@ -1,3 +1,11 @@
+# Restart checkpoint — 2026-11-08 (current)
+
+Recovered 11 unpushed Anvil source files from 28 successful read-only source-edit history events after published `1b4f41261d1371e2122a285f1327fca50abd00c5`. No old workspace snapshot recovered; source was reconstructed with literal edits and locked Ruff normalization, with event/file hashes in `t04-recovery.json`. Old conversation remains ERROR, detailed cause unknown, not resumed or modified. No credentials/private inputs/dependencies/runtime configuration copied.
+
+**WIP / not qualified:** recovered pipeline, worker, API, SQL044/045 and tests compile in fresh locked Python3.12. No current SQL/native tests yet; historical checks below do not qualify recovered code. This runtime has no inherited Docker socket/images. Native qualification requires the approved preloaded pinned image; do not pull substitutes. Continue safe independent implementation/checks; never mark missing prerequisites passed. Active workspace `/workspace/project/adi-anvil`; branch unchanged, PR16 verified open/draft. Current restart authority appended to approval log. Stop after T04 Coding for human review, before T05–T10/QA/paid calls/merge/deployment.
+
+---
+
 # Benchmark Coding progress
 
 Status: T00–T03 foundations and T04A complete at focused Coding level. The user approved the restricted adapter plan with **Yes** to the 9f2dcc3 handoff. T04B now passes: nine real Harbor trials, three stale-source/private-binding negatives, four actual resource/stdio checks, seven adapter guards; existing217 backend and12 Node checks also pass. Exact product source `fbfcbb868256b809bae252709dccb2eef3900e66`, tree `b04544b27ace0c0d6b4adf9e0b29e4576b02b382`; evidence `t04b-checks.json` / `t04b-source.sha256`. **T04 overall remains incomplete**: durable build/qualification hooks and product admission are not implemented. This bounded native continuation stops for human Coding review, not QA, deployment or paid calls. Earlier failure records below remain historical, not erased.

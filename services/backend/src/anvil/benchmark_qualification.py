@@ -13,6 +13,7 @@ import time
 import zipfile
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
+from types import SimpleNamespace
 from uuid import uuid4
 
 from anvil.benchmark_compiler import FIXTURE_IMAGE, seal_outputs
@@ -558,6 +559,25 @@ def native_trial(package, compiled, task, private, folder, *, mode):
                 "Native Harbor trial failed; inspect owned ignored log: " + str(folder)
             )
     finally:
+        for session in (name + "__env", name + "__verifier__trial"):
+            owned = (
+                docker.run(
+                    [
+                        "ps",
+                        "--no-trunc",
+                        "--filter",
+                        "label=com.docker.compose.project=" + session,
+                        "--format",
+                        "{{.ID}}",
+                    ]
+                )
+                .decode()
+                .split()
+            )
+            for container in owned:
+                if len(container) != 64:
+                    raise ValueError("Invalid owned container identity")
+                docker.run(["stop", "--time", "1", container])
         gateway.close()
     actor, evaluation = gateway.result["/actor"], gateway.result["/evaluate"]
     result = {
@@ -599,3 +619,159 @@ def native_trial(package, compiled, task, private, folder, *, mode):
     raw = json.dumps(result, sort_keys=True, allow_nan=False).encode()
     (folder / "native-receipt.json").write_bytes(raw)
     return {**result, "native_receipt_sha256": hashlib.sha256(raw).hexdigest()}
+
+
+def resource_probe(mode, folder):
+    if os.environ.get("ANVIL_TEST_HARBOR") != "1" or mode not in {
+        "memory_pids",
+        "tree_timeout",
+        "stdio_overflow",
+        "stdio_timeout",
+    }:
+        raise ValueError("Explicit isolated resource-probe scope required")
+    folder = Path(folder)
+    folder.mkdir(mode=0o700)
+    home = folder / "home"
+    home.mkdir(mode=0o700)
+    docker = NativeDocker(home)
+    container = (
+        docker.run(
+            [
+                "run",
+                "--detach",
+                "--pull",
+                "never",
+                "--name",
+                "anvil-bm-g4-" + uuid4().hex[:20],
+                "--network",
+                "none",
+                "--read-only",
+                "--cap-drop",
+                "ALL",
+                "--security-opt",
+                "no-new-privileges:true",
+                "--pids-limit",
+                "16",
+                "--memory",
+                "128m",
+                "--memory-swap",
+                "128m",
+                "--cpus",
+                "1",
+                "--user",
+                "10001:10001",
+                "--tmpfs",
+                "/tmp:rw,nosuid,nodev,noexec,size=8m,uid=10001,gid=10001",
+                "--tmpfs",
+                "/workspace:rw,nosuid,nodev,noexec,size=8m,uid=10001,gid=10001",
+                "--workdir",
+                "/workspace",
+                FIXTURE_IMAGE,
+                "sleep",
+                "infinity",
+            ]
+        )
+        .decode()
+        .strip()
+    )
+    result = {"mode": mode, "container": container, "retained": True}
+    try:
+        if mode == "memory_pids":
+            result.update(
+                json.loads(
+                    docker.execute(
+                        container,
+                        [
+                            "python",
+                            "-c",
+                            """import json,subprocess
+from pathlib import Path
+children=[]
+try:
+    while len(children)<30:children.append(subprocess.Popen(['sleep','20']))
+except BlockingIOError:limited=True
+else:limited=False
+finally:
+    for child in children:child.terminate()
+    for child in children:child.wait()
+assert limited and len(children)<16
+assert Path('/sys/fs/cgroup/memory.max').read_text().strip()=='134217728'
+print(json.dumps({'pids_denied':limited,'children_started':len(children)}))
+""",
+                        ],
+                    )
+                )
+            )
+            before = dict(
+                line.split()
+                for line in docker.execute(container, ["cat", "/sys/fs/cgroup/memory.events"])
+                .decode()
+                .splitlines()
+            )
+            try:
+                docker.execute(
+                    container,
+                    ["python", "-c", "data=[]\nwhile True:data.append(bytearray(8*1024*1024))"],
+                    timeout=15,
+                )
+            except RuntimeError:
+                after = dict(
+                    line.split()
+                    for line in docker.execute(container, ["cat", "/sys/fs/cgroup/memory.events"])
+                    .decode()
+                    .splitlines()
+                )
+                if int(after["oom_kill"]) <= int(before["oom_kill"]):
+                    raise ValueError("Memory OOM control was not observed") from None
+            else:
+                raise ValueError("Memory exhaustion was not denied")
+            result["memory_oom_observed"] = True
+        elif mode == "tree_timeout":
+            try:
+                docker.execute(
+                    container,
+                    [
+                        "python",
+                        "-c",
+                        "import subprocess,time;subprocess.Popen(['sleep','60']);time.sleep(60)",
+                    ],
+                    timeout=1,
+                )
+            except RuntimeError as exc:
+                if "process tree stopped after timeout" not in str(exc):
+                    raise
+            else:
+                raise ValueError("Owned tree timeout was not observed")
+            result["owned_timeout_tree_stopped"] = True
+        else:
+            tool = SimpleNamespace(
+                command=[
+                    "python",
+                    "-c",
+                    "import sys;sys.stdin.readline();sys.stdout.write('x'*70000);sys.stdout.flush()"
+                    if mode == "stdio_overflow"
+                    else "import time;time.sleep(60)",
+                ],
+                tool_timeout_seconds=1,
+            )
+            try:
+                tools = StdioTools(docker, container, SimpleNamespace(tools=[tool]))
+            except (ValueError, RuntimeError) as exc:
+                expected = (
+                    "response exceeds bound"
+                    if mode == "stdio_overflow"
+                    else "tool tree stopped after timeout"
+                )
+                if expected not in str(exc):
+                    raise
+            else:
+                tools.close()
+                raise ValueError("Stdio bound was not enforced")
+            result[mode + "_denied"] = True
+    finally:
+        if docker.inspect(container)["State"]["Running"]:
+            docker.run(["stop", "--time", "1", container])
+    state = docker.inspect(container)["State"]
+    if state["Running"] or state["Pid"] != 0:
+        raise ValueError("Owned resource probe process tree is still running")
+    return result
