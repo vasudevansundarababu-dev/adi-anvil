@@ -1,3 +1,7 @@
+# T04 image prerequisite authorized — preparing isolated qualification
+
+User explicitly approved one-time Docker Hub downloads of only the two exact pinned images into a new workspace-local dedicated test daemon. Approval appended verbatim. This supersedes the image-permission blocker below, NOT any test failure or safety gate. Starting fromc7546a6, no new SQL/native result yet. Scope remains T04 Coding; no T05–T10/QA/paid/merge/deployment/Praxis/Mac/shared changes.
+
 Current focused-tested source: `c0f98b24de4aaeb8ebc72cbd4e6f8ed3eb5d4534` (tree `c161214346de7bd19bb047e968addb93438cc14a`). Actual results/commands and blocked checks: `docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04c-checks.json` / `t04c-commands.md`. Full T04 incomplete.
 
 # T04 restart continuation — current Coding status (2026-11-08)
