@@ -1,18 +1,18 @@
 {
-  "status": "T04_approved_fictional_slice_focused_Coding_pass_STOP_human_review_before_T05_QA",
-  "observed_at": "2026-11-08T04:47:07.017194+00:00",
-  "product_source_commit": "38cc1513aaee1069b69392b80566d23cb45d216a",
+  "status": "T05_offline_Coding_complete_STOP_human_review_before_T06_QA",
+  "observed_at": "2026-11-08T05:40:05.306452+00:00",
+  "product_source_commit": "bb7713fdcee6a187a99daaa04b60c8f9f8afac63",
   "recovered_commit": "15e35f12725a89be6e507b2eb73d4433e666dd76",
   "recovered_tree": "18fca788310f91a35a54df39392a37c026ae16b1",
   "release_source_files_verified_at_t00": 504,
   "approved_originals_unchanged": true,
   "native_failure_not_waived": true,
-  "history_note": "Task-bound historical evidence remains unchanged. Current actual SQL/native T04D results and hashes supersede former runtime blockers only for approved fictional scope. No next-role/code-review approval inferred.",
+  "history_note": "Earlier task/source-bound pass/failure evidence retained unchanged. Current t05 files supersede prior stop/in-progress scope only; no next-task/QA/paid authority inferred.",
   "entries": [
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/approval-log.jsonl",
-      "sha256": "37ce85a6183cde02c8ca9b305a07305c9282045c008b1b80248d27c9ecd45d9c",
-      "bytes": 8293
+      "sha256": "40199c69f03dff4929962dc2bd19b326458b37e1e982c8b1ca3ab28acee44760",
+      "bytes": 9524
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/approved-input-snapshot.json",
@@ -43,8 +43,8 @@
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/handoff.md",
-      "sha256": "8b5d120659c2fd6a3671e1bf8a6b9df7d21d3b38da50af2c70df4b81946c5990",
-      "bytes": 26584
+      "sha256": "85986869fc15f6a2029b8c119b150ed158cc7766f8791239dd0e94986002040d",
+      "bytes": 29465
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/historical-documents-verified.json",
@@ -63,8 +63,8 @@
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/implementation-report.md",
-      "sha256": "d7bcacfef31248e681e93e9932e7cd51ebfe8bb02b53c9b728476ee3d837e6f8",
-      "bytes": 24533
+      "sha256": "22eb2377b031f1afa49249d3782bc0884e55a39a13345c03443361293ccb178c",
+      "bytes": 29559
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/isolated-database-evidence.json",
@@ -210,10 +210,25 @@
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04d-commands.md",
       "sha256": "0eb46b51303ec7b0add27fa090aa17a27745a710160028b24a30b78d9959eacd",
       "bytes": 6807
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t05-checks.json",
+      "sha256": "91e7a604a43df86c2a7c119bc561608ecd84368a1499f16111075220ac543e8b",
+      "bytes": 7789
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t05-source.sha256",
+      "sha256": "60b0f1101604cbd00d6a0a6c7df5a48360fcb532cfbf58de824f41a506dabd82",
+      "bytes": 1988
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t05-commands.md",
+      "sha256": "c162640261b760ca0a5265ceef9585424518c8877ed0caedbc8c73997b003ada",
+      "bytes": 4503
     }
   ],
-  "product_source_tree": "0fe379b77c4168bb905a76d1d83f13c3faa7ca30",
+  "product_source_tree": "1369a0254476b7dc64d107d7205527ef9addc2be",
   "restart_recovery_checkpoint": "23bb8f1741156fd6d0e6f25df379a0117513e14e",
-  "native_qualification_current": true,
-  "native_qualification_scope": "Exact reviewed fictional Python/no-network profile only, not production/general/Bodhium admission"
+  "native_qualification_current": false,
+  "native_qualification_scope": "T04 historical fictional native profile unchanged; new T05 profile is offline SDK/host-client conformance only, NOT native container or live model qualification"
 }

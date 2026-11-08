@@ -1,0 +1,115 @@
+{
+  "task": "T05 only \u2014 provider-neutral native-tool conversation/parity, offline Coding",
+  "status": "Implemented and focused offline-qualified; STOP for human T05 Coding review",
+  "observed_at": "2026-11-08T05:38:56.299931+00:00",
+  "source_commit": "bb7713fdcee6a187a99daaa04b60c8f9f8afac63",
+  "source_tree": "1369a0254476b7dc64d107d7205527ef9addc2be",
+  "approved_T04_source": "38cc1513aaee1069b69392b80566d23cb45d216a",
+  "start_checkpoint": "62ac0ff158813646489bc2d3cf7482c781d5dc61",
+  "approval_checkpoint": "377023e32bf5ee61d30b9cfc95a375c532ce6457",
+  "intermediate_source": "c126eaee7ac2e23bd6175fadf989fda5551882f9",
+  "authority": "Actual user T04 source approval/T05-only offline Coding authorization verbatim appended to approval-log.jsonl; user then requested finishT05 while away. No next-scope authority.",
+  "requirements": {
+    "BM-05": "T05 real3 SDK wire/native tool conversation parity",
+    "BM-09": "T05 host auth/destination boundary ONLY; durable paid admission remainsT07",
+    "BM-11": "T05 correlated turn/usage evidence ONLY; scoring/export remainT06/T08/T09"
+  },
+  "profile": "anvil-sme-native-tools-offline-v1",
+  "test_results": {
+    "new_focused": {
+      "passed": 120,
+      "provider_loop": 95,
+      "real_bridge": 25,
+      "failed": 0,
+      "skipped": 0
+    },
+    "combined_backend": {
+      "passed": 467,
+      "new_T05_included": 120,
+      "legacy": 347,
+      "failed": 0,
+      "skipped": 0
+    },
+    "adapter_guards": {
+      "passed": 7,
+      "native": false
+    },
+    "node_policies": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    },
+    "ruff_check": "Passed5 files",
+    "ruff_format": "Passed5 files",
+    "source_secret_scan": "654 tracked/0 findings; final docs separately rescanned"
+  },
+  "real_paths": [
+    "Installed3 vendor SDK request/parsing/normalization; only unavailable paid HTTP uses httpx.MockTransport, as approved BM05 requires",
+    "Real hash-pinned fictional MCP process with sanitized env, protocol/schema init and49/9 arithmetic results",
+    "Actual declared write-once actor files; traversal/absolute/symlink/hardlink/overwrite/quota negatives",
+    "Actual owned process/pipe tests: bool/wrong RPC IDs, oversize, read timeout and deliberately full input-pipe total write/read deadline",
+    "Actual authenticated owner-only private Unix socket, wrong auth/session, duplicate/concurrent/unknown negatives; installed Harbor SMEAgent host-client subprocess, NOT a Docker trial"
+  ],
+  "controls": [
+    "Exact provider-family endpoint/path/auth and selected model; one send/turn, no fallback/redirect/env proxy or SDK retry",
+    "Ordered typed content/calls/observations, duplicate/reused IDs rejected before side effects; deterministic requested order",
+    "Gemini native IDs echoed only when supplied; omitted IDs use stable local turn/part IDs within normalized observation. Opaque signatures replay internally, no hidden-thought request or public trace",
+    "15 inference responses/task,8 calls/response,64KiB arguments/results/final text; full SDK request bounded up to selected limit, response2MB; task/provider/tool deadlines",
+    "Unsupported/non-object schemas and controls rejected before SDK dispatch; direct stdio validates frozen schema before RPC; safe correlated error observations",
+    "Raw boolean/string/fractional/negative tokens rejected before SDK coercion; missing usage and actual cost remainNone/Unknown, never0"
+  ],
+  "boundary": "Exact MockTransport required in public and wire entries, synthetic credential only. No live dispatch/credential lookup/DB/API/worker wiring. In-memory gateway is NOT a durable paid fence; T07 owns future admission/claims. T04 native evidence does not qualify new T05 profile.",
+  "repairs_and_failures": [
+    "TDD initially failed collection for absent new module, then43 initial parity checks passed",
+    "Ordered-content test failed before typed content support",
+    "Bridge initially5 failed/15 passed: bool RPC ID accepted;4 harness cases used unsupported HTTPConnection context manager, corrected to closing",
+    "Schema preflight2 failed/108 passed, fixed before-dispatch rejection",
+    "Strict JSON body guard briefly misclassified3 redirects, corrected by preserving HTTP status before body parsing; no redirect followed",
+    "Direct stdio schema negative observed an extra RPC before fix; now rejected before send",
+    "Raw usage9-case negative matrix exposed4 coercions/5 already rejected; now rejects raw invalid types before all SDKs"
+  ],
+  "compatibility": {
+    "approved_originals": "15 byte-identical to62ac0ff",
+    "legacy_providers_dispatch_Harbor_SQL_OpenAPI_locks": "Unchanged",
+    "new_dependencies_migrations_routes_default_activation": false,
+    "Praxis_Mac_shared_cloud_auth_changes": false
+  },
+  "not_run": {
+    "new_T05_native_Docker_trials": "Not run; no container qualification claimed",
+    "SQL_API_browser_full_acceptance": "Not run forT05; no SQL/API/UI changes. Earlier T04 results remain historical.",
+    "live_task_smoke_each_exact_model": "Blocked: exact model/rights/key/budget/operator authority absent; no paid calls",
+    "T06_T10_QA_merge_deployment": "Not started or authorized"
+  },
+  "operations": [
+    "No Docker/PostgreSQL/shared service started/stopped/reconfigured/reused byT05. No old vault/config permission relaxation.",
+    "Initial Git credential prompt canceled; refreshed injected token used only for authorized same-repo GitHub auth through ephemeral owner-only askpass variable reference, no actual key file/global settings. No force/reset.",
+    "git apply used because apply_patch executable unavailable; locked Ruff normalizes code. Existing Authlib deprecation only.",
+    "Evidence generator initially ran under host Python3.13 without SDK metadata; rerun under actual locked backend Python3.12. Product tests always ran locked3.12.",
+    "Raw logs/scripts/runtime inputs/dependencies stay ignored; only sanitized evidence hashes versioned. No credentials/private exhibits copied."
+  ],
+  "stop": "Human review of exact T05 source before T06\u2013T10/QA/paid/merge/deployment. No production trust roots, live qualification or model-performance claim.",
+  "runtime": {
+    "openai": "2.54.0",
+    "anthropic": "0.125.0",
+    "google-genai": "1.75.0",
+    "httpx": "0.28.1",
+    "pydantic": "2.13.5"
+  },
+  "local_log_sha256": {
+    "parity-expanded.log": "85f01dd77169ccbdf9dc4a73bda0b40c604a84fb23957c494e14f70137ae0d27",
+    "combined-final.log": "d6be8efee882badeeb025535eb0ee9cde787d34f19bc3adc70df91d9a72c8be1",
+    "node.log": "b7788bcfc2ff33088d3a7ebcb1fbf534d5cade181430a20c4e78fe8362eaca4f",
+    "bridge-before.log": "e5ad55d86638aa56f3043f24aa02302f52f042c66df86490e52d3f56568d2479",
+    "combined.log": "87b958fbb73a17df3f6ef425e0f5949999774770bffc56d8d84316ebbfc49b2f",
+    "boundaries-before.log": "ad4bd8b9a0374f68afb2b90673f1f258eaefebaeb11459c78036fdafd1e33a85",
+    "usage-coercion-before.log": "85bc7f66e2991570ab996d165dc819849e420fa5f6878b0326d87f4425cc5362",
+    "adapter.log": "0f30eda0b7639f6faf6f30fab369a775860f26f2f3d174e7f6dd7b9adc802dac",
+    "direct-stdio-before.log": "2f40378ac49c5ca56ca902cc288d53aa75e68333eacd27c569ec329448002aa2",
+    "bridge-after.log": "e888a4099aeff0a238e70ef17f92a4f4f8c88c0423e74dba22a5a37ac63757f6",
+    "parity-first.log": "3a01195c3bb0ed2a860e18cbfc31509a30732c8485ad5c6f90d36a288b5e4ba3",
+    "focused-checkpoint.log": "702988c20a1721a1f30c874b952af3ea8df140bfc312b4205e026fe9a0733f84",
+    "final-boundaries-before.log": "4559894b1574a816458a360c61d25fbc7dea21fcf452c39705fa130056ce2642",
+    "tests-before.log": "835371af43dce96076e23c6a10ca8dc75c42258053f548f9565fd2067663e4f2",
+    "final-focused.log": "3994d3b381c1e7a79a5264cb0516838034a293905b8b12a080b266c34ee1b910"
+  }
+}

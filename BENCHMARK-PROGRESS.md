@@ -1,3 +1,5 @@
+Current focused-tested T05 source `bb7713fdcee6a187a99daaa04b60c8f9f8afac63`, tree `1369a0254476b7dc64d107d7205527ef9addc2be`. Results/source/commands: Coding run `t05-checks.json`, `t05-source.sha256`, `t05-commands.md`. T05 complete at offline Coding level; STOP for human review before T06–T10/QA/paid/merge/deploy. Earlier T04/T05-in-progress statements below are historical.
+
 # T05 Coding complete — offline qualification passed; STOP human review
 
 120 new focused checks (95 provider-loop+25 real bridge) and467 combined offline backend checks pass, plus7 adapter guards/12 Node. No final failures/skips. Versioned offline profile implements actual3 SDK mappings and bounded typed native multi-tool loop; real fixture stdio arithmetic, declared write-once outputs and authenticated single-use Unix gateway exercise installed Harbor host client without Docker. Schema/usage are validated before SDK coercion/dispatch; unknown usage/cost never replaced with zero. Exact Gemini optional IDs/opaque replay signatures preserved.

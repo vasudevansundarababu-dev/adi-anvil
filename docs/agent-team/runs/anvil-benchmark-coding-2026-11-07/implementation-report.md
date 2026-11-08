@@ -1,3 +1,41 @@
+# Current implementation report — T05 offline Coding complete; human review pending
+
+## Approved task and input revisions
+
+User approved T04 source38cc151 and T05 under the original implementation plan, local/offline only, normal checkpoints to existing branch, PR16 draft, preserve Praxis/local changes; stop beforeT06–T10/QA/paid/merge/deploy. User then requested finishT05 while away. Exact approval append-only at377023e; original15 approved spec/design/plan artifacts unchanged. Existing LLM connection unchanged; role Coding.
+
+## Changed behavior and source revision
+
+Source `bb7713fdcee6a187a99daaa04b60c8f9f8afac63`, tree `1369a0254476b7dc64d107d7205527ef9addc2be`; checks rerun on the committed bytes.3 additive modules: `benchmark_conversation.py` typed bounded host loop, `benchmark_provider_wire.py` three real SDK mappings/replay/guard, `benchmark_tool_gateway.py` declared output/stdin/Unix mediation.2 focused unit test files. Keep new SDK/profile code separate instead of altering existing providers/dispatch; reuse installed SMEAgent host-client protocol unchanged. No API/worker/admission route or live transport enabled. Profile `anvil-sme-native-tools-offline-v1` requires exact MockTransport and fixed synthetic credential, never environment/sibling key inference.
+
+## Requirement coverage
+
+BM-05/T05: ordered response/model/text/calls/observations/finish/usage; native OpenAI/Anthropic/Gemini wire formats independently qualified offline; exact endpoints/auth/model, no retries/redirect/proxy fallback.15 responses/task,8 calls/response,64KiB arg/result/final, bounded SDK request/2MB response and task/tool deadlines. Duplicate/reused IDs rejected before side effects; unknown usage/cost remainsNone. Gemini opaque signatures replay internally and native IDs only echoed when supplied. Schemas/raw usage validated before dispatch/SDK coercion.
+
+BM-09/T05 only: host keys never enter actor tools; no live credential retrieval/admission bypass. BM-11/T05 only: typed correlation/error/unknown evidence, not scoring/export. Real MCP protocol/schema/49-and9 arithmetic, owner-only declared write-once output files/16MiB aggregate quota, no path/link escapes, nonblocking total pipe write/read deadline and owned process stop, authenticated single-use Unix gateway to installed Harbor host client. In-memory gateway is NOT a durable paid fence; actual claims/spend remainT07.
+
+## Tests actually run, results and evidence
+
+`t05-checks.json`/`t05-source.sha256`/`t05-commands.md`:120 new tests (95 provider/25 bridge),467 combined backend INCLUDING120,7 adapter guards,12 Node passed. Ruff5 files; source checkpoint654 tracked files/0 scanner findings, final artifacts rescanned. Original15, legacy providers/dispatch/Harbor, locks/SQL/OpenAPI unchanged. Only paid vendor HTTP is mocked, as approved plan requires; tool/process/filesystem/socket paths are real. No final failures/skips.
+
+## Failed, blocked and not-run checks
+
+Earlier collection failure preceded implementation. Tests exposed ordered-content omission, bool RPC ID acceptance, missing schema preflight/direct stdio enforcement and4 raw token coercions; repaired/reverified. HTTPConnection test harness fixed to use closing; redirect classification repaired without following redirects. Existing Authlib deprecation remains. Initial Git credential prompt canceled; ephemeral refreshed authentication used without config changes/reset/force. Evidence metadata script initially used host Python; rerun under actual locked3.12. Full details/raw-log hashes preserved, not relabeled as prior passes.
+
+No T05 native Docker trial or SQL/API/browser/full acceptance run. Installed Harbor host client + real process tools are NOT native container qualification. T04 evidence remains historical and does not qualify this new profile. Actual model/task live smokes are Blocked: exact models/rights/keys/budgets/operator activation absent, no invented selections. T06–T10/QA/merge/deployment not started.
+
+## Compatibility, migrations and remaining risks
+
+Additive separate offline profile; no migrations/dependency changes/routes/default flag changes. Legacy single-action adapters and limits unchanged, all15 approved artifacts preserved. No Docker/SQL/shared/runtime permission/Praxis/Mac/cloud/auth changes. Fresh owner-only test paths only; prior vaults/config untouched. Unknown usage is not0; no model-performance/production trust/admission claim. Live/durable integration, actual model-supported controls and new native-profile qualification require their later explicit scopes.
+
+## Human Coding handoff — not QA
+
+T05 implemented and focused offline-qualified; STOP for human review of `bb7713fdcee6a187a99daaa04b60c8f9f8afac63`. PR16 stays draft. No autonomous next task. Actual approval of resulting T05 code/next role is PENDING, not inferred from user being away. Exact resume at top of BENCHMARK-PROGRESS.md; keep source/input hashes when reviewing.
+
+---
+
+## Historical reports below — unchanged; current T05 status above supersedes
+
 # Current implementation report — T04 approved fictional slice qualified (Coding)
 
 ## Approved task and input revisions

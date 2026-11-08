@@ -1,3 +1,26 @@
+# Current handoff — T05 Coding complete, STOP for human review
+
+- Work ID: anvil-benchmark-coding-2026-11-07 / T05 offline provider parity.
+- Repository / branch / source: vasudevansundarababu-dev/adi-anvil, codex/anvil-agent-team-2026-11-06, `bb7713fdcee6a187a99daaa04b60c8f9f8afac63` / tree `1369a0254476b7dc64d107d7205527ef9addc2be`.
+- From role / next: Coding -> HUMAN T05 CODING REVIEW, not QA or automaticT06.
+- Input artifacts: unchanged15 approved spec/design/plan files; approvedT04 source38cc151 and checkpoint62ac0ff. Exact T05 approval appended377023e.
+- Output hashes: t05-checks.json, t05-source.sha256, t05-commands.md and current report/progress in run artifact-index.json/SHA256SUMS.
+- Changes:3 additive modules/2 tests; BM05 tool/wire/host correlation; BM09 host auth/destination only; BM11 typed error/usage evidence only. Preserve legacy SDK/dispatch/Harbor/SQL/OpenAPI/locks.
+- Passed:120 new (95+25),467 combined INCLUDING120,7 adapter guards,12 Node, Ruff5 files, source654/0 scanner, final docs rescanned; original15 unchanged. No final failed/skipped checks.
+- Actual real paths:3 installed SDKs over mocked vendor HTTP only; fictional MCP process/49/9 calculations, canonical write-once actor files, owned bounded pipe I/O, authenticated private Unix gateway and installed Harbor SMEAgent host client. NOT native Docker/live qualification.
+- Fixed negatives: ordered content, bool RPC IDs, schema preflight/direct RPC schema rejection, raw SDK token coercion, terminal duplicate/unknown gateway; preserve earlier failure logs/hashes.
+- Blocked/not run: live model task smoke, exact models/rights/credentials/budgets/operator activation absent; nativeT05/SQL/API/browser/full acceptance not run; T06–T10/QA/paid/merge/deploy not authorized.
+- Risks: offline profile cannot be used as paid dispatch; no public route/worker wiring/credential retrieval. In-memory gateway is NOT durable claim/spend fencing (T07). Later native/live profile qualification cannot reuse old T04 pass.
+- Operations: no Docker/SQL/shared service or previous vault permission changes; no Praxis/Mac/cloud/global-auth edits. Ephemeral Git askpass only, no secret file. No dependencies/migrations/new image pulls.
+- Proposed next allowed scope: read-only human review of exact T05 source and evidence. No next engineering task until specific human approval.
+- Prohibited: T06–T10/QA/full acceptance/paid/merge/deployment, Praxis/Mac/shared changes, force/reset/delete, invented approvals/models/performance.
+- Decision: T05 IMPLEMENTED/OFFLINE FOCUSED-QUALIFIED; RESULTING CODE/NEXT SCOPE PENDING HUMAN APPROVAL.
+- Human approval of T05 implementation / next role: pending; no approval supplied. Prior actual scope approval: user messages quoted append-only in approval-log.jsonl.
+
+---
+
+## Historical handoffs below — retained unchanged; current T05 status above supersedes
+
 # Current Coding handoff — approved fictional T04 slice passed; human review required
 
 - Work ID: anvil-benchmark-coding-2026-11-07 / T04D isolated continuation.
