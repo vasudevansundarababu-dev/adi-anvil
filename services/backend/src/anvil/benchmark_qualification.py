@@ -259,11 +259,19 @@ for file in seal['files']:
     data=(Path('/sealed')/file['path']).read_bytes()
     assert hashlib.sha256(data).hexdigest()==file['sha256'] and len(data)==file['byte_size']
 path=Path('/sealed/answers.json')
-output=json.loads(path.read_bytes()) if path.exists() else {}
+invalid_output=False
+try:
+    output=json.loads(path.read_bytes()) if path.exists() and path.stat().st_size else {}
+    if not isinstance(output,dict):
+        invalid_output=True
+        output={}
+except (ValueError,UnicodeError):
+    invalid_output=True
+    output={}
 rules=json.loads(Path('/private/rules.json').read_bytes())
 points=evaluate(rules,output)
 assert set(points)=={r['id'] for r in rules} and all(type(v) is int and v in (0,1) for v in points.values())
-print(json.dumps({'points':sum(points.values()),'possible_points':len(rules),'criteria':points}))
+print(json.dumps({'points':sum(points.values()),'possible_points':len(rules),'criteria':points,'invalid_output':invalid_output}))
 """
 
 CAPTURE_OUTPUT = """import base64,json,os,stat,sys
@@ -755,6 +763,7 @@ def native_trial(package, compiled, task, private, folder, *, mode, actor_driver
         result["atif_validator"] = "harbor-0.25.0"
         result["duration_ms"] = int((time.monotonic() - started_at) * 1000)
         result["criteria"] = evaluation["criteria"]
+        result["invalid_output"] = evaluation["invalid_output"]
         result["conversation"] = actor["conversation"]
         result["provider_calls"] = actor["conversation"]["turn_count"]
         raw = json.dumps(result, sort_keys=True, allow_nan=False).encode()

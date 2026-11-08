@@ -1,6 +1,16 @@
 # Coding handoff — Anvil transition to Codex, 8 November 2026
 
-Status: assessment complete; product continuation authority pending. This document defines the Coding agent's next bounded work. It does not approve implementation, tests, staging deployment, paid calls or changes to the approved design.
+Status update: the user subsequently authorized remaining Anvil implementation, independent Testing and DevOps staging preparation, with approval required before deployment and no paid candidate/judge calls. OpenHands stopped as writer before Codex product changes. The assessment below is retained as historical cutover context.
+
+## Current implementation and qualification boundary
+
+Checkpoint `267c4b8951237bad2ac127c38782625b8ea1996f` is pushed on the same branch. It implements the offline operational benchmark lifecycle, durable fenced scheduling/recovery, immutable review-gated score revisions, authorized evidence/exports and the real API-backed benchmark UI. It is **not a qualified release**: self-audit identified actual-file citation and typed missing/empty-output gaps, addressed by migration 058 and its successor checkpoint.
+
+The scoring repair preserves exact per-file hashes and spans. Missing or empty mapped `answers.json` gives zero only to its affected criteria, bound to an exact typed absence event. Missing or empty required `report.md` without a frozen scoring rule remains explicitly unresolved with primary score null. Whole-task zero requires an explicitly frozen hard safety constraint; raw diagnostic points remain available. No missing deliverable invents an undeclared safety policy.
+
+At 267, independent verification recorded 776 offline units and 148 benchmark SQL checks passing, with 28 explicit native skips; TypeScript, 12 Node tests and 7 adapter tests passed. These are historical checkpoint results, not validation of the successor. The scoring repair's focused scoring/evaluation unit checks currently pass 50 tests. Independent SQL and fresh final-source verification follow the successor checkpoint.
+
+Remaining release gates are explicit: actual native execution requires the isolated reviewed Linux operator environment; the Mac's Docker Desktop does not satisfy that contract. Nonzero live candidate/judge broker reservations and live dispatch are not implemented by the offline transport and must not be claimed ready merely by enabling flags. Authentic Praxis exports, approved model/judge configurations, rights, calibration, thresholds and paid budgets remain required for live evaluations. DevOps prepares staging only; no deployment is authorized yet.
 
 ## Exact cutover and source ownership
 

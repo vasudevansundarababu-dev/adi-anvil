@@ -688,7 +688,7 @@ def routes(context, wrap, idempotent):
             if metadata["classification"] != "benchmark_sealed":
                 raise HTTPException(409, "Invalid sealed output binding")
             criteria = c.execute(
-                "SELECT cr.criterion_id,cr.earned_points,cr.possible_points,cr.output_sha256 FROM anvil.benchmark_criterion_results cr JOIN anvil.benchmark_evaluator_calls ec ON ec.project_id=cr.project_id AND ec.id=cr.evaluator_call_id WHERE ec.attempt_id=%s AND ec.evaluation_revision=1 AND ec.purpose='deterministic' ORDER BY cr.criterion_id",
+                "SELECT cr.criterion_id,cr.earned_points,cr.possible_points,cr.output_sha256,cr.absence_event_id,cr.evidence_start,cr.evidence_end FROM anvil.benchmark_criterion_results cr JOIN anvil.benchmark_evaluator_calls ec ON ec.project_id=cr.project_id AND ec.id=cr.evaluator_call_id WHERE ec.attempt_id=%s AND ec.evaluation_revision=1 AND ec.purpose='deterministic' ORDER BY cr.criterion_id",
                 (cell["attempt_id"],),
             ).fetchall()
         sealed = json.loads(read_private_record(metadata))
@@ -702,7 +702,8 @@ def routes(context, wrap, idempotent):
                     "cell_id": str(cell_id),
                     "origin": "original_synthetic_fixture",
                     "criteria": [
-                        {k: str(v) for k, v in criterion.items()} for criterion in criteria
+                        {k: str(v) if v is not None else None for k, v in criterion.items()}
+                        for criterion in criteria
                     ],
                     "outputs": sealed["files"],
                     "missing": sealed["missing"],

@@ -34,6 +34,8 @@ def requirements(protocol, cells):
         ):
             task_policy = declared[cell["task_revision_id"]]
             criteria = actual["criteria"]
+            if actual.get("hard_constraint_ids"):
+                reasons.append("declared_hard_safety_failure")
             maximum = sum(Decimal(c["possible_points"]) for c in criteria)
             earned = sum(Decimal(c["earned_points"]) for c in criteria)
             if (

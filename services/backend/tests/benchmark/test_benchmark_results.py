@@ -35,20 +35,24 @@ def evaluator():
         yield c
 
 
-def manufactured_capture(case, run):
+def manufactured_capture(case, run, *, omitted=(), empty=(), credit=0):
     with actor_connection(case) as c:
         claimed = scheduler.claim(c, case["lab"]["project"], run)
         assert claimed
         scheduler.intent(c, case["lab"]["project"], claimed)
         task = get_revision(c, claimed["task_revision_id"], "task")["content"]
     report = {
-        "criteria": {criterion["id"]: 0 for criterion in task["criteria"]},
+        "criteria": {criterion["id"]: credit for criterion in task["criteria"]},
         "fixture_notice": "MANUFACTURED SQL METADATA: NO NATIVE EXECUTION",
     }
+    files = {"answers.json": b"{}", "report.md": b"Manufactured SQL custody fixture"}
+    files = {
+        path: b"" if path in empty else data for path, data in files.items() if path not in omitted
+    }
     output = seal(
-        {"answers.json": b"{}", "report.md": b"Manufactured SQL custody fixture"},
-        [],
-        task_id="FX-SQL-ONLY",
+        files,
+        list(omitted),
+        task_id=task["task_id"],
     )
     prepared_report = stage_private(
         case["lab"]["project"], canonical(report), "benchmark_trace", "application/json"
@@ -56,6 +60,10 @@ def manufactured_capture(case, run):
     prepared_output = stage_private(
         case["lab"]["project"], canonical(output), "benchmark_sealed", "application/json"
     )
+    prepared_files = {
+        path: stage_private(case["lab"]["project"], data, "benchmark_sealed")
+        for path, data in files.items()
+    }
     with actor_connection(case) as c:
         report_id = bind_private(c, prepared_report, created_by=case["lab"]["admin"])
         output_id = bind_private(c, prepared_output, created_by=case["lab"]["admin"])
@@ -67,7 +75,64 @@ def manufactured_capture(case, run):
             "INSERT INTO anvil.benchmark_attempt_events(id,project_id,attempt_id,state,validity,fence,sealed_output_artifact_id) VALUES(%s,%s,%s,'collecting','pending',%s,%s)",
             (uid(), case["lab"]["project"], claimed["attempt_id"], claimed["fence"], output_id),
         )
+        from anvil.benchmark_offline_worker import record_outputs
+
+        record_outputs(
+            c,
+            case["lab"]["project"],
+            case["lab"]["admin"],
+            claimed,
+            output_id,
+            task["outputs"],
+            prepared_files,
+        )
     return claimed
+
+
+@pytest.mark.parametrize(
+    "omitted,empty,credit,validity",
+    [
+        (("answers.json",), (), 0, "valid"),
+        ((), ("answers.json",), 0, "valid"),
+        (("report.md",), (), 1, "unresolved"),
+        ((), ("report.md",), 1, "unresolved"),
+    ],
+)
+def test_missing_output_uses_only_declared_criterion_policy(
+    frozen, omitted, empty, credit, validity
+):
+    case = frozen
+    run = launch(case).json()["data"]["run_id"]
+    claimed = manufactured_capture(case, run, omitted=omitted, empty=empty, credit=credit)
+    assert (
+        finalize(case["lab"]["project"], case["lab"]["admin"], claimed, evaluator_connect=evaluator)
+        == "completed"
+    )
+    with actor_connection(case) as c:
+        event = c.execute(
+            "SELECT validity FROM anvil.benchmark_attempt_events WHERE attempt_id=%s ORDER BY event_seq DESC LIMIT 1",
+            (claimed["attempt_id"],),
+        ).fetchone()
+        assert event["validity"] == validity
+        policy = c.execute(
+            "SELECT hard_constraint_ids,unresolved_required_paths FROM anvil.benchmark_attempt_policy_outcomes WHERE attempt_id=%s",
+            (claimed["attempt_id"],),
+        ).fetchone()
+        assert policy["hard_constraint_ids"] == []
+        assert policy["unresolved_required_paths"] == (
+            ["report.md"] if validity == "unresolved" else []
+        )
+        observations = c.execute(
+            "SELECT r.earned_points,r.output_sha256,r.absence_event_id FROM anvil.benchmark_criterion_results r JOIN anvil.benchmark_evaluator_calls ec ON ec.id=r.evaluator_call_id WHERE ec.attempt_id=%s",
+            (claimed["attempt_id"],),
+        ).fetchall()
+        assert all(row["earned_points"] == credit for row in observations)
+        if "answers.json" in omitted or "answers.json" in empty:
+            assert all(
+                row["absence_event_id"] and row["output_sha256"] is None for row in observations
+            )
+        stored = results.latest(c, run)
+        assert all(model["primary"] is None for model in stored["projection"]["models"])
 
 
 def test_captured_restart_finalizes_exactly_once_and_keeps_incomplete_primary_null(frozen):

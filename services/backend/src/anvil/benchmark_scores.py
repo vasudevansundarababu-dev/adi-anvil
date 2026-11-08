@@ -7,6 +7,7 @@ turn operational failures into model zeroes. Its input is the evaluator evidence
 import re
 from decimal import ROUND_HALF_UP, Decimal
 from statistics import median
+from uuid import UUID
 
 from anvil.benchmark_review_policy import requirements
 from anvil.db import digest
@@ -48,7 +49,11 @@ def criterion_totals(criteria, expected):
             raise ValueError("Criterion denominator or earned points mismatch")
         # Evidence authorization is performed at API export time; identity remains
         # bound here and no private oracle/definition is copied into the scorecard.
-        if not re.fullmatch(r"[a-f0-9]{64}", item.get("evidence_sha256", "")):
+        if item.get("absence_event_id") is not None:
+            UUID(str(item["absence_event_id"]))
+            if actual != 0 or item.get("evidence_sha256") is not None:
+                raise ValueError("Typed absence requires zero without a fabricated file citation")
+        elif not re.fullmatch(r"[a-f0-9]{64}", item.get("evidence_sha256") or ""):
             raise ValueError("Criterion evidence binding is required")
         earned += actual
         possible += maximum
@@ -91,6 +96,9 @@ def scorecard(protocol, cells):
                 if not re.fullmatch(r"[a-f0-9]{64}", cell.get("evidence_sha256") or ""):
                     raise ValueError("Cell evidence binding is required")
                 actual, maximum = criterion_totals(cell["criteria"], cell["expected_criteria"])
+                raw_actual = actual
+                if cell.get("hard_constraint_ids"):
+                    actual = Decimal(0)
                 if len(cell["expected_criteria"]) != task_counts[key[0]]:
                     raise ValueError("Criterion membership differs from frozen task")
                 if maximum != task_points[key[0]]:
@@ -100,6 +108,8 @@ def scorecard(protocol, cells):
                         "task_revision_id": key[0],
                         "repetition": key[2],
                         "earned_points": text(actual),
+                        "raw_earned_points": text(raw_actual),
+                        "hard_constraint_ids": cell.get("hard_constraint_ids", []),
                         "possible_points": text(maximum),
                         "evidence_sha256": cell["evidence_sha256"],
                     }

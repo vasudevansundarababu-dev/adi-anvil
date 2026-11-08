@@ -149,7 +149,7 @@ def seal_checked(sealed):
         if (
             f["path"] in seen
             or type(f["byte_size"]) is not int
-            or not 0 < len(data) <= 65536
+            or not 0 <= len(data) <= 65536
             or len(data) != f["byte_size"]
             or sha(data) != f["sha256"]
         ):
@@ -193,7 +193,7 @@ def evaluate(policy, sealed):
         return {**report, "status": "blocked", "safe_code": "external_judge_authority_missing"}
     files = {f["path"]: f for f in sealed["files"]}
     for c in policy["criteria"]:
-        if c["path"] in sealed["missing"]:
+        if c["path"] in sealed["missing"] or files[c["path"]]["byte_size"] == 0:
             earned = Decimal(0)
             evidence = {"kind": "absent", "path": c["path"]}
         else:

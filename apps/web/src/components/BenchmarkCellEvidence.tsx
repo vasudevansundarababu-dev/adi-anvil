@@ -10,7 +10,8 @@ type Evidence = {
     criterion_id: string;
     earned_points: string;
     possible_points: string;
-    output_sha256: string;
+    output_sha256: string | null;
+    absence_event_id: string | null;
   }[];
   outputs: { path: string; sha256: string; byte_size: number; text: string }[];
   missing: string[];
@@ -75,7 +76,7 @@ export default function BenchmarkCellEvidence({
                     <td>{item.earned_points}</td>
                     <td>{item.possible_points}</td>
                     <td>
-                      <code>{item.output_sha256}</code>
+                      <code>{item.output_sha256 ?? `Typed absence: ${item.absence_event_id}`}</code>
                     </td>
                   </tr>
                 ))}

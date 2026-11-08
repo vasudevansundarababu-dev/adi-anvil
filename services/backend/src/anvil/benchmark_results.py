@@ -67,10 +67,11 @@ def publish(c, project, user, run_id, *, adjustments=None):
     }
     attempts = c.execute(
         """SELECT c.id cell_id,c.task_revision_id,c.slot,c.repetition,a.id attempt_id,a.attempt_no,
-        e.state,e.validity,rt.report_artifact_id,rt.duration_ms,art.sha256 evidence_sha256
+        e.state,e.validity,rt.report_artifact_id,rt.duration_ms,art.sha256 evidence_sha256,po.hard_constraint_ids
         FROM anvil.benchmark_cells c JOIN anvil.benchmark_cell_attempts a ON a.project_id=c.project_id AND a.cell_id=c.id AND a.attempt_no=1
         JOIN anvil.benchmark_offline_runtime rt ON rt.project_id=a.project_id AND rt.attempt_id=a.id
         LEFT JOIN anvil.artifacts art ON art.project_id=rt.project_id AND art.id=rt.report_artifact_id
+        LEFT JOIN anvil.benchmark_attempt_policy_outcomes po ON po.project_id=a.project_id AND po.attempt_id=a.id
         JOIN LATERAL (SELECT state,validity FROM anvil.benchmark_attempt_events WHERE attempt_id=a.id ORDER BY event_seq DESC LIMIT 1) e ON true
         WHERE c.run_id=%s ORDER BY c.task_revision_id,c.slot,c.repetition""",
         (run_id,),
@@ -78,12 +79,16 @@ def publish(c, project, user, run_id, *, adjustments=None):
     cells = []
     for row in attempts:
         criteria = c.execute(
-            "SELECT r.criterion_id,r.earned_points,r.possible_points,r.output_sha256 evidence_sha256 FROM anvil.benchmark_criterion_results r JOIN anvil.benchmark_evaluator_calls ec ON ec.project_id=r.project_id AND ec.id=r.evaluator_call_id WHERE ec.attempt_id=%s AND ec.evaluation_revision=1 AND ec.purpose='deterministic' ORDER BY r.criterion_id",
+            "SELECT r.criterion_id,r.earned_points,r.possible_points,r.output_sha256 evidence_sha256,r.absence_event_id FROM anvil.benchmark_criterion_results r JOIN anvil.benchmark_evaluator_calls ec ON ec.project_id=r.project_id AND ec.id=r.evaluator_call_id WHERE ec.attempt_id=%s AND ec.evaluation_revision=1 AND ec.purpose='deterministic' ORDER BY r.criterion_id",
             (row["attempt_id"],),
         ).fetchall()
         adjusted = [
             {
-                k: format(v, "f") if k in ("earned_points", "possible_points") else v
+                k: format(v, "f")
+                if k in ("earned_points", "possible_points")
+                else str(v)
+                if k == "absence_event_id" and v is not None
+                else v
                 for k, v in criterion.items()
             }
             for criterion in criteria
@@ -103,6 +108,7 @@ def publish(c, project, user, run_id, *, adjustments=None):
                 "validity": row["validity"],
                 "duration_ms": row["duration_ms"],
                 "evidence_sha256": row["evidence_sha256"],
+                "hard_constraint_ids": row["hard_constraint_ids"] or [],
                 "expected_criteria": expected[str(row["task_revision_id"])],
                 "criteria": adjusted,
             }
@@ -251,6 +257,10 @@ def correct(c, project, user, run_id, body):
         if observed is None:
             raise HTTPException(404, "A valid original criterion result is required")
         earned = exact(change.earned_points)
+        if observed["output_sha256"] is None and earned != 0:
+            raise HTTPException(
+                409, "An absent deliverable cannot receive positive criterion credit"
+            )
         if earned > observed["possible_points"] or change.evidence_sha256 not in {
             observed["output_sha256"],
             observed["report_sha256"],

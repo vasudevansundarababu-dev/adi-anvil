@@ -523,7 +523,7 @@ def test_static_catalog_remains_available_when_sme_benchmark_versions_exist(froz
     )
 
 
-def manufactured_capture(case, creator="admin"):
+def manufactured_capture(case, creator="admin", files=None):
     """SQL custody fixture only; never invoke or claim a native evaluator."""
     response = launch(case)
     assert response.status_code == 200, response.text
@@ -532,14 +532,12 @@ def manufactured_capture(case, creator="admin"):
         claimed = scheduler.claim(c, case["lab"]["project"], run)
     with actor_connection(case) as c:
         scheduler.intent(c, case["lab"]["project"], claimed)
+    if files is None:
+        files = {"answers.json": b"{}", "report.md": b"Manufactured SQL fixture, NOT native output"}
     output = stage_private(
         case["lab"]["project"],
         canonical(
-            seal(
-                {"fixture.txt": b"Manufactured SQL fixture, NOT native output"},
-                [],
-                task_id="SQL-ONLY",
-            )
+            seal(files, sorted({"answers.json", "report.md"} - set(files)), task_id="SQL-ONLY")
         ),
         "benchmark_sealed",
     )
@@ -591,6 +589,9 @@ def manufactured_capture(case, creator="admin"):
         "qualification": task["qualification_id"],
         "output": output.sha256,
         "report": report.sha256,
+        "manifest_artifact_id": output_id,
+        "report_artifact_id": report_id,
+        "files": files,
     }
 
 

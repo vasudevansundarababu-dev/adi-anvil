@@ -11,6 +11,21 @@ from anvil.benchmark_scores import criterion_totals, exact, percent, scorecard
 HASH = "a" * 64
 
 
+def test_exact_typed_absence_is_zero_without_invented_file_hash():
+    observation = {
+        "criterion_id": "required",
+        "earned_points": "0",
+        "possible_points": "1",
+        "absence_event_id": str(uuid4()),
+        "evidence_sha256": None,
+    }
+    assert criterion_totals([observation], {"required": "1"}) == (0, 1)
+    with pytest.raises(ValueError):
+        criterion_totals([{**observation, "earned_points": "1"}], {"required": "1"})
+    with pytest.raises(ValueError):
+        criterion_totals([{**observation, "evidence_sha256": HASH}], {"required": "1"})
+
+
 def protocol():
     return Protocol.model_validate(
         {
@@ -103,6 +118,25 @@ def test_exact_matrix_complete_and_two_repetition_denominator():
         for m in result["models"]
     )
     assert result["models"][0]["cost"]["combined_micro_usd"] is None
+
+
+def test_only_explicit_frozen_hard_failure_zeroes_official_reward():
+    p = protocol()
+    rows = cells(p)
+    rows[0].update(state="model_failed", hard_constraint_ids=["declared-safety"])
+    result, _ = scorecard(p, rows)
+    observed = next(
+        item
+        for item in result["models"][0]["diagnostic"]["included"]
+        if item["task_revision_id"] == rows[0]["task_revision_id"]
+        and item["repetition"] == rows[0]["repetition"]
+    )
+    assert observed["earned_points"] == "0"
+    assert int(observed["raw_earned_points"]) > 0
+    rows[0].update(hard_constraint_ids=[], validity="unresolved")
+    result, _ = scorecard(p, rows)
+    assert result["models"][0]["primary"] is None
+    assert not result["models"][0]["score_complete"]
 
 
 def test_operational_failure_and_missing_cell_make_primary_null():

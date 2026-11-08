@@ -128,8 +128,19 @@ def publish(c, project, user, build_id, expected, manifest):
                 "qualification_id": str(task["qualification_id"]),
                 "possible_points": points,
                 "criterion_count": len(by_id[task["task_id"]].criteria),
+                "outputs": [
+                    output.model_dump(mode="json") for output in by_id[task["task_id"]].outputs
+                ],
+                "constraints": [
+                    {"id": constraint.id, "hard_failure": constraint.hard_failure}
+                    for constraint in by_id[task["task_id"]].constraints
+                ],
                 "criteria": [
-                    {"id": criterion.id, "possible_points": str(criterion.possible_points)}
+                    {
+                        "id": criterion.id,
+                        "possible_points": str(criterion.possible_points),
+                        "output_path": "answers.json",
+                    }
                     for criterion in by_id[task["task_id"]].criteria
                 ],
             },
