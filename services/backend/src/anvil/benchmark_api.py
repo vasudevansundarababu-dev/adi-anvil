@@ -450,6 +450,27 @@ def routes(context, wrap, idempotent):
                 request,
             )
 
+    @router.post("/evaluators/reviews/{registry_id}/revoke")
+    def revoke_evaluator(project: UUID, registry_id: UUID, body: Revoke, request: Request):
+        preflight(project, request, admin=True)
+        with context(request, project) as (c, user, roles):
+
+            def act():
+                if not one(
+                    c,
+                    "SELECT id FROM anvil.benchmark_evaluator_registrations WHERE id=%s",
+                    (registry_id,),
+                ):
+                    raise HTTPException(404, "Evaluator registry not found")
+                c.execute(
+                    "INSERT INTO anvil.benchmark_evaluator_registry_revocations(project_id,registry_id,revoked_by,rationale) VALUES(%s,%s,%s,%s) ON CONFLICT DO NOTHING",
+                    (project, registry_id, user, body.rationale),
+                )
+                audit(c, project, user, "benchmark.evaluator_revoked", registry_id)
+                return {"registry_id": str(registry_id), "revoked": True}
+
+            return wrap(idempotent(c, project, user, request, body, act), request)
+
     @router.post("/evaluations", status_code=202)
     def evaluate_output(project: UUID, body: Evaluate, request: Request):
         user = preflight(project, request)

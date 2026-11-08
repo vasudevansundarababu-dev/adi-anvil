@@ -3182,6 +3182,256 @@
         }
       }
     },
+    "/api/v1/projects/{project}/workspace/benchmarks/evaluators/reviews": {
+      "post": {
+        "summary": "Evaluator Review",
+        "operationId": "evaluator_review_api_v1_projects__project__workspace_benchmarks_evaluators_reviews_post",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluatorReview"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project}/workspace/benchmarks/evaluators/reviews/{registry_id}/revoke": {
+      "post": {
+        "summary": "Revoke Evaluator",
+        "operationId": "revoke_evaluator_api_v1_projects__project__workspace_benchmarks_evaluators_reviews__registry_id__revoke_post",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project"
+            }
+          },
+          {
+            "name": "registry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Registry Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Revoke"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project}/workspace/benchmarks/evaluations": {
+      "post": {
+        "summary": "Evaluate Output",
+        "operationId": "evaluate_output_api_v1_projects__project__workspace_benchmarks_evaluations_post",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Evaluate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project}/workspace/benchmarks/evaluations/{job_id}": {
+      "get": {
+        "summary": "Evaluation Status",
+        "operationId": "evaluation_status_api_v1_projects__project__workspace_benchmarks_evaluations__job_id__get",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project"
+            }
+          },
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project}/workspace/benchmarks/evaluations/{job_id}/cancel": {
+      "post": {
+        "summary": "Cancel Evaluation",
+        "operationId": "cancel_evaluation_api_v1_projects__project__workspace_benchmarks_evaluations__job_id__cancel_post",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project"
+            }
+          },
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects/{project}/praxis-sources": {
       "get": {
         "summary": "Listing",
@@ -9688,6 +9938,54 @@
           "files"
         ],
         "title": "Environment"
+      },
+      "Evaluate": {
+        "properties": {
+          "registry_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Registry Id"
+          },
+          "sealed_output_artifact_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Sealed Output Artifact Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "registry_id",
+          "sealed_output_artifact_id"
+        ],
+        "title": "Evaluate"
+      },
+      "EvaluatorReview": {
+        "properties": {
+          "policy_artifact_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Policy Artifact Id"
+          },
+          "evidence_artifact_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Evidence Artifact Id"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "policy_artifact_id",
+          "evidence_artifact_id",
+          "expires_at"
+        ],
+        "title": "EvaluatorReview"
       },
       "Field_": {
         "properties": {

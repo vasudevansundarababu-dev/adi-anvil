@@ -72,10 +72,19 @@ def prepare_job(connect, claimed):
         or policy["task_id"] != request["task_id"]
     ):
         raise ValueError("Sealed task binding changed")
-    return {"policy": policy, "sealed": sealed}
+    return {
+        "policy": policy,
+        "sealed": sealed,
+        "implementation_sha256": registry["implementation_sha256"],
+        "calibration_sha256": registry["calibration_sha256"],
+    }
 
 
 def finish(connect, claimed, job, report):
+    if job["implementation_sha256"] != implementation_sha256() or job["calibration_sha256"] != sha(
+        canonical(calibration())
+    ):
+        raise ValueError("Evaluator inputs changed during execution")
     checked = validate_report(job["policy"], job["sealed"], report)
     # Hashing/staging is outside SQL; the final fence recheck precedes capture.
     prepared = stage_private(
@@ -109,7 +118,7 @@ def process_job(connect, project, job_id, execute):
     job = prepare_job(connect, claimed)
     with connect() as c:
         scoped(c, claimed)
-    raw = execute(job)
+    raw = execute({"policy": job["policy"], "sealed": job["sealed"]})
     if type(raw) is not bytes or len(raw) > 2_000_000:
         raise ValueError("Evaluator report bound")
     report = json.loads(raw)

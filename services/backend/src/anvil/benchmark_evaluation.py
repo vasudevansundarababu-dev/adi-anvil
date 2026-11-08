@@ -52,16 +52,15 @@ def prepare_review(project, user, policy_id, evidence_id):
     checks = calibration()
     if checks["status"] != "passed":
         raise HTTPException(409, "Local evaluator calibration failed")
-    return policy, evidence, parsed, sha(canonical(checks))
+    return policy, evidence, parsed, sha(canonical(checks)), implementation_sha256()
 
 
 def register(c, project, user, prepared, expires_at):
-    policy, evidence, parsed, calibration_hash = prepared
+    policy, evidence, parsed, calibration_hash, implementation = prepared
     metadata(c, policy["id"], "benchmark_eval")
     metadata(c, evidence["id"], "benchmark_eval")
     if expires_at <= datetime.now(timezone.utc):
         raise HTTPException(409, "Evaluator review already expired")
-    implementation = implementation_sha256()
     binding = one(
         c,
         "SELECT id FROM anvil.benchmark_evaluator_bindings WHERE project_id=%s AND registry_id=%s AND version=%s AND implementation_sha256=%s AND policy_sha256=%s",
@@ -191,16 +190,17 @@ def enqueue(c, project, user, prepared, key):
 def projection(c, job):
     row = one(
         c,
-        "SELECT j.id,j.state,r.status,r.safe_code FROM anvil.benchmark_evaluator_jobs j JOIN anvil.benchmark_evaluation_requests q ON q.project_id=j.project_id AND q.job_id=j.id LEFT JOIN anvil.benchmark_evaluation_results r ON r.project_id=j.project_id AND r.job_id=j.id WHERE j.id=%s",
+        "SELECT j.id,j.state,j.lease_until,r.status,r.safe_code FROM anvil.benchmark_evaluator_jobs j JOIN anvil.benchmark_evaluation_requests q ON q.project_id=j.project_id AND q.job_id=j.id LEFT JOIN anvil.benchmark_evaluation_results r ON r.project_id=j.project_id AND r.job_id=j.id WHERE j.id=%s",
         (job,),
     )
     if row is None:
         raise HTTPException(404, "Evaluation job not found")
+    expired = row["state"] == "leased" and row["lease_until"] <= datetime.now(timezone.utc)
     return {
         "job_id": str(row["id"]),
         "state": row["state"],
-        "evaluation_state": row["status"] or "pending",
-        "safe_code": row["safe_code"],
+        "evaluation_state": "review_required" if expired else row["status"] or "pending",
+        "safe_code": "lease_expired_no_retry" if expired else row["safe_code"],
         "scope": "fictional_local_software_only",
         "external_judge": "blocked",
     }
