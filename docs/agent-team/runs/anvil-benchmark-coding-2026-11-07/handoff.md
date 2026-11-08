@@ -1,3 +1,32 @@
+# Current handoff — recovered T05 Coding; STOP human review
+
+- Work ID: anvil-benchmark-coding-2026-11-07 / recovery2026-11-08
+- Repository/branch: vasudevansundarababu-dev/adi-anvil / codex/anvil-agent-team-2026-11-06; existing PR16 OPEN DRAFT
+- From role / proposed next: anvil-coding -> HUMAN CODING REVIEW ONLY; no QA/T07 authority
+- Tested commit `4e64f54c368d04afcde6faa8c41cdadd9529e0d9`, tree `0c745b5b5f098f2f55ea066f8c4f8228913cfe6f`. Repair checkpoint `e0a7b5fb45dbc73c1e9d6248647a102387ea5cd8`, tree `d807b5ee4f17acdf1d8f582a356e731863ab0c66`. Recovery/publication change documentation/evidence only; product/test/lock bytes are identical, but whole Git trees are not equated.
+- Input hashes: all15 originals match approved-input-snapshot.json; actual current recovery quote append-only in approval-log.jsonl.
+- Output t05-recovery-checks.json SHA256 `f71814f326168b0a1eaa983502419e8f12bfa2449a9a473d4f8ca5b587089c14`.
+- Output t05-recovery-source.sha256 SHA256 `e6060d23acb9f3e7285ae9706c225f9b90e5f08561295e8888faae9f2e130535`.
+- Output t05-recovery-commands.md SHA256 `2c20dcfff2d30e04be22fa6592c94476e96b299a64589713b251ee16399c0b61`.
+- Output t05-recovery-history.json SHA256 `a9ef4cb5f01536a73280197447a5a3cc3303de58de58dee64dd949c381e34170`.
+- Report/index/portable SHA256SUMS bind available outputs; missing old TAP digest retained as unavailable in index.
+- BM05/09/11 framing/deadlines/max4/ownedshutdown/auth-beforeJSON+callback/exactsession/singleuse/no SDK retry. Recovery changes no source/test.
+- PASS: 46 gateway;95 provider-loop; exactly3 fixed diagnostic rounds of6 each;96 pricing/capture;33 T06 contracts;729 full units;3 pre-dispatch private-binding negatives;7 adapter;12 Node; Ruff check/format2 files; scanner/diff: PASS. Counts overlap, not additive unique tests.
+- BLOCKED: Fresh full T06 SQL/native57 and combinedSQL136, T04 actual native9 and4 resource probes are BLOCKED/NOT RUN. No approved dedicated preloaded Docker/PostgreSQL runtime/images/socket in this new runtime; no new pull/build/load/substitution authority inferred. The3 private negatives invoke no Docker and are not native isolation. Old last4resource action has no observed result.
+- HISTORICAL: Read-only platform history yielded sanitized summaries/commands/event IDs/timestamps, not byte-exact raw logs/private artifacts/runtime recovery. Expected old-code4failed/11passed/25deselected and separate absolute-deadline1failed/39deselected, combined KeyboardInterrupt and outer soft timeouts retained. Later3x6/57T06/12T04/136combined/729full/96pricing-capture summaries remain historical; final e0 source observations identified separately. Shell exit0 after tail does not turn failed pytest into pass. Earlier707/1 and689/1 reports remain unchanged.
+- Safety: Old conversation preserved. No old credentials/secrets/private exhibits read/copied; no shared sockets, production/cloud/old-runtime lifecycle, Praxis/Mac/local-user checkout, auth or shared permission changes. New tests used a constructed environment allowlist and fresh owner-only HOME/TMP/vault. MockTransport only at unavailable paid HTTP boundary; Unix/process/filesystem/installed SDK/Harbor host-client paths real. No T07/independent QA/full acceptance/paid/judge/model-performance/Bodhium/trust/admission/merge/deployment claim or action.
+- Prices/UTC/expiry/SQL schema/locks/legacy providers and15 originals unchanged. No native/live/product admission inferred.
+- Proposed next allowed scope: human review only. New image/runtime preparation, nativeSQL or next role needs explicit new scope, not automatic launch.
+- Prohibited: T07/QA/fullacceptance/paid/judge/merge/deploy; implicit pulls/build/load/substitution/Alpineprobe/delete/sharedsockets/auth/permissions/production/Praxis/Mac/local-user changes.
+- Decision: PENDING HUMAN CODING REVIEW — STOP
+- Human approver / resulting-code approval reference / timestamp: (pending; no approval inferred)
+
+---
+
+Publication verification:39 source hashes /55 available artifact hashes and staged scanner681 files /0 findings passed; product diff and staged diff clean. Missing historical TAP bytes remain unavailable, not counted.
+
+## Historical handoffs retained unchanged below
+
 # Current handoff — pricing verified/T06 focused passed; STOP repeated T05 full-unit blocker
 
 - Work: T06 pricing maintenance/final Coding checkpoint, samecodex/anvil-agent-team-2026-11-06/draftPR16.

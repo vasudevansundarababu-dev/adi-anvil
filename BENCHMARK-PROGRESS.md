@@ -1,3 +1,15 @@
+# T05 recovery — offline Coding verified; native/SQL environment blocked
+
+Tested commit `4e64f54c368d04afcde6faa8c41cdadd9529e0d9`, tree `0c745b5b5f098f2f55ea066f8c4f8228913cfe6f`. Repair checkpoint `e0a7b5fb45dbc73c1e9d6248647a102387ea5cd8`, tree `d807b5ee4f17acdf1d8f582a356e731863ab0c66`. Recovery/publication change documentation/evidence only; product/test/lock bytes are identical, but whole Git trees are not equated. Early checkpoint4e64f54 pushed normally; all15 approved originals rehashed unchanged.
+
+46 gateway;95 provider-loop; exactly3 fixed diagnostic rounds of6 each;96 pricing/capture;33 T06 contracts;729 full units;3 pre-dispatch private-binding negatives;7 adapter;12 Node; Ruff check/format2 files; scanner/diff: PASS. Counts overlap, not additive unique tests. No new test failures/skips; existing Authlib/Node warnings retained.
+
+Fresh full T06 SQL/native57 and combinedSQL136, T04 actual native9 and4 resource probes are BLOCKED/NOT RUN. No approved dedicated preloaded Docker/PostgreSQL runtime/images/socket in this new runtime; no new pull/build/load/substitution authority inferred. The3 private negatives invoke no Docker and are not native isolation. Old last4resource action has no observed result. Historical summaries are not new-runtime proof; expected-red/interrupted outcomes retained. Exact source/environment/commands/log hashes: Coding run t05-recovery-checks.json, t05-recovery-commands.md, t05-recovery-source.sha256, t05-recovery-history.json.
+
+Prices unchanged, verified2026-11-08T15:25:35Z/expires2026-11-15T15:25:35Z; strict production UTC retained, no refresh. PR16 stays draft. STOP human Coding review before T07/QA/paid/merge/deployment.
+
+---
+
 # T05 checkpoint recovery — independent Coding checks pending
 
 Verified local/remote/open draft PR16 exact `e0a7b5fb45dbc73c1e9d6248647a102387ea5cd8`, tree `d807b5ee4f17acdf1d8f582a356e731863ab0c66`; initially clean. Actual recovery authorization appended in Coding run approval log. Read-only platform history recovered sanitized outcomes only (`t05-recovery-history.json`), NOT byte-exact runtime/log recovery or new-runtime proof; last four-resource action has no observed result. New runtime has Python3.13 only and no restored locked venvs/dedicated daemon/images/PG. Recreate independent locked offline environments; native/SQL blocked without approved preloaded prerequisites, no implicit pull/build/load/substitution/shared socket/permission changes. No new tests passed yet. Preserve old failures and conversation. Stop human Coding review before T07/QA/paid/merge/deployment; Praxis/Mac/local changes untouched.

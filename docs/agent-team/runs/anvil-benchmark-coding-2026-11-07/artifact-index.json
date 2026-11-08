@@ -1,18 +1,18 @@
 {
-  "status": "pricing_revalidated_T06_focused_passed_STOP_repeated_T05_full_unit_blocker",
-  "observed_at": "2026-11-08T15:35:45.034203+00:00",
-  "product_source_commit": "b97ac8d2949811d7ec06a00b43fdc8dc391e353e",
+  "status": "T05_recovery_offline_Coding_passed_native_SQL_blocked_STOP_human_review",
+  "observed_at": "2026-11-08T17:27:14.592954+00:00",
+  "product_source_commit": "4e64f54c368d04afcde6faa8c41cdadd9529e0d9",
   "recovered_commit": "15e35f12725a89be6e507b2eb73d4433e666dd76",
   "recovered_tree": "18fca788310f91a35a54df39392a37c026ae16b1",
   "release_source_files_verified_at_t00": 504,
   "approved_originals_unchanged": true,
   "native_failure_not_waived": true,
-  "history_note": "Prior t06-checks/source/commands retained unchanged. Pricing expiry failure superseded only by actual passing price rerun, not full-unit gate. Current repeated T05 transport blocker outside maintenance scope requires separate authority. STOP before QA/T07/paid/deploy.",
+  "history_note": "Old failure/evidence files retained unchanged; sanitized platform excerpts historical only, not byte-exact runtime/log recovery. Missing old TAP digest retained as unavailable. Portable current SHA256SUMS lists available files only.",
   "entries": [
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/approval-log.jsonl",
-      "sha256": "b647946a05ebd313bea58b95e50acb391563009633ddf897f83f92366ae29519",
-      "bytes": 12331
+      "sha256": "eb04bc53f1196fcbedcc10bfe456e2e15081cc25692555469b0d1734481bd0ed",
+      "bytes": 15344
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/approved-input-snapshot.json",
@@ -34,7 +34,8 @@
       "sha256": "dfdd19d474e03740f9dceb77d9bcd84f726ea07a8f8e45139dc8ee70d4050401",
       "bytes": 2096,
       "local_only": true,
-      "available_in_restart_runtime": false
+      "available_in_restart_runtime": false,
+      "classification": "Historical digest only; original bytes unavailable/not recovered"
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/github-readonly-evidence.json",
@@ -43,8 +44,8 @@
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/handoff.md",
-      "sha256": "a527964db47a43084db77a5827a4805f8d62ac6fe2b0b6810dddba5cdf35e66c",
-      "bytes": 34737
+      "sha256": "146e512eaedf5e9a8f942d2151165b220baf2de0ea2b818c7da841cf89ef3ad8",
+      "bytes": 38944
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/historical-documents-verified.json",
@@ -63,8 +64,8 @@
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/implementation-report.md",
-      "sha256": "9209b0af71c967d77c4cd5f3386a33e07e05ef92f4c6538ae054e46a2768ce09",
-      "bytes": 40048
+      "sha256": "705b143d481e5049269d28486096aed43710e0914f45f17127200a4b07044c3e",
+      "bytes": 46442
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/isolated-database-evidence.json",
@@ -260,12 +261,43 @@
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t06-pricing-commands.md",
       "sha256": "3b9fdb7c34da30f85c88250eac3c8c816848d47b6e41ed9052d8e725a4060fbf",
       "bytes": 6083
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t05-recovery-checks.json",
+      "sha256": "f71814f326168b0a1eaa983502419e8f12bfa2449a9a473d4f8ca5b587089c14",
+      "bytes": 20032
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t05-recovery-commands.md",
+      "sha256": "2c20dcfff2d30e04be22fa6592c94476e96b299a64589713b251ee16399c0b61",
+      "bytes": 9566
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t05-recovery-history.json",
+      "sha256": "a9ef4cb5f01536a73280197447a5a3cc3303de58de58dee64dd949c381e34170",
+      "bytes": 15775
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t05-recovery-preflight.json",
+      "sha256": "9ab756773b29da5ebb1f04b30f9f6a08c41c84555efc8d79ae7d9f55b1a96117",
+      "bytes": 1398
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t05-recovery-source.sha256",
+      "sha256": "e6060d23acb9f3e7285ae9706c225f9b90e5f08561295e8888faae9f2e130535",
+      "bytes": 4566
     }
   ],
-  "product_source_tree": "1787c39dbd33ae733a775a413e5704afc8babf5f",
-  "restart_recovery_checkpoint": "23bb8f1741156fd6d0e6f25df379a0117513e14e",
+  "product_source_tree": "0c745b5b5f098f2f55ea066f8c4f8228913cfe6f",
+  "restart_recovery_checkpoint": "4e64f54c368d04afcde6faa8c41cdadd9529e0d9",
   "native_qualification_current": false,
-  "native_qualification_scope": "T06 focused57pass incl2realnative on current pricing source; no full benchmark/live/QA admission",
-  "full_unit_status": "Latest exact source707pass/1 repeated unchanged T05 wrong-auth Unix BrokenPipe. Earlier one708pass retained, not a reliable green result.",
-  "pricing_status": "All6 exact existing model rates verified unchanged from10 official HTTP200 sources at2026-11-08T15:25:35.450801Z; existing7day expiry2026-11-15T15:25:35.450801Z;36pricing tests pass."
+  "native_qualification_scope": "Fresh native/SQL blocked without approved dedicated preloaded runtime/images.3pre-dispatch negatives are not native isolation. Old last4resource result unobserved.",
+  "full_unit_status": "New isolated runtime729passed on committed product/test bytes; all3fixed6test diagnostic rounds passed. No source/test/dependency changes.",
+  "pricing_status": "All6 exact existing model rates verified unchanged from10 official HTTP200 sources at2026-11-08T15:25:35.450801Z; existing7day expiry2026-11-15T15:25:35.450801Z;36pricing tests pass.",
+  "tested_source_commit": "4e64f54c368d04afcde6faa8c41cdadd9529e0d9",
+  "tested_source_tree": "0c745b5b5f098f2f55ea066f8c4f8228913cfe6f",
+  "repair_source_checkpoint": "e0a7b5fb45dbc73c1e9d6248647a102387ea5cd8",
+  "repair_source_tree": "d807b5ee4f17acdf1d8f582a356e731863ab0c66",
+  "publication_changes": "Documentation/evidence only; product trees/source manifest unchanged.",
+  "next_gate": "Human Coding review only; no next role or image authority"
 }

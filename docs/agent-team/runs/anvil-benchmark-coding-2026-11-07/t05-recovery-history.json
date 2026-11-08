@@ -10,7 +10,12 @@
     "event_id": "5a2ee749-3d4d-4203-863f-b75d8adb1ad2",
     "timestamp": "2026-11-08T16:01:11.492530",
     "resource_probe_command": true,
-    "matching_observation_in_page": false
+    "matching_observation_in_page": false,
+    "command_sha256": "c74a8bd798bacbee043ba08d3713803ce6ae5b012242dfc37f0f59b8a39ee58d",
+    "sanitized_probe_lines": [
+      "for mode in ('memory_pids','tree_timeout','stdio_overflow','stdio_timeout'):",
+      " result=resource_probe(mode,root/(mode+'-'+uuid4().hex));results.append(result)"
+    ]
   },
   "events": [
     {
@@ -23,6 +28,11 @@
         "136 passed, 3 deselected, 1 warning in 26.02s",
         "e0a7b5fb45dbc73c1e9d6248647a102387ea5cd8",
         "d807b5ee4f17acdf1d8f582a356e731863ab0c66"
+      ],
+      "action_id": "9215ff75-76b1-4499-accb-d883d46a5480",
+      "originating_command_sha256": "b2b3188b8a2ee06987bfa59d9e71ca621e8ccbea16837504968e9620fd952384",
+      "originating_pytest_commands": [
+        "services/backend/.venv/bin/python -m pytest services/backend/tests/benchmark/test_private_storage.py services/backend/tests/benchmark/test_canonical_bindings.py services/backend/tests/benchmark/test_benchmark_imports.py services/backend/tests/benchmark/test_benchmark_pipeline.py services/backend/tests/benchmark/test_benchmark_evaluation.py services/backend/tests/unit/test_benchmark_evaluation_contracts.py -k 'not real_native and not native_actor' -q > .local/t05-transport/combined.log 2>&1"
       ]
     },
     {
@@ -37,6 +47,12 @@
         "e0a7b5fb45dbc73c1e9d6248647a102387ea5cd8",
         "729 passed, 1 warning in 39.10s",
         "96 passed, 1 warning in 4.55s"
+      ],
+      "action_id": "5815825e-ee0f-4df8-9d18-856558588365",
+      "originating_command_sha256": "2e2de6125eecf761f4bdb1001c2857ebfcbd6db3764e191218d4dc951e26d80a",
+      "originating_pytest_commands": [
+        "services/backend/.venv/bin/python -m pytest services/backend/tests/unit -q > .local/t05-transport/full-final.log 2>&1",
+        "services/backend/.venv/bin/python -m pytest services/backend/tests/unit/test_workspace_costs.py services/backend/tests/unit/test_benchmark_qualification_capture.py -q > .local/t05-transport/pricing-capture-final.log 2>&1"
       ]
     },
     {
@@ -47,7 +63,10 @@
       "exit_code": 0,
       "sanitized_lines": [
         "12 passed, 1 warning in 182.31s (0:03:02)"
-      ]
+      ],
+      "action_id": "b79cea01-7f38-491e-a961-b0e7514d4b18",
+      "originating_command_sha256": "11f4649901676861626dede863b7e1bb2e4a35dd6a362c3861be2d8db8203e9e",
+      "originating_pytest_commands": []
     },
     {
       "event_id": "545ea666-c2d3-4c24-a266-a937ad2aa0ae",
@@ -57,7 +76,8 @@
       "exit_code": null,
       "sanitized_lines": [
         "services/backend/.venv/bin/python -m pytest services/backend/tests/benchmark/test_benchmark_qualification.py -q > .local/t05-transport/t04-native.log 2>&1; tail -18 .local/t05-transport/t04-native.log; services/backend/.venv/bin/python -m pytest services/backend/tests/benchmark/test_private_storage.py services/backend/tests/benchmark/test_canonical_bindings.py services/backend/tests/benchmark/test_benchmark_imports.py services/backend/tests/benchmark/test_benchmark_pipeline.py services/backend/tests/benchmark/test_benchmark_evaluation.py services/backend/tests/unit/test_benchmark_evaluation_contracts.py -k 'not real_native and not native_actor' -q > .local/t05-transport/combined.log 2>&1; tail -12 .local/t05-transport/combined.log; PYTHONPATH=\"$PWD/services/harbor/src\" .local/harbor-venv/bin/python -m unittest discover -s services/harbor/tests -q > .local/t05-transport/adapter.log 2>&1; cat .local/t05-transport/adapter.log; node --test tests/provider_failure.mjs tests/readiness_catalog.mjs > .local/t05-transport/node.log 2>&1; tail -8 .local/t05-transport/node.log"
-      ]
+      ],
+      "action_id": null
     },
     {
       "event_id": "c9ede354-7ed1-48a6-afe7-1d3455c48370",
@@ -70,6 +90,11 @@
         "Fixed diagnostic round 2 returncode 0 6 passed, 40 deselected, 1 warning in 14.57s",
         "Fixed diagnostic round 3 returncode 0 6 passed, 40 deselected, 1 warning in 14.46s",
         "57 passed, 1 warning in 17.56s"
+      ],
+      "action_id": "242abe35-fbf4-4555-91c3-191a8c263644",
+      "originating_command_sha256": "3f25aa4894a7615da8b490ac89fa0c1d223f3e52a0e5d6f1e96e662e5d5c7f84",
+      "originating_pytest_commands": [
+        "services/backend/.venv/bin/python -m pytest services/backend/tests/unit/test_benchmark_evaluation_contracts.py services/backend/tests/benchmark/test_benchmark_evaluation.py -q > .local/t05-transport/t06.log 2>&1"
       ]
     },
     {
@@ -82,6 +107,12 @@
         "729 passed, 1 warning in 39.16s",
         "96 passed, 1 warning in 4.54s",
         "e0a7b5fb45dbc73c1e9d6248647a102387ea5cd8"
+      ],
+      "action_id": "e59346a5-2108-43d8-8253-363b7eb7cf49",
+      "originating_command_sha256": "d76547a73c7bfacacd521e0732a518db8a8dafc58ed80f0172a72c4cf6d688e4",
+      "originating_pytest_commands": [
+        "services/backend/.venv/bin/python -m pytest services/backend/tests/unit -q > .local/t05-transport/full-first.log 2>&1",
+        "services/backend/.venv/bin/python -m pytest services/backend/tests/unit/test_workspace_costs.py services/backend/tests/unit/test_benchmark_qualification_capture.py -q > .local/t05-transport/pricing-capture-first.log 2>&1"
       ]
     },
     {
@@ -92,7 +123,8 @@
       "exit_code": null,
       "sanitized_lines": [
         "services/backend/.venv/bin/python -m pytest services/backend/tests/unit -q > .local/t05-transport/full-first.log 2>&1; tail -18 .local/t05-transport/full-first.log; services/backend/.venv/bin/python -m pytest services/backend/tests/unit/test_workspace_costs.py services/backend/tests/unit/test_benchmark_qualification_capture.py -q > .local/t05-transport/pricing-capture-first.log 2>&1; tail -12 .local/t05-transport/pricing-capture-first.log; services/backend/.venv/bin/ruff check services/backend/src/anvil/benchmark_qualification.py services/backend/tests/unit/test_benchmark_tool_gateway.py; git diff --check; python - <<'PY'"
-      ]
+      ],
+      "action_id": null
     },
     {
       "event_id": "bfe24a46-0954-4414-9adf-664f64ccf3b3",
@@ -102,6 +134,11 @@
       "exit_code": 0,
       "sanitized_lines": [
         "46 passed, 1 warning in 28.30s"
+      ],
+      "action_id": "ab03e790-d723-4baa-8371-52929614d35a",
+      "originating_command_sha256": "1831afc6705b54c190dec7912a81dc8281d6940cd824403c2e88b4431d8c2c32",
+      "originating_pytest_commands": [
+        "services/backend/.venv/bin/python -m pytest services/backend/tests/unit/test_benchmark_tool_gateway.py -q > .local/t05-transport/transport-complete.log 2>&1"
       ]
     },
     {
@@ -112,6 +149,11 @@
       "exit_code": 0,
       "sanitized_lines": [
         "43 passed, 1 warning in 26.23s"
+      ],
+      "action_id": "8623042c-1a9e-4e30-ba46-542137b22410",
+      "originating_command_sha256": "11025ef7b1760fc60ce22012dd87cf832e103a781f3da9adca2b650f871d564e",
+      "originating_pytest_commands": [
+        "services/backend/.venv/bin/python -m pytest services/backend/tests/unit/test_benchmark_tool_gateway.py -q > .local/t05-transport/transport-bounded.log 2>&1"
       ]
     },
     {
@@ -122,6 +164,11 @@
       "exit_code": 0,
       "sanitized_lines": [
         "40 passed, 1 warning in 23.63s"
+      ],
+      "action_id": "eaed54f7-58ba-43c7-84a1-48c5f615d186",
+      "originating_command_sha256": "8493900b0272992e6955b3f04c36d1d9d9574e6941328b03100d4dd9ed1498ef",
+      "originating_pytest_commands": [
+        "services/backend/.venv/bin/python -m pytest services/backend/tests/unit/test_benchmark_tool_gateway.py -q > .local/t05-transport/transport-first.log 2>&1"
       ]
     },
     {
@@ -132,6 +179,11 @@
       "exit_code": 0,
       "sanitized_lines": [
         "1 failed, 39 deselected, 1 warning in 4.77s"
+      ],
+      "action_id": "15d74ac7-6e91-4e94-8724-485166fb1911",
+      "originating_command_sha256": "69d0a89ddebbdc3503908a67cbcc6c56c6659c0ef947c4113f63aa8e8b11b80d",
+      "originating_pytest_commands": [
+        "new=old.replace('client.sendall(request_headers(gateway, body))\\n            started = time.monotonic()','client.sendall(request_headers(gateway, body, length=256))\\n            started = time.monotonic()',1)\nprint(''.join(difflib.unified_diff(old.splitlines(True),new.splitlines(True),fromfile='a/'+str(p),tofile='b/'+str(p))),end='')\nPY\nservices/backend/.venv/bin/python -m pytest services/backend/tests/unit/test_benchmark_tool_gateway.py -k absolute_framing -q > .local/t05-transport/body-deadline-before.log 2>&1"
       ]
     },
     {
@@ -142,7 +194,8 @@
       "exit_code": null,
       "sanitized_lines": [
         "services/backend/.venv/bin/python -m pytest services/backend/tests/unit/test_benchmark_tool_gateway.py -k absolute_framing -q > .local/t05-transport/body-deadline-before.log 2>&1; tail -12 .local/t05-transport/body-deadline-before.log; sed -n '175,256p' .local/t05-transport/build-context.txt; sed -n '290,312p' services/backend/src/anvil/benchmark_qualification.py"
-      ]
+      ],
+      "action_id": null
     },
     {
       "event_id": "58cf70b2-4ec3-45a6-b08e-a14071293ee2",
@@ -152,6 +205,11 @@
       "exit_code": 0,
       "sanitized_lines": [
         "4 failed, 11 passed, 25 deselected, 1 warning in 12.18s"
+      ],
+      "action_id": "162d3df1-c8cb-4d98-9edd-fe1a378a67f8",
+      "originating_command_sha256": "6289a17721ce6f7f7de56c4699bbc0fe8f736f062a4776da47da6998b9354462",
+      "originating_pytest_commands": [
+        "services/backend/.venv/bin/python -m pytest services/backend/tests/unit/test_benchmark_tool_gateway.py -k 'split_bounded or invalid_frames or absolute_framing or stalled_header or header_trickle' -q > .local/t05-transport/regression-before.log 2>&1"
       ]
     },
     {
@@ -162,7 +220,54 @@
       "exit_code": 0,
       "sanitized_lines": [
         "617b58228b74b05b0210e317b07a7205acbdef4c"
+      ],
+      "action_id": "0c56abe5-0aba-4039-8652-73f0b97c522a",
+      "originating_command_sha256": "a2cebd889abddc53c2b6fa638148737921c80f7953da1abef3d93c910767ea15",
+      "originating_pytest_commands": []
+    }
+  ],
+  "additional_failure_excerpts": [
+    {
+      "event_id": "c3a90aff-446f-41f5-bc02-df15129936af",
+      "timestamp": "2026-11-08T16:00:14.561762",
+      "kind": "ObservationEvent",
+      "action_id": "5815825e-ee0f-4df8-9d18-856558588365",
+      "tool_call_id": "call_mMBWWXy2kwyW9d7wrk0PmzGB",
+      "sanitized_lines": [
+        "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! KeyboardInterrupt !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+        "/workspace/project/adi-anvil/services/backend/.venv/lib/python3.12/site-packages/typing_extensions.py:3294: KeyboardInterrupt",
+        "(to show a full traceback on KeyboardInterrupt use --full-trace)"
+      ]
+    },
+    {
+      "event_id": "12daec16-4e26-4e82-995b-a15acf88ebd0",
+      "timestamp": "2026-11-08T15:48:12.820429",
+      "kind": "ObservationEvent",
+      "action_id": "15d74ac7-6e91-4e94-8724-485166fb1911",
+      "tool_call_id": "call_SHh8vp85tN06Q3q5LhTM8akI",
+      "sanitized_lines": [
+        "FAILED services/backend/tests/unit/test_benchmark_tool_gateway.py::test_absolute_framing_deadline_rejects_slow_body_not_just_idle_socket"
+      ]
+    },
+    {
+      "event_id": "58cf70b2-4ec3-45a6-b08e-a14071293ee2",
+      "timestamp": "2026-11-08T15:47:04.633821",
+      "kind": "ObservationEvent",
+      "action_id": "162d3df1-c8cb-4d98-9edd-fe1a378a67f8",
+      "tool_call_id": "call_Kuv8HNpQvz7q0cNtAaoiyZvB",
+      "sanitized_lines": [
+        "FAILED services/backend/tests/unit/test_benchmark_tool_gateway.py::test_wrong_auth_waits_for_split_bounded_body_and_never_spends_attempt",
+        "FAILED services/backend/tests/unit/test_benchmark_tool_gateway.py::test_invalid_frames_never_dispatch_or_consume_single_use[duplicate_length]",
+        "FAILED services/backend/tests/unit/test_benchmark_tool_gateway.py::test_invalid_frames_never_dispatch_or_consume_single_use[transfer_encoding]",
+        "FAILED services/backend/tests/unit/test_benchmark_tool_gateway.py::test_slow_header_trickle_has_an_absolute_deadline"
       ]
     }
-  ]
+  ],
+  "historical_prerequisites": {
+    "python": "Locked Python3.12.14 and Harbor0.25.0, as documented in prior command reports",
+    "test_roots": ".local/t05-transport, .local/t06/pgsocket, .local/benchmark-docker/docker.sock in OLD runtime, not accessed/restored",
+    "images": "Previously dedicated preloaded exact two user-approved pinned images, per approval log; not available here",
+    "current_runtime_recovery": false
+  },
+  "additional_excerpts_retrieved_at": "2026-11-08T17:21:29.385571+00:00"
 }

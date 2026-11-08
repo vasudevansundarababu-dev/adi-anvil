@@ -1,3 +1,58 @@
+# Current implementation report — recovered T05 final Coding handoff
+
+## Approved task and input revisions
+
+Actual recovery quote appended to approval-log.jsonl from current conversation b59115d76f8b427baccc1382eeb0426e. Initially clean local/remote/open draftPR16 exactlye0a7b5f. Existing branch/Git identity/current ADI-Architecture connection retained, anvil-coding role only. All15 original requirements/design/plan approvals match approved-input-snapshot.json.
+
+## Changed behavior and source revision
+
+Tested commit `4e64f54c368d04afcde6faa8c41cdadd9529e0d9`, tree `0c745b5b5f098f2f55ea066f8c4f8228913cfe6f`. Repair checkpoint `e0a7b5fb45dbc73c1e9d6248647a102387ea5cd8`, tree `d807b5ee4f17acdf1d8f582a356e731863ab0c66`. Recovery/publication change documentation/evidence only; product/test/lock bytes are identical, but whole Git trees are not equated. No new source/test/dependency fix needed. Only product diff from accepted pricingb97ac8d remains NativeGateway/server in benchmark_qualification.py and existing test_benchmark_tool_gateway.py.
+
+```text
+bounded <=256B unambiguous frame + absolute1s framing deadline
+  -> cancel/fence framing timer
+  -> token before JSON/callback -> exact session/single use
+  -> one callback, no SDK retry -> bounded response I/O
+```
+
+Max4 owned handlers/owned-socket shutdown/1sresponse preserved.21 added cases include32 fixed split-denial schedules plus framing/duplicateCL/TE/Expect/auth/truncation/oversize/stall/capacity/shutdown/valid256B/longcallback/postdispatchdisconnect/replay. No single-use/auth weakening after ambiguous dispatch.
+
+## Requirement coverage
+
+BM05/09/11 bounded T05 repair verification and T06 compatibility only.3 actual installed SDKs and real Unix/stdio/filesystem/Harbor host client exercised. Pricing/capture/evaluator contracts independent. Private negatives prove real compiler/private hash rejection, not isolation. SQL/native qualification blocked, not waived.
+
+## Tests actually run, results and evidence
+
+46 gateway;95 provider-loop; exactly3 fixed diagnostic rounds of6 each;96 pricing/capture;33 T06 contracts;729 full units;3 pre-dispatch private-binding negatives;7 adapter;12 Node; Ruff check/format2 files; scanner/diff: PASS. Counts overlap, not additive unique tests. Full729 is new-runtime proof on committed product/test bytes, not reused historical working-tree729. All invoked commands exited0, correct fixture flag from first test; no retry-until-green/source workaround.40 deselected per diagnostic and9native deselected for private negatives are scoped selections, not skips/passes.
+
+Python3.12.14, independent Harbor0.25.0, OpenAI2.54.0/Anthropic0.125.0/google-genai1.75.0/httpx0.28.1/pytest9.1.1/Node24.22.1/Linux. Exact versions/UTC times/commands/env/local-log hashes/source hashes in t05-recovery-checks.json / commands / source manifest. Existing Authlib jose deprecation and Node module-type warnings retained.
+
+## Failed, blocked and not-run checks
+
+Fresh full T06 SQL/native57 and combinedSQL136, T04 actual native9 and4 resource probes are BLOCKED/NOT RUN. No approved dedicated preloaded Docker/PostgreSQL runtime/images/socket in this new runtime; no new pull/build/load/substitution authority inferred. The3 private negatives invoke no Docker and are not native isolation. Old last4resource action has no observed result.
+
+Read-only platform history yielded sanitized summaries/commands/event IDs/timestamps, not byte-exact raw logs/private artifacts/runtime recovery. Expected old-code4failed/11passed/25deselected and separate absolute-deadline1failed/39deselected, combined KeyboardInterrupt and outer soft timeouts retained. Later3x6/57T06/12T04/136combined/729full/96pricing-capture summaries remain historical; final e0 source observations identified separately. Shell exit0 after tail does not turn failed pytest into pass. Earlier707/1 and689/1 reports remain unchanged.
+
+No new test/setup failure. Read-only guessed filename probes found no native_gateway/conftest files; corrected to actual suite, not counted as tests. Large publication tool requests failed validation or produced no writes; final smaller commands generated the evidence. These tool interruptions did not change test outcomes.
+
+## Compatibility, migrations and remaining risks
+
+All product trees/locks and15 originals unchanged. Legacy providers/dispatch/Harbor/locks/OpenAPI/pricing equalb97ac8d. No migrations here; previous fresh/upgrade049 evidence historical.6 exact rates and prior official sources unchanged, verified2026-11-08T15:25:35.450801Z/expires2026-11-15T15:25:35.450801Z; no unnecessary GET/refresh/expiry extension. Real UTC production expiry/deterministic fixture clock preserved. Do not backfill immutable receipts or convert historical qualification into product admission.
+
+Old conversation preserved. No old credentials/secrets/private exhibits read/copied; no shared sockets, production/cloud/old-runtime lifecycle, Praxis/Mac/local-user checkout, auth or shared permission changes. New tests used a constructed environment allowlist and fresh owner-only HOME/TMP/vault. MockTransport only at unavailable paid HTTP boundary; Unix/process/filesystem/installed SDK/Harbor host-client paths real. No T07/independent QA/full acceptance/paid/judge/model-performance/Bodhium/trust/admission/merge/deployment claim or action. Raw logs/private synthetic outputs/dependencies ignored. Optional uv-created user-bin Python link removed after exact-target verification; no global package/system/config change. Current portable SHA256SUMS excludes unavailable historical TAP bytes but original digest remains in artifact-index.
+
+## Human Coding review handoff — STOP
+
+Offline verification and handoff complete; fresh SQL/native remains an environment blocker. Keep PR16 draft, title/purpose unchanged. Human review only. For fresh SQL/native, supply an approved preloaded dedicated runtime or separately authorize exact two image preparation for this new isolated runtime, then bounded remaining checks. No preparation/next role automatically approved or launched.
+
+Decision: PENDING HUMAN CODING REVIEW.
+
+---
+
+Publication verification:39 source hashes /55 available artifact hashes and staged scanner681 files /0 findings passed; product diff and staged diff clean. Missing historical TAP bytes remain unavailable, not counted.
+
+## Historical implementation reports retained unchanged below
+
 # Current report — verified pricing/T06 checkpoint; full-unit T05 blocker
 
 ## Approved task and inputs

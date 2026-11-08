@@ -1,0 +1,432 @@
+{
+  "started_at": "2026-11-08T17:20:57.818965+00:00",
+  "source_commit": "4e64f54c368d04afcde6faa8c41cdadd9529e0d9",
+  "source_tree": "0c745b5b5f098f2f55ea066f8c4f8228913cfe6f",
+  "product_checkpoint": "e0a7b5fb45dbc73c1e9d6248647a102387ea5cd8",
+  "environment": {
+    "python": "3.12.14 (main, Sep 29 2026, 15:01:18) [Clang 22.1.3 ]",
+    "platform": "Linux-6.8.0-1055-gke-x86_64-with-glibc2.41",
+    "uname": [
+      "Linux",
+      "runtime-fltcuoibovagpjnn-869bbf6977-bnzc5",
+      "6.8.0-1055-gke",
+      "#61-Ubuntu SMP Tue May 26 22:57:42 UTC 2026",
+      "x86_64",
+      ""
+    ],
+    "safe_environment": {
+      "PATH": "/bin:/usr/bin:/usr/local/bin",
+      "HOME": "/workspace/project/adi-anvil/.local/t05-recovery/home",
+      "TMPDIR": "/workspace/project/adi-anvil/.local/t05-recovery/tmp",
+      "LANG": "C.UTF-8",
+      "ANVIL_ENV": "local",
+      "WEB_ORIGIN": "http://127.0.0.1:3202",
+      "ANVIL_LIVE_PROVIDERS_ENABLED": "false",
+      "ANVIL_REAL_EMAIL_ENABLED": "false",
+      "ANVIL_FIXTURE_MODE": "true",
+      "LANGSMITH_TRACING": "false",
+      "ANVIL_BENCHMARK_VAULT_ROOT": "/workspace/project/adi-anvil/.local/t05-recovery/vault",
+      "PYTHONDONTWRITEBYTECODE": "1"
+    },
+    "packages": {
+      "pytest": "9.1.1",
+      "openai": "2.54.0",
+      "anthropic": "0.125.0",
+      "google-genai": "1.75.0",
+      "httpx": "0.28.1",
+      "ruff": "0.16.9",
+      "psycopg": "3.3.6"
+    },
+    "harbor_python": "Python 3.12.14",
+    "harbor_version": "0.25.0",
+    "node": "v24.22.1"
+  },
+  "diagnostic_policy": "Exactly 3 predeclared six-test rounds, all outcomes preserved; no retry-until-green. Other suites each once on unchanged source. No inference/SDK retries.",
+  "results": [
+    {
+      "name": "gateway",
+      "command": "services/backend/.venv/bin/python -m pytest services/backend/tests/unit/test_benchmark_tool_gateway.py -q",
+      "environment_overrides": {},
+      "started_at": "2026-11-08T17:20:57.887822+00:00",
+      "elapsed_seconds": 34.585,
+      "returncode": 0,
+      "summary": [
+        "46 passed, 1 warning in 32.30s"
+      ],
+      "log_path": ".local/t05-recovery/gateway.log",
+      "log_sha256": "bc490a7fe293dc96f93b2e073471a5ac1e6aefc3b5e58a1254964a71e3ab43d2",
+      "log_bytes": 549,
+      "log_committed": false
+    },
+    {
+      "name": "provider-loop",
+      "command": "services/backend/.venv/bin/python -m pytest services/backend/tests/unit/test_benchmark_provider_loop.py -q",
+      "environment_overrides": {},
+      "started_at": "2026-11-08T17:21:32.473173+00:00",
+      "elapsed_seconds": 9.382,
+      "returncode": 0,
+      "summary": [
+        "95 passed, 1 warning in 7.19s"
+      ],
+      "log_path": ".local/t05-recovery/provider-loop.log",
+      "log_sha256": "ec711bef4ce837336c9e3c2c2700c8c5a3754ed37f41e1cc46042fa64d4407d7",
+      "log_bytes": 628,
+      "log_committed": false
+    },
+    {
+      "name": "diagnostic-1",
+      "command": "services/backend/.venv/bin/python -m pytest services/backend/tests/unit/test_benchmark_tool_gateway.py -k 'real_unix_gateway_and_installed_harbor_host_agent_client or wrong_auth_waits_for_split_bounded_body or gateway_concurrent_duplicate or failed_unknown_gateway_response' -q",
+      "environment_overrides": {},
+      "started_at": "2026-11-08T17:21:41.855517+00:00",
+      "elapsed_seconds": 17.799,
+      "returncode": 0,
+      "summary": [
+        "6 passed, 40 deselected, 1 warning in 15.68s"
+      ],
+      "log_path": ".local/t05-recovery/diagnostic-1.log",
+      "log_sha256": "7b14bd872041367a0d26a9183478057cda068dc452b3ed12cec0279a6d831879",
+      "log_bytes": 563,
+      "log_committed": false
+    },
+    {
+      "name": "diagnostic-2",
+      "command": "services/backend/.venv/bin/python -m pytest services/backend/tests/unit/test_benchmark_tool_gateway.py -k 'real_unix_gateway_and_installed_harbor_host_agent_client or wrong_auth_waits_for_split_bounded_body or gateway_concurrent_duplicate or failed_unknown_gateway_response' -q",
+      "environment_overrides": {},
+      "started_at": "2026-11-08T17:21:59.655207+00:00",
+      "elapsed_seconds": 18.055,
+      "returncode": 0,
+      "summary": [
+        "6 passed, 40 deselected, 1 warning in 15.92s"
+      ],
+      "log_path": ".local/t05-recovery/diagnostic-2.log",
+      "log_sha256": "b2fa05afa2f7ecffe9420a6230487d6cc456538fb20ada56e27282d022774b6f",
+      "log_bytes": 563,
+      "log_committed": false
+    },
+    {
+      "name": "diagnostic-3",
+      "command": "services/backend/.venv/bin/python -m pytest services/backend/tests/unit/test_benchmark_tool_gateway.py -k 'real_unix_gateway_and_installed_harbor_host_agent_client or wrong_auth_waits_for_split_bounded_body or gateway_concurrent_duplicate or failed_unknown_gateway_response' -q",
+      "environment_overrides": {},
+      "started_at": "2026-11-08T17:22:17.710583+00:00",
+      "elapsed_seconds": 17.849,
+      "returncode": 0,
+      "summary": [
+        "6 passed, 40 deselected, 1 warning in 15.73s"
+      ],
+      "log_path": ".local/t05-recovery/diagnostic-3.log",
+      "log_sha256": "52d928564923fa4ea7a1425cf0ae25e67aa2109248351723198608e4929503b1",
+      "log_bytes": 563,
+      "log_committed": false
+    },
+    {
+      "name": "pricing-capture",
+      "command": "services/backend/.venv/bin/python -m pytest services/backend/tests/unit/test_workspace_costs.py services/backend/tests/unit/test_benchmark_qualification_capture.py -q",
+      "environment_overrides": {},
+      "started_at": "2026-11-08T17:22:35.561835+00:00",
+      "elapsed_seconds": 7.729,
+      "returncode": 0,
+      "summary": [
+        "96 passed, 1 warning in 5.78s"
+      ],
+      "log_path": ".local/t05-recovery/pricing-capture.log",
+      "log_sha256": "d4031aef043edb10181b6fcd7be11dce8e50960839331083f2451a7d820fe541",
+      "log_bytes": 628,
+      "log_committed": false
+    },
+    {
+      "name": "t06-contracts",
+      "command": "services/backend/.venv/bin/python -m pytest services/backend/tests/unit/test_benchmark_evaluation_contracts.py -q",
+      "environment_overrides": {},
+      "started_at": "2026-11-08T17:22:43.291385+00:00",
+      "elapsed_seconds": 1.717,
+      "returncode": 0,
+      "summary": [
+        "33 passed in 0.40s"
+      ],
+      "log_path": ".local/t05-recovery/t06-contracts.log",
+      "log_sha256": "56969c1508f0e70ef82e4377fc8ecce1eaf30cf0eee2f8a9593a7705c4e00604",
+      "log_bytes": 99,
+      "log_committed": false
+    },
+    {
+      "name": "full-unit",
+      "command": "services/backend/.venv/bin/python -m pytest services/backend/tests/unit -q",
+      "environment_overrides": {},
+      "started_at": "2026-11-08T17:22:45.009203+00:00",
+      "elapsed_seconds": 45.353,
+      "returncode": 0,
+      "summary": [
+        "729 passed, 1 warning in 43.00s"
+      ],
+      "log_path": ".local/t05-recovery/full-unit.log",
+      "log_sha256": "37aefacf06eeda42c9ab77d87effe40f3047cb9c22268b24bd1cc735ac48421d",
+      "log_bytes": 1350,
+      "log_committed": false
+    },
+    {
+      "name": "adapter",
+      "command": ".local/harbor-venv/bin/python -m unittest discover -s services/harbor/tests -q",
+      "environment_overrides": {
+        "PYTHONPATH": "/workspace/project/adi-anvil/services/harbor/src"
+      },
+      "started_at": "2026-11-08T17:23:30.362197+00:00",
+      "elapsed_seconds": 0.415,
+      "returncode": 0,
+      "summary": [
+        "Ran 7 tests in 0.006s",
+        "OK"
+      ],
+      "log_path": ".local/t05-recovery/adapter.log",
+      "log_sha256": "5b87efe35b8cd83f177571b6bb70850542b15c4626430b4cd5a8dcb0bdb7d49e",
+      "log_bytes": 97,
+      "log_committed": false
+    },
+    {
+      "name": "node",
+      "command": "/usr/local/bin/node --test tests/provider_failure.mjs tests/readiness_catalog.mjs",
+      "environment_overrides": {},
+      "started_at": "2026-11-08T17:23:30.777381+00:00",
+      "elapsed_seconds": 0.165,
+      "returncode": 0,
+      "summary": [
+        "\u2139 tests 12",
+        "\u2139 pass 12",
+        "\u2139 fail 0",
+        "\u2139 skipped 0"
+      ],
+      "log_path": ".local/t05-recovery/node.log",
+      "log_sha256": "b05a5642f531a37a84d727a3031131badeeaea3b602f65dfe0fb70e08a893437",
+      "log_bytes": 2105,
+      "log_committed": false
+    },
+    {
+      "name": "ruff-check",
+      "command": "services/backend/.venv/bin/ruff check services/backend/src/anvil/benchmark_qualification.py services/backend/tests/unit/test_benchmark_tool_gateway.py",
+      "environment_overrides": {},
+      "started_at": "2026-11-08T17:23:30.942690+00:00",
+      "elapsed_seconds": 0.016,
+      "returncode": 0,
+      "summary": [
+        "All checks passed!"
+      ],
+      "log_path": ".local/t05-recovery/ruff-check.log",
+      "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "log_bytes": 19,
+      "log_committed": false
+    },
+    {
+      "name": "ruff-format",
+      "command": "services/backend/.venv/bin/ruff format --check services/backend/src/anvil/benchmark_qualification.py services/backend/tests/unit/test_benchmark_tool_gateway.py",
+      "environment_overrides": {},
+      "started_at": "2026-11-08T17:23:30.958880+00:00",
+      "elapsed_seconds": 0.016,
+      "returncode": 0,
+      "summary": [
+        "2 files already formatted"
+      ],
+      "log_path": ".local/t05-recovery/ruff-format.log",
+      "log_sha256": "3bc53bf3e981a98a34a852e175bf9b77af841edea74fca595d9aedcbaf9a4938",
+      "log_bytes": 26,
+      "log_committed": false
+    },
+    {
+      "name": "secret-scan",
+      "command": "services/backend/.venv/bin/python scripts/secret_scan.py",
+      "environment_overrides": {},
+      "started_at": "2026-11-08T17:23:30.975008+00:00",
+      "elapsed_seconds": 0.214,
+      "returncode": 0,
+      "summary": [
+        "{\"tracked_files_checked\": 678, \"findings\": []}"
+      ],
+      "log_path": ".local/t05-recovery/secret-scan.log",
+      "log_sha256": "410937e23300530fe77352512b744812e5833d1d73d51b27bf94f30bafb648d2",
+      "log_bytes": 47,
+      "log_committed": false
+    },
+    {
+      "name": "diff-check",
+      "command": "git diff --check",
+      "environment_overrides": {},
+      "started_at": "2026-11-08T17:23:31.189705+00:00",
+      "elapsed_seconds": 0.008,
+      "returncode": 0,
+      "summary": [],
+      "log_path": ".local/t05-recovery/diff-check.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "log_bytes": 0,
+      "log_committed": false
+    }
+  ],
+  "finished_at": "2026-11-08T17:23:31.197817+00:00",
+  "all_commands_succeeded": true,
+  "published_at": "2026-11-08T17:26:25.564813+00:00",
+  "status": "offline_Coding_passed_native_SQL_environment_blocked_STOP_human_review",
+  "repair_source_tree": "d807b5ee4f17acdf1d8f582a356e731863ab0c66",
+  "source_binding_note": "Committed product/test bytes at tested HEAD. Documentation-only historical excerpts were uncommitted during checks. No source/test/dependency changes in recovery. Final documentation publication has a different whole tree; product byte equality and source manifest bind it to tested revision.",
+  "private_predispatch": {
+    "name": "private-predispatch",
+    "started_at": "2026-11-08T17:22:01.959869+00:00",
+    "elapsed_seconds": 6.382,
+    "command": "services/backend/.venv/bin/python -m pytest services/backend/tests/benchmark/test_benchmark_qualification.py -k native_rejects_stale_package_or_evaluator_before_execution -q",
+    "environment_additions": {
+      "ANVIL_TEST_HARBOR": "1",
+      "ANVIL_HARBOR_DOCKER_HOST": "unix:///workspace/project/adi-anvil/.local/benchmark-docker/docker.sock"
+    },
+    "returncode": 0,
+    "summary": [
+      "3 passed, 9 deselected, 1 warning in 4.23s"
+    ],
+    "log_path": ".local/t05-recovery/private-predispatch.log",
+    "log_sha256": "1ef9857c169c4a6f9fecee0e7501ab9557bbadba636151f0f00852bfee116d77",
+    "log_bytes": 561,
+    "log_committed": false,
+    "scope": "Real package/private-file stale binding rejection before execution ONLY; source inspection shows NativeDocker constructor assembles an unused command but no subprocess/daemon is invoked before changed package/rules/extra_private rejection. Dedicated socket does not exist. NOT native runtime/isolation qualification.",
+    "native_trials_intentionally_deselected": 9
+  },
+  "approved_originals_unchanged": {
+    "approval-record.md": "3c02f95ba28a03240a1bc8ae375d024b2d77cb4e33a6f601007cbaf58b20d07c",
+    "artifact-index.json": "8e1ae48cccac03166098fa55d0274eaf713466412addbe29b2f8522f16bbedf9",
+    "recovery-report.md": "e7a471372a4fb103b1aba9423285f2a3439977a655a39dd3570f2aacc1bdf694",
+    "recovery-inventory.json": "f8060cf3355b629e7990ca5cd2db568355e49ac84f8d44d3a5d3753db60ba603",
+    "SHA256SUMS": "c70375fe17b61867224a2d0d7b7b9ad7f97e98a28b5c2291c397987ca29aa84c",
+    "handoff.md": "3463919dbb1aace19c9d18ae1aa01fd5d118c17b4883c69d7aea335e8f7b04df",
+    "production-source-manifest.jsonl": "cedfb20d5b3160dcfee2e91f729e237063e16c714eb70dbef52cc7c59e173031",
+    "execution-evidence-index.json": "d193e6ce2fc9c57ce7d081a2c37446dc5e5916260b6072819ee88ff9761caedb",
+    "approved-specification.txt": "44196cae04b7a399fb70da8d4577345b2cf95ee6a14daa41f3d8c8f2b4921cbc",
+    "architecture.md": "c200d135bd9dbe171b63e13833349a6486d09adff17c5c27daf870d46c6cf68a",
+    "verification-record.json": "ecdc1f430664d342ae34fce68c8de4af1c356b0b08b57a87e64f787848f87069",
+    "contract-design.md": "6486299f60ec6f58f2acf21b02137cff5402eb4a13a6df01701a30f9b2c58668",
+    "requirements-to-test.md": "b8608c8225231c9a0581ed32959dbac8ad18aa56ce970bae49ef093483bc209f",
+    "threat-model.md": "2ca9cb927254ea2450da4b2c63813993e24fb17da4bc575e52a99fbaf77db673",
+    "implementation-plan.md": "1cdf87e4d48bc483a2e5116509e83d07b35f2652b95c032635b98bbe0e3f9749"
+  },
+  "unchanged_product_trees": {
+    "services": {
+      "repair": "6e96211dc8b4864051e40e7c0ed36411bdb47800",
+      "tested": "6e96211dc8b4864051e40e7c0ed36411bdb47800"
+    },
+    "apps": {
+      "repair": "cf630e43e78c4296aebf491cd58aaf3fa1035d06",
+      "tested": "cf630e43e78c4296aebf491cd58aaf3fa1035d06"
+    },
+    "contracts": {
+      "repair": "1e80d2181f281a600fd220e37e90faa45f7fe0c6",
+      "tested": "1e80d2181f281a600fd220e37e90faa45f7fe0c6"
+    },
+    "fixtures": {
+      "repair": "0166a2fd821a47b9aa5be726744f8a5f35da2de7",
+      "tested": "0166a2fd821a47b9aa5be726744f8a5f35da2de7"
+    },
+    "infra": {
+      "repair": "82f97d5485dc59ee14ac278cd2d6a8dffe4329f6",
+      "tested": "82f97d5485dc59ee14ac278cd2d6a8dffe4329f6"
+    },
+    "scripts": {
+      "repair": "b0caae083c5de5be1a572898758cbbc57f48ba25",
+      "tested": "b0caae083c5de5be1a572898758cbbc57f48ba25"
+    },
+    "tests": {
+      "repair": "18bdf0b33aaaac9d2e7a50970defe7e97b851dd0",
+      "tested": "18bdf0b33aaaac9d2e7a50970defe7e97b851dd0"
+    },
+    "task-packs": {
+      "repair": "1848f63e45029972e761f522b8f144e03367595c",
+      "tested": "1848f63e45029972e761f522b8f144e03367595c"
+    },
+    "assets": {
+      "repair": "df20a708c15107c000229f2220521ffa4e9a43f7",
+      "tested": "df20a708c15107c000229f2220521ffa4e9a43f7"
+    },
+    "package.json": {
+      "repair": "ef747e1bef81bc97eb5a3ab8f30486a701db3491",
+      "tested": "ef747e1bef81bc97eb5a3ab8f30486a701db3491"
+    },
+    "pnpm-lock.yaml": {
+      "repair": "bb5ddc1010c269f7da9a7bd8747b933a827c36fe",
+      "tested": "bb5ddc1010c269f7da9a7bd8747b933a827c36fe"
+    },
+    "pnpm-workspace.yaml": {
+      "repair": "286cf7f5643db97142c425abe7c8e5d5663f5d65",
+      "tested": "286cf7f5643db97142c425abe7c8e5d5663f5d65"
+    },
+    ".python-version": {
+      "repair": "e4fba2183587225f216eeada4c78dfab6b2e65f5",
+      "tested": "e4fba2183587225f216eeada4c78dfab6b2e65f5"
+    },
+    ".node-version": {
+      "repair": "df6ae3370f9f89272d88629c442cf554d6c1f9fb",
+      "tested": "df6ae3370f9f89272d88629c442cf554d6c1f9fb"
+    },
+    "ruff.toml": {
+      "repair": "87e2e336df03d5871ebc8f56422ce37d033ae6e8",
+      "tested": "87e2e336df03d5871ebc8f56422ce37d033ae6e8"
+    }
+  },
+  "blocked": [
+    {
+      "suite": "T06 full57:33 contracts+24 SQL/API including2native; combinedSQL136",
+      "status": "BLOCKED/NOT RUN as suites;33contracts separately passed",
+      "reason": "No authorized preloaded dedicated Docker/PostgreSQL runtime/image store/socket; no fresh image pull/build/load authority."
+    },
+    {
+      "suite": "T04 actual native9;4resource probes memory_pids/tree_timeout/stdio_overflow/stdio_timeout",
+      "status": "BLOCKED/NOT RUN; old4resource result UNOBSERVED",
+      "reason": "Same missing prerequisite.3pre-dispatch negatives pass without Docker and are NOT native isolation.9native deselected only in that scoped command."
+    }
+  ],
+  "historical_evidence": "t05-recovery-history.json; sanitized platform IDs/timestamps/excerpts, not byte-exact runtime/log/artifact recovery. Expected old-red, KeyboardInterrupt and outer soft-timeout outcomes preserved.4resource result unobserved.",
+  "pricing": "6rates unchanged;10 official GETs verified2026-11-08T15:25:35.450801Z, expires2026-11-15T15:25:35.450801Z; no refresh or UTC/expiry weakening.",
+  "warnings": [
+    "Existing Authlib jose deprecation",
+    "Existing Node MODULE_TYPELESS_PACKAGE_JSON warning"
+  ],
+  "next_gate": "Human Coding review only; no T07/QA/fullacceptance/paid/judge/merge/deployment or new image preparation authority.",
+  "setup": {
+    "all_install_commands_succeeded": true,
+    "commands": [
+      "export UV_PYTHON_INSTALL_DIR=\"$PWD/.local/python\" UV_CACHE_DIR=\"$PWD/.local/uv-cache\"",
+      "uv python install 3.12.14",
+      "uv sync --project services/backend --frozen --python 3.12.14",
+      "uv venv .local/harbor-venv --python 3.12.14",
+      "uv pip sync --python .local/harbor-venv/bin/python services/harbor/requirements.lock --index-url https://pypi.org/simple"
+    ],
+    "logs_committed": false,
+    "log_sha256": {
+      "python-install.log": "756fcdd65b63c0ecadaa259e8fad204a572de52e0702ac4d7000dccd28333d63",
+      "backend-install.log": "b2dd0039ff5ccc86ee39a5723310bb4eb09f6a128c6f570370518a6fd0a317ba",
+      "harbor-venv.log": "dbf3d678b339b97ee77f80e3de44db8c63c019affe07eda81315445ffe7b9f23",
+      "harbor-install.log": "0b4c039d4035748dc98889ab1bf97d011b86bbaf0421ce9e8d670dfc29161494"
+    },
+    "cleanup": {
+      "observed_at": "2026-11-08T17:22:49.518691+00:00",
+      "action": "Removed only uv-created optional link pointing into this new workspace; interpreter and both virtualenvs remain workspace-local. Existing global/system Python unchanged.",
+      "note": "uv python install with workspace UV_PYTHON_INSTALL_DIR also created an optional user-bin symlink; removed after exact-target verification. No config/permission/system interpreter changes."
+    }
+  },
+  "publication_verification": {
+    "observed_at": "2026-11-08T17:27:39.063612+00:00",
+    "commands": [
+      "sha256sum -c docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t05-recovery-source.sha256",
+      "sha256sum -c docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/SHA256SUMS",
+      "services/backend/.venv/bin/python scripts/secret_scan.py",
+      "git diff --check",
+      "git diff --cached --check",
+      "git diff --exit-code e0a7b5f -- services apps contracts fixtures infra scripts tests task-packs assets package.json pnpm-lock.yaml pnpm-workspace.yaml .python-version .node-version ruff.toml"
+    ],
+    "all_exit_codes": 0,
+    "source_entries_verified": 39,
+    "available_artifact_entries_verified": 55,
+    "staged_secret_scan": {
+      "tracked_files_checked": 681,
+      "findings": []
+    },
+    "log_sha256": {
+      "source-hashcheck.log": "36ead2bd251b514a7f920d8f651d3fd08726246899ce220e7f0717a5a439395b",
+      "artifact-hashcheck.log": "a230583115a76529fa9cbe9d7977bd204f49c9bba6506e5bbf87837cc8a15bf1",
+      "final-secret-scan.log": "554057e86acd8032e94ba58d2840848a9cd156c9f449aba841b602d04223774a"
+    },
+    "logs_committed": false,
+    "note": "Hash/scan logs contain path OK or findings-count output only, not self-referential source content. Rechecked against final staged publication before commit."
+  }
+}

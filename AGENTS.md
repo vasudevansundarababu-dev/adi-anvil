@@ -36,3 +36,5 @@
 - T06 uses private benchmark_sealed; do not move legacy benchmark_output into the vault. Exact-job evaluator claims never auto-reclaim; absent judge authority stays Blocked/unscored. Accepted T05 OpenAI pricing expired2026-11-08T02:47:35Z; never extend expiry/invent rates merely to green its time-dependent unit test. T06 focused evidence and preserved whole-unit failure are separate in t06-checks.json.
 
 - Authorized2026-11-08 pricing revalidation of6 exact existing models is in t06-pricing-sources.json; unchanged rates,7day TTL, deterministic optional unit-test clock with realUTC production default. Separate unchanged T05 gateway wrong-auth reject-before-body close can race HTTPConnection body send (BrokenPipe); preserve failures and require bounded follow-up authority, never rerun-until-green or weaken auth.
+
+- T05 transport repair sourcee0a7b5f;2026-11-08 isolated recovery evidence is Codingrun t05-recovery-*. Fresh offline729full/46gateway/3x6 diagnostics pass; SQL/native prerequisites absent, old4resource result unobserved. Platform excerpts are not byte-exact runtime/log recovery. Do not inherit old image-download authority in a new runtime.
