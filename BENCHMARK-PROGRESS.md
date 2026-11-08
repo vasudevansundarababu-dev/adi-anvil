@@ -1,3 +1,7 @@
+# T06 Coding approved — evaluator boundary in progress
+
+User accepted tested T05 sourcebb7713f/publicationdfc8c3e; remote/branch/PR16 verified exact, clean tree. Actual T06-only approval appended. Implement only sealed-output fictional evaluator registry/calibration/worker with constrained SQL/private claims and citation/hash validation. External semantic judge remains Blocked, imported code inert; no T07/QA/paid/merge/deploy. Current runtime has retained2 image metadata records but no running daemon/PostgreSQL; old vaults group-readable and not modified. Inspect/restart only approved dedicated runtime if safe, use fresh owned test roots; independent local work continues if prerequisite blocked. No new tests or native pass claimed at this checkpoint.
+
 Current focused-tested T05 source `bb7713fdcee6a187a99daaa04b60c8f9f8afac63`, tree `1369a0254476b7dc64d107d7205527ef9addc2be`. Results/source/commands: Coding run `t05-checks.json`, `t05-source.sha256`, `t05-commands.md`. T05 complete at offline Coding level; STOP for human review before T06–T10/QA/paid/merge/deploy. Earlier T04/T05-in-progress statements below are historical.
 
 # T05 Coding complete — offline qualification passed; STOP human review
