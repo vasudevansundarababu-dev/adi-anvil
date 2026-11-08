@@ -1,0 +1,76 @@
+{
+  "schema": "anvil.gcp.staging.proposal.v1",
+  "status": "proposal_not_executable",
+  "source_checkpoint": "adcc1d2",
+  "authorization": {
+    "target_choice": "existing_anvil_project_separate_staging_resources",
+    "preparation_only": true,
+    "provisioning_authorized": false,
+    "incremental_budget_usd": 500,
+    "budget_period": "monthly",
+    "budget_scope": "additional_staging_infrastructure_compute_storage_builds",
+    "budget_is_hard_cap": false,
+    "lifetime_days": null
+  },
+  "target": {
+    "project_id": "adi-anvil-mvp-2026",
+    "region": "us-west1",
+    "zone": "us-west1-a",
+    "resource_prefix": "anvil-staging",
+    "web_hostname": null,
+    "auth_hostname": null,
+    "allocated_public_ip": null,
+    "oidc_issuer": null,
+    "access_policy": "invited_users_only_no_public_demo"
+  },
+  "proposed_resources": {
+    "vm": {"name": "anvil-staging", "machine_type": "e2-standard-4", "architecture": "amd64", "public_ip": false},
+    "data_disk": {"name": "anvil-staging-data", "size_gb": 50, "type": "pd-balanced", "reuse_existing": false},
+    "network": "anvil-staging-net",
+    "subnet": {"name": "anvil-staging-subnet", "cidr": null},
+    "router": "anvil-staging-router",
+    "nat": "anvil-staging-nat",
+    "firewall_rules": ["anvil-staging-lb-http", "anvil-staging-iap-ssh"],
+    "runtime_service_account": "anvil-staging-vm@adi-anvil-mvp-2026.iam.gserviceaccount.com",
+    "build_service_account": "anvil-staging-build@adi-anvil-mvp-2026.iam.gserviceaccount.com",
+    "deployment_principal": null,
+    "artifact_registry_repository": "anvil-staging",
+    "snapshot_policy": {"name": "anvil-staging-daily", "frequency": "daily", "retention_days": 7},
+    "load_balancer": {
+      "address_name": "anvil-staging-ip",
+      "instance_group": "anvil-staging-ig",
+      "health_check": "anvil-staging-hc",
+      "backend_service": "anvil-staging-backend",
+      "url_map": "anvil-staging-urlmap",
+      "https_proxy": "anvil-staging-https-proxy",
+      "certificate": "anvil-staging-cert",
+      "forwarding_rule": "anvil-staging-https"
+    }
+  },
+  "application_isolation": {
+    "compose_project": "adi-anvil-staging",
+    "host_data_root": "/var/lib/anvil-staging",
+    "postgres_database": "anvil_staging",
+    "identity_database": "anvil_staging_identity",
+    "database_roles": ["anvil_staging_migration", "anvil_staging_app", "anvil_staging_worker", "anvil_staging_identity"],
+    "keycloak_realm": "anvil-staging",
+    "artifact_root": "/var/lib/anvil-staging/artifacts",
+    "benchmark_vault_root": "/var/lib/anvil-staging/benchmark-vault",
+    "qualification_work_root": "/var/lib/anvil-staging/qualification",
+    "data_origin": "fresh_fictional_only",
+    "reuse_current_database_disk_secrets_or_identity": false
+  },
+  "secret_reference_proposals": [
+    "projects/adi-anvil-mvp-2026/secrets/anvil-staging-db-owner",
+    "projects/adi-anvil-mvp-2026/secrets/anvil-staging-db-app",
+    "projects/adi-anvil-mvp-2026/secrets/anvil-staging-db-worker",
+    "projects/adi-anvil-mvp-2026/secrets/anvil-staging-neo4j",
+    "projects/adi-anvil-mvp-2026/secrets/anvil-staging-session",
+    "projects/adi-anvil-mvp-2026/secrets/anvil-staging-oidc",
+    "projects/adi-anvil-mvp-2026/secrets/anvil-staging-keycloak-admin",
+    "projects/adi-anvil-mvp-2026/secrets/anvil-staging-keycloak-db"
+  ],
+  "disabled_features": ["candidate_dispatch", "judge_dispatch", "import_generation", "vertex_support", "other_paid_support", "outbound_email"],
+  "release": {"source_sha": null, "image_digests": {}, "configuration_hash": null, "migration_ledger": null, "rollback_revision": null},
+  "unresolved": ["lifetime_and_shutdown_policy", "resource_name_collision_inventory", "nonoverlapping_subnet_cidr", "hostnames_and_DNS_control", "deployment_principal_and_scoped_IAM", "build_and_runtime_cost_estimate", "new_benchmark_worker_wiring", "independent_QA_and_release_review"]
+}
