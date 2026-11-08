@@ -11,6 +11,7 @@ from google.genai import types
 from openai import OpenAI
 
 from anvil.providers import PROVIDERS
+from anvil.task_parser import json_value
 from anvil.workspace_adapter_contracts import bytes_echo, contains_secret
 
 CONTRACT_KEY = "anvil-offline-contract-only"
@@ -54,15 +55,45 @@ def extend_history(provider, history, replay, observations):
         )
     else:
         history.append(replay)
-        history.append(
-            {
-                "role": "user",
-                "parts": [
-                    {"function_response": {"id": o["call_id"], "name": o["name"], "response": o}}
-                    for o in values
-                ],
-            }
-        )
+        native_calls = [p["function_call"] for p in replay["parts"] if "function_call" in p]
+        parts = []
+        for native, observation in zip(native_calls, values, strict=True):
+            response = {"name": observation["name"], "response": observation}
+            if native.get("id") is not None:
+                response["id"] = native["id"]
+            parts.append({"function_response": response})
+        history.append({"role": "user", "parts": parts})
+
+
+def _check_usage(data, provider):
+    usage = data.get("usageMetadata" if provider == "gemini" else "usage")
+    if usage is None:
+        return
+    if not isinstance(usage, dict):
+        raise ValueError("Invalid usage metadata")
+    fields = {
+        "input_tokens",
+        "output_tokens",
+        "total_tokens",
+        "cache_read_input_tokens",
+        "cache_creation_input_tokens",
+        "cached_tokens",
+        "reasoning_tokens",
+        "promptTokenCount",
+        "candidatesTokenCount",
+        "totalTokenCount",
+        "cachedContentTokenCount",
+        "thoughtsTokenCount",
+    }
+
+    def check(mapping):
+        for key, value in mapping.items():
+            if key in fields and value is not None and (type(value) is not int or value < 0):
+                raise ValueError("Invalid token metadata")
+            if isinstance(value, dict):
+                check(value)
+
+    check(usage)
 
 
 def request_turn(binding, history, tools, limits, transport, timeout):
@@ -80,6 +111,7 @@ def request_turn(binding, history, tools, limits, transport, timeout):
 
     class Guard(httpx.BaseTransport):
         def handle_request(self, req):
+            nonlocal status
             flags["attempts"] += 1
             header = {
                 "openai": "authorization",
@@ -108,6 +140,7 @@ def request_turn(binding, history, tools, limits, transport, timeout):
                 raise httpx.TransportError("offline_contract_request_blocked", request=req)
             flags["sent"] = True
             response = transport.handle_request(req)
+            status = response.status_code
             data = bytearray()
             try:
                 for chunk in response.iter_bytes():
@@ -120,15 +153,15 @@ def request_turn(binding, history, tools, limits, transport, timeout):
                 ):
                     flags["unsafe"] = True
                     raise httpx.TransportError("offline_credential_echo", request=req)
+                decoded = json_value(bytes(data))
+                if not isinstance(decoded, dict):
+                    raise ValueError("Provider response must be an object")
+                _check_usage(decoded, provider)
                 return httpx.Response(
                     response.status_code, headers=response.headers, content=bytes(data), request=req
                 )
             finally:
                 response.close()
-
-    def observe(response):
-        nonlocal status
-        status = response.status_code
 
     try:
         with httpx.Client(
@@ -136,7 +169,6 @@ def request_turn(binding, history, tools, limits, transport, timeout):
             trust_env=False,
             follow_redirects=False,
             timeout=timeout,
-            event_hooks={"response": [observe]},
         ) as http:
             if provider == "openai":
                 sdk = OpenAI(

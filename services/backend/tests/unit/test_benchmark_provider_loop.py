@@ -502,7 +502,8 @@ def test_gemini_optional_ids_are_stable_and_content_order_is_preserved(tmp_path)
         if len(requests) > 1:
             body = json.loads(req.content)
             obs = observations("gemini", body)
-            assert obs[0]["id"] == "anvil-1-1"
+            assert "id" not in obs[0]
+            assert obs[0]["response"]["call_id"] == "anvil-1-1"
             return httpx.Response(200, json=response("gemini", text="Finished"))
         data = response("gemini", calls=[("remove", "undeclared", {})])
         parts = data["candidates"][0]["content"]["parts"]
@@ -520,3 +521,130 @@ def test_gemini_optional_ids_are_stable_and_content_order_is_preserved(tmp_path)
     )
     assert result.status == "completed" and len(requests) == 2
     assert [part.type for part in result.turns[0].content] == ["text", "tool_call", "text"]
+
+
+@pytest.mark.parametrize("provider", PROVIDERS_UNDER_TEST)
+def test_http_envelope_limits_and_proxy_cannot_retarget_sdk(provider, tmp_path, monkeypatch):
+    monkeypatch.setenv("HTTPS_PROXY", "http://127.0.0.1:1")
+    monkeypatch.setenv("HTTP_PROXY", "http://127.0.0.1:1")
+    calls = []
+
+    def send(req):
+        calls.append(req)
+        body = json.loads(req.content)
+        assert (
+            req.url.path
+            == {
+                "openai": "/v1/responses",
+                "anthropic": "/v1/messages",
+                "gemini": "/v1beta/models/anvil-fixture-model:generateContent",
+            }[provider]
+        )
+        assert (
+            body.get(
+                "max_output_tokens",
+                body.get("max_tokens", body.get("generationConfig", {}).get("maxOutputTokens")),
+            )
+            == 111
+        )
+        if provider == "openai":
+            assert body["store"] is False
+        return httpx.Response(200, json=response(provider, text="Final"))
+
+    b = binding(provider).model_copy(update={"max_output_tokens": 111})
+    result = run_contract(b, "Actor only", [tool()], None, httpx.MockTransport(send))
+    assert len(calls) == 1 and result.status == "completed"
+
+
+@pytest.mark.parametrize("fault", ["unsupported_schema", "non_object_schema", "unknown_control"])
+def test_invalid_profile_or_schema_is_rejected_before_dispatch(fault):
+    calls = []
+    with pytest.raises(ValidationError):
+        if fault == "unknown_control":
+            Binding(
+                provider="openai",
+                model_id="test",
+                destination=PROVIDERS["openai"][2],
+                temperature=0.5,
+            )
+        else:
+            declaration = tool().model_dump()
+            declaration["parameters"] = (
+                {"type": "array"}
+                if fault == "non_object_schema"
+                else {
+                    "type": "object",
+                    "properties": {"x": {"$ref": "https://evil.invalid/schema"}},
+                }
+            )
+            run_contract(
+                binding("openai"),
+                "Actor",
+                [Tool(**declaration)],
+                None,
+                httpx.MockTransport(lambda req: calls.append(req)),
+            )
+    assert not calls
+
+
+def test_oversized_malformed_arguments_never_bypass_raw_byte_bound(tmp_path):
+    root = tmp_path / "out"
+    root.mkdir(mode=0o700)
+    calls = []
+
+    def send(req):
+        calls.append(req)
+        return httpx.Response(
+            200, json=response("openai", calls=[("id", "write_artifact", "{" + "x" * 65536)])
+        )
+
+    result = run_contract(
+        binding("openai"),
+        "Actor",
+        [tool()],
+        ArtifactTools(root, {"report.md": 1}),
+        httpx.MockTransport(send),
+    )
+    assert (
+        result.status == "execution_unknown"
+        and result.error_code == "argument_bound"
+        and len(calls) == 1
+    )
+
+
+def test_real_slow_provider_consumes_task_deadline_without_followup():
+    import time
+
+    calls = []
+
+    def send(req):
+        calls.append(req)
+        time.sleep(1.05)
+        return httpx.Response(200, json=response("openai", calls=[("a", "undeclared", {})]))
+
+    result = run_contract(
+        binding("openai"),
+        "Actor",
+        [tool()],
+        None,
+        httpx.MockTransport(send),
+        limits=Limits(task_timeout_seconds=1),
+    )
+    assert len(calls) == 1 and result.status == "deadline"
+
+
+@pytest.mark.parametrize("provider", PROVIDERS_UNDER_TEST)
+@pytest.mark.parametrize("value", [True, "10", 1.5])
+def test_sdk_coercion_cannot_turn_invalid_usage_into_recorded_tokens(provider, value):
+    calls = []
+
+    def send(req):
+        calls.append(req)
+        data = response(provider, text="Final")
+        data["usageMetadata" if provider == "gemini" else "usage"][
+            "promptTokenCount" if provider == "gemini" else "input_tokens"
+        ] = value
+        return httpx.Response(200, json=data)
+
+    result = run_contract(binding(provider), "Actor", [tool()], None, httpx.MockTransport(send))
+    assert len(calls) == 1 and result.status == "execution_unknown" and not result.turns

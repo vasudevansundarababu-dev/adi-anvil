@@ -10,6 +10,7 @@ from pathlib import Path
 
 from anvil.benchmark_bundle import canonical_path
 from anvil.benchmark_qualification import NativeGateway
+from anvil.import_sandbox import schema_check
 from anvil.task_parser import json_value
 
 
@@ -164,6 +165,7 @@ class StdioConnection:
     def call(self, name, arguments, *, timeout):
         if not self.ready or name not in self.tools:
             raise ValueError("Initialized declared stdio tool required")
+        schema_check(arguments, self.tools[name].parameters)
         result = self.rpc("tools/call", {"name": name, "arguments": arguments}, timeout=timeout)
         if result.get("isError") is True:
             raise ValueError("Tool returned an error")

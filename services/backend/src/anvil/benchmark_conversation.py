@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 import httpx
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, field_validator
 
 from anvil.benchmark_provider_wire import CONTRACT_KEY, PROFILE, extend_history, request_turn
 from anvil.import_sandbox import schema_check
@@ -44,6 +44,73 @@ class Tool(Frozen):
     name: str = Field(pattern=r"^[A-Za-z][A-Za-z0-9_-]{0,63}$")
     description: str = Field(max_length=2000)
     parameters: dict
+
+    @field_validator("parameters")
+    @classmethod
+    def supported_schema(cls, value):
+        json_value(encoded(value))
+        allowed = {
+            "type",
+            "properties",
+            "required",
+            "additionalProperties",
+            "items",
+            "enum",
+            "const",
+            "minimum",
+            "maximum",
+            "minItems",
+            "maxItems",
+            "minLength",
+            "maxLength",
+            "description",
+            "title",
+        }
+
+        def check(node):
+            if not isinstance(node, dict) or set(node) - allowed:
+                raise ValueError("Unsupported tool schema")
+            if node.get("type") not in {
+                None,
+                "object",
+                "array",
+                "string",
+                "integer",
+                "number",
+                "boolean",
+                "null",
+            }:
+                raise ValueError("Unsupported schema type")
+            properties = node.get("properties", {})
+            required = node.get("required", [])
+            if (
+                not isinstance(properties, dict)
+                or not isinstance(required, list)
+                or any(type(x) is not str for x in required)
+                or len(set(required)) != len(required)
+                or not set(required) <= set(properties)
+            ):
+                raise ValueError("Invalid schema properties")
+            for item in properties.values():
+                check(item)
+            if "items" in node:
+                check(node["items"])
+            extra = node.get("additionalProperties", True)
+            if isinstance(extra, dict):
+                check(extra)
+            elif type(extra) is not bool:
+                raise ValueError("Invalid additional properties")
+            for key in ("minItems", "maxItems", "minLength", "maxLength"):
+                if key in node and (type(node[key]) is not int or node[key] < 0):
+                    raise ValueError("Invalid schema bound")
+            for key in ("minimum", "maximum"):
+                if key in node and type(node[key]) not in (int, float):
+                    raise ValueError("Invalid numeric bound")
+
+        if value.get("type") != "object":
+            raise ValueError("Tool arguments must be an object")
+        check(value)
+        return value
 
 
 class Call(Frozen):
@@ -277,6 +344,8 @@ def run_contract(binding, actor_text, tools, mediator, transport, *, limits=None
     )
     deadline, seen = time.monotonic() + limits.task_timeout_seconds, set()
     for number in range(1, limits.max_turns + 1):
+        if any(os.environ.get(k) for k in ENV_OVERRIDES):
+            return outcome("failed_operational", "sdk_environment_override")
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             return outcome("deadline", "task_deadline")

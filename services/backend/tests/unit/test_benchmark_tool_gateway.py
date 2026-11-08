@@ -291,3 +291,59 @@ def test_gateway_concurrent_duplicate_executes_at_most_once(tmp_path):
         assert sorted(results) == [200, 409] and len(calls) == 1
     finally:
         gateway.close()
+
+
+def test_uninitialized_and_reinitialized_stdio_are_not_call_authority():
+    with owned_process() as (process, stop):
+        connection = StdioConnection(process, [square_tool()], stop_owned=stop)
+        with pytest.raises(ValueError):
+            connection.call("square", {"n": 3}, timeout=1)
+        assert connection.counter == 0
+        connection.initialize()
+        with pytest.raises(ValueError):
+            connection.initialize()
+
+
+def test_aggregate_declared_output_quota_is_not_per_file_only(tmp_path):
+    root = tmp_path / "out"
+    root.mkdir(mode=0o700)
+    with pytest.raises(ValueError):
+        ArtifactTools(root, {"a.md": 16 * 1024 * 1024, "b.md": 1})
+
+
+def test_bad_stdio_initialization_is_terminal_and_stops_owned_process():
+    script = "import sys,json\nfor line in sys.stdin:\n r=json.loads(line);print(json.dumps({'jsonrpc':'2.0','id':r.get('id'),'result':{'protocolVersion':'wrong'}}),flush=True)"
+    with owned_process(script) as (process, stop):
+        connection = StdioConnection(process, [square_tool()], stop_owned=stop)
+        with pytest.raises(ValueError):
+            connection.initialize()
+        assert connection.closed and not connection.ready and process.poll() is not None
+
+
+def test_failed_unknown_gateway_response_is_terminal_not_retryable(tmp_path):
+    calls = []
+
+    def send(req):
+        calls.append(req)
+        raise httpx.ReadTimeout("private-canary", request=req)
+
+    def execute():
+        return run_contract(binding("openai"), "Actor", [tool()], None, httpx.MockTransport(send))
+
+    gateway = conversation_gateway(tmp_path, "owned", execute)
+    try:
+        assert gateway_request(gateway, "owned")[0] == 409
+        assert gateway_request(gateway, "owned")[0] == 409
+        assert len(calls) == 1 and gateway.result["conversation"].status == "execution_unknown"
+    finally:
+        gateway.close()
+
+
+def test_direct_stdio_bridge_rejects_schema_invalid_arguments_before_rpc():
+    with owned_process() as (process, stop):
+        connection = StdioConnection(process, [square_tool()], stop_owned=stop)
+        connection.initialize()
+        before = connection.counter
+        with pytest.raises(ValueError):
+            connection.call("square", {"n": True}, timeout=1)
+        assert connection.counter == before and not connection.closed
