@@ -1,3 +1,7 @@
+# Bounded T05 gateway repair — transport46/full729 passing, further qualification pending
+
+Only NativeGateway transport/server in benchmark_qualification.py and its existing gateway tests changed. Consume <=256-byte unambiguous frame before rejection; token before JSON/callback, exactsession/single-use unchanged. Absolute1s header/body deadline fenced/cancelled before callback, max4 handlers, shutdown interrupts owned sockets,1s response I/O; no provider/SDK retries.21 new tests include32 fixed split-denial schedules, duplicate/TE/Expect/auth framing negatives, truncation/oversize/stall/trickle/shutdown/capacity, valid256B frame, >1s callback and disconnected dispatched outcome no replay. Expected old-code red failures retained.46gateway tests/729fullunit pass; pricing+capture run recorded. Fixed-count diagnostics/native/SQL and source-bound final reruns pending; no final full-native/QA claims. No T07/QA/paid/runtime/SDK/shared/Praxis/Mac changes.
+
 # Bounded T05 Unix transport repair authorized — in progress
 
 Verified clean617b582/b97ac8d, exactbranch/remote/open draftPR16. Actual explicit repair approval appended. Reproduce early-close/body-send with deterministic real Unix regressions; inspect shared NativeGateway/installedHarbor boundary; bounded I/O/deadlines/concurrency/shutdown without relaxing auth or consuming rejected attempts. Earlier failures/evidence retained. No source repair/tests passed yet, no QA/T07/paid/SDK/runtime/shared/Praxis/Mac changes.

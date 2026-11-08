@@ -1,12 +1,14 @@
 """Opt-in fictional native Harbor conformance; not product execution admission."""
 
 import base64
+import errno
 import hashlib
 import hmac
 import json
 import os
 import select
 import shutil
+import socket
 import subprocess
 import tempfile
 import threading
@@ -311,6 +313,81 @@ def check_container(docker, container, *, actor, compiled):
     return info
 
 
+class _GatewayServer(UnixHTTPServer):
+    framing_seconds = 1.0
+    max_connections = 4
+
+    def __init__(self, path, handler):
+        self._guard = threading.Lock()
+        self._slots = threading.BoundedSemaphore(self.max_connections)
+        self._active = {}
+        self._closing = False
+        super().__init__(path, handler)
+
+    def process_request(self, request, address):
+        with self._guard:
+            if self._closing or not self._slots.acquire(blocking=False):
+                self.shutdown_request(request)
+                return
+            self._active[request] = None
+        try:
+            super().process_request(request, address)
+        except BaseException:
+            self.release(request)
+            raise
+
+    def release(self, request):
+        with self._guard:
+            if request in self._active:
+                del self._active[request]
+                self._slots.release()
+
+    def process_request_thread(self, request, address):
+        try:
+            super().process_request_thread(request, address)
+        finally:
+            self.release(request)
+
+    def framing_complete(self, request):
+        with self._guard:
+            framing = self._active.get(request)
+            if framing is None or time.monotonic() >= framing[1]:
+                raise TimeoutError("Native request framing deadline")
+            framing[0].cancel()
+            self._active[request] = None
+
+    def expire(self, request):
+        with self._guard:
+            if self._active.get(request) is not None:
+                self.interrupt(request)
+
+    def arm_deadline(self, request):
+        timer = threading.Timer(self.framing_seconds, self.expire, args=(request,))
+        timer.daemon = True
+        with self._guard:
+            if self._closing or request not in self._active:
+                raise ConnectionError("Gateway closing")
+            self._active[request] = (timer, time.monotonic() + self.framing_seconds)
+            timer.start()
+        return timer
+
+    @staticmethod
+    def interrupt(request):
+        try:
+            request.shutdown(socket.SHUT_RDWR)
+        except OSError as exc:
+            if exc.errno not in (errno.ENOTCONN, errno.EBADF):
+                raise
+
+    def interrupt_all(self):
+        with self._guard:
+            self._closing = True
+            for request, framing in self._active.items():
+                if framing is not None:
+                    framing[0].cancel()
+                self.interrupt(request)
+
+
 class NativeGateway:
     def __init__(self, folder, callback):
         # Unix socket limits apply to the full path, not only the basename.
@@ -325,18 +402,46 @@ class NativeGateway:
             def log_message(self, *args):
                 return
 
+            def handle(self):
+                timer = self.server.arm_deadline(self.connection)
+                self.connection.settimeout(self.server.framing_seconds)
+                try:
+                    super().handle()
+                except (OSError, ValueError) as exc:
+                    gateway.error = exc
+                    raise
+                finally:
+                    timer.cancel()
+
             def do_POST(self):
                 try:
-                    if not hmac.compare_digest(
-                        self.headers.get("Authorization", ""), "Bearer " + gateway.token
+                    lengths = self.headers.get_all("Content-Length", [])
+                    if (
+                        len(lengths) != 1
+                        or not lengths[0].isascii()
+                        or not lengths[0].isdecimal()
+                        or self.headers.get_all("Transfer-Encoding")
+                        or self.headers.get_all("Expect")
                     ):
-                        raise ValueError("Native gateway auth denied")
-                    length = int(self.headers.get("Content-Length", "0"))
+                        raise ValueError("Ambiguous native request framing")
+                    length = int(lengths[0])
                     if not 0 < length <= 256:
                         raise ValueError("Invalid native request")
-                    body = json.loads(self.rfile.read(length))
+                    # Finish only this bounded frame so a header-first client can send
+                    # its body before rejection; no authorization or dispatch is granted.
+                    raw = self.rfile.read(length)
+                    if len(raw) != length:
+                        raise ValueError("Incomplete native request")
+                    self.server.framing_complete(self.connection)
+                    authorization = self.headers.get_all("Authorization", [])
+                    if len(authorization) != 1 or not hmac.compare_digest(
+                        authorization[0], "Bearer " + gateway.token
+                    ):
+                        raise ValueError("Native gateway auth denied")
+                    body = json.loads(raw)
                     if set(body) != {"session_id"}:
                         raise ValueError("Invalid native request fields")
+                    self.connection.settimeout(1.0)
                     data = json.dumps(
                         callback(self.path, body["session_id"], gateway.result), allow_nan=False
                     ).encode()
@@ -351,7 +456,7 @@ class NativeGateway:
                 self.wfile.write(data)
 
         try:
-            self.server = UnixHTTPServer(self.path, Handler)
+            self.server = _GatewayServer(self.path, Handler)
             os.chmod(self.path, 0o600)
             self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
             self.thread.start()
@@ -361,6 +466,7 @@ class NativeGateway:
 
     def close(self):
         try:
+            self.server.interrupt_all()
             self.server.shutdown()
             self.server.server_close()
             self.thread.join(timeout=3)
