@@ -1,3 +1,7 @@
+# T05 Coding authorized — offline provider/tool parity in progress
+
+User approved T04 source38cc151 and bounded T05 under the approved plan, then requested completion while away. Exact approval appended; starting62ac0ff on unchanged branch/PR16 draft. T05 is a separately versioned typed multi-tool host conversation using real installed OpenAI/Anthropic/Gemini SDKs and MockTransport ONLY at the unavailable paid vendor boundary. Actual local tool/filesystem/socket paths remain real. No live provider entry point/admission enabled; old single-action adapters unchanged. Stop after T05 for human review before T06–T10/QA/paid/merge/deploy. T04 qualification is historical and does not qualify new T05 wire/profile behavior.
+
 Current focused-verified source: `38cc1513aaee1069b69392b80566d23cb45d216a`, tree `0fe379b77c4168bb905a76d1d83f13c3faa7ca30`. T04D results/source/commands: `docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04d-checks.json`, `t04d-source.sha256`, `t04d-commands.md`. Image/SQL/native blockers below are historical and resolved for this approved fictional scope only. STOP for human Coding review; no next task/QA authorized.
 
 # T04 approved fictional local slice — focused Coding qualification passed
