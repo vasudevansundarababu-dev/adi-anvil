@@ -1,3 +1,50 @@
+# Current report — verified pricing/T06 checkpoint; full-unit T05 blocker
+
+## Approved task and inputs
+
+Actual user authorized verified current exact-model pricing maintenance, deterministic clock tests and final T06 publication only. Approval append-onlyd7bc624; base T06ca8c279/publication8854f71 verified. Original15 unchanged. Samebranch/current connection/Coding role; no T07/QA/paid/merge/deploy authority.
+
+## Changed behavior and exact source
+
+Tested `b97ac8d2949811d7ec06a00b43fdc8dc391e353e`, tree `1787c39dbd33ae733a775a413e5704afc8babf5f`. Only workspace_costs.py and test_workspace_costs.py changed in source/contracts/Harbor. Actual10 official HTTP200 pricing/model/cache pages verify all6 original exact models/rates; no numeric rate/model/tier/cache/context expansion. Refreshed provider references/verified_at and existing7day expiry after verification, not a blind timestamp extension. Keyword-only optional testclock; production default actualUTC/strict expiry unchanged. Original billing/arithmetic/cache/usage and all T05/T06 core/legacy/Harbor/locks unchanged.
+
+## Authoritative pricing evidence
+
+`t06-pricing-sources.json` retains10 source URLs/resolved URLs/retrieval times/body hashes, exact model IDs and relevant quoted rows, old/new reference/rate/time/expiry comparisons and excluded tiers/context/cache rates. Public full docs remain ignored, not raw source dumps in Git. As-of **2026-11-08T15:25:35.450801Z**, expires **2026-11-15T15:25:35.450801Z**, exactly7days. Sources: OpenAI developers.openai.com/api/docs/pricing.md +4exactmodel pages +prompt-caching.md; Anthropic platform.claude.com/docs/en/about-claude/pricing.md +models/overview.md; Google ai.google.dev/gemini-api/docs/pricing +exactgemini-3.8-flash modelpage. All entries verified; unknown/unlisted IDs still unavailable, no account availability/live authorization inferred.
+
+USD/million tokens, unchanged admitted rates:
+
+| Exact model | Input | Cached input | 30m write | Output |
+| --- | ---: | ---: | ---: | ---: |
+| gpt-6-luna |0.10|0.01|0.125|0.50|
+| gpt-6-astra |10.00|1.00|12.50|50.00|
+| gpt-6.1-sol |2.00|0.10|2.50|10.00|
+| gpt-6.1-terra |1.00|0.05|1.25|5.00|
+| claude-opus-5-5 |4.00|not admitted|not admitted|20.00|
+| gemini-3.8-flash |0.75|not added|not added|3.75 including thinking|
+
+OpenAI Standard/global/short context only, runtime<=33792input vs >272Klong context, default30m; excluded12h/long/regional/Batch/Flex/Fast dimensions retained in evidence. Opus direct global Standard/noncached; excludes cache/fast/batch/USgeo uplift. Gemini paid Standard, promo through2026-12-31 with announced2027-01-01 change: Nov15expiry precedes change; no future price/cache storage/grounding admission or automatic renewal. Existing immutable frozen expired-price groups NOT backfilled/revived; normal explicit updated config/run controls remain required.
+
+## Tests actually run and results
+
+Source-bound `t06-pricing-checks.json` / `t06-pricing-source.sha256` / `t06-pricing-commands.md`. On committed source: **36pricing passed**, **57T06 passed** INCLUDING2realnative; **136combined backend passed/3native deselected**,7adapter/12Node/Ruff2 passed.36price tests cover all6exact IDs/current/expiry-1us/equality/+1us/10-yearfuture, unknown/malformed/bool/negative/naive dates, default actualUTC and originalcache/usage/reservation math. Old expiry failure reproduced1failed/17pass; TDD15failed/21passed then36pass. Earlier689/1 pricing failure preserved in historical T06 evidence and superseded ONLY by actual pricing rerun, not a fake full-suite pass.
+
+## Failed/blocked/not-run — concrete stop condition
+
+**Latest exact-source full-unit suite:707passed/1FAILED**, unchanged T05 test_benchmark_tool_gateway.py::test_real_unix_gateway_and_installed_harbor_host_agent_client[anthropic]. Wrong-auth HTTP body sendBrokenPipe before any provider callback; NativeGateway rejects auth/returns409 before reading body and may close socket first. Considered pricing clock, SDK versions, network/daemon, stalepath, process lifetime and request ordering; unchanged source/fresh AF_UNIX path/no callback indicate early-reject vs body-send ordering, not pricing. Initial full run hadsamefailure; focused3provider gateway rerun and one full708pass occurred, but final committed707/1 repeated. All evidence retained; **full-unit gate is not reliably green**, no rerun-until-green/skip/retry/mock/workaround. This T05 transport fix is outside exact pricing/T06-only authorization; stop for separately approved bounded fix before claiming complete regression pass. Existing Authlib warning unchanged.
+
+T06 core/native focused complete and pricing maintenance complete; overall fully green completion blocked by T05 race. No QA/full acceptance/browser/cloud/deployment or paid/model/judge call run. Semantic judge staysBlocked, fictional calibration NOT SME/Bodhium/model performance. No new migrations: historical049 fresh/upgrade/repeat evidence remains prior source-bound, not fabricated as new.
+
+## Compatibility/runtime and handoff
+
+Only2 source/test files changed; original15/T05/T06 core/Harbor/locks/API unchanged. Fresh0700 test vault,4new evaluator+2new actor sessions stopped/retained; existing isolated main PostgreSQL kept running for tmpfs evidence. No daemon restart/pulls/builds/deletion/socket permissions/role/credential/bootstrap/shared/Praxis/Mac/local edits. No frozen config DB mutation. Raw logs/private fictional test inputs ignored; sanitized evidence/hash only committed.
+
+STOP human Coding review of exact `b97ac8d2949811d7ec06a00b43fdc8dc391e353e`. Propose separately authorized bounded T05 wrong-auth transport/test repair, then full-unit rerun; do not execute it now. T07/QA/paid/merge/deploy remain prohibited; resulting code and next-scope approval pending.
+
+---
+
+## Historical reports retained below, not retroactively relabeled
+
 # Current report — T06 reviewable; human Coding review pending
 
 ## Approved task and input revisions

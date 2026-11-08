@@ -1,0 +1,163 @@
+{
+  "task": "Verified pricing maintenance and final T06 Coding checkpoint only",
+  "status": "Pricing maintenance complete and T06 focused pass; STOP human Coding review. Full-unit regression NOT reliably green: repeated unchanged T05 wrong-auth Unix BrokenPipe on committed source.",
+  "tested_source": "b97ac8d2949811d7ec06a00b43fdc8dc391e353e",
+  "tested_tree": "1787c39dbd33ae733a775a413e5704afc8babf5f",
+  "prior_T06_source": "ca8c2792e849ed2c7756a08e633a73a7a5832df2",
+  "prior_publication": "8854f71a732eb7f27d3de5ce3cbb9f1bfadca0b0",
+  "authority_checkpoint": "d7bc624a7a6e514b751c008741500ba57fbd46f1",
+  "observed_at": "2026-11-08T15:33:09.813438+00:00",
+  "pricing_evidence": "t06-pricing-sources.json",
+  "as_of": "2026-11-08T15:25:35.450801+00:00",
+  "expires_at": "2026-11-15T15:25:35.450801+00:00",
+  "verification": "10 HTTP200 official docs,6 exact existing IDs and rates established; no unverifiable existing models; no numeric changes/substitutions/expanded tiers/cache/context. Existing7dayTTL, new references and actual verification time.",
+  "source_changes": [
+    "services/backend/src/anvil/workspace_costs.py",
+    "services/backend/tests/unit/test_workspace_costs.py"
+  ],
+  "clock": "Keyword-only optional current(price,now=...) for deterministic unit checks; every production caller defaults actual UTC. Strict expiry>now, equalityExpired, malformed/unknownFailClosed, original token arithmetic/rounding/cache/tiers unchanged.",
+  "results": {
+    "pricing": {
+      "passed": 36,
+      "failed": 0,
+      "baseline_before_changes": "1 failed/17 passed: actual expired OpenAI current() assertion",
+      "TDD_before_implementation": "15 failed/21 passed: new optional clock and verified dates absent",
+      "coverage": "all6 exact IDs/current/expiry-1us/equality/+1us/10-years-future, malformed/naive-date/boolean/negative/missing/unknown/aliases, default actual production clock and original usage/cache/reservation arithmetic"
+    },
+    "full_unit_latest_exact_source": {
+      "passed": 707,
+      "failed": 1,
+      "skipped": 0,
+      "failed_test": "test_benchmark_tool_gateway.py::test_real_unix_gateway_and_installed_harbor_host_agent_client[anthropic]",
+      "error": "BrokenPipeError sending wrong-auth POST body; handler rejects/returns409/closes before body read. Fails before MockTransport provider callback.",
+      "disposition": "Repeated unchanged T05 transport/test race, outside pricing/T06-only source authority. Retained failing result, no retries/mocks/clock workaround or gateway edits. Needs separately authorized bounded T05 fix before reliable overall-green claim.",
+      "related_runs": [
+        "Initial postchange707passed/1samefailure",
+        "Focused gateway3providers passed/22deselected with fresh software fixtures",
+        "One full rerun708passed/0failed before commit, identical source bytes",
+        "Committed-source final707passed/1samefailure; no rerun-until-green claim"
+      ]
+    },
+    "T06_focused": {
+      "passed": 57,
+      "failed": 0,
+      "native_included": 2,
+      "unit": 33,
+      "SQL_API_filesystem": 24
+    },
+    "combined_backend": {
+      "passed": 136,
+      "failed": 0,
+      "deselected": 3,
+      "note": "OldT04native1+T06native2 separated intentionally; overlapping counts not additive"
+    },
+    "adapter_guards": {
+      "passed": 7
+    },
+    "node": {
+      "passed": 12
+    },
+    "ruff": "2 modified Python files check/format pass",
+    "migrations": "No changes; source remains049, historical exact fresh/upgrade/repeat evidence at t06-checks.json, no new migration pass fabricated"
+  },
+  "native": {
+    "scope": "Maintenance reruns on same approved exact pinned isolated daemon/PostgreSQL/Python; fresh0700 vault and fresh actor/evaluator session names",
+    "evaluators": [
+      {
+        "container": "b96207a21ca45b81e0a74cdf950b63e7f2fcdcf5aca11cbef4be68e7d8f0e19e",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "implementation_sha256": "955ddcae17adaa5b6b414ad8940f613f28f1bd8cee2fdfc058c5959614a569c7",
+        "no_actor_or_vault_mount": true,
+        "probe": {
+          "nonroot_readonly_no_credentials_no_socket_no_actor_no_egress": true
+        },
+        "report_sha256": "cb287dc5ef1552f052951e86872d6b526c66ebbed9b1349935de10aacb3fe819",
+        "receipt_sha256": "15f7df2c018ac5824b4eb919c4be35bbdb0610f01f3498ca06bfba9accfac54b"
+      },
+      {
+        "container": "b0ffaad781d6d344fe23052891c61eacdc44d7cdc4dd530b0a40edb0700771d1",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "implementation_sha256": "955ddcae17adaa5b6b414ad8940f613f28f1bd8cee2fdfc058c5959614a569c7",
+        "no_actor_or_vault_mount": true,
+        "probe": {
+          "nonroot_readonly_no_credentials_no_socket_no_actor_no_egress": true
+        },
+        "report_sha256": "cb287dc5ef1552f052951e86872d6b526c66ebbed9b1349935de10aacb3fe819",
+        "receipt_sha256": "220269904ffbbbf287fca9604c8f365db717c5f80838622a5ef50e3c9364a018"
+      },
+      {
+        "container": "30575617643bc79a41334ee3791b37f7f84470c121399db564c8b2001b6bc546",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "implementation_sha256": "955ddcae17adaa5b6b414ad8940f613f28f1bd8cee2fdfc058c5959614a569c7",
+        "no_actor_or_vault_mount": true,
+        "probe": {
+          "nonroot_readonly_no_credentials_no_socket_no_actor_no_egress": true
+        },
+        "report_sha256": "cb287dc5ef1552f052951e86872d6b526c66ebbed9b1349935de10aacb3fe819",
+        "receipt_sha256": "a1fff2a34c3d57ce09e9f9a92f28d3aad92b3dd8e168accc35ca8ff8be95a5da"
+      },
+      {
+        "container": "f72bc1ea8488037c3aca4c6eb26292af1d71e4eea884e8dbcd90a52490e60f10",
+        "image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "implementation_sha256": "955ddcae17adaa5b6b414ad8940f613f28f1bd8cee2fdfc058c5959614a569c7",
+        "no_actor_or_vault_mount": true,
+        "probe": {
+          "nonroot_readonly_no_credentials_no_socket_no_actor_no_egress": true
+        },
+        "report_sha256": "cb287dc5ef1552f052951e86872d6b526c66ebbed9b1349935de10aacb3fe819",
+        "receipt_sha256": "35d39abd4e6df8893e9f5550847a16e85f12e86a639ef44592170394cbd7a194"
+      }
+    ],
+    "actors": [
+      {
+        "actor": "7ad0c41c1ee779485997a159d6c4e9c9f657bcb98ce4d6306b3032853ae09b1c",
+        "evaluator": "b0ffaad781d6d344fe23052891c61eacdc44d7cdc4dd530b0a40edb0700771d1",
+        "actor_stopped_before_seal_and_evaluation": true,
+        "sealed_sha256": "41c47a91514db37b546bb799cf352eee76d489e0301d876a7420c474d3abbace",
+        "provider_calls": 0,
+        "receipt_sha256": "ac9706249cb32989625167e1b93813bfbd042128278486f6642525a143aca9a1"
+      },
+      {
+        "actor": "f8f551cc7a6d7105c17c19cb4151a141d8475f6436cce5a096fe8116d22714aa",
+        "evaluator": "f72bc1ea8488037c3aca4c6eb26292af1d71e4eea884e8dbcd90a52490e60f10",
+        "actor_stopped_before_seal_and_evaluation": true,
+        "sealed_sha256": "41c47a91514db37b546bb799cf352eee76d489e0301d876a7420c474d3abbace",
+        "provider_calls": 0,
+        "receipt_sha256": "d753ef0a1e3a4f986a8a520bd2132875aeab071dbe25130d8eeb788dd702d238"
+      }
+    ],
+    "no_resource_changes": "No pull/build/delete/daemon restart/permissions/credential/bootstrap/shared settings changes; prior existing daemon/main isolatedPG reused only as explicitly authorized test service, no stale actor/trial reuse",
+    "retention": "All new actor/evaluator containers stopped/retained. Existing main privatePG remains running for ephemeral SQL evidence; independent fresh049 DB staysstopped."
+  },
+  "compatibility": {
+    "all15approved_inputs": "Byte-identical",
+    "T05_T06_core_and_legacy_Harbor_locks_API": "Byte-identical; only2 pricing source/test files differ from8854f71",
+    "previous_failures": "Historical t06-checks/source/commands untouched. Original689/1 price failure superseded ONLY for pricing by actual36passing new tests; NOT falsely marking whole-unit gate passed.",
+    "immutable_frozen_config": "No DB backfill/rewrite, activation, approvals or runs. Old expired frozen price groups remain blocked until ordinary explicit updated/new immutable config and Run controls."
+  },
+  "limitations": [
+    "Repeated T05 wrong-auth Unix transport race unresolved/outside this scope; full-suite latest actually failed even though one earlier full pass occurred",
+    "Existing Authlib deprecation unchanged",
+    "Official pricing documents are not account/model availability, processing rights/budget/approval or paid call authorization",
+    "Gemini paid intro rates until2026-12-31; seven-day Nov15expiry well before futureJan1pricechange. No automatic promotion/rate/expiry renewal",
+    "T06 fictional numeric/paraphrase calibration is not real semantic judge/Bodhium/model performance; external judging remainsBlocked",
+    "No T07 onward/QA/full acceptance/paid/live/secrets/merge/deploy/Praxis/shared/Mac changes"
+  ],
+  "log_sha256": {
+    "combined-final.log": "4567c83094d94f6311939d5b39241d80f442c87049720a8780675e65f98bc1a8",
+    "full-unit-first.log": "4de51b763a8104cc7bad03b3d5b5e83cbc1fea2a3dbbc154cfb0fe4fcbb3b8d6",
+    "node.log": "a01533ad41853c9a58d4a3bd82ffa6c136cab4b47a03c5cb43e6e0eb3c52fe4c",
+    "t06-first.log": "2dc4731f4969fdfdf359a25722f10fd5e19464768b4a18c6db0ea2eb2967867e",
+    "costs-final.log": "400ba2a648be611cf3ca8c8ab4a4cb42e48414a5f70a4a407c82fe4e097aecfa",
+    "combined-first.log": "cd267de82cf08fd8c1ec561e1fe7a501eb92f4cb0d35f0d0790c07c2b24b48dc",
+    "adapter.log": "c9420289eba3c4c138c230b82b48957d35af62261bc5b2b1d8ac2c97305e4411",
+    "full-unit-rerun.log": "6607499e3ae1665bbd02273db13671d8f98a7d6407791967e746def9190d2428",
+    "gateway-rerun.log": "4fdb0f4cb2c6c3ce9dad54d758e940133e3aea956df325da325de4741197e233",
+    "full-unit-final.log": "88d830f447c00cae841217ef8b43b1134e78323d0b421f205b6f69d4a9292c47",
+    "baseline-costs.log": "d5f14026b0878ea20da73c3e797b72d39555298a2928c786ee2e33262c8982d9",
+    "tests-before.log": "39a9d265d92003e852a0d78f42e8800e02803c5faa0b83bcf5559a175c532fd1",
+    "costs-after.log": "e534365c9bab92d513ce21123e2b20c2b126e7e643a847e95e511c4b9ad045af",
+    "t06-final.log": "8023b72fb3e9b584350ea1484852a8f03d64c3f6726023220c507d181feed6b1"
+  },
+  "next": "Human review of exact pricing/T06 source/evidence. Need separate authority for a bounded T05 wrong-auth transport fix if reliable complete regression green is required. Do not broaden current scope."
+}

@@ -1,18 +1,18 @@
 {
-  "status": "T06_reviewable_focused_passed_STOP_human_review_full_unit_1_baseline_failure",
-  "observed_at": "2026-11-08T15:17:25.240493+00:00",
-  "product_source_commit": "ca8c2792e849ed2c7756a08e633a73a7a5832df2",
+  "status": "pricing_revalidated_T06_focused_passed_STOP_repeated_T05_full_unit_blocker",
+  "observed_at": "2026-11-08T15:35:45.034203+00:00",
+  "product_source_commit": "b97ac8d2949811d7ec06a00b43fdc8dc391e353e",
   "recovered_commit": "15e35f12725a89be6e507b2eb73d4433e666dd76",
   "recovered_tree": "18fca788310f91a35a54df39392a37c026ae16b1",
   "release_source_files_verified_at_t00": 504,
   "approved_originals_unchanged": true,
   "native_failure_not_waived": true,
-  "history_note": "Current T06 source-bound evidence supersedes prior stop scopes only; prior evidence and actual approvals unchanged, no next task/QA/live authority.",
+  "history_note": "Prior t06-checks/source/commands retained unchanged. Pricing expiry failure superseded only by actual passing price rerun, not full-unit gate. Current repeated T05 transport blocker outside maintenance scope requires separate authority. STOP before QA/T07/paid/deploy.",
   "entries": [
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/approval-log.jsonl",
-      "sha256": "72fd7fe1aba3c0b638a12ffc63e017e4068b233eb009903bf69d6c5825fc6be6",
-      "bytes": 10966
+      "sha256": "b647946a05ebd313bea58b95e50acb391563009633ddf897f83f92366ae29519",
+      "bytes": 12331
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/approved-input-snapshot.json",
@@ -43,8 +43,8 @@
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/handoff.md",
-      "sha256": "52280b88b6124656eb2bc5f0a48b19c3910224a91bfe015d32e97e668b4d44c9",
-      "bytes": 31955
+      "sha256": "a527964db47a43084db77a5827a4805f8d62ac6fe2b0b6810dddba5cdf35e66c",
+      "bytes": 34737
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/historical-documents-verified.json",
@@ -63,8 +63,8 @@
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/implementation-report.md",
-      "sha256": "d828821b32d4669890c2ebfb2c471c13a2a0463c47fc7784f7f7bc510bb51bdb",
-      "bytes": 34198
+      "sha256": "9209b0af71c967d77c4cd5f3386a33e07e05ef92f4c6538ae054e46a2768ce09",
+      "bytes": 40048
     },
     {
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/isolated-database-evidence.json",
@@ -240,11 +240,32 @@
       "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t06-commands.md",
       "sha256": "c7be852cecbc7742be3e871e43ef3ef3cc6b98037a522a1ed07333595cd79587",
       "bytes": 6604
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t06-pricing-sources.json",
+      "sha256": "3e797be9d3714c0327ad63da5490b2fb2b0dbf8bce595bf9b14377192c2f4fc5",
+      "bytes": 22282
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t06-pricing-checks.json",
+      "sha256": "1ae7d3e87ef6e9605f9377e4aec9d16704e688dba466ff359fcd6a08606fc077",
+      "bytes": 10694
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t06-pricing-source.sha256",
+      "sha256": "80d89ada3edec3fcac72bb50657dff5b65e7dcfef0d6ecb8b8b59435988602bf",
+      "bytes": 3345
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t06-pricing-commands.md",
+      "sha256": "3b9fdb7c34da30f85c88250eac3c8c816848d47b6e41ed9052d8e725a4060fbf",
+      "bytes": 6083
     }
   ],
-  "product_source_tree": "2f4fc5f2416cc3e4649ebf4899507e29bbc1fea0",
+  "product_source_tree": "1787c39dbd33ae733a775a413e5704afc8babf5f",
   "restart_recovery_checkpoint": "23bb8f1741156fd6d0e6f25df379a0117513e14e",
   "native_qualification_current": false,
-  "native_qualification_scope": "T06 exact fictional separate evaluator isolation57 focused pass incl2 native; NOT full benchmark or live execution admission; oldT04/T05 evidence historical",
-  "full_unit_status": "689 passed/1 unchanged expired-price test failed; fail-closed expiry retained, not a complete green suite"
+  "native_qualification_scope": "T06 focused57pass incl2realnative on current pricing source; no full benchmark/live/QA admission",
+  "full_unit_status": "Latest exact source707pass/1 repeated unchanged T05 wrong-auth Unix BrokenPipe. Earlier one708pass retained, not a reliable green result.",
+  "pricing_status": "All6 exact existing model rates verified unchanged from10 official HTTP200 sources at2026-11-08T15:25:35.450801Z; existing7day expiry2026-11-15T15:25:35.450801Z;36pricing tests pass."
 }

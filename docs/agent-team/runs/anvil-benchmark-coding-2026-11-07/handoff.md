@@ -1,3 +1,23 @@
+# Current handoff — pricing verified/T06 focused passed; STOP repeated T05 full-unit blocker
+
+- Work: T06 pricing maintenance/final Coding checkpoint, samecodex/anvil-agent-team-2026-11-06/draftPR16.
+- Tested source `b97ac8d2949811d7ec06a00b43fdc8dc391e353e`, tree `1787c39dbd33ae733a775a413e5704afc8babf5f`. Base T06ca8c279/publication8854f71; actual usermaintenanceauthority append-onlyd7bc624.
+- From/next: Coding -> HUMAN REVIEW, not QA/T07. Code result/next authority PENDING.
+- Changed: only workspace_costs.py/pricing unit tests. All6 exact existing rates verified on10 official GETs; numeric rates/IDs/arithmetic unchanged, provenance refreshed; strict realUTC expiry retained and deterministic optional test clock.
+- As-of2026-11-08T15:25:35.450801Z; exact7day expiry2026-11-15T15:25:35.450801Z. URLs/quotes/hashes/old comparisons and tier/context/cache/Gemini2027 distinction in t06-pricing-sources.json. None of6unverifiable, unknown/unlisted still unavailable, no account/rights/paid authority inferred.
+- Evidence: t06-pricing-checks.json/source.sha256/commands.md plus current report/progress/status/index. Prior t06-checks/source/commands retained unchanged as historical source evidence.
+- PASSED exactsource:36pricing,57T06 INCLUDING2native,136combined/3native deselected,7adapter/12Node/Ruff2. Source core/approved15/locks/Harbor unchanged.4new evaluator+2actor stopped/retained; existing isolated mainPG remains running for ephemeralSQL; no runtime/permission/bootstrap changes.
+- FAILED latestfull:707pass/1 repeated T05 wrong-auth HTTP bodyBrokenPipe in Anthropic-labelled offline gatewaytest. Fails before providercallback. Initial707/1, focused3provider pass and one708full pass preserved; latest repeated707/1 not hidden. No transport/test/SDK source change, retries/mocks/skip or rerun-until-green.
+- Diagnostic: authreject before bodyread can close Unixsocket while HTTPConnection still sends body. Outside pricing/T06 scope. Concrete blocker to reliable full-unit green; bounded T05 repair needs separate userapproval. No automatic attempt to fix/advance.
+- Pricing previous expiry failure superseded ONLY by actual36pricing pass, not whole-suite pass. Production expires atboundary; no invented prices/clock/expiry extension withoutverification.
+- Prohibited: T07 onward/QA/fullacceptance/paid/model/judge/secrets/merge/deploy, Praxis/Mac/shared/auth/socket changes, pulls/builds/deletion/production role setup.
+- Proposed next: human read-only review; explicit scoped T05 auth-reject transport repair authorization if desired, then rerun regression. No next role/task authorized now.
+- Decision: Pricing maintenance/T06 focused REVIEWABLE; COMPLETE REGRESSION GATE BLOCKED, PENDING HUMAN REVIEW.
+
+---
+
+## Historical handoffs below retained unchanged
+
 # Current handoff — T06 reviewable, STOP human Coding review
 
 - Work: anvil-benchmark-coding-2026-11-07/T06.
