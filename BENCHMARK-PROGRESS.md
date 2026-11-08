@@ -1,3 +1,24 @@
+# T04 restart continuation — current Coding status (2026-11-08)
+
+Recovery WIP checkpoint `23bb8f1` is published on the unchanged authorized branch. Continued source hardening now passes **233 focused backend tests (173 existing unit checks +60 new capture/filesystem/socket tests),7 adapter guards and12 Node policy tests**. No current SQL/native pass is claimed. `t04-recovery.json` records11 reconstructed files/28 source edit events; old sandbox remains ERROR with no detailed cause exposed. No byte-exact old filesystem snapshot or old private runtime was recovered.
+
+Recovered pipeline/worker/API and additive044/045 remain **WIP / SQL+native qualification blocked**. Capture validation now requires exact fields/types, current source/private bindings, receipt hashes, fresh separate containers and complete resource controls. Current dependency snapshots hash actual fictional evaluator/rules/calibration/tool bytes plus compiler/adapter/API/SQL policy sources. Real local authenticated Unix-socket negatives/pass now work even with long trial paths; only fresh private gateway directories are removed. This proves validator/software behavior only, NOT actual G1–G5, SQL immutability or model performance. Feature defaults remain off and readiness remains false without execution authority/profile.
+
+## Exact environment blocker / next prerequisite
+
+This fresh runtime has no dedicated Docker socket/daemon and no preloaded images: `/var/lib/docker` has no entries and the containerd store has no image metadata/content. No Docker daemon was started, no image pulled/built/loaded, no existing runtime/shared socket changed. Need the approved images preloaded into the **new dedicated no-network daemon** before continuing actual SQL/native qualification:
+
+- `postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3`
+- `python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e`
+
+Do not pull substitutes, borrow shared/deployed services, loosen sockets or reuse old trial sessions. New locked Python3.12.14/uv0.12.19, independent Harbor0.25.0, pnpm10.34.5 environments were installed locally from official registries; no old dependencies/credentials/config copied.
+
+Resume **Coding only** at `/workspace/project/adi-anvil`, branch `codex/anvil-agent-team-2026-11-06`. Confirm PR16 remains open/draft and current remote before any normal push. After the image prerequisite is supplied, create only the approved fresh isolated PostgreSQL17.6 target/private socket/owner-only test vault, apply/repeat migrations through045, run the44 existing SQL/HTTP/filesystem checks plus21 collected pipeline checks (one includes actual9-trial matrix +4 resource probes), add/verify045 negative capture/race tests and repair observed regressions. Re-run focused unit/adapter/Node checks; source changes stale all old qualification evidence. Do not mistake test collection for execution or validation of045 guards. Detailed commands/evidence and exact source commit will be in `t04c-checks.json`/`t04c-source.sha256` and current handoff/report.
+
+All15 approved original artifacts byte-compare equal to1b4f412. Full historical SHA256SUMS check reports two unavailable excluded original input archives; they were not fetched or rewritten and are NOT claimed verified here. T00's previously verified recovery remains historical, not rerun. Stop at this real environment blocker for human Coding review; T04 not complete. **No T05–T10, QA/full acceptance, paid calls, merge or deployment.** Praxis/Mac/unrelated edits remain untouched.
+
+---
+
 # Restart checkpoint — 2026-11-08 (current)
 
 Recovered 11 unpushed Anvil source files from 28 successful read-only source-edit history events after published `1b4f41261d1371e2122a285f1327fca50abd00c5`. No old workspace snapshot recovered; source was reconstructed with literal edits and locked Ruff normalization, with event/file hashes in `t04-recovery.json`. Old conversation remains ERROR, detailed cause unknown, not resumed or modified. No credentials/private inputs/dependencies/runtime configuration copied.

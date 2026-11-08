@@ -13,7 +13,7 @@ from fastapi import HTTPException
 
 from anvil import auth
 from anvil.benchmark_archive import validate_archive
-from anvil.benchmark_bundle import actor_view
+from anvil.benchmark_bundle import actor_view, parse_manifest
 from anvil.benchmark_compiler import COMPILER_VERSION, FIXTURE_IMAGE, compile_task, fixture_binding
 from anvil.benchmark_storage import (
     bind_private,
@@ -41,6 +41,14 @@ SOURCE_FILES = (
     "services/harbor/src/anvil_harbor/sme.py",
     "services/harbor/requirements.lock",
     "services/backend/uv.lock",
+    "services/backend/src/anvil/benchmark_api.py",
+    "services/backend/migrations/039_benchmark_private_foundation.sql",
+    "services/backend/migrations/040_benchmark_private_guards.sql",
+    "services/backend/migrations/041_benchmark_canonical_bindings.sql",
+    "services/backend/migrations/042_benchmark_window_ownership.sql",
+    "services/backend/migrations/043_benchmark_import_summaries.sql",
+    "services/backend/migrations/044_benchmark_qualification_pipeline.sql",
+    "services/backend/migrations/045_benchmark_qualification_capture_guards.sql",
 )
 
 
@@ -48,13 +56,29 @@ def checksum(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def current_dependencies(signers):
+def current_dependencies(signers, *, root=ROOT):
+    root = Path(root)
+    fixture = root / "fixtures/benchmark-bundle/fictional-points-v1"
+    raw = (fixture / "manifest.json").read_bytes()
+    manifest = parse_manifest(raw)
+    if manifest.canonical_sha256 != fixture_binding().manifest_sha256:
+        raise ValueError("Fictional fixture manifest changed")
+    fixture_files = {"manifest.json": checksum(raw)}
+    for member in manifest.manifest.files:
+        path = fixture / member.path
+        if not path.resolve().is_relative_to(fixture.resolve()) or path.is_symlink():
+            raise ValueError("Fictional fixture member escaped source scope")
+        data = path.read_bytes()
+        if len(data) != member.byte_size or checksum(data) != member.sha256:
+            raise ValueError("Fictional fixture payload changed")
+        fixture_files[member.path] = member.sha256
     return {
         "profile": PROFILE,
         "compiler_version": COMPILER_VERSION,
         "image": FIXTURE_IMAGE,
         "harbor_version": "0.25.0",
-        "sources": {path: checksum((ROOT / path).read_bytes()) for path in SOURCE_FILES},
+        "sources": {path: checksum((root / path).read_bytes()) for path in SOURCE_FILES},
+        "fixture_files": fixture_files,
         "trust_sha256": checksum(
             rfc8785.dumps(
                 {

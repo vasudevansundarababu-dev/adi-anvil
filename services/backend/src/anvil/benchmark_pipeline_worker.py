@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import re
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
@@ -14,6 +15,7 @@ from anvil.benchmark_pipeline import (
     PROFILE,
     checksum,
     claim,
+    current_dependencies,
     policy_status,
     private_metadata,
     record,
@@ -86,36 +88,118 @@ def _task_inputs(operation):
     return build, review, parsed, metadata
 
 
-def _validate_native(compiled, task, results):
-    if {r["mode"] for r in results} != {"positive", "empty", "guardrail"} or len(results) != 3:
+def _validate_native(compiled, task, results, dependencies=None):
+    if (
+        not isinstance(results, list)
+        or len(results) != 3
+        or any(not isinstance(r, dict) for r in results)
+        or {r.get("mode") for r in results} != {"positive", "empty", "guardrail"}
+    ):
         raise ValueError("Incomplete native qualification matrix")
+    if checksum(rfc8785.dumps(compiled.bindings)) != compiled.binding_sha256:
+        raise ValueError("Compiled binding changed")
+    sources = (dependencies if dependencies is not None else current_dependencies({}))["sources"]
     possible = sum(criterion.possible_points for criterion in task.criteria)
+    common = {
+        "origin": "original_synthetic_software_conformance",
+        "harbor_version": "0.25.0",
+        "source_authenticity": "isolated_test_signer_not_product_authority",
+        "binding_sha256": compiled.binding_sha256,
+        "compiled_archive_sha256": compiled.archive_sha256,
+        "manifest_sha256": compiled.bindings["manifest_sha256"],
+        "private_file_bindings": compiled.bindings["private_files"],
+        "qualification_sha256": sources["services/backend/src/anvil/benchmark_qualification.py"],
+        "compiler_source_sha256": sources["services/backend/src/anvil/benchmark_compiler.py"],
+        "adapter_sha256": sources["services/harbor/src/anvil_harbor/sme.py"],
+        "task_id": task.id,
+        "possible_points": possible,
+        "provider_calls": 0,
+        "candidate_stopped_before_evaluation": True,
+        "candidate_mounts_private": False,
+        "evaluator_mounts_actor": False,
+        "forbidden_access_attempts_denied": 4,
+        "control_checks": {"non_root_readonly_no_egress_cgroups": True, "fresh_actor": True},
+    }
+    containers = set()
     for result in results:
-        if (
-            result["binding_sha256"] != compiled.binding_sha256
-            or result["compiled_archive_sha256"] != compiled.archive_sha256
-            or result["task_id"] != task.id
-            or result["possible_points"] != possible
-            or result["points"] != (possible if result["mode"] == "positive" else 0)
+        mode = result["mode"]
+        expected = {
+            **common,
+            "mode": mode,
+            "points": possible if mode == "positive" else 0,
+            "tool_calls": possible if mode == "positive" else 0,
+            "denied_tool_calls": 1 if mode == "guardrail" else 0,
+        }
+        if set(result) != set(expected) | {
+            "seal_sha256",
+            "candidate_container",
+            "evaluator_container",
+            "native_receipt_sha256",
+        }:
+            raise ValueError("Native result fields are incomplete or unsupported")
+        if any(
+            type(result[key]) is not type(value)
+            or json.dumps(result[key], sort_keys=True, allow_nan=False)
+            != json.dumps(value, sort_keys=True, allow_nan=False)
+            for key, value in expected.items()
         ):
-            raise ValueError("Native result does not bind expected task and reward")
-        if (
-            result["provider_calls"] != 0
-            or result["candidate_container"] == result["evaluator_container"]
-            or not result["candidate_stopped_before_evaluation"]
-            or result["candidate_mounts_private"]
-            or result["evaluator_mounts_actor"]
-            or result["forbidden_access_attempts_denied"] != 4
-            or not all(result["control_checks"].values())
+            raise ValueError("Native result does not bind expected task, controls and inputs")
+        for key in (
+            "seal_sha256",
+            "candidate_container",
+            "evaluator_container",
+            "native_receipt_sha256",
         ):
-            raise ValueError("Native isolation controls did not pass")
-        if (
-            result["mode"] == "positive"
-            and result["tool_calls"] != possible
-            or result["mode"] == "guardrail"
-            and result["denied_tool_calls"] != 1
+            if not isinstance(result[key], str) or not re.fullmatch(r"[a-f0-9]{64}", result[key]):
+                raise ValueError("Native receipt digest or container identity is invalid")
+        for key in ("candidate_container", "evaluator_container"):
+            if result[key] in containers:
+                raise ValueError("Native qualification requires fresh separate containers")
+            containers.add(result[key])
+        raw = json.dumps(
+            {k: v for k, v in result.items() if k != "native_receipt_sha256"},
+            sort_keys=True,
+            allow_nan=False,
+        ).encode()
+        if checksum(raw) != result["native_receipt_sha256"]:
+            raise ValueError("Native receipt bytes changed")
+
+
+def _validate_resources(results):
+    controls = {
+        "memory_pids": {"pids_denied": True, "memory_oom_observed": True},
+        "tree_timeout": {"owned_timeout_tree_stopped": True},
+        "stdio_overflow": {"stdio_overflow_denied": True},
+        "stdio_timeout": {"stdio_timeout_denied": True},
+    }
+    if (
+        not isinstance(results, list)
+        or len(results) != len(controls)
+        or any(not isinstance(r, dict) for r in results)
+        or {r.get("mode") for r in results} != set(controls)
+    ):
+        raise ValueError("Incomplete resource qualification matrix")
+    containers = set()
+    for result in results:
+        expected = {"retained": True, **controls[result["mode"]]}
+        fields = set(expected) | {"mode", "container"}
+        if result["mode"] == "memory_pids":
+            fields.add("children_started")
+            count = result.get("children_started")
+            if type(count) is not int or not 1 <= count < 16:
+                raise ValueError("PID exhaustion was not observed")
+        if set(result) != fields or any(
+            result[key] is not value for key, value in expected.items()
         ):
-            raise ValueError("Native tool controls did not pass")
+            raise ValueError("Resource qualification controls did not pass")
+        container = result["container"]
+        if (
+            not isinstance(container, str)
+            or not re.fullmatch(r"[a-f0-9]{64}", container)
+            or container in containers
+        ):
+            raise ValueError("Resource qualification requires fresh retained containers")
+        containers.add(container)
 
 
 def _finish(operation, report, task_reports, state):
@@ -196,6 +280,7 @@ def process_operation(project, operation_id, user):
         for mode in ("memory_pids", "tree_timeout", "stdio_overflow", "stdio_timeout"):
             _assert_policy(operation)
             limits.append(resource_probe(mode, folder / mode))
+        _validate_resources(limits)
         for row, package_metadata, binding_metadata in metadata:
             _assert_policy(operation)
             task = next(task for task in parsed.parsed.manifest.tasks if task.id == row["task_id"])
@@ -220,7 +305,7 @@ def process_operation(project, operation_id, user):
                 trial.mkdir(mode=0o700)
                 private = ROOT / "fixtures/benchmark-bundle/fictional-points-v1/eval_pack" / task.id
                 results.append(native_trial(path, compiled, task, private, trial, mode=mode))
-            _validate_native(compiled, task, results)
+            _validate_native(compiled, task, results, build["dependencies"])
             document = {
                 "origin": "original_synthetic_software_conformance",
                 "scope": PROFILE,

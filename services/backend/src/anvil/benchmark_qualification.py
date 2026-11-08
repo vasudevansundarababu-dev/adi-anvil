@@ -8,6 +8,7 @@ import os
 import select
 import shutil
 import subprocess
+import tempfile
 import threading
 import time
 import zipfile
@@ -312,7 +313,10 @@ def check_container(docker, container, *, actor, compiled):
 
 class NativeGateway:
     def __init__(self, folder, callback):
-        self.path = str(folder / "gateway.sock")
+        # Unix socket limits apply to the full path, not only the basename.
+        self.socket_home = tempfile.TemporaryDirectory(prefix=".bm-gw-", dir=ROOT / ".local")
+        os.chmod(self.socket_home.name, 0o700)
+        self.path = str(Path(self.socket_home.name) / "gateway.sock")
         self.token = uuid4().hex + uuid4().hex
         self.result, self.error = {}, None
         gateway = self
@@ -346,15 +350,22 @@ class NativeGateway:
                 self.end_headers()
                 self.wfile.write(data)
 
-        self.server = UnixHTTPServer(self.path, Handler)
-        os.chmod(self.path, 0o600)
-        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
-        self.thread.start()
+        try:
+            self.server = UnixHTTPServer(self.path, Handler)
+            os.chmod(self.path, 0o600)
+            self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+            self.thread.start()
+        except Exception:
+            self.socket_home.cleanup()
+            raise
 
     def close(self):
-        self.server.shutdown()
-        self.server.server_close()
-        self.thread.join(timeout=3)
+        try:
+            self.server.shutdown()
+            self.server.server_close()
+            self.thread.join(timeout=3)
+        finally:
+            self.socket_home.cleanup()
 
 
 def readable_projection(source, destination):
