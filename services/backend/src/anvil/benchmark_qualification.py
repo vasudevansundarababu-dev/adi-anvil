@@ -9,6 +9,7 @@ import os
 import select
 import shutil
 import socket
+import stat
 import subprocess
 import tempfile
 import threading
@@ -19,6 +20,9 @@ from pathlib import Path
 from types import SimpleNamespace
 from uuid import uuid4
 
+import rfc8785
+
+from anvil.benchmark_bundle import canonical_path
 from anvil.benchmark_compiler import FIXTURE_IMAGE, seal_outputs
 from anvil.config import ROOT
 from anvil.harbor_agents import UnixHTTPServer
@@ -494,6 +498,94 @@ def readable_projection(source, destination):
     os.chmod(destination, 0o555)
 
 
+def public_actor_projection(actor_dir, compiled, task):
+    """Expose only the immutable declared actor inputs, independent of host umask."""
+    actor_dir = Path(actor_dir)
+    if not actor_dir.is_absolute() or actor_dir.resolve() != actor_dir:
+        raise ValueError("Canonical owned actor task directory required")
+    projection_path = actor_dir / "actor.json"
+    metadata = projection_path.lstat()
+    if (
+        not stat.S_ISREG(metadata.st_mode)
+        or metadata.st_nlink != 1
+        or metadata.st_uid != os.getuid()
+    ):
+        raise ValueError("Compiled actor metadata must be an owned regular file")
+    projection = json.loads(projection_path.read_bytes())
+    if (
+        hashlib.sha256(rfc8785.dumps(projection)).hexdigest() != compiled.bindings["actor_sha256"]
+        or projection["task_id"] != task.id
+    ):
+        raise ValueError("Compiled actor projection binding changed")
+    expected = {
+        task.prompt_path,
+        *task.actor_asset_paths,
+        *(tool.schema_path for tool in task.tools),
+        *(output.schema_ref for output in task.outputs if output.schema_ref is not None),
+    }
+    declarations = projection["files"]
+    if (
+        not isinstance(declarations, list)
+        or len(declarations) != len(expected)
+        or {entry["path"] for entry in declarations} != expected
+    ):
+        raise ValueError("Declared actor input membership changed")
+    prefix = f"runtime_pack/{task.id}/"
+    root = actor_dir / "environment/actor/runtime_pack" / task.id
+    for ancestor in [root, *root.parents]:
+        if ancestor.is_symlink():
+            raise ValueError("Actor input paths cannot contain symlinks")
+        if ancestor == actor_dir:
+            break
+    files, directories = [], {root}
+    for entry in declarations:
+        path = canonical_path(entry["path"])
+        if (
+            not path.startswith(prefix)
+            or entry["visibility"] != "actor"
+            or entry["task_id"] != task.id
+        ):
+            raise ValueError("Only declared task-public inputs may be exposed")
+        target = actor_dir / "environment/actor" / path
+        for parent in target.parents:
+            if not parent.is_dir() or parent.is_symlink():
+                raise ValueError("Actor input directories cannot be aliases")
+            directories.add(parent)
+            if parent == root:
+                break
+        metadata = target.lstat()
+        if (
+            not stat.S_ISREG(metadata.st_mode)
+            or metadata.st_nlink != 1
+            or metadata.st_uid != os.getuid()
+            or metadata.st_size != entry["byte_size"]
+            or hashlib.sha256(target.read_bytes()).hexdigest() != entry["sha256"]
+        ):
+            raise ValueError("Actor input bytes or custody changed")
+        files.append(target)
+    actual_files = set()
+    for member in root.rglob("*"):
+        metadata = member.lstat()
+        if stat.S_ISDIR(metadata.st_mode):
+            if member not in directories:
+                raise ValueError("Undeclared actor input directory")
+        elif stat.S_ISREG(metadata.st_mode):
+            actual_files.add(member)
+        else:
+            raise ValueError("Actor inputs cannot include aliases or special files")
+    if actual_files != set(files) or any(
+        not directory.is_dir() or directory.is_symlink() or directory.stat().st_uid != os.getuid()
+        for directory in directories
+    ):
+        raise ValueError("Actor input tree differs from declared public projection")
+    # No permission changes occur until every declaration, path and byte passes.
+    for target in files:
+        os.chmod(target, 0o444, follow_symlinks=False)
+    for directory in sorted(directories, key=lambda value: len(value.parts), reverse=True):
+        os.chmod(directory, 0o555, follow_symlinks=False)
+    return root
+
+
 def native_trial(package, compiled, task, private, folder, *, mode, actor_driver=None):
     started_at = time.monotonic()
     if os.environ.get("ANVIL_TEST_HARBOR") != "1" or mode not in {
@@ -525,6 +617,7 @@ def native_trial(package, compiled, task, private, folder, *, mode, actor_driver
             target.parent.mkdir(parents=True, exist_ok=True)
             with archive.open(entry) as incoming, target.open("xb") as outgoing:
                 shutil.copyfileobj(incoming, outgoing, length=65536)
+    public_actor_projection(actor_dir, compiled, task)
     for name, key in [("evaluator.py", "implementation_sha256"), ("policy.json", "policy_sha256")]:
         if (
             hashlib.sha256((private / name).read_bytes()).hexdigest()
