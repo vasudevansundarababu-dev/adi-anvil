@@ -1,4 +1,14 @@
-# Current — stored fictional comparison and configurable report review
+# Current — approved evaluator design implementation started
+
+November9: user approved the final design, requested a detailed Praxis coding handoff and QA changes for BOTH products, then Anvil coding. Specifications34/35, rendered Word handoffs, schema and examples are delivered. Praxis remains an independent coding handoff; its repository and the original dirty checkout are untouched.
+
+The first coding milestone adds optional policy validation, migration064, append-only project evaluator configuration/testing/revocation, both-role API/administration UI, installed deterministic local adapter capabilities and two bounded API contracts. Expanded source passed13 fresh SQL/API checks across Admin/RL Engineer and five local options (OPA1.22.2, ZEN2.1.3, NeMo0.24.1 literal checks, Promptfoo0.125.1 literal assertions, built-in templates). TruLens2.16.0 calibration worker passed4 separate actual-library cases; it is not a policy verdict. API contracts are mocked, not live-account verified. Foundation predecessor full930units and locked Next16.4.1 build passed; later adapter extensions have focused SQL/types/Ruff/Node checks, not relabelled full successor regression qualification.
+
+Full Run integration, policy import persistence/extraction, remaining dashboard/PDF changes, browser QA and native qualification remain pending. Existing running previews are unchanged. All paid calls remain off; no deployment/merge/cloud resources. Resume from `docs/agent-team/runs/anvil-codex-transition-2026-11-08/policy-evaluator-implementation-progress.md`. Earlier completion entries below describe the previous fictional comparison only.
+
+---
+
+# Historical — stored fictional comparison and configurable report review
 
 November 9, 2026: product checkpoint `a1ddace319cd6e7e0472877ef5f181099613b63f` is pushed on the existing draft PR16 branch. The local application now executes and persists a complete, explicitly fictional software comparison: three transparent scripted profiles, three public tasks and two repetitions. All four connected views read its saved results and exact-result PDFs. These software scores are not model-performance or current native-qualification evidence.
 

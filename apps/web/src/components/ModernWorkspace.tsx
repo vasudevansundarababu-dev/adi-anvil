@@ -8,6 +8,7 @@ import WorkspaceBenchmarks from './WorkspaceBenchmarks';
 import WorkspaceExecutionGroups from './WorkspaceExecutionGroups';
 import ModelProfiles from './ModelProfiles';
 import FrameworkProfiles from './FrameworkProfiles';
+import EvaluatorSettings from './EvaluatorSettings';
 import DiagnosticResults from './DiagnosticResults';
 import WorkspaceRevisionEditor from './WorkspaceRevisionEditor';
 import WorkspacePeople, { WorkspaceAccess } from './WorkspacePeople';
@@ -36,6 +37,7 @@ const navigation = [
   ['execution-groups', 'Execution groups'],
   ['models', 'Models & keys'],
   ['frameworks', 'Frameworks'],
+  ['evaluators', 'Evaluators'],
   ['people', 'People'],
   ['limits', 'Limits & usage'],
 ];
@@ -599,6 +601,7 @@ function WorkspaceView() {
                   <p>Open an exact task, rubric or evaluation version from a run snapshot.</p>
                 ))}
               {section === 'models' && admin && <ModelProfiles key={base} base={base} />}
+              {section === 'evaluators' && canEdit && <EvaluatorSettings key={base} base={base} />}
               {section === 'benchmarks' && (
                 <WorkspaceBenchmarks
                   key={base}

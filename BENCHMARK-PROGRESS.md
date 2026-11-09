@@ -1,4 +1,12 @@
-# Current — real stored fictional comparison; configurable report authorization
+# Current — evaluator implementation launched after final design review
+
+November9: current user authorized detailed Praxis coding handoff, QA changes for both products and Anvil coding. Product specs34/35 and rendered Word/JSON example handoff supersede the design hold. Local policy/evaluator foundation is implemented, not the full approved dashboard release. Latest focused fresh SQL/API suite13PASS covers both roles and five local deterministic capabilities; two API adapters remain contract-tested/paid-off. Foundation full930units/build pass is predecessor evidence; do not relabel it full successor qualification. Exact installed library/runtime limits and remaining work are in `docs/agent-team/runs/anvil-codex-transition-2026-11-08/policy-evaluator-implementation-progress.md`.
+
+No Praxis repository/original dirty checkout edits, deployment, merge, cloud provisioning or live paid calls. Do not restart completed agents; root remains sole writer. Resume implementation from the explicit remaining list, preserving prior results and access/spending boundaries.
+
+---
+
+# Historical — real stored fictional comparison; configurable report authorization
 
 November 9, 2026: product checkpoint `a1ddace319cd6e7e0472877ef5f181099613b63f` is pushed. Four connected replacement views now include an actual local scripted comparison with persisted outputs, criterion results, 81-point repetition means, separate observed win/tie and Bradley–Terry metrics, failure inspection and exact-result reports. Paid calls remain off; no model-performance or new native qualification is claimed.
 

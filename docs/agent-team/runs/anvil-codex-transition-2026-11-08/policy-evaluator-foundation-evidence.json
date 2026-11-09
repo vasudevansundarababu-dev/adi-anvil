@@ -1,0 +1,52 @@
+{
+  "milestone": "policy-evaluator-foundation-v1",
+  "status": "implementation-in-progress",
+  "tests": {
+    "offline_units_and_contracts": {
+      "passed": 930
+    },
+    "fresh_sql_api": {
+      "passed": 5
+    },
+    "nemo_actual_library_cases": {
+      "passed": 3
+    },
+    "trulens_actual_library_cases": {
+      "passed": 4
+    },
+    "frontend": "types and exact locked Next16.4.1 production build passed"
+  },
+  "retained_initial_failures": [
+    "first unit collection used an empty source root; marketing runtime could not locate its source",
+    "33 unit failures from denied local sockets and omitted synthetic-fixture flag",
+    "next run927passed with3helper import-path failures; corrected whole suite930passed",
+    "first SQL5setup errors from denied loopback connection",
+    "first actual SQL4fail1pass exposed PLpgSQL table-specific field lookup; fixed then5passed",
+    "initial frontend build used stale installedNext16.3.6; independently synchronized existing lock and rebuiltNext16.4.1"
+  ],
+  "provider_calls": 0,
+  "native_qualification": "not_run",
+  "browser_qa": "not_run",
+  "deployment": false,
+  "remaining": [
+    "remaining adapter installation/qualification and product wiring",
+    "actual policy sidecar persistence/import endpoint",
+    "execution-group and Run snapshots/mapping/worker integration",
+    "full new dashboard/PDF and safety metric views",
+    "independent QA execution"
+  ],
+  "sha256": {
+    "contracts/praxis/project-policy-v1/example.json": "5d73f6ee4eaa135c743152a133f2744bcb3b96d91a918a956944f764fb604c68",
+    "contracts/praxis/project-policy-v1/schema.json": "bc08ff4f3f9a5cbf0eda64836339b93dfa53f533f937ac8c34b65ad2a278398e",
+    "contracts/praxis/project-policy-v1/no-policy.example.json": "55aead5cd4e8e3ea43372269467e3d1b119209c2eb7ea9033e17eb7a2da77721",
+    "contracts/praxis/project-policy-v1/policies/privacy.txt": "b86a84da2339e95a275823611ab37d4f038b290d7ec78e8e438892e2add85297",
+    "apps/web/src/components/EvaluatorSettings.tsx": "43b98a7f461b0d6d0f53d5d8576aba4e8bffeca45c4c94351461c62d424009a3",
+    "services/backend/tests/test_policy_evaluators.py": "847062b8bb3163eeaefe0673cf8bbf02d2156f35ea4f5b5c0fdc2cfb7116e6e2",
+    "services/backend/tests/test_praxis_policy.py": "8a3cbe34b34d72f4d5be9cb8bea851ef8e84be8beb7ef04f45188a1522a07111",
+    "services/backend/src/anvil/policy_rules.py": "570f9bef21c08edf62ff46ff5500cb4becd92df520743e397271347f45b8fab9",
+    "services/backend/src/anvil/evaluator_configurations.py": "e383fec3002c4da6151d46db79d73154d4bc7039e6ae3d0aeb2301bd2eecf1c9",
+    "services/backend/src/anvil/evaluator_api.py": "776914e620f58476e7286fffa6d532104fc61ead371fe3b3a17033563796f667",
+    "services/backend/src/anvil/evaluator_http.py": "024413d816e3822cdcae65bdf76425b5c0c576fc38211ca06198eca03b1edfa9",
+    "services/backend/src/anvil/praxis_policy.py": "eac3172b421f762ec6f6f22b0279425f531fd4f8db7c7da42f13794514400e53"
+  }
+}
