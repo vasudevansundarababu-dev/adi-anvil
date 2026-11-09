@@ -6,6 +6,7 @@ image only; retained containers, no candidate mounts, socket or database credent
 
 import json
 import os
+import stat
 from pathlib import Path
 from uuid import uuid4
 
@@ -33,6 +34,44 @@ print(json.dumps({'nonroot_readonly_no_credentials_no_socket_no_actor_no_egress'
 """
 
 
+def evaluator_program_projection(folder, expected_implementation):
+    """Expose one reviewed immutable program, never the private service parent."""
+    folder = Path(folder)
+    if not folder.is_absolute() or folder.resolve() != folder:
+        raise ValueError("Canonical evaluator service parent required")
+    parent = folder.stat()
+    source = PROGRAM.lstat()
+    if (
+        not stat.S_ISDIR(parent.st_mode)
+        or parent.st_uid != os.getuid()
+        or parent.st_mode & 0o077
+        or not stat.S_ISREG(source.st_mode)
+        or source.st_nlink != 1
+    ):
+        raise ValueError("Owned private parent and regular reviewed program required")
+    data = PROGRAM.read_bytes()
+    if sha(data) != expected_implementation:
+        raise ValueError("Reviewed evaluator implementation changed")
+    service = folder / "service"
+    service.mkdir(mode=0o700)
+    script = service / "evaluator.py"
+    with script.open("xb") as stream:
+        stream.write(data)
+    stored = script.lstat()
+    if (
+        not stat.S_ISREG(stored.st_mode)
+        or stored.st_nlink != 1
+        or stored.st_uid != os.getuid()
+        or sha(script.read_bytes()) != expected_implementation
+        or set(service.iterdir()) != {script}
+    ):
+        raise ValueError("Evaluator program projection custody changed")
+    # All byte/custody checks pass before exposing this leaf to nonroot UID10001.
+    os.chmod(script, 0o444, follow_symlinks=False)
+    os.chmod(service, 0o555, follow_symlinks=False)
+    return service
+
+
 def execute_native(job, folder, expected_implementation):
     if (
         os.environ.get("ANVIL_TEST_HARBOR") != "1"
@@ -49,11 +88,7 @@ def execute_native(job, folder, expected_implementation):
         r.split("@")[1] for r in info.get("RepoDigests", [])
     ]:
         raise ValueError("Exact preloaded image absent")
-    service = folder / "service"
-    service.mkdir(mode=0o700)
-    script = service / "evaluator.py"
-    script.write_bytes(PROGRAM.read_bytes())
-    script.chmod(0o444)
+    service = evaluator_program_projection(folder, expected_implementation)
     name = "anvil-t06-eval-" + uuid4().hex[:16]
     container = (
         docker.run(
