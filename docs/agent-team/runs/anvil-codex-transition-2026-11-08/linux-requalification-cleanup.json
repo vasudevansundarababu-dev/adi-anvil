@@ -1,0 +1,67 @@
+{
+  "project": "adi-anvil-mvp-2026",
+  "scope": "exact_disposable_QA_resources_only",
+  "evidence_export_clearance": true,
+  "deleted": [
+    {
+      "resource": "instances",
+      "name": "anvil-staging-native",
+      "verified_prior_id": "2931597834343741053",
+      "verified_after": "NOT_FOUND"
+    },
+    {
+      "resource": "disks",
+      "name": "anvil-staging-native-boot",
+      "verified_prior_id": "4521431763378828925",
+      "verified_after": "NOT_FOUND"
+    },
+    {
+      "resource": "firewall-rules",
+      "name": "anvil-staging-native-iap-ssh",
+      "verified_prior_id": "1284464424490169958",
+      "verified_after": "NOT_FOUND"
+    },
+    {
+      "resource": "NAT_config",
+      "name": "anvil-staging-native-nat",
+      "verified_parent_id": "5294962567458649709",
+      "verified_after": "ABSENT_IN_ROUTER"
+    },
+    {
+      "resource": "routers",
+      "name": "anvil-staging-native-router",
+      "verified_prior_id": "5294962567458649709",
+      "verified_after": "NOT_FOUND"
+    },
+    {
+      "resource": "addresses",
+      "name": "anvil-staging-native-nat-ip",
+      "verified_prior_id": "6086832916252128912",
+      "verified_after": "NOT_FOUND"
+    },
+    {
+      "resource": "subnets",
+      "name": "anvil-staging-native-subnet",
+      "verified_prior_id": "1177464664454133403",
+      "verified_after": "NOT_FOUND"
+    },
+    {
+      "resource": "networks",
+      "name": "anvil-staging-native-net",
+      "verified_prior_id": "14450652421617289",
+      "verified_after": "NOT_FOUND"
+    }
+  ],
+  "complete": true,
+  "bill_reconciled": false,
+  "ongoing_created_resource_charges": "No listed created QA resources remain; prior usage/log retention billing may post later",
+  "verified_at_utc": "2026-11-09T04:50:50.209042+00:00",
+  "source_sha": "abb4348a6eb38bb5696cb89062d9fb5c00d3e0b4",
+  "temporary_key_removed": true,
+  "other_keys_unchanged": true,
+  "owned_iap_tunnel_closed": true,
+  "evidence_package_sha256": "1909932c808f333dd32b399a2c3d70add85c3e83399cbd01bf8e13101d574d92",
+  "native_baseline_actual_passes": 28,
+  "new_individual_demo_started": false,
+  "host_full_units_started": false
+}
