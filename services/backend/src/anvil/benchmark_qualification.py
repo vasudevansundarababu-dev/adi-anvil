@@ -812,6 +812,8 @@ def native_trial(package, compiled, task, private, folder, *, mode, actor_driver
                 docker.run(["stop", "--time", "1", container])
         gateway.close()
     actor, evaluation = gateway.result["/actor"], gateway.result["/evaluate"]
+    from anvil.benchmark_qualification_evidence import capture_public
+
     result = {
         "origin": "original_synthetic_software_conformance",
         "binding_sha256": compiled.binding_sha256,
@@ -848,6 +850,10 @@ def native_trial(package, compiled, task, private, folder, *, mode, actor_driver
             "fresh_actor": actor["probe"]["fresh"],
         },
     }
+    if mode in {"positive", "empty", "guardrail"}:
+        result["public_capture"] = capture_public(
+            folder / "sealed", task, evaluation, actor["seal"]
+        )
     raw = json.dumps(result, sort_keys=True, allow_nan=False).encode()
     if mode == "offline_conversation":
         from anvil.benchmark_atif import project, validate

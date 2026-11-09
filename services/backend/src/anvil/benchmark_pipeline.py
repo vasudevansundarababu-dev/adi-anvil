@@ -32,6 +32,7 @@ SOURCE_FILES = (
     "services/backend/src/anvil/benchmark_pipeline_worker.py",
     "services/backend/src/anvil/benchmark_compiler.py",
     "services/backend/src/anvil/benchmark_qualification.py",
+    "services/backend/src/anvil/benchmark_qualification_evidence.py",
     "services/backend/src/anvil/benchmark_archive.py",
     "services/backend/src/anvil/benchmark_bundle.py",
     "services/backend/src/anvil/benchmark_trust.py",

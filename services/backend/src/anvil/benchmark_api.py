@@ -1088,6 +1088,46 @@ def routes(context, wrap, idempotent):
             _authorize(c, project, user, roles)
             return wrap(pipeline.operation_public(c, operation_id), request)
 
+    @router.get("/qualification-operations/{operation_id}/evidence")
+    def qualification_evidence(project: UUID, operation_id: UUID, request: Request):
+        from anvil import benchmark_qualification_evidence as individual
+
+        _enabled()
+        with context(request, project) as (c, user, roles):
+            _authorize(c, project, user, roles)
+            operation, build, artifacts = individual.metadata(c, operation_id)
+        _, blockers = pipeline.policy_status(project, user, build["id"])
+        if blockers:
+            raise HTTPException(409, "Individual evidence source policy is no longer current")
+        try:
+            qualifications = [
+                individual.project_report(row, artifact, build) for row, artifact in artifacts
+            ]
+        except (ValueError, KeyError, TypeError, OSError) as exc:
+            raise HTTPException(409, "Individual evidence is unavailable or changed") from exc
+        # Recheck current rights after all bounded private reads, before returning bytes.
+        with context(request, project) as (c, user, roles):
+            _authorize(c, project, user, roles)
+            current, current_build, current_artifacts = individual.metadata(c, operation_id)
+            if current != operation or current_build != build or current_artifacts != artifacts:
+                raise HTTPException(409, "Individual evidence changed during inspection")
+        _, blockers = pipeline.policy_status(project, user, build["id"])
+        if blockers:
+            raise HTTPException(409, "Individual evidence source policy is no longer current")
+        return wrap(
+            {
+                "operation_id": str(operation_id),
+                "build_id": str(build["id"]),
+                "state": operation["state"],
+                "scope": "qualification_evidence",
+                "model_performance": False,
+                "comparison_admitted": False,
+                "primary": None,
+                "qualifications": qualifications,
+            },
+            request,
+        )
+
     @router.post("/qualification-operations/{operation_id}/cancel")
     def cancel_qualification(project: UUID, operation_id: UUID, request: Request):
         preflight(project, request, admin=True)

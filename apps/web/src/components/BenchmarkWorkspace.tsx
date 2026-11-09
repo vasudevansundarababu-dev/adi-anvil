@@ -19,6 +19,8 @@ import {
 } from '../lib/benchmark';
 import styles from './ModernWorkspace.module.css';
 import BenchmarkScoreReview from './BenchmarkScoreReview';
+import BenchmarkResults from './BenchmarkResults';
+import BenchmarkQualificationEvidence from './BenchmarkQualificationEvidence';
 import BenchmarkCellEvidence from './BenchmarkCellEvidence';
 import BenchmarkHistory from './BenchmarkHistory';
 import BenchmarkRecovery from './BenchmarkRecovery';
@@ -203,7 +205,12 @@ export function BenchmarkProtocol({
   const [duties, setDuties] = useState(['', '', '']);
   const [confirmed, setConfirmed] = useState(false);
   const [assignments, setAssignments] = useState<
-    { assignment_id: string; user_id: string; user_name?: string; expires_at: string }[]
+    {
+      assignment_id: string;
+      user_id: string;
+      user_name?: string;
+      expires_at: string;
+    }[]
   >([]);
   const [assignmentError, setAssignmentError] = useState('');
   useEffect(() => {
@@ -452,157 +459,6 @@ export function BenchmarkMatrix({
   );
 }
 
-export function BenchmarkResults({
-  comparison,
-  base,
-}: {
-  comparison: BenchmarkComparison;
-  base: string;
-}) {
-  const results = comparison.scorecard;
-  return (
-    <section className={styles.panel} aria-label="Comparison results">
-      <h2>Results and evidence</h2>
-      {!results ? (
-        <p>
-          No scorecard has been published. Pending, failed or invalid trials do not count as model
-          zeroes.
-        </p>
-      ) : (
-        <>
-          <p>
-            {results.complete
-              ? 'Complete, reviewed scorecard'
-              : results.execution_complete
-                ? 'Execution evidence is complete. Comparable primary results remain unavailable until mandatory independent review is recorded.'
-                : 'Incomplete comparison — primary result unavailable; no winner declared.'}
-          </p>
-          <table>
-            <caption>Stored primary results</caption>
-            <thead>
-              <tr>
-                <th>Model slot</th>
-                <th>Raw points</th>
-                <th>Percent</th>
-                <th>Completeness</th>
-              </tr>
-            </thead>
-            <tbody>
-              {results.models.map((model) => (
-                <tr key={model.slot}>
-                  <td>{model.slot + 1}</td>
-                  <td>
-                    {model.primary == null
-                      ? 'Unavailable'
-                      : `${model.primary.earned_points} / ${model.primary.possible_points}`}
-                  </td>
-                  <td>{model.primary == null ? 'Unavailable' : `${model.primary.percent}%`}</td>
-                  <td>
-                    {model.scored} / {model.planned} scored · {model.completion}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <details>
-            <summary>Unranked diagnostics and measured runtime</summary>
-            <p>
-              Diagnostic means use only complete suite repetitions out of81 points. They do not
-              replace missing trials or mandatory review and do not establish model performance.
-            </p>
-            <table>
-              <caption>Complete-repetition diagnostics</caption>
-              <thead>
-                <tr>
-                  <th>Slot</th>
-                  <th>Complete repetitions</th>
-                  <th>Diagnostic mean</th>
-                  <th>Median duration</th>
-                  <th>Cost status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {results.models.map((model) => (
-                  <tr key={model.slot}>
-                    <td>{model.slot + 1}</td>
-                    <td>{model.diagnostic.complete_repetitions.length} / 2</td>
-                    <td>
-                      {model.diagnostic.complete_repetition_mean
-                        ? `${model.diagnostic.complete_repetition_mean.earned_points} / 81 (${model.diagnostic.complete_repetition_mean.percent}%)`
-                        : 'Unavailable'}
-                    </td>
-                    <td>
-                      {model.duration.median_ms == null
-                        ? 'Unknown'
-                        : `${model.duration.median_ms} ms from ${model.duration.samples} trials`}
-                    </td>
-                    <td>{model.cost.status}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </details>
-        </>
-      )}
-      <p>
-        Offline software evidence does not establish live model performance. Unknown usage and costs
-        remain unknown.
-      </p>
-      <a
-        href={
-          '/api/v1' +
-          benchmarkPath(base) +
-          '/comparisons/' +
-          encodeURIComponent(comparison.run_id) +
-          '/exports/json'
-        }
-      >
-        Download authorized JSON
-      </a>
-      {' · '}
-      <a
-        href={
-          '/api/v1' +
-          benchmarkPath(base) +
-          '/comparisons/' +
-          encodeURIComponent(comparison.run_id) +
-          '/exports/csv'
-        }
-      >
-        Download redacted CSV
-      </a>
-      {' · '}
-      <a
-        href={
-          '/api/v1' +
-          benchmarkPath(base) +
-          '/comparisons/' +
-          encodeURIComponent(comparison.run_id) +
-          '/exports/report'
-        }
-      >
-        Download redacted report
-      </a>
-      {' · '}
-      <a
-        href={
-          '/api/v1' +
-          benchmarkPath(base) +
-          '/comparisons/' +
-          encodeURIComponent(comparison.run_id) +
-          '/exports/atif'
-        }
-      >
-        Download authorized Harbor trajectories
-      </a>
-      <p>
-        Private trajectory downloads require a current individual evaluation assignment. They omit
-        hidden reasoning and evaluator reference material.
-      </p>
-    </section>
-  );
-}
-
 export default function BenchmarkWorkspace({
   base,
   canWrite,
@@ -639,6 +495,7 @@ export default function BenchmarkWorkspace({
     versionId = query.get('version'),
     protocolId = query.get('protocol'),
     comparisonId = query.get('comparison');
+  const qualificationId = query.get('qualification');
   const bankSearch = query.get('bank_search') || '',
     sourceClass = query.get('source_class') || '';
   const libraryFilters =
@@ -666,7 +523,10 @@ export default function BenchmarkWorkspace({
   };
   const loadLibrary = useCallback(
     async (after?: string) => {
-      const result = await benchmarkGet<{ items: BenchmarkReceipt[]; next_cursor: string | null }>(
+      const result = await benchmarkGet<{
+        items: BenchmarkReceipt[];
+        next_cursor: string | null;
+      }>(
         base,
         '/library?limit=25' + libraryFilters + (after ? '&after=' + encodeURIComponent(after) : ''),
       );
@@ -797,7 +657,10 @@ export default function BenchmarkWorkspace({
       const value = await benchmarkPost<{ build_id: string }>(
         base,
         '/imports/' + receipt.receipt_id + '/build',
-        { expected_manifest_sha256: receipt.manifest_sha256, review_id: reviewId },
+        {
+          expected_manifest_sha256: receipt.manifest_sha256,
+          review_id: reviewId,
+        },
       );
       setBuildId(value.build_id);
       setReadiness(await benchmarkGet(base, '/builds/' + value.build_id + '/readiness'));
@@ -865,6 +728,15 @@ export default function BenchmarkWorkspace({
         }
       />
       <BenchmarkHistory base={base} select={(id) => select('comparison', id)} />
+      <BenchmarkQualificationEvidence
+        base={base}
+        operationId={qualificationId}
+        select={(id) => {
+          const next = new URLSearchParams(query.toString());
+          next.set('qualification', id);
+          router.push(pathname + '?' + next.toString());
+        }}
+      />
       {receipt && (
         <section className={styles.panel} aria-label="Source and qualification">
           <h2>
@@ -953,12 +825,15 @@ export default function BenchmarkWorkspace({
                 disabled={busy || !canAdmin || !buildId}
                 onClick={() =>
                   void act(async () => {
-                    const operation = await benchmarkPost<{ operation_id: string }>(
-                      base,
-                      '/builds/' + buildId + '/qualify',
-                      { expected_subject_sha256: readiness.subject_sha256 },
-                    );
+                    const operation = await benchmarkPost<{
+                      operation_id: string;
+                    }>(base, '/builds/' + buildId + '/qualify', {
+                      expected_subject_sha256: readiness.subject_sha256,
+                    });
                     setMessage('Qualification queued: ' + operation.operation_id);
+                    const next = new URLSearchParams(query.toString());
+                    next.set('qualification', operation.operation_id);
+                    router.push(pathname + '?' + next.toString());
                   })
                 }
               >
@@ -1061,7 +936,12 @@ export default function BenchmarkWorkspace({
       {comparison && (
         <>
           <BenchmarkMatrix comparison={comparison} base={base} />
-          <BenchmarkResults comparison={comparison} base={base} />
+          <BenchmarkResults
+            key={comparison.run_id}
+            comparison={comparison}
+            base={base}
+            changed={setComparison}
+          />
           <BenchmarkScoreReview
             key={comparison.run_id}
             base={base}

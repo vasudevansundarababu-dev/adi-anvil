@@ -1,6 +1,11 @@
 import { workspaceApi } from './workspace';
 
-export type BenchmarkBlocker = { code: string; layer: string; fixer: string; action: string };
+export type BenchmarkBlocker = {
+  code: string;
+  layer: string;
+  fixer: string;
+  action: string;
+};
 export type BenchmarkReceipt = {
   receipt_id: string;
   exporter: string;
@@ -13,7 +18,11 @@ export type BenchmarkReceipt = {
   signature_status: string;
   task_count: number;
   source_classification: string;
-  latest_build?: { build_id: string; subject_sha256: string; state: string } | null;
+  latest_build?: {
+    build_id: string;
+    subject_sha256: string;
+    state: string;
+  } | null;
 };
 export type BenchmarkReadiness = {
   subject_sha256: string;
@@ -88,6 +97,8 @@ export type BenchmarkComparison = {
     reconciled: boolean;
   }[];
   scorecard: {
+    profile: string;
+    protocol_sha256: string;
     complete: boolean;
     execution_complete: boolean;
     origin: string;
@@ -100,6 +111,22 @@ export type BenchmarkComparison = {
       completion: 'complete' | 'incomplete';
       score_complete: boolean;
       diagnostic: {
+        earned_points: string;
+        possible_points: string;
+        included: {
+          task_revision_id: string;
+          repetition: number;
+          earned_points: string;
+          raw_earned_points: string;
+          possible_points: string;
+          evidence_sha256: string;
+          hard_constraint_ids: string[];
+        }[];
+        excluded: {
+          task_revision_id: string;
+          repetition: number;
+          reason: string;
+        }[];
         complete_repetition_mean: {
           earned_points: string;
           possible_points: string;
@@ -112,7 +139,11 @@ export type BenchmarkComparison = {
           percent: string;
         }[];
       };
-      primary: { earned_points: string; possible_points: string; percent: string } | null;
+      primary: {
+        earned_points: string;
+        possible_points: string;
+        percent: string;
+      } | null;
       cost: {
         candidate_micro_usd: number | null;
         judge_micro_usd: number | null;
@@ -121,8 +152,22 @@ export type BenchmarkComparison = {
       };
       duration: { median_ms: number | null; samples: number };
     }[];
+    review_requirements?: {
+      state: string;
+      first_assignment_id?: string;
+      second_assignment_id?: string;
+      adjudicator_assignment_id?: string;
+    };
   } | null;
   blockers: BenchmarkBlocker[];
+};
+export type BenchmarkStoredScore = {
+  score_revision_id: string;
+  revision: number;
+  projection_sha256: string;
+  projection: NonNullable<BenchmarkComparison['scorecard']>;
+  review_state: string;
+  reviews: number;
 };
 export const benchmarkPath = (base: string) => base + '/workspace/benchmarks';
 export async function benchmarkGet<T>(base: string, path = ''): Promise<T> {

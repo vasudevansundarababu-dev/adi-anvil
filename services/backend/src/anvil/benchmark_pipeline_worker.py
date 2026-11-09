@@ -131,13 +131,17 @@ def _validate_native(compiled, task, results, dependencies=None):
             "tool_calls": possible if mode == "positive" else 0,
             "denied_tool_calls": 1 if mode == "guardrail" else 0,
         }
-        if set(result) != set(expected) | {
+        receipt_fields = set(expected) | {
             "seal_sha256",
             "candidate_container",
             "evaluator_container",
             "native_receipt_sha256",
-        }:
+        }
+        if set(result) not in (receipt_fields, receipt_fields | {"public_capture"}):
             raise ValueError("Native result fields are incomplete or unsupported")
+        from anvil.benchmark_qualification_evidence import public_projection
+
+        public_projection(result.get("public_capture"))
         if any(
             type(result[key]) is not type(value)
             or json.dumps(result[key], sort_keys=True, allow_nan=False)

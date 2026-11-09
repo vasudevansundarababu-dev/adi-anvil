@@ -16,5 +16,15 @@
   "primary_secondary_subnet_overlap": false,
   "creation_performed": false,
   "temporary_key_registered": false,
-  "source_freeze_pending": true
+  "source_freeze_pending": true,
+  "user_authorization": "Approve this Linux rerun and cleanup",
+  "approved_scope_only": true,
+  "prior_run_reserve_usd": 30,
+  "rerun_max_allocation_usd": 20,
+  "original_allowance_usd": 60,
+  "unallocated_headroom_usd": 10,
+  "bill_reconciled": false,
+  "maximum_runtime_hours": 24,
+  "temporary_key_max_hours": 2,
+  "absolute_stop_utc": "2026-11-15T19:30:00Z"
 }

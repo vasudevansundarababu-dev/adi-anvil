@@ -1,10 +1,10 @@
-# Successor Linux requalification — proposed, not authorized or provisioned
+# Successor Linux requalification — approved scope, source freeze pending
 
 ## User authorization received — execution prerequisites still pending
 
 The user explicitly approved **“Approve this Linux rerun and cleanup”** for this addendum: same private disposable resources, at most24hours and original absolute stop, at most20USD within the remaining original60USD QA allowance, same public key registered for at most2hours, and exact newly created-resource cleanup after evidence export on success or failure. This supersedes the proposal-only authorization wording below for that bounded scope only. It does not authorize application deployment, build submission, new IAM/settings, Praxis or original local changes.
 
-No provisioning or key registration yet: first freeze the final connected-results successor/source archive/manifest/security locks and pass the required local checks; then establish prior QA spending/adequate reserve plus rerun allocation≤60USD. Conserve temporary key lifetime until runtime access is needed. Keep model comparison blocked and show only authentic individual fictional execution evidence; no fabricated reviewer approval or real performance inference. Historical proposal sections below remain the exact scope basis.
+No provisioning or key registration yet: first freeze the final connected-results successor/source archive/manifest/security locks and pass the required local checks; use the conservative30USD prior-run reserve plus20USD rerun allocation below (50USD total against60USD; actual invoice unreconciled). Conserve temporary key lifetime until runtime access is needed. Keep model comparison blocked and show only authentic individual fictional execution evidence; no fabricated reviewer approval or real performance inference. Historical proposal sections below remain the exact scope basis.
 
 ## Conservative original-allowance ledger — preparation gate resolved
 
@@ -22,7 +22,7 @@ The minimal native runtime remains one E2standard4/30GiB disposable Linux host p
 
 A test fixture may create explicitly labeled test identities/rights in a fresh test DB, but must not manufacture real approvals or imply user review; production three-reviewer separation stays enforced and any unmet gate must be displayed as pending. Testing must verify exact expected SQL identities, independent evaluator receipt, persistent run/cell/source hashes and result-route outputs, not equate rendered mockup rows or SDK transport mocks with completed native results. A browser/real OIDC staging demo is a separate deployment/identity decision and is not silently bundled into this QA host. Root/Coding will specify the exact connected E2E test selectors and final source binding after implementation review; old28 passes do not qualify new results wiring.
 
-All host creation, temporary key registration and installation remain **unapproved** under this addendum. Existing resources/key were deleted. Keep the ≤USD20 allocation from remaining originalUSD60, ≤24hours/absolute Nov15 stop, ≤2hour temporary same-key access and exact new-ID cleanup on success/failure below. No cloud, key or settings actions occurred for this assessment.
+Host creation, temporary key registration and installation are **user-approved within the exact bounded scope above**, but remain unexecuted pending final source/local-check readiness. Existing resources/key were deleted. Keep the ≤USD20 allocation from remaining originalUSD60, ≤24hours/absolute Nov15 stop, ≤2hour temporary same-key access and exact new-ID cleanup on success/failure below. No cloud, key or settings actions occurred for this assessment.
 
 Security dependency repairs change the backend environment. The edcc source's28 native passes remain evidence for that exact source/lock set, not qualification of its successor. This addendum proposes a fresh disposable Linux run; no previous VM/disk/network is available because exact QA cleanup completed.
 
@@ -57,8 +57,12 @@ Using previously verified official rates and24hours: E2standard4 compute at97.84
 
 On success **or failure**, export sanitized source/package/provenance/test receipts, preserve raw private evidence locally, verify no active tests/actors, remove exact temporary OS Login key, then delete **only resources created by this rerun** using recorded exact IDs and fresh reference checks. Include VM, bootdisk, firewall, NAT, router, reservedIP, subnet and network. Stop on unexpected references/ID mismatch; never prefix-delete or alter shared resources. No snapshot/data retention in cloud is proposed after export. Prior usage/log billing can post after deletion.
 
-Requested approval covers this exact disposable test host/access/runtime/cleanup addendum only. It does not authorize build submission, application VM/endpoint, DNS, paid model calls, deployment, new IAM or API enabling. No creation or key registration has occurred under this proposal.
+The received approval covers this exact disposable test host/access/runtime/cleanup addendum only. It does not authorize build submission, application VM/endpoint, DNS, paid model calls, deployment, new IAM or API enabling. No creation or key registration has yet occurred under this approved addendum.
 
 ## Separate source amendment for the existing one-build approval
 
 The user will also be asked whether the same already-approved single backend/web build may use the security-patched successor **after** independent local and fresh Linux verification pass. This changes only the reviewed source/archive/lock/configuration bindings, not the new build resources/permissions, USD5 allowance, one-job limit or40-minute timeout. Recreate the source/upload manifests, immutable source object/generation and generation-bound build configuration; keep the old uploaded edcc object as historical evidence. No second build, new build resource or application deployment is proposed. This source amendment is pending until the user's actual response is recorded.
+
+## Evidence export before approved cleanup
+
+Coordinate with Testing before cleanup: export only canonical QA `anvil` schema/data from the dedicated fresh test DB (exclude sessions, global roles, role passwords and environment credentials), exact canonical vault/artifact bytes with SHA inventory, public synthetic signer/trust policy (no signing private key), frozen source/locks and runtime receipts. Preserve actual QA UUIDs, review/qualification/capture hashes, timestamps and expiries; do not create replacement review/capture rows or restamp expired evidence. All private exports remain fresh owned0700 directories/0600files locally, never public cloud uploads or Git. Test export/restore completeness before destroying the host. Replay only into a fresh isolated local DB/vault and synthetic read-only-access test realm; no old preview/service reuse, comparison remains blocked. This export is authorized evidence preservation, not application deployment or new human approval.
