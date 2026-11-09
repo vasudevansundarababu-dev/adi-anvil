@@ -9,7 +9,7 @@ CONFIG = "/Users/vasudevansundarababu/Documents/Codex/anvil-tools/cloud-config"
 
 
 def recipe(contract):
-    required = {"project", "region", "build_identity", "registry", "source_sha", "source_archive_sha256", "source_manifest_sha256", "build_context_sha256", "fresh_context_directory", "build_tag"}
+    required = {"project", "region", "build_identity", "registry", "source_sha", "source_archive_sha256", "source_manifest_sha256", "build_context_sha256", "fresh_context_directory", "build_tag", "staging_source_bucket"}
     if not isinstance(contract, dict) or set(contract) != required:
         raise ValueError("Exact separately reviewed build input contract required")
     if contract["project"] != "adi-anvil-mvp-2026" or contract["region"] != "us-west1":
@@ -18,6 +18,8 @@ def recipe(contract):
         raise ValueError("Explicit independently scoped staging build identity required")
     if contract["registry"] not in {"us-west1-docker.pkg.dev/adi-anvil-mvp-2026/anvil-staging", "us-west1-docker.pkg.dev/adi-anvil-mvp-2026/anvil-staging-demo"}:
         raise ValueError("Explicit separate staging registry required")
+    if contract["staging_source_bucket"] != "gs://adi-anvil-mvp-2026-anvil-staging-build-source":
+        raise ValueError("Explicit isolated staging source bucket required")
     for key, length in (("source_sha", 40), ("source_archive_sha256", 64), ("source_manifest_sha256", 64), ("build_context_sha256", 64)):
         if not re.fullmatch(rf"[a-f0-9]{{{length}}}", contract[key] or ""):
             raise ValueError("Exact source/archive/inventory/context hashes required")
@@ -41,7 +43,7 @@ def recipe(contract):
     return {"executed": False, "build_authorized": False, "requires_separate_paid_build_approval": True,
             "public_input_bindings": contract,
             "cloudbuild_config_to_review_and_materialize": cloudbuild,
-            "prospective_submit_argv": base + ["builds", "submit", str(context), "--region=us-west1", "--config=REVIEWED_STAGING_BACKEND_WEB_CONFIG.json", "--service-account=projects/adi-anvil-mvp-2026/serviceAccounts/" + contract["build_identity"]],
+            "prospective_submit_argv": base + ["builds", "submit", str(context), "--region=us-west1", "--gcs-source-staging-dir=" + contract["staging_source_bucket"] + "/source", "--config=REVIEWED_STAGING_BACKEND_WEB_CONFIG.json", "--service-account=projects/adi-anvil-mvp-2026/serviceAccounts/" + contract["build_identity"]],
             "postbuild_readonly_template": base + ["builds", "describe", "ACTUAL_SUCCESSFUL_BUILD_ID_REQUIRED", "--region=us-west1", "--format=json(id,status,serviceAccount,sourceProvenance,results.images,buildStepImages,substitutions,timing)"],
             "required_prebuild_proofs": ["explicit paid-build approval and budget", "new scoped build identity and registry IAM reviewed", "fresh context hashes verified against approved public archive/inventory", "no env credentials private keys private data logs or ignored local state", "unique tag absent and immutable-output policy", "current mutable base tags and unpinned hatchling limitation reviewed"],
             "required_output_receipt": ["actual build ID and status", "submitted context/archive/source/inventory hashes", "builder and resolved base image digests from actual build provenance", "backend and web immutable output digests", "actual dependency/build-system versions and provenance", "no deployment implied"],

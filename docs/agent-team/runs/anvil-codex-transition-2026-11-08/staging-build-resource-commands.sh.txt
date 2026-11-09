@@ -1,0 +1,22 @@
+# REVIEW ONLY — do not source/run without separate reviewed resource/build approval.
+set -euf
+: "${REVIEWED_BUILD_RESOURCE_APPROVAL_SHA256:?Review/approval required; missing input stops}"
+case "$REVIEWED_BUILD_RESOURCE_APPROVAL_SHA256" in *[!0-9a-f]*|'') exit 2;; esac
+[ "${#REVIEWED_BUILD_RESOURCE_APPROVAL_SHA256}" = 64 ] || exit 2
+export CLOUDSDK_CONFIG=/Users/vasudevansundarababu/Documents/Codex/anvil-tools/cloud-config
+export CLOUDSDK_CORE_DISABLE_USAGE_REPORTING=true
+GCLOUD=/Users/vasudevansundarababu/Documents/Codex/anvil-tools/google-cloud-sdk/bin/gcloud
+# Fresh exact-name absence / org-policy review required before these proposed mutations.
+"$GCLOUD" artifacts repositories create anvil-staging-demo --project=adi-anvil-mvp-2026 --account=vasudevan.sundarababu@adi-labs.ai --location=us-west1 --repository-format=docker --immutable-tags
+"$GCLOUD" iam service-accounts create anvil-staging-build --project=adi-anvil-mvp-2026 --account=vasudevan.sundarababu@adi-labs.ai
+"$GCLOUD" storage buckets create gs://adi-anvil-mvp-2026-anvil-staging-build-source --project=adi-anvil-mvp-2026 --account=vasudevan.sundarababu@adi-labs.ai --location=us-west1 --uniform-bucket-level-access --public-access-prevention
+# Materialize/review lifecycle {rule:[{action:{type:Delete},condition:{age:7}}]} separately; no default bucket.
+: "${REVIEWED_SEVEN_DAY_LIFECYCLE_JSON:?Missing reviewed lifecycle file}"
+"$GCLOUD" storage buckets update gs://adi-anvil-mvp-2026-anvil-staging-build-source --project=adi-anvil-mvp-2026 --account=vasudevan.sundarababu@adi-labs.ai --lifecycle-file="$REVIEWED_SEVEN_DAY_LIFECYCLE_JSON"
+"$GCLOUD" artifacts repositories add-iam-policy-binding anvil-staging-demo --location=us-west1 --project=adi-anvil-mvp-2026 --account=vasudevan.sundarababu@adi-labs.ai --member=serviceAccount:anvil-staging-build@adi-anvil-mvp-2026.iam.gserviceaccount.com --role=roles/artifactregistry.writer
+"$GCLOUD" storage buckets add-iam-policy-binding gs://adi-anvil-mvp-2026-anvil-staging-build-source --project=adi-anvil-mvp-2026 --account=vasudevan.sundarababu@adi-labs.ai --member=serviceAccount:anvil-staging-build@adi-anvil-mvp-2026.iam.gserviceaccount.com --role=roles/storage.objectViewer
+"$GCLOUD" projects add-iam-policy-binding adi-anvil-mvp-2026 --account=vasudevan.sundarababu@adi-labs.ai --member=serviceAccount:anvil-staging-build@adi-anvil-mvp-2026.iam.gserviceaccount.com --role=roles/logging.logWriter --condition=None
+"$GCLOUD" iam service-accounts add-iam-policy-binding anvil-staging-build@adi-anvil-mvp-2026.iam.gserviceaccount.com --project=adi-anvil-mvp-2026 --account=vasudevan.sundarababu@adi-labs.ai --member=user:vasudevan.sundarababu@adi-labs.ai --role=roles/iam.serviceAccountUser
+# STOP HERE: root reviews actual scoped IAM/resource receipts and sanitized context before single paid submission.
+# Renderer emits --gcs-source-staging-dir=gs://adi-anvil-mvp-2026-anvil-staging-build-source/source.
+# No runtime account, VM, public endpoint or application deployment is included.

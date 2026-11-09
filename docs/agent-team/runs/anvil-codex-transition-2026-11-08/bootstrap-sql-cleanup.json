@@ -1,0 +1,15 @@
+{
+  "container": "anvil-codex-bootstrap-sql-20261108",
+  "volume": "anvil-codex-bootstrap-sql-20261108-data",
+  "verified_labels": {
+    "application": "anvil",
+    "purpose": "bootstrap-sql-test"
+  },
+  "verified_loopback_binding": "127.0.0.1:5432",
+  "postgres_data_mode": "0700",
+  "removed_container": true,
+  "removed_volume": true,
+  "existing_clusters_or_global_roles_touched": false,
+  "verified_absent_container": true,
+  "verified_absent_volume": true
+}

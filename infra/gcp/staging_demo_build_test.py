@@ -10,7 +10,7 @@ from staging_demo_build import recipe, main, CLI, CONFIG
 
 class BuildPreparation(unittest.TestCase):
     def setUp(self):
-        self.c = {"project": "adi-anvil-mvp-2026", "region": "us-west1", "build_identity": "anvil-staging-demo-build@adi-anvil-mvp-2026.iam.gserviceaccount.com", "registry": "us-west1-docker.pkg.dev/adi-anvil-mvp-2026/anvil-staging-demo", "source_sha": "a"*40, "source_archive_sha256": "b"*64, "source_manifest_sha256": "c"*64, "build_context_sha256": "d"*64, "fresh_context_directory": "/private/tmp/FICTIONAL-NONEXISTENT-CONTEXT", "build_tag": "a"*12+"-fixture-only"}
+        self.c = {"staging_source_bucket": "gs://adi-anvil-mvp-2026-anvil-staging-build-source","project": "adi-anvil-mvp-2026", "region": "us-west1", "build_identity": "anvil-staging-demo-build@adi-anvil-mvp-2026.iam.gserviceaccount.com", "registry": "us-west1-docker.pkg.dev/adi-anvil-mvp-2026/anvil-staging-demo", "source_sha": "a"*40, "source_archive_sha256": "b"*64, "source_manifest_sha256": "c"*64, "build_context_sha256": "d"*64, "fresh_context_directory": "/private/tmp/FICTIONAL-NONEXISTENT-CONTEXT", "build_tag": "a"*12+"-fixture-only"}
 
     def test_exact_backend_web_only_with_isolated_identity_and_no_execution(self):
         result = recipe(self.c)
@@ -24,6 +24,7 @@ class BuildPreparation(unittest.TestCase):
         self.assertEqual(command[0], "env")
         self.assertIn(CLI, command)
         self.assertIn("CLOUDSDK_CONFIG="+CONFIG, command)
+        self.assertIn("--gcs-source-staging-dir="+self.c["staging_source_bucket"]+"/source", command)
         self.assertNotIn("gcloud", command)
         self.assertNotIn("golden", json.dumps(config))
         self.assertNotIn("harbor", json.dumps(config))
@@ -33,7 +34,7 @@ class BuildPreparation(unittest.TestCase):
             c = copy.deepcopy(self.c);c[key] = None
             with self.subTest(key=key), self.assertRaises((ValueError, TypeError)):
                 recipe(c)
-        for key, value in (("project", "praxis"), ("registry", "us-west1-docker.pkg.dev/adi-anvil-mvp-2026/anvil"), ("build_identity", "anvil-vm@adi-anvil-mvp-2026.iam.gserviceaccount.com"), ("fresh_context_directory", "/tmp/../current-secrets")):
+        for key, value in (("staging_source_bucket", "gs://adi-anvil-mvp-2026_cloudbuild"), ("project", "praxis"), ("registry", "us-west1-docker.pkg.dev/adi-anvil-mvp-2026/anvil"), ("build_identity", "anvil-vm@adi-anvil-mvp-2026.iam.gserviceaccount.com"), ("fresh_context_directory", "/tmp/../current-secrets")):
             c = copy.deepcopy(self.c);c[key] = value
             with self.assertRaises(ValueError):recipe(c)
 

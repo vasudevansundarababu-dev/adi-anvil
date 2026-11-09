@@ -1,0 +1,55 @@
+{
+  "scope": "actual evaluator LOGIN/NOINHERIT/SET-only SQL identity and privilege proof; no jobs/native/GCE/OIDC proof",
+  "test_sha256": "2155b60160220f4ae5cca8c2beb3f89e5949a6ec05b17276d5f4943d014bbad6",
+  "started_at": "2026-11-09T02:20:11.836594+00:00",
+  "elapsed_seconds": 0.315,
+  "exit_code": 0,
+  "command": [
+    "/private/tmp/anvil-testing-backend/bin/python",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "infra/gcp",
+    "-p",
+    "staging_evaluator_login_sql_test.py",
+    "-v",
+    "-f"
+  ],
+  "raw_log_path": "/private/tmp/anvil-codex-testing-runtime/evaluator-login-sql-contract.log",
+  "raw_log_sha256": "ddacdd374fb11a20f8a3744c0f1c4529bbf7d433ff8e113e440f61426ddf6b56",
+  "summary": [
+    "Ran 1 test in 0.252s",
+    "OK"
+  ],
+  "container": "anvil-codex-evaluator-login-sql-20261108",
+  "volume": "anvil-codex-evaluator-login-sql-20261108-data",
+  "image": "postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3",
+  "port": 5432,
+  "real_gce_metadata_called": false,
+  "real_oidc_account_created": false,
+  "deployment_performed": false,
+  "evaluator_identity_source_sha256": "7b1dc6273fe33b63ceef53cd921caee2b649553b11f292ab5289787dc82d48df",
+  "observed_identity": {
+    "current_user": "anvil_benchmark_evaluator",
+    "session_user": "anvil_staging_benchmark_evaluator_login"
+  },
+  "observed_login_flags": {
+    "rolcanlogin": true,
+    "rolinherit": false,
+    "rolsuper": false,
+    "rolbypassrls": false,
+    "rolcreatedb": false,
+    "rolcreaterole": false,
+    "rolreplication": false
+  },
+  "observed_memberships": [
+    {
+      "rolname": "anvil_benchmark_evaluator",
+      "admin_option": false,
+      "inherit_option": false,
+      "set_option": true
+    }
+  ],
+  "evaluator_jobs_after_proof": 0
+}

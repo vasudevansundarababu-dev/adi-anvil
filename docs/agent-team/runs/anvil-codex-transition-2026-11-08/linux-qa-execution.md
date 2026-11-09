@@ -1,5 +1,17 @@
 # Linux QA execution record
 
+## Final exact-resource cleanup complete
+
+After the user explicitly approved **“Delete these temporary test resources”**, automatic approval review accepted the same bounded cleanup. Fresh exact-ID/status/reference checks preceded deletion. All eight reviewed QA resources/configurations are now verified absent: VM4723949448594237365, bootdisk8660101875172681653, firewall9051667802961520580, NATchild `anvil-staging-native-nat` in router8927032357452294091, that router, reservedIP7265975432424237005, subnet159611463170566136 and network8017050090191235044. NAT absence was verified in its parent before that parent was deleted; all other resources returned NOT_FOUND after deletion. No unexpected references or ID mismatches occurred.
+
+All exported evidence and local private/public receipts remain preserved. The exact temporary OS Login key was already removed. No listed QA resources remain to incur ongoing resource charges; prior usage and logging retention may still appear on the bill, which is not reconciled here. No unrelated project resource, IAM/setting, Praxis, original local changes or application deployment was touched. Receipt: `linux-qa-provenance/qa-resources-deleted.json`. Earlier blocked/stopped sections below are preserved history, superseded by this explicit-authorized successful cleanup.
+
+## Cleanup approval review blocked — current update
+
+The exact-ID deletion attempt was rejected **before execution** by automatic approval review because the trusted user messages authorize creation/testing but do not explicitly authorize irreversible resource deletion. No deletion was executed and no final-cleanup receipt was created. The VM remains stopped, the temporary key remains removed, and retained disk/network/NAT resources continue to incur the residual costs below. Explicit user cleanup approval is required before retrying; the rejection will not be bypassed.
+
+Read-only Cloud DNS zone discovery also returned `SERVICE_DISABLED` for `dns.googleapis.com`. The API was not enabled and no records/settings were changed; authority over the proposed `adi-labs.ai` staging hostnames remains unverified.
+
 ## Current compute/access state — stopped after evidence export
 
 After Testing confirmed all28 native evidence, prior failures,402-file source checks and final focused results were exported, no active tests/actors or further SSH were needed. The exact temporary OS Login fingerprint `290de06f1812c7115b087f4e1923b17801a03bdf8f7e51c9f12bbacbe404f838` was removed and verified absent; other account keys were untouched. No further extension occurred.

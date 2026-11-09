@@ -123,5 +123,27 @@ class ComposeSafety(unittest.TestCase):
                 self.assertEqual(env["ANVIL_BENCHMARK_OFFLINE_ENABLED"], "true" if opted and name=="api" else "false")
 
 
+    def test_new_demo_resource_budget_and_migration_order_without_native_cap_changes(self):
+        from decimal import Decimal
+        new = render_demo(self.images)
+        steady = [service for name, service in new["services"].items() if name != "migrate"]
+        memory = sum(int(service["mem_limit"].removesuffix("m")) for service in steady)
+        cpus = sum(Decimal(service["cpus"]) for service in steady)
+        self.assertEqual(memory, 5760)
+        self.assertLessEqual(memory, 6*1024)
+        self.assertEqual(cpus, Decimal("3.00"))
+        for service in new["services"].values():self.assertGreater(service["pids_limit"], 0)
+        self.assertEqual(new["services"]["migrate"]["restart"], "no")
+        for name in ("api", "worker"):
+            self.assertEqual(new["services"][name]["depends_on"]["migrate"]["condition"], "service_completed_successfully")
+        # There is no actor/evaluator service whose caps could be silently
+        # reduced; the reviewed native profile remains separately source-bound.
+        self.assertEqual(set(new["services"]), {"postgres", "neo4j", "keycloak", "migrate", "api", "worker", "web", "caddy"})
+        for service in render(self.images)["services"].values():
+            self.assertNotIn("mem_limit", service)
+            self.assertNotIn("cpus", service)
+            self.assertNotIn("pids_limit", service)
+
+
 if __name__ == "__main__":
     unittest.main()

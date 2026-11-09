@@ -1,0 +1,28 @@
+{
+  "application_sha": "edcc0514c43ceb614b813566820ee0c2c7311463",
+  "started_at": "2026-11-09T01:55:10.822488+00:00",
+  "duration_seconds": 68.521,
+  "exit_code": 1,
+  "command": [
+    "/opt/anvil/.local/backend-venv/bin/python3.12",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "--tb=short",
+    "-rs",
+    "--junitxml=/opt/anvil/.local/native-qa-results/units-edcc051.xml",
+    "services/backend/tests/unit"
+  ],
+  "log_sha256": "78d6e2c997cf48ba7e1c2c7be94cd315508e1468a143ecd1432c83ff4fe1628f",
+  "junit_sha256": "a7912bd8f812d4031faadb119213d9700d700439b673cca27f5a555355945c0d",
+  "native_opt_in": false,
+  "paid_calls_enabled": false,
+  "summary": [
+    "3 failed, 790 passed, 1 warning in 66.02s (0:01:06)"
+  ],
+  "platform": "isolated Linux native test host",
+  "interpretation": "790passed;3environment failures solelymissing Git executable in secret-scan temporary-repository tests. No Git installation or product repair/rerun on this host.",
+  "private_raw_log_export": ".local/native-qa/results/units-edcc051.log"
+}

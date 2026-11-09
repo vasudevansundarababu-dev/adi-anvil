@@ -52,6 +52,21 @@ Manual host-only qualification/offline CLI, **one trial per invocation** (`--max
 
 Proposed core memory allocation ceiling6GiB total, native runtime budget4GiB with the reviewed per-container limits retained, host/OS+coordinator2GiB and4GiB headroom on16GiB. Native actor/evaluator are sequential under existing stop-before-evaluation semantics; the current evaluator limit is2GiB/1CPU/64PIDs. Do not silently reduce source-enforced native caps to fit a UI demo. Core CPU budget up to3vCPU and native1vCPU; prove memory/CPU pressure does not disrupt DB/auth or leak jobs before acceptance. No throughput or performance guarantee is inferred from these budgets. Disk admission/retention bounds and fresh failure behavior must be tested;50GiB is a proposal, not unlimited retained trials.
 
+The new-demo Compose binding now enforces this **proposed** steady-core allocation, leaving the old renderer unchanged:
+
+| Service | Memory MiB | CPU quota | PID limit |
+| --- | ---: | ---: | ---: |
+| PostgreSQL |1024|0.50|256|
+| Neo4j |1536|0.75|256|
+| Keycloak |1536|0.50|256|
+| API |512|0.50|128|
+| Ordinary worker |512|0.25|128|
+| Web |512|0.40|128|
+| Caddy |128|0.10|64|
+| **Steady total** |**5760 (5.625GiB)**|**3.00**| |
+
+One-off migration has512MiB/0.50CPU/128PIDs, restart disabled; API/worker admission depends on successful migration completion. On an upgrade, explicitly drain/stop prior API/workers before migration; dependencies do not automatically stop an existing old container. No Java/Neo4j heap tuning or native actor/evaluator cap change was introduced. These are hard container quotas but **not** pressure/boot/throughput evidence: JVM overhead, Node/auth/database behavior and memory-pressure recovery must pass actual integrated rehearsal before deployment acceptance.
+
 ## Cost comparison and approval gate
 
 The previous core estimate was252.48USD/month plus100USD contingency; it includes one E2standard4,80GiB total balanced storage, NAT/LB/build/log/egress allowances. With both daemons on that same new VM, no second persistent operator VM/NAT is assumed. This estimate must be adjusted for registry/data/log retention and verified against actual image/native storage use; the single-host design does not make native work free.

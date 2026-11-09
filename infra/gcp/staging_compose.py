@@ -94,6 +94,21 @@ def render_demo(images, *, fictional_benchmark_demo=False):
         services[name]["depends_on"] = {"migrate": {"condition": "service_completed_successfully"}, "neo4j": {"condition": "service_started"}}
         services[name]["user"] = "10001:10001"
     services["caddy"]["depends_on"] = {name: {"condition": "service_started"} for name in ("api", "web", "keycloak")}
+    # NEW demo only: bounded single-user capacity proposal, not pressure evidence.
+    # Steady core: 5760MiB / 3vCPU. Migration replaces API/worker admission until
+    # completion; it is not counted as a simultaneously running steady service.
+    budgets = {
+        "postgres": (1024, "0.50", 256),
+        "neo4j": (1536, "0.75", 256),
+        "keycloak": (1536, "0.50", 256),
+        "api": (512, "0.50", 128),
+        "worker": (512, "0.25", 128),
+        "web": (512, "0.40", 128),
+        "caddy": (128, "0.10", 64),
+        "migrate": (512, "0.50", 128),
+    }
+    for name, (memory_mib, cpus, pids) in budgets.items():
+        services[name].update(mem_limit=f"{memory_mib}m", cpus=cpus, pids_limit=pids)
     result["x-anvil-preparation"] = {"new_target_only": "anvil-staging-demo", "deployment_authorized": False, "native_auto_start": False}
     return result
 

@@ -8,5 +8,6 @@
   "source_manifest_sha256": "cd9c2d44cd2106658923adc84307d6107ced87e9c33f6f6653d4325f65b536a6",
   "build_context_sha256": null,
   "fresh_context_directory": null,
-  "build_tag": null
+  "build_tag": null,
+  "staging_source_bucket": "gs://adi-anvil-mvp-2026-anvil-staging-build-source"
 }
