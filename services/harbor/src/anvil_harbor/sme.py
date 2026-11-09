@@ -12,7 +12,10 @@ from pathlib import Path
 
 from harbor.agents.base import BaseAgent
 from harbor.environments.capabilities import EnvironmentCapabilities
-from harbor.environments.docker.docker import DockerEnvironment
+from harbor.environments.docker.docker import (
+    DockerEnvironment,
+    _sanitize_docker_compose_project_name,
+)
 from harbor.environments.docker.runtime import ContainerRuntime
 from harbor.models.task.config import NetworkMode
 from harbor.models.trial.config import TrialConfig
@@ -65,7 +68,7 @@ def guard_compose(command):
         raise ValueError("Privileged or destructive Docker flags prohibited")
 
 
-def write_compose_snapshot(trial_dir, role, stdout):
+def write_compose_snapshot(trial_dir, role, stdout, *, stderr=False):
     """The operator owns the snapshot; sudo Docker must never create this file."""
     folder = Path(trial_dir)
     if (
@@ -82,9 +85,9 @@ def write_compose_snapshot(trial_dir, role, stdout):
     ):
         raise ValueError("Operator-owned trial directory required")
     data = stdout.encode("utf-8") if isinstance(stdout, str) else stdout
-    if not isinstance(data, bytes) or not 0 < len(data) <= 1048576:
+    if not isinstance(data, bytes) or len(data) > 1048576 or (not stderr and not data):
         raise ValueError("Bounded resolved Compose snapshot required")
-    path = folder / ("sme-compose-" + role + ".json")
+    path = folder / ("sme-compose-" + role + (".stderr" if stderr else ".json"))
     descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
     with os.fdopen(descriptor, "wb") as stream:
         stream.write(data)
@@ -152,6 +155,58 @@ class SMEDocker(DockerEnvironment):
         guard_compose(command)
         return await super()._run_docker_compose_command(command, *args, **kwargs)
 
+    async def _read_compose_config(self):
+        # Harbor0.25 combines stderr into stdout for ordinary commands. Machine
+        # JSON needs separate pipes; never strip warnings or scan for a JSON start.
+        command = ["config", "--format", "json"]
+        guard_compose(command)
+        if not re.fullmatch(r"anvil-bm-[a-z0-9]+__(env|verifier__trial)", self.session_id):
+            raise ValueError("Fresh scoped SME session required")
+        runtime = type(self).runtime()
+        argv = [
+            *runtime.compose,
+            "--project-name",
+            _sanitize_docker_compose_project_name(self.session_id),
+        ]
+        if runtime.supports_compose_project_directory:
+            argv.extend(["--project-directory", str(self.environment_dir.resolve().absolute())])
+        for path in self._docker_compose_paths:
+            argv.extend(["-f", str(path.resolve().absolute())])
+        argv.extend(command)
+        try:
+            result = await asyncio.to_thread(
+                subprocess.run,
+                argv,
+                capture_output=True,
+                timeout=10,
+                check=False,
+                env=self._compose_env_vars(include_os_env=True),
+                cwd=str(self.environment_dir.resolve().absolute())
+                if self.environment_dir.is_dir()
+                else None,
+            )
+        except subprocess.TimeoutExpired as exc:
+            if isinstance(exc.stderr, bytes) and len(exc.stderr) <= 1048576:
+                write_compose_snapshot(
+                    self.trial_paths.trial_dir, self.role, exc.stderr, stderr=True
+                )
+            raise RuntimeError("Resolved Compose configuration timed out; no startup") from None
+        if (
+            not isinstance(result.stdout, bytes)
+            or not isinstance(result.stderr, bytes)
+            or len(result.stdout) > 1048576
+            or len(result.stderr) > 1048576
+        ):
+            raise ValueError("Resolved Compose output exceeds its bounded machine contract")
+        write_compose_snapshot(self.trial_paths.trial_dir, self.role, result.stderr, stderr=True)
+        if result.returncode != 0:
+            raise RuntimeError(
+                "Resolved Compose configuration failed; private stderr receipt retained"
+            )
+        if not result.stdout:
+            raise ValueError("Resolved Compose configuration is empty")
+        return result.stdout
+
     async def start(self, force_build):
         if force_build or not re.fullmatch(
             r"anvil-bm-[a-z0-9]+__(env|verifier__trial)", self.session_id
@@ -186,8 +241,8 @@ class SMEDocker(DockerEnvironment):
         self._mounts_compose_path = self._write_mounts_compose_file()
         self._env_compose_path = self._write_env_compose_file()
         self._resources_compose_path = await self._write_resources_compose_file()
-        config = await self._run_docker_compose_command(["config", "--format", "json"])
-        document = json.loads(config.stdout)
+        config = await self._read_compose_config()
+        document = json.loads(config)
         if set(document["services"]) != {"main"}:
             raise ValueError("Only one isolated service supported")
         main = document["services"]["main"]
@@ -226,7 +281,7 @@ class SMEDocker(DockerEnvironment):
                 or not source.resolve().is_relative_to(root)
             ):
                 raise ValueError("SME mount source is missing or outside the owned trial")
-        write_compose_snapshot(self.trial_paths.trial_dir, self.role, config.stdout)
+        write_compose_snapshot(self.trial_paths.trial_dir, self.role, config)
         await self._run_docker_compose_command(
             ["up", "--detach", "--wait", "--no-build", "--pull", "never"]
         )

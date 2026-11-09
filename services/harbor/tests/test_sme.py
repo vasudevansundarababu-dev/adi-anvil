@@ -2,11 +2,12 @@ import asyncio
 import json
 import os
 import stat
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, PropertyMock, patch
 
 from anvil_harbor.sme import (
     IMAGE,
@@ -42,8 +43,8 @@ class RestrictedAdapterTests(unittest.TestCase):
                 write_compose_snapshot(link, "tests", data)
 
     def test_native_start_captures_sudo_config_stdout_without_root_created_file(self):
-        for network in ("none", "host"):
-            with self.subTest(network=network), tempfile.TemporaryDirectory() as temporary:
+        for scenario in ("valid_warning", "unsafe", "malformed", "nonzero", "oversized", "timeout"):
+            with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as temporary:
                 folder = Path(temporary).resolve()
                 environment = folder / "environment"
                 environment.mkdir()
@@ -65,7 +66,7 @@ class RestrictedAdapterTests(unittest.TestCase):
                         "services": {
                             "main": {
                                 "image": IMAGE,
-                                "network_mode": network,
+                                "network_mode": "host" if scenario == "unsafe" else "none",
                                 "read_only": True,
                                 "user": "10001:10001",
                                 "pull_policy": "never",
@@ -84,7 +85,23 @@ class RestrictedAdapterTests(unittest.TestCase):
                         raise PermissionError("privileged writer boundary")
                     return SimpleNamespace(stdout=resolved)
 
-                runtime = SimpleNamespace(engine=("sudo", "-n", "/usr/bin/docker"))
+                runtime = SimpleNamespace(
+                    engine=("sudo", "-n", "/usr/bin/docker"),
+                    compose=("sudo", "-n", "/usr/bin/docker", "compose"),
+                    supports_compose_project_directory=True,
+                )
+                stdout = (
+                    b"warning-prefix\n" + resolved.encode()
+                    if scenario == "malformed"
+                    else b"x" * 1048577
+                    if scenario == "oversized"
+                    else resolved.encode()
+                )
+                stderr = b"Compose diagnostic warning; PRIVATE-TEST-ONLY"
+                config_result = SimpleNamespace(
+                    stdout=stdout, stderr=stderr, returncode=1 if scenario == "nonzero" else 0
+                )
+                files = [environment / "docker-compose.yaml", trial / "mounts.yaml"]
                 with (
                     patch.object(SMEDocker, "runtime", return_value=runtime),
                     patch(
@@ -92,15 +109,29 @@ class RestrictedAdapterTests(unittest.TestCase):
                         side_effect=[
                             SimpleNamespace(stdout=b""),
                             SimpleNamespace(stdout=b'[{"Os":"linux"}]'),
+                            subprocess.TimeoutExpired("config", 10, stderr=stderr)
+                            if scenario == "timeout"
+                            else config_result,
                         ],
+                    ) as run,
+                    patch.object(
+                        SMEDocker,
+                        "_docker_compose_paths",
+                        new_callable=PropertyMock,
+                        return_value=files,
                     ),
+                    patch.object(
+                        instance,
+                        "_compose_env_vars",
+                        return_value={"HOME": "/owned/config", "SECRET_TEST_VALUE": "NEVER_LOG"},
+                    ) as env,
                     patch.object(instance, "_write_mounts_compose_file"),
                     patch.object(instance, "_write_env_compose_file"),
                     patch.object(instance, "_write_resources_compose_file", new=AsyncMock()),
                     patch.object(instance, "_run_docker_compose_command", side_effect=compose),
                     patch.object(instance, "ensure_dirs", new=AsyncMock()),
                 ):
-                    if network == "none":
+                    if scenario == "valid_warning":
                         asyncio.run(instance.start(False))
                         self.assertEqual(
                             json.loads((trial / "sme-compose-environment.json").read_text()),
@@ -109,12 +140,40 @@ class RestrictedAdapterTests(unittest.TestCase):
                         self.assertEqual(
                             calls[-1], ["up", "--detach", "--wait", "--no-build", "--pull", "never"]
                         )
+                        receipt = trial / "sme-compose-environment.stderr"
+                        self.assertEqual(receipt.read_bytes(), stderr)
+                        self.assertEqual(stat.S_IMODE(receipt.stat().st_mode), 0o600)
                     else:
-                        with self.assertRaises(ValueError):
+                        with self.assertRaises((ValueError, RuntimeError)) as error:
                             asyncio.run(instance.start(False))
-                        self.assertEqual(calls, [["config", "--format", "json"]])
+                        self.assertNotIn("PRIVATE-TEST-ONLY", str(error.exception))
+                        self.assertNotIn("NEVER_LOG", str(error.exception))
+                        self.assertEqual(calls, [])
                         self.assertFalse((trial / "sme-compose-environment.json").exists())
-                self.assertEqual(calls[0], ["config", "--format", "json"])
+                    config_call = run.call_args_list[2]
+                    self.assertEqual(
+                        config_call.args[0],
+                        [
+                            *runtime.compose,
+                            "--project-name",
+                            "anvil-bm-unit__env",
+                            "--project-directory",
+                            str(environment),
+                            "-f",
+                            str(files[0]),
+                            "-f",
+                            str(files[1]),
+                            "config",
+                            "--format",
+                            "json",
+                        ],
+                    )
+                    self.assertTrue(config_call.kwargs["capture_output"])
+                    self.assertFalse(config_call.kwargs["check"])
+                    self.assertEqual(config_call.kwargs["timeout"], 10)
+                    self.assertEqual(config_call.kwargs["cwd"], str(environment))
+                    self.assertEqual(config_call.kwargs["env"], env.return_value)
+                    env.assert_called_once_with(include_os_env=True)
 
     def test_engine_probe_and_mutations_rejected_before_operator_access(self):
         for verb in ["run", "container", "pull", "build", "rm", "volume", "system", "network"]:
