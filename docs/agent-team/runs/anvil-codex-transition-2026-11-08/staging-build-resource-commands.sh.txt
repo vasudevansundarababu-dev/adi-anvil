@@ -1,22 +1,39 @@
-# REVIEW ONLY — do not source/run without separate reviewed resource/build approval.
+# REVIEW ONLY. This file prints validated prospective argv; it cannot create resources.
+# No approval hash is manufactured. New builder identity/IAM/resources await user approval.
+# Existing USD500 preparation allowance does not authorize new identity/IAM implicitly.
 set -euf
-: "${REVIEWED_BUILD_RESOURCE_APPROVAL_SHA256:?Review/approval required; missing input stops}"
-case "$REVIEWED_BUILD_RESOURCE_APPROVAL_SHA256" in *[!0-9a-f]*|'') exit 2;; esac
-[ "${#REVIEWED_BUILD_RESOURCE_APPROVAL_SHA256}" = 64 ] || exit 2
-export CLOUDSDK_CONFIG=/Users/vasudevansundarababu/Documents/Codex/anvil-tools/cloud-config
-export CLOUDSDK_CORE_DISABLE_USAGE_REPORTING=true
-GCLOUD=/Users/vasudevansundarababu/Documents/Codex/anvil-tools/google-cloud-sdk/bin/gcloud
-# Fresh exact-name absence / org-policy review required before these proposed mutations.
-"$GCLOUD" artifacts repositories create anvil-staging-demo --project=adi-anvil-mvp-2026 --account=vasudevan.sundarababu@adi-labs.ai --location=us-west1 --repository-format=docker --immutable-tags
-"$GCLOUD" iam service-accounts create anvil-staging-build --project=adi-anvil-mvp-2026 --account=vasudevan.sundarababu@adi-labs.ai
-"$GCLOUD" storage buckets create gs://adi-anvil-mvp-2026-anvil-staging-build-source --project=adi-anvil-mvp-2026 --account=vasudevan.sundarababu@adi-labs.ai --location=us-west1 --uniform-bucket-level-access --public-access-prevention
-# Materialize/review lifecycle {rule:[{action:{type:Delete},condition:{age:7}}]} separately; no default bucket.
-: "${REVIEWED_SEVEN_DAY_LIFECYCLE_JSON:?Missing reviewed lifecycle file}"
-"$GCLOUD" storage buckets update gs://adi-anvil-mvp-2026-anvil-staging-build-source --project=adi-anvil-mvp-2026 --account=vasudevan.sundarababu@adi-labs.ai --lifecycle-file="$REVIEWED_SEVEN_DAY_LIFECYCLE_JSON"
-"$GCLOUD" artifacts repositories add-iam-policy-binding anvil-staging-demo --location=us-west1 --project=adi-anvil-mvp-2026 --account=vasudevan.sundarababu@adi-labs.ai --member=serviceAccount:anvil-staging-build@adi-anvil-mvp-2026.iam.gserviceaccount.com --role=roles/artifactregistry.writer
-"$GCLOUD" storage buckets add-iam-policy-binding gs://adi-anvil-mvp-2026-anvil-staging-build-source --project=adi-anvil-mvp-2026 --account=vasudevan.sundarababu@adi-labs.ai --member=serviceAccount:anvil-staging-build@adi-anvil-mvp-2026.iam.gserviceaccount.com --role=roles/storage.objectViewer
-"$GCLOUD" projects add-iam-policy-binding adi-anvil-mvp-2026 --account=vasudevan.sundarababu@adi-labs.ai --member=serviceAccount:anvil-staging-build@adi-anvil-mvp-2026.iam.gserviceaccount.com --role=roles/logging.logWriter --condition=None
-"$GCLOUD" iam service-accounts add-iam-policy-binding anvil-staging-build@adi-anvil-mvp-2026.iam.gserviceaccount.com --project=adi-anvil-mvp-2026 --account=vasudevan.sundarababu@adi-labs.ai --member=user:vasudevan.sundarababu@adi-labs.ai --role=roles/iam.serviceAccountUser
-# STOP HERE: root reviews actual scoped IAM/resource receipts and sanitized context before single paid submission.
-# Renderer emits --gcs-source-staging-dir=gs://adi-anvil-mvp-2026-anvil-staging-build-source/source.
-# No runtime account, VM, public endpoint or application deployment is included.
+cd /Users/vasudevansundarababu/Documents/Codex/anvil-codex-transition
+python3 infra/gcp/staging_demo_build.py \
+  --contract docs/agent-team/runs/anvil-codex-transition-2026-11-08/staging-build-input-contract.json
+
+# The print-only CLI FIRST validates all local inputs:
+# - exact versioned Delete-after7-days lifecycle JSON and its raw SHA256
+# - exact edcc/native-manifest lineage, current792-file public context and hash
+# - official381-file SDK upload-list receipt/hash (distinct from792-file inventory)
+# - every selected upload file is a verified context subset; no .env files upload
+# - complete materialized Cloud Build configuration bytes/hash
+# Missing/changed inputs yield no prospective mutation/submission argv.
+#
+# Its prospective_resource_argv is DATA ONLY, exactly these new resources/permissions:
+# 1. Create us-west1 Docker repository anvil-staging-demo, immutable tags.
+# 2. Create anvil-staging-build@adi-anvil-mvp-2026.iam.gserviceaccount.com (build only).
+# 3. Create gs://adi-anvil-mvp-2026-anvil-staging-build-source, uniform/PAP enforced.
+# 4. Apply the already validated versioned unconditional seven-day Delete policy.
+# 5. Grant that builder artifactregistry.writer on that new repository only.
+# 6. Grant that builder storage.objectViewer on that new source bucket only.
+# 7. Grant that builder project logging.logWriter only (Cloud Logging-only job).
+# 8. Grant the existing ADI submitter serviceAccountUser on that new builder only.
+#
+# BEFORE any future cloud mutation: obtain explicit identity/IAM/resource approval,
+# fresh exact-name absence receipts, enabled-API status and organization-policy review.
+# No services-enable command is included. Stop on any API-enable prompt or IAM denial;
+# do not add broad roles, TokenCreator, keys, default bucket or production registry access.
+# Do not source emitted argv or automatically pipe it to a shell.
+#
+# Resource provisioning and paid build submission are distinct reviewed stages.
+# After resource receipts/IAM are verified, separately review prospective_submit_argv.
+# It always names the isolated bucket using --gcs-source-staging-dir and exact new SA.
+# GCS object/generation/uploaded-package hash/buildID stay NULL until observed.
+# Record actual storage object generation/checksums and Cloud Build sourceProvenance;
+# never call the prefilter context or upload-list hash the uploaded package hash.
+# No runtime account, VM, public endpoint, API enablement or application deployment.

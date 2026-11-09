@@ -1,0 +1,26 @@
+{
+  "build_config_canonical_sha256": "929a9cad85fc3e874ccd77eaa78eea2376a73c51b136b5ad10ec95f90f793c13",
+  "build_config_sha256": "51b71b5722e2e21fbe3df1f9e759ac9377acc5f2c746580cf1d852458e63ffc5",
+  "cloud_build_id": null,
+  "gcs_bucket": "gs://adi-anvil-mvp-2026-anvil-staging-build-source",
+  "gcs_generation": null,
+  "gcs_object": null,
+  "input_contract_sha256": "979733ab293b788e3fae236eb66d2fcad30abc4de9964a5059899c0d689b26e5",
+  "local_validation": {
+    "build_config_materialized_and_verified": true,
+    "exact_seven_day_lifecycle": true,
+    "unfiltered_files": 792,
+    "upload_files": 381
+  },
+  "native_manifest_sha256": "cd9c2d44cd2106658923adc84307d6107ced87e9c33f6f6653d4325f65b536a6",
+  "output_digests": null,
+  "resource_and_builder_IAM_approval": null,
+  "schema": "anvil.staging.build.proposed-receipt.v1",
+  "sourceProvenance": null,
+  "source_archive_sha256": "8564c5cd5fdd0795a6dc9e041befbce591781ccacd41182288c0fbdc1c7a6b28",
+  "source_sha": "edcc0514c43ceb614b813566820ee0c2c7311463",
+  "status": "review_only_not_uploaded_or_built",
+  "unfiltered_context_inventory_sha256": "57a7b64884aed1bebb114a89662fec8d417092f9b7ba1fe5cf160818c60ebed4",
+  "upload_inventory_sha256": "728a66918f33705f7a224ea0bbe98d2e73ac542f814499a6cdc7fe313a613a14",
+  "uploaded_package_sha256": null
+}
