@@ -10,10 +10,20 @@ import tarfile
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 from uuid import uuid4
 
-from staging_benchmark_operator import OFF, REQUIRED_SOURCE, _source_path, prepare
+from staging_benchmark_operator import (
+    MIN_BOOT_FREE_BYTES,
+    OFF,
+    REQUIRED_SOURCE,
+    _source_path,
+    boot_space_guard,
+    exclusive_native_guard,
+    prepare,
+    run_guarded_one_shot,
+)
 
 
 class OperatorPreparation(unittest.TestCase):
@@ -60,7 +70,7 @@ class OperatorPreparation(unittest.TestCase):
             "evaluator_login_role": "anvil_staging_benchmark_evaluator_login",
         }
         self.env = {
-            "ANVIL_DATABASE_URL": "postgresql://anvil_app:TOP_SECRET_APP@127.0.0.1/test_only",
+            "DATABASE_URL": "postgresql://anvil_app:TOP_SECRET_APP@127.0.0.1/test_only",
             "ANVIL_BENCHMARK_EVALUATOR_DATABASE_URL": "postgresql://anvil_staging_benchmark_evaluator_login:TOP_SECRET_EVAL@127.0.0.1/test_only?options=-c%20role%3Danvil_benchmark_evaluator",
         }
 
@@ -78,6 +88,182 @@ class OperatorPreparation(unittest.TestCase):
         self.assertEqual(recipe["argv"][-2:], ["--max-trials", "18"])
         self.assertIn("exact_dedicated_native_daemon_socket_required", recipe["blockers"])
         self.assertTrue(recipe["unverified_human_and_runtime_gates"])
+
+    def test_real_temporary_lock_is_exclusive_and_inode_is_never_unlinked(self):
+        parent = self.root / ".local"
+        parent.mkdir(mode=0o700)
+        with (
+            patch("staging_benchmark_operator.OPERATOR_ROOT", self.root),
+            patch("staging_benchmark_operator.boot_space_guard"),
+        ):
+            with exclusive_native_guard(str(self.root)):
+                inode = (parent / "staging-native.lock").stat().st_ino
+                with self.assertRaises(BlockingIOError):
+                    with exclusive_native_guard(str(self.root)):
+                        self.fail("concurrent admission")
+            self.assertTrue((parent / "staging-native.lock").is_file())
+            with exclusive_native_guard(str(self.root)):
+                self.assertEqual((parent / "staging-native.lock").stat().st_ino, inode)
+
+    def test_boot_guard_requires_reviewed_root_device_and_ten_gib_free(self):
+        for free in (MIN_BOOT_FREE_BYTES - 1, MIN_BOOT_FREE_BYTES):
+            with (
+                patch.object(Path, "stat", return_value=SimpleNamespace(st_dev=11)),
+                patch("shutil.disk_usage", return_value=SimpleNamespace(free=free)),
+            ):
+                if free < MIN_BOOT_FREE_BYTES:
+                    with self.assertRaises(RuntimeError):
+                        boot_space_guard(self.root)
+                else:
+                    boot_space_guard(self.root)
+        with (
+            patch.object(
+                Path, "stat", side_effect=[SimpleNamespace(st_dev=11), SimpleNamespace(st_dev=22)]
+            ),
+            self.assertRaises(RuntimeError),
+        ):
+            boot_space_guard(self.root)
+
+    def test_lock_denies_unowned_modes_aliases_and_unknown_marker(self):
+        parent = self.root / ".local"
+        parent.mkdir(mode=0o700)
+        lock = parent / "staging-native.lock"
+        with (
+            patch("staging_benchmark_operator.OPERATOR_ROOT", self.root),
+            patch("staging_benchmark_operator.boot_space_guard"),
+        ):
+            parent.chmod(0o755)
+            with self.assertRaises(ValueError):
+                with exclusive_native_guard(str(self.root)):
+                    self.fail("public parent")
+            parent.chmod(0o700)
+            target = self.root / "private-canary"
+            target.write_text("unchanged")
+            lock.symlink_to(target)
+            with self.assertRaises(OSError):
+                with exclusive_native_guard(str(self.root)):
+                    self.fail("symlink lock")
+            self.assertEqual(target.read_text(), "unchanged")
+            lock.unlink()
+            lock.write_bytes(b"1")
+            lock.chmod(0o600)
+            with self.assertRaises(RuntimeError):
+                with exclusive_native_guard(str(self.root)):
+                    self.fail("unknown admission")
+
+    def guarded_fixture(self):
+        (self.root / ".local").mkdir(mode=0o700)
+        argv = [
+            str(self.root / ".local/backend-venv/bin/python"),
+            "-m",
+            "anvil.benchmark_offline_worker",
+            "--project",
+            self.contract["project"],
+            "--run",
+            self.contract["target"],
+            "--operator",
+            self.contract["operator"],
+            "--max-trials",
+            "1",
+        ]
+        env = {
+            **OFF,
+            **{key: value.replace("/test_only", "/anvil") for key, value in self.env.items()},
+            "ANVIL_ROOT": str(self.root),
+            "ANVIL_TEST_HARBOR": "1",
+            "ANVIL_BENCHMARK_OFFLINE_ENABLED": "true",
+            "ANVIL_HARBOR_DOCKER_HOST": "unix://"
+            + str(self.root / ".local/benchmark-docker/docker.sock"),
+            "ARTIFACT_ROOT": str(self.root / ".data/artifacts"),
+            "ANVIL_BENCHMARK_VAULT_ROOT": str(self.root / ".local/benchmark-vault"),
+        }
+        return argv, env
+
+    def test_guarded_dispatch_is_fixed_one_shot_and_low_space_never_starts(self):
+        argv, env = self.guarded_fixture()
+
+        def dispatch_receipt(*args, **kwargs):
+            self.assertEqual((self.root / ".local/staging-native.lock").read_bytes(), b"1")
+            self.assertEqual(os.fstat(kwargs["stdout"].fileno()).st_mode & 0o777, 0o600)
+            self.assertEqual(os.fstat(kwargs["stderr"].fileno()).st_mode & 0o777, 0o600)
+            kwargs["stdout"].write(b'{"statuses":["completed"],"paid_calls":false}')
+            kwargs["stderr"].write(b"PRIVATE-DIAGNOSTIC-NEVER-RETURN")
+            return SimpleNamespace(returncode=0)
+
+        with (
+            patch("staging_benchmark_operator.OPERATOR_ROOT", self.root),
+            patch(
+                "staging_benchmark_operator.boot_space_guard", side_effect=RuntimeError("low space")
+            ),
+            patch("subprocess.run") as dispatch,
+        ):
+            with self.assertRaises(RuntimeError):
+                run_guarded_one_shot(argv, env)
+            dispatch.assert_not_called()
+        with (
+            patch("staging_benchmark_operator.OPERATOR_ROOT", self.root),
+            patch("staging_benchmark_operator.boot_space_guard"),
+            patch("subprocess.run", side_effect=dispatch_receipt) as dispatch,
+        ):
+            status = run_guarded_one_shot(argv, env)
+            self.assertFalse(status["paid_calls"])
+            self.assertNotIn("PRIVATE-DIAGNOSTIC", repr(status))
+            self.assertEqual(dispatch.call_args.args, (argv,))
+            self.assertNotIn("shell", dispatch.call_args.kwargs)
+            self.assertEqual(dispatch.call_args.kwargs["timeout"], 3600)
+            self.assertEqual((self.root / ".local/staging-native.lock").read_bytes(), b"0")
+            for invalid in (
+                ["/bin/sh", "-c", "true"],
+                [*argv[:-1], "18"],
+                [*argv[:2], "unapproved.module", *argv[3:]],
+            ):
+                with self.assertRaises(ValueError):
+                    run_guarded_one_shot(invalid, env)
+            with self.assertRaises(ValueError):
+                run_guarded_one_shot(argv, {**env, "PYTHONPATH": "/untrusted"})
+
+    def test_timeout_is_unknown_and_persistent_marker_blocks_subsequent_dispatch(self):
+        argv, env = self.guarded_fixture()
+        with (
+            patch("staging_benchmark_operator.OPERATOR_ROOT", self.root),
+            patch("staging_benchmark_operator.boot_space_guard"),
+            patch("subprocess.run", side_effect=subprocess.TimeoutExpired(argv, 3600)) as dispatch,
+        ):
+            with self.assertRaisesRegex(RuntimeError, "descendants are not assumed stopped"):
+                run_guarded_one_shot(argv, env)
+            self.assertEqual((self.root / ".local/staging-native.lock").read_bytes(), b"1")
+            with self.assertRaises(RuntimeError):
+                run_guarded_one_shot(argv, env)
+            self.assertEqual(dispatch.call_count, 1)
+
+    def test_qualification_failed_receipt_even_exit_zero_does_not_reopen_admission(self):
+        argv, env = self.guarded_fixture()
+        argv = [
+            *argv[:2],
+            "anvil.benchmark_pipeline_worker",
+            "--project",
+            self.contract["project"],
+            "--operation",
+            self.contract["target"],
+            "--admin",
+            self.contract["operator"],
+        ]
+
+        def failed_receipt(*args, **kwargs):
+            kwargs["stdout"].write(b"failed\n")
+            return SimpleNamespace(returncode=0)
+
+        with (
+            patch("staging_benchmark_operator.OPERATOR_ROOT", self.root),
+            patch("staging_benchmark_operator.boot_space_guard"),
+            patch("subprocess.run", side_effect=failed_receipt) as dispatch,
+        ):
+            with self.assertRaisesRegex(RuntimeError, "known terminal receipt"):
+                run_guarded_one_shot(argv, env)
+            self.assertEqual((self.root / ".local/staging-native.lock").read_bytes(), b"1")
+            with self.assertRaises(RuntimeError):
+                run_guarded_one_shot(argv, env)
+            self.assertEqual(dispatch.call_count, 1)
 
     def test_qualification_argv_has_no_trial_or_shell_switches(self):
         self.contract.update(operation="qualification", max_trials=1)
@@ -111,7 +297,7 @@ class OperatorPreparation(unittest.TestCase):
     def test_role_separation_and_paid_flags_remain_gated(self):
         env = {
             **self.env,
-            "ANVIL_BENCHMARK_EVALUATOR_DATABASE_URL": self.env["ANVIL_DATABASE_URL"],
+            "ANVIL_BENCHMARK_EVALUATOR_DATABASE_URL": self.env["DATABASE_URL"],
             "ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED": "true",
         }
         result = prepare(self.contract, env)
@@ -187,11 +373,17 @@ class OperatorPreparation(unittest.TestCase):
             )
         owner_app = {
             **self.env,
-            "ANVIL_DATABASE_URL": self.env["ANVIL_DATABASE_URL"].replace("anvil_app:", "postgres:"),
+            "DATABASE_URL": self.env["DATABASE_URL"].replace("anvil_app:", "postgres:"),
         }
         self.assertIn(
-            "anvil_database_url_separate_role_reference_required",
+            "database_url_separate_role_reference_required",
             prepare(self.contract, owner_app)["blockers"],
+        )
+        alias_only = {key: value for key, value in self.env.items() if key != "DATABASE_URL"}
+        alias_only["ANVIL_DATABASE_URL"] = self.env["DATABASE_URL"]
+        self.assertIn(
+            "database_url_separate_role_reference_required",
+            prepare(self.contract, alias_only)["blockers"],
         )
 
     def test_rejects_symlink_vault_and_incomplete_source_manifest(self):

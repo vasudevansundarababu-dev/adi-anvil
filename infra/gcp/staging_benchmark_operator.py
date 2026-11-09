@@ -1,15 +1,20 @@
-"""Prepare a non-executing fictional benchmark operator recipe. Never runs jobs.
+"""Recipe CLI never executes jobs; explicit post-approval library helper is separate.
 
 This is not deployment, a queue daemon, a native qualification receipt or a human
 approval. Secret values are inspected only for role separation and never emitted.
 """
 
 import argparse
+import fcntl
 import hashlib
 import json
 import os
 import re
+import shutil
 import stat
+import subprocess
+import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import parse_qsl, unquote, urlsplit
 from uuid import UUID
@@ -45,6 +50,190 @@ REQUIRED_SOURCE = {
 
 EVALUATOR_LOGIN_ROLES = {"anvil_staging_benchmark_evaluator_login"}
 EVALUATOR_ROLE = "anvil_benchmark_evaluator"
+OPERATOR_ROOT = Path("/opt/anvil")
+MIN_BOOT_FREE_BYTES = 10 * 1024**3
+
+
+def boot_space_guard(root):
+    """Native source, image data and captured outputs live on the reviewed boot device."""
+    if root.stat().st_dev != Path("/").stat().st_dev:
+        raise RuntimeError("Operator source is not on the reviewed boot-root device")
+    if shutil.disk_usage("/").free < MIN_BOOT_FREE_BYTES:
+        raise RuntimeError("At least10GiB free boot space required before native admission")
+
+
+@contextmanager
+def exclusive_native_guard(root):
+    """Hold one persistent-inode host lock; never replaces product SQL fences."""
+    root = _plain_path(root)
+    if root != OPERATOR_ROOT:
+        raise ValueError("Exact staging operator checkout required")
+    parent = _plain_path(str(root / ".local"))
+    info = parent.stat()
+    if (
+        not stat.S_ISDIR(info.st_mode)
+        or info.st_uid != os.getuid()
+        or stat.S_IMODE(info.st_mode) != 0o700
+    ):
+        raise ValueError("Operator lock parent must be owned nonsymlink0700")
+    descriptor = os.open(
+        parent / "staging-native.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600
+    )
+    try:
+        info = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(info.st_mode)
+            or info.st_uid != os.getuid()
+            or info.st_nlink != 1
+            or stat.S_IMODE(info.st_mode) != 0o600
+        ):
+            raise ValueError("Operator lock must be owned single regular0600 file")
+        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        state = os.read(descriptor, 2)
+        if state not in {b"", b"0"}:
+            raise RuntimeError(
+                "Prior native work is unknown; actual actor-stop evidence and SQL reconciliation required before manual lock reset"
+            )
+        if state == b"":
+            os.write(descriptor, b"0")
+            os.fsync(descriptor)
+        boot_space_guard(root)
+        yield descriptor
+    finally:
+        # Persistent inode prevents a second process acquiring a replacement lock.
+        os.close(descriptor)
+
+
+def run_guarded_one_shot(argv, environ):
+    """Explicit operator API after deployment approval; never called by recipe CLI.
+
+    One qualification operation (its full qualification matrix), or one offline
+    trial. Current source rights, SQL reservations, fences and cancellation remain
+    product authority. A persistent unknown marker survives wrapper death/timeout;
+    it must not be reset without actual actor-stop evidence and SQL reconciliation.
+    """
+    root = OPERATOR_ROOT
+    python = str(root / ".local/backend-venv/bin/python")
+    if not isinstance(argv, list) or len(argv) not in {9, 11} or argv[:2] != [python, "-m"]:
+        raise ValueError("Fixed one-shot Python module argv required")
+    if argv[2] == "anvil.benchmark_pipeline_worker":
+        if len(argv) != 9 or argv[3::2] != ["--project", "--operation", "--admin"]:
+            raise ValueError("Fixed qualification one-shot required")
+    elif argv[2] == "anvil.benchmark_offline_worker":
+        if (
+            len(argv) != 11
+            or argv[3::2] != ["--project", "--run", "--operator", "--max-trials"]
+            or argv[-1] != "1"
+        ):
+            raise ValueError("Exactly one offline trial per staging invocation required")
+    else:
+        raise ValueError("Unapproved operator module")
+    for value in argv[4:9:2]:
+        if _uuid(value) != value:
+            raise ValueError("Canonical scoped UUIDs required")
+    if (
+        any(environ.get(key, "false") != "false" for key in tuple(OFF)[:4])
+        or environ.get("ANVIL_TEST_HARBOR") != "1"
+        or environ.get("ANVIL_BENCHMARK_OFFLINE_ENABLED") != "true"
+    ):
+        raise ValueError("Explicit offline-only operator environment required")
+    if environ.get("ANVIL_ROOT") != str(root) or environ.get(
+        "ANVIL_HARBOR_DOCKER_HOST"
+    ) != "unix://" + str(root / ".local/benchmark-docker/docker.sock"):
+        raise ValueError("Exact separate native daemon and checkout required")
+    allowed = set(OFF) | {
+        "ANVIL_ROOT",
+        "ANVIL_ENV",
+        "WEB_ORIGIN",
+        "OIDC_ISSUER",
+        "ANVIL_SESSION_KEY",
+        "ANVIL_FIXTURE_MODE",
+        "LANGSMITH_TRACING",
+        "ANVIL_SUPPORT_VERTEX_PROJECT",
+        "ANVIL_SUPPORT_MODEL",
+        "ARTIFACT_ROOT",
+        "ANVIL_BENCHMARK_VAULT_ROOT",
+        "ANVIL_HARBOR_DOCKER_HOST",
+        "DATABASE_URL",
+        "ANVIL_BENCHMARK_EVALUATOR_DATABASE_URL",
+    }
+    if set(environ) - allowed:
+        raise ValueError(
+            "Native operator cannot inherit unreviewed environment or executable hooks"
+        )
+    target = _dsn_target(environ.get("DATABASE_URL", ""), "anvil_app")
+    evaluator_target = _dsn_target(
+        environ.get("ANVIL_BENCHMARK_EVALUATOR_DATABASE_URL", ""),
+        "anvil_staging_benchmark_evaluator_login",
+        evaluator=True,
+    )
+    if (
+        target != ("127.0.0.1", 5432, "/anvil")
+        or evaluator_target != target
+        or environ.get("ARTIFACT_ROOT") != str(root / ".data/artifacts")
+        or environ.get("ANVIL_BENCHMARK_VAULT_ROOT") != str(root / ".local/benchmark-vault")
+        or environ.get("ANVIL_SUPPORT_VERTEX_PROJECT", "")
+        or environ.get("ANVIL_SUPPORT_MODEL", "")
+        or environ.get("LANGSMITH_TRACING", "false") != "false"
+    ):
+        raise ValueError("Exact isolated staging data roots, roles and paid-off profile required")
+    with exclusive_native_guard(str(root)) as descriptor:
+        # No shell, capture or stdout logging; private receipts belong to worker.
+        # Mark unknown BEFORE spawning, including wrapper SIGKILL/power loss.
+        os.lseek(descriptor, 0, os.SEEK_SET)
+        os.write(descriptor, b"1")
+        os.fsync(descriptor)
+        # File-backed private output avoids unbounded in-memory communicate buffers.
+        # The trusted worker's bounded receipt is read only after successful exit.
+        with (
+            tempfile.TemporaryFile(dir=root / ".local") as stdout,
+            tempfile.TemporaryFile(dir=root / ".local") as stderr,
+        ):
+            try:
+                subprocess.run(
+                    argv,
+                    env={**environ, "PATH": "/usr/bin:/bin"},
+                    cwd=str(root),
+                    stdin=subprocess.DEVNULL,
+                    stdout=stdout,
+                    stderr=stderr,
+                    timeout=3600,
+                    check=True,
+                )
+            except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+                raise RuntimeError(
+                    "Native outcome unknown; descendants are not assumed stopped. Manual actor-stop evidence and SQL reconciliation required; host admission remains blocked"
+                ) from None
+            if stdout.tell() > 65536 or stderr.tell() > 65536:
+                raise RuntimeError(
+                    "Unexpected operator receipt; admission remains unknown pending manual reconciliation"
+                )
+            stdout.seek(0)
+            receipt_bytes = stdout.read(65537)
+        try:
+            if argv[2] == "anvil.benchmark_pipeline_worker":
+                terminal = receipt_bytes.decode().strip() in {"passed", "not_claimed"}
+            else:
+                receipt = json.loads(receipt_bytes)
+                terminal = (
+                    set(receipt) == {"statuses", "paid_calls"}
+                    and receipt["paid_calls"] is False
+                    and receipt["statuses"] in [["completed"], ["not_claimed"]]
+                )
+        except (ValueError, TypeError, UnicodeError):
+            terminal = False
+        if not terminal:
+            raise RuntimeError(
+                "Operator did not return a known terminal receipt; admission stays unknown, manual actor-stop evidence and SQL reconciliation required"
+            )
+        os.lseek(descriptor, 0, os.SEEK_SET)
+        os.write(descriptor, b"0")
+        os.fsync(descriptor)
+        return {
+            "status": "known_terminal_one_shot_returned",
+            "operation": argv[2],
+            "paid_calls": False,
+        }
 
 
 def _dsn_target(value, user, *, evaluator=False):
@@ -220,9 +409,9 @@ def prepare(contract, environ=None):
         blockers.append("paid_generation_and_email_flags_must_remain_off")
     app_target = None
     try:
-        app_target = _dsn_target(environ.get("ANVIL_DATABASE_URL", ""), "anvil_app")
+        app_target = _dsn_target(environ.get("DATABASE_URL", ""), "anvil_app")
     except ValueError:
-        blockers.append("anvil_database_url_separate_role_reference_required")
+        blockers.append("database_url_separate_role_reference_required")
     login_role = contract.get("evaluator_login_role")
     if login_role not in EVALUATOR_LOGIN_ROLES:
         blockers.append("reviewed_dedicated_evaluator_login_role_required")
@@ -269,6 +458,14 @@ def prepare(contract, environ=None):
         "schema": "anvil.staging.operator.recipe.v1",
         "status": "blocked_preparation" if blockers else "prepared_not_authorized_or_executed",
         "execution_supported": False,
+        "separate_operator_execution_guard": {
+            "implementation": "staging_benchmark_operator.run_guarded_one_shot",
+            "offline_maximum_trials": 1,
+            "qualification_operations": 1,
+            "exclusive_lock": "/opt/anvil/.local/staging-native.lock",
+            "minimum_boot_free_bytes": MIN_BOOT_FREE_BYTES,
+            "does_not_replace": "product SQL reservations, lease fences, cancellation or human approvals",
+        },
         "source_sha": source,
         "source_manifest_sha256": manifest_hash,
         "argv": argv,
@@ -284,7 +481,7 @@ def prepare(contract, environ=None):
             "ANVIL_HARBOR_DOCKER_HOST": "unix://" + str(daemon),
             "ANVIL_BENCHMARK_VAULT_ROOT": str(vault),
         },
-        "secret_references_only": ["ANVIL_DATABASE_URL", "ANVIL_BENCHMARK_EVALUATOR_DATABASE_URL"],
+        "secret_references_only": ["DATABASE_URL", "ANVIL_BENCHMARK_EVALUATOR_DATABASE_URL"],
         "evaluator_sql_contract": {
             "login_role": login_role if login_role in EVALUATOR_LOGIN_ROLES else None,
             "protected_nologin_role": EVALUATOR_ROLE,

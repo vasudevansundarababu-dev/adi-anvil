@@ -7,7 +7,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
-from staging_compose import main, render
+from staging_compose import main, render, render_demo
 
 
 class ComposeSafety(unittest.TestCase):
@@ -89,6 +89,38 @@ class ComposeSafety(unittest.TestCase):
             with patch("sys.argv", argv), patch.object(Path, "read_text", return_value=json.dumps(self.images)), patch("subprocess.run", side_effect=AssertionError("execution forbidden")), redirect_stdout(output):
                 self.assertEqual(main(), 0)
             self.assertEqual(json.loads(output.getvalue()), render(self.images, fictional_benchmark_demo=opt_in))
+
+
+    def test_explicit_new_demo_binding_leaves_old_default_unchanged(self):
+        old = render(self.images)
+        new = render_demo(self.images)
+        self.assertEqual(old["name"], "adi-anvil-staging")
+        self.assertIn("/var/lib/anvil-staging/config/app.env", old["services"]["api"]["env_file"])
+        self.assertEqual(new["name"], "adi-anvil-staging-demo")
+        self.assertEqual(new["networks"]["staging"]["name"], "adi-anvil-staging-demo")
+        self.assertEqual(new["services"]["postgres"]["ports"], ["127.0.0.1:5432:5432"])
+        self.assertEqual(new["services"]["api"]["volumes"], ["/opt/anvil/.data/artifacts:/app/.data/artifacts", "/opt/anvil/.local/benchmark-vault:/app/.data/benchmark-vault"])
+        self.assertEqual(new["services"]["worker"]["volumes"], ["/opt/anvil/.data/artifacts:/app/.data/artifacts"])
+        self.assertNotIn("volumes", new["services"]["migrate"])
+        self.assertTrue(any("postgres-init.sh" in p for p in new["services"]["postgres"]["volumes"]))
+        self.assertIn("realm.json", str(new["services"]["keycloak"]["volumes"]))
+        self.assertEqual(new["services"]["migrate"]["depends_on"], {"postgres": {"condition": "service_healthy"}})
+
+    def test_new_demo_paid_and_native_boundaries_with_opt_in(self):
+        for opted in (False, True):
+            new = render_demo(self.images, fictional_benchmark_demo=opted)
+            self.assertEqual(len(new["services"]), 8)
+            for name, service in new["services"].items():
+                self.assertEqual(service["env_file"], [f"/var/lib/anvil-staging-demo/config/{'app' if name=='api' else name}.env"])
+                self.assertNotIn("docker.sock", str(service))
+                self.assertNotIn("ANVIL_BENCHMARK_EVALUATOR_DATABASE_URL", service.get("environment", {}))
+            for name in ("api", "worker", "migrate"):
+                env = new["services"][name]["environment"]
+                self.assertEqual(env["ANVIL_TEST_HARBOR"], "0")
+                for key in ("ANVIL_LIVE_PROVIDERS_ENABLED", "ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED", "ANVIL_IMPORT_GENERATION_ENABLED", "ANVIL_REAL_EMAIL_ENABLED"):
+                    self.assertEqual(env[key], "false")
+                self.assertEqual(env["ANVIL_SUPPORT_VERTEX_PROJECT"], "")
+                self.assertEqual(env["ANVIL_BENCHMARK_OFFLINE_ENABLED"], "true" if opted and name=="api" else "false")
 
 
 if __name__ == "__main__":

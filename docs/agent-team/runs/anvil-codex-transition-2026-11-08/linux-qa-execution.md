@@ -1,5 +1,15 @@
 # Linux QA execution record
 
+## Current compute/access state — stopped after evidence export
+
+After Testing confirmed all28 native evidence, prior failures,402-file source checks and final focused results were exported, no active tests/actors or further SSH were needed. The exact temporary OS Login fingerprint `290de06f1812c7115b087f4e1923b17801a03bdf8f7e51c9f12bbacbe404f838` was removed and verified absent; other account keys were untouched. No further extension occurred.
+
+Fresh VM metadata verified ID `4723949448594237365` before stopping only `anvil-staging-native` in `adi-anvil-mvp-2026/us-west1-a`. Follow-up metadata confirmed **TERMINATED**, last stop **2026-11-09T02:07:31.726Z**. Boot disk8660101875172681653 and NAT/network/subnet/router/address/IAP firewall remain intentionally retained pending the final exact-ID cleanup handoff. No application deployment or current environment change occurred.
+
+Compute is stopped, but charges are not zero:30GiB balanced disk≈3USD/month plus reserved NAT IPv4≈3.65USD/month, with possible retained gateway assignment up to≈1.02USD/month and processing/log/retention usage. Conservative fixed reserve≈7.67USD/month while retained; this is a planning estimate, not a reconciled invoice. No evidence snapshot was created by DevOps. Receipt: `linux-qa-provenance/qa-compute-stopped.json`.
+
+## Preserved setup/source/test history
+
 ## Fourth reviewed successor and explicit access extension — edcc051
 
 User explicitly selected the first offered access option, permitting one extension of the **same** temporary public OS Login key until **2026-11-09T02:51:10Z**. The official isolated Anvil SDK updated only `expirationTimeUsec`; the returned exact timestamp was asserted and verified. Fingerprint/account unchanged; no IAM/project setting, private-key read, new resource or automatic further renewal. Earlier01:51 expiry statements below are historical. Remove the exact key after testing, and do not extend beyond the new deadline without fresh authority.

@@ -1,0 +1,18 @@
+{
+  "project": "adi-anvil-mvp-2026",
+  "zone": "us-west1-a",
+  "vm_name": "anvil-staging-native",
+  "vm_id_freshly_verified": "4723949448594237365",
+  "verified_status": "TERMINATED",
+  "actual_last_stop_utc": "2026-11-09T02:07:31.726Z",
+  "testing_clearance": "all_native_evidence_exported_no_active_tests_or_actors_no_further_SSH_needed",
+  "temporary_oslogin_fingerprint_removed": "290de06f1812c7115b087f4e1923b17801a03bdf8f7e51c9f12bbacbe404f838",
+  "fingerprint_absent_verified": true,
+  "other_keys_changed": false,
+  "access_renewal": false,
+  "retained_resources": ["boot_disk_8660101875172681653", "native_network_subnet_router_NAT_address_IAP_firewall"],
+  "residual_cost_estimate_not_bill": {"30GiB_balanced_disk_usd_per_month": 3.0, "one_reserved_NAT_IP_usd_per_month": 3.65, "possible_one_VM_gateway_assignment_usd_per_month": 1.02, "conservative_fixed_reserve_usd_per_month": 7.67, "additional_usage": "actual_processing_logs_or_other_retention_not_assumed_zero"},
+  "actual_bill": "not_reconciled",
+  "no_other_VM_or_application_change": true,
+  "application_deployed": false
+}

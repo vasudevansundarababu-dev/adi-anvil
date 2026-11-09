@@ -60,13 +60,53 @@ def render(images, *, fictional_benchmark_demo=False):
     return {"name": "adi-anvil-staging", "services": services, "networks": {"staging": {"name": "adi-anvil-staging"}}}
 
 
+def render_demo(images, *, fictional_benchmark_demo=False):
+    """Explicit NEW demo target binding; old render/defaults remain unchanged.
+
+    This contains no native worker, cloud command or approval mechanism. The
+    host-only operator/vault binding needs separately reviewed startup proofs.
+    """
+    result = render(images, fictional_benchmark_demo=fictional_benchmark_demo)
+    data = "/var/lib/anvil-staging-demo"
+    result["name"] = "adi-anvil-staging-demo"
+    result["networks"]["staging"]["name"] = "adi-anvil-staging-demo"
+    services = result["services"]
+    env_names = {"postgres": "postgres", "neo4j": "neo4j", "keycloak": "keycloak", "migrate": "migrate", "api": "app", "worker": "worker", "web": "web", "caddy": "caddy"}
+    for name, env_name in env_names.items():
+        services[name]["env_file"] = [f"{data}/config/{env_name}.env"]
+    mounts = {
+        "postgres": [f"{data}/postgres:/var/lib/postgresql/data", f"{data}/config/postgres-init.sh:/docker-entrypoint-initdb.d/10-staging-identity.sh:ro"],
+        "neo4j": [f"{data}/neo4j:/data"],
+        "keycloak": [f"{data}/config/realm.json:/opt/keycloak/data/import/anvil-staging-demo.json:ro"],
+        "api": ["/opt/anvil/.data/artifacts:/app/.data/artifacts", "/opt/anvil/.local/benchmark-vault:/app/.data/benchmark-vault"],
+        "worker": ["/opt/anvil/.data/artifacts:/app/.data/artifacts"],
+        "caddy": [f"{data}/config/Caddyfile:/etc/caddy/Caddyfile:ro", f"{data}/caddy:/data"],
+    }
+    for name in services:
+        services[name].pop("volumes", None)
+        if name in mounts:
+            services[name]["volumes"] = mounts[name]
+    services["postgres"]["ports"] = ["127.0.0.1:5432:5432"]
+    services["postgres"]["healthcheck"] = {"test": ["CMD-SHELL", "pg_isready -U anvil_staging_migration -d anvil"], "interval": "5s", "timeout": "3s", "retries": 30}
+    services["migrate"]["depends_on"] = {"postgres": {"condition": "service_healthy"}}
+    services["keycloak"]["depends_on"] = {"postgres": {"condition": "service_healthy"}}
+    for name in ("api", "worker"):
+        services[name]["depends_on"] = {"migrate": {"condition": "service_completed_successfully"}, "neo4j": {"condition": "service_started"}}
+        services[name]["user"] = "10001:10001"
+    services["caddy"]["depends_on"] = {name: {"condition": "service_started"} for name in ("api", "web", "keycloak")}
+    result["x-anvil-preparation"] = {"new_target_only": "anvil-staging-demo", "deployment_authorized": False, "native_auto_start": False}
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--images", type=Path, required=True, help="Non-secret map of six reviewed image digests")
     parser.add_argument("--fictional-benchmark-demo", action="store_true", help="Prepare only fictional benchmark API gates; no operators, paid calls or deployment")
+    parser.add_argument("--new-fictional-demo-target", action="store_true", help="Use the separate reviewed demo path/realm/loopback database binding; preparation only")
     args = parser.parse_args()
     try:
-        result = render(json.loads(args.images.read_text()), fictional_benchmark_demo=args.fictional_benchmark_demo)
+        renderer = render_demo if args.new_fictional_demo_target else render
+        result = renderer(json.loads(args.images.read_text()), fictional_benchmark_demo=args.fictional_benchmark_demo)
     except (OSError, ValueError, TypeError):
         print(json.dumps({"ready": False, "error": "Missing or invalid immutable image manifest"}))
         return 2
