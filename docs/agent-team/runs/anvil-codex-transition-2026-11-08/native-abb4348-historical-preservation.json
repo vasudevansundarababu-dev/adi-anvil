@@ -1,0 +1,23 @@
+{
+  "profile": "HISTORICAL_NATIVE_BASELINE_EVIDENCE_ONLY",
+  "source_sha": "abb4348a6eb38bb5696cb89062d9fb5c00d3e0b4",
+  "source_files_verified": 875,
+  "package_sha256": "1909932c808f333dd32b399a2c3d70add85c3e83399cbd01bf8e13101d574d92",
+  "package_bytes": 36727,
+  "manifest_sha256": "cf17f873f91625cddd2d2042accaf1b449177d55cb6cc10c9c455b5e0ee0078e",
+  "regular_members_verified": 54,
+  "every_member_hash_and_size_verified": true,
+  "trial_receipts_verified": 27,
+  "canonical_report_objects_verified": 4,
+  "observed_sql_metadata_tables": 18,
+  "intentional_signer_revocation_preserved": true,
+  "current_qualification_authority": false,
+  "new_demo_run": false,
+  "linux_full_units_run": false,
+  "application_started": false,
+  "private_package_path": "/Users/vasudevansundarababu/Documents/Codex/anvil-codex-transition/.local/native-requalification-abb4348/results/historical-preservation/historical-abb4348-baseline.tar.gz",
+  "initial_setup_error_evidence_separately_preserved": true,
+  "export_helper_sha256": "cb903270e50d55ee584b0ced757544c41d4b0eb874c551dd9ccb6504ec3ea08f",
+  "canonical_qualification_trials_crossbound_to_exact_raw_receipts": 9,
+  "all_raw_logs_and_preflight_diagnostics_preserved": true
+}

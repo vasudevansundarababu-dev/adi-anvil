@@ -1,0 +1,47 @@
+{
+  "source_sha": "abb4348a6eb38bb5696cb89062d9fb5c00d3e0b4",
+  "kind": "native_baseline28_configured",
+  "command": [
+    "/opt/anvil/.local/backend-venv/bin/python3.12",
+    "-m",
+    "pytest",
+    "-q",
+    "-x",
+    "-p",
+    "no:cacheprovider",
+    "--tb=short",
+    "-rs",
+    "--junitxml=/opt/anvil/.local/native-qa-results/abb-baseline-e7498035a43e4db1a50ce0f5c1f717f2/pytest.xml",
+    "services/backend/tests/benchmark/test_benchmark_qualification.py::test_real_native_harbor_trial",
+    "services/backend/tests/benchmark/test_benchmark_qualification.py::test_native_rejects_stale_package_or_evaluator_before_execution",
+    "services/backend/tests/benchmark/test_benchmark_native_limits.py",
+    "services/backend/tests/benchmark/test_benchmark_offline_native.py::test_real_native_offline_sdk_and_separate_evaluator",
+    "services/backend/tests/benchmark/test_benchmark_evaluation.py::test_real_native_separate_evaluator_captures_fenced_private_result",
+    "services/backend/tests/benchmark/test_benchmark_evaluation.py::test_native_actor_stops_before_its_bytes_enter_separate_evaluator",
+    "services/backend/tests/benchmark/test_benchmark_pipeline.py::test_real_native_receipts_persist_through_durable_pipeline"
+  ],
+  "started_at": "2026-11-09T04:29:19.637637+00:00",
+  "elapsed_seconds": 618.155,
+  "exit_code": 0,
+  "summary": [
+    "28 passed, 1 warning in 615.63s (0:10:15)"
+  ],
+  "raw_log_path": "/opt/anvil/.local/native-qa-results/abb-baseline-e7498035a43e4db1a50ce0f5c1f717f2/pytest.log",
+  "raw_log_sha256": "a847ef50807cf1f3e8624f0b6e0855be85cb4bb0673f2ba9f50891e5fae0f38a",
+  "junit_path": "/opt/anvil/.local/native-qa-results/abb-baseline-e7498035a43e4db1a50ce0f5c1f717f2/pytest.xml",
+  "junit_sha256": "a43856833d0805e03edbe9bd87ce57fa3f6ca644876d97630f51d5a5450cf873",
+  "source_changes_after": [],
+  "paid_calls_enabled": false,
+  "documented_test_subprocess_flags": {
+    "ANVIL_BENCHMARK_ENABLED": true,
+    "ANVIL_BENCHMARK_EVALUATION_ENABLED": true,
+    "ANVIL_BENCHMARK_OFFLINE_ENABLED": true
+  },
+  "host_environment_file_unchanged": true,
+  "new_individual_demo_not_yet_run": true,
+  "classification": "Actual28 native software-conformance passes; historical baseline pipeline intentionally revoked signer afterward. Not current user/demo authority or model performance.",
+  "raw_logs_exported_owner_only": true,
+  "new_individual_demo_run": false,
+  "linux_full_units_run": false,
+  "application_started": false
+}
