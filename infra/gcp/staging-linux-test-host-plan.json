@@ -54,6 +54,23 @@
     "package_repository": "https://deb.debian.org/debian bookworm main; Debian archive keyring signed InRelease required",
     "backend_lock_sha256": "00a917be042f5204926d3149c5e9bcbf57c0717c298afe202a20799ca58d7bb3",
     "harbor_lock_sha256": "612ab41777d8eb6ec2dee6c3390705130e55d9d1a216c79df34a1597c6156ec3"
+    ,"host_python_proposed_amendment": {
+      "version": "3.12.14",
+      "publisher": "Astral python-build-standalone",
+      "release": "20260901",
+      "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20260901/cpython-3.12.14%2B20260901-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz",
+      "checksum_manifest": "https://github.com/astral-sh/python-build-standalone/releases/download/20260901/SHA256SUMS",
+      "sha256": "72748da13197c1fb161e3afeef20a6a385ff24f2165e6e2758e47008e7faba4c",
+      "independent_signature_verified": false,
+      "system_python_modified": false
+    },
+    "host_uv_proposed_amendment": {
+      "version": "0.12.19",
+      "metadata": "https://pypi.org/pypi/uv/0.12.19/json",
+      "filename": "uv-0.12.19-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "sha256": "a63d18a0aa38ee9f21a5406afbbaeb41303bcd954be9d6b7c1b95ac275e53958",
+      "size_bytes": 20478749
+    }
   },
   "isolation": {
     "postgres": "fresh_same_host_isolated_daemon_loopback_or_Unix_socket_only",
