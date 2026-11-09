@@ -233,9 +233,11 @@ def publish_reviewed(c, project, user, run_id, parent, decisions, state):
 
 
 def admin_approve(c, project, user, run_id, body):
+    from anvil import benchmark_execution as execution
     from anvil import benchmark_report_policy as report_policy
 
     c.execute("SELECT id FROM anvil.projects WHERE id=%s FOR UPDATE", (project,))
+    execution.report_authority_current(c, project, user, run_id)
     current = latest(c, run_id)
     report_policy.decide(
         c, project, user, "comparison", run_id, current["projection_sha256"], body, admin=True

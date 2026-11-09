@@ -81,6 +81,37 @@ def test_v2_actual_admin_admission_releases_completed_task_primary_without_fake_
             (run,),
         ).fetchone()
         assert authority["admin_run_exempt"] and str(authority["actor_id"]) == case["lab"]["admin"]
+        before = c.execute(
+            "SELECT count(*) n FROM anvil.benchmark_score_revisions WHERE run_id=%s", (run,)
+        ).fetchone()["n"]
+        qualification = case["protocol"]["protocol"]["tasks"][0]["qualification_id"]
+        c.execute(
+            "INSERT INTO anvil.benchmark_qualification_events(id,project_id,qualification_id,decision,rationale,actor_id) VALUES(%s,%s,%s,'revoked','Post-capture manufactured qualification revocation',%s)",
+            (str(uuid4()), case["lab"]["project"], qualification, case["lab"]["admin"]),
+        )
+    denied = case["admin"].post(
+        case["base"] + "/comparisons/" + run + "/report-approval",
+        headers={"idempotency-key": str(uuid4())},
+        json={
+            "expected_result_sha256": stored["projection_sha256"],
+            "rationale": "Admin report approval must retain current qualification gates",
+        },
+    )
+    assert denied.status_code == 409, denied.text
+    with connection() as c:
+        assert (
+            c.execute(
+                "SELECT count(*) n FROM anvil.benchmark_score_revisions WHERE run_id=%s", (run,)
+            ).fetchone()["n"]
+            == before
+        )
+        assert (
+            c.execute(
+                "SELECT count(*) n FROM anvil.benchmark_report_decisions WHERE target_kind='comparison' AND target_id=%s",
+                (run,),
+            ).fetchone()["n"]
+            == 0
+        )
 
 
 def test_admin_report_exemption_never_bypasses_current_qualification_gate(frozen):

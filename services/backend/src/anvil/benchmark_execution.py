@@ -520,6 +520,36 @@ def export_rights(c, run_id):
         raise HTTPException(403, "Current source rights/review are required for export")
 
 
+def report_authority_current(c, project, user, run_id):
+    """Report exemptions never turn stale native/source evidence into authority.
+
+    No dispatch, spending reservation, reviewer quota or provider activation is
+    performed here. A report review exemption changes report review only.
+    """
+    row = one(
+        c,
+        "SELECT benchmark_revision_id,protocol_revision_id FROM anvil.benchmark_comparisons WHERE project_id=%s AND run_id=%s",
+        (project, run_id),
+    )
+    if not row:
+        raise HTTPException(404, "Comparison not found")
+    bound = version(c, row["benchmark_revision_id"])
+    _, blockers = pipeline.policy_status(project, user, bound["build_id"])
+    stale = one(
+        c,
+        "SELECT 1 FROM anvil.benchmark_version_tasks t JOIN anvil.benchmark_qualifications q ON q.project_id=t.project_id AND q.id=t.qualification_id WHERE t.benchmark_revision_id=%s AND (q.outcome<>'passed' OR EXISTS(SELECT 1 FROM anvil.benchmark_qualification_events e WHERE e.project_id=q.project_id AND e.qualification_id=q.id)) LIMIT 1",
+        (row["benchmark_revision_id"],),
+    )
+    frozen = Protocol.model_validate(
+        domain.get_revision(c, row["protocol_revision_id"], "protocol")["content"]
+    )
+    if blockers or stale or frozen.runtime_sha256 != runtime_sha256():
+        raise HTTPException(
+            409,
+            "Current source integrity, native qualification and exact runtime are required for report authorization",
+        )
+
+
 def admit_offline(c, project, user, identifier, expected):
     """Atomic whole-parent installation; no individual child can launch itself."""
     c.execute("SELECT id FROM anvil.projects WHERE id=%s FOR UPDATE", (project,))
