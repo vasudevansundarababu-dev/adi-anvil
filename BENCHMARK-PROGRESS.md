@@ -1,4 +1,16 @@
-# Current direction — replacement four-view dashboard specification clarified
+# Current — real stored fictional comparison; configurable report authorization
+
+November 9, 2026: product checkpoint `a1ddace319cd6e7e0472877ef5f181099613b63f` is pushed. Four connected replacement views now include an actual local scripted comparison with persisted outputs, criterion results, 81-point repetition means, separate observed win/tie and Bradley–Terry metrics, failure inspection and exact-result reports. Paid calls remain off; no model-performance or new native qualification is claimed.
+
+The user replaced the fixed reviewer-count rule. Admin-configurable report policy supports zero through ten reviewers, default one. Actual authenticated Admin execution or exact-result Admin approval exempts extra report review; it creates no fictional human decisions. Existing frozen policies and reviewer facts are not rewritten. Source rights, execution qualification and spending gates remain intact. See `docs/agent-team/runs/anvil-codex-transition-2026-11-08/report-review-policy-spec-addendum.md` for QA requirements.
+
+Root executed the actual Admin UI demonstration `9791e3a8-9946-44b5-a912-785aac4badbe`: 18 saved cells; profile means 81, 18 and 43 out of81; zero provider calls. With the configured reviewer count of two, its report state is `admin_run_exempt`, zero completed reviewer decisions. Stored output and all four views were inspected. Final verification and limitations: `docs/agent-team/runs/anvil-codex-transition-2026-11-08/rehearsal-final-handoff.md`.
+
+No deployment, merge, paid calls, new cloud resources or Praxis/original-checkout changes. Current native requalification and source-bound staging build/identity/TLS/operator preparation remain separate outstanding work. Earlier entries below are historical and their old fixed-three/pending-implementation scope is superseded.
+
+---
+
+# Historical direction — replacement four-view dashboard specification clarified
 
 2026-11-08 late evening Central / November9UTC: the user supplied a new seven-page dashboard specification and explicitly replaced the presentation being developed. Confirmed scope: **all four connected views in the first release**, existing fictional task bank first, existing81-point task scores preserved, separate judge metrics, and Bradley–Terry as a separate ranking alongside the printed wins/ties percentage. Judge/logprob values remain “Not run”/“Unavailable” until supported and separately approved. Sample PDF rankings, trace counts and prices are not measured results. Requirements/decisions: `docs/agent-team/runs/anvil-codex-transition-2026-11-08/benchmark-dashboard-replacement-decisions.md`. Replacement implementation has not started; existing approval/privacy/budget gates remain.
 

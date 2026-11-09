@@ -1,7 +1,7 @@
 {
-  "source_sha": "8f6a4e6cee3604a65fb98382335fddae867cce13",
-  "source_archive_sha256": "c4f3dee1d89dfb1605e1aadca9e738a23226551389ed97010680bca59e1c1150",
-  "tracked_source_file_count": 938,
+  "source_sha": "a1ddace319cd6e7e0472877ef5f181099613b63f",
+  "source_archive_sha256": "e2e7f969aea2844fbf286d4b24a9b006eb468d40f10f2d83e4f0cf29f18680e7",
+  "tracked_source_file_count": 965,
   "source_changes_after_setup": [],
   "project_id": "72ece19c-20ba-4be5-b4bc-29916ad0a0f8",
   "url": "http://127.0.0.1:50679/workspace/72ece19c-20ba-4be5-b4bc-29916ad0a0f8/benchmarks",
@@ -14,7 +14,7 @@
   "qualifications_created": 0,
   "comparisons_created": 0,
   "viewer_role": "synthetic rl-engineer with27artifact-scopedread duties;notglobalreadonly",
-  "actual_browser_authenticated_cohort_verification": "56a6 actualOIDC/PDF2/all27 PASS; root8f6a CUA finalcontrast/outputreadPASS",
+  "actual_browser_authenticated_cohort_verification": "Verified: Root actual CUA Admin18-cell fictional run; Testing3real-browser casesPASS and independentbothPDF/SQL audit",
   "api_database_health": "ready",
   "web_http_status": 200,
   "oidc_callback_50679_allow_other50680_deny": true,
@@ -22,10 +22,10 @@
   "defaultcache_misses_resolved_using_existing_security_caches": true,
   "Next_generated_declaration_preserved_then_snapshot_restored_exact": true,
   "private_credentials_in_public_record": false,
-  "private_runtime_home": "/private/tmp/anvil-replacement-runtime-f990a9bf3bb2440b94cd923825ac4b4a",
+  "private_runtime_home": "/private/tmp/anvil-replacement-runtime-1aa50e4b09dd4169974f5811daf813bf",
   "pids": {
-    "api": 68770,
-    "web": 68771
+    "api": 71799,
+    "web": 71800
   },
   "cloud_changes": false,
   "paid_calls": false,
@@ -72,10 +72,10 @@
   "modern_workspace_http_status": 200,
   "anonymous_me_http_status": 401,
   "last_promotion": {
-    "previous_source_sha": "56a6d3fe78add4ebeda66c2dd7f0aa614c7c1832",
+    "previous_source_sha": "ab38fa1987d765ef243febc96df467b8ccf3acfc",
     "db_counts_before": {
       "benchmark_trace_audit": 27,
-      "benchmark_golden_datasets": 1,
+      "benchmark_golden_datasets": 2,
       "benchmark_golden_versions": 1,
       "benchmark_remediation_proposals": 1,
       "benchmark_remediation_intents": 1,
@@ -85,7 +85,7 @@
     },
     "db_counts_after": {
       "benchmark_trace_audit": 27,
-      "benchmark_golden_datasets": 1,
+      "benchmark_golden_datasets": 2,
       "benchmark_golden_versions": 1,
       "benchmark_remediation_proposals": 1,
       "benchmark_remediation_intents": 1,
@@ -111,5 +111,45 @@
     "official_model_authority": false,
     "source_reviews_qualifications_comparisons": 0,
     "original_expiry_utc": "2026-11-09T13:33:30.708607Z"
-  }
+  },
+  "runtime_schema_head": 63,
+  "local_fixture_rehearsal_enabled": true,
+  "all_paid_generation_email_native_disabled": true,
+  "migration_063": {
+    "source_sha": "a1ddace319cd6e7e0472877ef5f181099613b63f",
+    "target_database": "anvil_dashboard_runtime_20261109",
+    "migrations": [
+      {
+        "version": 63,
+        "sha256": "3f1a7ab7e040bbd68e0d20511d0d564111f0465e1aa05c1e2e19e7731d0343d7"
+      }
+    ],
+    "no_other_database_touched": true
+  },
+  "promotion_hold_history": "ab38061062completed before hold; stoppedonlyownedapp; forward063reviewed/appliedwithoutrollback",
+  "rehearsal_executed_by_devops": false,
+  "new_native_qualification_claimed": false,
+  "verified_fictional_rehearsal": {
+    "product_source_sha": "a1ddace319cd6e7e0472877ef5f181099613b63f",
+    "actual_cua_run_id": "9791e3a8-9946-44b5-a912-785aac4badbe",
+    "completed_cells": 18,
+    "fictional_algorithm_means": [
+      81,
+      18,
+      43
+    ],
+    "provider_calls": 0,
+    "report_authorization": "admin_run_exempt",
+    "configured_reviewer_count": 2,
+    "reviewer_decisions_created": 0,
+    "source_reviews_created": 0,
+    "qualifications_created": 0,
+    "official_comparisons_created": 0,
+    "result_sha256": "df0f79b6baa2a82a15eb3bfdd96d6812ccb132fb0357632d8d0e74d66cc0aa81",
+    "software_rehearsal_not_model_performance": true,
+    "observations": "Root actualCUA plusTesting3realbrowserPASS; independentPDFandSQL audit confirmsactualAdminexecutionrecord andzero fabricatedauthority forbothrealruns"
+  },
+  "user_preview_kept_running": true,
+  "disposable_testing_cleanup_owner": "Testing; only its owned disposable test resources",
+  "future_staging_status": "held; no deployment authorized or performed"
 }

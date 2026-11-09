@@ -1,4 +1,16 @@
-# T05 recovery — offline Coding verified; native/SQL environment blocked
+# Current — stored fictional comparison and configurable report review
+
+November 9, 2026: product checkpoint `a1ddace319cd6e7e0472877ef5f181099613b63f` is pushed on the existing draft PR16 branch. The local application now executes and persists a complete, explicitly fictional software comparison: three transparent scripted profiles, three public tasks and two repetitions. All four connected views read its saved results and exact-result PDFs. These software scores are not model-performance or current native-qualification evidence.
+
+The user's new report policy is implemented: an authenticated Admin configures zero through ten reviewers (default one); actual Admin execution or explicit exact-result Admin approval requires no additional report sign-off. Frozen policies, actual actor provenance and historical reviews remain immutable. Source rights, qualification and spending gates remain separate. No reviewer decisions are fabricated.
+
+Final backend units: 865 passed. Predecessor full benchmark SQL: 209 passed / 29 explicit native skips; integration: 190 passed / 19 native/authentic-Praxis skips. The bounded successor guard/revocation delta passed 26 focused SQL/API checks. Frontend types, production build and 38 Node checks passed; three real authenticated browser checks passed on exact successor source. Detailed final evidence is in `docs/agent-team/runs/anvil-codex-transition-2026-11-08/rehearsal-final-handoff.md`.
+
+No application deployment, merge or paid calls. Current native requalification and operational staging release remain outstanding. Earlier entries below are preserved historical evidence, not current task scope or acceptance.
+
+---
+
+# Historical T05 recovery — offline Coding verified; native/SQL environment blocked
 
 Tested commit `4e64f54c368d04afcde6faa8c41cdadd9529e0d9`, tree `0c745b5b5f098f2f55ea066f8c4f8228913cfe6f`. Repair checkpoint `e0a7b5fb45dbc73c1e9d6248647a102387ea5cd8`, tree `d807b5ee4f17acdf1d8f582a356e731863ab0c66`. Recovery/publication change documentation/evidence only; product/test/lock bytes are identical, but whole Git trees are not equated. Early checkpoint4e64f54 pushed normally; all15 approved originals rehashed unchanged.
 
