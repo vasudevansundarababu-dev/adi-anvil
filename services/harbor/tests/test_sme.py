@@ -1,14 +1,121 @@
+import asyncio
 import json
+import os
+import stat
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
 
-from anvil_harbor.sme import SMEDocker, guard_compose, operator_command
+from anvil_harbor.sme import (
+    IMAGE,
+    SMEDocker,
+    guard_compose,
+    operator_command,
+    write_compose_snapshot,
+)
 from harbor.models.task.config import EnvironmentConfig, NetworkMode, NetworkPolicy
 from harbor.models.trial.paths import TrialPaths
 
 
 class RestrictedAdapterTests(unittest.TestCase):
+    def test_compose_snapshot_is_operator_owned_fresh_private_and_never_follows_links(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary).resolve()
+            data = '{"services":{"main":{}}}'
+            snapshot = write_compose_snapshot(folder, "environment", data)
+            self.assertEqual(snapshot.read_text(), data)
+            self.assertEqual(snapshot.stat().st_uid, os.getuid())
+            self.assertEqual(stat.S_IMODE(snapshot.stat().st_mode), 0o600)
+            with self.assertRaises(FileExistsError):
+                write_compose_snapshot(folder, "environment", "replacement")
+            target = folder / "untouched"
+            target.write_text("original")
+            (folder / "sme-compose-tests.json").symlink_to(target)
+            with self.assertRaises(FileExistsError):
+                write_compose_snapshot(folder, "tests", data)
+            self.assertEqual(target.read_text(), "original")
+            link = folder / "linked-directory"
+            link.symlink_to(folder, target_is_directory=True)
+            with self.assertRaises(ValueError):
+                write_compose_snapshot(link, "tests", data)
+
+    def test_native_start_captures_sudo_config_stdout_without_root_created_file(self):
+        for network in ("none", "host"):
+            with self.subTest(network=network), tempfile.TemporaryDirectory() as temporary:
+                folder = Path(temporary).resolve()
+                environment = folder / "environment"
+                environment.mkdir()
+                trial = folder / "trial"
+                trial.mkdir(mode=0o700)
+                instance = SMEDocker(
+                    environment_dir=environment,
+                    environment_name="fixture",
+                    session_id="anvil-bm-unit__env",
+                    trial_paths=TrialPaths(trial_dir=trial),
+                    task_env_config=EnvironmentConfig(
+                        docker_image=IMAGE, network_mode="no-network", cpus=1, memory_mb=2048
+                    ),
+                    auto_mounts=[],
+                    network_policy=NetworkPolicy(network_mode=NetworkMode.NO_NETWORK),
+                )
+                resolved = json.dumps(
+                    {
+                        "services": {
+                            "main": {
+                                "image": IMAGE,
+                                "network_mode": network,
+                                "read_only": True,
+                                "user": "10001:10001",
+                                "pull_policy": "never",
+                                "volumes": [],
+                            }
+                        }
+                    }
+                )
+                calls = []
+
+                async def compose(command, *args, **kwargs):
+                    calls.append(command)
+                    # Reproduces the privilege boundary: the old --output form
+                    # asks sudo Docker to create an unreadable root-owned file.
+                    if "--output" in command:
+                        raise PermissionError("privileged writer boundary")
+                    return SimpleNamespace(stdout=resolved)
+
+                runtime = SimpleNamespace(engine=("sudo", "-n", "/usr/bin/docker"))
+                with (
+                    patch.object(SMEDocker, "runtime", return_value=runtime),
+                    patch(
+                        "anvil_harbor.sme.subprocess.run",
+                        side_effect=[
+                            SimpleNamespace(stdout=b""),
+                            SimpleNamespace(stdout=b'[{"Os":"linux"}]'),
+                        ],
+                    ),
+                    patch.object(instance, "_write_mounts_compose_file"),
+                    patch.object(instance, "_write_env_compose_file"),
+                    patch.object(instance, "_write_resources_compose_file", new=AsyncMock()),
+                    patch.object(instance, "_run_docker_compose_command", side_effect=compose),
+                    patch.object(instance, "ensure_dirs", new=AsyncMock()),
+                ):
+                    if network == "none":
+                        asyncio.run(instance.start(False))
+                        self.assertEqual(
+                            json.loads((trial / "sme-compose-environment.json").read_text()),
+                            json.loads(resolved),
+                        )
+                        self.assertEqual(
+                            calls[-1], ["up", "--detach", "--wait", "--no-build", "--pull", "never"]
+                        )
+                    else:
+                        with self.assertRaises(ValueError):
+                            asyncio.run(instance.start(False))
+                        self.assertEqual(calls, [["config", "--format", "json"]])
+                        self.assertFalse((trial / "sme-compose-environment.json").exists())
+                self.assertEqual(calls[0], ["config", "--format", "json"])
+
     def test_engine_probe_and_mutations_rejected_before_operator_access(self):
         for verb in ["run", "container", "pull", "build", "rm", "volume", "system", "network"]:
             with self.subTest(verb=verb), self.assertRaises(ValueError):

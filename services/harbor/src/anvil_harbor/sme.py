@@ -65,6 +65,32 @@ def guard_compose(command):
         raise ValueError("Privileged or destructive Docker flags prohibited")
 
 
+def write_compose_snapshot(trial_dir, role, stdout):
+    """The operator owns the snapshot; sudo Docker must never create this file."""
+    folder = Path(trial_dir)
+    if (
+        role not in {"environment", "tests"}
+        or not folder.is_absolute()
+        or folder.resolve() != folder
+    ):
+        raise ValueError("Canonical owned trial directory required")
+    metadata = folder.stat()
+    if (
+        not stat.S_ISDIR(metadata.st_mode)
+        or metadata.st_uid != os.getuid()
+        or metadata.st_mode & 0o022
+    ):
+        raise ValueError("Operator-owned trial directory required")
+    data = stdout.encode("utf-8") if isinstance(stdout, str) else stdout
+    if not isinstance(data, bytes) or not 0 < len(data) <= 1048576:
+        raise ValueError("Bounded resolved Compose snapshot required")
+    path = folder / ("sme-compose-" + role + ".json")
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(descriptor, "wb") as stream:
+        stream.write(data)
+    return path
+
+
 class SMEDocker(DockerEnvironment):
     @classmethod
     def runtime(cls):
@@ -160,11 +186,8 @@ class SMEDocker(DockerEnvironment):
         self._mounts_compose_path = self._write_mounts_compose_file()
         self._env_compose_path = self._write_env_compose_file()
         self._resources_compose_path = await self._write_resources_compose_file()
-        config_path = self.trial_paths.trial_dir / ("sme-compose-" + self.role + ".json")
-        await self._run_docker_compose_command(
-            ["config", "--format", "json", "--output", str(config_path)]
-        )
-        document = json.loads(config_path.read_bytes())
+        config = await self._run_docker_compose_command(["config", "--format", "json"])
+        document = json.loads(config.stdout)
         if set(document["services"]) != {"main"}:
             raise ValueError("Only one isolated service supported")
         main = document["services"]["main"]
@@ -203,6 +226,7 @@ class SMEDocker(DockerEnvironment):
                 or not source.resolve().is_relative_to(root)
             ):
                 raise ValueError("SME mount source is missing or outside the owned trial")
+        write_compose_snapshot(self.trial_paths.trial_dir, self.role, config.stdout)
         await self._run_docker_compose_command(
             ["up", "--detach", "--wait", "--no-build", "--pull", "never"]
         )
