@@ -1562,7 +1562,7 @@ def test_review_request_cannot_inject_checkpoint_or_graph_commands(client_factor
     assert before == after
 
 
-def test_manifest_dryrun_atomic_commit_dedup_and_quarantine(client_factory):
+def test_manifest_dryrun_atomic_commit_dedup_and_quarantine(client_factory, monkeypatch):
     client, _ = client_factory("data-engineer")
     fixtures = client.post(
         BASE + "/fixtures/import",
@@ -1682,20 +1682,66 @@ def test_manifest_dryrun_atomic_commit_dedup_and_quarantine(client_factory):
         ).status_code
         == 409
     )
-    researcher = client_factory("researcher")[0]
-    tasks = researcher.get(BASE + "/tasks?limit=100")
+    # Fixture import creates a draft owned by its importing data engineer. Copy
+    # that exact binding, not whichever UUID happens to sort first in this project.
+    fixture_source = fixtures.json()["data"][0]
+    tasks = client.get(BASE + "/tasks?limit=100")
     assert tasks.status_code == 200, tasks.text
-    template = tasks.json()["data"][0]["content"]
-    draft = researcher.post(
+    template_record = next(
+        item
+        for item in tasks.json()["data"]
+        if item["content"].get("external_case_id") == "MKT-001"
+        and item["content"].get("source_revision_id") == fixture_source["current_revision_id"]
+        and item["created_by"] == USERS["data-engineer"]
+        and item["content"].get("title") == fixture_source["content"]["title"]
+    )
+    assert template_record["lifecycle"] == "draft"
+    template = template_record["content"]
+    task_body = {
+        **template,
+        "title": "Cannot relabel a partner source as an original fixture",
+        "source_revision_id": new_revision,
+    }
+    # A fresh synthetic session has no source ownership or private assignment,
+    # regardless of what earlier tests granted to the seeded researcher.
+    import psycopg
+
+    unassigned = uid()
+    monkeypatch.setitem(USERS, "unassigned-reference-researcher", unassigned)
+    with psycopg.connect(setting("MIGRATION_DATABASE_URL")) as c:
+        org = c.execute("SELECT org_id FROM anvil.projects WHERE id=%s", (PROJECT,)).fetchone()[0]
+        c.execute(
+            "INSERT INTO anvil.users(id,org_id,issuer,subject,name,active,is_synthetic) "
+            "VALUES(%s,%s,'synthetic-integration-no-login',%s,'Unassigned reference fixture',true,true)",
+            (unassigned, org, unassigned),
+        )
+        c.execute(
+            "INSERT INTO anvil.memberships(project_id,user_id,role) VALUES(%s,%s,'rl-engineer')",
+            (PROJECT, unassigned),
+        )
+    try:
+        denied = client_factory("unassigned-reference-researcher")[0].post(
+            BASE + "/tasks", json=task_body, headers={"Idempotency-Key": uid()}
+        )
+        assert denied.status_code == 403, denied.text
+        assert "private reference bindings" in denied.text
+    finally:
+        with psycopg.connect(setting("MIGRATION_DATABASE_URL")) as c:
+            c.execute("UPDATE anvil.users SET active=false WHERE id=%s", (unassigned,))
+    draft_response = client.post(
         BASE + "/tasks",
-        json={
-            **template,
-            "title": "Cannot relabel a partner source as an original fixture",
-            "source_revision_id": new_revision,
-        },
+        json=task_body,
         headers={"Idempotency-Key": uid()},
-    ).json()["data"]
-    rejected_origin = researcher.post(
+    )
+    assert draft_response.status_code == 201, {
+        "status": draft_response.status_code,
+        "body": draft_response.text,
+        "template_id": template_record["id"],
+        "template_lifecycle": template_record["lifecycle"],
+        "template_keys": sorted(template),
+    }
+    draft = draft_response.json()["data"]
+    rejected_origin = client.post(
         BASE + "/tasks/" + draft["id"] + "/submit",
         json={},
         headers={"Idempotency-Key": uid(), "If-Match": str(draft["row_version"])},
