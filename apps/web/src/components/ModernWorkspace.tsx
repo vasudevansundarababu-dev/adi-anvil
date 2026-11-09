@@ -9,6 +9,9 @@ import WorkspaceExecutionGroups from './WorkspaceExecutionGroups';
 import ModelProfiles from './ModelProfiles';
 import FrameworkProfiles from './FrameworkProfiles';
 import EvaluatorSettings from './EvaluatorSettings';
+import BenchmarkRunDashboard from './BenchmarkRunDashboard';
+import BenchmarkMethods from './BenchmarkMethods';
+import BenchmarkExecutionGroups from './BenchmarkExecutionGroups';
 import DiagnosticResults from './DiagnosticResults';
 import WorkspaceRevisionEditor from './WorkspaceRevisionEditor';
 import WorkspacePeople, { WorkspaceAccess } from './WorkspacePeople';
@@ -38,6 +41,7 @@ const navigation = [
   ['models', 'Models & keys'],
   ['frameworks', 'Frameworks'],
   ['evaluators', 'Evaluators'],
+  ['benchmark-methods', 'Benchmark methods'],
   ['people', 'People'],
   ['limits', 'Limits & usage'],
 ];
@@ -84,6 +88,11 @@ function WorkspaceView() {
     route = project ? '/workspace/' + project.id : '/workspace';
   const taskFilter = query.get('task'),
     runId = query.get('run');
+  const connectedBenchmark =
+    section === 'benchmarks' &&
+    !query.get('rehearsal_id') &&
+    !query.get('trace_id') &&
+    !query.get('source_class');
   const diagnostic = query.get('kind') === 'diagnostic';
   const tasksEndpoint = diagnostic ? 'diagnostic-tasks' : 'tasks';
   const runsEndpoint = diagnostic ? 'diagnostic-runs' : 'runs';
@@ -114,6 +123,11 @@ function WorkspaceView() {
   const load = useCallback(async () => {
     if (!base || !allowed) return;
     const current = ++generation.current;
+    if (connectedBenchmark) {
+      setLoading(false);
+      setError('');
+      return;
+    }
     setLoading(true);
     setError('');
     setDetail(null);
@@ -139,7 +153,7 @@ function WorkspaceView() {
     } finally {
       if (current === generation.current) setLoading(false);
     }
-  }, [base, allowed, taskFilter, runId, section, tasksEndpoint, runsEndpoint]);
+  }, [base, allowed, taskFilter, runId, section, tasksEndpoint, runsEndpoint, connectedBenchmark]);
   useEffect(() => {
     void load();
     setPrepare(false);
@@ -157,6 +171,13 @@ function WorkspaceView() {
   }, [detail, load]);
   function go(page: string) {
     setTab('Dashboard');
+    if (page === 'benchmarks') {
+      const saved = sessionStorage.getItem('anvil-benchmark:' + base);
+      if (saved?.startsWith(route + '/benchmarks?')) {
+        router.push(saved);
+        return;
+      }
+    }
     router.push(route + '/' + page + (scopeQuery ? '?' + scopeQuery : ''));
   }
   function openRun(run: WorkspaceRun) {
@@ -228,6 +249,12 @@ function WorkspaceView() {
               <a
                 key={key}
                 href={route + '/' + key}
+                onClick={(e) => {
+                  if (key === 'benchmarks') {
+                    e.preventDefault();
+                    go(key);
+                  }
+                }}
                 aria-current={section === key ? 'page' : undefined}
               >
                 {key === 'models' && <small>Administration</small>}
@@ -602,17 +629,26 @@ function WorkspaceView() {
                 ))}
               {section === 'models' && admin && <ModelProfiles key={base} base={base} />}
               {section === 'evaluators' && canEdit && <EvaluatorSettings key={base} base={base} />}
-              {section === 'benchmarks' && (
-                <WorkspaceBenchmarks
-                  key={base}
-                  base={base}
-                  route={route}
-                  userId={user.id}
-                  canWrite={canEdit}
-                  canAdmin={admin}
-                  tasks={tasks?.items || []}
-                />
+              {section === 'benchmark-methods' && canEdit && <BenchmarkMethods base={base} />}
+              {section === 'execution-groups' && canEdit && (
+                <BenchmarkExecutionGroups base={base} route={route} />
               )}
+              {section === 'benchmarks' &&
+                (!query.get('rehearsal_id') &&
+                !query.get('trace_id') &&
+                !query.get('source_class') ? (
+                  <BenchmarkRunDashboard base={base} canAdmin={admin} />
+                ) : (
+                  <WorkspaceBenchmarks
+                    key={base}
+                    base={base}
+                    route={route}
+                    userId={user.id}
+                    canWrite={canEdit}
+                    canAdmin={admin}
+                    tasks={tasks?.items || []}
+                  />
+                ))}
               {section === 'frameworks' && admin && (
                 <>
                   <FrameworkProfiles

@@ -1,4 +1,12 @@
-# Current — evaluator implementation launched after final design review
+# Current — integrated local benchmark flow
+
+The full local fictional journey now persists Project/Task Group imports, optional policy documents/text, tested mappings, method profiles, reusable plans, durable Runs and immutable cell evidence. New seven-view dashboard has retained filters, actual rubrics/Task links, six-axis quality/safety charts and persistent exact-scope exports. See `docs/agent-team/runs/anvil-codex-transition-2026-11-08/benchmark-integrated-handoff.md` and product36 for the collection packaging contract.
+
+Actual upstream local engines work in Run evaluation within their restricted capabilities. Commercial calls, real models, original external benchmark harnesses and current native qualification are not manufactured by the fictional flow. Both real local role journeys are tested; actual Admin execution exempts report review, while an RL Engineer using an Admin-authored plan remains pending. No approval was clicked in the preview. Paid calls remain off; Praxis and original local changes remain untouched; no deployment.
+
+---
+
+# Historical — evaluator foundation launch
 
 November9: current user authorized detailed Praxis coding handoff, QA changes for both products and Anvil coding. Product specs34/35 and rendered Word/JSON example handoff supersede the design hold. Local policy/evaluator foundation is implemented, not the full approved dashboard release. Latest focused fresh SQL/API suite13PASS covers both roles and five local deterministic capabilities; two API adapters remain contract-tested/paid-off. Foundation full930units/build pass is predecessor evidence; do not relabel it full successor qualification. Exact installed library/runtime limits and remaining work are in `docs/agent-team/runs/anvil-codex-transition-2026-11-08/policy-evaluator-implementation-progress.md`.
 

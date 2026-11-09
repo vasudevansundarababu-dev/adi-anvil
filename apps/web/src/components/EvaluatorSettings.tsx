@@ -18,6 +18,16 @@ type Configuration = {
 export default function EvaluatorSettings({ base }: { base: string }) {
   const endpoint = base + '/workspace/evaluators';
   const [items, setItems] = useState<Configuration[]>([]);
+  const [catalog, setCatalog] = useState<
+    {
+      id: string;
+      name: string;
+      status: string;
+      version?: string;
+      capability: string;
+      reason: string;
+    }[]
+  >([]);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -26,6 +36,7 @@ export default function EvaluatorSettings({ base }: { base: string }) {
   const reload = useCallback(async () => {
     const value = await api(endpoint);
     setItems(value.items);
+    setCatalog(value.catalog || []);
   }, [endpoint]);
   useEffect(() => {
     reload().catch((e) => setError(e.message));
@@ -39,6 +50,31 @@ export default function EvaluatorSettings({ base }: { base: string }) {
         configure evaluators.
       </p>
       <p>Live API calls are off. Saving a key makes no external request.</p>
+      <details>
+        <summary>Integration catalog and actual capabilities</summary>
+        <table>
+          <thead>
+            <tr>
+              <th>Integration</th>
+              <th>Runtime</th>
+              <th>Capability</th>
+              <th>Readiness</th>
+            </tr>
+          </thead>
+          <tbody>
+            {catalog.map((c) => (
+              <tr key={c.id}>
+                <td>{c.name}</td>
+                <td>{c.version || '—'}</td>
+                <td>{c.capability}</td>
+                <td>
+                  {c.status.replaceAll('_', ' ')} · {c.reason}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </details>
       {error && <p role="alert">{error}</p>}
       {message && <p role="status">{message}</p>}
       <table>
@@ -88,7 +124,9 @@ export default function EvaluatorSettings({ base }: { base: string }) {
                       .split(',')
                       .map((x) => x.trim())
                       .filter(Boolean)
-                  : rawValue;
+                  : kind === 'equals' && ['true', 'false'].includes(rawValue)
+                    ? rawValue === 'true'
+                    : rawValue;
               const body = local
                 ? {
                     name: data.get('name'),

@@ -1,4 +1,14 @@
-# Current — approved evaluator design implementation started
+# Current — integrated local benchmark journey
+
+November9: the approved local dashboard/configuration flow is connected to stored Project imports, optional policy sources, tested deterministic mappings, reusable Execution Groups, durable LangGraph Runs, separate captures/assessments, seven result views and exact-scope PDF/JSON/JSONL exports. The new preview is on loopback53586; older50679/52977 previews remain unchanged. This is a fictional business software execution, not vendor model performance or native isolation.
+
+Five actual local adapter capabilities are integrated into Run assessment: built-in, ZEN2.1.3, OPA1.22.2, NeMo0.24.1 literal checks and Promptfoo0.125.1 literal assertions. Arthur/Openlayer retain bounded wire contracts and disconnected API configuration; no live calls. Unqualified/archived vendor entries stay unavailable rather than becoming Run options.
+
+Evidence and exact limitations: `docs/agent-team/runs/anvil-codex-transition-2026-11-08/benchmark-integrated-handoff.md`. Full offline units933 PASS; broad SQL predecessor238 PASS/38 explicit native-or-optional skips, followed by23 fresh final Run/adapter/authority/intake checks.38 Node contracts, types and production build pass. Real OIDC browser flow exercises Admin and RL Engineer; no report decisions were manufactured. Current native qualification and live API/provider verification remain separate and unrun. No Praxis/original-checkout changes, paid calls, merge, push, cloud build or deployment.
+
+---
+
+# Historical — evaluator foundation milestone
 
 November9: user approved the final design, requested a detailed Praxis coding handoff and QA changes for BOTH products, then Anvil coding. Specifications34/35, rendered Word handoffs, schema and examples are delivered. Praxis remains an independent coding handoff; its repository and the original dirty checkout are untouched.
 

@@ -27,8 +27,12 @@ class RequestLimits:
             )
             is not None
         )
+        project_import = scope["method"] == "POST" and re.fullmatch(
+            r"/api/v1/projects/[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}/workspace/benchmark/import",
+            scope["path"],
+        ) is not None
         limit = (
-            (100 if streaming else 26 if upload else 3 if praxis else 2 if manifest else 1)
+            (100 if streaming else 26 if upload or project_import else 3 if praxis else 2 if manifest else 1)
             * 1024
             * 1024
         )
@@ -42,7 +46,7 @@ class RequestLimits:
             return await self.reject(send, 400, "Invalid Content-Length", request_id)
         if declared > limit:
             return await self.reject(send, 413, "Request exceeds size limit", request_id)
-        if streaming:
+        if streaming or project_import:
             size = 0
 
             async def streaming_receive():

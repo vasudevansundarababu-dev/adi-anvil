@@ -1,0 +1,170 @@
+{
+  "schema_version": "anvil.integrated-benchmark-evidence.v1",
+  "local_fictional_flow_complete": true,
+  "real_model_performance": false,
+  "native_qualification": false,
+  "commercial_live_calls": false,
+  "deployment": false,
+  "github_push": false,
+  "paid_calls": 0,
+  "base_commit": "b12e2e910713f719ff4d58fae93a2a1aa50647d3",
+  "preview": {
+    "root": "/private/tmp/anvil-business-preview-7ca87fce68",
+    "web_port": 53586,
+    "api_port": 53587,
+    "oidc_port": 53588,
+    "url": "http://127.0.0.1:53586/workspace/e22b24df-9fdf-4420-9b92-e2d52a9dc17a/benchmarks",
+    "project": "e22b24df-9fdf-4420-9b92-e2d52a9dc17a",
+    "database": "anvil_preview_87841773da",
+    "oidc_container": "anvil-business-oidc-7ca87fce68",
+    "oidc_container_id": "ca0eee3a170ecef6a9c1b096b4611727b3ea669834e604a2b01789741c44a039",
+    "processes": {
+      "api": 91095,
+      "worker": 91096,
+      "web": 91097
+    },
+    "provider_calls": 0,
+    "deployment": false,
+    "runtime": "/private/tmp/anvil-business-runtime-c346434103094dc19bbf0cf67d18b0fb",
+    "source_files": 1018,
+    "credential_scopes": {
+      "api": "app database and local OIDC only",
+      "worker": "worker database; no app/owner/OIDC/session credentials",
+      "web": "API port only",
+      "inherited_provider_credentials": false
+    }
+  },
+  "admin_browser": {
+    "passed": true,
+    "runUrl": "http://127.0.0.1:53586/workspace/e22b24df-9fdf-4420-9b92-e2d52a9dc17a/benchmarks?task_group=7c74680c-dfd7-48ec-bad4-d5ca43c91da0&benchmark_run=34b62854-dbba-462f-8dc8-d4724d691b08",
+    "finalUrl": "http://127.0.0.1:53586/workspace/e22b24df-9fdf-4420-9b92-e2d52a9dc17a/benchmarks?task_group=7c74680c-dfd7-48ec-bad4-d5ca43c91da0&benchmark_run=34b62854-dbba-462f-8dc8-d4724d691b08&view=Overview&task=all",
+    "checks": [
+      "OIDC login",
+      "Project import",
+      "Actual ZEN rule known-case tests",
+      "saved Execution Group",
+      "durable 18-cell Run",
+      "all seven views",
+      "filters preserved",
+      "first rubric selection",
+      "task detail",
+      "stored output",
+      "persistent exports",
+      "reload",
+      "scoped PDF",
+      "full PDF and JSON",
+      "remediation JSONL and persisted draft"
+    ],
+    "provider_calls": 0,
+    "browser_errors": []
+  },
+  "engineer_browser": {
+    "passed": true,
+    "url": "http://127.0.0.1:53586/workspace/e22b24df-9fdf-4420-9b92-e2d52a9dc17a/benchmarks?benchmark_run=349811ba-d2e0-49b4-8c97-8d82700204b4&task_group=7c74680c-dfd7-48ec-bad4-d5ca43c91da0&view=Report+preview",
+    "checks": [
+      "actual RL Engineer OIDC",
+      "configure benchmark method",
+      "save ZEN configuration",
+      "actual known-case tests",
+      "reuse Admin-authored plan",
+      "actual RL Engineer execution",
+      "no inherited Admin exemption",
+      "report pending; no decision clicked"
+    ],
+    "provider_calls": 0,
+    "errors": []
+  },
+  "actual_sql_run_facts": [
+    {
+      "run_id": "349811ba-d2e0-49b4-8c97-8d82700204b4",
+      "executor_name": "rl-engineer - Synthetic preview",
+      "actual_admin_execution": false,
+      "cells": 18,
+      "provider_calls": 0,
+      "actual_report_decisions": 0,
+      "durable_checkpoint_rows": 4,
+      "result_sha256": "9fbb3db1dc27294a9989f003ecd660e2fd7bc785b2c837ce8df3eb8c5ebdfa88"
+    },
+    {
+      "run_id": "34b62854-dbba-462f-8dc8-d4724d691b08",
+      "executor_name": "admin-1 - Synthetic preview",
+      "actual_admin_execution": true,
+      "cells": 18,
+      "provider_calls": 0,
+      "actual_report_decisions": 0,
+      "durable_checkpoint_rows": 4,
+      "result_sha256": "80f74d345bb3447644e1ea8c85f1f2ae5a4b0e94fbe3cb4f4bb819930369ba4e"
+    }
+  ],
+  "score_summary": [
+    {
+      "model_key": "fictional-compliant-v1",
+      "cells": 6,
+      "mean_points": "81.00",
+      "possible_points": "81",
+      "percent": "100.00"
+    },
+    {
+      "model_key": "fictional-incomplete-v1",
+      "cells": 6,
+      "mean_points": "56.70",
+      "possible_points": "81",
+      "percent": "70.00"
+    },
+    {
+      "model_key": "fictional-permissive-v1",
+      "cells": 6,
+      "mean_points": "35.10",
+      "possible_points": "81",
+      "percent": "43.33"
+    }
+  ],
+  "view_sha256": "d5ced6ca323632fec3f7b495add008f821ba9c25ab6ee2064923228e040890aa",
+  "pdfs": {
+    "complete-fictional-run": {
+      "pages": 7,
+      "sha256": "531bf23ceaf31c9ea123e08ab5ffd44b10283e82b06d6538ab71390c08283b1e"
+    },
+    "selected-model-environment": {
+      "pages": 7,
+      "sha256": "65e24d34c9d85a3f3c62affb5ea5fedbb603867b5561bf2744dfd11c39a30f33"
+    }
+  },
+  "public_source_pattern_scan": {
+    "text_files": 1012,
+    "findings": 0,
+    "private_env_files_scanned": false
+  },
+  "serving_product_source": {
+    "files": 338,
+    "sha256": "24fa632a42fadbfb80a9b9a2d9d776ccc4d7b44b87fba74102d6d86f2371cf29",
+    "matches_worktree": true
+  },
+  "tests": {
+    "backend_units": {
+      "passed": 933,
+      "failed": 0
+    },
+    "broad_sql_predecessor": {
+      "passed": 238,
+      "skipped": 38,
+      "not_final_native_qualification": true
+    },
+    "final_focused_sql_api_actual_adapters": {
+      "passed": 23,
+      "failed": 0
+    },
+    "node_contracts": {
+      "passed": 38,
+      "failed": 0
+    },
+    "types_ruff_production_build": "pass"
+  },
+  "retained_boundaries": [
+    "fictional software agents and simulated environments",
+    "no original-suite or judge/model performance fabricated",
+    "no human approval/source qualification invented",
+    "unsupported vendor catalog entries unavailable",
+    "Praxis and original dirty checkout untouched"
+  ]
+}

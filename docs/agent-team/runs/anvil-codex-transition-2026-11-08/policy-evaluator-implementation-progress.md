@@ -1,5 +1,9 @@
 # Policy evaluation implementation progress
 
+## Current integrated delivery
+
+The foundation-only remaining list below is historical. The current local implementation connects import/persistence/extraction, saved mappings, plans/Run snapshots, separate durable capture/assessment, all seven dashboard views, remediation sample exports and actual PDF reports. Current evidence, preview and remaining external qualification boundaries are in `benchmark-integrated-handoff.md`. Current source is a local checkpoint; the earlier remote PR head is not evidence of a missing local implementation.
+
 ## Authorization and handoff
 
 On November 9 the user approved the final design and requested a detailed Praxis coding handoff, QA changes for both products, then Anvil implementation. The isolated Anvil checkout is the only product repository being edited. Praxis changes are specified for its independent team; its repository and the original dirty Anvil checkout remain untouched. No deployment, merge, external handoff message, cloud change or live paid call is authorized by this launch.
@@ -32,7 +36,7 @@ Types and production build passed after independently synchronizing the committe
 
 Only new owned QA container `anvil-evaluator-sql-20261109` and its fresh databases are used. Private test configuration remains under `/private/tmp/anvil-evaluator-sql-20261109`; never copy credentials into reports. Local isolated environments are `/private/tmp/anvil-evaluators-20261109-venv`, `anvil-nemo-evaluator-20261109`, `anvil-trulens-evaluator-20261109`; actual OPA binary/installation checksum is in `/private/tmp/anvil-evaluator-tools-20261109`. Existing previews50678/50679 and older local services are untouched.
 
-## Remaining implementation
+## Remaining at the historical foundation milestone
 
 This milestone is not the full approved dashboard release. Remaining: actual sidecar import/persistence/extraction screens; saved policy mapping and Task/environment compatibility; execution-group/Run snapshots and evaluator worker integration; selected/used evaluation views and task-level safety evidence; six-axis charts, persistent context/export fixes, remediation and complete PDF changes; browser and independent QA. Final API-key testing needs exact service/resource/budget and user-supplied keys. Willingness to buy a small API allowance is not a fabricated spending authorization.
 

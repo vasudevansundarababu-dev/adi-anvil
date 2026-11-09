@@ -15,6 +15,8 @@ def routes(context, wrap, idempotent):
 
     @router.get("")
     def listing(project: UUID, request: Request):
+        from anvil.evaluator_catalog import catalog
+
         with context(request, project) as (c, user, roles):
             authorize(roles)
             rows = c.execute(
@@ -24,6 +26,7 @@ def routes(context, wrap, idempotent):
                 {
                     "items": [configurations.get(c, row["id"]) for row in rows],
                     "live_calls_enabled": False,
+                    "catalog": catalog(),
                 },
                 request,
             )

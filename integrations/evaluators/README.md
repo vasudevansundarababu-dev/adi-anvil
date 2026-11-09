@@ -14,7 +14,7 @@ Anvil ships restricted adapter code and independent dependency locks. Installati
 | Arthur Engine API | API v2 contract | Existing Task prompt validation; capability is per returned rule type | Keyword rule only; other rails remain separate |
 | Openlayer API | v1 existing-test evaluation contract | Queue one exact existing pipeline/window without overwriting history | No verdict from queue acceptance |
 
-The local libraries were tested independently in owned environments on macOS. This is not Linux/native isolation qualification, live-account verification, or completion of the Run integration. API contract tests use HTTPX MockTransport and never call a vendor.
+The five deterministic local capabilities are now connected to captured business-Run evidence and tested through the stored Run pipeline. TruLens remains a separate metric harness. This is not Linux/native isolation qualification or live-account verification. API contract tests use HTTPX MockTransport and never call a vendor. The current integrated evidence is in `docs/agent-team/runs/anvil-codex-transition-2026-11-08/benchmark-integrated-handoff.md`.
 
 ## Reproducible setup
 

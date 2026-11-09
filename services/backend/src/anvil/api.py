@@ -16,6 +16,7 @@ from anvil.benchmark_dashboard_api import routes as benchmark_dashboard_routes
 from anvil.benchmark_golden_api import routes as benchmark_golden_routes
 from anvil.benchmark_rehearsal_api import routes as benchmark_rehearsal_routes
 from anvil.benchmark_rehearsal_report import routes as benchmark_rehearsal_report_routes
+from anvil.benchmark_run_api import routes as benchmark_run_routes
 from anvil.config import harbor_live_enabled
 from anvil.db import audit, digest, one, transaction, uid
 from anvil.delivery import routes as delivery_routes
@@ -166,6 +167,7 @@ def idempotent(c, project, user, request, body, fn):
 
 app.include_router(evaluation_routes(context, wrap, idempotent))
 app.include_router(evaluator_configuration_routes(context, wrap, idempotent))
+app.include_router(benchmark_run_routes(context, wrap, idempotent))
 app.include_router(graph_routes(context, wrap))
 app.include_router(report_routes(context, wrap, idempotent))
 app.include_router(provider_routes(context, wrap, idempotent))
