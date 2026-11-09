@@ -124,7 +124,7 @@ export function BenchmarkOverviewView({
     <>
       <div className={styles.cards}>
         <WorkbenchMetric
-          label="REVIEWED COHORT LEADER"
+          label="AUTHORIZED COHORT LEADER"
           value={
             overview.leader ? (
               <>
@@ -139,7 +139,7 @@ export function BenchmarkOverviewView({
           highlight
         />
         <WorkbenchMetric
-          label="AVERAGE REVIEWED SCORE"
+          label="AVERAGE AUTHORIZED SCORE"
           value={dashboardNumber(overview.average_score_percent, '%')}
           note="Existing task primary only. Judge scores are separate."
         />
@@ -149,7 +149,7 @@ export function BenchmarkOverviewView({
           note={`${overview.model_trace_count} model observations · ${overview.control_trace_count} software controls`}
         />
         <WorkbenchMetric
-          label="REVIEWED MODEL BINDINGS"
+          label="AUTHORIZED MODEL BINDINGS"
           value={overview.ranked_models}
           note="Not a count of active or reachable provider endpoints."
         />
@@ -190,7 +190,7 @@ export function BenchmarkOverviewView({
                           : 'Unavailable'}
                         <small>
                           {model.primary
-                            ? `${model.primary.percent}% · reviewed`
+                            ? `${model.primary.percent}% · ${model.review_state}`
                             : readable(model.review_state)}
                         </small>
                       </td>
@@ -211,8 +211,9 @@ export function BenchmarkOverviewView({
                       <td>
                         {model.scored_cells} / {model.planned_cells}
                         <small>
-                          {model.reviewed_run_count ?? 'Unknown'} reviewed / {model.run_count}{' '}
-                          stored runs
+                          {model.authorized_run_count ?? model.reviewed_run_count ?? 'Unknown'}{' '}
+                          authorized / {model.run_count} stored runs ·{' '}
+                          {model.reviewed_run_count ?? 0} reviewer-verified
                         </small>
                       </td>
                       <td>
@@ -856,6 +857,9 @@ export default function BenchmarkWorkbench({
             <p>{selected.description}</p>
           </div>
           <div className={styles.actions}>
+            <a className={styles.button} href={route + '/benchmarks/rehearsal'}>
+              New fictional comparison ↗
+            </a>
             <button type="button" disabled={busy} onClick={() => void refresh()}>
               {busy ? 'Refreshing…' : 'Refresh evidence'}
             </button>

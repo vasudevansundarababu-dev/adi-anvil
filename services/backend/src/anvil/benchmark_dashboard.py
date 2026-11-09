@@ -300,7 +300,15 @@ def collect(c, context, *, now=None, include_curation=True):
         )
         reviewed = bool(
             stored
-            and stored["review_state"] in {"approved", "adjudicated"}
+            and stored["review_state"]
+            in {
+                "approved",
+                "adjudicated",
+                "admin_run_exempt",
+                "admin_approved",
+                "policy_no_review",
+                "reviewed",
+            }
             and rights
             and not stale
         )
@@ -533,11 +541,22 @@ def collect(c, context, *, now=None, include_curation=True):
                 "suite_key": suite,
                 "primary": mean_score(primary_values),
                 "diagnostic": mean_score(diagnostic_values),
-                "review_state": "reviewed"
+                "review_state": (
+                    next(iter({x["state"] for x in values}))
+                    if len({x["state"] for x in values}) == 1
+                    else "mixed_authorization"
+                )
                 if len(primary_values) == len(values)
                 else "pending_or_unavailable",
+                "authorization_basis": sorted({x["state"] for x in values}),
+                "reviewer_verified": bool(primary_values)
+                and all(x["state"] in {"approved", "adjudicated", "reviewed"} for x in values),
                 "run_count": len(values),
-                "reviewed_run_count": len(primary_values),
+                "authorized_run_count": len(primary_values),
+                "reviewed_run_count": sum(
+                    bool(x["primary"]) and x["state"] in {"approved", "adjudicated", "reviewed"}
+                    for x in values
+                ),
                 "ranking_eligible": all(x["ranking_eligible"] for x in values),
                 "measurement_notice": "Offline contract scores prove software behavior, not model performance"
                 if not all(x["ranking_eligible"] for x in values)

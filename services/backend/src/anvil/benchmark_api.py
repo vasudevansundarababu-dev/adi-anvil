@@ -18,6 +18,7 @@ from anvil import benchmark_evaluation as evaluation
 from anvil import benchmark_execution as execution
 from anvil import benchmark_pipeline as pipeline
 from anvil import benchmark_reconciliation as reconciliation
+from anvil import benchmark_report_policy as report_policy
 from anvil import benchmark_results as results
 from anvil import benchmark_scheduler as scheduler
 from anvil.benchmark_archive import ArchiveError
@@ -708,6 +709,26 @@ def routes(context, wrap, idempotent):
                     "outputs": sealed["files"],
                     "missing": sealed["missing"],
                 },
+                request,
+            )
+
+    @router.post("/comparisons/{run_id}/report-approval")
+    def approve_report(project: UUID, run_id: UUID, body: report_policy.Approve, request: Request):
+        preflight(project, request, admin=True)
+        with context(request, project) as (c, user, roles):
+            _authorize(c, project, user, roles)
+            auth.require(roles, "admin")
+            execution.comparison(c, run_id)
+            execution.export_rights(c, run_id)
+            return wrap(
+                idempotent(
+                    c,
+                    project,
+                    user,
+                    request,
+                    body,
+                    lambda: results.admin_approve(c, project, user, run_id, body),
+                ),
                 request,
             )
 

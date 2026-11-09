@@ -202,7 +202,7 @@ export function BenchmarkProtocol({
   const [expiry, setExpiry] = useState('');
   const [thresholds, setThresholds] = useState<Record<string, string>>({});
   const [critical, setCritical] = useState<Record<string, string>>({});
-  const [duties, setDuties] = useState(['', '', '']);
+  const [duties, setDuties] = useState<string[]>([]);
   const [confirmed, setConfirmed] = useState(false);
   const [assignments, setAssignments] = useState<
     {
@@ -228,7 +228,7 @@ export function BenchmarkProtocol({
   }, [base]);
   const distinctPeople =
     new Set(duties.map((id) => assignments.find((item) => item.assignment_id === id)?.user_id))
-      .size === 3;
+      .size === duties.length;
   return (
     <section className={styles.panel} aria-label="Comparison configuration">
       <h2>Configure an offline software comparison</h2>
@@ -250,9 +250,8 @@ export function BenchmarkProtocol({
                 .filter(Boolean),
             })),
             calibration_sha256: version.calibration_sha256,
-            first_assignment_id: duties[0],
-            second_assignment_id: duties[1],
-            adjudicator_assignment_id: duties[2],
+            version: 2,
+            reviewer_assignment_ids: duties,
             sample_percent: 10,
             borderline_percentage_points: 5,
           });
@@ -323,29 +322,29 @@ export function BenchmarkProtocol({
             </div>
           ))}
           {assignmentError && <p role="alert">{assignmentError}</p>}
-          {['First reviewer', 'Second reviewer', 'Adjudicator'].map((name, index) => (
-            <label key={name}>
-              {name}{' '}
-              <select
-                required
-                value={duties[index]}
-                onChange={(event) =>
-                  setDuties((current) =>
-                    current.map((id, position) => (position === index ? event.target.value : id)),
-                  )
-                }
-              >
-                <option value="">Choose a current individual assignment</option>
-                {assignments.map((item) => (
-                  <option key={item.assignment_id} value={item.assignment_id}>
-                    {item.user_name || item.user_id} · expires{' '}
-                    {new Date(item.expires_at).toLocaleString()}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ))}
-          {!distinctPeople && <p>Three different assigned people are required.</p>}
+          <label>
+            Report reviewer assignments (optional for an Admin-run report){' '}
+            <select
+              multiple
+              value={duties}
+              onChange={(event) =>
+                setDuties(Array.from(event.target.selectedOptions, (option) => option.value))
+              }
+            >
+              {assignments.map((item) => (
+                <option key={item.assignment_id} value={item.assignment_id}>
+                  {item.user_name || item.user_id} · expires{' '}
+                  {new Date(item.expires_at).toLocaleString()}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p>
+            The Admin-configured report policy determines the reviewer count. Actual Admin execution
+            or explicit Admin approval exempts additional report sign-off; source and qualification
+            gates still apply.
+          </p>
+          {!distinctPeople && <p>Selected review duties must belong to different people.</p>}
           <p>
             Calibration binding: <code>{version.calibration_sha256}</code>
           </p>
@@ -947,6 +946,7 @@ export default function BenchmarkWorkspace({
             base={base}
             runId={comparison.run_id}
             canWrite={canWrite}
+            canAdmin={canAdmin}
             userId={userId}
             comparison={comparison}
           />

@@ -12,6 +12,8 @@ type StoredScore = {
   reviews: number;
   projection: {
     review_requirements: {
+      state?: string;
+      reviewer_assignment_ids?: string[];
       first_assignment_id?: string;
       second_assignment_id?: string;
       adjudicator_assignment_id?: string;
@@ -25,12 +27,14 @@ export default function BenchmarkScoreReview({
   canWrite,
   userId,
   comparison,
+  canAdmin = false,
 }: {
   base: string;
   runId: string;
   canWrite: boolean;
   userId: string;
   comparison: BenchmarkComparison;
+  canAdmin?: boolean;
 }) {
   const [stored, setStored] = useState<StoredScore | null>(null);
   const [assignment, setAssignment] = useState(''),
@@ -66,13 +70,22 @@ export default function BenchmarkScoreReview({
   };
   const policy = stored?.projection.review_requirements;
   const assigned = duties.filter((duty) =>
-    [
-      policy?.first_assignment_id,
-      policy?.second_assignment_id,
-      policy?.adjudicator_assignment_id,
-    ].includes(duty.assignment_id),
+    (
+      policy?.reviewer_assignment_ids || [
+        policy?.first_assignment_id,
+        policy?.second_assignment_id,
+        policy?.adjudicator_assignment_id,
+      ]
+    ).includes(duty.assignment_id),
   );
-  const locked = stored?.review_state === 'approved' || stored?.review_state === 'adjudicated';
+  const locked = [
+    'approved',
+    'adjudicated',
+    'reviewed',
+    'admin_run_exempt',
+    'admin_approved',
+    'policy_no_review',
+  ].includes(stored?.review_state || '');
   return (
     <section className={styles.panel} aria-label="Independent score review">
       <h2>Independent score review</h2>
@@ -100,12 +113,41 @@ export default function BenchmarkScoreReview({
           )}
           {locked && (
             <p>
-              This reviewed publication is immutable. Its predecessor and recorded decisions are
-              retained.
+              This report-authorized publication is immutable. Its actual authorization basis,
+              predecessor and any recorded reviewer decisions are retained.
             </p>
           )}
           {!locked && (
             <>
+              {canAdmin && (
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    setBusy(true);
+                    setError('');
+                    void benchmarkPost(base, '/comparisons/' + runId + '/report-approval', {
+                      expected_result_sha256: stored.projection_sha256,
+                      rationale,
+                    })
+                      .then(() => refresh())
+                      .catch((failure) => setError((failure as Error).message))
+                      .finally(() => setBusy(false));
+                  }}
+                >
+                  <label>
+                    Admin report approval rationale
+                    <textarea
+                      required
+                      minLength={10}
+                      maxLength={2000}
+                      value={rationale}
+                      onChange={(event) => setRationale(event.target.value)}
+                    />
+                  </label>
+                  <button disabled={busy}>Approve this exact report as Admin</button>
+                  <p>This records an Admin authorization, not a fabricated independent review.</p>
+                </form>
+              )}
               <form
                 onSubmit={(event) => {
                   event.preventDefault();

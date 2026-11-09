@@ -80,7 +80,7 @@ test('all four views preserve the exact selected cohort and immutable score refe
     assert.equal(parsed.searchParams.toString(), original.toString());
     assert.equal(
       parsed.pathname,
-      '/workspace/project/benchmarks' + (view === 'overview' ? '' : '/' + view),
+      '/workspace/project/benchmarks' + (view === 'overview' ? '/evidence' : '/' + view),
     );
   }
 });
@@ -201,8 +201,13 @@ test('client rejects unreviewed primary attribution and historical controls masq
     reviewed_run_count: 0,
     run_count: 1,
   });
-  assert.throws(() => api.validateDashboardSnapshot(data), /actual reviewed run/);
+  assert.throws(() => api.validateDashboardSnapshot(data), /actual report-authorization basis/);
   data.overview.models[0].reviewed_run_count = 1;
+  assert.equal(api.validateDashboardSnapshot(data), data);
+  data.overview.models[0].reviewed_run_count = 0;
+  data.overview.models[0].authorized_run_count = 1;
+  data.overview.models[0].reviewer_verified = false;
+  data.overview.models[0].authorization_basis = ['admin_run_exempt'];
   assert.equal(api.validateDashboardSnapshot(data), data);
   data.overview.models[0].model_key = 'contract-only';
   data.overview.models[0].ranking_eligible = false;

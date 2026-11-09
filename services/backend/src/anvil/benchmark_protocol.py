@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import AwareDatetime, Field, model_validator
+from pydantic import AwareDatetime, Field, model_serializer, model_validator
 
 from anvil.benchmark_conversation import Binding, Frozen, Limits
 from anvil.config import ROOT
@@ -29,7 +29,12 @@ def runtime_sha256():
         "benchmark_conversation.py",
         "benchmark_provider_wire.py",
     )
-    paths += ("benchmark_review_policy.py", "benchmark_atif.py", "benchmark_reconciliation.py")
+    paths += (
+        "benchmark_review_policy.py",
+        "benchmark_report_policy.py",
+        "benchmark_atif.py",
+        "benchmark_reconciliation.py",
+    )
     paths += (
         "benchmark_qualification.py",
         "benchmark_compiler.py",
@@ -88,18 +93,52 @@ class TaskReviewPolicy(Frozen):
 
 
 class ReviewPolicy(Frozen):
+    version: Literal[1, 2] = 1
     tasks: tuple[TaskReviewPolicy, TaskReviewPolicy, TaskReviewPolicy]
     calibration_sha256: Hash
-    first_assignment_id: UUID
-    second_assignment_id: UUID
-    adjudicator_assignment_id: UUID
+    first_assignment_id: UUID | None = None
+    second_assignment_id: UUID | None = None
+    adjudicator_assignment_id: UUID | None = None
+    reviewer_assignment_ids: tuple[UUID, ...] = Field(default=(), max_length=10)
+    report_policy: dict | None = None
     sample_percent: Literal[10] = 10
     borderline_percentage_points: Literal[5] = 5
 
+    @model_serializer(mode="wrap")
+    def preserve_legacy_bytes(self, handler):
+        result = handler(self)
+        if self.version == 1:
+            for key in ("version", "reviewer_assignment_ids", "report_policy"):
+                result.pop(key, None)
+        return result
+
     @model_validator(mode="after")
     def distinct(self):
+        if self.version == 2:
+            if len({t.task_revision_id for t in self.tasks}) != 3 or len(
+                set(self.reviewer_assignment_ids)
+            ) != len(self.reviewer_assignment_ids):
+                raise ValueError("Exact task thresholds and distinct report duties required")
+            if any(
+                x is not None
+                for x in (
+                    self.first_assignment_id,
+                    self.second_assignment_id,
+                    self.adjudicator_assignment_id,
+                )
+            ):
+                raise ValueError("Version2 uses configurable report duties, not legacy stages")
+            return self
         if (
-            len({t.task_revision_id for t in self.tasks}) != 3
+            any(
+                x is None
+                for x in (
+                    self.first_assignment_id,
+                    self.second_assignment_id,
+                    self.adjudicator_assignment_id,
+                )
+            )
+            or len({t.task_revision_id for t in self.tasks}) != 3
             or len(
                 {
                     self.first_assignment_id,

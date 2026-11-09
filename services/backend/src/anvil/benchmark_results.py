@@ -37,7 +37,11 @@ def latest(c, run_id, revision_id=None):
         "review_state": basis["state"]
         if basis
         else review_state(row["redacted_projection"], reviews),
-        "reviews": len(basis["decisions"]) if basis else len(reviews),
+        "reviews": basis.get("authorization_basis", {}).get(
+            "completed_reviewers", len(basis["decisions"])
+        )
+        if basis
+        else len(reviews),
     }
 
 
@@ -114,6 +118,23 @@ def publish(c, project, user, run_id, *, adjustments=None):
             }
         )
     projection, hash_ = scorecard(protocol, cells)
+    if protocol.review_policy and protocol.review_policy.version == 2:
+        from anvil import benchmark_report_policy as report_policy
+
+        release = report_policy.authorization(c, project, "comparison", run_id, None)
+        # Release is not a human verification fact; no fictional review rows.
+        if release["state"] in {"admin_run_exempt", "policy_no_review"}:
+            for model in projection["models"]:
+                if model["score_complete"]:
+                    model["primary"] = model["diagnostic"]["complete_repetition_mean"]
+                    model["completion"] = "complete"
+            projection["complete"] = all(m["primary"] is not None for m in projection["models"])
+            projection["review_basis"] = {
+                "state": release["state"],
+                "decisions": [],
+                "reviewer_verified": False,
+                "authorization_basis": release,
+            }
     if adjudications:
         projection["adjudications"] = adjudications
     measurement = digest(projection)
@@ -161,6 +182,7 @@ def publish_reviewed(c, project, user, run_id, parent, decisions, state):
     projection["complete"] = all(model["primary"] is not None for model in projection["models"])
     projection["review_basis"] = {
         "state": state,
+        "reviewer_verified": state in {"approved", "adjudicated", "reviewed"},
         "score_revision_id": str(parent["id"]),
         "projection_sha256": parent["projection_sha256"],
         "decisions": [
@@ -174,6 +196,12 @@ def publish_reviewed(c, project, user, run_id, parent, decisions, state):
             for row in decisions
         ],
     }
+    if state in {"admin_approved", "admin_run_exempt", "policy_no_review", "reviewed"}:
+        from anvil import benchmark_report_policy as report_policy
+
+        projection["review_basis"]["authorization_basis"] = report_policy.authorization(
+            c, project, "comparison", run_id, parent["projection_sha256"]
+        )
     identifier, hash_ = uid(), digest(projection)
     c.execute(
         "INSERT INTO anvil.benchmark_score_revisions(id,project_id,run_id,revision,predecessor_id,projection_sha256,redacted_projection,created_by) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)",
@@ -202,6 +230,23 @@ def publish_reviewed(c, project, user, run_id, parent, decisions, state):
         {"predecessor_score_revision_id": str(parent["id"]), "projection_sha256": hash_},
     )
     return latest(c, run_id)
+
+
+def admin_approve(c, project, user, run_id, body):
+    from anvil import benchmark_report_policy as report_policy
+
+    c.execute("SELECT id FROM anvil.projects WHERE id=%s FOR UPDATE", (project,))
+    current = latest(c, run_id)
+    report_policy.decide(
+        c, project, user, "comparison", run_id, current["projection_sha256"], body, admin=True
+    )
+    parent = one(
+        c,
+        "SELECT * FROM anvil.benchmark_score_revisions WHERE id=%s",
+        (current["score_revision_id"],),
+    )
+    result = publish_reviewed(c, project, user, run_id, parent, [], "admin_approved")
+    return result
 
 
 def correct(c, project, user, run_id, body):
@@ -326,6 +371,35 @@ def review(c, project, user, run_id, body):
     if assignment is None or assignment["artifact_id"] is not None:
         raise HTTPException(403, "A current project-wide evaluation duty is required")
     policy = current["projection"].get("review_requirements", {})
+    if policy.get("state") == "report_policy_v2":
+        from anvil import benchmark_report_policy as report_policy
+
+        if str(body.assignment_id) not in policy["reviewer_assignment_ids"]:
+            raise HTTPException(403, "Duty is not in the frozen report policy")
+        if body.decision != "approved" or body.evidence_sha256 != current["projection_sha256"]:
+            raise HTTPException(409, "Exact result and affirmative human report review required")
+        release = report_policy.decide(
+            c,
+            project,
+            user,
+            "comparison",
+            run_id,
+            current["projection_sha256"],
+            report_policy.Review(
+                expected_result_sha256=body.expected_projection_sha256,
+                rationale=body.rationale,
+                assignment_id=body.assignment_id,
+                human_reviewed=True,
+            ),
+        )
+        if release["ready"]:
+            parent = one(
+                c,
+                "SELECT * FROM anvil.benchmark_score_revisions WHERE id=%s",
+                (body.score_revision_id,),
+            )
+            return publish_reviewed(c, project, user, run_id, parent, [], release["state"])
+        return latest(c, run_id)
     if policy.get("state") != "declared":
         raise HTTPException(409, "Score review policy is incomplete")
     stage = next(
@@ -455,7 +529,7 @@ def export(c, run_id, format_, revision_id=None):
             "Projection SHA-256: " + stored["projection_sha256"],
             "Review: " + stored["review_state"],
             "",
-            "Offline software conformance is not model performance. Primary is the mean of the two complete, mandatorily reviewed repetitions out of81. Pending review keeps the comparable primary null.",
+            "Offline software conformance is not model performance. Primary is the mean of two complete repetitions out of81, released under the frozen report policy or explicit authenticated Admin authorization. Authorization is distinct from human reviewer verification; pending required authorization keeps primary null.",
             "",
         ]
         for model in stored["projection"]["models"]:

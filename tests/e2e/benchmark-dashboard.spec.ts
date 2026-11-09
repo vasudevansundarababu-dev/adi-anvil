@@ -53,7 +53,7 @@ test('four connected benchmark views preserve real context and never create exec
     )
       mutations.push(request.url());
   });
-  await page.goto(root + '?period=7d&environment=all');
+  await page.goto(root + '/evidence?period=7d&environment=all');
   const response = await page.request.get(
     '/api/v1/projects/' + project + '/workspace/benchmarks/dashboard?period=7d&environment=all',
   );
@@ -78,7 +78,9 @@ test('four connected benchmark views preserve real context and never create exec
       .getByRole('navigation', { name: 'Benchmark views' })
       .getByRole('link', { name: label })
       .click();
-    await expect.poll(() => new URL(page.url()).pathname).toBe(root + (suffix ? '/' + suffix : ''));
+    await expect
+      .poll(() => new URL(page.url()).pathname)
+      .toBe(root + (suffix ? '/' + suffix : '/evidence'));
     expect(new URL(page.url()).searchParams.get('period')).toBe('7d');
     expect(new URL(page.url()).searchParams.get('environment')).toBe('all');
     await expect(workbench.getByRole('heading', { name: label, exact: true })).toBeVisible();
@@ -96,7 +98,7 @@ test('report export is an actual redacted snapshot-bound PDF and raw prompts rem
   page,
 }) => {
   await signIn(page);
-  await page.goto('/workspace/' + project + '/benchmarks');
+  await page.goto('/workspace/' + project + '/benchmarks/evidence');
   await page.getByRole('button', { name: 'Export report' }).click();
   const dialog = page.getByRole('dialog', { name: 'Generate evaluation report' });
   await expect(dialog).toBeVisible();

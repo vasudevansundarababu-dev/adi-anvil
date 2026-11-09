@@ -59,9 +59,11 @@ export type BenchmarkReviewPolicy = {
     critical_criterion_ids: string[];
   }[];
   calibration_sha256: string;
-  first_assignment_id: string;
-  second_assignment_id: string;
-  adjudicator_assignment_id: string;
+  version?: 1 | 2;
+  first_assignment_id?: string;
+  second_assignment_id?: string;
+  adjudicator_assignment_id?: string;
+  reviewer_assignment_ids?: string[];
   sample_percent: 10;
   borderline_percentage_points: 5;
 };

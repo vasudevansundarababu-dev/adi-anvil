@@ -70,6 +70,9 @@ export type DashboardSnapshot = {
       review_state: string;
       run_count: number;
       reviewed_run_count: number;
+      authorized_run_count?: number;
+      reviewer_verified?: boolean;
+      authorization_basis?: string[];
       ranking_eligible: boolean;
       measurement_notice: string;
       scored_cells: number;
@@ -159,15 +162,17 @@ export function validateDashboardSnapshot(value: DashboardSnapshot) {
   )
     throw Object.assign(new Error('Unsupported or unbound dashboard response'), { status: 409 });
   for (const model of value.overview.models) {
+    const authorized = model.authorized_run_count ?? model.reviewed_run_count;
     if (
       model.primary &&
-      (!Number.isInteger(model.reviewed_run_count) ||
-        model.reviewed_run_count < 1 ||
-        model.reviewed_run_count > model.run_count)
+      (!Number.isInteger(authorized) || authorized < 1 || authorized > model.run_count)
     )
-      throw Object.assign(new Error('Primary scores require actual reviewed run observations'), {
-        status: 409,
-      });
+      throw Object.assign(
+        new Error('Primary scores require an actual report-authorization basis'),
+        {
+          status: 409,
+        },
+      );
   }
   if (
     value.overview.leader &&
@@ -259,7 +264,10 @@ export function dashboardContextLink(
   if ('run_id' in changes && !('score_revision_id' in changes)) query.delete('score_revision_id');
   const suffix = query.toString();
   return (
-    route + '/benchmarks' + (view === 'overview' ? '' : '/' + view) + (suffix ? '?' + suffix : '')
+    route +
+    '/benchmarks' +
+    (view === 'overview' ? '/evidence' : '/' + view) +
+    (suffix ? '?' + suffix : '')
   );
 }
 

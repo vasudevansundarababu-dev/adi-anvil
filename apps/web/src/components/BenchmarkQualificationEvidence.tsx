@@ -307,8 +307,9 @@ export default function BenchmarkQualificationEvidence({
               prerequisites remain blocking requirements.
             </p>
             <p>
-              A complete comparison additionally requires three distinct assigned reviewers before
-              admission. This evidence view does not assign or approve anyone.
+              Report review follows the Admin-configured policy. An actual Admin run or explicit
+              Admin approval needs no additional report sign-off. Source and qualification gates
+              remain separate; this evidence view does not assign or approve anyone.
             </p>
           </div>
         )

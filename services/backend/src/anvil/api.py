@@ -14,6 +14,8 @@ from anvil import artifacts, auth, domain, fixtures
 from anvil.benchmark_api import routes as benchmark_routes
 from anvil.benchmark_dashboard_api import routes as benchmark_dashboard_routes
 from anvil.benchmark_golden_api import routes as benchmark_golden_routes
+from anvil.benchmark_rehearsal_api import routes as benchmark_rehearsal_routes
+from anvil.benchmark_rehearsal_report import routes as benchmark_rehearsal_report_routes
 from anvil.config import harbor_live_enabled
 from anvil.db import audit, digest, one, transaction, uid
 from anvil.delivery import routes as delivery_routes
@@ -173,6 +175,8 @@ app.include_router(task_import_routes(context, wrap, idempotent))
 app.include_router(benchmark_routes(context, wrap, idempotent))
 app.include_router(benchmark_dashboard_routes(context, wrap, idempotent))
 app.include_router(benchmark_golden_routes(context, wrap, idempotent))
+app.include_router(benchmark_rehearsal_routes(context, wrap, idempotent))
+app.include_router(benchmark_rehearsal_report_routes(context, wrap))
 app.include_router(harbor_routes(context, wrap, idempotent))
 app.include_router(import_generation_routes(context, wrap, idempotent))
 app.include_router(workspace_routes(context, wrap, idempotent))

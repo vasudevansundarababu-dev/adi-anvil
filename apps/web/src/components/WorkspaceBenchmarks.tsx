@@ -8,6 +8,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import BenchmarkPreview from './BenchmarkPreview';
 import BenchmarkWorkspace from './BenchmarkWorkspace';
 import BenchmarkWorkbench from './BenchmarkWorkbench';
+import BenchmarkRehearsalWorkbench from './BenchmarkRehearsalWorkbench';
 
 export default function WorkspaceBenchmarks({
   base,
@@ -32,7 +33,14 @@ export default function WorkspaceBenchmarks({
     (!section && ['receipt', 'qualification', 'version', 'protocol'].some((key) => query.has(key)));
   return (
     <>
-      {section === 'preview' ? (
+      {section === 'rehearsal' || query.has('rehearsal_id') || (!section && !preparation) ? (
+        <BenchmarkRehearsalWorkbench
+          base={base}
+          route={route}
+          canWrite={canWrite}
+          canAdmin={canAdmin}
+        />
+      ) : section === 'preview' ? (
         <>
           <aside className={styles.mockupBanner} aria-label="UI mockup disclosure">
             <strong>UI MOCKUP</strong>

@@ -12,6 +12,8 @@ def requirements(protocol, cells):
     policy = protocol.review_policy
     if policy is None:
         return {"state": "blocked_missing_policy", "second_required": None, "cells": []}
+    if policy.version == 2:
+        return {"state":"report_policy_v2","policy":policy.report_policy,"reviewer_assignment_ids":[str(x) for x in policy.reviewer_assignment_ids],"calibration_sha256":policy.calibration_sha256,"cells":[]}
     declared = {str(t.task_revision_id): t for t in policy.tasks}
     observed = {key(c["task_revision_id"], c["slot"], c["repetition"]): c for c in cells}
     selection = []
@@ -65,6 +67,8 @@ def requirements(protocol, cells):
 
 def review_state(projection, reviews):
     policy = projection.get("review_requirements", {})
+    if policy.get("state")=="report_policy_v2":
+        return "pending_review"
     if policy.get("state") != "declared":
         return "blocked_missing_policy"
     duties = {

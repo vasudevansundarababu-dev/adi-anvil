@@ -14,6 +14,15 @@
   min-height: 750px;
   font-size: 13px;
 }
+.notice {
+  margin: 16px 0;
+  padding: 14px 16px;
+  background: #11252d;
+  border: 1px solid #2d525a;
+  border-radius: 7px;
+  color: #b9dcdf;
+  line-height: 1.6;
+}
 .topbar {
   display: flex;
   justify-content: space-between;

@@ -228,6 +228,8 @@ def protocol(c, identifier):
 
 
 def freeze_protocol(c, project, user, body):
+    from anvil import benchmark_report_policy as report_policy
+
     c.execute("SELECT id FROM anvil.projects WHERE id=%s FOR UPDATE", (project,))
     current = version(c, body.benchmark_revision_id)
     if body.review_policy is None:
@@ -238,6 +240,14 @@ def freeze_protocol(c, project, user, body):
         raise HTTPException(
             409, "Review calibration must bind the exact current native qualification"
         )
+    review_policy = body.review_policy
+    if review_policy.version == 2:
+        selected = report_policy.current(c, project)
+        review_policy = review_policy.model_copy(update={"report_policy": selected})
+        if len(review_policy.reviewer_assignment_ids) != selected[
+            "required_reviewers"
+        ] and not report_policy.is_admin(c, project, user):
+            raise HTTPException(409, "Configured number of distinct report duties required")
     if current["subject_sha256"] != body.expected_benchmark_sha256:
         raise HTTPException(409, "Benchmark version changed before protocol freeze")
     benchmark = domain.get_revision(c, body.benchmark_revision_id, "benchmark")
@@ -283,7 +293,7 @@ def freeze_protocol(c, project, user, body):
                 [t["evaluator_binding_id"] for t in current["tasks"]]
             ),
             "runtime_sha256": runtime_sha256(),
-            "review_policy": body.review_policy.model_dump(mode="json"),
+            "review_policy": review_policy.model_dump(mode="json"),
             "spend": {
                 "currency": "USD",
                 "candidate_cap_micro_usd": 0,
@@ -355,11 +365,16 @@ def protocol_gates(c, identifier):
         } != {t.task_revision_id for t in frozen.tasks}:
             blockers.append("review_calibration_or_threshold_binding_stale")
         people = []
-        for assignment_id in (
-            policy.first_assignment_id,
-            policy.second_assignment_id,
-            policy.adjudicator_assignment_id,
-        ):
+        assignments = (
+            policy.reviewer_assignment_ids
+            if policy.version == 2
+            else (
+                policy.first_assignment_id,
+                policy.second_assignment_id,
+                policy.adjudicator_assignment_id,
+            )
+        )
+        for assignment_id in assignments:
             duty = one(
                 c,
                 "SELECT a.user_id FROM anvil.benchmark_private_assignments a JOIN anvil.memberships m ON m.project_id=a.project_id AND m.user_id=a.user_id AND m.active AND m.role IN ('admin','rl-engineer') JOIN anvil.users u ON u.id=m.user_id AND u.active WHERE a.id=%s AND a.scope='evaluation_review' AND a.artifact_id IS NULL AND a.expires_at>now() AND NOT EXISTS(SELECT 1 FROM anvil.benchmark_private_revocations r WHERE r.assignment_id=a.id)",
@@ -369,7 +384,7 @@ def protocol_gates(c, identifier):
                 blockers.append("review_assignment_missing_or_stale")
             else:
                 people.append(str(duty["user_id"]))
-        if len(set(people)) != 3:
+        if len(set(people)) != len(assignments):
             blockers.append("reviewers_not_independent")
         for task_policy in policy.tasks:
             task = domain.get_revision(c, task_policy.task_revision_id, "task")["content"]
@@ -529,6 +544,12 @@ def admit_offline(c, project, user, identifier, expected):
         "INSERT INTO anvil.benchmark_comparisons(project_id,run_id,benchmark_revision_id,protocol_revision_id,subject_sha256,planned_cells,created_by) VALUES(%s,%s,%s,%s,%s,18,%s)",
         (project, run_id, frozen.benchmark_revision_id, identifier, expected, user),
     )
+    if frozen.review_policy and frozen.review_policy.version == 2:
+        from anvil import benchmark_report_policy as report_policy
+
+        report_policy.snapshot(
+            c, project, user, "comparison", run_id, frozen.review_policy.report_policy
+        )
     windows = {}
     for purpose in ("candidate", "judge"):
         window = uid()

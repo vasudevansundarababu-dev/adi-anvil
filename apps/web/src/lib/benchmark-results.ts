@@ -37,7 +37,14 @@ export async function loadBenchmarkResults(base: string, runId: string) {
     );
   if (
     score &&
-    !['approved', 'adjudicated'].includes(score.review_state) &&
+    ![
+      'approved',
+      'adjudicated',
+      'reviewed',
+      'admin_run_exempt',
+      'admin_approved',
+      'policy_no_review',
+    ].includes(score.review_state) &&
     score.projection.models.some((model) => model.primary !== null)
   )
     throw Object.assign(
