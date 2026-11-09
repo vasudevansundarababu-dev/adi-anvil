@@ -1,7 +1,7 @@
 {
-  "source_sha": "c592b0bd6097db1ddab62956dd0ed541891b15bf",
-  "source_archive_sha256": "98e5a1120125cb0cea6289a14e71692e61045e7c27722028e8959fedd5147ba5",
-  "tracked_source_file_count": 934,
+  "source_sha": "8f6a4e6cee3604a65fb98382335fddae867cce13",
+  "source_archive_sha256": "c4f3dee1d89dfb1605e1aadca9e738a23226551389ed97010680bca59e1c1150",
+  "tracked_source_file_count": 938,
   "source_changes_after_setup": [],
   "project_id": "72ece19c-20ba-4be5-b4bc-29916ad0a0f8",
   "url": "http://127.0.0.1:50679/workspace/72ece19c-20ba-4be5-b4bc-29916ad0a0f8/benchmarks",
@@ -14,7 +14,7 @@
   "qualifications_created": 0,
   "comparisons_created": 0,
   "viewer_role": "synthetic rl-engineer with27artifact-scopedread duties;notglobalreadonly",
-  "actual_browser_authenticated_cohort_verification": "Testing actualOIDC2specsPASS plusall27canonicalauthorizedtraceAPIreadsPASS",
+  "actual_browser_authenticated_cohort_verification": "56a6 actualOIDC/PDF2/all27 PASS; root8f6a CUA finalcontrast/outputreadPASS",
   "api_database_health": "ready",
   "web_http_status": 200,
   "oidc_callback_50679_allow_other50680_deny": true,
@@ -22,10 +22,10 @@
   "defaultcache_misses_resolved_using_existing_security_caches": true,
   "Next_generated_declaration_preserved_then_snapshot_restored_exact": true,
   "private_credentials_in_public_record": false,
-  "private_runtime_home": "/private/tmp/anvil-replacement-runtime-dea110e4f25b4ccbab1c5084418bec0e",
+  "private_runtime_home": "/private/tmp/anvil-replacement-runtime-f990a9bf3bb2440b94cd923825ac4b4a",
   "pids": {
-    "api": 59081,
-    "web": 59082
+    "api": 68770,
+    "web": 68771
   },
   "cloud_changes": false,
   "paid_calls": false,
@@ -39,5 +39,77 @@
     "official": false
   },
   "independent_read_receipt_private_path": "/private/tmp/anvil-replacement-runtime-dea110e4f25b4ccbab1c5084418bec0e/independent-27-authorized-reads.json",
-  "promotion_pending_for_visual_fixes": true
+  "promotion_pending_for_visual_fixes": false,
+  "promotion": {
+    "previous_source_sha": "c592b0bd6097db1ddab62956dd0ed541891b15bf",
+    "db_counts_before": {
+      "benchmark_trace_audit": 27,
+      "benchmark_golden_datasets": 1,
+      "benchmark_golden_versions": 1,
+      "benchmark_remediation_proposals": 1,
+      "benchmark_remediation_intents": 1,
+      "benchmark_source_reviews": 0,
+      "benchmark_qualifications": 0,
+      "benchmark_comparisons": 0
+    },
+    "db_counts_after": {
+      "benchmark_trace_audit": 27,
+      "benchmark_golden_datasets": 1,
+      "benchmark_golden_versions": 1,
+      "benchmark_remediation_proposals": 1,
+      "benchmark_remediation_intents": 1,
+      "benchmark_source_reviews": 0,
+      "benchmark_qualifications": 0,
+      "benchmark_comparisons": 0
+    },
+    "stored_objects_preserved": 28,
+    "stored_bytes_preserved": 230333,
+    "all_stored_object_hashes_verified": true,
+    "session_database_oidc_preserved": true,
+    "history_import_not_repeated": true,
+    "Next_generated_declaration_recorded_and_restored": true
+  },
+  "modern_workspace_http_status": 200,
+  "anonymous_me_http_status": 401,
+  "last_promotion": {
+    "previous_source_sha": "56a6d3fe78add4ebeda66c2dd7f0aa614c7c1832",
+    "db_counts_before": {
+      "benchmark_trace_audit": 27,
+      "benchmark_golden_datasets": 1,
+      "benchmark_golden_versions": 1,
+      "benchmark_remediation_proposals": 1,
+      "benchmark_remediation_intents": 1,
+      "benchmark_source_reviews": 0,
+      "benchmark_qualifications": 0,
+      "benchmark_comparisons": 0
+    },
+    "db_counts_after": {
+      "benchmark_trace_audit": 27,
+      "benchmark_golden_datasets": 1,
+      "benchmark_golden_versions": 1,
+      "benchmark_remediation_proposals": 1,
+      "benchmark_remediation_intents": 1,
+      "benchmark_source_reviews": 0,
+      "benchmark_qualifications": 0,
+      "benchmark_comparisons": 0
+    },
+    "stored_objects_preserved": 28,
+    "all_stored_object_hashes_verified": true,
+    "session_database_oidc_preserved": true,
+    "history_import_not_repeated": true,
+    "access_duties_or_expiries_changed": false,
+    "Next_generated_declaration_recorded_and_restored": true
+  },
+  "local_synthetic_read_window": {
+    "project_id": "72ece19c-20ba-4be5-b4bc-29916ad0a0f8",
+    "original_27_assignments_preserved": true,
+    "new_append_only_artifact_assignments": 27,
+    "expiry_utc": "2026-11-10T00:00:00+00:00",
+    "expiry_central": "2026-11-09T18:00:00-06:00",
+    "operator_chosen_local_fixture_window": true,
+    "explicit_user_1800_approval_claimed": false,
+    "official_model_authority": false,
+    "source_reviews_qualifications_comparisons": 0,
+    "original_expiry_utc": "2026-11-09T13:33:30.708607Z"
+  }
 }
