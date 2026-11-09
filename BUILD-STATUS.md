@@ -1,4 +1,8 @@
-# Current — integrated local benchmark journey
+# Current — six local reference environments verified; full revision 2 remains in progress
+
+User launched the six-environment plan on November9. Actual local environment/data/runtime/binding/UI slice now passes885 offline units,38 fresh SQL/API/generator checks,38 existing Node contracts, types/Ruff/build and2 actual both-role browser flows across all six templates. Thirty synthetic reference scenarios are materialized and validated. Existing benchmark UI/scoring and prior preview remain unchanged. No cloud provisioning, deployment or paid calls. Read `docs/agent-team/runs/anvil-codex-transition-2026-11-08/environment-v2-local-handoff.md` for the current preview and AC01–AC22 limits. Native Harbor attempt integration, automatic qualified GCP lifecycle, authentic six-task mappings, selected-model receipts and OpenEnv trial remain outstanding. Do not claim full approved-spec completion.
+
+# Previous completed — integrated local benchmark journey
 
 November9: the approved local dashboard/configuration flow is connected to stored Project imports, optional policy sources, tested deterministic mappings, reusable Execution Groups, durable LangGraph Runs, separate captures/assessments, seven result views and exact-scope PDF/JSON/JSONL exports. The new preview is on loopback53586; older50679/52977 previews remain unchanged. This is a fictional business software execution, not vendor model performance or native isolation.
 

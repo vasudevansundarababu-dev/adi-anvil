@@ -12,6 +12,7 @@ import EvaluatorSettings from './EvaluatorSettings';
 import BenchmarkRunDashboard from './BenchmarkRunDashboard';
 import BenchmarkMethods from './BenchmarkMethods';
 import BenchmarkExecutionGroups from './BenchmarkExecutionGroups';
+import EnvironmentLibrary from './EnvironmentLibrary';
 import DiagnosticResults from './DiagnosticResults';
 import WorkspaceRevisionEditor from './WorkspaceRevisionEditor';
 import WorkspacePeople, { WorkspaceAccess } from './WorkspacePeople';
@@ -38,6 +39,7 @@ const navigation = [
   ['tasks', 'Tasks'],
   ['benchmarks', 'Benchmarks'],
   ['execution-groups', 'Execution groups'],
+  ['environments', 'Environments'],
   ['models', 'Models & keys'],
   ['frameworks', 'Frameworks'],
   ['evaluators', 'Evaluators'],
@@ -630,6 +632,7 @@ function WorkspaceView() {
               {section === 'models' && admin && <ModelProfiles key={base} base={base} />}
               {section === 'evaluators' && canEdit && <EvaluatorSettings key={base} base={base} />}
               {section === 'benchmark-methods' && canEdit && <BenchmarkMethods base={base} />}
+              {section === 'environments' && canEdit && <EnvironmentLibrary base={base} canAdmin={admin} />}
               {section === 'execution-groups' && canEdit && (
                 <BenchmarkExecutionGroups base={base} route={route} />
               )}

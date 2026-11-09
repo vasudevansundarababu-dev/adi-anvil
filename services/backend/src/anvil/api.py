@@ -22,6 +22,7 @@ from anvil.db import audit, digest, one, transaction, uid
 from anvil.delivery import routes as delivery_routes
 from anvil.evaluation import routes as evaluation_routes
 from anvil.evaluator_api import routes as evaluator_configuration_routes
+from anvil.environment_api import routes as environment_factory_routes
 from anvil.external_results import routes as external_routes
 from anvil.factory import routes as factory_routes
 from anvil.graph import routes as graph_routes
@@ -167,6 +168,7 @@ def idempotent(c, project, user, request, body, fn):
 
 app.include_router(evaluation_routes(context, wrap, idempotent))
 app.include_router(evaluator_configuration_routes(context, wrap, idempotent))
+app.include_router(environment_factory_routes(context, wrap, idempotent))
 app.include_router(benchmark_run_routes(context, wrap, idempotent))
 app.include_router(graph_routes(context, wrap))
 app.include_router(report_routes(context, wrap, idempotent))

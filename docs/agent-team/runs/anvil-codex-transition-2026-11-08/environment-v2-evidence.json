@@ -1,0 +1,97 @@
+{
+  "scope": "local synthetic six-environment implementation; full specification acceptance incomplete",
+  "baseline": "420ed32e5b5eaa1177f40d879954a375df890dd7",
+  "spec_sha256": "20140f38d36db2bcad07f1d56223da2a08d296bb62f0b4486e76df9083d2f5f3",
+  "preview": {
+    "root": "/private/tmp/anvil-environment-v2-preview-2a1dc4952b",
+    "runtime": "/private/tmp/anvil-environment-v2-runtime-2a1dc4952b",
+    "web_port": 52137,
+    "api_port": 52138,
+    "oidc_port": 52139,
+    "url": "http://127.0.0.1:52137/workspace/fbbc80b8-f3cc-4d41-b64d-f1464607377c/environments",
+    "project": "fbbc80b8-f3cc-4d41-b64d-f1464607377c",
+    "database": "anvil_environment_preview_2a1dc4952b",
+    "oidc_container": "anvil-environment-v2-oidc-2a1dc4952b",
+    "oidc_container_id": "eded03799fecb68492bd7ca30750a743073ff7ed6f8bfdb8ac189f2647ad8374",
+    "processes": {
+      "api": 3671,
+      "web": 3672
+    },
+    "provider_calls": 0,
+    "cloud_resources": [],
+    "deployment": false,
+    "reference_versions": 30,
+    "source_manifest_sha256": "c196cc64f12867778b7df9373c473e040e8b03239ab06af4a96c6806f7acdb72"
+  },
+  "runtime_product_files_matched": 342,
+  "runtime_mismatches": [],
+  "public_pattern_scan": {
+    "text_files": 1039,
+    "findings": [],
+    "private_files_read": false
+  },
+  "checks": {
+    "backend_offline_units": 885,
+    "fresh_sql_api_and_generators": 38,
+    "existing_node_contracts": 38,
+    "actual_oidc_browser_flows": 2,
+    "types": "pass",
+    "ruff": "pass",
+    "production_build": "pass",
+    "reference_scenarios": 30
+  },
+  "provider_calls": 0,
+  "cloud_resources_created": 0,
+  "native_isolation_qualified": false,
+  "real_model_execution": false,
+  "praxis_modified": false,
+  "pushed": false,
+  "deployed": false,
+  "acceptance": "See environment-v2-local-handoff.md for AC01\u2013AC22 partial/not-run limits",
+  "experimental_preview_cleanup": [
+    {
+      "preview": "26c15c56bf",
+      "role": "api",
+      "action": "owned process group stopped"
+    },
+    {
+      "preview": "26c15c56bf",
+      "role": "web",
+      "action": "owned process group stopped"
+    },
+    {
+      "preview": "26c15c56bf",
+      "action": "owned synthetic OIDC stopped; data retained"
+    },
+    {
+      "preview": "7d7353e33f",
+      "role": "api",
+      "action": "owned process group stopped"
+    },
+    {
+      "preview": "7d7353e33f",
+      "role": "web",
+      "action": "owned process group stopped"
+    },
+    {
+      "preview": "7d7353e33f",
+      "action": "owned synthetic OIDC stopped; data retained"
+    },
+    {
+      "preview": "a6e327526f",
+      "role": "api",
+      "action": "owned process group stopped"
+    },
+    {
+      "preview": "a6e327526f",
+      "role": "web",
+      "action": "owned process group stopped"
+    },
+    {
+      "preview": "a6e327526f",
+      "action": "owned synthetic OIDC stopped; data retained"
+    }
+  ],
+  "browser_evidence": "artifacts/test-runs/environment-v2/browser-delivery",
+  "browser_log": "/private/tmp/anvil-environment-v2-browser-delivery.log"
+}
