@@ -26,7 +26,7 @@ services:
       - "127.0.0.1:${ANVIL_NEO4J_BOLT_PORT:-7688}:7687"
     volumes: ["adi-anvil-neo4j:/data"]
   keycloak:
-    image: quay.io/keycloak/keycloak:26.3.5@sha256:357829ec7c4693397533035092ad13b0644bcc95ded311f33a3738c4d9e9bdba
+    image: quay.io/keycloak/keycloak:26.8.2@sha256:3879c623248408de29a5303178b5816c77e8dfef3890c361f8c0bbeaa979ba3b
     command: [start-dev, --import-realm]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: anvil-bootstrap
