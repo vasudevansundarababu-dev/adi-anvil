@@ -1,0 +1,28 @@
+{
+  "application_sha": "e4bb2d56800b6e2705b359724750c5702a003204",
+  "started_at": "2026-11-09T01:10:19.007014+00:00",
+  "duration_seconds": 16.632,
+  "exit_code": 0,
+  "command": [
+    "/opt/anvil/.local/backend-venv/bin/python3.12",
+    "-m",
+    "pytest",
+    "-q",
+    "-x",
+    "-p",
+    "no:cacheprovider",
+    "--tb=short",
+    "-rs",
+    "--junitxml=/opt/anvil/.local/native-qa-results/native-limits-e4.xml",
+    "services/backend/tests/benchmark/test_benchmark_native_limits.py"
+  ],
+  "log_sha256": "68cc2084625760a68bcb3a358a109680376fe04670254a5efb722a42557a72a4",
+  "junit_sha256": "1ece8fc37530fe6fb52751974843c2a2c8653cda3c8295de9dadb285182fcf5f",
+  "native_opt_in": true,
+  "paid_calls_enabled": false,
+  "summary": [
+    "4 passed, 1 warning in 14.63s"
+  ],
+  "scope": "actual fictional native conformance; not measured model performance",
+  "private_raw_log_export": ".local/native-qa/results/native-limits-e4.log"
+}

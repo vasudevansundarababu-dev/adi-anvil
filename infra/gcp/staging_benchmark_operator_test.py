@@ -57,10 +57,11 @@ class OperatorPreparation(unittest.TestCase):
             "source_manifest": str(self.manifest),
             "source_manifest_sha256": hashlib.sha256(self.manifest.read_bytes()).hexdigest(),
             "lock_sha256": locks,
+            "evaluator_login_role": "anvil_staging_benchmark_evaluator_login",
         }
         self.env = {
             "ANVIL_DATABASE_URL": "postgresql://anvil_app:TOP_SECRET_APP@127.0.0.1/test_only",
-            "ANVIL_BENCHMARK_EVALUATOR_DATABASE_URL": "postgresql://anvil_benchmark_evaluator:TOP_SECRET_EVAL@127.0.0.1/test_only",
+            "ANVIL_BENCHMARK_EVALUATOR_DATABASE_URL": "postgresql://anvil_staging_benchmark_evaluator_login:TOP_SECRET_EVAL@127.0.0.1/test_only?options=-c%20role%3Danvil_benchmark_evaluator",
         }
 
     def test_only_printable_argv_no_execution_or_secret_values(self):
@@ -126,9 +127,72 @@ class OperatorPreparation(unittest.TestCase):
         with socket.socket(socket.AF_UNIX) as sock:
             sock.bind(str(daemon))
             recipe = prepare(self.contract, self.env)
-        self.assertEqual(recipe["status"], "prepared_not_authorized_or_executed")
+        self.assertEqual(recipe["status"], "blocked_preparation")
+        self.assertIn(
+            "actual_evaluator_login_membership_and_current_user_sql_proof_required",
+            recipe["blockers"],
+        )
         self.assertFalse(recipe["execution_supported"])
         self.assertTrue(recipe["unverified_human_and_runtime_gates"])
+
+    def test_evaluator_nologin_requires_dedicated_login_and_exact_role_option(self):
+        original = self.env["ANVIL_BENCHMARK_EVALUATOR_DATABASE_URL"]
+        rejected = [
+            original.replace("anvil_staging_benchmark_evaluator_login:", role + ":")
+            for role in ("anvil_app", "postgres", "anvil_owner", "anvil_benchmark_evaluator")
+        ]
+        rejected += [
+            original.split("?")[0],
+            original.replace("role%3Danvil_benchmark_evaluator", "role%3Danvil_app"),
+            original + "&options=-c%20role%3Dpostgres",
+            original + "&role=postgres",
+            original + "&user=postgres",
+            original + "%20-c%20role%3Dpostgres",
+        ]
+        for dsn in rejected:
+            with self.subTest(dsn_kind=rejected.index(dsn)):
+                result = prepare(
+                    self.contract, {**self.env, "ANVIL_BENCHMARK_EVALUATOR_DATABASE_URL": dsn}
+                )
+                self.assertIn(
+                    "anvil_benchmark_evaluator_database_url_separate_role_reference_required",
+                    result["blockers"],
+                )
+                self.assertNotIn("TOP_SECRET", json.dumps(result))
+        for role in (None, "anvil_app", "postgres", "anvil_owner", "anvil_benchmark_evaluator"):
+            result = prepare({**self.contract, "evaluator_login_role": role}, self.env)
+            self.assertIn("reviewed_dedicated_evaluator_login_role_required", result["blockers"])
+
+    def test_same_database_separate_identity_is_required_not_same_dsn(self):
+        valid = prepare(self.contract, self.env)
+        self.assertNotIn(
+            "anvil_benchmark_evaluator_database_url_separate_role_reference_required",
+            valid["blockers"],
+        )
+        self.assertEqual(
+            valid["evaluator_sql_contract"]["verify_current_user"], "anvil_benchmark_evaluator"
+        )
+        self.assertFalse(valid["evaluator_sql_contract"]["sql_proof_recorded"])
+        for change in ("test_only?", "other_database?"):
+            evaluator = self.env["ANVIL_BENCHMARK_EVALUATOR_DATABASE_URL"].replace(
+                "test_only?", change
+            )
+            result = prepare(
+                self.contract, {**self.env, "ANVIL_BENCHMARK_EVALUATOR_DATABASE_URL": evaluator}
+            )
+            self.assertEqual(
+                "anvil_benchmark_evaluator_database_url_separate_role_reference_required"
+                in result["blockers"],
+                change != "test_only?",
+            )
+        owner_app = {
+            **self.env,
+            "ANVIL_DATABASE_URL": self.env["ANVIL_DATABASE_URL"].replace("anvil_app:", "postgres:"),
+        }
+        self.assertIn(
+            "anvil_database_url_separate_role_reference_required",
+            prepare(self.contract, owner_app)["blockers"],
+        )
 
     def test_rejects_symlink_vault_and_incomplete_source_manifest(self):
         link = self.root / "vault-link"

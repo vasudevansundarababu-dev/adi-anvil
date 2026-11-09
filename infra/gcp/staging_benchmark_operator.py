@@ -11,7 +11,7 @@ import os
 import re
 import stat
 from pathlib import Path
-from urllib.parse import unquote, urlsplit
+from urllib.parse import parse_qsl, unquote, urlsplit
 from uuid import UUID
 
 OFF = {
@@ -41,6 +41,32 @@ REQUIRED_SOURCE = {
     "services/backend/src/anvil/benchmark_protocol.py",
     "services/harbor/src/anvil_harbor/sme.py",
 }
+
+
+EVALUATOR_LOGIN_ROLES = {"anvil_staging_benchmark_evaluator_login"}
+EVALUATOR_ROLE = "anvil_benchmark_evaluator"
+
+
+def _dsn_target(value, user, *, evaluator=False):
+    url = urlsplit(value)
+    if (
+        url.scheme not in {"postgres", "postgresql"}
+        or unquote(url.username or "") != user
+        or not url.hostname
+        or not url.path.strip("/")
+    ):
+        raise ValueError("separate SQL identity required")
+    parameters = parse_qsl(url.query, keep_blank_values=True)
+    allowed = {"connect_timeout", "application_name", "sslmode", "sslrootcert"} | (
+        {"options"} if evaluator else set()
+    )
+    if len({key for key, _ in parameters}) != len(parameters) or any(
+        key not in allowed for key, _ in parameters
+    ):
+        raise ValueError("unreviewed SQL connection overrides")
+    if evaluator and dict(parameters).get("options") != "-c role=" + EVALUATOR_ROLE:
+        raise ValueError("exact evaluator role startup option required")
+    return url.hostname, url.port or 5432, unquote(url.path)
 
 
 def _uuid(value):
@@ -192,21 +218,26 @@ def prepare(contract, environ=None):
         blockers.append("exact_dedicated_native_daemon_socket_required")
     if any(environ.get(key, "false") != "false" for key in tuple(OFF)[:4]):
         blockers.append("paid_generation_and_email_flags_must_remain_off")
-    for name, required_role in (
-        ("ANVIL_DATABASE_URL", "anvil_app"),
-        ("ANVIL_BENCHMARK_EVALUATOR_DATABASE_URL", "anvil_benchmark_evaluator"),
-    ):
-        try:
-            url = urlsplit(environ.get(name, ""))
-            if (
-                url.scheme not in {"postgres", "postgresql"}
-                or unquote(url.username or "") != required_role
-                or not url.hostname
-                or not url.path.strip("/")
-            ):
-                raise ValueError("role")
-        except ValueError:
-            blockers.append(name.lower() + "_separate_role_reference_required")
+    app_target = None
+    try:
+        app_target = _dsn_target(environ.get("ANVIL_DATABASE_URL", ""), "anvil_app")
+    except ValueError:
+        blockers.append("anvil_database_url_separate_role_reference_required")
+    login_role = contract.get("evaluator_login_role")
+    if login_role not in EVALUATOR_LOGIN_ROLES:
+        blockers.append("reviewed_dedicated_evaluator_login_role_required")
+    try:
+        if login_role not in EVALUATOR_LOGIN_ROLES:
+            raise ValueError("dedicated wrapper required")
+        evaluator_target = _dsn_target(
+            environ.get("ANVIL_BENCHMARK_EVALUATOR_DATABASE_URL", ""), login_role, evaluator=True
+        )
+        if app_target is None or evaluator_target != app_target:
+            raise ValueError("same project database target required")
+    except ValueError:
+        blockers.append("anvil_benchmark_evaluator_database_url_separate_role_reference_required")
+    # Syntax does not prove actual LOGIN, membership, SET ROLE or least privilege.
+    blockers.append("actual_evaluator_login_membership_and_current_user_sql_proof_required")
     python = str(root / ".local/backend-venv/bin/python")
     if operation == "qualification":
         argv = [
@@ -254,6 +285,15 @@ def prepare(contract, environ=None):
             "ANVIL_BENCHMARK_VAULT_ROOT": str(vault),
         },
         "secret_references_only": ["ANVIL_DATABASE_URL", "ANVIL_BENCHMARK_EVALUATOR_DATABASE_URL"],
+        "evaluator_sql_contract": {
+            "login_role": login_role if login_role in EVALUATOR_LOGIN_ROLES else None,
+            "protected_nologin_role": EVALUATOR_ROLE,
+            "required_startup_options": "-c role=" + EVALUATOR_ROLE,
+            "verify_session_user": login_role if login_role in EVALUATOR_LOGIN_ROLES else None,
+            "verify_current_user": EVALUATOR_ROLE,
+            "sql_proof_recorded": False,
+            "future_separate_deployment_approval": "Create reviewed dedicated LOGIN wrapper/membership only; never ALTER protected evaluator role LOGIN. Verify no superuser, BYPASSRLS, CREATEROLE, CREATEDB or owner memberships before execution.",
+        },
         "required_runtime": {
             "backend_python": "3.12 exact reviewed lock installation",
             "harbor_python": str(root / ".local/harbor-venv/bin/python"),

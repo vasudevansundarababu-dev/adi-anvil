@@ -1,4 +1,14 @@
-# Codex continuation — T07–T10 implementation in progress
+# Current checkpoint — Linux adapter repair awaiting native rerun
+
+2026-11-08 evening Central: the user explicitly authorized the isolated Linux QA VM, disk, network, NAT and IAP firewall within USD60, continued testing/fixes, and separate approval before application deployment. These resources exist in the Anvil project only. The VM is private, has no cloud service account, uses fresh test PostgreSQL/schema058 and a dedicated daemon with only the two approved image digests. Praxis and the original local checkout remain untouched. Exact resource identities, runtime provenance and automatic STOP are in `docs/agent-team/runs/anvil-codex-transition-2026-11-08/linux-qa-execution.md`.
+
+Independent Linux testing on source `e4bb2d5` found a real adapter defect before any actor started: elevated Compose created a root-only validation file and non-root Harbor could not read it. The first failure and logs are preserved. Four independent actual Linux resource probes passed on that source; this is not overall native qualification. The reviewed repair is pushed at `0574c68fcdd889e7fa1c4ec8b0bcdff47c06195e`: capture Compose stdout, retain the existing isolation checks, then write a fresh operator-owned0600 snapshot with exclusive/no-symlink creation. Nine adapter regression tests pass. No chmod, socket-permission or privilege workaround was used.
+
+The repaired source/archive and400-file runtime inventory are being verified on the host before a fresh selected28-case native rerun. Native success is **not yet claimed**. Earlier e4 local evidence (778units,168benchmark SQL/security,190integration clean repeat,2browser checks/build) remains source-specific; one earlier intermittent integration failure remains documented despite its passing repeat.
+
+Staging API opt-in configuration and bounded operator recipes are preparatory, with paid paths disabled and operator/evaluator capabilities absent from the API. Actual application deployment, paid model/judge calls and merge remain gated. A candid release packet lists unfinished stage initialization, identities/TLS, artifact binding, operator SQL/storage custody and consolidated costs. There is no new staging application URL or deployment approval request yet.
+
+## Historical initial Codex continuation — preserved
 
 2026-11-08: user authorized remaining implementation in Codex, independent Testing and DevOps staging preparation within additional USD500/month, and STOP before deployment/paid calls. Existing OpenHands coding session is Done/stopped writer; separate fixed-checkpoint read-only security review is authorized. Actual instruction and disjoint ownership: `docs/agent-team/runs/anvil-codex-transition-2026-11-08/current-execution.md`.
 
