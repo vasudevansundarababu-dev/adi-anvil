@@ -1,0 +1,28 @@
+{
+  "application_sha": "54964583dd18cdec512a96c7a0068f743dd3da55",
+  "started_at": "2026-11-09T01:37:30.535764+00:00",
+  "duration_seconds": 10.659,
+  "exit_code": 1,
+  "command": [
+    "/opt/anvil/.local/backend-venv/bin/python3.12",
+    "-m",
+    "pytest",
+    "-q",
+    "-x",
+    "-p",
+    "no:cacheprovider",
+    "--tb=short",
+    "-rs",
+    "--junitxml=/opt/anvil/.local/native-qa-results/native-evaluator-diagnostic-5496458.xml",
+    "services/backend/tests/benchmark/test_benchmark_evaluation.py::test_real_native_separate_evaluator_captures_fenced_private_result"
+  ],
+  "log_sha256": "3c3e23e8827ceacbb63c417f26ddbfccaa1e84181b47f26ec3c2aa5c4fd787e8",
+  "junit_sha256": "aa0b3a56e3ef4a015cc578dca265485ec08f9f28f60432eff7dd12af26dd3fed",
+  "native_opt_in": true,
+  "paid_calls_enabled": false,
+  "summary": [
+    "1 failed, 1 warning in 7.76s"
+  ],
+  "scope": "targeted actual evaluator failure after approved missing-parent setup; unchanged549 source",
+  "private_raw_log_export": ".local/native-qa/results/native-evaluator-diagnostic-5496458.log"
+}

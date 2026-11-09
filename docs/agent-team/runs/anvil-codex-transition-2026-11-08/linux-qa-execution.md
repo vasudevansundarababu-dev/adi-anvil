@@ -1,5 +1,15 @@
 # Linux QA execution record
 
+## Fourth reviewed successor and explicit access extension — edcc051
+
+User explicitly selected the first offered access option, permitting one extension of the **same** temporary public OS Login key until **2026-11-09T02:51:10Z**. The official isolated Anvil SDK updated only `expirationTimeUsec`; the returned exact timestamp was asserted and verified. Fingerprint/account unchanged; no IAM/project setting, private-key read, new resource or automatic further renewal. Earlier01:51 expiry statements below are historical. Remove the exact key after testing, and do not extend beyond the new deadline without fresh authority.
+
+Testing retained a further549 native failure: the non-root evaluator could not read its projected public program leaf. A reviewed source-only correction preserves private-parent ownership and makes only the bounded evaluator program projection usable. Pushed source `edcc0514c43ceb614b813566820ee0c2c7311463` has archive SHA256 `8564c5cd5fdd0795a6dc9e041befbce591781ccacd41182288c0fbdc1c7a6b28` and402-file manifest SHA256 `cd9c2d44cd2106658923adc84307d6107ced87e9c33f6f6653d4325f65b536a6`.
+
+With Testing paused, all401 prior549 files matched. Only `services/backend/src/anvil/benchmark_evaluator_native.py` was atomically replaced (old copy `.local/source-before-edcc`), and new `services/backend/tests/unit/test_benchmark_evaluator_projection.py` was created without overwrite. All402 successor files matched. Existing owner-only `.local/t06` prerequisite, environment, packages, images and host/private-parent permissions were unchanged.
+
+Actual-host **48 evaluator/projection/contract units passed** without SQL credentials/writes (one existing Authlib warning), plus **9 adapter guards passed**. Testing received the exact successor for a fresh full28 native suite; this is not yet a native pass. All prior failures/stopped containers and source backups remain preserved. Receipt: `linux-qa-provenance/host-successor-edcc051.json`. No application deployment or paid calls.
+
 ## Third reviewed successor — 5496458
 
 Independent native Testing exposed a public-input leaf that the non-root actor could not read. No global/private chmod workaround was applied. Reviewed source `54964583dd18cdec512a96c7a0068f743dd3da55` validates the compiled actor hash, exact public membership and bytes before creating only its bounded read-only public projection; separate new unit tests cover that boundary.

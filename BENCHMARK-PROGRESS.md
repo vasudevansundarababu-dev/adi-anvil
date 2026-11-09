@@ -1,4 +1,12 @@
-# Current checkpoint — Linux public-input repair awaiting native rerun
+# Current checkpoint — all28 native cases passed on edcc051
+
+2026-11-08 evening Central: **fresh full selected native suite passed28/28 with zero failures/skips** on `edcc0514c43ceb614b813566820ee0c2c7311463` in610.72seconds. Testing independently matched all402 source paths before/after, indexed27 actual fresh trial receipts and read back three passed SQL qualifications plus one passed operation. All native actor/evaluator/resource containers stopped; only private test PostgreSQL remained running. Exact verdict: `docs/agent-team/runs/anvil-codex-transition-2026-11-08/native-edcc051-verdict.md`. This is fictional software conformance, not real model performance or application deployment.
+
+The final repair projects only the reviewed evaluator program and its mounted service leaf read-only while retaining private parents, fixing the confirmed non-root evaluator read boundary. Forty-eight focused evaluator/projection/contract units and nine adapter guards passed before the fresh full native run. Earlier failures remain preserved below and in source-specific reports; the prior54925 passes were not carried forward into this28 total.
+
+Broader exact-source software/SQL regression and staging configuration/bootstrap preparation continue separately. There is no new staging URL, application deployment approval or paid-model authority. The same temporary login key was explicitly extended once until02:51:10UTC (8:51PMCentral), with removal after testing required. No further extension is implied.
+
+## Preserved Linux repair history
 
 2026-11-08 evening Central: the user explicitly authorized the isolated Linux QA VM, disk, network, NAT and IAP firewall within USD60, continued testing/fixes, and separate approval before application deployment. These resources exist in the Anvil project only. The VM is private, has no cloud service account, uses fresh test PostgreSQL/schema058 and a dedicated daemon with only the two approved image digests. Praxis and the original local checkout remain untouched. Exact resource identities, runtime provenance and automatic STOP are in `docs/agent-team/runs/anvil-codex-transition-2026-11-08/linux-qa-execution.md`.
 

@@ -1,0 +1,36 @@
+{
+  "application_sha": "edcc0514c43ceb614b813566820ee0c2c7311463",
+  "started_at": "2026-11-09T01:41:34.803800+00:00",
+  "duration_seconds": 613.026,
+  "exit_code": 0,
+  "command": [
+    "/opt/anvil/.local/backend-venv/bin/python3.12",
+    "-m",
+    "pytest",
+    "-q",
+    "-x",
+    "-p",
+    "no:cacheprovider",
+    "--tb=short",
+    "-rs",
+    "--junitxml=/opt/anvil/.local/native-qa-results/native-edcc051.xml",
+    "services/backend/tests/benchmark/test_benchmark_qualification.py::test_real_native_harbor_trial",
+    "services/backend/tests/benchmark/test_benchmark_qualification.py::test_native_rejects_stale_package_or_evaluator_before_execution",
+    "services/backend/tests/benchmark/test_benchmark_native_limits.py",
+    "services/backend/tests/benchmark/test_benchmark_offline_native.py::test_real_native_offline_sdk_and_separate_evaluator",
+    "services/backend/tests/benchmark/test_benchmark_evaluation.py::test_real_native_separate_evaluator_captures_fenced_private_result",
+    "services/backend/tests/benchmark/test_benchmark_evaluation.py::test_native_actor_stops_before_its_bytes_enter_separate_evaluator",
+    "services/backend/tests/benchmark/test_benchmark_pipeline.py::test_real_native_receipts_persist_through_durable_pipeline"
+  ],
+  "log_sha256": "c58268d001bf04976830ff16df34df54255d8271560e4e0ca89251bdd7baaae5",
+  "junit_sha256": "598e8b176feebed2101e75c9a7b4517de77c28a384ca4880f99a0ca866f7795c",
+  "native_opt_in": true,
+  "paid_calls_enabled": false,
+  "summary": [
+    "28 passed, 1 warning in 610.72s (0:10:10)"
+  ],
+  "scope": "all28 actual native fictional software-conformance cases passed; no measured model performance or paid calls",
+  "postcheck_source_manifest_paths": 402,
+  "postcheck_source_changed_paths": [],
+  "private_raw_log_export": ".local/native-qa/results/native-edcc051.log"
+}

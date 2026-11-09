@@ -1,0 +1,23 @@
+{
+  "source_sha": "edcc0514c43ceb614b813566820ee0c2c7311463",
+  "previous_source_sha": "54964583dd18cdec512a96c7a0068f743dd3da55",
+  "archive_sha256": "8564c5cd5fdd0795a6dc9e041befbce591781ccacd41182288c0fbdc1c7a6b28",
+  "source_manifest_sha256": "cd9c2d44cd2106658923adc84307d6107ced87e9c33f6f6653d4325f65b536a6",
+  "previous_runtime_files_verified": 401,
+  "successor_runtime_files_verified": 402,
+  "changed_file": {"path": "services/backend/src/anvil/benchmark_evaluator_native.py", "before": "2ab2fed4a5affe8b6f1a2255bba02ec51a9f0d87ecfb4a5e4ba32603678f79ce", "after": "ae4e1a748088dffc8beb10cf93ddcc5d0f76a7dbfe91a3f107e97fc2b021518e"},
+  "new_file": {"path": "services/backend/tests/unit/test_benchmark_evaluator_projection.py", "sha256": "cd4c79a21d600de6860fac44005056a73d957ec65b41c2e9591ee6d4598a603c", "created_fresh_no_overwrite": true},
+  "old_source_preserved": "/opt/anvil/.local/source-before-edcc",
+  "packages_images_environment_host_permissions_changed": false,
+  "existing_t06_private_parent_changed": false,
+  "focused_unit_checks": {"passed": 48, "failed": 0, "warnings": 1, "warning": "existing_Authlib_deprecation", "database_credentials_or_writes": false},
+  "adapter_guards": {"passed": 9, "failed": 0},
+  "native_suite": "handed_to_independent_testing_not_yet_passed",
+  "prior_failure": "nonroot_evaluator_cannot_read_projected_public_program_leaf",
+  "fix_scope": "reviewed_public_evaluator_program_leaf_projection_only",
+  "private_or_global_chmod_workaround": false,
+  "temporary_oslogin_key_expiry_utc": "2026-11-09T02:51:10Z",
+  "extension_authority": "explicit_user_selected_first_option_one_extension_only",
+  "application_deployed": false,
+  "paid_calls": false
+}
