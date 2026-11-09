@@ -1,7 +1,13 @@
 """Offline tests for container separation and paid-off rendering."""
+import copy
+import io
+import json
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
-from staging_compose import render
+from unittest.mock import patch
+
+from staging_compose import main, render
 
 
 class ComposeSafety(unittest.TestCase):
@@ -43,6 +49,46 @@ class ComposeSafety(unittest.TestCase):
         for images in ({}, {**self.images, "backend": "latest"}, {**self.images, "extra": self.images["web"]}):
             with self.assertRaises(ValueError):
                 render(images)
+
+    def test_explicit_demo_changes_only_three_api_gates(self):
+        enabled = render(self.images, fictional_benchmark_demo=True)
+        expected = copy.deepcopy(self.compose)
+        for flag in ("ANVIL_BENCHMARK_ENABLED", "ANVIL_BENCHMARK_EVALUATION_ENABLED", "ANVIL_BENCHMARK_OFFLINE_ENABLED"):
+            expected["services"]["api"]["environment"][flag] = "true"
+        self.assertEqual(enabled, expected)
+        self.assertEqual(render(self.images, fictional_benchmark_demo=False), self.compose)
+
+    def test_demo_preserves_paid_off_and_operator_separation(self):
+        rendered = render(self.images, fictional_benchmark_demo=True)
+        for name in ("api", "worker", "migrate"):
+            service = rendered["services"][name]
+            env = service["environment"]
+            for flag in ("ANVIL_LIVE_PROVIDERS_ENABLED", "ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED", "ANVIL_IMPORT_GENERATION_ENABLED", "ANVIL_REAL_EMAIL_ENABLED"):
+                self.assertEqual(env[flag], "false")
+            self.assertEqual(env["ANVIL_TEST_HARBOR"], "0")
+            self.assertEqual(env["ANVIL_SUPPORT_VERTEX_PROJECT"], "")
+            self.assertEqual(env["ANVIL_SUPPORT_MODEL"], "")
+            self.assertNotIn("ANVIL_BENCHMARK_EVALUATOR_DATABASE_URL", env)
+            self.assertNotIn("ANVIL_HARBOR_DOCKER_HOST", env)
+            self.assertFalse(service.get("privileged", False))
+            self.assertNotIn("sudo", service.get("command", []))
+            self.assertNotIn("docker.sock", str(service))
+        self.assertEqual(set(rendered["services"]), set(self.compose["services"]))
+        for name in ("worker", "migrate"):
+            self.assertEqual(rendered["services"][name], self.compose["services"][name])
+
+    def test_profile_rejects_implicit_truthiness(self):
+        for value in (None, "false", "true", 0, 1, [], {}):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                render(self.images, fictional_benchmark_demo=value)
+
+    def test_cli_is_static_opt_in_rendering_without_execution(self):
+        for opt_in in (False, True):
+            output = io.StringIO()
+            argv = ["staging_compose", "--images", "/nonsecret/image-manifest.json"] + (["--fictional-benchmark-demo"] if opt_in else [])
+            with patch("sys.argv", argv), patch.object(Path, "read_text", return_value=json.dumps(self.images)), patch("subprocess.run", side_effect=AssertionError("execution forbidden")), redirect_stdout(output):
+                self.assertEqual(main(), 0)
+            self.assertEqual(json.loads(output.getvalue()), render(self.images, fictional_benchmark_demo=opt_in))
 
 
 if __name__ == "__main__":

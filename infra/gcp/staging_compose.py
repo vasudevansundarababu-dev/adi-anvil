@@ -2,13 +2,18 @@
 
 Explicit operator-provided env files and reviewed runtime initialization are required.
 This renderer does not create files, retrieve secrets, pull images, or start services.
+The optional fictional benchmark API profile is preparation only. Current human
+rights/reviewer/identity gates and exact-source native qualification remain required;
+application deployment needs separate approval. It never starts native operators.
 """
 import argparse
 import json
 from pathlib import Path
 
 
-def render(images):
+def render(images, *, fictional_benchmark_demo=False):
+    if type(fictional_benchmark_demo) is not bool:
+        raise ValueError("Fictional benchmark demo opt-in must be an explicit boolean")
     required = {"backend", "web", "postgres", "neo4j", "keycloak", "caddy"}
     import re
     if set(images) != required or any(not re.fullmatch(r".+@sha256:[0-9a-f]{64}", value) for value in images.values()):
@@ -38,6 +43,11 @@ def render(images):
     }
     for name in ("migrate", "api", "worker"):
         services[name]["environment"] = paid_off.copy()
+    if fictional_benchmark_demo:
+        # API gates only; current policy/SQL authorization still admits every
+        # action. Native workers remain explicit separate-host one-shots.
+        for flag in ("ANVIL_BENCHMARK_ENABLED", "ANVIL_BENCHMARK_EVALUATION_ENABLED", "ANVIL_BENCHMARK_OFFLINE_ENABLED"):
+            services["api"]["environment"][flag] = "true"
     services["worker"]["environment"].pop("ANVIL_BENCHMARK_VAULT_ROOT")
     services["migrate"]["environment"].pop("ANVIL_BENCHMARK_VAULT_ROOT")
     services["api"]["expose"] = ["8200"]
@@ -53,9 +63,10 @@ def render(images):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--images", type=Path, required=True, help="Non-secret map of six reviewed image digests")
+    parser.add_argument("--fictional-benchmark-demo", action="store_true", help="Prepare only fictional benchmark API gates; no operators, paid calls or deployment")
     args = parser.parse_args()
     try:
-        result = render(json.loads(args.images.read_text()))
+        result = render(json.loads(args.images.read_text()), fictional_benchmark_demo=args.fictional_benchmark_demo)
     except (OSError, ValueError, TypeError):
         print(json.dumps({"ready": False, "error": "Missing or invalid immutable image manifest"}))
         return 2

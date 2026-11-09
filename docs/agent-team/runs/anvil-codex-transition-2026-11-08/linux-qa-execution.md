@@ -1,5 +1,21 @@
 # Linux QA execution record
 
+## Current milestone — host ready for independent native QA, 2026-11-09T01:06Z
+
+The exact source/runtime setup is complete and independently verifiable; Testing has received the private SSH/runner interface. **Host readiness is not a native test pass.** No application deployment or paid calls occurred.
+
+VM `4723949448594237365`, boot disk `8660101875172681653` (30GiB balanced), private10.22.0.2, no public IP/cloud identity, automatic restart false and absolute STOP Nov15 19:30Z verified. Temporary user-approved OS Login key expires **Nov9 01:51:10.698714Z**; remove its exact fingerprint after testing. No IAM or project SSH setting was changed.
+
+Exact e4 source/archive hashes and runtime3.12.14 verified. Backend85 packages installed from frozen uv lock into `.local/backend-venv`; separate Harbor0.25 runtime91 exact versions installed using a derived distribution-hash manifest. Original Harbor requirements are version-pinned **without** distribution hashes; canonical name/version map was checked unchanged before install. Derived SHA256 `def0d8440bcd7f67254ef890329e1b4dfafddf119fe087263158136de0151c0c`. Unversioned backend build dependency resolved hatchling1.33.0; metadata hash recorded, so fully locked build-system reproducibility is not claimed.
+
+Dedicated Docker20.10.24/cgroupv2 uses only `.local/benchmark-docker` socket/data/exec/PID roots; default socket absent. Only the two approved Python/PostgreSQL images were pulled and Linux/amd64 repository digests verified. Fresh PostgreSQL17.6 binds **127.0.0.1:55482 only**, database `anvil_local`, migrations1–58 (58 rows). App/worker roles NOSUPERUSER/NOBYPASSRLS; evaluator remains NOLOGIN/NOSUPERUSER/NOBYPASSRLS. Vault and generic artifact roots are disjoint, owner-only0700 and non-symlink. Credentials remain host-local0600 and were not exported.
+
+Public dependency/hash/readiness receipts are under `linux-qa-provenance/`; no environment file, private key, raw private data or raw diagnostic log belongs in that export. No system/package/image changes will occur while Testing runs.
+
+Preserved setup failures and bounded fixes: Debian3.11 lacks tarfile data_filter; exact-hash manual bootstrap approved instead. Initial manual bootstrap omitted implicit directories and stopped before first file; empty tree preserved under `/opt/anvil.bootstrap-failed-20261109`, then corrected fresh extraction passed. Source root directory normalization was handled explicitly after pre-write validation stopped. Already-installed sudo required explicit download/reinstall mode for package hash verification. uv stdout included a valid architecture suffix; exact version/architecture accepted. Harbor source lacked hashes; strict hash mode blocked before install until the unchanged91-package hash manifest was derived. Docker20.10 rejects simultaneous bridge-name/bip flags; failed unit retained, corrected dedicated unit-v2 with explicit subnet passed. These are setup failures, not hidden native failures or skipped safety checks.
+
+## Earlier state and preserved preflight history
+
 ## Current actual state — 2026-11-09T00:56Z
 
 User explicitly superseded the earlier hold: “Create the isolated Anvil Linux test VM, disk, network, NAT and IAP firewall within $60. Continue Linux testing and fix issues.” That later authorization resolved the earlier automatic-review rejection. The exact approved resources have now been created in `adi-anvil-mvp-2026/us-west1-a`:
