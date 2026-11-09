@@ -193,6 +193,23 @@ def test_all_eighteen_valid_zeroes_are_complete_and_exports_use_same_stored_revi
         model["duration"] == {"median_ms": 12, "samples": 6}
         for model in stored["projection"]["models"]
     )
+    # Real stored SQL fixture projection, not native execution or a user demo.
+    dashboard = case["admin"].get(case["base"] + "/dashboard", params={"run_id": run})
+    assert dashboard.status_code == 200, dashboard.text
+    overview = dashboard.json()["data"]["overview"]
+    assert overview["model_trace_count"] == 0 and overview["control_trace_count"] == 18
+    assert len(dashboard.json()["data"]["traces"]) == 18
+    assert all(row["kind"] == "comparison_cell" for row in dashboard.json()["data"]["traces"])
+    assert overview["ranked_models"] == 0 and overview["leader"] is None
+    assert all(row["primary"] is None for row in overview["models"])
+    assert all(row["diagnostic"]["earned_points"] == "0" for row in overview["models"])
+    assert overview["ranking"]["observed_win_rate"]["pair_count"] == 0
+    trace = dashboard.json()["data"]["traces"][0]
+    detail = case["admin"].get(
+        case["base"] + "/dashboard/traces/" + trace["id"], params={"run_id": run}
+    )
+    assert detail.status_code == 200, detail.text
+    assert detail.json()["data"]["outputs"] and detail.json()["data"]["criteria"]
     json_export = case["admin"].get(case["base"] + "/comparisons/" + run + "/exports/json")
     assert json_export.status_code == 200 and json_export.json() == stored
     csv_export = case["admin"].get(case["base"] + "/comparisons/" + run + "/exports/csv")
@@ -233,6 +250,22 @@ def test_all_eighteen_valid_zeroes_are_complete_and_exports_use_same_stored_revi
         model["primary"] == {"earned_points": "0", "possible_points": "81", "percent": "0.00"}
         for model in approved["projection"]["models"]
     )
+    reviewed = case["admin"].get(
+        case["base"] + "/dashboard",
+        params={"run_id": run, "score_revision_id": approved["score_revision_id"]},
+    )
+    assert reviewed.status_code == 200, reviewed.text
+    reviewed_overview = reviewed.json()["data"]["overview"]
+    assert (
+        reviewed_overview["ranked_models"] == 0 and reviewed_overview["control_trace_count"] == 18
+    )
+    assert reviewed_overview["leader"] is None
+    assert all(
+        not row["ranking_eligible"] and row["measurement_notice"]
+        for row in reviewed_overview["models"]
+    )
+    assert all(not row["official"] for row in reviewed.json()["data"]["traces"])
+    assert all(row["primary"]["earned_points"] == "0" for row in reviewed_overview["models"])
     with actor_connection(case) as c:
         assert (
             results.publish(c, case["lab"]["project"], case["lab"]["admin"], run)[

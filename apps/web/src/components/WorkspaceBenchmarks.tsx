@@ -4,9 +4,10 @@ import BenchmarkFactory from './BenchmarkFactory';
 import AnvilHelp from './AnvilHelp';
 import { workspaceApi, WorkspaceTask } from '../lib/workspace';
 import styles from './ModernWorkspace.module.css';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import BenchmarkPreview from './BenchmarkPreview';
 import BenchmarkWorkspace from './BenchmarkWorkspace';
+import BenchmarkWorkbench from './BenchmarkWorkbench';
 
 export default function WorkspaceBenchmarks({
   base,
@@ -24,7 +25,11 @@ export default function WorkspaceBenchmarks({
   tasks: WorkspaceTask[];
 }) {
   const section = usePathname().split('/')[4];
+  const query = useSearchParams();
   const connected = section === 'catalog';
+  const preparation =
+    section === 'setup' ||
+    (!section && ['receipt', 'qualification', 'version', 'protocol'].some((key) => query.has(key)));
   return (
     <>
       {section === 'preview' ? (
@@ -35,13 +40,27 @@ export default function WorkspaceBenchmarks({
           </aside>
           <BenchmarkPreview />
         </>
+      ) : preparation ? (
+        <>
+          <p>
+            <a href={route + '/benchmarks'}>← Return to connected benchmark views</a>
+          </p>
+          <BenchmarkWorkspace
+            key={base}
+            base={base}
+            userId={userId}
+            canWrite={canWrite}
+            canAdmin={canAdmin}
+          />
+        </>
       ) : !connected ? (
-        <BenchmarkWorkspace
+        <BenchmarkWorkbench
           key={base}
           base={base}
-          userId={userId}
+          route={route}
           canWrite={canWrite}
           canAdmin={canAdmin}
+          userId={userId}
         />
       ) : (
         <>

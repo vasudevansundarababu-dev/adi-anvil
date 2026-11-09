@@ -19,7 +19,7 @@ test('real OIDC benchmark intake persists a quarantined fictional receipt withou
 }) => {
   await signIn(page);
   const project = 'a0000000-0000-4000-8000-000000000002';
-  await page.goto('/workspace/' + project + '/benchmarks');
+  await page.goto('/workspace/' + project + '/benchmarks/setup');
   await expect(page.getByRole('heading', { name: 'Import from Praxis' })).toBeVisible();
   await expect(
     page.getByText('Paid candidate and judge calls remain disabled.', { exact: false }),
@@ -79,7 +79,7 @@ test('actual build retries retain their token across reload and isolate changed 
   const review = '11111111-1111-4111-8111-111111111111';
   const changedReview = '22222222-2222-4222-8222-222222222222';
   async function imported(target: string) {
-    await page.goto('/workspace/' + target + '/benchmarks');
+    await page.goto('/workspace/' + target + '/benchmarks/setup');
     await page
       .getByLabel('Praxis export archive')
       .setInputFiles('.local/testing-unsigned-bundle.tar.gz');
