@@ -1,0 +1,23 @@
+{
+  "status": "LOCAL_ONLY_SOURCE_AMENDMENT_REQUIRES_USER_APPROVAL",
+  "source_sha": "abb4348a6eb38bb5696cb89062d9fb5c00d3e0b4",
+  "archive_sha256": "c17f59305a4875ae90d039e973ba6912fb62225822401c5c9ce1f9a5b0c81e18",
+  "all_tracked_manifest_sha256": "f6b16603ff9eb6ac2bb72d374678a53ff7e160fc17b595c03b9b7cc32ddb9e3d",
+  "context_inventory_sha256": "328fb4a7df5717ed381bf23084cd5f6b02864c42d2ef7aca6a5c7e64dbd81058",
+  "context_files": 875,
+  "upload_inventory_sha256": "28a7a5a0ebac72f5170439926be8fc1400868284b0c661f4d6a3ae298a0e9b6b",
+  "upload_files": 396,
+  "upload_bytes": 5365353,
+  "package_sha256": "7cc70f15356d890f51cef91d24523d3fbc38adc5d10b39c37ba77dd55afb450f",
+  "package_bytes": 3224259,
+  "private_package_path": "/Users/vasudevansundarababu/Documents/Codex/anvil-codex-transition/.local/staging-build-upload-packages/abb4348-source-amendment/source.tar.gz",
+  "upload_receipt_sha256": "724eddb953733cc547914bb103e43c0148eee363642d9bc949b458fafe0d6e0e",
+  "proposed_build_config_sha256": "c76da3a6890318a9bcc5b18bdeb5ab10a890aac00b9e7a12940508ba135d8a52",
+  "gcs_object": null,
+  "gcs_generation": null,
+  "build_id": null,
+  "source_amendment_approved": false,
+  "paid_job_authority_unused": true,
+  "cloud_mutations": false,
+  "scope": "Same existing scoped build resources, single backend/web job<=40min/5USD; no deployment; proposal nullsource MUSTNOTsubmit"
+}

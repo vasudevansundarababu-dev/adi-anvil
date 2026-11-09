@@ -1,0 +1,1998 @@
+{
+  "source_sha": "abb4348a6eb38bb5696cb89062d9fb5c00d3e0b4",
+  "source_archive_sha256": "c17f59305a4875ae90d039e973ba6912fb62225822401c5c9ce1f9a5b0c81e18",
+  "unfiltered_context_inventory_sha256": "328fb4a7df5717ed381bf23084cd5f6b02864c42d2ef7aca6a5c7e64dbd81058",
+  "unfiltered_files": 875,
+  "upload_files": 396,
+  "upload_bytes": 5365353,
+  "upload_inventory_sha256": "28a7a5a0ebac72f5170439926be8fc1400868284b0c661f4d6a3ae298a0e9b6b",
+  "files": [
+    {
+      "path": ".dockerignore",
+      "sha256": "d1fa7589ca5f675dabca44b67b391e357f704b911ba3305d94d8404bcf614f5a",
+      "size": 349
+    },
+    {
+      "path": ".python-version",
+      "sha256": "7b55f8e67b5623c4bef3fa691288da9437d79d3aba156de48d481db32ac7d16d",
+      "size": 5
+    },
+    {
+      "path": "apps/web/AGENTS.md",
+      "sha256": "63f2c50380ed6303237cce215ce27af1d620d094c215e28d1b1538a3c070e3bb",
+      "size": 678
+    },
+    {
+      "path": "apps/web/CLAUDE.md",
+      "sha256": "336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49",
+      "size": 11
+    },
+    {
+      "path": "apps/web/next-env.d.ts",
+      "sha256": "0f70629890b72a0a82e91972cc032c04b658b26c265373cb711cf576bfbf8fcc",
+      "size": 296
+    },
+    {
+      "path": "apps/web/next.config.ts",
+      "sha256": "dd922221f6c456240e284a78b288a9d454e999c933d7fcb295b9ac625bec33d4",
+      "size": 477
+    },
+    {
+      "path": "apps/web/package.json",
+      "sha256": "74172a2b9f1ef903d0101da441e78ada46a0a1eeb6b4b4eba150649f8e52cd02",
+      "size": 500
+    },
+    {
+      "path": "apps/web/postcss.config.mjs",
+      "sha256": "d7c07db9a36ab70c78a63b82668435659b8b160bee3551b204b35475d56ef7da",
+      "size": 56
+    },
+    {
+      "path": "apps/web/public/brand/adi-anvil-logo-v1.png",
+      "sha256": "eb48c094654f54cbf3ed4215e689a1c074ebc1c6aeca1475e69cb9b0baef8eb0",
+      "size": 1306356
+    },
+    {
+      "path": "apps/web/public/examples/synthetic-five-tasks.jsonl",
+      "sha256": "81744d72b70655e2285eb545f69721f9772964f8438523d5e68f6da48fd038db",
+      "size": 1555
+    },
+    {
+      "path": "apps/web/public/help/marketing-run.html",
+      "sha256": "810afa20c03afda39a4b9af6c48a49cf5d21a0e2976dcd2d869cf44945ca824f",
+      "size": 3582
+    },
+    {
+      "path": "apps/web/public/help/task-import.html",
+      "sha256": "5b8c1b5cfbe94c621e00f178b34397348aebe4a24d7f2a41df4e2202ff67534e",
+      "size": 2131
+    },
+    {
+      "path": "apps/web/src/app/layout.tsx",
+      "sha256": "9be9d10ac71834b93077567e5f5e8a5b7be5b5b870d011fdd70320ac12de14ec",
+      "size": 341
+    },
+    {
+      "path": "apps/web/src/app/p/[project]/[[...section]]/page.tsx",
+      "sha256": "330a4eed940be9a826433081c4d34aeacd53a401432d28dfb11a4f7b02da72f0",
+      "size": 495
+    },
+    {
+      "path": "apps/web/src/app/page.tsx",
+      "sha256": "e404874b6242deace851cf9e91283d6eec3895e7a8c1fb04a6f269be52fc6f72",
+      "size": 105
+    },
+    {
+      "path": "apps/web/src/app/style.css",
+      "sha256": "bd7280dcba9e1099e3f944e01ea81d4f880af3ade5d6867760e021abb7457070",
+      "size": 6912
+    },
+    {
+      "path": "apps/web/src/app/workspace/[project]/[[...section]]/page.tsx",
+      "sha256": "486459b9fec55fc67eb626bbbf1f4bad001c282e6a4ae64b76248beea42d08e2",
+      "size": 251
+    },
+    {
+      "path": "apps/web/src/app/workspace/page.tsx",
+      "sha256": "f6de202d705d2ac9d85883ced6734ab4389bb815c47bf10f81a64064c1d39ffd",
+      "size": 245
+    },
+    {
+      "path": "apps/web/src/components/AccessRequest.module.css",
+      "sha256": "ee0cd0b9557b5f7685ac062f45b0310591935f97c40246dac45aca6acdf44c92",
+      "size": 1042
+    },
+    {
+      "path": "apps/web/src/components/AccessRequest.tsx",
+      "sha256": "d89f2569c4bfe1af1215e272cf3c6ea21fb3f4a60c6fc7cd1371ccbdedc8408c",
+      "size": 2069
+    },
+    {
+      "path": "apps/web/src/components/AnvilHelp.tsx",
+      "sha256": "b4be214046dac728bb4a9f0749e122009785cca055e850087ea7916c70e54988",
+      "size": 7369
+    },
+    {
+      "path": "apps/web/src/components/BenchmarkCellEvidence.tsx",
+      "sha256": "33a42406170a7d0c7fdd01f9bd040366d61cac1b74bf3ce5f48b7f4122759efa",
+      "size": 3020
+    },
+    {
+      "path": "apps/web/src/components/BenchmarkDashboard.module.css",
+      "sha256": "f8592973ce9e76475129637f6861e8a9e1a7766d9c977400a37bb5d34e45746b",
+      "size": 6234
+    },
+    {
+      "path": "apps/web/src/components/BenchmarkDashboard.tsx",
+      "sha256": "18140789ba53196024d935fc4cc867fbdabf5d6c24a893e33690b4cdbfa3e204",
+      "size": 17085
+    },
+    {
+      "path": "apps/web/src/components/BenchmarkFactory.tsx",
+      "sha256": "69d0c7912d1d3116680780354b71e641cc709566dee85a7c1bb29face878c15a",
+      "size": 18391
+    },
+    {
+      "path": "apps/web/src/components/BenchmarkHistory.tsx",
+      "sha256": "bc59b23b7e4fb4f583dbdf48dcf5ea69ef33873c205e219a4d529aedc0872ed0",
+      "size": 3293
+    },
+    {
+      "path": "apps/web/src/components/BenchmarkPreview.module.css",
+      "sha256": "214d5f76397e8e254d97a272c0dd323a66e65967451a1c76424709f004971b2f",
+      "size": 5749
+    },
+    {
+      "path": "apps/web/src/components/BenchmarkPreview.tsx",
+      "sha256": "f8ad5a15e06456606aa093881c382800023559c0ec360baf3e28fc1342a59327",
+      "size": 13598
+    },
+    {
+      "path": "apps/web/src/components/BenchmarkQualificationEvidence.tsx",
+      "sha256": "8f77faea68cc71926ea3b28e02249c6cdad132c3d6d31d1e2b61e5fc88f1cc17",
+      "size": 11683
+    },
+    {
+      "path": "apps/web/src/components/BenchmarkRecovery.tsx",
+      "sha256": "f205f9f786a0b2810a8bb614f9bda4fc6624765536330c8cc15b0c7c1f7e538b",
+      "size": 7224
+    },
+    {
+      "path": "apps/web/src/components/BenchmarkResults.module.css",
+      "sha256": "861885c8fd7b725e1e5d3f860f159bec37cbc86dd91c7df7ba943f7ae9e9c061",
+      "size": 7624
+    },
+    {
+      "path": "apps/web/src/components/BenchmarkResults.tsx",
+      "sha256": "b009638bc86fc83bb5a9a2888442fcafafac0ff6bbd4bcaf6d738411f1565a6d",
+      "size": 15343
+    },
+    {
+      "path": "apps/web/src/components/BenchmarkScoreReview.tsx",
+      "sha256": "68ce612c79585aab2f2994dafd61bc411b563c6f432557df592cbe17a5c14135",
+      "size": 12700
+    },
+    {
+      "path": "apps/web/src/components/BenchmarkWorkspace.tsx",
+      "sha256": "0f5acda9a9a4df4654322e46345f8ea1392e85d4a100e35815efff97e94781d7",
+      "size": 34483
+    },
+    {
+      "path": "apps/web/src/components/CaseReadiness.tsx",
+      "sha256": "e5b0020692bcaf42ca24670ab0a9483450fad82bf2e1f5e39a2e1356f4edbbfd",
+      "size": 6716
+    },
+    {
+      "path": "apps/web/src/components/Console.tsx",
+      "sha256": "6de7b3f5cf3aeed21f293d09de1d383e44ec7e1a3362c6a8cdd6861b4b2ac62c",
+      "size": 65011
+    },
+    {
+      "path": "apps/web/src/components/CredentialManager.tsx",
+      "sha256": "5b973c69c74de23b6deb18dbccefd3875e3d2828411d55530a18c0e561ea2497",
+      "size": 11804
+    },
+    {
+      "path": "apps/web/src/components/DiagnosticResults.tsx",
+      "sha256": "88322d28656cd9fcd4bb7d3a4bea9272901517e417ef720f7ffb35569a75b5a7",
+      "size": 4545
+    },
+    {
+      "path": "apps/web/src/components/EvaluationWizard.tsx",
+      "sha256": "b04ec6c570d275318ecfe41ea50d46db8c562d6d14d8dd0f18405a5d7f14ac39",
+      "size": 28231
+    },
+    {
+      "path": "apps/web/src/components/ExecutableImport.tsx",
+      "sha256": "5744a9c0be4214619437cce0f9bee8e3812117c84905ce777fa1f13d39af1e1b",
+      "size": 20195
+    },
+    {
+      "path": "apps/web/src/components/ExternalResults.tsx",
+      "sha256": "87ef97e920bbafb79b2c99802d4deafd12f5c2195469d070b299b127ab0bd783",
+      "size": 3590
+    },
+    {
+      "path": "apps/web/src/components/FindingComposer.tsx",
+      "sha256": "29bcab0816f59d8a51089cdda53e5e7f1dc589f62f6c1210b3920d46563db7d2",
+      "size": 5569
+    },
+    {
+      "path": "apps/web/src/components/FixtureDelivery.tsx",
+      "sha256": "3285269378fe7143d1cab17b7d766e66a02f1b2d096b828d099dd3c0638122c5",
+      "size": 11588
+    },
+    {
+      "path": "apps/web/src/components/Form.tsx",
+      "sha256": "bcf2f8bb07f670d0783751981f7f93e098231b4817587dbbd17a10b3894f4083",
+      "size": 3786
+    },
+    {
+      "path": "apps/web/src/components/FrameworkProfiles.tsx",
+      "sha256": "1070e5c562a06d97c666707b65b925a2f3186eab638bca086e187684f3508a97",
+      "size": 7827
+    },
+    {
+      "path": "apps/web/src/components/GraphMap.tsx",
+      "sha256": "db879a081ee7dcf2bfb983416de6d2f0160a1dd2a1754d8ffb0f00e5e996fb0a",
+      "size": 4678
+    },
+    {
+      "path": "apps/web/src/components/HarborWorkbench.tsx",
+      "sha256": "782b4e1ee20e3d1254bd6f049881b04baa0055d0039a0312559070e585ea386d",
+      "size": 23660
+    },
+    {
+      "path": "apps/web/src/components/ImportGenerationSettings.tsx",
+      "sha256": "65b0a0af90704df1f40fc04153a9d360218ff880f52da61d62ff003abdefc8b6",
+      "size": 5736
+    },
+    {
+      "path": "apps/web/src/components/Intake.tsx",
+      "sha256": "6bb67c140e6a9cf7a92f7e471b80d8fc528cae8590e65e57f05e5db4f3079f86",
+      "size": 4712
+    },
+    {
+      "path": "apps/web/src/components/MarketingRun.tsx",
+      "sha256": "9a9f791083fef64e7a2349bc54f9a1dd6b9ac558f05f45f169a37f04edf10fa9",
+      "size": 7726
+    },
+    {
+      "path": "apps/web/src/components/ModelProfileEditor.tsx",
+      "sha256": "90469d3694c25e0f47f4de1ff14012509b713185668b1e1efda9cd98a34060a2",
+      "size": 8878
+    },
+    {
+      "path": "apps/web/src/components/ModelProfiles.tsx",
+      "sha256": "7fa4d07b282660ace07c37fe16e48e65495d5727824da7cc8e9c4cafcedf7713",
+      "size": 13261
+    },
+    {
+      "path": "apps/web/src/components/ModernWorkspace.module.css",
+      "sha256": "a0c0e9dc632f6e24d9d917a0899e4138c319a335947c11692c14e874f8bc9f45",
+      "size": 7651
+    },
+    {
+      "path": "apps/web/src/components/ModernWorkspace.tsx",
+      "sha256": "106d632f1a4156cdf28219fd74c90bf5f93525c8bff5a5e7182e9314b1c3fa53",
+      "size": 51575
+    },
+    {
+      "path": "apps/web/src/components/ProviderSetup.tsx",
+      "sha256": "1e8d085923eb6677b8099f186bfecbbdaed2556883acbe301e425e643b6ca6ca",
+      "size": 4089
+    },
+    {
+      "path": "apps/web/src/components/ReasonList.tsx",
+      "sha256": "036073a1e42f8d83962f3623091afc98be0789c69ccec4af6a1533715476e087",
+      "size": 864
+    },
+    {
+      "path": "apps/web/src/components/ReportSummary.tsx",
+      "sha256": "c1e5547d3e3d98a0d113cdf36e3522a638110667743b8db64e96da64b342f213",
+      "size": 1557
+    },
+    {
+      "path": "apps/web/src/components/RevisionEditor.tsx",
+      "sha256": "255a4b033d5cef7dd46f525cd6b939ba3a55f752b6f0b6fd4ee8d9f5a18e33af",
+      "size": 3449
+    },
+    {
+      "path": "apps/web/src/components/RightsReview.tsx",
+      "sha256": "3d37d1dbbf2d18aca4f36400f8909e87240510f1bd8a57f4212cc27a879ab861",
+      "size": 3612
+    },
+    {
+      "path": "apps/web/src/components/SupportChat.tsx",
+      "sha256": "83dd523bca6beb5fbf41e0a56183894a357db3a3f6b586a54657d1d5e5088fbf",
+      "size": 5537
+    },
+    {
+      "path": "apps/web/src/components/TaskImport.tsx",
+      "sha256": "72ceb409724f6ec336a4a0a3ed6a6d890b9be68d7da9a5796a387249b6184db1",
+      "size": 24277
+    },
+    {
+      "path": "apps/web/src/components/WorkspaceBenchmarks.tsx",
+      "sha256": "9618aab10cad5841c315bf413ea2f5006d2c9d84095eab95a9094a5486fc4b96",
+      "size": 4046
+    },
+    {
+      "path": "apps/web/src/components/WorkspaceExecutionGroups.tsx",
+      "sha256": "ae7d78f940f5ebf08039c1e5100df807232f6b9690e6d6258f78c9f53f61989b",
+      "size": 11973
+    },
+    {
+      "path": "apps/web/src/components/WorkspacePeople.tsx",
+      "sha256": "56d4e30dc52c846e48596ac503225030ec4a65ae7c3fdb560ea8580587ac5c1a",
+      "size": 3728
+    },
+    {
+      "path": "apps/web/src/components/WorkspacePreparation.tsx",
+      "sha256": "daecf3375ce9d9f1ee761e2da84551bf73f9b21cae3bfa8612795578a8725fc9",
+      "size": 34582
+    },
+    {
+      "path": "apps/web/src/components/WorkspaceRevisionEditor.tsx",
+      "sha256": "d5825d50bb7b4410bb4182e9557e2e65fbd89c8ed53c6e13e03e2816a4dcf226",
+      "size": 12965
+    },
+    {
+      "path": "apps/web/src/components/WorkspaceTasks.module.css",
+      "sha256": "9a1f7c5b8cb48b8884becac9be2702d2c3dc0914e4f6e6030f19211f576b6553",
+      "size": 4924
+    },
+    {
+      "path": "apps/web/src/components/WorkspaceTasks.tsx",
+      "sha256": "5afe1194332b5ad8251e00a98341cfb3c9a30b276ecda7ce5e597e18bbb3d7ec",
+      "size": 32327
+    },
+    {
+      "path": "apps/web/src/lib/benchmark-results.ts",
+      "sha256": "34689eb8ee7257f474e4f983d4c900aa4ede5eab024fb1dd5ad0919d327acd30",
+      "size": 2699
+    },
+    {
+      "path": "apps/web/src/lib/benchmark.ts",
+      "sha256": "505f630a55b048bdec8090e132a8a0242e971d4fb97591a10a27a06bde9fd62f",
+      "size": 6646
+    },
+    {
+      "path": "apps/web/src/lib/executionReadiness.ts",
+      "sha256": "139422442bc53c39e203d1c136ba6c6b3cfbacf565aecf80af788c48b173f675",
+      "size": 133
+    },
+    {
+      "path": "apps/web/src/lib/providerFailure.ts",
+      "sha256": "73d8d07d3ee331a3e23874f34d73e21e3dfe1e74c22543ee9cc40ab58314d288",
+      "size": 859
+    },
+    {
+      "path": "apps/web/src/lib/readinessCatalog.ts",
+      "sha256": "403ab3ce8c82c89d75612730db391a3e4ccee885dea7bb34b1ee9d9541ebcc8e",
+      "size": 18904
+    },
+    {
+      "path": "apps/web/src/lib/workspace.ts",
+      "sha256": "dc83db467842b25ca4504baaeaef7556de41b08ff264a8bdd3c379bd30ef4021",
+      "size": 4528
+    },
+    {
+      "path": "apps/web/tsconfig.json",
+      "sha256": "5376c66f9324303692e49269484a2516874322215d60cc31b3ddac2783a28c00",
+      "size": 639
+    },
+    {
+      "path": "assets/brand/adi-anvil-logo-v1.png",
+      "sha256": "eb48c094654f54cbf3ed4215e689a1c074ebc1c6aeca1475e69cb9b0baef8eb0",
+      "size": 1306356
+    },
+    {
+      "path": "fixtures/README.md",
+      "sha256": "c8d215f768d1951dbd43f9902e9d7d99dbe2c6d1820e6fc8b564f20eb1091272",
+      "size": 1002
+    },
+    {
+      "path": "fixtures/benchmark-bundle/README.md",
+      "sha256": "a0e06572aaa24d65b7608d4038805c36d10f952f26a8b4d74910852bf5aef091",
+      "size": 2198
+    },
+    {
+      "path": "fixtures/benchmark-bundle/build_fixture.py",
+      "sha256": "d9df7509d54e5b432027069f2e74ccd246ca8a137beb620e61db18d31da6fc45",
+      "size": 10823
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/eval_pack/FX-001/calibration.json",
+      "sha256": "a2158c255d12773ee34db904d302e8f5576616309a19b1717a55bcba1f775008",
+      "size": 1223
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/eval_pack/FX-001/evaluator.py",
+      "sha256": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+      "size": 255
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/eval_pack/FX-001/policy.json",
+      "sha256": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+      "size": 222
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/eval_pack/FX-001/rules.json",
+      "sha256": "fb55a6eef47308734433253814e7107f2cfb5eee7cd2d04439d6fd15da1b315f",
+      "size": 1935
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/eval_pack/FX-002/calibration.json",
+      "sha256": "0863a6ec94c488538d684a7d71a05f8c9bcb204713a2ee0e7e3ada2d0a20bf34",
+      "size": 488
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/eval_pack/FX-002/evaluator.py",
+      "sha256": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+      "size": 255
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/eval_pack/FX-002/policy.json",
+      "sha256": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+      "size": 222
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/eval_pack/FX-002/rules.json",
+      "sha256": "b4b4753f4c77cd2dd2964eb5437777f2f9f70d73c851f8eca14b3697686940df",
+      "size": 480
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/eval_pack/FX-003/calibration.json",
+      "sha256": "3273db732a4aaade3cdae8831cd0e45a0dc1615888dea2899c4d0be4634f1b9f",
+      "size": 2350
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/eval_pack/FX-003/evaluator.py",
+      "sha256": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+      "size": 255
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/eval_pack/FX-003/policy.json",
+      "sha256": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+      "size": 222
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/eval_pack/FX-003/rules.json",
+      "sha256": "bff5ac30f858c49965ad7b52db321798e0c97d2ee09b506a4b4dabaf68a6c8f3",
+      "size": 4142
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/manifest.json",
+      "sha256": "300024bd7632d7552408da846bc1875fe73bbc5f55e3b66febc1c221c21ff3e2",
+      "size": 40905
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/runtime_pack/FX-001/items.json",
+      "sha256": "12a36dee635c786561aa58b0c0f9d9e7ddfeb1c5bb38869efd4a53c6d7c420d8",
+      "size": 1235
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/runtime_pack/FX-001/output.schema.json",
+      "sha256": "3ffb0cf559d35b0c6b0b278b41ca9a1db9217cbf1eb64fff7e44e6e475ebbdec",
+      "size": 1658
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/runtime_pack/FX-001/prompt.md",
+      "sha256": "080f1e2fb29292ab30027f46a4d53d797609d2e917d328feff58d147b154133f",
+      "size": 370
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/runtime_pack/FX-001/tool-server.py",
+      "sha256": "a2f4197652df6a03503b18b1c20fa195f5cd596c47b450322ac958aab1af138d",
+      "size": 1625
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/runtime_pack/FX-001/tools.json",
+      "sha256": "52c261d91b0315037f78807c25295177998f40d28589ad670591d89f6c2e8e2d",
+      "size": 433
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/runtime_pack/FX-002/items.json",
+      "sha256": "4887f2653cebbb185379faf032a495369250f5d3aa589363d895a16e704edda6",
+      "size": 320
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/runtime_pack/FX-002/output.schema.json",
+      "sha256": "7991446fcd2d3d6c68dd16739e89221f55f7c12538147e237e51248bee5a8855",
+      "size": 488
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/runtime_pack/FX-002/prompt.md",
+      "sha256": "5f40339bc52a2cc17e4e76d1b53f4f5bb7525f2c22d7c8d5859be11ede385f36",
+      "size": 370
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/runtime_pack/FX-002/tool-server.py",
+      "sha256": "a2f4197652df6a03503b18b1c20fa195f5cd596c47b450322ac958aab1af138d",
+      "size": 1625
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/runtime_pack/FX-002/tools.json",
+      "sha256": "52c261d91b0315037f78807c25295177998f40d28589ad670591d89f6c2e8e2d",
+      "size": 433
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/runtime_pack/FX-003/items.json",
+      "sha256": "425d2a9190ef001789aca99c5013822dce687ddf245eb020f473a6240cf4f881",
+      "size": 2612
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/runtime_pack/FX-003/output.schema.json",
+      "sha256": "f52c6c6bd612917b19632464ea2e71c7df1ce1e46435afa15fb2c675f0ac8b9c",
+      "size": 3413
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/runtime_pack/FX-003/prompt.md",
+      "sha256": "d59340acf9f22324d2498287416d020b8ed32947956c3cf19dda420709d6bfa8",
+      "size": 370
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/runtime_pack/FX-003/tool-server.py",
+      "sha256": "a2f4197652df6a03503b18b1c20fa195f5cd596c47b450322ac958aab1af138d",
+      "size": 1625
+    },
+    {
+      "path": "fixtures/benchmark-bundle/fictional-points-v1/runtime_pack/FX-003/tools.json",
+      "sha256": "52c261d91b0315037f78807c25295177998f40d28589ad670591d89f6c2e8e2d",
+      "size": 433
+    },
+    {
+      "path": "fixtures/calibration/valid-alternative-mkt.json",
+      "sha256": "f8d34d4c055edfe3b4489dbeeff7a8e3643ca10e1d15f3aa98ebd00b15727703",
+      "size": 1335
+    },
+    {
+      "path": "fixtures/candidate-outputs/responses.json",
+      "sha256": "b11e2ffbb761315785e4a5f75a1e8aaea8757a5cbfd2ccb5612c6778e98090cc",
+      "size": 4428
+    },
+    {
+      "path": "fixtures/cases/FIN-001/actor/exhibits.json",
+      "sha256": "5cce90a898dabd82bdda7fb626b79afc0f95ce6db506e92cb86212f76eb3b921",
+      "size": 465
+    },
+    {
+      "path": "fixtures/cases/FIN-001/actor/task.md",
+      "sha256": "e7bf4d86041edf57e66412216eb3257132399ebd7904dbd472ca03e21ca4add9",
+      "size": 946
+    },
+    {
+      "path": "fixtures/cases/FIN-001/case.json",
+      "sha256": "8cb5498832553b42ce54db8cab7d8bfacb87e40336f8c0fc717a807601b7bfa6",
+      "size": 683
+    },
+    {
+      "path": "fixtures/cases/FIN-001/private/reference.json",
+      "sha256": "71899c960223a08a66f1167b245c769f5536dacf2af826581564190dafcd5371",
+      "size": 984
+    },
+    {
+      "path": "fixtures/cases/MKT-001/actor/exhibits.json",
+      "sha256": "95b7ae6a191ef10d17a5e171bbc06f7517e73302b46e788473ca48ab94685749",
+      "size": 402
+    },
+    {
+      "path": "fixtures/cases/MKT-001/actor/task.md",
+      "sha256": "a3643a8c001cc624d31263e2115767e47d296fa55b671f77176fce219528ddc0",
+      "size": 1031
+    },
+    {
+      "path": "fixtures/cases/MKT-001/case.json",
+      "sha256": "0d1f5fe3c30b8e63fcfda6f3acfd799d931f1ccb76c4489b0a7f129a5e524a67",
+      "size": 697
+    },
+    {
+      "path": "fixtures/cases/MKT-001/private/reference.json",
+      "sha256": "082228ea4cbe8cbcd81cc894048ad029c16eb176175d22d50b35ca8aa29e714e",
+      "size": 1107
+    },
+    {
+      "path": "fixtures/cases/STR-001/actor/exhibits.json",
+      "sha256": "e24e1a0905d745174770d629f457427baffe849b161693f38a01943baee002cd",
+      "size": 713
+    },
+    {
+      "path": "fixtures/cases/STR-001/actor/task.md",
+      "sha256": "0a5d4fd641b7bd3657a7d42a3472e205e90461c74f0943633e177dc611302798",
+      "size": 1049
+    },
+    {
+      "path": "fixtures/cases/STR-001/case.json",
+      "sha256": "46bf06d8370508d0b6e40247860d1ebbe3b4889c0c0212ee7c22a04d3b64dcd8",
+      "size": 695
+    },
+    {
+      "path": "fixtures/cases/STR-001/private/reference.json",
+      "sha256": "3f04e8c903541fbebb220c9d65bf637b60a633b8e405d6725a430d013df60dba",
+      "size": 1030
+    },
+    {
+      "path": "fixtures/cases/rubric-template.json",
+      "sha256": "9fb506c3b2323d72c98c0564440bbef19e7cd9d840a2d669b3c0a63569384072",
+      "size": 1733
+    },
+    {
+      "path": "fixtures/executable-import/actor_fixture.py",
+      "sha256": "772c9266e4190025ec6800a3c371226a6851ff7ca73c130cb0eaee7970f13962",
+      "size": 4609
+    },
+    {
+      "path": "fixtures/executable-import/environment/Dockerfile",
+      "sha256": "e52d45eb96af290683f5fa880433673455cbb3f603529479b2b9cae7f9da28b2",
+      "size": 442
+    },
+    {
+      "path": "fixtures/executable-import/environment/data/fraud.json",
+      "sha256": "f90d8920c94ed01d7f78597c257f4116ddf643268d3123b01b9040cd7a92a31d",
+      "size": 1022
+    },
+    {
+      "path": "fixtures/executable-import/environment/data/kyc_aml.json",
+      "sha256": "8326c3bf66ab5469d50f9c973966eea933e09f0c6bd17bfca8c8b20c0f0d9dd4",
+      "size": 701
+    },
+    {
+      "path": "fixtures/executable-import/environment/data/marketing.json",
+      "sha256": "399508a0e4050b306034743664574e6b94eafca3c2a2b6bdc1cff8291075bdd3",
+      "size": 504
+    },
+    {
+      "path": "fixtures/executable-import/environment/server.py",
+      "sha256": "3a57514b9c237feb0a010e289e96a0fc68e2c4a7b669ec1d3124400e547aa626",
+      "size": 4766
+    },
+    {
+      "path": "fixtures/executable-import/environment/tool_schemas.json",
+      "sha256": "c3dceba07af6b1eee2fdffcc8b872a414d8141d91d0686a0108d6f1e9d73dc08",
+      "size": 5673
+    },
+    {
+      "path": "fixtures/executable-import/generated_fraud.py",
+      "sha256": "0efe02018c3091ffcc756a7b494f062b26705fdc65bc9ea10ed4be5c7771a7e3",
+      "size": 2074
+    },
+    {
+      "path": "fixtures/executable-import/generated_kyc_aml.py",
+      "sha256": "e3770f3fd2e8a7fc63b8e9c8e89eacb965c12b6f837e3fc43eb15772d816b0dc",
+      "size": 1933
+    },
+    {
+      "path": "fixtures/executable-import/generated_marketing.py",
+      "sha256": "4d037ec0f8f7431c3e68b0f0fbbc08fe228d06b84eda3c281ac68fc06a72fbc0",
+      "size": 2373
+    },
+    {
+      "path": "fixtures/executable-import/harbor_verifier.py",
+      "sha256": "f1222bbcee02405dd42f025979d6ad78aa30add268ce52b4b98fbdef58432fcd",
+      "size": 984
+    },
+    {
+      "path": "fixtures/executable-import/reference_evaluator.py",
+      "sha256": "e77283b35434d76f361a0db640dff76eef2f09235417d7e677ef804a07b5ab25",
+      "size": 5373
+    },
+    {
+      "path": "fixtures/expected/morning-assertions.json",
+      "sha256": "2a9db9b04eb49e9eb787c500834feb24d06ec997db2c6b9821dbb08965d97fa1",
+      "size": 1133
+    },
+    {
+      "path": "fixtures/negative/scenarios.json",
+      "sha256": "8bee85c573cac9b71b18ad7a873174d0542bcd998f259c3de4dfab66095f5bbe",
+      "size": 1636
+    },
+    {
+      "path": "infra/docker/backend.Dockerfile",
+      "sha256": "fa642e1be71f503e2912617b92547c5dbd4d1ecd3b1a3eed91876e2adcbcee34",
+      "size": 1428
+    },
+    {
+      "path": "infra/docker/harbor.Dockerfile",
+      "sha256": "02efcb3c816c57925c32a3f0946797c4a6c3c5fd027ac5acf233f2d2cd7b174f",
+      "size": 1010
+    },
+    {
+      "path": "infra/docker/web.Dockerfile",
+      "sha256": "5b75445ba95c7f1fc411f322ce26c52ef90458c5d5110a59e3439a791621ee2e",
+      "size": 707
+    },
+    {
+      "path": "infra/gcp/Caddyfile",
+      "sha256": "5221f1d1bc65f0b78260bb41a2270278a533271632e8376400ee9d2a17a2404c",
+      "size": 1035
+    },
+    {
+      "path": "infra/gcp/cloudbuild.yaml",
+      "sha256": "3a35266b6d6051e62d71826d3d7f28ac0677b24ac406ee2e89878410895c6922",
+      "size": 1299
+    },
+    {
+      "path": "infra/gcp/compose.yaml",
+      "sha256": "e04119f7a010ab523cf1816c31c01d09999c6c182740a101fe69a5bf36f39acb",
+      "size": 5599
+    },
+    {
+      "path": "infra/gcp/deploy.sh",
+      "sha256": "a3f9dff483d9099015086ca8300eeb6f46174af1bc460b357a94131fb0c35b31",
+      "size": 16971
+    },
+    {
+      "path": "infra/gcp/deployment.json",
+      "sha256": "dff2496ee0d1a2ed2bad51952ec8723f16e26256cc1265219a804db8326a262f",
+      "size": 3181
+    },
+    {
+      "path": "infra/gcp/invite.sh",
+      "sha256": "0ecc14cc1fa71e649d7f073c555a60a9b63a2ff5bbe1b064b16c891729401718",
+      "size": 1146
+    },
+    {
+      "path": "infra/gcp/postgres-init.sh",
+      "sha256": "baefdcb189d0322e584a6ad5717c633d5aa4b2a872c6006a2b5f0abd42d5df2c",
+      "size": 334
+    },
+    {
+      "path": "infra/gcp/render_config.py",
+      "sha256": "abf6569e84771e1d37d00fc7effac4456711664996945ce6b31bf05dae66021f",
+      "size": 6287
+    },
+    {
+      "path": "infra/gcp/staging-linux-test-host-plan.json",
+      "sha256": "a5fd4be773832ddd39f22a4b736faf883357d6d88ae3f51d6e1db51993681b7b",
+      "size": 4803
+    },
+    {
+      "path": "infra/gcp/staging-plan.json",
+      "sha256": "18483b0742654414fdb60a4357bddb33fbcc744597913d9d3b7ab1a93ec2b158",
+      "size": 4982
+    },
+    {
+      "path": "infra/gcp/staging_benchmark_operator.py",
+      "sha256": "fdb61fd0a056329fa6d8b700197007ec171489257335a94161af48f23360676b",
+      "size": 21966
+    },
+    {
+      "path": "infra/gcp/staging_benchmark_operator_test.py",
+      "sha256": "977a1956ecad1aa837415c062a9f32023e0e48bfacd7e24f349d6b28e0a7b10e",
+      "size": 22928
+    },
+    {
+      "path": "infra/gcp/staging_build_lifecycle.json",
+      "sha256": "e3ae995908d1537644653d392074bb59d5b5c979009c0cd6861d5c4b30689963",
+      "size": 130
+    },
+    {
+      "path": "infra/gcp/staging_compose.py",
+      "sha256": "92bc83401d2b5400a007fd5a5228880b52122870752adfc907f5615d3361a1ff",
+      "size": 8691
+    },
+    {
+      "path": "infra/gcp/staging_compose_test.py",
+      "sha256": "2b65035f4f0393ada237b4c6bc6799ff1d338edc8159f8ec02309c80adf40db6",
+      "size": 9126
+    },
+    {
+      "path": "infra/gcp/staging_demo_build.example.json",
+      "sha256": "e4b404b75f8dccf95c5769d5e40b2a08c2dce88cb1631e36c0abb47e3afc96b1",
+      "size": 528
+    },
+    {
+      "path": "infra/gcp/staging_demo_build.py",
+      "sha256": "2cf986b371203002948feb37ca94ce21f213c2447be5e7ed4e6bac889ec5692a",
+      "size": 18151
+    },
+    {
+      "path": "infra/gcp/staging_demo_build_test.py",
+      "sha256": "fec6ed705ed3ceec32e8f5c65396cba525f06668fd56fc8262243449b3cee25c",
+      "size": 8880
+    },
+    {
+      "path": "infra/gcp/staging_demo_config.py",
+      "sha256": "0825e74692d786f356d20fce1362caebfdb2d921dc182855b3ea742f00191ea7",
+      "size": 17302
+    },
+    {
+      "path": "infra/gcp/staging_demo_config_test.py",
+      "sha256": "fda23f480150a151d6b4d15d13dadac6a1fbc1d9b378472a039912e7070a0238",
+      "size": 12884
+    },
+    {
+      "path": "infra/gcp/staging_evaluator_login_sql_test.py",
+      "sha256": "2155b60160220f4ae5cca8c2beb3f89e5949a6ec05b17276d5f4943d014bbad6",
+      "size": 5509
+    },
+    {
+      "path": "infra/gcp/staging_identity_bootstrap.py",
+      "sha256": "c4d66a2a51d8bfee6c1b29ebdae0a43a8857239b7555ff211979cf9d5dc17369",
+      "size": 22884
+    },
+    {
+      "path": "infra/gcp/staging_identity_bootstrap_sql_test.py",
+      "sha256": "161950bcc59f3c804330f78c1557f4f17f0e9f96c457024a3b9a9c3598f0ff5b",
+      "size": 15009
+    },
+    {
+      "path": "infra/gcp/staging_identity_bootstrap_test.py",
+      "sha256": "544d2e6d7c3b0baeca5357d267e13216e3110600781c72f8a534d57b5fb717b1",
+      "size": 20042
+    },
+    {
+      "path": "infra/gcp/staging_linux_commands.py",
+      "sha256": "7b29280a8ec482b4464e2c1686e8b7314a01b6e4c8fe0d77306a85e6682536ba",
+      "size": 5837
+    },
+    {
+      "path": "infra/gcp/staging_linux_commands_test.py",
+      "sha256": "9c17dc025768b17ed7252cee89cb5130e63986766de124d15160dd8b4f36a7bf",
+      "size": 1463
+    },
+    {
+      "path": "infra/gcp/staging_prepare.py",
+      "sha256": "a4f77c68efd462c463cf4771b6fd4e382b83252f66cd3b28e1ed2c925c1d2374",
+      "size": 11354
+    },
+    {
+      "path": "infra/gcp/staging_prepare_test.py",
+      "sha256": "c77ebf87c9ff30625245fda8ca36e12b467fd9b4f12e8b51051709c243615db3",
+      "size": 3890
+    },
+    {
+      "path": "infra/gcp/staging_startup.py",
+      "sha256": "7976aefb7f64b6c9a66ad23a118cdc99b86470fb014b7e4c23b1719e03856b5b",
+      "size": 1388
+    },
+    {
+      "path": "infra/gcp/startup.sh",
+      "sha256": "364f647dbd5bc7fbedc8087ebbb9a8b301f56160725ffe5e3cee05abff899339",
+      "size": 5090
+    },
+    {
+      "path": "infra/local/compose.yaml",
+      "sha256": "d5c6cd19a81ac12ea3f8528ced1c65f8b438d593b67212b2fd9baa2d762b587d",
+      "size": 1744
+    },
+    {
+      "path": "package.json",
+      "sha256": "939774dcb95ad25cb804684de51e5a029eb5062a07a0d36a2f28a080f4fee242",
+      "size": 1421
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "aca63f223856b6ebd415765934a7332b792e5797cba2aec2706ff7b61b8369b6",
+      "size": 33948
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "sha256": "01a2e5bc955db255030f223e98826ced0fa2617ebfb95c1eddf22f12552d14bf",
+      "size": 79
+    },
+    {
+      "path": "services/backend/alembic.ini",
+      "sha256": "09c71866226cd7d1fc6321b4f00235fca99b456566488272e639019db1b454e5",
+      "size": 77
+    },
+    {
+      "path": "services/backend/alembic/env.py",
+      "sha256": "8494e1c51465e1533e6b76f4c99a4bd17e1dcf019f7ca001c8028d71f5d04b4c",
+      "size": 424
+    },
+    {
+      "path": "services/backend/alembic/versions/001_core.py",
+      "sha256": "9250f09fd6f40a441e27d32da87faabd3b642f6f45c3d84be64c23e9a8badcfa",
+      "size": 540
+    },
+    {
+      "path": "services/backend/alembic/versions/002_provider_gates.py",
+      "sha256": "80bbc3303a5bc95c2bb0e52aedbf5e279b6478c9065d941f8639a087e0b9b539",
+      "size": 520
+    },
+    {
+      "path": "services/backend/alembic/versions/003_imports.py",
+      "sha256": "6f3a648e4ef3d5b10d4d91cfeee4844bcd060050cd4dd006625baef77a9e3f10",
+      "size": 338
+    },
+    {
+      "path": "services/backend/alembic/versions/004_fixture_delivery.py",
+      "sha256": "9afedb638b83d4f1a3e63f420d77a858dee75dcb40c18ee92d7bebc451a9524b",
+      "size": 399
+    },
+    {
+      "path": "services/backend/alembic/versions/005_review_issues.py",
+      "sha256": "2a8de4743c595fb6f1f36d8639e0f1e88f643fc0834fc783394d4190a9d4cd72",
+      "size": 396
+    },
+    {
+      "path": "services/backend/alembic/versions/006_external_results.py",
+      "sha256": "74a4a3bb3173681fe39fac0928f6b9d7b90c1b390c9876667cde2d194116824f",
+      "size": 399
+    },
+    {
+      "path": "services/backend/alembic/versions/007_external_evidence_binding.py",
+      "sha256": "6e41880d8fa3f8511f3c00acba795e7fec94f44be52074a3f335995dcbf5ed58",
+      "size": 408
+    },
+    {
+      "path": "services/backend/alembic/versions/008_source_revision_receipts.py",
+      "sha256": "82000ecf54931a1e0a693134f6c7e1d9156afa885ab75c9a714347bc9395df35",
+      "size": 407
+    },
+    {
+      "path": "services/backend/alembic/versions/009_execution_bindings.py",
+      "sha256": "e4c93199962430562606e43e7df594b624bcb8e7b2006bd8cd5c58b1e8511eee",
+      "size": 401
+    },
+    {
+      "path": "services/backend/alembic/versions/010_readiness.py",
+      "sha256": "99227944b085b629cb87606bf7c3ddf263f5b13ea8ea98e079343c152fc34f9d",
+      "size": 392
+    },
+    {
+      "path": "services/backend/alembic/versions/011_episode_projection_events.py",
+      "sha256": "bffbf7c2d42a6047d251a197470406f943b5d6e05cd534fe0913592933dadb75",
+      "size": 408
+    },
+    {
+      "path": "services/backend/alembic/versions/012_projection_version.py",
+      "sha256": "b728790ccd019a183f60f6ec7acd89924a34d16bd5769605767f86656d5b7a6a",
+      "size": 401
+    },
+    {
+      "path": "services/backend/alembic/versions/013_task_datasets.py",
+      "sha256": "05be539144d69ed6ab30d809a90d617274d026dff9a266d0ffef44179d8ecaf0",
+      "size": 396
+    },
+    {
+      "path": "services/backend/alembic/versions/014_ingestion_jobs.py",
+      "sha256": "7d5f3f913342dbb1b5c6a520684781488e255be5d97fadad27f75562b7607790",
+      "size": 397
+    },
+    {
+      "path": "services/backend/alembic/versions/015_marketing_interactive.py",
+      "sha256": "1f70ec19a40377eeb0cb8c2afc40bbcd4960ab0f6d4f752038cf7295974f25ca",
+      "size": 404
+    },
+    {
+      "path": "services/backend/alembic/versions/016_interactive_binding.py",
+      "sha256": "e4c16e8f502941873c3c66a90fc63376bc082de6587df2804a081251a74d3c3c",
+      "size": 402
+    },
+    {
+      "path": "services/backend/alembic/versions/017_benchmark_factory.py",
+      "sha256": "9e21b11998e70499dc1cb6ecdb810da97c535760bc2b60ed5f741c6134d96609",
+      "size": 400
+    },
+    {
+      "path": "services/backend/alembic/versions/018_source_provenance.py",
+      "sha256": "979f20f8fb293874ada414afa169f9b0b2f5011d183494588612891e452bc64f",
+      "size": 400
+    },
+    {
+      "path": "services/backend/alembic/versions/019_evaluation_plans.py",
+      "sha256": "cfea9893361f88fe074ba3d7d3ee509a05ff44222f4f118272a9a2f3a8bf6ab8",
+      "size": 399
+    },
+    {
+      "path": "services/backend/alembic/versions/020_praxis_harbor.py",
+      "sha256": "45d1e4c3a3a7ca54cb79cd035ab14b95995bf5a96adfa887640983b8469c8f85",
+      "size": 396
+    },
+    {
+      "path": "services/backend/alembic/versions/021_harbor_checks.py",
+      "sha256": "737157315622f5d5e8f6a2a0fc4feb0bc1c2bed3a2a75128d098512ed34f7165",
+      "size": 396
+    },
+    {
+      "path": "services/backend/alembic/versions/022_harbor_fencing.py",
+      "sha256": "e2fb65f6c259eee3d82a36bf3212cc6333d24e42a4ac04bdd95c2a1ddcc64935",
+      "size": 397
+    },
+    {
+      "path": "services/backend/alembic/versions/023_harbor_agent_plans.py",
+      "sha256": "7e0659a2007c43e410fe19e02c2f26a68b29aa4a8ecaf1c28ae736f6e509b396",
+      "size": 401
+    },
+    {
+      "path": "services/backend/alembic/versions/024_harbor_billing_evidence.py",
+      "sha256": "23cc12b6c949bfcd05b0caae48bec96eb78ab46df50fbabb46fccfb5b77479ff",
+      "size": 406
+    },
+    {
+      "path": "services/backend/alembic/versions/025_harbor_version_rights.py",
+      "sha256": "29f0862776c0ffe2252dec85c4d142e94afae4a73b2c4825ac8c500e40854621",
+      "size": 404
+    },
+    {
+      "path": "services/backend/alembic/versions/026_workspace_framework_profiles.py",
+      "sha256": "c5b369ce39c8f274dea3f7f0041662bc13074f303b32d834bf18b1a39a2769f4",
+      "size": 411
+    },
+    {
+      "path": "services/backend/alembic/versions/027_workspace_credentials.py",
+      "sha256": "c67f22373f4d991ac2e264f28cb6edbd5bccebcf7a2f650a96aeae4673eadc6b",
+      "size": 404
+    },
+    {
+      "path": "services/backend/alembic/versions/028_workspace_profile_mapping.py",
+      "sha256": "d134adff5294338c9688398d3648e40933276d3c666ba6654f261a8f8445d7c6",
+      "size": 408
+    },
+    {
+      "path": "services/backend/alembic/versions/029_workspace_preparations.py",
+      "sha256": "70b48827858d5665c50975ba17e838a1f3827176dcd0e54e08124a2398da0ab1",
+      "size": 405
+    },
+    {
+      "path": "services/backend/alembic/versions/030_workspace_model_versions.py",
+      "sha256": "680660699d22c106a39fce02c412f27493a2e4f673bfe2671e3a222aabe88464",
+      "size": 407
+    },
+    {
+      "path": "services/backend/alembic/versions/031_workspace_execution.py",
+      "sha256": "8c9b37056536f4c3d82cab24cc5d61f0ee45c3a3b3d9512e87dbe470eb5984d6",
+      "size": 402
+    },
+    {
+      "path": "services/backend/alembic/versions/032_harbor_terminal_recovery.py",
+      "sha256": "fbc0f7a5bae03382b6fb6ef55e768f06d689ffd42ebe26d8c4af729a9bd008d3",
+      "size": 429
+    },
+    {
+      "path": "services/backend/alembic/versions/033_two_roles.py",
+      "sha256": "dd858635988c937a6672dc8897fef4404b64bb595995f66623e932b0b05a9133",
+      "size": 397
+    },
+    {
+      "path": "services/backend/alembic/versions/034_admin_run_authority.py",
+      "sha256": "03061ed8dd77c572e209dfc2f953d7b22bc5695dfdaa646ffb5342ee6d420d9f",
+      "size": 408
+    },
+    {
+      "path": "services/backend/alembic/versions/035_workspace_trials.py",
+      "sha256": "0704059cd1b42a7800245b144030da0854021554fc53d2ad288286a66c2c679b",
+      "size": 406
+    },
+    {
+      "path": "services/backend/alembic/versions/036_executable_imports.py",
+      "sha256": "794d864d4b8bb4b8caaa7148c7bff6e6ec7f0bba6b61fa02003a38b7fd17f93a",
+      "size": 472
+    },
+    {
+      "path": "services/backend/alembic/versions/037_import_evidence_guards.py",
+      "sha256": "730580ef534d06e70df99f2221556e7d381924e80c89dd777aa9307fa18aa550",
+      "size": 378
+    },
+    {
+      "path": "services/backend/alembic/versions/038_import_generation_rebinding.py",
+      "sha256": "caf95a00b6843a3438e8f6b06a8390ec9cda0dee8692a81a2d07effd3e6a1882",
+      "size": 387
+    },
+    {
+      "path": "services/backend/alembic/versions/039_benchmark_private_foundation.py",
+      "sha256": "7d247dc4583bcaf4e7e93dfc2eb5a00806da6da9176b3546639c926790ef90e1",
+      "size": 385
+    },
+    {
+      "path": "services/backend/alembic/versions/040_benchmark_private_guards.py",
+      "sha256": "2da3c94cdef094fbdbdff468096449e9653dd6bbc73c219785ac1baa21e3c4ac",
+      "size": 379
+    },
+    {
+      "path": "services/backend/alembic/versions/041_benchmark_canonical_bindings.py",
+      "sha256": "2287df0d788c00720921dddc0da5756811940e627a389b708e1ac41f081f9d7b",
+      "size": 387
+    },
+    {
+      "path": "services/backend/alembic/versions/042_benchmark_window_ownership.py",
+      "sha256": "883a68e77af45d2dc1bae824661fc080aa76cfa3885f51e66e2f9523b1f1e8b7",
+      "size": 392
+    },
+    {
+      "path": "services/backend/alembic/versions/043_benchmark_import_summaries.py",
+      "sha256": "d5c2f49ab17feeafc9a134a73e3837ab9ffcb15ca7091d11b0ee0ea96e0a4c3f",
+      "size": 383
+    },
+    {
+      "path": "services/backend/alembic/versions/044_benchmark_qualification_pipeline.py",
+      "sha256": "aa4b1efaf1d5c9e02719f97878923bda66ea58c462a6abc887b4af8ba47cb140",
+      "size": 395
+    },
+    {
+      "path": "services/backend/alembic/versions/045_benchmark_qualification_capture_guards.py",
+      "sha256": "a0ea5bd80140cdbff50df1dbdb2ba0883336292b5525aabbb331c536fdfeda25",
+      "size": 429
+    },
+    {
+      "path": "services/backend/alembic/versions/046_benchmark_capture_inputs.py",
+      "sha256": "009632d38a57909d546eb73406ceaf6139668deb427b5ce2294e85953713e1aa",
+      "size": 387
+    },
+    {
+      "path": "services/backend/alembic/versions/047_benchmark_evaluation.py",
+      "sha256": "5ead8a82adaec2f440940f5e0fb7f8e222d91de6155f6de24a8486e982c6abb7",
+      "size": 390
+    },
+    {
+      "path": "services/backend/alembic/versions/048_benchmark_sealed_custody.py",
+      "sha256": "b6474f667af544906bc9d8240d5590bcb277e57a4e887d4768ff3a9a377352aa",
+      "size": 394
+    },
+    {
+      "path": "services/backend/alembic/versions/049_benchmark_evaluation_revocation.py",
+      "sha256": "b31961778490306ccaa5b65f146b96aae0fe6abec5bf66a363e13e15a01fb80e",
+      "size": 401
+    },
+    {
+      "path": "services/backend/alembic/versions/050_benchmark_offline_runtime.py",
+      "sha256": "24a55d4a27567c4829f55e040a4726cc564e5ff77b522fd712c46a96f54f9ba6",
+      "size": 392
+    },
+    {
+      "path": "services/backend/alembic/versions/051_benchmark_offline_capture.py",
+      "sha256": "39274250f32c926c4cfd7f510656c0e2e997322a24734e4138d934afa2b2e42d",
+      "size": 389
+    },
+    {
+      "path": "services/backend/alembic/versions/052_benchmark_capacity_transitions.py",
+      "sha256": "61e173a5a6e9d179f785e5af38c101611258dcfe26bd3ef035c93dd076ccea60",
+      "size": 397
+    },
+    {
+      "path": "services/backend/alembic/versions/053_benchmark_native_evaluator_custody.py",
+      "sha256": "85b18b22d52d1dd558aa2fec354e4ee887646959117c388896d3aedf574e86cb",
+      "size": 423
+    },
+    {
+      "path": "services/backend/alembic/versions/054_benchmark_protocol_freeze_receipts.py",
+      "sha256": "2c7c702156c0010893f9c0bac7d6013a5b42a54904253cfc87f4a7052f7097e1",
+      "size": 422
+    },
+    {
+      "path": "services/backend/alembic/versions/055_benchmark_offline_reconciliation.py",
+      "sha256": "7785e06c8504b932e94f561cf866f7deef40e62b25d46aafbb01c720f21b125c",
+      "size": 396
+    },
+    {
+      "path": "services/backend/alembic/versions/056_benchmark_native_operator_role.py",
+      "sha256": "344843f94b2888a3043b984a101843b2325c90179d7ca15381f42872732a1fba",
+      "size": 397
+    },
+    {
+      "path": "services/backend/alembic/versions/057_benchmark_public_source_metadata.py",
+      "sha256": "30d7b194846a062585a44228832168e1a07a03cf1011ff3ed4bca85923340574",
+      "size": 387
+    },
+    {
+      "path": "services/backend/alembic/versions/058_benchmark_deliverable_custody.py",
+      "sha256": "4a1146f32f81983e8e7cbd0a0f81ed03eb7fbc611f0fa07e14f114394e9fe781",
+      "size": 397
+    },
+    {
+      "path": "services/backend/migrations/001_core.sql",
+      "sha256": "ab898386ceec0098ec0975836fede0454e1458340377355a8c8ba5d2bd1db859",
+      "size": 12137
+    },
+    {
+      "path": "services/backend/migrations/002_provider_gates.sql",
+      "sha256": "f5ac781bf0a7d0ae9b88ff0ec4834926610b8758dcfb1ff01d8fe427cc5f550e",
+      "size": 4225
+    },
+    {
+      "path": "services/backend/migrations/003_imports.sql",
+      "sha256": "45852032288fc38195b1e9f50055d9fa4211e78c2f2523bd36a8f59c8db04d03",
+      "size": 2086
+    },
+    {
+      "path": "services/backend/migrations/004_fixture_delivery.sql",
+      "sha256": "8f35107dde02b5f3825ea776f82397a9906fb0852e9bb5c8d76b1813ec2e1007",
+      "size": 3172
+    },
+    {
+      "path": "services/backend/migrations/005_review_issues.sql",
+      "sha256": "f2fa8d2ee69fdd9f3bea867ec065486b6d5ccb93df80c48362ec12f8ea04be8b",
+      "size": 2064
+    },
+    {
+      "path": "services/backend/migrations/006_external_results.sql",
+      "sha256": "b9b931db7ac69fbb92916036af55a7a90f7979336537804279709decced3613b",
+      "size": 1490
+    },
+    {
+      "path": "services/backend/migrations/007_external_evidence_binding.sql",
+      "sha256": "7b3a30988a01f242262c334be8b7f95942cbe5c19826bc73d8bec7f0496118a5",
+      "size": 877
+    },
+    {
+      "path": "services/backend/migrations/008_source_revision_receipts.sql",
+      "sha256": "f25286a2e7f025c83ff2344b0a91140cec0c0e6d14f2bf21cdf1b2373331fa5a",
+      "size": 1199
+    },
+    {
+      "path": "services/backend/migrations/009_execution_bindings.sql",
+      "sha256": "61c56dd442725d97f9fe072f1f45cc68b0540eee8b07fd6bf89fa803d1479d4a",
+      "size": 1496
+    },
+    {
+      "path": "services/backend/migrations/010_readiness.sql",
+      "sha256": "fde2878af1367f8e94ce64f7bdf28d14d7d814dce1f750e86dc2f66a398977b9",
+      "size": 1065
+    },
+    {
+      "path": "services/backend/migrations/011_episode_projection_events.sql",
+      "sha256": "102a1a68f2bb38330725a0fe9cdb4cb845ad6d1e5bd1095fa53215ba24213b96",
+      "size": 793
+    },
+    {
+      "path": "services/backend/migrations/012_projection_version.sql",
+      "sha256": "17f2f532f7f7f742d261589175a1376fe497b1de463178aa7ec1064ea4d3514a",
+      "size": 161
+    },
+    {
+      "path": "services/backend/migrations/013_task_datasets.sql",
+      "sha256": "aadd820981b324131bf9d2a8bcd6450035042e8633155e09e8596b52b7fb85ea",
+      "size": 5866
+    },
+    {
+      "path": "services/backend/migrations/014_ingestion_jobs.sql",
+      "sha256": "8b081e171ff330246d8059af3d68aa9e71d74d3cc462d5005320f32a322d5ec0",
+      "size": 1949
+    },
+    {
+      "path": "services/backend/migrations/015_marketing_interactive.sql",
+      "sha256": "6da820d09d72a47e6755cef7875320e486852a3d947b96b001f31924e394c0c6",
+      "size": 2732
+    },
+    {
+      "path": "services/backend/migrations/016_interactive_binding.sql",
+      "sha256": "b18d6f6bf76323eabddad437cb93a5718c0cbcd4c8bc672734acf1a4747f31ca",
+      "size": 1008
+    },
+    {
+      "path": "services/backend/migrations/017_benchmark_factory.sql",
+      "sha256": "1878efa21369bfdf9af543236f4b400d56487813c562b3343018b5d786fe23eb",
+      "size": 357
+    },
+    {
+      "path": "services/backend/migrations/018_source_provenance.sql",
+      "sha256": "d43d5419fe0a323beafeca3d33226150fd26e949bfb13ece34de1a533f2f92d3",
+      "size": 978
+    },
+    {
+      "path": "services/backend/migrations/019_evaluation_plans.sql",
+      "sha256": "7bd93ed8ec1ef2af45924e4594151613143a2c8b90674d6258357062c5535af1",
+      "size": 1873
+    },
+    {
+      "path": "services/backend/migrations/020_praxis_harbor.sql",
+      "sha256": "fc92712b94e6d4a165eadc9afb97db40331da605dda82394d87f699cad1d5d7c",
+      "size": 4689
+    },
+    {
+      "path": "services/backend/migrations/021_harbor_checks.sql",
+      "sha256": "c4611ba418b8307dfe192c1f85364bd602a0d51c30e669efe79e94c1ad7413f2",
+      "size": 2120
+    },
+    {
+      "path": "services/backend/migrations/022_harbor_fencing.sql",
+      "sha256": "f09282be1985789df58f9b1cd9b9313dc7733d8cfe7a47b082ec8377af6e8e3e",
+      "size": 1039
+    },
+    {
+      "path": "services/backend/migrations/023_harbor_agent_plans.sql",
+      "sha256": "02a7d6a9482e770a36f850255b0a50ea1e27fdeccb6d953610a703f233225b46",
+      "size": 5852
+    },
+    {
+      "path": "services/backend/migrations/024_harbor_billing_evidence.sql",
+      "sha256": "1c9c135381c9f4d0987b0dcab2d3d3d171bca97cc0ed385ba124ab11e3334ecc",
+      "size": 365
+    },
+    {
+      "path": "services/backend/migrations/025_harbor_version_rights.sql",
+      "sha256": "96694d150167a4a93b340550cef2d2e54da5685be74d352feae7c99ebf9fa703",
+      "size": 391
+    },
+    {
+      "path": "services/backend/migrations/026_workspace_framework_profiles.sql",
+      "sha256": "4d307f4b8edaecb06ecf2142c4f1c25cc3319c5725d97f7cd984efa484f32736",
+      "size": 1155
+    },
+    {
+      "path": "services/backend/migrations/027_workspace_credentials.sql",
+      "sha256": "aaa3a931b215acfcfb87e56e95c0e734beb96b03312aeb1168de9d4440868e9d",
+      "size": 2239
+    },
+    {
+      "path": "services/backend/migrations/028_workspace_profile_mapping.sql",
+      "sha256": "338437c2db4bae60032663497683af66a7043f7599dfd90f5249bf5eef9e586c",
+      "size": 1798
+    },
+    {
+      "path": "services/backend/migrations/029_workspace_preparations.sql",
+      "sha256": "52a82ced9b809051e06db9307d1a5785a4980c0e26c4dfbd64033132d7afb125",
+      "size": 3184
+    },
+    {
+      "path": "services/backend/migrations/030_workspace_model_versions.sql",
+      "sha256": "e83e672f904a31051ff323aa6ceed01d9ed3148b87a07640d40f66e809f90a7d",
+      "size": 4906
+    },
+    {
+      "path": "services/backend/migrations/031_workspace_execution.sql",
+      "sha256": "c72cba1a9319d8e513a4cb4909354bbc118148de146e48384c486b6cae1b840d",
+      "size": 4052
+    },
+    {
+      "path": "services/backend/migrations/033_two_roles.sql",
+      "sha256": "f70c30503d62829a6680aa1b691ef2a429950821f7d84617aa15e79f8fd1bdc2",
+      "size": 2473
+    },
+    {
+      "path": "services/backend/migrations/034_admin_run_authority.sql",
+      "sha256": "7b62541bbdeecfdc51ee0088239a7b29d6a57a0b6bced53f9244218cae67b811",
+      "size": 1731
+    },
+    {
+      "path": "services/backend/migrations/035_workspace_trials.sql",
+      "sha256": "50a61b57bdc5c2e33a2a3be6d5fce623281205090b49c1a0a4a44e3a94b73455",
+      "size": 1613
+    },
+    {
+      "path": "services/backend/migrations/036_executable_imports.sql",
+      "sha256": "199a9a078d49dfc9b72b3e0c0f5322cd11d7b7c9a46c62cfbb826025413d3181",
+      "size": 6207
+    },
+    {
+      "path": "services/backend/migrations/037_import_evidence_guards.sql",
+      "sha256": "745592013a984fd7d812a60ab022dbb9e2de49ee60d6e1d43eb57f3096352569",
+      "size": 2253
+    },
+    {
+      "path": "services/backend/migrations/038_import_generation_rebinding.sql",
+      "sha256": "4d9b8728f24fb0a2db96ea29d40fdfc84d30511b931070acb1c419eda1625067",
+      "size": 1466
+    },
+    {
+      "path": "services/backend/migrations/039_benchmark_private_foundation.sql",
+      "sha256": "d0ee4510aae2850605d2a8595055141a366ddf27d16fe0ec18d9eacf739acf91",
+      "size": 15236
+    },
+    {
+      "path": "services/backend/migrations/040_benchmark_private_guards.sql",
+      "sha256": "53369432cfe263fb9521a6e9d05aeb5f83a9e9c998e10fdbaa786c0bf59c2de5",
+      "size": 1806
+    },
+    {
+      "path": "services/backend/migrations/041_benchmark_canonical_bindings.sql",
+      "sha256": "c608d6425d63943a33883d9806414fced5431f9abba38b86f0b0f74c3efba84e",
+      "size": 18060
+    },
+    {
+      "path": "services/backend/migrations/042_benchmark_window_ownership.sql",
+      "sha256": "35a57bbc75cc56c52b9a0f694dbfdfb77e68d4c6e76cfdfa5d26c7b9bde430af",
+      "size": 3973
+    },
+    {
+      "path": "services/backend/migrations/043_benchmark_import_summaries.sql",
+      "sha256": "46ea4796483e2466df8cd1694843ce0158b2235fe0cd52e1392b3da25adcd6a6",
+      "size": 1224
+    },
+    {
+      "path": "services/backend/migrations/044_benchmark_qualification_pipeline.sql",
+      "sha256": "6f8ee6173a6da236d75073802ff6d8d5a2a9540fc895b1d274dcfe7cc00652c7",
+      "size": 9857
+    },
+    {
+      "path": "services/backend/migrations/045_benchmark_qualification_capture_guards.sql",
+      "sha256": "2ca62f45bbe359d27c093dc53db710c2b97edd26b2da61d3c70a963cc9b3000b",
+      "size": 2851
+    },
+    {
+      "path": "services/backend/migrations/046_benchmark_capture_inputs.sql",
+      "sha256": "7bc8d9c5212e8de2157aa22b614571e9cf3355afdb8eb1ec105b011f8cd5131e",
+      "size": 2205
+    },
+    {
+      "path": "services/backend/migrations/047_benchmark_evaluation.sql",
+      "sha256": "c28f7ec92aae56735af20dff228f6663d4d64d579c24dc051cd512be601708c7",
+      "size": 11566
+    },
+    {
+      "path": "services/backend/migrations/048_benchmark_sealed_custody.sql",
+      "sha256": "61cae1dc806f73c1db8e760558998c6b6c3a00074688d788327b244dbdb91351",
+      "size": 4791
+    },
+    {
+      "path": "services/backend/migrations/049_benchmark_evaluation_revocation.sql",
+      "sha256": "aa7b43dc0359ee18cd82ff8305af43410269cea2f2c613dbe2e756dc204014e3",
+      "size": 3761
+    },
+    {
+      "path": "services/backend/migrations/050_benchmark_offline_runtime.sql",
+      "sha256": "106d4f45d5e54844e2c50e3edc990d8c2213a83bd204528263d7252dab8a7893",
+      "size": 2741
+    },
+    {
+      "path": "services/backend/migrations/051_benchmark_offline_capture.sql",
+      "sha256": "ca99082581e8533c9ca740e9ed4361debbaa0293456326a8bb678951758c4b4f",
+      "size": 1179
+    },
+    {
+      "path": "services/backend/migrations/052_benchmark_capacity_transitions.sql",
+      "sha256": "6dbe5f7e4d5dd1d320cf90ef468856ed6726aac3f5d60a4ed9bc99b677184bf6",
+      "size": 366
+    },
+    {
+      "path": "services/backend/migrations/053_benchmark_native_evaluator_custody.sql",
+      "sha256": "ba82f4716555aca6023da97c07a106ebcf83387448c550915fe7dcb5f6ebef86",
+      "size": 7612
+    },
+    {
+      "path": "services/backend/migrations/054_benchmark_protocol_freeze_receipts.sql",
+      "sha256": "8650ca6b344ec3a82d4fee1f67d34f1101bd92b293589cac4bd8568140eac452",
+      "size": 2201
+    },
+    {
+      "path": "services/backend/migrations/055_benchmark_offline_reconciliation.sql",
+      "sha256": "74dcda98ee57a1e0c2bc6ddb876b88e344501676379d468c2b8ccb4462e29efc",
+      "size": 2577
+    },
+    {
+      "path": "services/backend/migrations/056_benchmark_native_operator_role.sql",
+      "sha256": "f309a3bcea9e56b86f5aff9bcda631d8f498954bcf097616357ddbe4c26d3f03",
+      "size": 1424
+    },
+    {
+      "path": "services/backend/migrations/057_benchmark_public_source_metadata.sql",
+      "sha256": "b78123daf816150f28072ee44b588ce83fee8b42ae68d430a19b1978c53e790f",
+      "size": 409
+    },
+    {
+      "path": "services/backend/migrations/058_benchmark_deliverable_custody.sql",
+      "sha256": "6dff83b38332e8b27550c06d9cd10b3a6429aaa28a123c08dd238a550ba2b0c9",
+      "size": 11084
+    },
+    {
+      "path": "services/backend/pyproject.toml",
+      "sha256": "b8f470f90101b14f497e33a616d17bfe53321053cad4b9779cfa34fa944e6cc0",
+      "size": 921
+    },
+    {
+      "path": "services/backend/src/anvil/__init__.py",
+      "sha256": "8d099afca1f15ba7bfe9f2950119938ee4724cc0b3dde0fc3b0074eb4a836164",
+      "size": 61
+    },
+    {
+      "path": "services/backend/src/anvil/api.py",
+      "sha256": "54dbc8a61a4ed6d87e8cee8895f2167259ae653fd643b1e65f29133050bd2a2f",
+      "size": 27205
+    },
+    {
+      "path": "services/backend/src/anvil/artifacts.py",
+      "sha256": "29d0e6419f0ecf6b5221684998c4dac03402b8d80b2df1e65f96610937a6f4e0",
+      "size": 3187
+    },
+    {
+      "path": "services/backend/src/anvil/auth.py",
+      "sha256": "7170a389973caf4578623775022ac5549a1a2a0d8d7fb6281cce09c4d30fdf7d",
+      "size": 8334
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_api.py",
+      "sha256": "158656e5878239f1a4a4bf93b26da58efca74788e341b9929420387441eae042",
+      "size": 54729
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_archive.py",
+      "sha256": "eee83469ecaee9731ccda814ce4c365cf7ba3df09aebee5c94985cf1167573dc",
+      "size": 6416
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_atif.py",
+      "sha256": "7a469c3e8fdbea2b0cca1310e05329bd124f75794c816d9c8f5586637c972d5a",
+      "size": 2684
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_bundle.py",
+      "sha256": "4653305b6c4a2d9e088c1fdf7ed0455644dd81446fc5f7285f5540656062b879",
+      "size": 17217
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_compiler.py",
+      "sha256": "0848f50fda8b1d6772f8bba067dc580cbbe4c1bf2c0a72dac56b8ab953609112",
+      "size": 13510
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_conversation.py",
+      "sha256": "27c218911830d2f18460886baf972cfb65cadc5b52c4035548f8ae41cb0ddcd5",
+      "size": 17345
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_evaluation.py",
+      "sha256": "51c482580f67ae84ede762e2239f0ad80c9a36c712a3f51fbaa4a31e843c694b",
+      "size": 7904
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_evaluator_native.py",
+      "sha256": "ae4e1a748088dffc8beb10cf93ddcc5d0f76a7dbfe91a3f107e97fc2b021518e",
+      "size": 6130
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_evaluator_program.py",
+      "sha256": "c25cff47e73209cde8bdae9604ffb278b50376e425c3aebf31dc809bbff0e58d",
+      "size": 10220
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_evaluator_worker.py",
+      "sha256": "7b1dc6273fe33b63ceef53cd921caee2b649553b11f292ab5289787dc82d48df",
+      "size": 5244
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_execution.py",
+      "sha256": "13d0072438e7ea553f521bcefd97c82eb97013366dd7abb55c2869d72ed99ec1",
+      "size": 31255
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_ingest.py",
+      "sha256": "42e064b3f8529a7c6e5bf34012fe6a6ef74607271c5b0c3fadf1a9b303f64ae4",
+      "size": 3351
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_offline_actor.py",
+      "sha256": "d31ad13b08b37f455375295ee3e7349944b82a132f7ffe78b9bd19d7223308bf",
+      "size": 8153
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_offline_worker.py",
+      "sha256": "245166ae4130fe100202445179edd5176c23e1dbb3b47030455c5c84b57d8df8",
+      "size": 27650
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_pipeline.py",
+      "sha256": "7a1ab6b7882e5f1f3a01f5ac8d674fa3ef22e9a6ba7116cf3e24bd3c6e33a15f",
+      "size": 24369
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_pipeline_worker.py",
+      "sha256": "94dc456afd79c90b765e7f4f4e946c20094922b919ab21f352bec7a65e74f13d",
+      "size": 16216
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_protocol.py",
+      "sha256": "bb978c9d680d7126015fe91742f0d887b31890a4bb75f959584ca1a794d67ed8",
+      "size": 7142
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_provider_wire.py",
+      "sha256": "f5a9dc342ed323a63e5773f119cd7ff66729c9495ae2d998f5e9bb685e645c6f",
+      "size": 10065
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_qualification.py",
+      "sha256": "6fa0b5194c3bb6da55f11f51b5e6a450c130fe1b594a2ca4cb0fdf3166268a40",
+      "size": 40852
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_qualification_evidence.py",
+      "sha256": "9d5707510e06c3175d17fade96b42ae343e8525b33c827abf59671ec5a7e5946",
+      "size": 13222
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_reconciliation.py",
+      "sha256": "4df6767ee7ad4bc20ff42a92fc2293dc2ca961a96b6111a4e851b50afe4d10b6",
+      "size": 5639
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_results.py",
+      "sha256": "7d6fa563c105e0a1471fae9f04bc0f6a083734e3b4a54b5bc6211999c83fec65",
+      "size": 21084
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_review_policy.py",
+      "sha256": "cc3ef00c4c1dff3ea4ac75223b7b86cf102bdc64a051c87fcfcf08401d158367",
+      "size": 3877
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_scheduler.py",
+      "sha256": "e99d80ca19c66a3a67fa03ea8d757134b0d4705d0ae3edf76b32607ce632bf65",
+      "size": 6235
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_scores.py",
+      "sha256": "395a0abf804f7ebaae0e4b01e034ba3eb6dbc568cb846dc4c0414fee56eb8317",
+      "size": 9035
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_storage.py",
+      "sha256": "0187bd456fc7f6d700234f24d20c8094e9a7b58fd2a8d3cb527f15ff7a6ef109",
+      "size": 10655
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_tool_gateway.py",
+      "sha256": "f2987e9419fbd92b919de1d8bb28f5253d6e7a3f3429148ebac153e04b22657e",
+      "size": 7725
+    },
+    {
+      "path": "services/backend/src/anvil/benchmark_trust.py",
+      "sha256": "763a1caf9406d8b197c48c7c5608ef9bdb18b90c8f4877eb143b048baa67e69c",
+      "size": 2370
+    },
+    {
+      "path": "services/backend/src/anvil/budget.py",
+      "sha256": "a723c13e21e120e0c05178abf349e7c9fb52973c57f35603f085bea8a380a38c",
+      "size": 4184
+    },
+    {
+      "path": "services/backend/src/anvil/cli.py",
+      "sha256": "1a2f8630ccf5ec65d645d489daa6bc60b42bec36db41c8b10aaa0b6f47a0e560",
+      "size": 7230
+    },
+    {
+      "path": "services/backend/src/anvil/cloud_secrets.py",
+      "sha256": "2a1f56604de176db1077037c58893e1d13a9f95f65b40c322b74cde6bd2b7434",
+      "size": 4981
+    },
+    {
+      "path": "services/backend/src/anvil/config.py",
+      "sha256": "d7a476e3f86f1cbea3b6a942fadf4d9ab9fde21a477c4aebf463791a46b7bab5",
+      "size": 3373
+    },
+    {
+      "path": "services/backend/src/anvil/db.py",
+      "sha256": "17ccd1bfa8dfb9a6b649e715bf545e1485929583da9bf78954053d3834eedafc",
+      "size": 1681
+    },
+    {
+      "path": "services/backend/src/anvil/delivery.py",
+      "sha256": "22cf6e83fdc5babf7a5f857d65029b63d98fbabe8da9d643d579bbda0b161611",
+      "size": 16942
+    },
+    {
+      "path": "services/backend/src/anvil/domain.py",
+      "sha256": "09556a98e6f9276fe3605fe077d3dd4bffcf298c5420712db5433354a6fec232",
+      "size": 15363
+    },
+    {
+      "path": "services/backend/src/anvil/evaluation.py",
+      "sha256": "66c6183fc938e9aa689f4017177a69009e295d10183ec7ee7547a922542df97d",
+      "size": 28167
+    },
+    {
+      "path": "services/backend/src/anvil/external_results.py",
+      "sha256": "d00474fd0e10d3542c5d34a183d64344202bf7492cec99eafbb428b6357e0ab5",
+      "size": 12335
+    },
+    {
+      "path": "services/backend/src/anvil/factory.py",
+      "sha256": "6f03ee185c6c04bfb7af228f99abaa6a00ad24daaa5b47b8d5d31d2059f6484f",
+      "size": 24281
+    },
+    {
+      "path": "services/backend/src/anvil/fixtures.py",
+      "sha256": "0669a698170c0748c38baa3331a99c03cbec79777df08f7d3f331968e6896ca5",
+      "size": 10115
+    },
+    {
+      "path": "services/backend/src/anvil/graph.py",
+      "sha256": "e6c542316d50ab675191077b0b5f4b50802a1b23530e52bde2d28f84d21e96c8",
+      "size": 12945
+    },
+    {
+      "path": "services/backend/src/anvil/harbor_agents.py",
+      "sha256": "449d33da88db2d194a2a06cf21f02c83a79233adfde5c1d5fd2485c208699e6a",
+      "size": 36364
+    },
+    {
+      "path": "services/backend/src/anvil/harbor_api.py",
+      "sha256": "9cc37c85b7613d47608ae0b1bf04f9ea2936002a141ae4a67ec2402ae45c8190",
+      "size": 19329
+    },
+    {
+      "path": "services/backend/src/anvil/harbor_package.py",
+      "sha256": "c7141472af5f7930374c1ead5221f3c768567e88a9b6081d85dc1cd3d1767b9f",
+      "size": 16612
+    },
+    {
+      "path": "services/backend/src/anvil/harbor_worker.py",
+      "sha256": "ba4742d24c61449a9c178ad6772fed770b2e22d324f1b5193b87d91ce6ecbef5",
+      "size": 21964
+    },
+    {
+      "path": "services/backend/src/anvil/help_pack.py",
+      "sha256": "166f0261c65586513d9e9595e4e8a2db0534f1c5cdbf05c6eaf0a08b89c51580",
+      "size": 5688
+    },
+    {
+      "path": "services/backend/src/anvil/import_codegen.py",
+      "sha256": "aaa8eb1a6ebbec16ec870cead36af23600a43e78cf8b40327da7c2376d30dbad",
+      "size": 21519
+    },
+    {
+      "path": "services/backend/src/anvil/import_execution.py",
+      "sha256": "547e64dccd71f28bd02034c00d2c5a5e266cecfc19603015ad9dd671d107d0e6",
+      "size": 17311
+    },
+    {
+      "path": "services/backend/src/anvil/import_generation.py",
+      "sha256": "36bf1c0b2d71936743071ec939992db7cce8e2cf0eaff441d979dc282ea94eed",
+      "size": 26990
+    },
+    {
+      "path": "services/backend/src/anvil/import_sandbox.py",
+      "sha256": "b8f51769f3a76177135dd5f1da976aff9bd7257d553f697eeda9caff39f023bb",
+      "size": 22840
+    },
+    {
+      "path": "services/backend/src/anvil/import_worker.py",
+      "sha256": "f369e7d09ef70e77049562f37a8280f51df776dddd28ba920d97a9059a77b2c4",
+      "size": 20694
+    },
+    {
+      "path": "services/backend/src/anvil/ingestion.py",
+      "sha256": "3fec012fe8c9bec1992bc848c7714aaac0bbcdd0d54929ac0444ca0072aec140",
+      "size": 6576
+    },
+    {
+      "path": "services/backend/src/anvil/intake.py",
+      "sha256": "27b7c6f744cdf6623e182ff008eb45d9600c70da6e5dbd5aaa5989c8ee00226e",
+      "size": 10400
+    },
+    {
+      "path": "services/backend/src/anvil/invitations.py",
+      "sha256": "4eaed951473eb3465dedd728224fe6c26aff6472f578d1862139353e898ba4ae",
+      "size": 5437
+    },
+    {
+      "path": "services/backend/src/anvil/marketing_api.py",
+      "sha256": "697d592b56cffda329ee9c61dc6c27f5f8958cdd1a487b5c049b2c7db868b1bf",
+      "size": 4562
+    },
+    {
+      "path": "services/backend/src/anvil/marketing_authority.py",
+      "sha256": "a1569eb04fcded1e6ba9cb0bfe09d68846613fa753c4296d8ed025e699fdc0cd",
+      "size": 6183
+    },
+    {
+      "path": "services/backend/src/anvil/marketing_env.py",
+      "sha256": "b1b08230aef7362d82c3f1eea4dec29e9a4f1bf4309cf3241a83d0576cf16c9f",
+      "size": 8447
+    },
+    {
+      "path": "services/backend/src/anvil/marketing_pack.py",
+      "sha256": "430bec032d9717ed952046d718117f3d8f73034812add06aa45025e0025e7087",
+      "size": 9206
+    },
+    {
+      "path": "services/backend/src/anvil/marketing_runtime.py",
+      "sha256": "6c8adb7ccbec8a16863dbcf3744e833dcbc40c41ce3c450a3a58c738eef0be43",
+      "size": 21932
+    },
+    {
+      "path": "services/backend/src/anvil/operations.py",
+      "sha256": "55ffa169137a6a01ad6aa1ac6049a2d1585c3853f8e150aca747527dd82cbd84",
+      "size": 8123
+    },
+    {
+      "path": "services/backend/src/anvil/plans.py",
+      "sha256": "e56f8e15c402a4533e09bcbbd66fe2fd328aeaf3eb8afd836788523a9d1b3390",
+      "size": 24903
+    },
+    {
+      "path": "services/backend/src/anvil/praxis_contract.py",
+      "sha256": "880591d61edee73ff41d0cc07d9ec2d646172f21e54f466717d4a33f31a762bc",
+      "size": 6743
+    },
+    {
+      "path": "services/backend/src/anvil/praxis_executable.py",
+      "sha256": "d716a6ba0f5be0c6c1ffb36f35bb3d67c4c49576946a883e46f28fd9295bb211",
+      "size": 10131
+    },
+    {
+      "path": "services/backend/src/anvil/praxis_export.py",
+      "sha256": "c7d8be97f87a112d18eab8a424ff25682b660d34950e33a04754bcb38ff25d4e",
+      "size": 1151
+    },
+    {
+      "path": "services/backend/src/anvil/praxis_staged.py",
+      "sha256": "d67e74c9482bb9de51d8463061f777182b4e8e6e586f43df448224d994ea8a8d",
+      "size": 5760
+    },
+    {
+      "path": "services/backend/src/anvil/provenance.py",
+      "sha256": "cd4134b0c6a0b83c1c4238837f7db04acddd9fdc00d435e077ffe3fbdde46c99",
+      "size": 3569
+    },
+    {
+      "path": "services/backend/src/anvil/provider_api.py",
+      "sha256": "e00e3de1e78eb67d71b1adc255f873f81a7802cf9ffb775a56664aa0034f25d0",
+      "size": 8579
+    },
+    {
+      "path": "services/backend/src/anvil/providers.py",
+      "sha256": "3c8511df3f3be3b640868f04455ca39fc7df46c3b454648fe7ba06705bfb8677",
+      "size": 17757
+    },
+    {
+      "path": "services/backend/src/anvil/readiness.py",
+      "sha256": "70f2c86ec44cb1a9090b6c310a4cd570c6e6ffe86a4f0b1c2f90052b60b9ccff",
+      "size": 10532
+    },
+    {
+      "path": "services/backend/src/anvil/reports.py",
+      "sha256": "cc03e044b8f9513848ac8016474b57d8fc937abf4f3b47c32a8482c12ab85955",
+      "size": 29759
+    },
+    {
+      "path": "services/backend/src/anvil/request_limits.py",
+      "sha256": "1a738a3351b0e65f01a4e493548f9d8e1189f99755e0c132a8475e227acf7bba",
+      "size": 3796
+    },
+    {
+      "path": "services/backend/src/anvil/schemas.py",
+      "sha256": "76645178ab86d73cf270e82a6adfc655f4e04b0ec22eb9f8e31327c2b1e05697",
+      "size": 9169
+    },
+    {
+      "path": "services/backend/src/anvil/support.py",
+      "sha256": "11682cc3ee59ceb397491cb169660a799224767a70f9ab69909b172415d27f25",
+      "size": 8908
+    },
+    {
+      "path": "services/backend/src/anvil/task_imports.py",
+      "sha256": "1b7ff19d3b64db19ccda9dd15452572403b87cb61a0ab3f26eedd725a3c7bae4",
+      "size": 22593
+    },
+    {
+      "path": "services/backend/src/anvil/task_parser.py",
+      "sha256": "5e45cbc8e87cdc67c6bb8c68c9edb9899c12d5f06c716e000f8ab978884d995f",
+      "size": 8941
+    },
+    {
+      "path": "services/backend/src/anvil/worker.py",
+      "sha256": "ec5afade0e41600fc3eb29d9a857d58887f94c7e49b5d9fc46979eef3c6ab113",
+      "size": 19116
+    },
+    {
+      "path": "services/backend/src/anvil/workspace.py",
+      "sha256": "137f5fcfe53084260cc54e7b754cba3f884061a707c17050d6d98422c0e97e1b",
+      "size": 24648
+    },
+    {
+      "path": "services/backend/src/anvil/workspace_access.py",
+      "sha256": "d49e1b99512e115403391d0d24196620cdd2b0151af9f0ce6d749ed1b686c569",
+      "size": 4234
+    },
+    {
+      "path": "services/backend/src/anvil/workspace_adapter_contracts.py",
+      "sha256": "d39e5636fb42b9fe85e6df9b6108f9b12d5ecb4d37455fe215e2fa252389f626",
+      "size": 9087
+    },
+    {
+      "path": "services/backend/src/anvil/workspace_costs.py",
+      "sha256": "82c5b162e465474a0a1859d2c549773702bd6f716620845e0f16c9e1b131e33a",
+      "size": 5726
+    },
+    {
+      "path": "services/backend/src/anvil/workspace_credentials.py",
+      "sha256": "8583e31f4ede404322427614c7c42b9c1bf0167c715f045ddcdbd4936db2d108",
+      "size": 7945
+    },
+    {
+      "path": "services/backend/src/anvil/workspace_diagnostics.py",
+      "sha256": "0b96728fd2cda40f0a38810576e66d0b1e29fbfcf554d995ecf023bb934d93fb",
+      "size": 14144
+    },
+    {
+      "path": "services/backend/src/anvil/workspace_dispatch.py",
+      "sha256": "5d701384ffe1d0470229192150506437c750f4e04a31a3200539a650f6f17ada",
+      "size": 4696
+    },
+    {
+      "path": "services/backend/src/anvil/workspace_editor.py",
+      "sha256": "bd7f003c1b9ac9e504bed16c96a0f0fb89332762ce7abb6a9dd652d1aab2e8dd",
+      "size": 9772
+    },
+    {
+      "path": "services/backend/src/anvil/workspace_environments.py",
+      "sha256": "e2cf6b53c05df61cbe9da1d3d02aa8b1de72f70816ec6f888bec136ffc082482",
+      "size": 4794
+    },
+    {
+      "path": "services/backend/src/anvil/workspace_execution.py",
+      "sha256": "b9277a80df5e327d90b01880f1c2af21a8e5a37910099b90eb43a26813ae1bf7",
+      "size": 39856
+    },
+    {
+      "path": "services/backend/src/anvil/workspace_models.py",
+      "sha256": "aaf359326f11fe8a185312396af89875fd18578f790cc93c9eb18fcfb4918f64",
+      "size": 13847
+    },
+    {
+      "path": "services/backend/src/anvil/workspace_preparation.py",
+      "sha256": "84461bb76c157c453421cffb5a4393cc2eee7575be8335a3fb4083001a5ab2cd",
+      "size": 18031
+    },
+    {
+      "path": "services/backend/src/anvil/workspace_secrets.py",
+      "sha256": "da05db6070af087ec8a9fdb4d3a6c4a913b386b485d1b60a31ee699b6538d59d",
+      "size": 5097
+    },
+    {
+      "path": "services/backend/uv.lock",
+      "sha256": "22bef436122e38ca72554a0e540688124397fc624394003ddd4066175f68b5fd",
+      "size": 153566
+    },
+    {
+      "path": "services/harbor/requirements.lock",
+      "sha256": "2daf87656097906db875028e92840767e16a62562704a3b58ffd76d134461757",
+      "size": 1682
+    },
+    {
+      "path": "services/harbor/src/anvil_harbor/__init__.py",
+      "sha256": "5037dd4c2c6e91728eb153e8ff6de4c702ce29189e48bd6c3dcb0b3718e6fa9e",
+      "size": 88
+    },
+    {
+      "path": "services/harbor/src/anvil_harbor/agent.py",
+      "sha256": "97ec43adc838cf2dc5454d86d2e4d3b9465ecf286c5cdde7a67d6654036d74a2",
+      "size": 2614
+    },
+    {
+      "path": "services/harbor/src/anvil_harbor/atif.py",
+      "sha256": "7ebb55d72fb2c7a019ac27d63420be8ed41918ba6fd183b1422482f8417f27a7",
+      "size": 655
+    },
+    {
+      "path": "services/harbor/src/anvil_harbor/sme.py",
+      "sha256": "ecc7444782e53950099a331d045826560ed704ea8de90a7e339adc28c6c285c7",
+      "size": 14227
+    },
+    {
+      "path": "services/harbor/src/anvil_harbor/tool_agent.py",
+      "sha256": "452e7b696c35d5954f7db0918a78ea8e9eaa678f82df9127c77e6a7f522c25cf",
+      "size": 1449
+    },
+    {
+      "path": "services/harbor/tests/test_sme.py",
+      "sha256": "85abc68683d34d0495a8fbd53c7ccfbcdb7744757e3f38e939e5ee4fc35f643f",
+      "size": 13912
+    },
+    {
+      "path": "task-packs/marketing-12-week/README.md",
+      "sha256": "d5fa2890ad4022919586c5e3b4f68413a79c4bac1b9c3cfa67ee3e4eb04133f0",
+      "size": 4116
+    },
+    {
+      "path": "task-packs/marketing-12-week/actor-manifest.json",
+      "sha256": "42edff483c7daa0e29b7ce3102751b0be8e631b56bcd28721b5c667a6dad9629",
+      "size": 356
+    },
+    {
+      "path": "task-packs/marketing-12-week/actor/initial-input.json",
+      "sha256": "6d7be1fed852af2115597424074d4368ee94faf80893c29b02f054ad9a5d7d3d",
+      "size": 15461
+    },
+    {
+      "path": "task-packs/marketing-12-week/actor/task.md",
+      "sha256": "9bea5784575b71586d496208ef2882612bbfe366b0f94c2b65beb6349c3fe14d",
+      "size": 4872
+    },
+    {
+      "path": "task-packs/marketing-12-week/operator/review.md",
+      "sha256": "5f997c408ac5cc52e92efc069f4db79e9c38db9aa6ec3db2ab5785d41f96060b",
+      "size": 5148
+    }
+  ],
+  "official_local_command": "independent Anvil gcloud meta list-files-for-upload .local/staging-build-context-abb4348",
+  "cloud_mutations": false,
+  "status": "source_amendment_awaits_user_approval_not_uploaded",
+  "uploaded_package_sha256": null,
+  "gcs_object": null,
+  "gcs_generation": null,
+  "cloud_build_id": null
+}

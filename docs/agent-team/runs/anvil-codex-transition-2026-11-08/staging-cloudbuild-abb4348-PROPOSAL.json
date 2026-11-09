@@ -1,0 +1,86 @@
+{
+  "images": [
+    "${_REPO}/backend:${_TAG}",
+    "${_REPO}/web:${_TAG}"
+  ],
+  "options": {
+    "logging": "CLOUD_LOGGING_ONLY",
+    "machineType": "E2_HIGHCPU_8"
+  },
+  "serviceAccount": "projects/adi-anvil-mvp-2026/serviceAccounts/anvil-staging-build@adi-anvil-mvp-2026.iam.gserviceaccount.com",
+  "steps": [
+    {
+      "args": [
+        "build",
+        "--platform=linux/amd64",
+        "--file",
+        "infra/docker/backend.Dockerfile",
+        "--label",
+        "org.opencontainers.image.revision=${_SOURCE_SHA}",
+        "--tag",
+        "${_REPO}/backend:${_TAG}",
+        "--label",
+        "io.adi.anvil.source-archive-sha256=${_SOURCE_ARCHIVE_SHA256}",
+        "--label",
+        "io.adi.anvil.native-manifest-sha256=${_NATIVE_MANIFEST_SHA256}",
+        "--label",
+        "io.adi.anvil.context-inventory-sha256=${_CONTEXT_INVENTORY_SHA256}",
+        "--label",
+        "io.adi.anvil.upload-inventory-sha256=${_UPLOAD_INVENTORY_SHA256}",
+        "."
+      ],
+      "id": "backend",
+      "name": "gcr.io/cloud-builders/docker",
+      "waitFor": [
+        "-"
+      ]
+    },
+    {
+      "args": [
+        "build",
+        "--platform=linux/amd64",
+        "--file",
+        "infra/docker/web.Dockerfile",
+        "--label",
+        "org.opencontainers.image.revision=${_SOURCE_SHA}",
+        "--tag",
+        "${_REPO}/web:${_TAG}",
+        "--label",
+        "io.adi.anvil.source-archive-sha256=${_SOURCE_ARCHIVE_SHA256}",
+        "--label",
+        "io.adi.anvil.native-manifest-sha256=${_NATIVE_MANIFEST_SHA256}",
+        "--label",
+        "io.adi.anvil.context-inventory-sha256=${_CONTEXT_INVENTORY_SHA256}",
+        "--label",
+        "io.adi.anvil.upload-inventory-sha256=${_UPLOAD_INVENTORY_SHA256}",
+        "."
+      ],
+      "id": "web",
+      "name": "gcr.io/cloud-builders/docker",
+      "waitFor": [
+        "-"
+      ]
+    }
+  ],
+  "substitutions": {
+    "_CONTEXT_INVENTORY_SHA256": "328fb4a7df5717ed381bf23084cd5f6b02864c42d2ef7aca6a5c7e64dbd81058",
+    "_NATIVE_MANIFEST_SHA256": "f6b16603ff9eb6ac2bb72d374678a53ff7e160fc17b595c03b9b7cc32ddb9e3d",
+    "_REPO": "us-west1-docker.pkg.dev/adi-anvil-mvp-2026/anvil-staging-demo",
+    "_SOURCE_ARCHIVE_SHA256": "c17f59305a4875ae90d039e973ba6912fb62225822401c5c9ce1f9a5b0c81e18",
+    "_SOURCE_SHA": "abb4348a6eb38bb5696cb89062d9fb5c00d3e0b4",
+    "_TAG": "abb4348a6eb3-staging-review-01",
+    "_UPLOAD_INVENTORY_SHA256": "28a7a5a0ebac72f5170439926be8fc1400868284b0c661f4d6a3ae298a0e9b6b"
+  },
+  "tags": [
+    "anvil-staging-demo",
+    "source-abb4348a6eb3"
+  ],
+  "timeout": "2400s",
+  "source": {
+    "storageSource": {
+      "bucket": "adi-anvil-mvp-2026-anvil-staging-build-source",
+      "object": null,
+      "generation": null
+    }
+  }
+}

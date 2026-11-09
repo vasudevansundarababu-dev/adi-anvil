@@ -1,0 +1,46 @@
+{
+  "scope": "Public signed package/name/version/distribution hash provenance only; no credentials or native verdict",
+  "source": "abb4348a6eb38bb5696cb89062d9fb5c00d3e0b4",
+  "files": [
+    {
+      "path": "git-policy-before.txt",
+      "sha256": "9901d431155702194c39b86c97e15f0651d6ac0d61a462dcb246cbcf3225d947",
+      "bytes": 312
+    },
+    {
+      "path": "git-deb-sha256-before.txt",
+      "sha256": "8cad3026b961619e64260294456bad3ac4a0b97349ed9916662902b8a7d234ee",
+      "bytes": 881
+    },
+    {
+      "path": "git-deb-versions-before.txt",
+      "sha256": "ba0045975af9cea308ff54a64bdbd7584797bc90c1ce9b05dc2e110569c0a1c6",
+      "bytes": 29
+    },
+    {
+      "path": "git-version-after.txt",
+      "sha256": "469b1acf8275955250bdef50b4190688e8e36453cfcb29816ae6dcfb31097039",
+      "bytes": 19
+    },
+    {
+      "path": "apt-deb-sha256-before.txt",
+      "sha256": "90169962023e4aa3e53b97d9edc95710b1d72f7df204b050eea10a78fc732406",
+      "bytes": 1517
+    },
+    {
+      "path": "apt-deb-versions-before.txt",
+      "sha256": "d48eed4871b63c530badc37229c245bf6aafec1af6605ebec47b7a10ed2f73d1",
+      "bytes": 25
+    },
+    {
+      "path": "backend-installed.txt",
+      "sha256": "838e6eaf941fe84bf8080cc45646718574dc68e3c47b3885c02fe660f1baacea",
+      "bytes": 1593
+    },
+    {
+      "path": "harbor-installed.txt",
+      "sha256": "5a657b7438db29029af238d0394884cbe0a8bae2e03969bb80ccdc272efccd34",
+      "bytes": 1603
+    }
+  ]
+}

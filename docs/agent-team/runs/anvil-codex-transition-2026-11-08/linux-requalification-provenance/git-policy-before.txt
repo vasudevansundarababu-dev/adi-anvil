@@ -1,0 +1,8 @@
+git:
+  Installed: (none)
+  Candidate: 1:2.39.5-0+deb12u3
+  Version table:
+     1:2.39.5-0+deb12u3 500
+        500 mirror+file:/etc/apt/mirrors/debian.list bookworm/main amd64 Packages
+     1:2.39.5-0+deb12u2 500
+        500 mirror+file:/etc/apt/mirrors/debian-security.list bookworm-security/main amd64 Packages
