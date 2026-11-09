@@ -1,0 +1,20 @@
+{
+  "observed_at": "2026-11-09T04:00:36.777756+00:00",
+  "read_only": true,
+  "resource_counts": {
+    "instances": 1,
+    "disks": 2,
+    "networks": 2,
+    "subnets": 43,
+    "routes": 45,
+    "routers": 1,
+    "addresses": 2,
+    "firewalls": 6
+  },
+  "native_prefix_collisions": [],
+  "candidate_cidr": "10.22.0.0/24",
+  "primary_secondary_subnet_overlap": false,
+  "creation_performed": false,
+  "temporary_key_registered": false,
+  "source_freeze_pending": true
+}

@@ -1,0 +1,29 @@
+{
+  "source_sha": "aad39e35ace64c55476f5e29400287a71e99d92a",
+  "label": "harbor-adapter-unittest",
+  "environment": "regression",
+  "cwd": "/private/tmp/anvil-backend-security-check-acpxstl6",
+  "command": [
+    "/private/tmp/anvil-backend-security-check-acpxstl6/.local/harbor-venv/bin/python",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "services/harbor/tests",
+    "-p",
+    "test_sme.py",
+    "-v"
+  ],
+  "started_at": "2026-11-09T03:24:50.963903+00:00",
+  "elapsed_seconds": 0.127,
+  "exit_code": 1,
+  "raw_log_path": "/private/tmp/anvil-aad-runtime-e2ff0994be1f476f8059b3600e27e38d/harbor-adapter-unittest.log",
+  "raw_log_sha256": "2046078980a8ec650e5dadb67f735c1c890446349e94ef79878646a60ca615f6",
+  "summary": [],
+  "explicit_skips": [],
+  "root_manifest_changes": [],
+  "isolated_backend_source_changes": [],
+  "native_opt_in": false,
+  "paid_provider_flags": false,
+  "prior_edcc_native_proof_not_reused": true
+}

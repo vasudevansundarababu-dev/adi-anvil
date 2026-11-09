@@ -1,0 +1,42 @@
+{
+  "schema": "anvil.staging.build.local-package.v1",
+  "status": "locally_verified_not_uploaded_or_built",
+  "created_at": "2026-11-09T02:43:49.282082+00:00",
+  "approval_plan_sha": "d72587e8923ce35496d233c399e745f8f3e5303f",
+  "source_sha": "edcc0514c43ceb614b813566820ee0c2c7311463",
+  "source_archive_sha256": "8564c5cd5fdd0795a6dc9e041befbce591781ccacd41182288c0fbdc1c7a6b28",
+  "reviewed_upload_receipt_sha256": "9d6ab17eeff7ba0c368d973008057cc479378c70f06a087183ab451a32ff07ae",
+  "input_contract_sha256": "979733ab293b788e3fae236eb66d2fcad30abc4de9964a5059899c0d689b26e5",
+  "upload_inventory_sha256": "728a66918f33705f7a224ea0bbe98d2e73ac542f814499a6cdc7fe313a613a14",
+  "unfiltered_context_inventory_sha256": "57a7b64884aed1bebb114a89662fec8d417092f9b7ba1fe5cf160818c60ebed4",
+  "package_private_path": "/Users/vasudevansundarababu/Documents/Codex/anvil-codex-transition/.local/staging-build-upload-packages/edcc051-50a1357914904e968f7f46f6d0ee6619/source.tar.gz",
+  "package_sha256": "2a66977df5f167c20b1ac5629f9d7dd9c6a23c7f5283398651385548e26c135a",
+  "package_bytes": 3180751,
+  "member_count": 381,
+  "member_content_bytes": 5167729,
+  "archive_format": "USTAR regular files only; gzip level9, mtime0, empty gzip filename",
+  "normalized_metadata": {
+    "uid": 0,
+    "gid": 0,
+    "uname": "",
+    "gname": "",
+    "mtime": 0,
+    "regular_mode": "0644",
+    "source_executable_mode": "0755"
+  },
+  "preserved_source_executables": [
+    "infra/gcp/deploy.sh",
+    "infra/gcp/invite.sh",
+    "infra/gcp/postgres-init.sh",
+    "infra/gcp/startup.sh"
+  ],
+  "verified_extraction_private_path": "/Users/vasudevansundarababu/Documents/Codex/anvil-codex-transition/.local/staging-build-upload-packages/edcc051-50a1357914904e968f7f46f6d0ee6619/verified-extraction",
+  "all_extracted_hashes_and_sizes_match_reviewed_receipt": true,
+  "unsafe_or_link_entries": 0,
+  "extra_entries": 0,
+  "source_and_context_receipts_preserved": true,
+  "cloud_mutations": false,
+  "gcs_object": null,
+  "gcs_generation": null,
+  "cloud_build_id": null
+}

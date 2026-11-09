@@ -1,0 +1,1304 @@
+{
+  "schema": "anvil-harbor-security-runtime-provenance-v1",
+  "source_sha": "aad39e35ace64c55476f5e29400287a71e99d92a",
+  "historical_native_source_sha": "edcc0514c43ceb614b813566820ee0c2c7311463",
+  "historical_flat_lock_sha256": "612ab41777d8eb6ec2dee6c3390705130e55d9d1a216c79df34a1597c6156ec3",
+  "historical_hashed_manifest_path": "docs/agent-team/runs/anvil-codex-transition-2026-11-08/linux-qa-provenance/harbor-hashed.lock",
+  "historical_hashed_manifest_sha256": "def0d8440bcd7f67254ef890329e1b4dfafddf119fe087263158136de0151c0c",
+  "new_flat_lock_path": "services/harbor/requirements.lock",
+  "new_flat_lock_sha256": "2daf87656097906db875028e92840767e16a62562704a3b58ffd76d134461757",
+  "new_hashed_manifest_path": "docs/agent-team/runs/anvil-codex-transition-2026-11-08/security-runtime-provenance/harbor-aad39e3-hashed.lock",
+  "new_hashed_manifest_sha256": "a13a4891375fc0fd1957dbf94a5bd121c15bb3ba572f83ac484b34e992eba36b",
+  "package_count": 91,
+  "unchanged_version_count": 89,
+  "changed_version_count": 2,
+  "python_version": "3.12.14",
+  "target_platform": "x86_64-unknown-linux-gnu",
+  "resolver": "uv0.12.19",
+  "index": "https://pypi.org/simple",
+  "hash_verification": "Every one of the 2,193 listed SHA-256 values matches an official PyPI release JSON distribution digest.",
+  "version_pairs": [
+    {
+      "name": "aiohappyeyeballs",
+      "old": "2.7.1",
+      "new": "2.7.1",
+      "changed": false
+    },
+    {
+      "name": "aiohttp",
+      "old": "3.14.5",
+      "new": "3.14.5",
+      "changed": false
+    },
+    {
+      "name": "aiosignal",
+      "old": "1.4.0",
+      "new": "1.4.0",
+      "changed": false
+    },
+    {
+      "name": "annotated-doc",
+      "old": "0.0.5",
+      "new": "0.0.5",
+      "changed": false
+    },
+    {
+      "name": "annotated-types",
+      "old": "0.8.0",
+      "new": "0.8.0",
+      "changed": false
+    },
+    {
+      "name": "anyio",
+      "old": "4.15.1",
+      "new": "4.15.1",
+      "changed": false
+    },
+    {
+      "name": "attrs",
+      "old": "26.1.0",
+      "new": "26.1.0",
+      "changed": false
+    },
+    {
+      "name": "boto3",
+      "old": "1.43.123",
+      "new": "1.43.123",
+      "changed": false
+    },
+    {
+      "name": "botocore",
+      "old": "1.43.123",
+      "new": "1.43.123",
+      "changed": false
+    },
+    {
+      "name": "certifi",
+      "old": "2026.10.23",
+      "new": "2026.10.23",
+      "changed": false
+    },
+    {
+      "name": "cffi",
+      "old": "2.1.1",
+      "new": "2.1.1",
+      "changed": false
+    },
+    {
+      "name": "charset-normalizer",
+      "old": "3.5.2",
+      "new": "3.5.2",
+      "changed": false
+    },
+    {
+      "name": "click",
+      "old": "8.5.0",
+      "new": "8.5.0",
+      "changed": false
+    },
+    {
+      "name": "cryptography",
+      "old": "50.0.2",
+      "new": "50.0.2",
+      "changed": false
+    },
+    {
+      "name": "deprecation",
+      "old": "2.1.0",
+      "new": "2.1.0",
+      "changed": false
+    },
+    {
+      "name": "dirhash",
+      "old": "0.5.0",
+      "new": "0.5.0",
+      "changed": false
+    },
+    {
+      "name": "distro",
+      "old": "1.9.0",
+      "new": "1.9.0",
+      "changed": false
+    },
+    {
+      "name": "fastapi",
+      "old": "0.162.0",
+      "new": "0.162.0",
+      "changed": false
+    },
+    {
+      "name": "fastuuid",
+      "old": "0.14.0",
+      "new": "0.14.0",
+      "changed": false
+    },
+    {
+      "name": "filelock",
+      "old": "3.32.7",
+      "new": "4.2.1",
+      "changed": true
+    },
+    {
+      "name": "frozenlist",
+      "old": "1.8.0",
+      "new": "1.8.0",
+      "changed": false
+    },
+    {
+      "name": "fsspec",
+      "old": "2026.9.0",
+      "new": "2026.9.0",
+      "changed": false
+    },
+    {
+      "name": "h11",
+      "old": "0.16.0",
+      "new": "0.16.0",
+      "changed": false
+    },
+    {
+      "name": "h2",
+      "old": "4.4.1",
+      "new": "4.4.1",
+      "changed": false
+    },
+    {
+      "name": "harbor",
+      "old": "0.25.0",
+      "new": "0.25.0",
+      "changed": false
+    },
+    {
+      "name": "hf-xet",
+      "old": "1.8.0",
+      "new": "1.8.0",
+      "changed": false
+    },
+    {
+      "name": "hpack",
+      "old": "4.2.0",
+      "new": "4.2.0",
+      "changed": false
+    },
+    {
+      "name": "httpcore",
+      "old": "1.0.9",
+      "new": "1.0.9",
+      "changed": false
+    },
+    {
+      "name": "httpx",
+      "old": "0.28.1",
+      "new": "0.28.1",
+      "changed": false
+    },
+    {
+      "name": "huggingface-hub",
+      "old": "1.33.0",
+      "new": "1.33.0",
+      "changed": false
+    },
+    {
+      "name": "hyperframe",
+      "old": "6.1.0",
+      "new": "6.1.0",
+      "changed": false
+    },
+    {
+      "name": "idna",
+      "old": "3.20",
+      "new": "3.20",
+      "changed": false
+    },
+    {
+      "name": "importlib-metadata",
+      "old": "8.9.0",
+      "new": "8.9.0",
+      "changed": false
+    },
+    {
+      "name": "jinja2",
+      "old": "3.1.6",
+      "new": "3.1.6",
+      "changed": false
+    },
+    {
+      "name": "jiter",
+      "old": "0.18.0",
+      "new": "0.18.0",
+      "changed": false
+    },
+    {
+      "name": "jmespath",
+      "old": "1.1.0",
+      "new": "1.1.0",
+      "changed": false
+    },
+    {
+      "name": "jsonschema",
+      "old": "4.26.0",
+      "new": "4.26.0",
+      "changed": false
+    },
+    {
+      "name": "jsonschema-specifications",
+      "old": "2025.9.1",
+      "new": "2025.9.1",
+      "changed": false
+    },
+    {
+      "name": "litellm",
+      "old": "1.106.6",
+      "new": "1.108.3",
+      "changed": true
+    },
+    {
+      "name": "markdown-it-py",
+      "old": "4.2.0",
+      "new": "4.2.0",
+      "changed": false
+    },
+    {
+      "name": "markupsafe",
+      "old": "3.0.4",
+      "new": "3.0.4",
+      "changed": false
+    },
+    {
+      "name": "mdurl",
+      "old": "0.1.2",
+      "new": "0.1.2",
+      "changed": false
+    },
+    {
+      "name": "multidict",
+      "old": "7.2.1",
+      "new": "7.2.1",
+      "changed": false
+    },
+    {
+      "name": "openai",
+      "old": "2.54.0",
+      "new": "2.54.0",
+      "changed": false
+    },
+    {
+      "name": "opentelemetry-api",
+      "old": "1.45.2",
+      "new": "1.45.2",
+      "changed": false
+    },
+    {
+      "name": "packaging",
+      "old": "26.3",
+      "new": "26.3",
+      "changed": false
+    },
+    {
+      "name": "pathspec",
+      "old": "1.1.1",
+      "new": "1.1.1",
+      "changed": false
+    },
+    {
+      "name": "platformdirs",
+      "old": "4.14.0",
+      "new": "4.14.0",
+      "changed": false
+    },
+    {
+      "name": "postgrest",
+      "old": "2.33.0",
+      "new": "2.33.0",
+      "changed": false
+    },
+    {
+      "name": "propcache",
+      "old": "0.5.4",
+      "new": "0.5.4",
+      "changed": false
+    },
+    {
+      "name": "pycparser",
+      "old": "3.12",
+      "new": "3.12",
+      "changed": false
+    },
+    {
+      "name": "pydantic",
+      "old": "2.14.2",
+      "new": "2.14.2",
+      "changed": false
+    },
+    {
+      "name": "pydantic-core",
+      "old": "2.50.2",
+      "new": "2.50.2",
+      "changed": false
+    },
+    {
+      "name": "pydantic-settings",
+      "old": "2.16.2",
+      "new": "2.16.2",
+      "changed": false
+    },
+    {
+      "name": "pygments",
+      "old": "2.21.0",
+      "new": "2.21.0",
+      "changed": false
+    },
+    {
+      "name": "pyjwt",
+      "old": "2.15.1",
+      "new": "2.15.1",
+      "changed": false
+    },
+    {
+      "name": "python-dateutil",
+      "old": "2.9.0.post0",
+      "new": "2.9.0.post0",
+      "changed": false
+    },
+    {
+      "name": "python-dotenv",
+      "old": "1.2.4",
+      "new": "1.2.4",
+      "changed": false
+    },
+    {
+      "name": "pyyaml",
+      "old": "6.0.3",
+      "new": "6.0.3",
+      "changed": false
+    },
+    {
+      "name": "realtime",
+      "old": "2.33.0",
+      "new": "2.33.0",
+      "changed": false
+    },
+    {
+      "name": "referencing",
+      "old": "0.37.0",
+      "new": "0.37.0",
+      "changed": false
+    },
+    {
+      "name": "regex",
+      "old": "2026.9.29",
+      "new": "2026.9.29",
+      "changed": false
+    },
+    {
+      "name": "requests",
+      "old": "2.34.2",
+      "new": "2.34.2",
+      "changed": false
+    },
+    {
+      "name": "rich",
+      "old": "15.0.0",
+      "new": "15.0.0",
+      "changed": false
+    },
+    {
+      "name": "rpds-py",
+      "old": "2026.9.1",
+      "new": "2026.9.1",
+      "changed": false
+    },
+    {
+      "name": "s3transfer",
+      "old": "0.19.3",
+      "new": "0.19.3",
+      "changed": false
+    },
+    {
+      "name": "scantree",
+      "old": "0.0.4",
+      "new": "0.0.4",
+      "changed": false
+    },
+    {
+      "name": "semver",
+      "old": "3.1.0",
+      "new": "3.1.0",
+      "changed": false
+    },
+    {
+      "name": "shellingham",
+      "old": "1.5.4",
+      "new": "1.5.4",
+      "changed": false
+    },
+    {
+      "name": "shortuuid",
+      "old": "1.0.13",
+      "new": "1.0.13",
+      "changed": false
+    },
+    {
+      "name": "six",
+      "old": "1.17.0",
+      "new": "1.17.0",
+      "changed": false
+    },
+    {
+      "name": "sniffio",
+      "old": "1.3.1",
+      "new": "1.3.1",
+      "changed": false
+    },
+    {
+      "name": "starlette",
+      "old": "1.10.0",
+      "new": "1.10.0",
+      "changed": false
+    },
+    {
+      "name": "storage3",
+      "old": "2.33.0",
+      "new": "2.33.0",
+      "changed": false
+    },
+    {
+      "name": "strenum",
+      "old": "0.4.15",
+      "new": "0.4.15",
+      "changed": false
+    },
+    {
+      "name": "supabase",
+      "old": "2.33.0",
+      "new": "2.33.0",
+      "changed": false
+    },
+    {
+      "name": "supabase-auth",
+      "old": "2.33.0",
+      "new": "2.33.0",
+      "changed": false
+    },
+    {
+      "name": "supabase-functions",
+      "old": "2.33.0",
+      "new": "2.33.0",
+      "changed": false
+    },
+    {
+      "name": "tenacity",
+      "old": "9.2.1",
+      "new": "9.2.1",
+      "changed": false
+    },
+    {
+      "name": "tiktoken",
+      "old": "0.14.0",
+      "new": "0.14.0",
+      "changed": false
+    },
+    {
+      "name": "tokenizers",
+      "old": "0.23.3",
+      "new": "0.23.3",
+      "changed": false
+    },
+    {
+      "name": "toml",
+      "old": "0.10.2",
+      "new": "0.10.2",
+      "changed": false
+    },
+    {
+      "name": "tqdm",
+      "old": "4.70.1",
+      "new": "4.70.1",
+      "changed": false
+    },
+    {
+      "name": "typer",
+      "old": "0.27.3",
+      "new": "0.27.3",
+      "changed": false
+    },
+    {
+      "name": "typing-extensions",
+      "old": "4.16.0",
+      "new": "4.16.0",
+      "changed": false
+    },
+    {
+      "name": "typing-inspection",
+      "old": "0.4.4",
+      "new": "0.4.4",
+      "changed": false
+    },
+    {
+      "name": "urllib3",
+      "old": "2.8.0",
+      "new": "2.8.0",
+      "changed": false
+    },
+    {
+      "name": "uvicorn",
+      "old": "0.54.0",
+      "new": "0.54.0",
+      "changed": false
+    },
+    {
+      "name": "websockets",
+      "old": "15.0.1",
+      "new": "15.0.1",
+      "changed": false
+    },
+    {
+      "name": "yarl",
+      "old": "1.25.1",
+      "new": "1.25.1",
+      "changed": false
+    },
+    {
+      "name": "zipp",
+      "old": "4.1.2",
+      "new": "4.1.2",
+      "changed": false
+    }
+  ],
+  "official_release_verification": [
+    {
+      "name": "aiohappyeyeballs",
+      "version": "2.7.1",
+      "official_release_url": "https://pypi.org/pypi/aiohappyeyeballs/2.7.1/json",
+      "official_metadata_sha256": "90a6fe95d5083b27fa3cb21b46a78cdf84befd72a03001ea3182747e6794b983",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "aiohttp",
+      "version": "3.14.5",
+      "official_release_url": "https://pypi.org/pypi/aiohttp/3.14.5/json",
+      "official_metadata_sha256": "7deb2f0d6dc95c63a2b576236bbe3051f3c0b1d402bd5f59e7619c05684f499a",
+      "listed_distribution_hash_count": 161,
+      "hashes_verified": true
+    },
+    {
+      "name": "aiosignal",
+      "version": "1.4.0",
+      "official_release_url": "https://pypi.org/pypi/aiosignal/1.4.0/json",
+      "official_metadata_sha256": "443bdf542505c93e62117e868b9984b0c5784d50ab5b40ad0ae36d600b2d75ae",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "annotated-doc",
+      "version": "0.0.5",
+      "official_release_url": "https://pypi.org/pypi/annotated-doc/0.0.5/json",
+      "official_metadata_sha256": "1aab691a5f37dd292e6d93ab53f7da5d839f56ba605345f017022ec75eb643af",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "official_release_url": "https://pypi.org/pypi/annotated-types/0.8.0/json",
+      "official_metadata_sha256": "a6e8e5b10c8fd2f596bba53e015cd37f6279fb5cec26ce0c5e9968625be4fefa",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "anyio",
+      "version": "4.15.1",
+      "official_release_url": "https://pypi.org/pypi/anyio/4.15.1/json",
+      "official_metadata_sha256": "16b64a4ca0f1779bc3faf59f27685c728d0ac3085ea7585f3f40e11c265b8d70",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "attrs",
+      "version": "26.1.0",
+      "official_release_url": "https://pypi.org/pypi/attrs/26.1.0/json",
+      "official_metadata_sha256": "a882bf941fb4a0bb748d0194df544121cc130f5fb15a710ab6b804c17d2899b7",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "boto3",
+      "version": "1.43.123",
+      "official_release_url": "https://pypi.org/pypi/boto3/1.43.123/json",
+      "official_metadata_sha256": "4f4dbfa8f1efa5bebf8d5ba0abae7fe33f3fde16787f7a90131e5223ee6492c4",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "botocore",
+      "version": "1.43.123",
+      "official_release_url": "https://pypi.org/pypi/botocore/1.43.123/json",
+      "official_metadata_sha256": "4f00583bb1d222ce839a0a4ea6beb1161834b16b6c7963de7c93511e8e107631",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "certifi",
+      "version": "2026.10.23",
+      "official_release_url": "https://pypi.org/pypi/certifi/2026.10.23/json",
+      "official_metadata_sha256": "546ce90e02c152f5ff565baca6bc2a8f43c355855f637756f49a0143e312bdb2",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "cffi",
+      "version": "2.1.1",
+      "official_release_url": "https://pypi.org/pypi/cffi/2.1.1/json",
+      "official_metadata_sha256": "2255e530e3f80593a354e3d84a29966924d0e10309d1e3a6d50f845ab7d8df66",
+      "listed_distribution_hash_count": 100,
+      "hashes_verified": true
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.5.2",
+      "official_release_url": "https://pypi.org/pypi/charset-normalizer/3.5.2/json",
+      "official_metadata_sha256": "9fda300857ae6a0486b4cd2d2fec7817ed2d45657249a6dfc0c2bbd1a44267b6",
+      "listed_distribution_hash_count": 172,
+      "hashes_verified": true
+    },
+    {
+      "name": "click",
+      "version": "8.5.0",
+      "official_release_url": "https://pypi.org/pypi/click/8.5.0/json",
+      "official_metadata_sha256": "6fc33d0e534d89a788a0965bb5071ca0726a483747589201789b60babd602686",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "cryptography",
+      "version": "50.0.2",
+      "official_release_url": "https://pypi.org/pypi/cryptography/50.0.2/json",
+      "official_metadata_sha256": "7423990cc0948676ef47a71ea62a476ece4c76245e6bebd1c3a71f03c4ffc0f4",
+      "listed_distribution_hash_count": 59,
+      "hashes_verified": true
+    },
+    {
+      "name": "deprecation",
+      "version": "2.1.0",
+      "official_release_url": "https://pypi.org/pypi/deprecation/2.1.0/json",
+      "official_metadata_sha256": "a86184b8cfda6838017c5ace8c471ea0c4dff97de64abc5476b1f14156ce47fb",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "dirhash",
+      "version": "0.5.0",
+      "official_release_url": "https://pypi.org/pypi/dirhash/0.5.0/json",
+      "official_metadata_sha256": "02c644d7e194b7afe75793aa74c6784554a22b9a1ce9c5d4ff72cda382383cea",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "distro",
+      "version": "1.9.0",
+      "official_release_url": "https://pypi.org/pypi/distro/1.9.0/json",
+      "official_metadata_sha256": "d83d91adebd208c0ce5b969017d4ce5c4ec59ea7d46793c20d36b261325fc236",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "fastapi",
+      "version": "0.162.0",
+      "official_release_url": "https://pypi.org/pypi/fastapi/0.162.0/json",
+      "official_metadata_sha256": "f34e837eb62acad4a1e04df3355be94fe398c195d577bd7267baf4ec845f5aab",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "fastuuid",
+      "version": "0.14.0",
+      "official_release_url": "https://pypi.org/pypi/fastuuid/0.14.0/json",
+      "official_metadata_sha256": "6d0fc0cb24c54f9da1e75225686d391d122dc1a54735699891603c5f92699e3c",
+      "listed_distribution_hash_count": 78,
+      "hashes_verified": true
+    },
+    {
+      "name": "filelock",
+      "version": "4.2.1",
+      "official_release_url": "https://pypi.org/pypi/filelock/4.2.1/json",
+      "official_metadata_sha256": "c0a0ea061f08d1df3e13384767e0eae13599f9e20ed4e72232b7f17a70550804",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "frozenlist",
+      "version": "1.8.0",
+      "official_release_url": "https://pypi.org/pypi/frozenlist/1.8.0/json",
+      "official_metadata_sha256": "b12a7f8b816bfb2a70f2eb97140890efb08a234ab3b75841b0e89e197effa5ad",
+      "listed_distribution_hash_count": 130,
+      "hashes_verified": true
+    },
+    {
+      "name": "fsspec",
+      "version": "2026.9.0",
+      "official_release_url": "https://pypi.org/pypi/fsspec/2026.9.0/json",
+      "official_metadata_sha256": "4a93a853911936a59262f3ccc1a36a42cfbff106beec53d6e247d00f7a3aa1e9",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "h11",
+      "version": "0.16.0",
+      "official_release_url": "https://pypi.org/pypi/h11/0.16.0/json",
+      "official_metadata_sha256": "97f4efb9cc00826f0408076983adc1a1e48e8f2cabf403aaf250f724e081440d",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "h2",
+      "version": "4.4.1",
+      "official_release_url": "https://pypi.org/pypi/h2/4.4.1/json",
+      "official_metadata_sha256": "8903fbfc73b625064e48cc99a2c629bd47e4dd47593fa3530de83aeb55f89105",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "harbor",
+      "version": "0.25.0",
+      "official_release_url": "https://pypi.org/pypi/harbor/0.25.0/json",
+      "official_metadata_sha256": "b1f944a4da26bffebeb66723e1bf4dd9e48cd4873372072e4e8fd45a6d0ee2d8",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "hf-xet",
+      "version": "1.8.0",
+      "official_release_url": "https://pypi.org/pypi/hf-xet/1.8.0/json",
+      "official_metadata_sha256": "80b2cd269ee7e7907b0565cb2c89733eab049f5263dfaffca608bf6965f0d075",
+      "listed_distribution_hash_count": 17,
+      "hashes_verified": true
+    },
+    {
+      "name": "hpack",
+      "version": "4.2.0",
+      "official_release_url": "https://pypi.org/pypi/hpack/4.2.0/json",
+      "official_metadata_sha256": "30c2f7e29c9c0cad70eac912fa745252f62c4a7bab1fd5e1a79f5202666b6456",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "httpcore",
+      "version": "1.0.9",
+      "official_release_url": "https://pypi.org/pypi/httpcore/1.0.9/json",
+      "official_metadata_sha256": "e26eca5c3d288fe9e6446af9bcbca1038ba688629d5c8a2886c47d74718d87a2",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "httpx",
+      "version": "0.28.1",
+      "official_release_url": "https://pypi.org/pypi/httpx/0.28.1/json",
+      "official_metadata_sha256": "293bfab7bf587fcd0825f1bd8eed8e6303285ba14801b15659853827cbe30796",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "huggingface-hub",
+      "version": "1.33.0",
+      "official_release_url": "https://pypi.org/pypi/huggingface-hub/1.33.0/json",
+      "official_metadata_sha256": "cbb5c8feeaa6e5bb95c5dd4c95cb8e0277c7279892476bde6c3dad53e1beefca",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "hyperframe",
+      "version": "6.1.0",
+      "official_release_url": "https://pypi.org/pypi/hyperframe/6.1.0/json",
+      "official_metadata_sha256": "161f3cc4aa873bb55267755306b46993c7f16ed1f1c3dca10c6059f6cd8f1af0",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "idna",
+      "version": "3.20",
+      "official_release_url": "https://pypi.org/pypi/idna/3.20/json",
+      "official_metadata_sha256": "e7cbd26e23ce60f6cb3a151d2adf3b1b087bb8f10ac2d9d6db70fdccbf3bb041",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "importlib-metadata",
+      "version": "8.9.0",
+      "official_release_url": "https://pypi.org/pypi/importlib-metadata/8.9.0/json",
+      "official_metadata_sha256": "66123db9110a0d2260b84ed0318c19478bbe45fcd44a5725e893e95b1110bf97",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "jinja2",
+      "version": "3.1.6",
+      "official_release_url": "https://pypi.org/pypi/jinja2/3.1.6/json",
+      "official_metadata_sha256": "1bc757d7065f3e67d3a49e72ebc731d0774055575732592eede9820c136329cc",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "jiter",
+      "version": "0.18.0",
+      "official_release_url": "https://pypi.org/pypi/jiter/0.18.0/json",
+      "official_metadata_sha256": "e7a78e37cbe9073f6ff92a1001962fbc0ab78d2e6859fd7d7c9d7794ff2dd28c",
+      "listed_distribution_hash_count": 119,
+      "hashes_verified": true
+    },
+    {
+      "name": "jmespath",
+      "version": "1.1.0",
+      "official_release_url": "https://pypi.org/pypi/jmespath/1.1.0/json",
+      "official_metadata_sha256": "de5bfed61841dea8dd10c05206276a42f526f10cd96a57717e24fa8d94f98111",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "jsonschema",
+      "version": "4.26.0",
+      "official_release_url": "https://pypi.org/pypi/jsonschema/4.26.0/json",
+      "official_metadata_sha256": "d0c9ccdfa30c3cdc57b048c2be21123dfb0c2f4d6bef2e8324dcb4eac985cfcf",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "jsonschema-specifications",
+      "version": "2025.9.1",
+      "official_release_url": "https://pypi.org/pypi/jsonschema-specifications/2025.9.1/json",
+      "official_metadata_sha256": "91810d8f79384375ad0c0cf631e06903e2790b030d3fad2f1ad657b20ddd839e",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "litellm",
+      "version": "1.108.3",
+      "official_release_url": "https://pypi.org/pypi/litellm/1.108.3/json",
+      "official_metadata_sha256": "d7ec0926bb48a8cfc8f64aa36a11370afc45ac98a7c5e83a68e12608affa3884",
+      "listed_distribution_hash_count": 8,
+      "hashes_verified": true
+    },
+    {
+      "name": "markdown-it-py",
+      "version": "4.2.0",
+      "official_release_url": "https://pypi.org/pypi/markdown-it-py/4.2.0/json",
+      "official_metadata_sha256": "62affba459c80b1279b5759735f7da3e9c7d24966086ff81ec0303c94512b966",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "markupsafe",
+      "version": "3.0.4",
+      "official_release_url": "https://pypi.org/pypi/markupsafe/3.0.4/json",
+      "official_metadata_sha256": "85cd5bce3f85e67ab0b921be9c9ba144a7cc01a2d02b85ad65b1f8dabeac4c57",
+      "listed_distribution_hash_count": 151,
+      "hashes_verified": true
+    },
+    {
+      "name": "mdurl",
+      "version": "0.1.2",
+      "official_release_url": "https://pypi.org/pypi/mdurl/0.1.2/json",
+      "official_metadata_sha256": "c7baac0b363d92cf55f1f3a313f4bb0564bff27343e6a0a4e9d7ff03afc8a6c7",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "multidict",
+      "version": "7.2.1",
+      "official_release_url": "https://pypi.org/pypi/multidict/7.2.1/json",
+      "official_metadata_sha256": "49fb04bf7bdb872b9fffc930a3e5e5f1a34c2fc35f7304815fadf3f167467a4d",
+      "listed_distribution_hash_count": 151,
+      "hashes_verified": true
+    },
+    {
+      "name": "openai",
+      "version": "2.54.0",
+      "official_release_url": "https://pypi.org/pypi/openai/2.54.0/json",
+      "official_metadata_sha256": "96cca2899ef47ba14e23db8b9526ba2c0bc0d0a770fc7b90b2802c673f700b56",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "opentelemetry-api",
+      "version": "1.45.2",
+      "official_release_url": "https://pypi.org/pypi/opentelemetry-api/1.45.2/json",
+      "official_metadata_sha256": "0b58654ba1b29b21bbbb90f03286d24425e752c219e556b80dae93f839b7e33f",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "packaging",
+      "version": "26.3",
+      "official_release_url": "https://pypi.org/pypi/packaging/26.3/json",
+      "official_metadata_sha256": "4f190d2f0b312b3086058cee64ab4333bf3ce67fb78b4c2bdb43899049b29f4d",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "pathspec",
+      "version": "1.1.1",
+      "official_release_url": "https://pypi.org/pypi/pathspec/1.1.1/json",
+      "official_metadata_sha256": "24f66829a7f40485bdccfcf32294218b0f4260b289ee4806ab644feb6c194766",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "platformdirs",
+      "version": "4.14.0",
+      "official_release_url": "https://pypi.org/pypi/platformdirs/4.14.0/json",
+      "official_metadata_sha256": "2a1d7800234f676fe5a748dcd8a90c574754404a5cc48130896d47e3116c8ee0",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "postgrest",
+      "version": "2.33.0",
+      "official_release_url": "https://pypi.org/pypi/postgrest/2.33.0/json",
+      "official_metadata_sha256": "f30d696dad1b5f969663aaafcf7d5d75f25bb850b2103c967985cbe54216666d",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "propcache",
+      "version": "0.5.4",
+      "official_release_url": "https://pypi.org/pypi/propcache/0.5.4/json",
+      "official_metadata_sha256": "253a90067f5c44ffec37f3f1081934c91fb60edda0dc1e9bdf805edc8cecf693",
+      "listed_distribution_hash_count": 138,
+      "hashes_verified": true
+    },
+    {
+      "name": "pycparser",
+      "version": "3.12",
+      "official_release_url": "https://pypi.org/pypi/pycparser/3.12/json",
+      "official_metadata_sha256": "e919b291615d54a2328a0da6128cd9d95601ad04d27cec48eeb75e0d57c3b6ad",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "pydantic",
+      "version": "2.14.2",
+      "official_release_url": "https://pypi.org/pypi/pydantic/2.14.2/json",
+      "official_metadata_sha256": "1c4f5fc17940230a3b448affc7263dcf84dba3134f52f1e2b300c5a947da2d2a",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "pydantic-core",
+      "version": "2.50.2",
+      "official_release_url": "https://pypi.org/pypi/pydantic-core/2.50.2/json",
+      "official_metadata_sha256": "338efb7e04f78cfbe1876c13774aa120f1129ce79a193f6220920f4f0b18ebab",
+      "listed_distribution_hash_count": 141,
+      "hashes_verified": true
+    },
+    {
+      "name": "pydantic-settings",
+      "version": "2.16.2",
+      "official_release_url": "https://pypi.org/pypi/pydantic-settings/2.16.2/json",
+      "official_metadata_sha256": "63cfe4ecd3df91f19aaee6bc02e58061e5b7547b397fc4d480542dc0e48ddc93",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "pygments",
+      "version": "2.21.0",
+      "official_release_url": "https://pypi.org/pypi/pygments/2.21.0/json",
+      "official_metadata_sha256": "330104a10adc8a587e3f98f4e207557125ca0c1d489e129334da5acb2b813a03",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "pyjwt",
+      "version": "2.15.1",
+      "official_release_url": "https://pypi.org/pypi/pyjwt/2.15.1/json",
+      "official_metadata_sha256": "f13089db8caff0efbdec85ab5c3fa281a3cc76d5b708c74fab427c98e1f29a0d",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "python-dateutil",
+      "version": "2.9.0.post0",
+      "official_release_url": "https://pypi.org/pypi/python-dateutil/2.9.0.post0/json",
+      "official_metadata_sha256": "7938916002e8d70c9d32cbaf43c467d163af3aadd8c3b358bda5babd1f7836ee",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "python-dotenv",
+      "version": "1.2.4",
+      "official_release_url": "https://pypi.org/pypi/python-dotenv/1.2.4/json",
+      "official_metadata_sha256": "89701376846132aefd76202d07dad6e84febe4a426a12973004e13018af15c41",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "pyyaml",
+      "version": "6.0.3",
+      "official_release_url": "https://pypi.org/pypi/pyyaml/6.0.3/json",
+      "official_metadata_sha256": "c3f35597bc2f08cc990c2a5fe57bef6687b3a3d7c61d8b0ba4cc067777eb1def",
+      "listed_distribution_hash_count": 73,
+      "hashes_verified": true
+    },
+    {
+      "name": "realtime",
+      "version": "2.33.0",
+      "official_release_url": "https://pypi.org/pypi/realtime/2.33.0/json",
+      "official_metadata_sha256": "733c5ef92356dd10e006aa8b14ee565212dd4408e3b2972081ea24ca8ff3f257",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "referencing",
+      "version": "0.37.0",
+      "official_release_url": "https://pypi.org/pypi/referencing/0.37.0/json",
+      "official_metadata_sha256": "a67968d8e03aa45e650fc2ff0d07796676db1a7841ce8e810bf2dba5af689464",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "regex",
+      "version": "2026.9.29",
+      "official_release_url": "https://pypi.org/pypi/regex/2026.9.29/json",
+      "official_metadata_sha256": "8156af074b938e319f3f26eceb5b8596047ce9c0199ad254eb3ae359d00c0333",
+      "listed_distribution_hash_count": 130,
+      "hashes_verified": true
+    },
+    {
+      "name": "requests",
+      "version": "2.34.2",
+      "official_release_url": "https://pypi.org/pypi/requests/2.34.2/json",
+      "official_metadata_sha256": "8622e50ffd295ed759ec793f2a009172a4ed0204bbc5e948de23111bc3d2aeae",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "rich",
+      "version": "15.0.0",
+      "official_release_url": "https://pypi.org/pypi/rich/15.0.0/json",
+      "official_metadata_sha256": "455015cb0b237a24819d91236152ad0e71b2be39a83cbe6afa0e29ea8aafa550",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "rpds-py",
+      "version": "2026.9.1",
+      "official_release_url": "https://pypi.org/pypi/rpds-py/2026.9.1/json",
+      "official_metadata_sha256": "93808b9ff27aabe26d9a4f03b28422d1d05c3fb8716d88f3826e7ddf4b0b258b",
+      "listed_distribution_hash_count": 128,
+      "hashes_verified": true
+    },
+    {
+      "name": "s3transfer",
+      "version": "0.19.3",
+      "official_release_url": "https://pypi.org/pypi/s3transfer/0.19.3/json",
+      "official_metadata_sha256": "05e5e0fe25ff2a54e775257f557bd60e2648803eb487e23945f1583820cb62e5",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "scantree",
+      "version": "0.0.4",
+      "official_release_url": "https://pypi.org/pypi/scantree/0.0.4/json",
+      "official_metadata_sha256": "9da321a37631c7c6093519294ae68ad5a12d7027f353582f0f739746da140450",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "semver",
+      "version": "3.1.0",
+      "official_release_url": "https://pypi.org/pypi/semver/3.1.0/json",
+      "official_metadata_sha256": "ff3fd2c6d7dd88a2edad51d7d828f61223a4873daa91f1fb33569002ad4abe61",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "shellingham",
+      "version": "1.5.4",
+      "official_release_url": "https://pypi.org/pypi/shellingham/1.5.4/json",
+      "official_metadata_sha256": "9381443cd6295d50fc7f7bd34a457243b0f3a54732cde45b0fc2d0994b61f3af",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "shortuuid",
+      "version": "1.0.13",
+      "official_release_url": "https://pypi.org/pypi/shortuuid/1.0.13/json",
+      "official_metadata_sha256": "295bf408b7c8d2018534885d31f7b1ae258d60976cdbde5e6f29688617dbf80d",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "six",
+      "version": "1.17.0",
+      "official_release_url": "https://pypi.org/pypi/six/1.17.0/json",
+      "official_metadata_sha256": "d8de39dd52b73048d81a8fd78022ee2bc72f8b568bcf0d88e5d5069c302b1208",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "sniffio",
+      "version": "1.3.1",
+      "official_release_url": "https://pypi.org/pypi/sniffio/1.3.1/json",
+      "official_metadata_sha256": "1217ad6ed84734e8f77ecfd151d91786d5a633b0482af1cde28185de0159bd37",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "starlette",
+      "version": "1.10.0",
+      "official_release_url": "https://pypi.org/pypi/starlette/1.10.0/json",
+      "official_metadata_sha256": "97b97206e2e6e29b5283cd401a9c8d0a75738705f3fbc7f5db1fc487dfafdc9a",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "storage3",
+      "version": "2.33.0",
+      "official_release_url": "https://pypi.org/pypi/storage3/2.33.0/json",
+      "official_metadata_sha256": "ee52f9c9eb9796e6d73bff0bde7dd750e7a784f6fb3495b1950d2d5f8b5a2f70",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "strenum",
+      "version": "0.4.15",
+      "official_release_url": "https://pypi.org/pypi/strenum/0.4.15/json",
+      "official_metadata_sha256": "7a8f706ccfcffda70a549dfdd69821b9ae38dad2282534394c2ce42ee7a8c90f",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "supabase",
+      "version": "2.33.0",
+      "official_release_url": "https://pypi.org/pypi/supabase/2.33.0/json",
+      "official_metadata_sha256": "cbebdd3621b8697065b3842343359e57290e91f265cc5831a4c96690cf1c58ee",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "supabase-auth",
+      "version": "2.33.0",
+      "official_release_url": "https://pypi.org/pypi/supabase-auth/2.33.0/json",
+      "official_metadata_sha256": "eac5eee14f4ff2fa6be25cb53919dbf136f86522386a548ea652da3380ac6e8b",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "supabase-functions",
+      "version": "2.33.0",
+      "official_release_url": "https://pypi.org/pypi/supabase-functions/2.33.0/json",
+      "official_metadata_sha256": "df378624bd98680b0adaa6a05713f5cbd83b53f8dd65576d0d03f2df604fe4f7",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "tenacity",
+      "version": "9.2.1",
+      "official_release_url": "https://pypi.org/pypi/tenacity/9.2.1/json",
+      "official_metadata_sha256": "c9b0a31d18971c3ad08979fadee97707207b2c983c85169a5acb8fa6e328e6f0",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "tiktoken",
+      "version": "0.14.0",
+      "official_release_url": "https://pypi.org/pypi/tiktoken/0.14.0/json",
+      "official_metadata_sha256": "05ff3946dc41fffc7ba7a35826e6385e29baa736fbe4fcc8ac9a37088049d58a",
+      "listed_distribution_hash_count": 64,
+      "hashes_verified": true
+    },
+    {
+      "name": "tokenizers",
+      "version": "0.23.3",
+      "official_release_url": "https://pypi.org/pypi/tokenizers/0.23.3/json",
+      "official_metadata_sha256": "c08480d45857e1c4d1174f000a98e74f542a875d07130d19b9c500090214487e",
+      "listed_distribution_hash_count": 24,
+      "hashes_verified": true
+    },
+    {
+      "name": "toml",
+      "version": "0.10.2",
+      "official_release_url": "https://pypi.org/pypi/toml/0.10.2/json",
+      "official_metadata_sha256": "79a1dc04ab333ee905cc02481c112052b5989d77f5eac3f12ae888806909d394",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "tqdm",
+      "version": "4.70.1",
+      "official_release_url": "https://pypi.org/pypi/tqdm/4.70.1/json",
+      "official_metadata_sha256": "0589819a1bc3437c8f215d95f3f64ff24d602dc6a62598eb8d2e420c8e6a0b25",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "typer",
+      "version": "0.27.3",
+      "official_release_url": "https://pypi.org/pypi/typer/0.27.3/json",
+      "official_metadata_sha256": "f1ab016bbada2cf55995c4cd4b56bfe889de8ae5a92af2e48690b093eec8ab4e",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "official_release_url": "https://pypi.org/pypi/typing-extensions/4.16.0/json",
+      "official_metadata_sha256": "2140da00d62dde967f52d0be0ae28444f1d6a3fe603f52c83c23988c32122d5a",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "official_release_url": "https://pypi.org/pypi/typing-inspection/0.4.4/json",
+      "official_metadata_sha256": "b37c398e1a0a3a97af35dcfb754e0e1f725f56d5f391d029ab90d3969d0e9583",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "urllib3",
+      "version": "2.8.0",
+      "official_release_url": "https://pypi.org/pypi/urllib3/2.8.0/json",
+      "official_metadata_sha256": "5315e7401db3cacccd0c2ce5daf81f752a9cc3614b18c37f2b79930b7159ce2f",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "uvicorn",
+      "version": "0.54.0",
+      "official_release_url": "https://pypi.org/pypi/uvicorn/0.54.0/json",
+      "official_metadata_sha256": "a308e83961793f6114221aefe9e046ef587da0fc986c4dc50ace1ee43fbe9bcb",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    },
+    {
+      "name": "websockets",
+      "version": "15.0.1",
+      "official_release_url": "https://pypi.org/pypi/websockets/15.0.1/json",
+      "official_metadata_sha256": "93f5356886e272d95729b3de8074d8338bf91f8861e233f3f5aefc4f48e6d50c",
+      "listed_distribution_hash_count": 69,
+      "hashes_verified": true
+    },
+    {
+      "name": "yarl",
+      "version": "1.25.1",
+      "official_release_url": "https://pypi.org/pypi/yarl/1.25.1/json",
+      "official_metadata_sha256": "a07cf3b564a15e3be66faacf0c81a23497ebfbf1ec849a3a77b494ba4b60cf0f",
+      "listed_distribution_hash_count": 138,
+      "hashes_verified": true
+    },
+    {
+      "name": "zipp",
+      "version": "4.1.2",
+      "official_release_url": "https://pypi.org/pypi/zipp/4.1.2/json",
+      "official_metadata_sha256": "cde33a7d7caaad103d41e476b7b8e175d77726494f76bae072e70a92f020c3c8",
+      "listed_distribution_hash_count": 2,
+      "hashes_verified": true
+    }
+  ],
+  "limitations": [
+    "Prepared manifest only; no Linux installation or native execution was performed for this successor.",
+    "Existing native28PASS binds historical dependency lineage; it cannot qualify this new manifest.",
+    "Hashes admit distributions listed by official registry metadata; acquisition metadata is not proof of package safety.",
+    "No cloud mutations, deployment, paid calls or new approval were performed."
+  ]
+}

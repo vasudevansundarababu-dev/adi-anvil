@@ -1,0 +1,31 @@
+# Independent connected-results acceptance plan
+
+Read-only assessment at `fcf51e6ee0ef11f9ce4b3b8af9b803f8c28637ed`. This is a plan, not a passing execution receipt. Full checks wait for the coordinated product source freeze. Historical previews and their data remain unchanged.
+
+## Existing contract and evidence distinction
+
+`benchmark_api.py` already exposes persisted comparison results, per-cell sealed output evidence, immutable review/correction routes and JSON/CSV/report/ATIF exports. `benchmark_results.latest` returns a stored revision and projection hash; `publish` derives criterion results from runtime/attempt/evaluator rows. Existing `test_benchmark_results.py` uses explicitly manufactured SQL captures: useful security/transaction contract tests, but unsuitable as proof of a real user-visible run.
+
+The connected demonstration must use a new owned fictional source and **actual** admitted cells, isolated actors, separate evaluator execution and durable artifact capture. No direct qualification/capture/criterion/review row inserts may substitute for execution or human decisions. A real source-rights review and any required assigned reviewer decisions must come through the approved process; if unavailable, preserve the blocked state and explain it. Paid providers remain disabled and fixture transport labels remain explicit.
+
+## Required independent assertions
+
+1. Bind the exact source commit, three lock hashes, source/runtime fingerprints, fresh project/run/protocol/version IDs and actual native qualification receipts. SQL readback must show the same18 canonical cells (three tasks, three slots, two repetitions), current fenced attempts and immutable attempt history displayed by the UI. Native command logs/receipts must prove actors and separate evaluators ran; a rendered score alone is insufficient.
+2. Compare real API responses and SQL/artifact metadata with the UI: each displayed output corresponds to the exact sealed file SHA/size/path, each criterion cites that file span or a typed absence event, and evaluator/report/ATIF evidence is bound to that attempt. Do not expose private evaluator payloads, signing material, credentials or local filesystem paths. Render untrusted output as plain text.
+3. Complete execution may expose measured criterion diagnostics, duration and declared offline transport provenance, while **primary remains null** and completion/review status accurately says pending until required independent reviews occur. No invented cost, score or model-performance claim. Correct denominator/repetition labels derive from the stored projection, not client arithmetic.
+4. Reload and reopen by persisted run URL/library selection; retain the same run/revision/projection hash and exact measured cells. Poll/reconnect should recover persisted progress without duplicate admission or replay of actors. Changing project or run must clear stale displayed evidence.
+5. JSON, CSV and text exports must identify the same requested stored score revision/projection; pending-review CSV primary columns remain blank. ATIF ZIP manifest must list only actually validated captured trajectories with matching hashes and pinned Harbor validator. Export links must not manufacture trajectories for missing/incomplete cells.
+6. Negative API/browser checks: foreign-project run/cell/revision IDs, unassigned or revoked duty, source-rights revocation, stale projection review, nonexistent capture, mismatched cell/run pair and unauthorized sealed/private artifact access fail closed without private bytes. Review button presence is not authorization. An expired/revoked assignment must not permit a decision; no test automation submits genuine human approval on the user's behalf.
+7. Partial/missing/failed output remains diagnostically explicit; mapped absence affects only its declared criterion, unmapped required output keeps comparable results unresolved, and only explicit frozen hard constraints can cause their declared policy disposition. Canceled/unknown/stale-fence attempts cannot become successful through refresh or export.
+
+## Native successor prerequisite and present blocker
+
+The previous28-case native pass belongs to `edcc051`, before patched dependencies. It cannot qualify the current successor. The old isolated Linux VM is stopped and its bounded access key removed; Testing has no current host/access authority. Mac local SQL/UI tests cannot prove Linux actor/evaluator isolation.
+
+A newly approved isolated Linux execution environment must provide: exact frozen source/archive/manifest verification; Python3.12.14 and current locked backend plus separate Harbor0.25.0 environments; cgroupv2; reviewed Docker/Compose adapter and dedicated daemon/socket at `ROOT/.local/benchmark-docker/docker.sock`; only the two reviewed Python3.12.14 and PostgreSQL17.6 Linux/amd64 image pins; no default/shared Docker socket; fresh schema001–058 database with restricted application/worker and protected NOLOGIN evaluator roles; disjoint owned0700 vault/artifact/work roots and existing evaluator work parent; private077 runner umask; all provider/generation/email/tracing paths disabled and no provider credentials. The28 selectors do not require Keycloak, graph, a public app or real accounts.
+
+Before actual execution, independently verify ready-contract metadata, exact image/source/lock hashes, roles and filesystem ownership. Capture actual fresh trial UUIDs and sanitized receipts, stop affected tests on the first confirmed source failure, and report pass/fail/blocked without substituting metadata. Cloud provisioning, key creation/extension, paid calls and deployment remain outside this Testing plan. Root/DevOps must supply the separately authorized ready environment; no implicit renewal or old-host restart.
+
+## Work ownership
+
+Root owns frontend; Coding owns backend and guarded fictional runner; Testing owns independent assertions/evidence and new disjoint test data. The retained aad local preview55203 and historical64829 preview are not modified for this work. Any new candidate preview uses a separate copy/build/unused loopback ports. A final report must distinguish contract fixtures, actual offline execution, human review state and staging availability.
