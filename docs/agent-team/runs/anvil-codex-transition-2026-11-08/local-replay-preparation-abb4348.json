@@ -1,0 +1,58 @@
+{
+  "kind": "offline schema-order rehearsal only; no execution or data replay claim",
+  "source_sha": "abb4348a6eb38bb5696cb89062d9fb5c00d3e0b4",
+  "schema_dump_sha256": "1277b5b0b512d95538cf08442eb07f39b875391666f3dd7c3ca2c45a7c44a013",
+  "restored_database": "anvil_replay_rehearsal",
+  "migration_head": "058",
+  "source_identity_tables_preserved": true,
+  "source_catalog_equal": true,
+  "table_count": 125,
+  "noninternal_trigger_count": 126,
+  "constraint_count": 792,
+  "function_count": 66,
+  "disable_triggers_used": false,
+  "application_started": false,
+  "application_rows_restored": 0,
+  "source_policies_acls_role_flags_equal": true,
+  "control_counts": {
+    "policies": 140,
+    "table_acl": 490,
+    "function_acl": 66,
+    "schema_acl": 1,
+    "role_flags": 3
+  },
+  "local_replay_home": "/private/tmp/anvil-individual-replay-65cabfedcc024869bcf13ede4170a1cf",
+  "containers": {
+    "pg": "anvil-codex-replay-pg-20261109",
+    "graph": "anvil-codex-replay-graph-20261109",
+    "oidc": "anvil-codex-replay-oidc-20261109"
+  },
+  "volumes": {
+    "pg": "anvil-codex-replay-pg-20261109-data",
+    "graph": "anvil-codex-replay-graph-20261109-data",
+    "oidc": "anvil-codex-replay-oidc-20261109-data",
+    "oidc_config": "anvil-codex-replay-oidc-20261109-config"
+  },
+  "ports": {
+    "pg": 50674,
+    "graph_http": 50675,
+    "graph_bolt": 50676,
+    "oidc": 50677,
+    "api": 50678,
+    "web": 50679
+  },
+  "images": {
+    "pg": "postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3",
+    "graph": "neo4j:5.26.12-community@sha256:9f75e8df4325a24f00fdd7a8c0bcce650a58375049b1058e496e8b43d6c36b37",
+    "oidc": "quay.io/keycloak/keycloak:26.3.5@sha256:357829ec7c4693397533035092ad13b0644bcc95ded311f33a3738c4d9e9bdba"
+  },
+  "source_archive_member_count": 875,
+  "private_build_generated_differences": [
+    "apps/web/next-env.d.ts"
+  ],
+  "fresh_frontend_build_exit": 0,
+  "fresh_frontend_build_log_sha256": "f552537152d8e6ec4d9f009d46b8a8007ce3d11e56988ba81acd65cf5fdd9ec3",
+  "api_web_not_started": true,
+  "actual_native_project_data_restored": false,
+  "historical_previews_untouched": true
+}
