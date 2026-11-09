@@ -1,5 +1,29 @@
 # Linux QA execution record
 
+## Third reviewed successor — 5496458
+
+Independent native Testing exposed a public-input leaf that the non-root actor could not read. No global/private chmod workaround was applied. Reviewed source `54964583dd18cdec512a96c7a0068f743dd3da55` validates the compiled actor hash, exact public membership and bytes before creating only its bounded read-only public projection; separate new unit tests cover that boundary.
+
+Exact archive SHA256 `117e5bfc80b7dfcaa643fab5b803f332c74364ad6e582be75c83fc249f54bb07` and source manifest SHA256 `7e9c3da11f6d9c5fb0ddf57b786a248bd3e65a4c2b9611d23bfc3984a42e21a3` were verified. With Testing paused, all400 prior8e5 files matched. Only `services/backend/src/anvil/benchmark_qualification.py` was atomically replaced (backup `.local/source-before-549`); new `services/backend/tests/unit/test_benchmark_public_projection.py` was created fresh without overwrite. All401 successor hashes matched. No packages/images/environment or host permissions changed.
+
+Actual-host **25 compiler/public-projection units passed** under explicit local paid-disabled configuration without SQL credentials/writes, plus **9 adapter guards passed**. Independent Testing received the exact successor for the full28 fresh native suite; no native pass is inferred. Prior stopped actors/logs remain retained and are not reused. Receipt: `linux-qa-provenance/host-successor-5496458.json`. Key expiry remains01:51:10Z; no automatic extension. No application deployment or paid calls.
+
+## Second reviewed successor — 8e5e0a9
+
+Independent Testing preserved a further057 failure: Harbor's helper merged Compose stderr warnings with valid configuration JSON. The reviewed fix separates only the configuration subprocess stdout/stderr while preserving restricted profile validation. It does not suppress a failed command or loosen native controls.
+
+Pushed source `8e5e0a988e154c96bb2293af050c29cf68d44318`, archive SHA256 `8b1ccd33233336973a35252ea62437d99b307aa22b8aeb0e60f1a7a020046089`, source manifest SHA256 `cd123c57ccab863e2c7cf97829dcc11e69aa5605740d4f5d32e7ab8472549978` were verified. With Testing explicitly paused, all400 prior057 files matched, only the same two reviewed adapter/test files were atomically replaced, old copies were preserved under `.local/source-before-8e5`, and all400 successor files matched. No packages/images/configuration/permissions changed.
+
+Actual-host adapter guards **9 passed**, including the added complete-start subcases. Independent Testing was released for a fresh full28 native suite against this exact source; a native pass remains unclaimed. Receipt: `linux-qa-provenance/host-successor-8e5e0a9.json`. Prior e4/057 failures and evidence remain preserved. No application deployment or paid calls.
+
+## Reviewed source successor — 0574c68
+
+Independent native testing of e4 found a real adapter defect: privileged Compose `config --output` created a root0600 file that the non-root Harbor process could not read. Testing paused before actor creation; old failure evidence was preserved. No chmod, broadened socket policy or host permission workaround was applied.
+
+Reviewed successor `0574c68fcdd889e7fa1c4ec8b0bcdff47c06195e` was pushed, with archive SHA256 `392251dff7349828aa8ff5294c2e31f0520de8fb6ef1562946af96a09c98f432` and400-file source manifest SHA256 `701f75ec7fe0771f79a45282537d5a1c029b26c7dc0e6fecc4bbd974aa8e2461`. While Testing was paused, all400 prior hashes were verified, only reviewed `services/harbor/src/anvil_harbor/sme.py` and `services/harbor/tests/test_sme.py` were atomically replaced as the owning operator, and all400 successor hashes were verified. Original two files remain under `.local/source-before-0574c68`. No package, image, system configuration or permissions changed.
+
+Actual-host adapter safety guards **9 passed**. Independent Testing has been handed the new exact source for the full28 native suite; no native pass is inferred from adapter guards. `linux-qa-provenance/host-successor-0574c68.json` records old/new hashes and command evidence. Earlier host-readiness metadata is historical e4 pre-test evidence, not the current source verdict. Application deployment and paid calls remain unauthorized.
+
 ## Current milestone — host ready for independent native QA, 2026-11-09T01:06Z
 
 The exact source/runtime setup is complete and independently verifiable; Testing has received the private SSH/runner interface. **Host readiness is not a native test pass.** No application deployment or paid calls occurred.

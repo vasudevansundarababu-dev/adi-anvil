@@ -4,7 +4,7 @@ The current user authorization covers the standalone Linux QA host and testing o
 
 ## Proposed release and review evidence
 
-Application source candidate: `e4bb2d56800b6e2705b359724750c5702a003204`, schema058, archive hash `68d37ec7191c64a592a9710bd592cb40e7c002a87ca7d73e88dc3f6279a3f325`. Independent native QA is in progress; completion, failures and repairs must be reviewed before choosing the final source. Any repair means a new source/archive/runtime-policy binding and warranted tests, not silently deploying e4. Local static and SQL checks do not replace deployed browser/worker verification.
+Application source candidate: `54964583dd18cdec512a96c7a0068f743dd3da55`, schema058, archive hash `117e5bfc80b7dfcaa643fab5b803f332c74364ad6e582be75c83fc249f54bb07`. This includes the reviewed Compose ownership/output-channel and declared-public-input projection repairs. Independent native QA is in progress; completion, failures and repairs must be reviewed before choosing the final source. Any further repair means a new source/archive/runtime-policy binding and warranted tests. Earlier e4 evidence is not this successor's final release qualification. Local static and SQL checks do not replace deployed browser/worker verification.
 
 The reviewed infrastructure candidate includes defaults-off staging Compose and an explicit fictional-benchmark demo option. That option enables only API benchmark admission/evaluation/offline gates; it gives the API no native Docker/sudo/evaluator credential capability. All candidate/judge/generation/Vertex support/email paths remain disabled. Exact infrastructure commit and rendered configuration hash must join the release record after review.
 

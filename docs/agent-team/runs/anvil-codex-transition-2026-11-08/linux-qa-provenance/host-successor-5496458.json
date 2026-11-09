@@ -1,0 +1,20 @@
+{
+  "source_sha": "54964583dd18cdec512a96c7a0068f743dd3da55",
+  "previous_source_sha": "8e5e0a988e154c96bb2293af050c29cf68d44318",
+  "archive_sha256": "117e5bfc80b7dfcaa643fab5b803f332c74364ad6e582be75c83fc249f54bb07",
+  "source_manifest_sha256": "7e9c3da11f6d9c5fb0ddf57b786a248bd3e65a4c2b9611d23bfc3984a42e21a3",
+  "previous_runtime_files_verified": 400,
+  "successor_runtime_files_verified": 401,
+  "changed_file": {"path": "services/backend/src/anvil/benchmark_qualification.py", "before": "c1b19ffccd0cb300d0e7f07f844d93c28b8dd350a41f6af28cb9f1541aff783b", "after": "adfd64db5ef7aa078f0fcf55b17f602378a93cd0fdadbbcafbaedcc1614863f1"},
+  "new_file": {"path": "services/backend/tests/unit/test_benchmark_public_projection.py", "sha256": "58bf2536ecc21f5fc014eb00eca994ee751aaa6997b83fdee3a9bb34fb39d22b", "created_fresh_no_overwrite": true},
+  "old_source_preserved": "/opt/anvil/.local/source-before-549",
+  "packages_images_environment_host_permissions_changed": false,
+  "focused_unit_checks": {"passed": 25, "failed": 0, "database_credentials_or_writes": false},
+  "adapter_guards": {"passed": 9, "failed": 0},
+  "native_suite": "handed_to_independent_testing_not_yet_passed",
+  "prior_failure": "nonroot_actor_cannot_read_compiled_public_input_leaf",
+  "fix_scope": "validate_compiled_actor_hash_membership_bytes_then_readonly_public_leaf_projection_only",
+  "private_or_global_chmod_workaround": false,
+  "application_deployed": false,
+  "paid_calls": false
+}
