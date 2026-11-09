@@ -1,0 +1,64 @@
+{
+  "schema": "anvil-dashboard-frontend-coding-checks-v1",
+  "observed_git_head_at_receipt": "c592b0bd6097db1ddab62956dd0ed541891b15bf",
+  "source_binding": "Exact ten-file candidate hashes; not a claim that the entire application or a future Git tree has passed independent QA.",
+  "files": {
+    "apps/web/src/components/BenchmarkWorkbench.module.css": "f408693a5a625cafcee421f9296449a9fd175dc6f20cae8a77e714ccdd8343da",
+    "apps/web/src/components/BenchmarkWorkbenchUI.tsx": "c6bb34118ab16300e9cc9f8145c527f66c8561a9aecda8436b9e41a9cf18a747",
+    "apps/web/src/components/BenchmarkWorkbench.tsx": "eea608fbe0aa2e51c89da8765f5be87300dc671851d2fe9900b5de264b417c7e",
+    "apps/web/src/components/BenchmarkGoldenWorkbench.tsx": "d549b4fec64c06897a9a708f56551b211cbf20493bc4ba2ff42d6bc23d3d67a3",
+    "apps/web/src/components/WorkspaceBenchmarks.tsx": "1e7652c4e0778086e67ae998e507e928c31373c559ae1db109e4b0fd5a4a616e",
+    "apps/web/src/lib/benchmark-dashboard.ts": "1c573f9f8e4f82c8e343a901ee9f9dee77e8f91da0062ebcfe34207da647d89d",
+    "apps/web/src/lib/benchmark-golden.ts": "09af578806720058ae8332e7df9460331aba5e0250ad7809ef186feff4402817",
+    "tests/benchmark-dashboard.mjs": "31739de0dc4dc4f17d62fbc9218bc2ac1e6f7796d192121d762a783dcecce212",
+    "tests/e2e/benchmark-dashboard.spec.ts": "d7c7cae68786972f81ee9593e721d3ec7c5ccc54624eddcd09bfcb1cc5282397",
+    "tests/e2e/benchmark-workspace.spec.ts": "bfccd3ab26e1e99cd606a555d7b4174680265233ef3a66265649bc87494951ad"
+  },
+  "workspace": "/private/tmp/anvil-four-view-workbench-9txjrbw_",
+  "checks": [
+    {
+      "command": "node --test tests/benchmark-dashboard.mjs tests/benchmark-results.mjs tests/provider_failure.mjs tests/readiness_catalog.mjs",
+      "result": "35 passed; zero failed/skipped; existing module-type warnings retained"
+    },
+    {
+      "command": "pnpm --filter @anvil/web check",
+      "result": "passed"
+    },
+    {
+      "command": "ANVIL_API_PORT=55202 NEXT_TELEMETRY_DISABLED=1 pnpm --filter @anvil/web build",
+      "result": "passed; Next16.4.1 production build; no server started"
+    },
+    {
+      "command": "pnpm exec playwright test tests/e2e/benchmark-dashboard.spec.ts --list",
+      "result": "two actual OIDC/API/PDF tests listed; execution not run by Coding"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    }
+  ],
+  "visual_check": {
+    "scope": "Component contract renders with actual empty isolated API fixture, not execution evidence or full live application QA",
+    "views": [
+      "overview",
+      "trace",
+      "failures",
+      "remediation"
+    ],
+    "widths": [
+      1440,
+      390
+    ],
+    "horizontal_overflow": false,
+    "artifacts": "/private/tmp/anvil-dashboard-visual-CcvukZ",
+    "note": "Intermediate component visual renders; final private browser/OIDC checks remain assigned to Testing. Full-page Chrome stitching artifact was distinguished from DOM duplication using fresh viewport screenshots and one-header DOM check."
+  },
+  "remaining": [
+    "Independent fixed-source actual OIDC/browser/API integration verification is pending.",
+    "No live candidate/judge data exists; judge/probability metrics stay unavailable and paid calls stay off.",
+    "Missing real reviewer duties keep comparison admission blocked. Historical controls never grant current source authority.",
+    "Persona execution intent is persisted but compatible offline executor is not implemented; no simulation/pass rate is fabricated.",
+    "Application deployment remains unapproved and was not performed."
+  ],
+  "mutations_performed": "Frontend source/test files only; no credentials read, account changes, approvals, model calls, cloud changes, source staging, commit or push by Coding."
+}

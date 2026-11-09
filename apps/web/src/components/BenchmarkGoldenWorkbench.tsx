@@ -54,6 +54,13 @@ export default function BenchmarkGoldenWorkbench({
   const [loaded, setLoaded] = useState(false);
   const [datasetName, setDatasetName] = useState(''),
     [description, setDescription] = useState('');
+  const [archiveRationale, setArchiveRationale] = useState('');
+  const selectedDataset = datasets.find((dataset) => dataset.id === selected);
+  const canArchive =
+    !!selectedDataset &&
+    !selectedDataset.archived &&
+    (canAdmin || selectedDataset.created_by === userId);
+  const canWriteCase = !!selectedDataset && !selectedDataset.archived && canWrite;
   const [caseKey, setCaseKey] = useState(''),
     [title, setTitle] = useState(''),
     [category, setCategory] = useState('task_correctness');
@@ -75,6 +82,17 @@ export default function BenchmarkGoldenWorkbench({
     [decision, setDecision] = useState('verified');
   const generation = useRef(0);
   const contextQuery = dashboardSnapshotQuery(data.context).toString();
+  const cohortFocused =
+    data.context.model.length > 0 ||
+    data.context.task !== 'all' ||
+    data.context.period !== 'all' ||
+    data.context.environment !== 'all' ||
+    !!(
+      data.context.run_id ||
+      data.context.score_revision_id ||
+      data.context.trace_id ||
+      data.context.cluster
+    );
   const contextSuffix = contextQuery ? '&' + contextQuery : '';
   const anchorTrace = data.traces.find((trace) => trace.id === data.context.trace_id);
   const source = goldenDraftSource(anchorTrace, buildId);
@@ -210,6 +228,23 @@ export default function BenchmarkGoldenWorkbench({
       setPredecessor('');
     });
   }
+  function archiveDataset(event: FormEvent) {
+    event.preventDefault();
+    if (!canArchive || archiveRationale.trim().length < 10) return;
+    void act(async () => {
+      await benchmarkPost(base, '/golden-datasets/' + encodeURIComponent(selected) + '/archive', {
+        rationale: archiveRationale.trim(),
+      });
+      setDatasets((old) =>
+        old.map((dataset) => (dataset.id === selected ? { ...dataset, archived: true } : dataset)),
+      );
+      setArchiveRationale('');
+      setMessage(
+        'Dataset archived. Immutable history is preserved; qualification and approvals are unchanged.',
+      );
+      onStored();
+    });
+  }
   function saveProposal(event: FormEvent) {
     event.preventDefault();
     void act(async () => {
@@ -295,9 +330,13 @@ export default function BenchmarkGoldenWorkbench({
       </aside>
       <div className={styles.cards}>
         <WorkbenchMetric
-          label="DATASET METADATA"
+          label={cohortFocused ? 'COHORT DATASETS' : 'DATASET METADATA'}
           value={data.curation?.datasets ?? 'Unavailable'}
-          note="Stored project dataset registry; no execution implied."
+          note={
+            cohortFocused
+              ? 'Datasets with matching case revisions in this context; registry below is project-wide.'
+              : 'Stored project dataset registry; no execution implied.'
+          }
         />
         <WorkbenchMetric
           label="COHORT CASE REVISIONS"
@@ -597,6 +636,28 @@ export default function BenchmarkGoldenWorkbench({
               </button>
             )}
           </div>
+          {canArchive && (
+            <form className={styles.form} onSubmit={archiveDataset}>
+              <label className={styles.field}>
+                Archive rationale
+                <textarea
+                  required
+                  minLength={10}
+                  maxLength={2000}
+                  value={archiveRationale}
+                  onChange={(event) => setArchiveRationale(event.target.value)}
+                  disabled={busy}
+                />
+              </label>
+              <p className={styles.muted}>
+                Archiving preserves immutable history and changes no qualification or approval. New
+                case revisions will be disabled.
+              </p>
+              <button disabled={busy || archiveRationale.trim().length < 10}>
+                Archive dataset
+              </button>
+            </form>
+          )}
         </WorkbenchPanel>
         <WorkbenchPanel
           title="Author a golden case revision"
@@ -610,7 +671,7 @@ export default function BenchmarkGoldenWorkbench({
                 pattern="[A-Za-z0-9][A-Za-z0-9_.-]{0,79}"
                 value={caseKey}
                 onChange={(event) => setCaseKey(event.target.value)}
-                disabled={!selected || !canWrite || busy}
+                disabled={!canWriteCase || busy}
               />
             </label>
             <label className={styles.field}>
@@ -620,7 +681,7 @@ export default function BenchmarkGoldenWorkbench({
                 maxLength={160}
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-                disabled={!selected || !canWrite || busy}
+                disabled={!canWriteCase || busy}
               />
             </label>
             <label className={styles.field}>
@@ -628,7 +689,7 @@ export default function BenchmarkGoldenWorkbench({
               <select
                 value={category}
                 onChange={(event) => setCategory(event.target.value)}
-                disabled={!selected || !canWrite || busy}
+                disabled={!canWriteCase || busy}
               >
                 {['safety', 'factuality', 'tone', 'latency', 'task_correctness'].map((value) => (
                   <option key={value} value={value}>
@@ -644,7 +705,7 @@ export default function BenchmarkGoldenWorkbench({
                 maxLength={16384}
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
-                disabled={!selected || !canWrite || busy}
+                disabled={!canWriteCase || busy}
               />
             </label>
             <label className={styles.field}>
@@ -654,7 +715,7 @@ export default function BenchmarkGoldenWorkbench({
                 maxLength={16384}
                 value={expected}
                 onChange={(event) => setExpected(event.target.value)}
-                disabled={!selected || !canWrite || busy}
+                disabled={!canWriteCase || busy}
               />
             </label>
             <label className={styles.field}>
@@ -662,7 +723,7 @@ export default function BenchmarkGoldenWorkbench({
               <select
                 value={predecessor}
                 onChange={(event) => setPredecessor(event.target.value)}
-                disabled={!selected || !canWrite || busy}
+                disabled={!canWriteCase || busy}
               >
                 <option value="">New case anchor</option>
                 {versions
@@ -682,7 +743,7 @@ export default function BenchmarkGoldenWorkbench({
               Expected output is never copied from a private grader. A draft is not verified and
               does not change existing task scoring.
             </p>
-            <button className={styles.primary} disabled={!selected || !canWrite || busy}>
+            <button className={styles.primary} disabled={!canWriteCase || busy}>
               Save immutable case revision
             </button>
           </form>

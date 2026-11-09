@@ -257,6 +257,24 @@ test('trace and failure views honor the same actual empty cohort without fake te
   assert.doesNotMatch(failures, /18.4%|1,248|12.8%|8.2%|28.8%/);
 });
 
+test('a selected trace collapses the long registry so its evidence is immediately reachable', () => {
+  const data = backendFixture();
+  data.context.trace_id = 'contract-selected-trace';
+  const html = renderToStaticMarkup(
+    React.createElement(views.BenchmarkTraceView, {
+      data,
+      selected: null,
+      busy: true,
+      error: '',
+      open() {},
+    }),
+  );
+  assert.match(html, /Change selected trace/);
+  assert.match(html, /<details class="traceSelector">/);
+  assert.doesNotMatch(html, /<details class="traceSelector" open/);
+  assert.match(html, /Loading authorized evidence/);
+});
+
 test('remediation view cannot seed verified cases, run a persona or manufacture pass rates', () => {
   const html = renderToStaticMarkup(
     React.createElement(goldenView.default, {
@@ -272,4 +290,17 @@ test('remediation view cannot seed verified cases, run a persona or manufacture 
   assert.match(html, /No persona execution, model request/);
   assert.match(html, /Awaiting the authorized dataset registry/);
   assert.doesNotMatch(html, /94.2%|2,000|>Verified<|>verified<|Active.*Stress-Tests Running/);
+  const focused = backendFixture();
+  focused.context.trace_id = 'contract-focus';
+  const focusedHtml = renderToStaticMarkup(
+    React.createElement(goldenView.default, {
+      base: '/projects/project',
+      data: focused,
+      canWrite: false,
+      canAdmin: false,
+      userId: 'contract-user',
+    }),
+  );
+  assert.match(focusedHtml, /COHORT DATASETS/);
+  assert.match(focusedHtml, /registry below is project-wide/);
 });

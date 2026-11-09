@@ -1,0 +1,43 @@
+{
+  "source_sha": "c592b0bd6097db1ddab62956dd0ed541891b15bf",
+  "source_archive_sha256": "98e5a1120125cb0cea6289a14e71692e61045e7c27722028e8959fedd5147ba5",
+  "tracked_source_file_count": 934,
+  "source_changes_after_setup": [],
+  "project_id": "72ece19c-20ba-4be5-b4bc-29916ad0a0f8",
+  "url": "http://127.0.0.1:50679/workspace/72ece19c-20ba-4be5-b4bc-29916ad0a0f8/benchmarks",
+  "api_port": 50678,
+  "web_port": 50679,
+  "loopback_only": true,
+  "actual_historical_receipts_imported": 27,
+  "historical_packet_sha256": "1909932c808f333dd32b399a2c3d70add85c3e83399cbd01bf8e13101d574d92",
+  "source_reviews_created": 0,
+  "qualifications_created": 0,
+  "comparisons_created": 0,
+  "viewer_role": "synthetic rl-engineer with27artifact-scopedread duties;notglobalreadonly",
+  "actual_browser_authenticated_cohort_verification": "Testing actualOIDC2specsPASS plusall27canonicalauthorizedtraceAPIreadsPASS",
+  "api_database_health": "ready",
+  "web_http_status": 200,
+  "oidc_callback_50679_allow_other50680_deny": true,
+  "offline_frozen_dependencies_and_webbuild_pass": true,
+  "defaultcache_misses_resolved_using_existing_security_caches": true,
+  "Next_generated_declaration_preserved_then_snapshot_restored_exact": true,
+  "private_credentials_in_public_record": false,
+  "private_runtime_home": "/private/tmp/anvil-replacement-runtime-dea110e4f25b4ccbab1c5084418bec0e",
+  "pids": {
+    "api": 59081,
+    "web": 59082
+  },
+  "cloud_changes": false,
+  "paid_calls": false,
+  "native_execution": false,
+  "deployment": false,
+  "actual_measurements": {
+    "model_measurements": 0,
+    "historical_controls": 27,
+    "public_outputs": 24,
+    "criterion_observations": 486,
+    "official": false
+  },
+  "independent_read_receipt_private_path": "/private/tmp/anvil-replacement-runtime-dea110e4f25b4ccbab1c5084418bec0e/independent-27-authorized-reads.json",
+  "promotion_pending_for_visual_fixes": true
+}

@@ -146,7 +146,7 @@ export function BenchmarkOverviewView({
         <WorkbenchMetric
           label="STORED SAMPLE TRACES"
           value={overview.total_traces}
-          note={`${overview.model_trace_count} model observations · ${overview.control_trace_count} historical controls`}
+          note={`${overview.model_trace_count} model observations · ${overview.control_trace_count} software controls`}
         />
         <WorkbenchMetric
           label="REVIEWED MODEL BINDINGS"
@@ -330,12 +330,24 @@ export function BenchmarkTraceView({
 }) {
   return (
     <>
-      <WorkbenchPanel
-        title="Select a stored execution trace"
-        note={`${data.traces.length} records returned`}
-      >
-        <DashboardTraceTable traces={data.traces} open={open} />
-      </WorkbenchPanel>
+      {data.context.trace_id ? (
+        <details className={styles.traceSelector}>
+          <summary>Change selected trace · {data.traces.length} records</summary>
+          <WorkbenchPanel
+            title="Select a stored execution trace"
+            note={`${data.traces.length} records returned`}
+          >
+            <DashboardTraceTable traces={data.traces} open={open} />
+          </WorkbenchPanel>
+        </details>
+      ) : (
+        <WorkbenchPanel
+          title="Select a stored execution trace"
+          note={`${data.traces.length} records returned`}
+        >
+          <DashboardTraceTable traces={data.traces} open={open} />
+        </WorkbenchPanel>
+      )}
       <div style={{ height: 18 }} />
       {error && (
         <p className={styles.alert} role="alert">
@@ -547,7 +559,7 @@ export function BenchmarkFailureView({
           )}
           <p className={styles.metricNote}>
             {failures.classification_basis || 'Derived classification metadata unavailable.'}{' '}
-            {failures.rate_basis || 'Rate basis unavailable.'} {failures.control_traces} historical
+            {failures.rate_basis || 'Rate basis unavailable.'} {failures.control_traces} software
             control traces are excluded from model error rate and ranking.
           </p>
         </WorkbenchPanel>
