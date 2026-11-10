@@ -16,7 +16,7 @@ CLI = "/Users/vasudevansundarababu/Documents/Codex/anvil-tools/google-cloud-sdk/
 CONFIG = "/Users/vasudevansundarababu/Documents/Codex/anvil-tools/cloud-config"
 
 
-def call(args):
+def call(args, *, raw=False):
     env = {
         "PATH": "/usr/bin:/bin",
         "HOME": str(Path.home()),
@@ -43,6 +43,8 @@ def call(args):
             + ": "
             + completed.stderr.decode(errors="replace")[-2000:]
         )
+    if raw:
+        return completed.stdout.decode()
     return json.loads(completed.stdout) if completed.stdout.strip() else None
 
 
