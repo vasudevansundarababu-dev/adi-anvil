@@ -19,7 +19,7 @@ def timestamp(value):
     return parsed.astimezone(timezone.utc)
 
 
-def validate_vm(vm, *, now):
+def validate_vm(vm, *, now, credential_identity=None):
     """Require actual Compute readback, not locally invented scheduling proof."""
     if now.tzinfo is None or now >= STOP:
         raise ValueError("QA execution window expired")
@@ -29,10 +29,22 @@ def validate_vm(vm, *, now):
         or not str(vm.get("id", "")).isdecimal()
         or vm.get("selfLink") != prefix + "zones/us-west1-a/instances/" + NAME
         or vm.get("machineType") != prefix + "zones/us-west1-a/machineTypes/e2-standard-8"
-        or vm.get("serviceAccounts")
         or vm.get("labels", {}).get("purpose") != "overnight-qa"
     ):
         raise ValueError("Unexpected QA host identity or authority")
+    accounts = vm.get("serviceAccounts", [])
+    if credential_identity is None:
+        if accounts:
+            raise ValueError("Unexpected QA workload identity")
+    elif (
+        credential_identity.get("email") != f"anvil-qa-20261110@{PROJECT}.iam.gserviceaccount.com"
+        or not str(credential_identity.get("uniqueId", "")).isdecimal()
+        or credential_identity.get("secret_only_policy_verified") is not True
+        or len(accounts) != 1
+        or accounts[0].get("email") != credential_identity["email"]
+        or accounts[0].get("scopes") != ["https://www.googleapis.com/auth/cloud-platform"]
+    ):
+        raise ValueError("Exact secret-only QA workload identity required")
     scheduling = vm.get("scheduling", {})
     if (
         scheduling.get("automaticRestart") is not False
@@ -45,7 +57,8 @@ def validate_vm(vm, *, now):
         len(interfaces) != 1
         or interfaces[0].get("accessConfigs")
         or interfaces[0].get("network") != prefix + "global/networks/" + NAME + "-net"
-        or interfaces[0].get("subnetwork") != prefix + "regions/us-west1/subnetworks/" + NAME + "-subnet"
+        or interfaces[0].get("subnetwork")
+        != prefix + "regions/us-west1/subnetworks/" + NAME + "-subnet"
     ):
         raise ValueError("QA host must have exactly one private interface")
     disks = vm.get("disks", [])
