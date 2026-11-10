@@ -1,0 +1,3974 @@
+{
+  "schema": "anvil.production.dependency-advisory-check.v1",
+  "source_sha": "edcc0514c43ceb614b813566820ee0c2c7311463",
+  "source_context": "/Users/vasudevansundarababu/Documents/Codex/anvil-codex-transition/.local/staging-build-context-edcc051",
+  "source_lock_hashes": {
+    "pnpm-lock.yaml": "f8894918d5b987e401bd3ca123b51a19370ec98882766c210f48e0acb81274b7",
+    "services/backend/uv.lock": "00a917be042f5204926d3149c5e9bcbf57c0717c298afe202a20799ca58d7bb3",
+    "services/harbor/requirements.lock": "612ab41777d8eb6ec2dee6c3390705130e55d9d1a216c79df34a1597c6156ec3"
+  },
+  "started_at": "2026-11-09T02:48:30.302008+00:00",
+  "source_context_files_unchanged": true,
+  "no_application_dependency_install": true,
+  "no_global_config_writes": true,
+  "no_source_or_lock_writes": true,
+  "no_cloud_mutations": true,
+  "container_image_vulnerability_scan": "NOT_RUN; Container Scanning API disabled; no image/OS vulnerability verdict",
+  "frontend": {
+    "method": "pnpm10.34.5 audit --prod --json against public npm registry; copied reviewed manifests/private home/cache",
+    "receipt": {
+      "command": [
+        "/Users/vasudevansundarababu/.local/bin/pnpm",
+        "audit",
+        "--prod",
+        "--json",
+        "--registry=https://registry.npmjs.org/"
+      ],
+      "started_at": "2026-11-09T02:48:30.302008+00:00",
+      "elapsed_seconds": 1.514,
+      "exit_code": 1,
+      "stdout_sha256": "ee1e5c58306f77cd8ab624e6155539a16b369e92e3fb13c0ce452fd8cd4700d4",
+      "stderr_sha256": "3cb9bd5c7d18e6e62b92229f5044e11f6575ecd5f608b3f62a4a281610abdb08",
+      "source_pnpm_lock_sha256": "f8894918d5b987e401bd3ca123b51a19370ec98882766c210f48e0acb81274b7",
+      "raw_stdout_path": "/private/tmp/anvil-production-advisory-b8757b139d4e45209c4cb650aaffd667/frontend-audit.stdout",
+      "raw_stderr_path": "/private/tmp/anvil-production-advisory-b8757b139d4e45209c4cb650aaffd667/frontend-audit.stderr"
+    },
+    "reported_metadata": {
+      "vulnerabilities": {
+        "info": 0,
+        "low": 1,
+        "moderate": 5,
+        "high": 3,
+        "critical": 2
+      },
+      "dependencies": 102,
+      "devDependencies": 0,
+      "optionalDependencies": 0,
+      "totalDependencies": 102
+    },
+    "advisories": [
+      {
+        "github_advisory_id": "GHSA-68fv-2mgg-jv7q",
+        "module_name": "source-map-js",
+        "severity": "high",
+        "title": "source-map-js allows event-loop denial of service through indexed source-map section offsets",
+        "findings": [
+          {
+            "version": "1.2.1",
+            "paths": [
+              "apps__web>@tailwindcss/postcss>@tailwindcss/node>source-map-js"
+            ]
+          }
+        ],
+        "vulnerable_versions": ">=1.0.0 <1.2.2",
+        "patched_versions": ">=1.2.2",
+        "recommendation": "Upgrade to version 1.2.2 or later",
+        "url": "https://github.com/advisories/GHSA-68fv-2mgg-jv7q",
+        "cves": [
+          "CVE-2026-93749"
+        ],
+        "updated": "2026-10-05T23:31:22.000Z"
+      },
+      {
+        "github_advisory_id": "GHSA-3w37-wq28-93x7",
+        "module_name": "next",
+        "severity": "moderate",
+        "title": "Next.js: Pending `use cache` fill can leak Draft Mode content into regular responses and persisted pages",
+        "findings": [
+          {
+            "version": "16.3.6",
+            "paths": [
+              "apps__web>next"
+            ]
+          }
+        ],
+        "vulnerable_versions": ">=16.3.0 <16.3.8",
+        "patched_versions": ">=16.3.8",
+        "recommendation": "Upgrade to version 16.3.8 or later",
+        "url": "https://github.com/advisories/GHSA-3w37-wq28-93x7",
+        "cves": [
+          "CVE-2026-94544"
+        ],
+        "updated": "2026-10-07T20:32:15.000Z"
+      },
+      {
+        "github_advisory_id": "GHSA-4jqv-mc3x-m676",
+        "module_name": "next",
+        "severity": "moderate",
+        "title": "Next.js has cache poisoning of SSG and ISR pages in self-hosted applications",
+        "findings": [
+          {
+            "version": "16.3.6",
+            "paths": [
+              "apps__web>next"
+            ]
+          }
+        ],
+        "vulnerable_versions": ">=16.0.0 <16.3.8",
+        "patched_versions": ">=16.3.8",
+        "recommendation": "Upgrade to version 16.3.8 or later",
+        "url": "https://github.com/advisories/GHSA-4jqv-mc3x-m676",
+        "cves": [
+          "CVE-2026-94543"
+        ],
+        "updated": "2026-10-07T20:32:07.000Z"
+      },
+      {
+        "github_advisory_id": "GHSA-39w2-rjm5-chcv",
+        "module_name": "next",
+        "severity": "low",
+        "title": "Next.js has information disclosure in development server's Model Context Protocol endpoint",
+        "findings": [
+          {
+            "version": "16.3.6",
+            "paths": [
+              "apps__web>next"
+            ]
+          }
+        ],
+        "vulnerable_versions": ">=16.0.0 <16.3.8",
+        "patched_versions": ">=16.3.8",
+        "recommendation": "Upgrade to version 16.3.8 or later",
+        "url": "https://github.com/advisories/GHSA-39w2-rjm5-chcv",
+        "cves": [
+          "CVE-2026-94486"
+        ],
+        "updated": "2026-10-07T20:31:52.000Z"
+      },
+      {
+        "github_advisory_id": "GHSA-f87g-xv8r-7p7x",
+        "module_name": "next",
+        "severity": "moderate",
+        "title": "Next.js has information disclosure in App Router metadata image routes via dynamicParams bypass",
+        "findings": [
+          {
+            "version": "16.3.6",
+            "paths": [
+              "apps__web>next"
+            ]
+          }
+        ],
+        "vulnerable_versions": ">=16.0.0 <16.3.8",
+        "patched_versions": ">=16.3.8",
+        "recommendation": "Upgrade to version 16.3.8 or later",
+        "url": "https://github.com/advisories/GHSA-f87g-xv8r-7p7x",
+        "cves": [
+          "CVE-2026-94485"
+        ],
+        "updated": "2026-10-07T20:31:35.000Z"
+      },
+      {
+        "github_advisory_id": "GHSA-mcj8-r9mp-w47p",
+        "module_name": "next",
+        "severity": "moderate",
+        "title": "Next.js has cache poisoning in SSG/ISR rendering that leads to cross-user content substitution and persistent denial of service",
+        "findings": [
+          {
+            "version": "16.3.6",
+            "paths": [
+              "apps__web>next"
+            ]
+          }
+        ],
+        "vulnerable_versions": ">=16.0.0 <16.3.8",
+        "patched_versions": ">=16.3.8",
+        "recommendation": "Upgrade to version 16.3.8 or later",
+        "url": "https://github.com/advisories/GHSA-mcj8-r9mp-w47p",
+        "cves": [
+          "CVE-2026-94484"
+        ],
+        "updated": "2026-10-07T20:31:15.000Z"
+      },
+      {
+        "github_advisory_id": "GHSA-cjq9-62q9-8jv4",
+        "module_name": "next",
+        "severity": "high",
+        "title": "Next.js has Server-Side Request Forgery in Image Optimization",
+        "findings": [
+          {
+            "version": "16.3.6",
+            "paths": [
+              "apps__web>next"
+            ]
+          }
+        ],
+        "vulnerable_versions": ">=16.0.0 <16.3.8",
+        "patched_versions": ">=16.3.8",
+        "recommendation": "Upgrade to version 16.3.8 or later",
+        "url": "https://github.com/advisories/GHSA-cjq9-62q9-8jv4",
+        "cves": [
+          "CVE-2026-94483"
+        ],
+        "updated": "2026-10-07T20:30:56.000Z"
+      },
+      {
+        "github_advisory_id": "GHSA-2464-fhr4-w9xw",
+        "module_name": "next",
+        "severity": "critical",
+        "title": "Next.js: Unauthenticated Remote Code Execution in Image Optimization API when SVG files are used",
+        "findings": [
+          {
+            "version": "16.3.6",
+            "paths": [
+              "apps__web>next"
+            ]
+          }
+        ],
+        "vulnerable_versions": ">=16.0.0 <=16.4.0",
+        "patched_versions": ">=16.4.1",
+        "recommendation": "Upgrade to version 16.4.1 or later",
+        "url": "https://github.com/advisories/GHSA-2464-fhr4-w9xw",
+        "cves": [],
+        "updated": "2026-10-22T15:52:56.000Z"
+      },
+      {
+        "github_advisory_id": "GHSA-p3m5-59mp-jv5r",
+        "module_name": "next",
+        "severity": "high",
+        "title": "Next.js: Denial of Service in App Router using Server Actions",
+        "findings": [
+          {
+            "version": "16.3.6",
+            "paths": [
+              "apps__web>next"
+            ]
+          }
+        ],
+        "vulnerable_versions": ">=16.0.0 <=16.4.0",
+        "patched_versions": ">=16.4.1",
+        "recommendation": "Upgrade to version 16.4.1 or later",
+        "url": "https://github.com/advisories/GHSA-p3m5-59mp-jv5r",
+        "cves": [
+          "CVE-2026-94482"
+        ],
+        "updated": "2026-10-22T15:50:35.000Z"
+      },
+      {
+        "github_advisory_id": "GHSA-h694-7cp9-m8p3",
+        "module_name": "next",
+        "severity": "moderate",
+        "title": "next.js cache leak across root param values in nested 'use cache' functions",
+        "findings": [
+          {
+            "version": "16.3.6",
+            "paths": [
+              "apps__web>next"
+            ]
+          }
+        ],
+        "vulnerable_versions": ">=16.3.0 <16.3.8",
+        "patched_versions": ">=16.3.8",
+        "recommendation": "Upgrade to version 16.3.8 or later",
+        "url": "https://github.com/advisories/GHSA-h694-7cp9-m8p3",
+        "cves": [
+          "CVE-2026-103004"
+        ],
+        "updated": "2026-10-22T16:08:41.000Z"
+      },
+      {
+        "github_advisory_id": "GHSA-673q-mjm6-r5xr",
+        "module_name": "next",
+        "severity": "critical",
+        "title": "Next.js: Unauthenticated Remote Code Execution in `use cache` functions returning typed arrays",
+        "findings": [
+          {
+            "version": "16.3.6",
+            "paths": [
+              "apps__web>next"
+            ]
+          }
+        ],
+        "vulnerable_versions": ">=16.0.0 <=16.4.0",
+        "patched_versions": ">=16.4.1",
+        "recommendation": "Upgrade to version 16.4.1 or later",
+        "url": "https://github.com/advisories/GHSA-673q-mjm6-r5xr",
+        "cves": [],
+        "updated": "2026-10-22T16:42:32.000Z"
+      }
+    ]
+  },
+  "backend": {
+    "method": "offline frozen uv --no-dev export; OSV batch plus exactly9 full affected-package public queries",
+    "target": "Linux x86_64 CPython3.12.14 production --no-dev",
+    "queried_package_count": 78,
+    "queried_packages": [
+      {
+        "name": "alembic",
+        "version": "1.20.0"
+      },
+      {
+        "name": "annotated-doc",
+        "version": "0.0.5"
+      },
+      {
+        "name": "annotated-types",
+        "version": "0.8.0"
+      },
+      {
+        "name": "anthropic",
+        "version": "0.125.0"
+      },
+      {
+        "name": "anyio",
+        "version": "4.15.1"
+      },
+      {
+        "name": "authlib",
+        "version": "1.8.0"
+      },
+      {
+        "name": "certifi",
+        "version": "2026.7.22"
+      },
+      {
+        "name": "cffi",
+        "version": "2.1.1"
+      },
+      {
+        "name": "charset-normalizer",
+        "version": "3.5.1"
+      },
+      {
+        "name": "click",
+        "version": "8.5.0"
+      },
+      {
+        "name": "cryptography",
+        "version": "50.0.1"
+      },
+      {
+        "name": "distro",
+        "version": "1.9.0"
+      },
+      {
+        "name": "docstring-parser",
+        "version": "0.18.0"
+      },
+      {
+        "name": "eval-type-backport",
+        "version": "0.4.0"
+      },
+      {
+        "name": "fastapi",
+        "version": "0.141.1"
+      },
+      {
+        "name": "google-auth",
+        "version": "2.58.1"
+      },
+      {
+        "name": "google-genai",
+        "version": "1.75.0"
+      },
+      {
+        "name": "h11",
+        "version": "0.16.0"
+      },
+      {
+        "name": "httpcore",
+        "version": "1.0.9"
+      },
+      {
+        "name": "httpcore2",
+        "version": "2.13.1"
+      },
+      {
+        "name": "httpx",
+        "version": "0.28.1"
+      },
+      {
+        "name": "httpx2",
+        "version": "2.13.1"
+      },
+      {
+        "name": "idna",
+        "version": "3.20"
+      },
+      {
+        "name": "jiter",
+        "version": "0.17.0"
+      },
+      {
+        "name": "joserfc",
+        "version": "1.7.5"
+      },
+      {
+        "name": "jsonpatch",
+        "version": "1.33"
+      },
+      {
+        "name": "jsonpath-python",
+        "version": "1.1.6"
+      },
+      {
+        "name": "jsonpointer",
+        "version": "3.1.1"
+      },
+      {
+        "name": "langchain-core",
+        "version": "1.6.5"
+      },
+      {
+        "name": "langchain-protocol",
+        "version": "0.0.19"
+      },
+      {
+        "name": "langgraph",
+        "version": "1.2.12"
+      },
+      {
+        "name": "langgraph-checkpoint",
+        "version": "4.2.0"
+      },
+      {
+        "name": "langgraph-checkpoint-postgres",
+        "version": "3.1.2"
+      },
+      {
+        "name": "langgraph-prebuilt",
+        "version": "1.1.0"
+      },
+      {
+        "name": "langgraph-sdk",
+        "version": "0.4.5"
+      },
+      {
+        "name": "langsmith",
+        "version": "0.14.1"
+      },
+      {
+        "name": "mako",
+        "version": "1.4.3"
+      },
+      {
+        "name": "markupsafe",
+        "version": "3.0.3"
+      },
+      {
+        "name": "mistralai",
+        "version": "2.10.1"
+      },
+      {
+        "name": "neo4j",
+        "version": "6.3.1"
+      },
+      {
+        "name": "openai",
+        "version": "2.54.0"
+      },
+      {
+        "name": "opentelemetry-api",
+        "version": "1.45.0"
+      },
+      {
+        "name": "opentelemetry-semantic-conventions",
+        "version": "0.66b0"
+      },
+      {
+        "name": "orjson",
+        "version": "3.12.0"
+      },
+      {
+        "name": "ormsgpack",
+        "version": "1.12.2"
+      },
+      {
+        "name": "packaging",
+        "version": "26.3"
+      },
+      {
+        "name": "pillow",
+        "version": "12.3.0"
+      },
+      {
+        "name": "psycopg",
+        "version": "3.3.6"
+      },
+      {
+        "name": "psycopg-binary",
+        "version": "3.3.6"
+      },
+      {
+        "name": "psycopg-pool",
+        "version": "3.3.3"
+      },
+      {
+        "name": "pyasn1",
+        "version": "0.6.4"
+      },
+      {
+        "name": "pyasn1-modules",
+        "version": "0.4.2"
+      },
+      {
+        "name": "pycparser",
+        "version": "3.0"
+      },
+      {
+        "name": "pydantic",
+        "version": "2.13.5"
+      },
+      {
+        "name": "pydantic-core",
+        "version": "2.46.5"
+      },
+      {
+        "name": "python-dateutil",
+        "version": "2.9.0.post0"
+      },
+      {
+        "name": "python-multipart",
+        "version": "0.0.32"
+      },
+      {
+        "name": "pytz",
+        "version": "2026.4"
+      },
+      {
+        "name": "pyyaml",
+        "version": "6.0.3"
+      },
+      {
+        "name": "reportlab",
+        "version": "4.5.1"
+      },
+      {
+        "name": "requests",
+        "version": "2.34.2"
+      },
+      {
+        "name": "requests-toolbelt",
+        "version": "1.0.0"
+      },
+      {
+        "name": "rfc8785",
+        "version": "0.1.4"
+      },
+      {
+        "name": "six",
+        "version": "1.17.0"
+      },
+      {
+        "name": "sniffio",
+        "version": "1.3.1"
+      },
+      {
+        "name": "sqlalchemy",
+        "version": "2.1.1"
+      },
+      {
+        "name": "starlette",
+        "version": "1.7.0"
+      },
+      {
+        "name": "tenacity",
+        "version": "9.1.4"
+      },
+      {
+        "name": "tqdm",
+        "version": "4.70.1"
+      },
+      {
+        "name": "truststore",
+        "version": "0.10.4"
+      },
+      {
+        "name": "typing-extensions",
+        "version": "4.16.0"
+      },
+      {
+        "name": "typing-inspection",
+        "version": "0.4.4"
+      },
+      {
+        "name": "urllib3",
+        "version": "2.8.0"
+      },
+      {
+        "name": "uuid-utils",
+        "version": "0.17.1"
+      },
+      {
+        "name": "uvicorn",
+        "version": "0.54.0"
+      },
+      {
+        "name": "websockets",
+        "version": "16.1.1"
+      },
+      {
+        "name": "xxhash",
+        "version": "4.0.1"
+      },
+      {
+        "name": "zstandard",
+        "version": "0.25.0"
+      }
+    ],
+    "platform_excluded_requirements": [
+      {
+        "name": "colorama",
+        "version": "0.4.6",
+        "marker": "sys_platform == \"win32\""
+      },
+      {
+        "name": "httpx2-jsfetch",
+        "version": "1.0",
+        "marker": "sys_platform == \"emscripten\""
+      },
+      {
+        "name": "tzdata",
+        "version": "2026.4",
+        "marker": "sys_platform == \"win32\""
+      }
+    ],
+    "raw_advisory_id_count_including_aliases": 83,
+    "unique_github_advisory_count": 58,
+    "github_severity_counts": {
+      "CRITICAL": 7,
+      "HIGH": 30,
+      "MODERATE": 21
+    },
+    "affected_packages": [
+      {
+        "name": "authlib",
+        "locked_version": "1.8.0",
+        "returned_record_count_including_aliases": 14,
+        "github_advisory_ids": [
+          "GHSA-6v38-4h7w-rj9h",
+          "GHSA-7vr2-2fgp-9w7p",
+          "GHSA-8m4g-j4wp-wgcg",
+          "GHSA-c5mf-xmp2-59rc",
+          "GHSA-c73q-w75p-j82v",
+          "GHSA-fch4-3c6x-j4gc",
+          "GHSA-q686-2qmg-hqc7",
+          "GHSA-x4rv-c3wx-4cr8"
+        ],
+        "severity_levels": [
+          "CRITICAL",
+          "HIGH",
+          "MODERATE"
+        ],
+        "reported_fixed_versions": [
+          "1.9.0",
+          "1.9.1"
+        ],
+        "largest_reported_fixed_threshold": "1.9.1"
+      },
+      {
+        "name": "certifi",
+        "locked_version": "2026.7.22",
+        "returned_record_count_including_aliases": 2,
+        "github_advisory_ids": [
+          "GHSA-6q48-6c7w-9gw2"
+        ],
+        "severity_levels": [
+          "CRITICAL"
+        ],
+        "reported_fixed_versions": [
+          "2026.10.18"
+        ],
+        "largest_reported_fixed_threshold": "2026.10.18"
+      },
+      {
+        "name": "joserfc",
+        "locked_version": "1.7.5",
+        "returned_record_count_including_aliases": 1,
+        "github_advisory_ids": [
+          "GHSA-9pg5-8c7x-5hfx"
+        ],
+        "severity_levels": [
+          "MODERATE"
+        ],
+        "reported_fixed_versions": [
+          "1.7.6"
+        ],
+        "largest_reported_fixed_threshold": "1.7.6"
+      },
+      {
+        "name": "langgraph",
+        "locked_version": "1.2.12",
+        "returned_record_count_including_aliases": 1,
+        "github_advisory_ids": [
+          "GHSA-3fx2-cqw9-xr3c"
+        ],
+        "severity_levels": [
+          "MODERATE"
+        ],
+        "reported_fixed_versions": [
+          "1.2.14"
+        ],
+        "largest_reported_fixed_threshold": "1.2.14"
+      },
+      {
+        "name": "langgraph-checkpoint-postgres",
+        "locked_version": "3.1.2",
+        "returned_record_count_including_aliases": 1,
+        "github_advisory_ids": [
+          "GHSA-6hmw-9432-67qq"
+        ],
+        "severity_levels": [
+          "MODERATE"
+        ],
+        "reported_fixed_versions": [
+          "3.1.3"
+        ],
+        "largest_reported_fixed_threshold": "3.1.3"
+      },
+      {
+        "name": "langgraph-sdk",
+        "locked_version": "0.4.5",
+        "returned_record_count_including_aliases": 1,
+        "github_advisory_ids": [
+          "GHSA-3fx2-cqw9-xr3c"
+        ],
+        "severity_levels": [
+          "MODERATE"
+        ],
+        "reported_fixed_versions": [
+          "0.4.6"
+        ],
+        "largest_reported_fixed_threshold": "0.4.6"
+      },
+      {
+        "name": "opentelemetry-api",
+        "locked_version": "1.45.0",
+        "returned_record_count_including_aliases": 1,
+        "github_advisory_ids": [
+          "GHSA-xcq7-p3pf-p88h"
+        ],
+        "severity_levels": [
+          "MODERATE"
+        ],
+        "reported_fixed_versions": [
+          "1.45.1"
+        ],
+        "largest_reported_fixed_threshold": "1.45.1"
+      },
+      {
+        "name": "pillow",
+        "locked_version": "12.3.0",
+        "returned_record_count_including_aliases": 59,
+        "github_advisory_ids": [
+          "GHSA-22hg-r758-rrw9",
+          "GHSA-24rc-8hj2-v98c",
+          "GHSA-254f-3936-288h",
+          "GHSA-27h8-gf7j-v5hc",
+          "GHSA-332p-7hrc-92wf",
+          "GHSA-3j72-p6qg-6xp7",
+          "GHSA-4558-3h8r-v8xp",
+          "GHSA-462x-pgg6-55fp",
+          "GHSA-4rm8-3hmm-39fg",
+          "GHSA-4rr5-89j8-mwwm",
+          "GHSA-58r4-6rv3-gfh8",
+          "GHSA-5x8w-8jj5-q52h",
+          "GHSA-5xm2-6676-qcp9",
+          "GHSA-654x-cwwv-5j9c",
+          "GHSA-65qm-jvmh-6pqg",
+          "GHSA-74r2-7ff9-mjj2",
+          "GHSA-78g4-xqwv-q3g8",
+          "GHSA-7mwm-ghpf-9vrm",
+          "GHSA-8g5g-8vmr-9782",
+          "GHSA-9v9v-9qvf-h2hj",
+          "GHSA-c6hw-5grf-ff96",
+          "GHSA-cp9v-662q-vvx9",
+          "GHSA-f2g6-542v-9j58",
+          "GHSA-fc9g-5qg7-mf45",
+          "GHSA-g4qv-2jxx-769h",
+          "GHSA-g7cr-3p24-7wf7",
+          "GHSA-g842-9rc4-69pw",
+          "GHSA-gg2r-wvfm-q9rx",
+          "GHSA-j4m9-6w36-pw47",
+          "GHSA-jg86-v3jv-hrpm",
+          "GHSA-mrfp-p49p-3hf2",
+          "GHSA-p4wg-p73j-c528",
+          "GHSA-p8hx-v2p6-rp84",
+          "GHSA-pchr-8j38-3x4p",
+          "GHSA-q45j-58j2-45rg",
+          "GHSA-rfgq-q3w2-pmv2",
+          "GHSA-v9pv-5gc8-w2m6",
+          "GHSA-vx6w-vv9f-6gvg",
+          "GHSA-w889-685w-c8fh",
+          "GHSA-xgh8-jp6q-p5x8",
+          "GHSA-xvh5-g6gv-559v"
+        ],
+        "severity_levels": [
+          "CRITICAL",
+          "HIGH",
+          "MODERATE"
+        ],
+        "reported_fixed_versions": [
+          "13.0.0"
+        ],
+        "largest_reported_fixed_threshold": "13.0.0"
+      },
+      {
+        "name": "pyasn1",
+        "locked_version": "0.6.4",
+        "returned_record_count_including_aliases": 4,
+        "github_advisory_ids": [
+          "GHSA-2qm8-x737-gmw5",
+          "GHSA-9m75-vc3g-4x39",
+          "GHSA-fm9c-5rcf-2q5p",
+          "GHSA-mm57-4v3p-rchx"
+        ],
+        "severity_levels": [
+          "HIGH"
+        ],
+        "reported_fixed_versions": [
+          "0.6.5"
+        ],
+        "largest_reported_fixed_threshold": "0.6.5"
+      }
+    ],
+    "advisories": [
+      {
+        "id": "GHSA-22hg-r758-rrw9",
+        "summary": "Pillow: Infinite loop in MIC n_frames when the embedded TIFF",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-112390",
+          "CVE-2026-112390"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "7.2.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-22hg-r758-rrw9"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-22hg-r758-rrw9",
+        "modified": "2026-10-26T08:56:03.565713059Z"
+      },
+      {
+        "id": "GHSA-24rc-8hj2-v98c",
+        "summary": "Pillow: BMP RLE decoder memory-amplification DoS via unbounded delta escape / absolute mode",
+        "severity": "MODERATE",
+        "aliases": [
+          "BIT-pillow-2026-96638",
+          "CVE-2026-96638"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "9.1.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-24rc-8hj2-v98c"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-24rc-8hj2-v98c",
+        "modified": "2026-10-29T10:55:36.262902070Z"
+      },
+      {
+        "id": "GHSA-254f-3936-288h",
+        "summary": "Pillow: PdfParser can recurse without limit in get_value() and linearize_page_tree()",
+        "severity": "MODERATE",
+        "aliases": [
+          "BIT-pillow-2026-112391",
+          "CVE-2026-112391"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "5.1.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-254f-3936-288h"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-254f-3936-288h",
+        "modified": "2026-10-26T08:56:17.690706279Z"
+      },
+      {
+        "id": "GHSA-27h8-gf7j-v5hc",
+        "summary": "Pillow: NULL dereference in ImagingExpand via rank filters on zero-size images",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-112392",
+          "CVE-2026-112392",
+          "PYSEC-2026-4326"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-27h8-gf7j-v5hc"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-27h8-gf7j-v5hc",
+        "modified": "2026-10-27T11:10:35.409737764Z"
+      },
+      {
+        "id": "GHSA-2qm8-x737-gmw5",
+        "summary": "pyasn1 has quadratic CPU consumption in constructed BIT STRING decoding",
+        "severity": "HIGH",
+        "aliases": [
+          "CVE-2026-119196"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pyasn1",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pyasn1"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "0.6.5"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/pyasn1/pyasn1/security/advisories/GHSA-2qm8-x737-gmw5"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-2qm8-x737-gmw5",
+        "modified": "2026-10-30T23:15:04.525223875Z"
+      },
+      {
+        "id": "GHSA-332p-7hrc-92wf",
+        "summary": "Pillow: Heap buffer overflow in _tiffWriteProc when saving TIFF to BytesIO",
+        "severity": "CRITICAL",
+        "aliases": [
+          "BIT-pillow-2026-112393",
+          "CVE-2026-112393"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "2.0.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-332p-7hrc-92wf"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-332p-7hrc-92wf",
+        "modified": "2026-10-26T08:56:07.886625845Z"
+      },
+      {
+        "id": "GHSA-3fx2-cqw9-xr3c",
+        "summary": "LangGraph: Unencoded identifiers in LangGraph SDK v3 streaming can redirect authenticated GET requests",
+        "severity": "MODERATE",
+        "aliases": [
+          "CVE-2026-118667"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "langgraph-sdk",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/langgraph-sdk"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0.4.0"
+                  },
+                  {
+                    "fixed": "0.4.6"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "package": {
+              "name": "langgraph",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/langgraph"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "1.2.3"
+                  },
+                  {
+                    "fixed": "1.2.14"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/langchain-ai/langgraph/security/advisories/GHSA-3fx2-cqw9-xr3c"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-3fx2-cqw9-xr3c",
+        "modified": "2026-10-28T21:15:05.147749489Z"
+      },
+      {
+        "id": "GHSA-3j72-p6qg-6xp7",
+        "summary": "Pillow: TarIO negative size field causes infinite CPU-spin loop",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-96642",
+          "CVE-2026-96642",
+          "PYSEC-2026-4341"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-3j72-p6qg-6xp7"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-3j72-p6qg-6xp7",
+        "modified": "2026-10-29T10:55:45.826300321Z"
+      },
+      {
+        "id": "GHSA-4558-3h8r-v8xp",
+        "summary": "Pillow: P;2L and P;4L decoders may read 1 to 3 bytes past the passed buffer size",
+        "severity": "MODERATE",
+        "aliases": [
+          "BIT-pillow-2026-112394",
+          "CVE-2026-112394",
+          "PYSEC-2026-4327"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-4558-3h8r-v8xp"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-4558-3h8r-v8xp",
+        "modified": "2026-10-27T11:10:34.006455299Z"
+      },
+      {
+        "id": "GHSA-462x-pgg6-55fp",
+        "summary": "Pillow tiled-TIFF decoder reads past tile buffer in copy4 (Unpack.c:1290)",
+        "severity": "MODERATE",
+        "aliases": [
+          "BIT-pillow-2026-112395",
+          "CVE-2026-112395"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "8.2.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-462x-pgg6-55fp"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-462x-pgg6-55fp",
+        "modified": "2026-10-26T08:56:01.770928143Z"
+      },
+      {
+        "id": "GHSA-4rm8-3hmm-39fg",
+        "summary": "Pillow: Reachable undefined behavior in native integer operations, potentially leading to denial of service or logic integrity compromise",
+        "severity": "MODERATE",
+        "aliases": [
+          "BIT-pillow-2026-96641",
+          "CVE-2026-96641",
+          "PYSEC-2026-4340"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-4rm8-3hmm-39fg"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-4rm8-3hmm-39fg",
+        "modified": "2026-10-29T10:56:07.449486409Z"
+      },
+      {
+        "id": "GHSA-4rr5-89j8-mwwm",
+        "summary": "Pillow: Heap use-after-free when encoding TIFF to an in-memory buffer",
+        "severity": "MODERATE",
+        "aliases": [
+          "BIT-pillow-2026-112396",
+          "CVE-2026-112396",
+          "PYSEC-2026-4328"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "11.3.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-4rr5-89j8-mwwm"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-4rr5-89j8-mwwm",
+        "modified": "2026-10-27T11:10:49.694224501Z"
+      },
+      {
+        "id": "GHSA-58r4-6rv3-gfh8",
+        "summary": "Pillow: Out-of-bounds access in _imagingmorph on a zero-width image",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-112397",
+          "CVE-2026-112397",
+          "PYSEC-2026-4329"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-58r4-6rv3-gfh8"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-58r4-6rv3-gfh8",
+        "modified": "2026-10-28T11:10:53.627071818Z"
+      },
+      {
+        "id": "GHSA-5x8w-8jj5-q52h",
+        "summary": "Pillow: Heap buffer overflow in FlashPix (FPX) JPEG decoding leads to code execution",
+        "severity": "CRITICAL",
+        "aliases": [
+          "BIT-pillow-2026-112398",
+          "CVE-2026-112398",
+          "PYSEC-2026-4330"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-5x8w-8jj5-q52h"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-5x8w-8jj5-q52h",
+        "modified": "2026-10-28T11:10:48.833199086Z"
+      },
+      {
+        "id": "GHSA-5xm2-6676-qcp9",
+        "summary": "Pillow: APNG background disposal allocates full canvas before decompression bomb check",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-112399",
+          "CVE-2026-112399"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "8.1.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-5xm2-6676-qcp9"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-5xm2-6676-qcp9",
+        "modified": "2026-10-26T08:56:16.789537980Z"
+      },
+      {
+        "id": "GHSA-654x-cwwv-5j9c",
+        "summary": "Pillow: Arrow export leaks stale heap memory when PILLOW_ALIGNMENT > 1",
+        "severity": "MODERATE",
+        "aliases": [
+          "BIT-pillow-2026-114501",
+          "CVE-2026-114501",
+          "PYSEC-2026-4336"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "11.2.1"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-654x-cwwv-5j9c"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-654x-cwwv-5j9c",
+        "modified": "2026-10-29T10:56:00.934076155Z"
+      },
+      {
+        "id": "GHSA-65qm-jvmh-6pqg",
+        "summary": "Pillow: GIF seek keeps rejected size after DecompressionBombError, allowing DoS",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-112400",
+          "CVE-2026-112400"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "9.2.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-65qm-jvmh-6pqg"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-65qm-jvmh-6pqg",
+        "modified": "2026-10-26T08:55:49.781288748Z"
+      },
+      {
+        "id": "GHSA-6hmw-9432-67qq",
+        "summary": "LangGraph: Namespace labels containing `.` reach other namespaces in Postgres and SQLite stores",
+        "severity": "MODERATE",
+        "aliases": [
+          "CVE-2026-115883"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "langgraph-checkpoint-postgres",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/langgraph-checkpoint-postgres"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "3.1.3"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "package": {
+              "name": "langgraph-checkpoint-sqlite",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/langgraph-checkpoint-sqlite"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "3.1.2"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/langchain-ai/langgraph/security/advisories/GHSA-6hmw-9432-67qq"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-6hmw-9432-67qq",
+        "modified": "2026-10-23T22:15:03.645110544Z"
+      },
+      {
+        "id": "GHSA-6q48-6c7w-9gw2",
+        "summary": "certifi bundles emSign root CAs with compromised intermediate CA keys",
+        "severity": "CRITICAL",
+        "aliases": [
+          "PYSEC-2026-4320"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "certifi",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/certifi"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "2019.03.09"
+                  },
+                  {
+                    "fixed": "2026.10.18"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/certifi/python-certifi/security/advisories/GHSA-6q48-6c7w-9gw2"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-6q48-6c7w-9gw2",
+        "modified": "2026-10-26T16:15:35.371128995Z"
+      },
+      {
+        "id": "GHSA-6v38-4h7w-rj9h",
+        "summary": "Authlib: empty signatures validation in JWS JSON deserialization",
+        "severity": "CRITICAL",
+        "aliases": [
+          "CVE-2026-96760"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "authlib",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/authlib"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "1.9.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/authlib/authlib/security/advisories/GHSA-6v38-4h7w-rj9h"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-6v38-4h7w-rj9h",
+        "modified": "2026-10-27T15:00:05.448675412Z"
+      },
+      {
+        "id": "GHSA-74r2-7ff9-mjj2",
+        "summary": "Pillow: Quadratic GIF comment concatenation allows DoS in Image.open()",
+        "severity": "MODERATE",
+        "aliases": [
+          "BIT-pillow-2026-112401",
+          "CVE-2026-112401"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "5.4.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-74r2-7ff9-mjj2"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-74r2-7ff9-mjj2",
+        "modified": "2026-10-26T08:56:13.792431880Z"
+      },
+      {
+        "id": "GHSA-78g4-xqwv-q3g8",
+        "summary": "Pillow: Bundled libopenjp2 2.5.4 in all wheels since 11.1.0 carries OSV-2025-219 heap-buffer-overflow write reachable from Image.open().load()",
+        "severity": "HIGH",
+        "aliases": [],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "11.1.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-78g4-xqwv-q3g8"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-78g4-xqwv-q3g8",
+        "modified": "2026-10-22T17:15:04.326552524Z"
+      },
+      {
+        "id": "GHSA-7mwm-ghpf-9vrm",
+        "summary": "Pillow: Double free in ImagingScaleAffine on calloc failure via Image.transform",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-112402",
+          "CVE-2026-112402",
+          "PYSEC-2026-4331"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-7mwm-ghpf-9vrm"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-7mwm-ghpf-9vrm",
+        "modified": "2026-10-28T11:10:35.587185673Z"
+      },
+      {
+        "id": "GHSA-7vr2-2fgp-9w7p",
+        "summary": "Authlib incomplete algorithm-confusion fix permits HMAC forgery with prefixed public keys",
+        "severity": "HIGH",
+        "aliases": [
+          "CVE-2026-114615",
+          "PYSEC-2026-4355"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "authlib",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/authlib"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "1.3.1"
+                  },
+                  {
+                    "fixed": "1.9.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/authlib/authlib/security/advisories/GHSA-7vr2-2fgp-9w7p"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-7vr2-2fgp-9w7p",
+        "modified": "2026-10-30T10:10:59.284487138Z"
+      },
+      {
+        "id": "GHSA-8g5g-8vmr-9782",
+        "summary": "Pillow: Heap buffer overflow in ImagingJpegDecode",
+        "severity": "CRITICAL",
+        "aliases": [
+          "BIT-pillow-2026-112403",
+          "CVE-2026-112403",
+          "PYSEC-2026-4332"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-8g5g-8vmr-9782"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-8g5g-8vmr-9782",
+        "modified": "2026-10-28T11:10:51.788355157Z"
+      },
+      {
+        "id": "GHSA-8m4g-j4wp-wgcg",
+        "summary": "Authlib accepts an empty HMAC key, allowing JWS/JWT signature forgery (HS256/HS384/HS512)",
+        "severity": "HIGH",
+        "aliases": [
+          "CVE-2026-114616",
+          "PYSEC-2026-4356"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "authlib",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/authlib"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "1.9.1"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/authlib/authlib/security/advisories/GHSA-8m4g-j4wp-wgcg"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-8m4g-j4wp-wgcg",
+        "modified": "2026-10-30T10:10:45.009932958Z"
+      },
+      {
+        "id": "GHSA-9m75-vc3g-4x39",
+        "summary": "pyasn1 has quadratic-time denial of service in constructed string and indefinite-length ANY decoding",
+        "severity": "HIGH",
+        "aliases": [
+          "CVE-2026-119195"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pyasn1",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pyasn1"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "0.6.5"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/pyasn1/pyasn1/security/advisories/GHSA-9m75-vc3g-4x39"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-9m75-vc3g-4x39",
+        "modified": "2026-10-30T23:15:07.377922369Z"
+      },
+      {
+        "id": "GHSA-9pg5-8c7x-5hfx",
+        "summary": "joserfc: Compact JWS size guard allocates attacker-controlled segments before rejection",
+        "severity": "MODERATE",
+        "aliases": [
+          "CVE-2026-119284"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "joserfc",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/joserfc"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "1.7.6"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/authlib/joserfc/security/advisories/GHSA-9pg5-8c7x-5hfx"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-9pg5-8c7x-5hfx",
+        "modified": "2026-10-30T15:15:03.588544987Z"
+      },
+      {
+        "id": "GHSA-9v9v-9qvf-h2hj",
+        "summary": "Pillow: Heap over-read in WMF/EMF rendering via 16-bit dimension truncation (Windows builds)",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-96644",
+          "CVE-2026-96644",
+          "PYSEC-2026-4343"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-9v9v-9qvf-h2hj"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-9v9v-9qvf-h2hj",
+        "modified": "2026-10-29T10:55:35.129178084Z"
+      },
+      {
+        "id": "GHSA-c5mf-xmp2-59rc",
+        "summary": "Authlib: ID token can disable its own nonce validation via the nonce_supported claim",
+        "severity": "MODERATE",
+        "aliases": [
+          "CVE-2026-114617",
+          "PYSEC-2026-4357"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "authlib",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/authlib"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "1.9.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/authlib/authlib/security/advisories/GHSA-c5mf-xmp2-59rc"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-c5mf-xmp2-59rc",
+        "modified": "2026-10-30T10:10:57.997901819Z"
+      },
+      {
+        "id": "GHSA-c6hw-5grf-ff96",
+        "summary": "Pillow: OOB read in TiffDecode.c tile and RGBA paths leaks heap memory into pixels",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-112404",
+          "CVE-2026-112404"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "8.1.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-c6hw-5grf-ff96"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-c6hw-5grf-ff96",
+        "modified": "2026-10-26T08:55:55.669563065Z"
+      },
+      {
+        "id": "GHSA-c73q-w75p-j82v",
+        "summary": "Authlib RFC 7592 examples omit registration-access-token client binding",
+        "severity": "HIGH",
+        "aliases": [
+          "CVE-2026-116672"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "authlib",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/authlib"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0.15"
+                  },
+                  {
+                    "fixed": "1.9.1"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/authlib/authlib/security/advisories/GHSA-c73q-w75p-j82v"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-c73q-w75p-j82v",
+        "modified": "2026-10-30T23:15:08.194586957Z"
+      },
+      {
+        "id": "GHSA-cp9v-662q-vvx9",
+        "summary": "Pillow: NULL pointer dereference in Image.merge via an unvalidated band 0",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-112405",
+          "CVE-2026-112405",
+          "PYSEC-2026-4333"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "12.0.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-cp9v-662q-vvx9"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-cp9v-662q-vvx9",
+        "modified": "2026-10-28T11:10:36.014536437Z"
+      },
+      {
+        "id": "GHSA-f2g6-542v-9j58",
+        "summary": "Pillow: Infinite loop in PdfParser.rewrite_pages on page tree Parent cycle",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-112406",
+          "CVE-2026-112406"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "5.1.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-f2g6-542v-9j58"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-f2g6-542v-9j58",
+        "modified": "2026-10-26T08:56:13.538142549Z"
+      },
+      {
+        "id": "GHSA-fc9g-5qg7-mf45",
+        "summary": "Pillow: Quadratic GIF comment copying during save",
+        "severity": "MODERATE",
+        "aliases": [
+          "BIT-pillow-2026-112891",
+          "CVE-2026-112891"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "9.2.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-fc9g-5qg7-mf45"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-fc9g-5qg7-mf45",
+        "modified": "2026-10-26T08:56:06.483214483Z"
+      },
+      {
+        "id": "GHSA-fch4-3c6x-j4gc",
+        "summary": "Authlib: Default JWT bearer grant accepts assertions for the wrong audience",
+        "severity": "MODERATE",
+        "aliases": [
+          "CVE-2026-114618",
+          "PYSEC-2026-4358"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "authlib",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/authlib"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "1.9.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/authlib/authlib/security/advisories/GHSA-fch4-3c6x-j4gc"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-fch4-3c6x-j4gc",
+        "modified": "2026-10-30T10:11:00.829781321Z"
+      },
+      {
+        "id": "GHSA-fm9c-5rcf-2q5p",
+        "summary": "pyasn1 has quadratic CPU use in schemaless BER/CER/DER container decoding",
+        "severity": "HIGH",
+        "aliases": [
+          "CVE-2026-119194"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pyasn1",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pyasn1"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0.3.3"
+                  },
+                  {
+                    "fixed": "0.6.5"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/pyasn1/pyasn1/security/advisories/GHSA-fm9c-5rcf-2q5p"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-fm9c-5rcf-2q5p",
+        "modified": "2026-10-30T23:15:06.423863231Z"
+      },
+      {
+        "id": "GHSA-g4qv-2jxx-769h",
+        "summary": "Pillow: PNG eXIf chunk makes EXIF parsing run in quadratic time",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-96643",
+          "CVE-2026-96643",
+          "PYSEC-2026-4342"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "11.0.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-g4qv-2jxx-769h"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-g4qv-2jxx-769h",
+        "modified": "2026-10-29T10:55:44.091799759Z"
+      },
+      {
+        "id": "GHSA-g7cr-3p24-7wf7",
+        "summary": "Pillow: Heap buffer overflow writing JPEG comment after ICC profile fills buffer",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-96778",
+          "CVE-2026-96778"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "9.4.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-g7cr-3p24-7wf7"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-g7cr-3p24-7wf7",
+        "modified": "2026-10-29T10:56:05.933422167Z"
+      },
+      {
+        "id": "GHSA-g842-9rc4-69pw",
+        "summary": "Pillow: Decompression bomb check bypass in SpiderImagePlugin.seek() leads to unbounded allocation DoS",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-96637",
+          "CVE-2026-96637",
+          "PYSEC-2026-4338"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-g842-9rc4-69pw"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-g842-9rc4-69pw",
+        "modified": "2026-10-29T10:55:56.102454725Z"
+      },
+      {
+        "id": "GHSA-gg2r-wvfm-q9rx",
+        "summary": "Pillow: MSP RLE decoder expands a tiny file into unbounded memory",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-112892",
+          "CVE-2026-112892"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "4.1.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-gg2r-wvfm-q9rx"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-gg2r-wvfm-q9rx",
+        "modified": "2026-10-26T08:55:54.537605973Z"
+      },
+      {
+        "id": "GHSA-j4m9-6w36-pw47",
+        "summary": "Pillow: Invalid free in FreeType glyph rendering when a stroker is active",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-112893",
+          "CVE-2026-112893"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "10.0.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-j4m9-6w36-pw47"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-j4m9-6w36-pw47",
+        "modified": "2026-10-26T08:55:43.891551666Z"
+      },
+      {
+        "id": "GHSA-jg86-v3jv-hrpm",
+        "summary": "Pillow: Quadratic-time DoS in PDF save_all (PdfParser.next_object_id)",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-112894",
+          "CVE-2026-112894"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "5.1.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-jg86-v3jv-hrpm"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-jg86-v3jv-hrpm",
+        "modified": "2026-10-26T08:56:08.669907131Z"
+      },
+      {
+        "id": "GHSA-mm57-4v3p-rchx",
+        "summary": "pyasn1 has quadratic-complexity denial of service in binary REAL decoding",
+        "severity": "HIGH",
+        "aliases": [
+          "CVE-2026-119197"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pyasn1",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pyasn1"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "0.6.5"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/pyasn1/pyasn1/security/advisories/GHSA-mm57-4v3p-rchx"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-mm57-4v3p-rchx",
+        "modified": "2026-10-30T23:15:06.620587810Z"
+      },
+      {
+        "id": "GHSA-mrfp-p49p-3hf2",
+        "summary": "Pillow PDF append accepts malformed shared page-tree DAG causing resource exhaustion",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-96640",
+          "CVE-2026-96640"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "5.1.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-mrfp-p49p-3hf2"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-mrfp-p49p-3hf2",
+        "modified": "2026-10-29T10:55:39.916451864Z"
+      },
+      {
+        "id": "GHSA-p4wg-p73j-c528",
+        "summary": "Pillow: Unbounded recursion parsing a PDF page tree or trailer chain (incomplete fix for CVE-2026-42310)",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-112895",
+          "CVE-2026-112895"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "5.1.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-p4wg-p73j-c528"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-p4wg-p73j-c528",
+        "modified": "2026-10-26T08:55:38.434240536Z"
+      },
+      {
+        "id": "GHSA-p8hx-v2p6-rp84",
+        "summary": "Pillow: Decompression-bomb protection bypass via multi-frame seek() in MPO and DCX (MpoImageFile.seek / DcxImageFile.seek)",
+        "severity": "MODERATE",
+        "aliases": [
+          "BIT-pillow-2026-96636",
+          "CVE-2026-96636",
+          "PYSEC-2026-4337"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-p8hx-v2p6-rp84"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-p8hx-v2p6-rp84",
+        "modified": "2026-10-29T10:55:49.521326948Z"
+      },
+      {
+        "id": "GHSA-pchr-8j38-3x4p",
+        "summary": "Pillow: TIFF encoder ColorMap plane-size mismatch causes a heap out-of-bounds read",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-112896",
+          "CVE-2026-112896",
+          "PYSEC-2026-4334"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-pchr-8j38-3x4p"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-pchr-8j38-3x4p",
+        "modified": "2026-10-28T11:10:41.233140457Z"
+      },
+      {
+        "id": "GHSA-q45j-58j2-45rg",
+        "summary": "Pillow: TiffDecode returns uninitialized memory as pixels for short JPEG strips",
+        "severity": "HIGH",
+        "aliases": [
+          "BIT-pillow-2026-112897",
+          "CVE-2026-112897"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "5.3.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-q45j-58j2-45rg"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-q45j-58j2-45rg",
+        "modified": "2026-10-26T08:56:08.265781051Z"
+      },
+      {
+        "id": "GHSA-q686-2qmg-hqc7",
+        "summary": "Authlib: OpenID implicit grant checks raw scope instead of allowed scope before issuing ID tokens",
+        "severity": "MODERATE",
+        "aliases": [
+          "CVE-2026-114619",
+          "PYSEC-2026-4359"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "authlib",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/authlib"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "1.9.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/authlib/authlib/security/advisories/GHSA-q686-2qmg-hqc7"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-q686-2qmg-hqc7",
+        "modified": "2026-10-30T10:10:43.207176790Z"
+      },
+      {
+        "id": "GHSA-rfgq-q3w2-pmv2",
+        "summary": "Pillow: Image.quantize() with empty palette leaks uninitialized stack memory",
+        "severity": "MODERATE",
+        "aliases": [
+          "BIT-pillow-2026-112898",
+          "CVE-2026-112898"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "9.1.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-rfgq-q3w2-pmv2"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-rfgq-q3w2-pmv2",
+        "modified": "2026-10-26T08:55:50.383984569Z"
+      },
+      {
+        "id": "GHSA-v9pv-5gc8-w2m6",
+        "summary": "Pillow multi-frame loaders can reuse stale native image storage after mode transitions",
+        "severity": "CRITICAL",
+        "aliases": [
+          "BIT-pillow-2026-96639",
+          "CVE-2026-96639",
+          "PYSEC-2026-4339"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "11.0.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-v9pv-5gc8-w2m6"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-v9pv-5gc8-w2m6",
+        "modified": "2026-10-29T10:55:37.663049285Z"
+      },
+      {
+        "id": "GHSA-vx6w-vv9f-6gvg",
+        "summary": "Pillow: EPS load(scale) lets Ghostscript render past the decompression bomb limit",
+        "severity": "MODERATE",
+        "aliases": [
+          "CVE-2026-112899"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "2.3.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-vx6w-vv9f-6gvg"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-vx6w-vv9f-6gvg",
+        "modified": "2026-10-20T21:00:04.428653055Z"
+      },
+      {
+        "id": "GHSA-w889-685w-c8fh",
+        "summary": "Pillow: Argument Injection in Ghostscript call, potentially leading into RCE",
+        "severity": "CRITICAL",
+        "aliases": [
+          "BIT-pillow-2026-112900",
+          "CVE-2026-112900"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "2.6.0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-w889-685w-c8fh"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-w889-685w-c8fh",
+        "modified": "2026-10-26T08:55:37.091976147Z"
+      },
+      {
+        "id": "GHSA-x4rv-c3wx-4cr8",
+        "summary": "Authlib: Unvalidated request_uri fetch in JWT-secured authorization request (JAR) leading to SSRF",
+        "severity": "MODERATE",
+        "aliases": [
+          "CVE-2026-114620",
+          "PYSEC-2026-4360"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "authlib",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/authlib"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "1.6.0"
+                  },
+                  {
+                    "fixed": "1.9.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/authlib/authlib/security/advisories/GHSA-x4rv-c3wx-4cr8"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-x4rv-c3wx-4cr8",
+        "modified": "2026-10-30T10:10:50.503885942Z"
+      },
+      {
+        "id": "GHSA-xcq7-p3pf-p88h",
+        "summary": "OpenTelemetry Python: Unbounded tracestate parsing in opentelemetry-api",
+        "severity": "MODERATE",
+        "aliases": [
+          "CVE-2026-114603"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "opentelemetry-api",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/opentelemetry-api"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "1.45.1"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/open-telemetry/opentelemetry-python/security/advisories/GHSA-xcq7-p3pf-p88h"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-xcq7-p3pf-p88h",
+        "modified": "2026-10-22T16:30:40.999595074Z"
+      },
+      {
+        "id": "GHSA-xgh8-jp6q-p5x8",
+        "summary": "Pillow: ReDoS in XbmImagePlugin: 512-byte file stalls Image.open() for minutes",
+        "severity": "MODERATE",
+        "aliases": [
+          "BIT-pillow-2026-112901",
+          "CVE-2026-112901",
+          "PYSEC-2026-4335"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-xgh8-jp6q-p5x8"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-xgh8-jp6q-p5x8",
+        "modified": "2026-10-28T11:10:55.647541842Z"
+      },
+      {
+        "id": "GHSA-xvh5-g6gv-559v",
+        "summary": " Pillow: Memory disclosure and segfault in libtiff encoder via crafted TIFF tags",
+        "severity": "HIGH",
+        "aliases": [
+          "CVE-2026-112902"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "pillow",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/pillow"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "13.0.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/python-pillow/Pillow/security/advisories/GHSA-xvh5-g6gv-559v"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-xvh5-g6gv-559v",
+        "modified": "2026-10-21T21:45:08.352742595Z"
+      }
+    ],
+    "query_errors": {},
+    "raw_batch_sha256": "4f78748c83febc61548be36a42a9297b9ed13af5616e6d0760c76bf142232432",
+    "raw_report_private_path": "/private/tmp/anvil-production-advisory-b8757b139d4e45209c4cb650aaffd667/backend-osv-report.json"
+  },
+  "bounded_source_observations": [
+    {
+      "advisory": "GHSA-2464-fhr4-w9xw",
+      "observation": "Upstream workaround is sharp>=0.35.5; reviewed lock already sharp0.35.5. Version-level Next flag remains; no runtime exploitability/image validation performed.",
+      "primary_url": "https://github.com/vercel/next.js/security/advisories/GHSA-2464-fhr4-w9xw"
+    },
+    {
+      "advisory": "GHSA-673q-mjm6-r5xr",
+      "observation": "Upstream condition is Cache Components/use-cache functions returning typed arrays. No use-cache/cacheComponents/useCache source/config matches observed; this is not proof of nonreachability. Upstream recommends upgrade even without such functions.",
+      "primary_url": "https://github.com/vercel/next.js/security/advisories/GHSA-673q-mjm6-r5xr"
+    },
+    {
+      "component": "Authlib",
+      "observation": "Auth callback explicitly uses compact JsonWebToken RS256 allowlist, mandatory issuer/audience/expiry/subject/nonce and an independent nonce comparison; no direct JWS JSON call observed. This does not clear all Authlib advisories."
+    },
+    {
+      "component": "LangGraph",
+      "observation": "Worker uses PostgresSaver and JsonPlusSerializer(pickle_fallback=False). This does not establish that the reported Store namespace/SDK issues are unreachable or fixed."
+    }
+  ],
+  "tooling_deviation": {
+    "description": "Existing pnpm entry point is a Corepack shim. Fresh COREPACK_HOME unexpectedly fetched the same pnpm10.34.5 tool archive into the private cache; this exceeded the no-new-installs/tool-download intent. No application dependencies were installed and no global state/source/locks changed; root was informed and no further Corepack invocation occurred.",
+    "private_cache": "/private/tmp/anvil-production-advisory-b8757b139d4e45209c4cb650aaffd667/cache/corepack",
+    "stderr_sha256": "3cb9bd5c7d18e6e62b92229f5044e11f6575ecd5f608b3f62a4a281610abdb08"
+  },
+  "limitations": [
+    "Advisory database matches are package-version findings, not proven runtime exploits.",
+    "Aliases and multiple-package advisories overlap; counts are not distinct CVE/exploit counts.",
+    "Source observations are bounded and not a complete reachability audit.",
+    "No OS/base-image/SBOM/container scanning, exploit probes, cloud API enabling, image pulls, model calls or credential access.",
+    "No compatibility verification or dependency upgrade was performed by this check."
+  ],
+  "backend_query_started_at": "2026-11-09T02:50:31.865953+00:00",
+  "report_finalized_at": "2026-11-09T02:59:47.414089+00:00",
+  "harbor": {
+    "method": "OSV publicbatch query for all91 exactPyPIrequirements plusfullquery foronly flaggedpackage",
+    "started_at": "2026-11-09T02:56:57.837101+00:00",
+    "source_requirements_lock_sha256": "612ab41777d8eb6ec2dee6c3390705130e55d9d1a216c79df34a1597c6156ec3",
+    "sdk_version": "0.25.0",
+    "sdk_version_changed": false,
+    "queried_package_count": 91,
+    "queried_packages": [
+      {
+        "name": "aiohappyeyeballs",
+        "version": "2.7.1"
+      },
+      {
+        "name": "aiohttp",
+        "version": "3.14.5"
+      },
+      {
+        "name": "aiosignal",
+        "version": "1.4.0"
+      },
+      {
+        "name": "annotated-doc",
+        "version": "0.0.5"
+      },
+      {
+        "name": "annotated-types",
+        "version": "0.8.0"
+      },
+      {
+        "name": "anyio",
+        "version": "4.15.1"
+      },
+      {
+        "name": "attrs",
+        "version": "26.1.0"
+      },
+      {
+        "name": "boto3",
+        "version": "1.43.123"
+      },
+      {
+        "name": "botocore",
+        "version": "1.43.123"
+      },
+      {
+        "name": "certifi",
+        "version": "2026.10.23"
+      },
+      {
+        "name": "cffi",
+        "version": "2.1.1"
+      },
+      {
+        "name": "charset-normalizer",
+        "version": "3.5.2"
+      },
+      {
+        "name": "click",
+        "version": "8.5.0"
+      },
+      {
+        "name": "cryptography",
+        "version": "50.0.2"
+      },
+      {
+        "name": "deprecation",
+        "version": "2.1.0"
+      },
+      {
+        "name": "dirhash",
+        "version": "0.5.0"
+      },
+      {
+        "name": "distro",
+        "version": "1.9.0"
+      },
+      {
+        "name": "fastapi",
+        "version": "0.162.0"
+      },
+      {
+        "name": "fastuuid",
+        "version": "0.14.0"
+      },
+      {
+        "name": "filelock",
+        "version": "3.32.7"
+      },
+      {
+        "name": "frozenlist",
+        "version": "1.8.0"
+      },
+      {
+        "name": "fsspec",
+        "version": "2026.9.0"
+      },
+      {
+        "name": "h11",
+        "version": "0.16.0"
+      },
+      {
+        "name": "h2",
+        "version": "4.4.1"
+      },
+      {
+        "name": "harbor",
+        "version": "0.25.0"
+      },
+      {
+        "name": "hf-xet",
+        "version": "1.8.0"
+      },
+      {
+        "name": "hpack",
+        "version": "4.2.0"
+      },
+      {
+        "name": "httpcore",
+        "version": "1.0.9"
+      },
+      {
+        "name": "httpx",
+        "version": "0.28.1"
+      },
+      {
+        "name": "huggingface-hub",
+        "version": "1.33.0"
+      },
+      {
+        "name": "hyperframe",
+        "version": "6.1.0"
+      },
+      {
+        "name": "idna",
+        "version": "3.20"
+      },
+      {
+        "name": "importlib-metadata",
+        "version": "8.9.0"
+      },
+      {
+        "name": "jinja2",
+        "version": "3.1.6"
+      },
+      {
+        "name": "jiter",
+        "version": "0.18.0"
+      },
+      {
+        "name": "jmespath",
+        "version": "1.1.0"
+      },
+      {
+        "name": "jsonschema",
+        "version": "4.26.0"
+      },
+      {
+        "name": "jsonschema-specifications",
+        "version": "2025.9.1"
+      },
+      {
+        "name": "litellm",
+        "version": "1.106.6"
+      },
+      {
+        "name": "markdown-it-py",
+        "version": "4.2.0"
+      },
+      {
+        "name": "markupsafe",
+        "version": "3.0.4"
+      },
+      {
+        "name": "mdurl",
+        "version": "0.1.2"
+      },
+      {
+        "name": "multidict",
+        "version": "7.2.1"
+      },
+      {
+        "name": "openai",
+        "version": "2.54.0"
+      },
+      {
+        "name": "opentelemetry-api",
+        "version": "1.45.2"
+      },
+      {
+        "name": "packaging",
+        "version": "26.3"
+      },
+      {
+        "name": "pathspec",
+        "version": "1.1.1"
+      },
+      {
+        "name": "platformdirs",
+        "version": "4.14.0"
+      },
+      {
+        "name": "postgrest",
+        "version": "2.33.0"
+      },
+      {
+        "name": "propcache",
+        "version": "0.5.4"
+      },
+      {
+        "name": "pycparser",
+        "version": "3.12"
+      },
+      {
+        "name": "pydantic",
+        "version": "2.14.2"
+      },
+      {
+        "name": "pydantic-core",
+        "version": "2.50.2"
+      },
+      {
+        "name": "pydantic-settings",
+        "version": "2.16.2"
+      },
+      {
+        "name": "pygments",
+        "version": "2.21.0"
+      },
+      {
+        "name": "pyjwt",
+        "version": "2.15.1"
+      },
+      {
+        "name": "python-dateutil",
+        "version": "2.9.0.post0"
+      },
+      {
+        "name": "python-dotenv",
+        "version": "1.2.4"
+      },
+      {
+        "name": "pyyaml",
+        "version": "6.0.3"
+      },
+      {
+        "name": "realtime",
+        "version": "2.33.0"
+      },
+      {
+        "name": "referencing",
+        "version": "0.37.0"
+      },
+      {
+        "name": "regex",
+        "version": "2026.9.29"
+      },
+      {
+        "name": "requests",
+        "version": "2.34.2"
+      },
+      {
+        "name": "rich",
+        "version": "15.0.0"
+      },
+      {
+        "name": "rpds-py",
+        "version": "2026.9.1"
+      },
+      {
+        "name": "s3transfer",
+        "version": "0.19.3"
+      },
+      {
+        "name": "scantree",
+        "version": "0.0.4"
+      },
+      {
+        "name": "semver",
+        "version": "3.1.0"
+      },
+      {
+        "name": "shellingham",
+        "version": "1.5.4"
+      },
+      {
+        "name": "shortuuid",
+        "version": "1.0.13"
+      },
+      {
+        "name": "six",
+        "version": "1.17.0"
+      },
+      {
+        "name": "sniffio",
+        "version": "1.3.1"
+      },
+      {
+        "name": "starlette",
+        "version": "1.10.0"
+      },
+      {
+        "name": "storage3",
+        "version": "2.33.0"
+      },
+      {
+        "name": "strenum",
+        "version": "0.4.15"
+      },
+      {
+        "name": "supabase",
+        "version": "2.33.0"
+      },
+      {
+        "name": "supabase-auth",
+        "version": "2.33.0"
+      },
+      {
+        "name": "supabase-functions",
+        "version": "2.33.0"
+      },
+      {
+        "name": "tenacity",
+        "version": "9.2.1"
+      },
+      {
+        "name": "tiktoken",
+        "version": "0.14.0"
+      },
+      {
+        "name": "tokenizers",
+        "version": "0.23.3"
+      },
+      {
+        "name": "toml",
+        "version": "0.10.2"
+      },
+      {
+        "name": "tqdm",
+        "version": "4.70.1"
+      },
+      {
+        "name": "typer",
+        "version": "0.27.3"
+      },
+      {
+        "name": "typing-extensions",
+        "version": "4.16.0"
+      },
+      {
+        "name": "typing-inspection",
+        "version": "0.4.4"
+      },
+      {
+        "name": "urllib3",
+        "version": "2.8.0"
+      },
+      {
+        "name": "uvicorn",
+        "version": "0.54.0"
+      },
+      {
+        "name": "websockets",
+        "version": "15.0.1"
+      },
+      {
+        "name": "yarl",
+        "version": "1.25.1"
+      },
+      {
+        "name": "zipp",
+        "version": "4.1.2"
+      }
+    ],
+    "affected_packages": [
+      {
+        "package": "filelock",
+        "version": "3.32.7",
+        "advisories": [
+          {
+            "id": "GHSA-567q-5qvw-pf92",
+            "modified": "2026-10-23T22:45:03.452878Z"
+          },
+          {
+            "id": "GHSA-6627-m3xw-93mp",
+            "modified": "2026-10-28T21:15:05.690884Z"
+          },
+          {
+            "id": "GHSA-69hj-f68j-2879",
+            "modified": "2026-10-28T21:15:04.974667Z"
+          },
+          {
+            "id": "GHSA-8mx5-7m5m-r77g",
+            "modified": "2026-10-28T21:15:05.688436Z"
+          },
+          {
+            "id": "GHSA-9c4x-gm8v-wgc4",
+            "modified": "2026-10-28T21:15:05.681708Z"
+          },
+          {
+            "id": "GHSA-9j6q-wvj5-jgjg",
+            "modified": "2026-10-28T21:15:05.577927Z"
+          },
+          {
+            "id": "GHSA-9vhv-jxww-xfm5",
+            "modified": "2026-10-23T22:45:03.439584Z"
+          },
+          {
+            "id": "GHSA-cwqr-hh33-gh44",
+            "modified": "2026-10-28T21:15:04.923553Z"
+          },
+          {
+            "id": "GHSA-fq56-3cx3-fjxp",
+            "modified": "2026-10-28T21:15:04.933315Z"
+          },
+          {
+            "id": "GHSA-j8f7-rjxc-mr56",
+            "modified": "2026-10-28T21:15:04.169983Z"
+          },
+          {
+            "id": "GHSA-m462-7rxw-wvpg",
+            "modified": "2026-10-28T21:15:04.165555Z"
+          },
+          {
+            "id": "GHSA-rfpc-qcw5-3pc4",
+            "modified": "2026-10-28T21:15:05.584943Z"
+          },
+          {
+            "id": "GHSA-v4x8-3wr5-3wq8",
+            "modified": "2026-10-23T22:15:04.432475Z"
+          }
+        ]
+      }
+    ],
+    "unique_github_advisory_count": 13,
+    "severity_counts": {
+      "LOW": 3,
+      "MODERATE": 9,
+      "HIGH": 1
+    },
+    "advisories": [
+      {
+        "id": "GHSA-567q-5qvw-pf92",
+        "summary": "filelock: On Windows an oplock on a soft lock's marker holds SoftFileLock.acquire() past its timeout and blocks the stale break",
+        "severity": "LOW",
+        "aliases": [
+          "CVE-2026-112907"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "filelock",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/filelock"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "3.22.0"
+                  },
+                  {
+                    "fixed": "4.2.1"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/tox-dev/filelock/security/advisories/GHSA-567q-5qvw-pf92"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-567q-5qvw-pf92",
+        "modified": "2026-10-23T22:45:03.452878321Z"
+      },
+      {
+        "id": "GHSA-6627-m3xw-93mp",
+        "summary": "filelock: StrictSoftFileLock creates its claim directories without the lock mode, so another local user with a write bit on them can end a live hold",
+        "severity": "MODERATE",
+        "aliases": [
+          "CVE-2026-112908"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "filelock",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/filelock"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "3.30.0"
+                  },
+                  {
+                    "fixed": "4.2.1"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/tox-dev/filelock/security/advisories/GHSA-6627-m3xw-93mp"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-6627-m3xw-93mp",
+        "modified": "2026-10-28T21:15:05.690884904Z"
+      },
+      {
+        "id": "GHSA-69hj-f68j-2879",
+        "summary": "filelock: UnixFileLock truncates and chmods any regular file another user renames or hard-links onto the lock path",
+        "severity": "MODERATE",
+        "aliases": [
+          "CVE-2026-112909"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "filelock",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/filelock"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "4.2.1"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/tox-dev/filelock/security/advisories/GHSA-69hj-f68j-2879"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-69hj-f68j-2879",
+        "modified": "2026-10-28T21:15:04.974667790Z"
+      },
+      {
+        "id": "GHSA-8mx5-7m5m-r77g",
+        "summary": "filelock: WindowsFileLock ignores mode: a 0o600 lock file and the ReadWriteLock database inherit the directory ACL",
+        "severity": "MODERATE",
+        "aliases": [
+          "CVE-2026-112910"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "filelock",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/filelock"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "3.10.0"
+                  },
+                  {
+                    "fixed": "4.2.1"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/tox-dev/filelock/security/advisories/GHSA-8mx5-7m5m-r77g"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-8mx5-7m5m-r77g",
+        "modified": "2026-10-28T21:15:05.688436299Z"
+      },
+      {
+        "id": "GHSA-9c4x-gm8v-wgc4",
+        "summary": "filelock: StrictSoftFileLock and SoftReadWriteLock adopt a protocol directory another user created first, losing mutual exclusion",
+        "severity": "MODERATE",
+        "aliases": [
+          "CVE-2026-112911"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "filelock",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/filelock"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "3.30.0"
+                  },
+                  {
+                    "fixed": "4.2.1"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/tox-dev/filelock/security/advisories/GHSA-9c4x-gm8v-wgc4"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-9c4x-gm8v-wgc4",
+        "modified": "2026-10-28T21:15:05.681708010Z"
+      },
+      {
+        "id": "GHSA-9j6q-wvj5-jgjg",
+        "summary": "filelock: Symlink swap during SoftFileLock's writability check leaks whether a path exists and is writable by the lock taker",
+        "severity": "LOW",
+        "aliases": [
+          "CVE-2026-112912"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "filelock",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/filelock"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "3.32.6"
+                  },
+                  {
+                    "fixed": "4.2.1"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/tox-dev/filelock/security/advisories/GHSA-9j6q-wvj5-jgjg"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-9j6q-wvj5-jgjg",
+        "modified": "2026-10-28T21:15:05.577927941Z"
+      },
+      {
+        "id": "GHSA-9vhv-jxww-xfm5",
+        "summary": "filelock: ReadWriteLock on Windows acts on SQLite side files another local user places beside its database",
+        "severity": "LOW",
+        "aliases": [
+          "CVE-2026-112913"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "filelock",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/filelock"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "3.20.4"
+                  },
+                  {
+                    "fixed": "4.2.1"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/tox-dev/filelock/security/advisories/GHSA-9vhv-jxww-xfm5"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-9vhv-jxww-xfm5",
+        "modified": "2026-10-23T22:45:03.439584635Z"
+      },
+      {
+        "id": "GHSA-cwqr-hh33-gh44",
+        "summary": "filelock ReadWriteLock: a crafted lock database makes every acquire stall or hang regardless of timeout",
+        "severity": "MODERATE",
+        "aliases": [
+          "CVE-2026-112915"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "filelock",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/filelock"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "3.20.4"
+                  },
+                  {
+                    "fixed": "4.2.1"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/tox-dev/filelock/security/advisories/GHSA-cwqr-hh33-gh44"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-cwqr-hh33-gh44",
+        "modified": "2026-10-28T21:15:04.923553251Z"
+      },
+      {
+        "id": "GHSA-fq56-3cx3-fjxp",
+        "summary": "filelock: SoftFileLock stale-lock break removes a live lock file on a reused inode number and admits two holders",
+        "severity": "MODERATE",
+        "aliases": [
+          "CVE-2026-112935"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "filelock",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/filelock"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "3.22.0"
+                  },
+                  {
+                    "fixed": "4.2.1"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/tox-dev/filelock/security/advisories/GHSA-fq56-3cx3-fjxp"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-fq56-3cx3-fjxp",
+        "modified": "2026-10-28T21:15:04.933315565Z"
+      },
+      {
+        "id": "GHSA-j8f7-rjxc-mr56",
+        "summary": "filelock: ReadWriteLock follows a symlink at the lock path into SQLite",
+        "severity": "MODERATE",
+        "aliases": [
+          "CVE-2026-112936"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "filelock",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/filelock"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "3.20.4"
+                  },
+                  {
+                    "fixed": "4.0.9"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/tox-dev/filelock/security/advisories/GHSA-j8f7-rjxc-mr56"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-j8f7-rjxc-mr56",
+        "modified": "2026-10-28T21:15:04.169983430Z"
+      },
+      {
+        "id": "GHSA-m462-7rxw-wvpg",
+        "summary": "filelock: StrictSoftFileLock follows a symbolic link swapped in at <path>.filelock and creates claim files in a directory another local user chooses",
+        "severity": "MODERATE",
+        "aliases": [
+          "CVE-2026-112938"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "filelock",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/filelock"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "3.30.0"
+                  },
+                  {
+                    "fixed": "4.2.1"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/tox-dev/filelock/security/advisories/GHSA-m462-7rxw-wvpg"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-m462-7rxw-wvpg",
+        "modified": "2026-10-28T21:15:04.165555871Z"
+      },
+      {
+        "id": "GHSA-rfpc-qcw5-3pc4",
+        "summary": "filelock: SoftFileLock removes a live holder's marker when another user forges the PID in a writable marker",
+        "severity": "MODERATE",
+        "aliases": [
+          "CVE-2026-112939"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "filelock",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/filelock"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "3.22.0"
+                  },
+                  {
+                    "fixed": "4.2.1"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/tox-dev/filelock/security/advisories/GHSA-rfpc-qcw5-3pc4"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-rfpc-qcw5-3pc4",
+        "modified": "2026-10-28T21:15:05.584943666Z"
+      },
+      {
+        "id": "GHSA-v4x8-3wr5-3wq8",
+        "summary": "filelock ReadWriteLock: SQLite reopens the lock database by name, so a planted symlink or journal file makes the lock user's process overwrite or unlink its own files",
+        "severity": "HIGH",
+        "aliases": [
+          "CVE-2026-112940"
+        ],
+        "affected": [
+          {
+            "package": {
+              "name": "filelock",
+              "ecosystem": "PyPI",
+              "purl": "pkg:pypi/filelock"
+            },
+            "ranges": [
+              {
+                "type": "ECOSYSTEM",
+                "events": [
+                  {
+                    "introduced": "3.20.4"
+                  },
+                  {
+                    "fixed": "4.2.1"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "primary_upstream_urls": [
+          "https://github.com/tox-dev/filelock/security/advisories/GHSA-v4x8-3wr5-3wq8"
+        ],
+        "osv_url": "https://osv.dev/vulnerability/GHSA-v4x8-3wr5-3wq8",
+        "modified": "2026-10-23T22:15:04.432475030Z"
+      }
+    ],
+    "query_errors": {},
+    "raw_batch_sha256": "3d55d16904af3c0b590fb0f7e99544efbd6b679b63713fde28346da83b6af342",
+    "raw_report_private_path": "/private/tmp/anvil-production-advisory-b8757b139d4e45209c4cb650aaffd667/harbor-osv-report.json",
+    "minimal_reported_fixed_threshold_for_filelock": "4.2.1",
+    "fixed_release_metadata": {
+      "url": "https://pypi.org/pypi/filelock/4.2.1/json",
+      "version": "4.2.1",
+      "requires_python": ">=3.11",
+      "yanked_artifacts": [],
+      "public_metadata_sha256": "c0a0ea061f08d1df3e13384767e0eae13599f9e20ed4e72232b7f17a70550804"
+    },
+    "existing_installed_metadata_constraints": {
+      "harbor0.25.0": "filelock>=3.29.4",
+      "huggingface-hub1.33.0": "filelock>=3.10.0"
+    },
+    "compatibility_status": "Declaredconstraints permit4.2.1 and its Python>=3.11 permits3.12; runtime compatibility/updatedlock/native evidence NOTtestedbythischeck.",
+    "reachability_limit": "Somefilelockrecords are Windows-specific; otherlocalfilesystem/lockpathconditions may be mitigated by private0700operatorroots. No complete transitivecaller/lockpathreview; notclassifiedunreachable.",
+    "lock_changes_performed": false
+  },
+  "backend_vs_harbor_flagged_pin_comparison": [
+    {
+      "package": "authlib",
+      "backend_locked": "1.8.0",
+      "harbor_locked": null,
+      "harbor_flagged_by_this_query": false,
+      "note": "not in separateHarborlock"
+    },
+    {
+      "package": "certifi",
+      "backend_locked": "2026.7.22",
+      "harbor_locked": "2026.10.23",
+      "harbor_flagged_by_this_query": false,
+      "note": "different locked version; assess separately"
+    },
+    {
+      "package": "joserfc",
+      "backend_locked": "1.7.5",
+      "harbor_locked": null,
+      "harbor_flagged_by_this_query": false,
+      "note": "not in separateHarborlock"
+    },
+    {
+      "package": "langgraph",
+      "backend_locked": "1.2.12",
+      "harbor_locked": null,
+      "harbor_flagged_by_this_query": false,
+      "note": "not in separateHarborlock"
+    },
+    {
+      "package": "langgraph-checkpoint-postgres",
+      "backend_locked": "3.1.2",
+      "harbor_locked": null,
+      "harbor_flagged_by_this_query": false,
+      "note": "not in separateHarborlock"
+    },
+    {
+      "package": "langgraph-sdk",
+      "backend_locked": "0.4.5",
+      "harbor_locked": null,
+      "harbor_flagged_by_this_query": false,
+      "note": "not in separateHarborlock"
+    },
+    {
+      "package": "opentelemetry-api",
+      "backend_locked": "1.45.0",
+      "harbor_locked": "1.45.2",
+      "harbor_flagged_by_this_query": false,
+      "note": "different locked version; assess separately"
+    },
+    {
+      "package": "pillow",
+      "backend_locked": "12.3.0",
+      "harbor_locked": null,
+      "harbor_flagged_by_this_query": false,
+      "note": "not in separateHarborlock"
+    },
+    {
+      "package": "pyasn1",
+      "backend_locked": "0.6.4",
+      "harbor_locked": null,
+      "harbor_flagged_by_this_query": false,
+      "note": "not in separateHarborlock"
+    }
+  ]
+}

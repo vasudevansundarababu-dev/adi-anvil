@@ -1,0 +1,30 @@
+{
+  "task": "T04A actor-only deterministic compiler and regular output sealing",
+  "observed_at": "2026-11-07T20:10:49.626249+00:00",
+  "parent_checkpoint": "cb29dbcf1241c6564985630091298c5e47a27576",
+  "tests": {
+    "new_compiler_seal_checks": 17,
+    "combined_focused_backend_passed": 217,
+    "failed": 0,
+    "skipped": 0
+  },
+  "tooling": {
+    "harbor": "0.25.0 installed from independently pinned services/harbor/requirements.lock in .local/harbor-venv, official PyPI",
+    "docker": "29.9.3 dedicated vfs daemon only; Compose5.7.0",
+    "native_preflight": "actual approved base uid10001, read-only, no-network other than loopback, no host mount/socket/key/DB env; stopped probe container retained, not removed"
+  },
+  "compatibility": [
+    "no legacy compiler/package/import format or limit changes",
+    "archive optional sink stages only inert actor bytes in owner-only unpublished temp dirs; normal receipt path unchanged",
+    "source still fully revalidated and exact archive/canonical/signature rebound before atomic ZIP publication",
+    "private eval/code/fixtures/canaries/other tasks absent from generated ZIP; imported code not executed",
+    "output file descriptor traversal denies links/devices/nonregular/oversize/changed files; owned atomic read-only seals carry hashes and explicit absence"
+  ],
+  "not_run": [
+    "nine native Harbor fixture trials",
+    "full G1-G5 native isolation/resource checks",
+    "DB/API build and qualification pipeline",
+    "QA/full acceptance/Bodhium/provider calls/deployment"
+  ],
+  "remaining": "T04B native runtime then T04 persistent build/qualification hooks; not complete T04"
+}

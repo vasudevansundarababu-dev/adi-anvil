@@ -14,3 +14,27 @@
 - After each milestone run relevant tests, repair regressions, update BUILD-STATUS.md and record evidence. Resume from that file after interruption; do not restart the repository.
 - Do not spawn subagents or new user tasks unless explicitly authorized. One writer is the default.
 - Stop on completion, a genuine authority/environment blocker with no safe independent work, or the approved work-window end. Leave a candid morning report with passed/failed/blocked/not-run tests, exact commands and remaining work. Never mark a blocked live smoke test as passed.
+
+## Benchmark source conventions
+
+- Resume active benchmark Coding from `BENCHMARK-PROGRESS.md`; approved originals and append-only approvals live in the dated agent-team runs. Progress authorization is session-specific, not a standing permission grant.
+- SME bundle v1 is separate from legacy task/export validators. Fictional FX fixtures test software only; they are not Bodhium data or model performance.
+- New benchmark-private classes must use the disjoint explicitly configured vault, never generic artifact storage/downloads. Dedicated SQL tests are under `services/backend/tests/benchmark/`; they require a real isolated PostgreSQL target and must not use shared/deployed services.
+
+- Benchmark raw intake is feature-disabled by default; only its exact project POST route streams without the legacy body buffer. Do not raise legacy limits. Complete originals/manifests live in benchmark_raw; source authenticity is never execution authority. Staging/hashing/quota checks precede SQL row locks.
+- Stock Harbor0.25.0 DockerEnvironment probes Alpine with `--rm`, attempts destructive startup cleanup and has helpers that bypass custom runtimes. Never use it directly for SME qualification or loosen socket permissions. The human-approved `anvil_harbor.sme:SMEDocker` adapter is static no-network/preloaded-only/no-build/no-delete; its actual focused evidence is in `t04b-checks.json`. Preserve the original failed attempt record. Do not treat local qualification receipts as durable product admission or QA approval.
+- In prebuilt Harbor tasks, `CONTEXT_DIR` is unset: use task-relative binds and validate resolved sources stay inside the owned trial before startup. Docker cp did not capture output tmpfs here; snapshot bounded regular files, stop the entire actor, then seal exact bytes for the separate evaluator. Never mount evaluator logs in the actor, even owner-only host directories.
+- A resumed workspace may restore private directory modes as group-readable. Do not weaken vault/config checks or modify unrelated runtime state. Use fresh owner-only test roots and explicit isolated Unix-socket DSNs; no credential-driven bootstrap. Avoid top-level shell `exit`, which can terminate the terminal and its local daemon/test database.
+
+- T04 restart history provenance is in the Coding run `t04-recovery.json`; recovered044/045 source is not proof of SQL/native qualification. Current environment blockers and exact resume are at the top of BENCHMARK-PROGRESS.md.
+- Native gateway Unix socket paths must use fresh short owner-only directories; deep trial/vault paths can exceed Linux AF_UNIX limits. Capture-contract tests use manufactured documents, not native pass evidence.
+
+- T04D exact-image authority and focused evidence live in the Coding run approval log/t04d-checks.json; that authority is session-specific.046 image/tool fields leave immutable older rows unqualified rather than backfilling history. Real lock-race tests must clear pg_stat_activity snapshots with pg_stat_clear_snapshot when polling inside a transaction.
+
+- T05 offline native-tool profile is separate from live/legacy adapters; public and wire calls require exact MockTransport. Validate raw token types before SDK coercion; Gemini omits native function IDs on some replies, so retain local correlation without inventing a native response ID. T05 evidence is not native/live qualification or durable paid admission.
+
+- T06 uses private benchmark_sealed; do not move legacy benchmark_output into the vault. Exact-job evaluator claims never auto-reclaim; absent judge authority stays Blocked/unscored. Accepted T05 OpenAI pricing expired2026-11-08T02:47:35Z; never extend expiry/invent rates merely to green its time-dependent unit test. T06 focused evidence and preserved whole-unit failure are separate in t06-checks.json.
+
+- Authorized2026-11-08 pricing revalidation of6 exact existing models is in t06-pricing-sources.json; unchanged rates,7day TTL, deterministic optional unit-test clock with realUTC production default. Separate unchanged T05 gateway wrong-auth reject-before-body close can race HTTPConnection body send (BrokenPipe); preserve failures and require bounded follow-up authority, never rerun-until-green or weaken auth.
+
+- T05 transport repair sourcee0a7b5f;2026-11-08 isolated recovery evidence is Codingrun t05-recovery-*. Fresh offline729full/46gateway/3x6 diagnostics pass; SQL/native prerequisites absent, old4resource result unobserved. Platform excerpts are not byte-exact runtime/log recovery. Do not inherit old image-download authority in a new runtime.

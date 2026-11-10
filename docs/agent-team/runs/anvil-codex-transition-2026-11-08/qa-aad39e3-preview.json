@@ -1,0 +1,18 @@
+{
+  "source_sha": "aad39e35ace64c55476f5e29400287a71e99d92a",
+  "services": {
+    "api": {
+      "url": "http://127.0.0.1:55202/api/v1/health",
+      "status": 200
+    },
+    "web": {
+      "url": "http://127.0.0.1:55203/",
+      "status": 307
+    }
+  },
+  "actual_browser_cases_passed": 2,
+  "local_synthetic_only": true,
+  "staging_deployment": false,
+  "historical_preview_untouched": true,
+  "screenshot": "artifacts/test-runs/benchmark-workspace-aad39e3.png"
+}

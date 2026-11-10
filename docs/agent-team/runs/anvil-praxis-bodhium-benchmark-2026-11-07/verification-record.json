@@ -1,0 +1,15 @@
+{
+  "base_tree_hash_algorithm_matches_git": true,
+  "composite_overlay_tree_recomputed": "cc9925ec8380a56fa3fa988c157b2d5d7563cda2",
+  "expected_full_r6_tree": "18fca788310f91a35a54df39392a37c026ae16b1",
+  "full_r6_tree_matches": false,
+  "archive_file_hashes_and_modes_unchanged": 264,
+  "historical_base_only_blobs_unchanged": 235,
+  "application_tests_executed": false,
+  "product_model_calls_executed": false,
+  "deployments_or_cloud_writes_executed": false,
+  "commits_or_pushes_executed": false,
+  "gcloud_login_or_cli_setup_executed": false,
+  "scope": "Recovery hash/document validation only; not acceptance tests",
+  "observed_at": "2026-11-07T18:04:37.006659+00:00"
+}

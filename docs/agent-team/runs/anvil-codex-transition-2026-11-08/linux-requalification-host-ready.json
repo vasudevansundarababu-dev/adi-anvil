@@ -1,0 +1,57 @@
+{
+  "full_source_paths_verified": 875,
+  "source_sha": "abb4348a6eb38bb5696cb89062d9fb5c00d3e0b4",
+  "schema_count": 58,
+  "roles": [
+    [
+      "anvil_app",
+      false,
+      false,
+      true
+    ],
+    [
+      "anvil_worker",
+      false,
+      false,
+      true
+    ],
+    [
+      "anvil_benchmark_evaluator",
+      false,
+      false,
+      false
+    ]
+  ],
+  "images": [
+    {
+      "id": "sha256:febd0be41adb897a0ab8f1f1c693d8912669ea60c4940e076e9946b60e210ef0",
+      "digests": [
+        "python@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e"
+      ]
+    },
+    {
+      "id": "sha256:567d5d704a3e5a4864393b623a0d50eb1b5a4ad134cdac7cf19555cb2d8ffe9e",
+      "digests": [
+        "postgres@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3"
+      ]
+    }
+  ],
+  "default_socket_absent": true,
+  "cgroup": "2",
+  "backend_python": "Python 3.12.14",
+  "harbor_version": "0.25.0",
+  "no_native_tests_yet": true,
+  "vm_id": "2931597834343741053",
+  "private_ip": "10.22.0.2",
+  "public_ip": null,
+  "cloud_service_account": null,
+  "maximum_stop_utc": "2026-11-10T04:13:25Z",
+  "temporary_key_expiry_utc": "2026-11-09T06:14:31.984762Z",
+  "source_archive_sha256": "c17f59305a4875ae90d039e973ba6912fb62225822401c5c9ce1f9a5b0c81e18",
+  "full_manifest_sha256": "f6b16603ff9eb6ac2bb72d374678a53ff7e160fc17b595c03b9b7cc32ddb9e3d",
+  "backend_lock_sha256": "22bef436122e38ca72554a0e540688124397fc624394003ddd4066175f68b5fd",
+  "harbor_version_lock_sha256": "2daf87656097906db875028e92840767e16a62562704a3b58ffd76d134461757",
+  "harbor_hashed_lock_sha256": "a13a4891375fc0fd1957dbf94a5bd121c15bb3ba572f83ac484b34e992eba36b",
+  "initial_iap_lookup_failure_preserved": true,
+  "native_tests_running_independently": true
+}

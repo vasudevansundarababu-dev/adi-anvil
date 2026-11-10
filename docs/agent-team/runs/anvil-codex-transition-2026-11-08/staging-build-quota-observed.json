@@ -1,0 +1,76 @@
+{
+  "endpoint": "ServiceUsage v1beta1 consumerQuotaMetrics FULL",
+  "project": "adi-anvil-mvp-2026",
+  "region": "us-west1",
+  "observed_at_utc": "2026-11-09T02:47:51.024484+00:00",
+  "quota_facts": [
+    {
+      "metric": "cloudbuild.googleapis.com/concurrent_private_pool_build_cpus",
+      "displayName": "Concurrent Private Pool Build CPUs",
+      "unit": "1/{project}/{region}/{build_origin}",
+      "buckets": [
+        {
+          "effectiveLimit": "4",
+          "defaultLimit": "4"
+        },
+        {
+          "effectiveLimit": "4",
+          "defaultLimit": "4",
+          "dimensions": {
+            "region": "us-west1"
+          }
+        }
+      ]
+    },
+    {
+      "metric": "cloudbuild.googleapis.com/concurrent_private_pool_c3_build_cpus",
+      "displayName": "Concurrent Private Pool C3 Build CPUs",
+      "unit": "1/{project}/{region}/{build_origin}",
+      "buckets": [
+        {},
+        {
+          "effectiveLimit": "4",
+          "defaultLimit": "4",
+          "dimensions": {
+            "region": "us-west1"
+          }
+        }
+      ]
+    },
+    {
+      "metric": "cloudbuild.googleapis.com/concurrent_private_pool_n2d_build_cpus",
+      "displayName": "Concurrent Private Pool N2D Build CPUs",
+      "unit": "1/{project}/{region}/{build_origin}",
+      "buckets": [
+        {},
+        {
+          "effectiveLimit": "2",
+          "defaultLimit": "2",
+          "dimensions": {
+            "region": "us-west1"
+          }
+        }
+      ]
+    },
+    {
+      "metric": "cloudbuild.googleapis.com/concurrent_public_pool_build_cpus",
+      "displayName": "Concurrent Build CPUs (Regional Default Pool)",
+      "unit": "1/{project}/{region}/{build_origin}",
+      "buckets": [
+        {
+          "effectiveLimit": "10",
+          "defaultLimit": "10"
+        },
+        {
+          "effectiveLimit": "10",
+          "defaultLimit": "10",
+          "dimensions": {
+            "region": "us-west1"
+          }
+        }
+      ]
+    }
+  ],
+  "usage_not_observed": true,
+  "no_quota_changes": true
+}

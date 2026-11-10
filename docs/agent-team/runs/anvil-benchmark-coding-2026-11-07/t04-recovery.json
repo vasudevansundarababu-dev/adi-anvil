@@ -1,0 +1,209 @@
+{
+  "source_conversation": "fdd0cf03f01748698589fa2401680560",
+  "method": "Read-only source action history; literal edits reconstructed; historical commands not executed; current pinned Ruff normalization",
+  "base_commit": "1b4f41261d1371e2122a285f1327fca50abd00c5",
+  "events": [
+    {
+      "event_id": "841d63a3-d609-426e-9c98-bbb5610a41e5",
+      "timestamp": "2026-11-07T23:55:46.338960",
+      "tool": "file_editor",
+      "paths": ["services/backend/tests/benchmark/test_benchmark_pipeline.py"]
+    },
+    {
+      "event_id": "d47713ce-379f-4f76-819a-0d202162e89f",
+      "timestamp": "2026-11-07T23:56:38.516725",
+      "tool": "file_editor",
+      "paths": ["services/backend/migrations/044_benchmark_qualification_pipeline.sql"]
+    },
+    {
+      "event_id": "00dcc5aa-7f4c-464d-ac7c-027b41945ff7",
+      "timestamp": "2026-11-07T23:56:50.187896",
+      "tool": "file_editor",
+      "paths": ["services/backend/alembic/versions/044_benchmark_qualification_pipeline.py"]
+    },
+    {
+      "event_id": "be069f5b-cf03-4c0f-8fba-e949faf42977",
+      "timestamp": "2026-11-07T23:57:03.901852",
+      "tool": "file_editor",
+      "paths": ["services/backend/src/anvil/benchmark_storage.py"]
+    },
+    {
+      "event_id": "f17c7e93-1e14-4889-b8e0-6ef765d3281c",
+      "timestamp": "2026-11-07T23:57:59.719935",
+      "tool": "file_editor",
+      "paths": ["services/backend/src/anvil/benchmark_pipeline.py"]
+    },
+    {
+      "event_id": "f7850bd5-33c1-4c2d-8f06-528fcc93259b",
+      "timestamp": "2026-11-07T23:58:29.552710",
+      "tool": "file_editor",
+      "paths": ["services/backend/src/anvil/benchmark_pipeline.py"]
+    },
+    {
+      "event_id": "6d64e708-46db-4981-8beb-4bfe09e5f872",
+      "timestamp": "2026-11-07T23:58:35.790746",
+      "tool": "terminal",
+      "paths": [
+        "services/backend/src/anvil/benchmark_pipeline.py",
+        "services/backend/tests/benchmark/test_benchmark_pipeline.py"
+      ]
+    },
+    {
+      "event_id": "302dddcc-df7d-47c6-a246-4edf9260e5a9",
+      "timestamp": "2026-11-07T23:58:42.576685",
+      "tool": "file_editor",
+      "paths": ["services/backend/src/anvil/benchmark_qualification.py"]
+    },
+    {
+      "event_id": "38af6fab-cd17-4d35-8a7e-27983cca9d54",
+      "timestamp": "2026-11-07T23:58:51.414671",
+      "tool": "file_editor",
+      "paths": ["services/backend/src/anvil/benchmark_qualification.py"]
+    },
+    {
+      "event_id": "09fb4db8-1357-43b4-96e2-a3fa0402cf16",
+      "timestamp": "2026-11-07T23:59:23.333376",
+      "tool": "file_editor",
+      "paths": ["services/backend/src/anvil/benchmark_pipeline_worker.py"]
+    },
+    {
+      "event_id": "c51f72a2-6933-464f-8111-7b81499d4843",
+      "timestamp": "2026-11-08T00:00:03.383991",
+      "tool": "file_editor",
+      "paths": ["services/backend/src/anvil/benchmark_qualification.py"]
+    },
+    {
+      "event_id": "52da3136-ac49-4c3e-8de0-3d4b2b495f93",
+      "timestamp": "2026-11-08T00:00:19.167042",
+      "tool": "file_editor",
+      "paths": ["services/backend/src/anvil/benchmark_api.py"]
+    },
+    {
+      "event_id": "83e7cde8-c49c-4402-91b0-0a742427ca41",
+      "timestamp": "2026-11-08T00:00:24.325612",
+      "tool": "file_editor",
+      "paths": ["services/backend/src/anvil/benchmark_api.py"]
+    },
+    {
+      "event_id": "39a7f134-c8c7-4e73-9d16-607d41f6841e",
+      "timestamp": "2026-11-08T00:00:34.093592",
+      "tool": "file_editor",
+      "paths": ["services/backend/src/anvil/benchmark_api.py"]
+    },
+    {
+      "event_id": "b5a827d5-c6ea-44c7-a511-032b7ac9ac5c",
+      "timestamp": "2026-11-08T00:00:48.043482",
+      "tool": "file_editor",
+      "paths": ["services/backend/src/anvil/harbor_api.py"]
+    },
+    {
+      "event_id": "d74dfa23-d6b5-4c2b-9144-2e674964b370",
+      "timestamp": "2026-11-08T00:00:51.683062",
+      "tool": "file_editor",
+      "paths": ["services/backend/src/anvil/harbor_api.py"]
+    },
+    {
+      "event_id": "92bdb1e7-aeb4-46c2-9227-aefcd8188793",
+      "timestamp": "2026-11-08T00:00:59.226529",
+      "tool": "terminal",
+      "paths": [
+        "services/backend/tests/benchmark/test_benchmark_pipeline.py",
+        "services/backend/src/anvil/benchmark_pipeline_worker.py"
+      ]
+    },
+    {
+      "event_id": "d140eb04-6f14-4734-8644-e4f5ddfd93cb",
+      "timestamp": "2026-11-08T00:01:26.573957",
+      "tool": "file_editor",
+      "paths": ["services/backend/src/anvil/benchmark_pipeline.py"]
+    },
+    {
+      "event_id": "04638088-f0ec-4dd7-9973-06469263ace6",
+      "timestamp": "2026-11-08T00:01:30.915448",
+      "tool": "file_editor",
+      "paths": ["services/backend/src/anvil/benchmark_pipeline.py"]
+    },
+    {
+      "event_id": "4f475dee-7ddc-4024-acbb-37e1ef4483a9",
+      "timestamp": "2026-11-08T00:01:39.893824",
+      "tool": "terminal",
+      "paths": ["services/backend/tests/benchmark/test_benchmark_pipeline.py"]
+    },
+    {
+      "event_id": "7cd4d7ef-ad28-4e45-ac6c-990870398b6b",
+      "timestamp": "2026-11-08T00:03:58.911600",
+      "tool": "file_editor",
+      "paths": ["services/backend/src/anvil/benchmark_pipeline_worker.py"]
+    },
+    {
+      "event_id": "3df18156-9249-42bf-b044-91955c189671",
+      "timestamp": "2026-11-08T00:04:37.424710",
+      "tool": "terminal",
+      "paths": ["services/backend/tests/benchmark/test_benchmark_pipeline.py"]
+    },
+    {
+      "event_id": "2e12f7b4-bfa5-4a15-b50a-0c2ec359e9bc",
+      "timestamp": "2026-11-08T00:05:00.147560",
+      "tool": "file_editor",
+      "paths": ["services/backend/tests/benchmark/test_benchmark_pipeline.py"]
+    },
+    {
+      "event_id": "b3365798-f23d-449f-9de2-9583c5bd5bfe",
+      "timestamp": "2026-11-08T00:05:09.268467",
+      "tool": "file_editor",
+      "paths": ["services/backend/tests/benchmark/test_benchmark_pipeline.py"]
+    },
+    {
+      "event_id": "1221a4ed-bccd-4ea3-af76-6841db582ca8",
+      "timestamp": "2026-11-08T00:05:13.599273",
+      "tool": "file_editor",
+      "paths": ["services/backend/tests/benchmark/test_benchmark_pipeline.py"]
+    },
+    {
+      "event_id": "833d61c3-6029-4ca6-b707-88204c08358d",
+      "timestamp": "2026-11-08T00:05:37.434140",
+      "tool": "file_editor",
+      "paths": ["services/backend/tests/benchmark/test_benchmark_pipeline.py"]
+    },
+    {
+      "event_id": "3367f415-aac7-4e73-966c-7ab01c52f17b",
+      "timestamp": "2026-11-08T00:06:22.325937",
+      "tool": "file_editor",
+      "paths": ["services/backend/migrations/045_benchmark_qualification_capture_guards.sql"]
+    },
+    {
+      "event_id": "6529f6cb-1933-4bb2-93c9-aaf8c99f2b36",
+      "timestamp": "2026-11-08T00:06:34.163763",
+      "tool": "file_editor",
+      "paths": ["services/backend/alembic/versions/045_benchmark_qualification_capture_guards.py"]
+    }
+  ],
+  "files": {
+    "services/backend/tests/benchmark/test_benchmark_pipeline.py": "3d7c96565f25ed0aa1c40d0c85b46a37bd423c61897c2369faa3b656ccbadc89",
+    "services/backend/migrations/044_benchmark_qualification_pipeline.sql": "6f8ee6173a6da236d75073802ff6d8d5a2a9540fc895b1d274dcfe7cc00652c7",
+    "services/backend/alembic/versions/044_benchmark_qualification_pipeline.py": "aa4b1efaf1d5c9e02719f97878923bda66ea58c462a6abc887b4af8ba47cb140",
+    "services/backend/src/anvil/benchmark_storage.py": "0187bd456fc7f6d700234f24d20c8094e9a7b58fd2a8d3cb527f15ff7a6ef109",
+    "services/backend/src/anvil/benchmark_pipeline.py": "b1531fb882b9d1ad89d0a15e002ef90c912017601507a896faf1c27bce3381e9",
+    "services/backend/src/anvil/benchmark_qualification.py": "71e4661f2cadcb38d04246e70af8f73a6dfe7b154cdb5fe320f9943c6369ca91",
+    "services/backend/src/anvil/benchmark_pipeline_worker.py": "3036f7a586c730927799f65427ff5f15b5eb8b6da09a07594e38b511ce335e74",
+    "services/backend/src/anvil/benchmark_api.py": "2038aded3dd58b7b040f6d938e9cf4a59b918cc478745ff49f202fd680f7fabf",
+    "services/backend/src/anvil/harbor_api.py": "9cc37c85b7613d47608ae0b1bf04f9ea2936002a141ae4a67ec2402ae45c8190",
+    "services/backend/migrations/045_benchmark_qualification_capture_guards.sql": "2ca62f45bbe359d27c093dc53db710c2b97edd26b2da61d3c70a963cc9b3000b",
+    "services/backend/alembic/versions/045_benchmark_qualification_capture_guards.py": "a0ea5bd80140cdbff50df1dbdb2ba0883336292b5525aabbb331c536fdfeda25"
+  },
+  "recorded_at": "2026-11-08T03:29:27.952498+00:00",
+  "status": "Recovered source WIP; compile-only checked, no current SQL/native qualification claim",
+  "workspace": "/workspace/project/adi-anvil",
+  "old_workspace_access": "No local /workspace/anvil-recovered; old API exposes ERROR/no conversation_url; no runtime resumed or changed",
+  "error_cause": "Sandbox error; detailed cause unavailable",
+  "excluded": [
+    "credentials",
+    "secrets",
+    "private benchmark exhibits",
+    "dependencies",
+    "old runtime configuration",
+    "raw event logs"
+  ],
+  "normalization": "Literal edit replay plus current locked Ruff; recovery is reconstructed source, not a byte-exact old filesystem snapshot",
+  "patch_tool": "apply_patch unavailable; validated unified patch applied with git apply"
+}

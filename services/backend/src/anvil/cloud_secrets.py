@@ -18,6 +18,13 @@ from anvil.config import private_file_owner
 
 
 def resource():
+    if os.environ.get("ANVIL_CREDENTIAL_STORE_PROFILE", "legacy") == "qa":
+        value = os.environ.get("ANVIL_QA_SECRET_RESOURCE", "")
+        if not re.fullmatch(r"projects/[0-9]+/secrets/anvil-qa-model-credentials", value):
+            raise ValueError("Separate QA credential secret is not configured")
+        return value
+    if os.environ.get("ANVIL_CREDENTIAL_STORE_PROFILE", "legacy") != "legacy":
+        raise ValueError("Unsupported credential store profile")
     value = os.environ.get("ANVIL_GENERATION_SECRET_RESOURCE", "")
     if not re.fullmatch(r"projects/[0-9]+/secrets/anvil-import-generation", value):
         raise ValueError("Managed generation secret is not configured")
@@ -81,6 +88,9 @@ def index():
 
 def save(value, binding):
     validate_binding(binding)
+    selected_resource = resource()
+    if os.environ.get("ANVIL_CREDENTIAL_STORE_PROFILE", "legacy") == "qa" and "scope" in binding:
+        raise ValueError("QA credential store requires a project binding")
     identifier = str(uuid4())
     data = json.dumps({"id": identifier, "binding": binding, "secret": value}).encode()
     if len(data) > 32768:
@@ -89,10 +99,10 @@ def save(value, binding):
     try:
         version = request(
             "POST",
-            resource() + ":addVersion",
+            selected_resource + ":addVersion",
             {"payload": {"data": base64.b64encode(data).decode()}},
         )["name"]
-        if not re.fullmatch(re.escape(resource()) + r"/versions/[0-9]+", version):
+        if not re.fullmatch(re.escape(selected_resource) + r"/versions/[0-9]+", version):
             raise ValueError("Unexpected managed secret version")
         out = os.open(
             identifier, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=fd
@@ -109,6 +119,9 @@ def save(value, binding):
 
 def load(identifier, binding):
     validate_binding(binding)
+    selected_resource = resource()
+    if os.environ.get("ANVIL_CREDENTIAL_STORE_PROFILE", "legacy") == "qa" and "scope" in binding:
+        raise ValueError("QA credential store requires a project binding")
     name = str(UUID(str(identifier)))
     fd = index()
     try:
@@ -125,7 +138,7 @@ def load(identifier, binding):
             version = json.load(stream)["version"]
     finally:
         os.close(fd)
-    if not re.fullmatch(re.escape(resource()) + r"/versions/[0-9]+", version):
+    if not re.fullmatch(re.escape(selected_resource) + r"/versions/[0-9]+", version):
         raise ValueError("Unexpected managed secret locator")
     response = request("GET", version + ":access")
     if response.get("name") != version:

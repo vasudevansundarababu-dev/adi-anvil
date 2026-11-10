@@ -45,6 +45,11 @@ def code_digest():
         for name in (
             "harbor_agents.py",
             "harbor_worker.py",
+            "environment_structured_agent.py",
+            "environment_harbor.py",
+            "environment_collect.py",
+            "environment_temp.py",
+            "benchmark_qualification.py",
             "harbor_package.py",
             "praxis_contract.py",
             "praxis_executable.py",
@@ -73,6 +78,8 @@ def code_digest():
     ]
     paths.append(ROOT / "services/harbor/src/anvil_harbor/agent.py")
     paths.append(ROOT / "services/harbor/src/anvil_harbor/tool_agent.py")
+    paths.append(ROOT / "services/harbor/src/anvil_harbor/environment.py")
+    paths.append(ROOT / "services/harbor/src/anvil_harbor/sme.py")
     return digest(
         {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
     )

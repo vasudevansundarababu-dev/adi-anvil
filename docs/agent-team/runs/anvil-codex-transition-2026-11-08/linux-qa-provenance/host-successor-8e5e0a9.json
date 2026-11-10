@@ -1,0 +1,20 @@
+{
+  "source_sha": "8e5e0a988e154c96bb2293af050c29cf68d44318",
+  "previous_source_sha": "0574c68fcdd889e7fa1c4ec8b0bcdff47c06195e",
+  "archive_sha256": "8b1ccd33233336973a35252ea62437d99b307aa22b8aeb0e60f1a7a020046089",
+  "source_manifest_sha256": "cd123c57ccab863e2c7cf97829dcc11e69aa5605740d4f5d32e7ab8472549978",
+  "tracked_runtime_files_verified_before_and_after": 400,
+  "changed_files": {
+    "services/harbor/src/anvil_harbor/sme.py": {"before": "3f08de726f317c2228eaa76624166449830e93d31e6871d7333523a59c2d013a", "after": "ecc7444782e53950099a331d045826560ed704ea8de90a7e339adc28c6c285c7"},
+    "services/harbor/tests/test_sme.py": {"before": "40b5c1c8413cd27e98f725e42d549dbc5d00db59d23e4e071fab53472f780e10", "after": "85abc68683d34d0495a8fbd53c7ccfbcdb7744757e3f38e939e5ee4fc35f643f"}
+  },
+  "old_files_preserved": "/opt/anvil/.local/source-before-8e5",
+  "update": "operator_owned_atomic_file_replacement_only",
+  "packages_images_configuration_permissions_changed": false,
+  "adapter_guards": {"command": "PYTHONPATH=/opt/anvil/services/harbor/src /opt/anvil/.local/harbor-venv/bin/python -m unittest discover -s /opt/anvil/services/harbor/tests -p test_sme.py", "passed": 9, "failed": 0},
+  "native_suite": "handed_to_independent_testing_not_yet_passed",
+  "prior_failure": "Harbor_helper_merged_Compose_warning_stderr_with_valid_config_JSON",
+  "profile_checks_relaxed": false,
+  "application_deployed": false,
+  "paid_calls": false
+}

@@ -1,0 +1,110 @@
+{
+  "task": "T04 restart recovery and environment-independent hardening",
+  "status": "T04 incomplete; software checks passed; SQL/native qualification blocked",
+  "observed_at": "2026-11-08T03:36:47.889851+00:00",
+  "product_source_commit": "c0f98b24de4aaeb8ebc72cbd4e6f8ed3eb5d4534",
+  "product_source_tree": "c161214346de7bd19bb047e968addb93438cc14a",
+  "recovery_checkpoint": "23bb8f1741156fd6d0e6f25df379a0117513e14e",
+  "published_baseline": "1b4f41261d1371e2122a285f1327fca50abd00c5",
+  "role": "Coding; existing LLM connection unchanged",
+  "recovery": "Read-only source-edit history reconstruction11 files/28 events; not an old workspace snapshot; see t04-recovery.json",
+  "tests": {
+    "focused_backend": {
+      "passed": 233,
+      "failed": 0,
+      "skipped": 0,
+      "existing_unit": 173,
+      "new_capture_filesystem_socket": 60,
+      "command": "services/backend/.venv/bin/python -m pytest services/backend/tests/unit/test_checkpoint_secret_scan.py services/backend/tests/unit/test_benchmark_bundle.py services/backend/tests/unit/test_benchmark_archive.py services/backend/tests/unit/test_benchmark_stream_limits.py services/backend/tests/unit/test_benchmark_trust.py services/backend/tests/unit/test_praxis_harbor.py services/backend/tests/unit/test_praxis_executable.py services/backend/tests/unit/test_readiness_reason_codes.py services/backend/tests/unit/test_request_limits.py services/backend/tests/unit/test_benchmark_compiler.py services/backend/tests/unit/test_benchmark_qualification_capture.py -q"
+    },
+    "restricted_adapter_guards": {
+      "passed": 7,
+      "failed": 0,
+      "native_execution": false
+    },
+    "node_policies": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    },
+    "pipeline_collection": {
+      "collected": 21,
+      "executed": 0,
+      "status": "Blocked, NOT passed"
+    },
+    "existing_sql_http_filesystem": {
+      "historical_count": 44,
+      "executed_now": 0,
+      "status": "Blocked"
+    },
+    "native_qualification": {
+      "executed_now": 0,
+      "status": "Blocked; no fresh G1-G5 pass"
+    },
+    "migrations_044_045": {
+      "executed_now": false,
+      "status": "Blocked; fresh/repeat/concurrency/negative guards unverified"
+    }
+  },
+  "software_coverage": [
+    "Complete exact typed receipt fields/source/private bindings/rewards/tool counters/seal/container digests/receipt-byte hashes",
+    "Reject empty/partial/truthy controls, extra fields, changed provenance/version/digests and reused actor/evaluator containers",
+    "Require complete resource-probe matrix before capture",
+    "Real fictional rules/calibration/evaluator/tool payload changes reject snapshot; source changes alter snapshot",
+    "Real authenticated Unix HTTP gateway: invalid auth denied, deep paths supported,0600 socket/0700 fresh directory, own temporary directory cleaned"
+  ],
+  "not_native_evidence": "Manufactured receipt documents are validator test inputs, never observed containers/model performance. Actual compiler/parser/signature/filesystem/socket paths run; no mocks.",
+  "earlier_failed_checks_preserved": [
+    "New capture checks initially27 failed/13 passed; repaired.",
+    "Filesystem tests first5 failed for unsupported new root keyword; final5 pass with real dependency snapshots.",
+    "Gateway first2 failed AF_UNIX path too long; short-directory retry exposed inherited setgid mode. Chmod only fresh owned directory0700; final2 pass.",
+    "Initial one-line test lint errors resolved by format/import sorting.",
+    "Full historical approved SHA256SUMS exits1 for2 unavailable excluded local-only originals; all15 tracked approved originals independently byte-identical to1b4f412. Missing originals not fetched/invented/reverified."
+  ],
+  "environment": {
+    "workspace": "/workspace/project/adi-anvil",
+    "python": "3.12.14",
+    "uv": "0.12.19",
+    "pnpm": "10.34.5",
+    "harbor": "0.25.0 independent locked environment",
+    "docker_socket": "Absent; no daemon started",
+    "docker_store": "/var/lib/docker empty",
+    "containerd_store": "Only empty overlayfs directory; no image metadata/content",
+    "image_pulls_builds_loads": 0,
+    "shared_services_used": false,
+    "old_credentials_dependencies_runtime_config_copied": false
+  },
+  "required_preloaded_images": [
+    "postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3",
+    "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e"
+  ],
+  "additional_checks": {
+    "ruff_check": "Passed15 Python files",
+    "ruff_format": "Passed15 Python files",
+    "openapi": "Generated469 additive lines; not SQL/HTTP execution evidence",
+    "approved_originals": "15 byte-identical to1b4f412",
+    "secret_scan": "640 tracked files/0 findings at product checkpoint; final evidence rescanned",
+    "workflow": "Draft fixture CI skipped for23bb8f1/c0f98b2; NOT a CI test pass"
+  },
+  "not_run": [
+    "Fresh/repeat044/045 migrations and real SQL/API/concurrency/race verification",
+    "Native9 trials/4 resource probes through durable pipeline",
+    "045 SQL partial/forged-pass negative tests remain to add/verify",
+    "Full acceptance/browser/QA",
+    "Bodhium/model/judge/paid calls",
+    "T05-T10",
+    "Merge/deployment"
+  ],
+  "next": "Preload exact approved images into new dedicated no-network daemon; Coding isolated SQL/native only after prerequisite. No substitutes/shared targets/stale sessions/waivers. Human Coding review.",
+  "local_log_sha256": {
+    "focused-backend.log": "144ecfbba8cf41a77bd7b6b92c517d42fa5a38198b45b6ee71b6ab3ab3b74665",
+    "adapter.log": "0f30eda0b7639f6faf6f30fab369a775860f26f2f3d174e7f6dd7b9adc802dac",
+    "node.log": "d721cc76f822a9c29f95826dd2cded9263a15c8d86cadfd606a620cd501f7d27",
+    "capture-before.log": "5b4a6dcbdf0f29c4e6023d275d22208ba7f3573836e1f6099480e5ea181f9020",
+    "gateway-before.log": "2a750bf9374f43bf25e6a9fbeffeb82b646d37ee2ed7fbf5c2882d84aee9f656",
+    "capture-final.log": "5843687423a2d02195d27c17d4a772aa2e9f5cedde278bdd4925a2e5bd230ca1",
+    "dependencies-before.log": "8f736ddf8986a924ebea07416fc997e41cbe85df1a7112979f91246230020c6a",
+    "sql-collection.log": "2a080cd62ef35bf9985e7ad60f707d251fb8b2c6d124003cd8a89ed64732469e",
+    "openapi.log": "02dc6e090dc224889e495788ad6bdd90e9951e8b221effb29046857cbe28d937"
+  }
+}

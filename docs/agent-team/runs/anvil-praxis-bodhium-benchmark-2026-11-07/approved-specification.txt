@@ -1,0 +1,256 @@
+ANVIL BENCHMARK SPECIFICATION
+Praxis SME Task Banks -> Harbor Execution -> Three-Model Evaluation
+Version 0.1 | 7 November 2026 | Draft for Product Owner review
+Target handoff: existing Anvil conversation in OpenHands
+
+1. PRODUCT OUTCOME AND AUTHORITY
+
+Anvil must turn a versioned SME-authored task-bank export from Praxis into a qualified, executable Harbor benchmark, run the same frozen benchmark against three selected model configurations, evaluate their deliverables with the same frozen scoring policy, and present measured comparisons with evidence. The Benchmarks mockup becomes an operational workflow integrated with Anvil Tasks, Preparation, models, execution groups, runs, budgets, audit, and artifacts.
+
+Bodhium business cases are the first acceptance example, not a separate application or a hard-coded banking benchmark. The same workflow must support other compatible Praxis task banks through a versioned adapter contract. This increment does not implement the broader 100,000-task Benchmark Factory roadmap, model training, optimization, or automatic task authoring in Praxis.
+
+This is a proposed product and engineering contract, not approval of implementation, provider spending, data transmission to model vendors, or deployment. The user confirmed the destination is the existing Anvil OpenHands conversation. Exact candidate model IDs remain unspecified. The default UI slots may be OpenAI, Anthropic/Claude, and Google/Gemini, matching the existing mockup; they are not selected or approved model versions. No budget is inferred from the prior Anvil deployment approval.
+
+Anvil and Praxis remain independently runnable and deployable. Praxis supplies exports; Anvil consumes an immutable receipt without requiring a live Praxis connection. The existing local user changes and earlier Anvil readiness/finalization changes must remain intact. This document does not assert that the earlier GCP deployment has completed.
+
+2. INPUTS, OBSERVED CODE, AND LIMITS
+
+Primary product input: the user's ten-page Anvil BenchmarkSpec.pdf. It describes a proposed signed bundle, three Bodhium modules, agent tools, preflight checks, judge harness, and an illustrative scorecard. It does not supply actual case narratives, financial exhibits, the companies CSV, complete 81 criterion definitions, executable judge code, keys, rights approval, or baseline run evidence. Do not reconstruct missing proprietary materials or ground truth from the prose summary.
+
+Read-only repository inspection: local ADI-Anvil HEAD 8cdc8a84784c7ae52d7bbb88f36193b387aedb60. This checkout is evidence of existing interfaces, not the authoritative current OpenHands working tree. OpenHands must inspect its own latest branch and manifests before design or implementation.
+
+Observed integration points:
+- apps/web/src/components/WorkspaceBenchmarks.tsx separates the illustrative preview from the connected catalog. It explicitly says executable task inventory is not a published benchmark.
+- BenchmarkPreview.tsx contains hard-coded Banking, Marketing, Commerce collections and illustrative counts/fit values.
+- BenchmarkDashboard.tsx contains illustrative OpenAI/Claude/Gemini results, two repetitions, a task-weighted metric, failure/history tabs, and published-reference separation.
+- services/backend/src/anvil/praxis_executable.py defines task.v3 with synthetic-only provenance, limited domains, output.json, max 30 rubric criteria, pinned environment and MCP declarations. The Bodhium 51-criterion module and Markdown outputs cannot be silently squeezed into it.
+- contracts/praxis/golden-v3/README.md documents export.v1, exact payload bytes, private fixtures, and the synthetic Harbor conformance suite.
+- harbor_package.py provides trusted compilation for structured and staged tasks; harbor_worker.py is a dedicated worker. Preserve existing adapters and qualification paths.
+- harbor_agents.py has an OpenAI-specific admitted agent path. providers.py has wider native provider transports, but their presence alone does not prove Harbor agent-loop compatibility for all three providers.
+- docs/runbooks/praxis-harbor.md and benchmark-factory.md describe boundaries and gates; some prose predates v3. Prefer current validated behavior over assuming every documented capability exists.
+- docs/build/benchmark-factory-specs/Anvil_Benchmark_Factory_Product_Technical_Spec_v1.0.md is a broader roadmap. This spec delivers a bounded end-to-end SME benchmark slice, preserving provenance, versioning and independent operation.
+
+3. SYSTEM RESPONSIBILITIES
+
+Praxis owns SME task authorship, source lineage, task-bank revisions, author/reviewer provenance, rubric meaning, oracle meaning, allowed source rights, and export production. It supplies actual exhibits, a complete rubric, machine-readable evaluation policy, positive/negative acceptance examples, and a signed or explicitly unverified source receipt. Praxis review is provenance, not automatic Anvil execution approval.
+
+Anvil owns project-scoped ingestion, source validation and quarantine, actor/evaluator separation, adapter qualification, executable package generation, model bindings, protocol freeze, rights and budget admission, durable scheduling, Harbor sandbox/tool execution, trusted evaluation execution, aggregation, evidence retention, human review and publication.
+
+The SME defines grading semantics. Anvil enforces them using a reviewed evaluator implementation. A script arriving from Praxis is untrusted executable content until separately reviewed and qualified; a signature proves origin, not safety. Do not run an imported run_judge.py with host credentials or mount it into the candidate container.
+
+Candidate models solve the tasks. Judge models assess outputs when a criterion requires judgment. These are separate roles, identities, budgets and traces. A candidate model must never receive private oracle content, evaluation fixtures or judge prompts.
+
+Data path: Praxis export -> immutable import receipt -> validation/quarantine -> qualified Harbor package -> frozen benchmark version -> three-model protocol -> execution cells -> collected outputs -> trusted evaluation -> versioned scorecard -> reviewed comparison.
+
+4. FIRST BENCHMARK: BODHIUM BUSINESS CASES
+
+Suite identity proposed: bodhium_enterprise_business_benchmark, source version supplied by Praxis. Preserve restricted Bodhium origin even when Praxis is the authoring/export system; do not relabel it synthetic or ADI-owned.
+
+BL-001 | M&A valuation | 24 points | 900-second task deadline
+Actor inputs: prompt, Tiffany/LVMH case narrative, complete authorized financial exhibits and definitions.
+Expected output: valuation_report.md, with evidence citations, assumptions and calculations.
+Private evaluation: 24 criterion records, numerical tolerances, comparison/valuation rules and approved references. Numeric grading should use declared absolute/relative tolerances, units, rounding and range semantics, not bare string matching. The supplied PDF names example WACC and valuation numbers; these are private evaluation material, not a substitute for exhibits or a validated full oracle.
+
+BL-002 | PR strategy | 6 points | 600-second task deadline
+Actor inputs: prompt, Canadian peat-moss case context and complete authorized exhibits.
+Expected output: pr_strategy_memo.md.
+Private evaluation: six strategic-instrument criteria across short, medium and long horizons. Specify what counts as an actionable recommendation, required rationale and acceptable equivalent instruments/certifications. An SME must resolve whether a named certification is mandatory or an example; do not equate keyword presence with strategic correctness.
+
+BL-003 | Financial ratios and industry matching | 51 points | 1,200-second task deadline
+Actor inputs: prompt, ratio definitions, Companies A-J financial table and explanatory units.
+Expected output: financial_matching_analysis.md plus a proposed structured sidecar for ten assignments and 41 evidence-backed checkpoints.
+Private evaluation: 10 assignment points and 41 justification points. Supply each checkpoint explicitly; no fabricated criteria. The PDF's claim of 58 CSV rows including header must be confirmed against the actual export, not imposed as a universal task-bank rule.
+
+Suite total: 24 + 6 + 51 = 81 points per complete repetition and candidate model. Evaluate each task independently when its output is sealed; do not wait for all three outputs to exist before evaluating a completed task. Suite completion depends on all required execution/evaluation cells reaching a resolved terminal state.
+
+The PDF's 64/81 = 79.01% score and historical baselines are illustrative, unverified values. They must not populate measured results or a leaderboard. A difference from 50.62% to 79.01% is 28.39 percentage points, not a 28.39% relative improvement. Historical comparisons require matching tasks, tools, model snapshots, judge policy, repetition and scoring method, plus source evidence.
+
+5. VERSIONED PRAXIS EXPORT CONTRACT
+
+Proposed new format: praxis.anvil.benchmark_bundle.v1. This name is a design proposal, not a currently supported schema. Architecture must define and version it alongside existing task.v1/v2/v3 and export.v1 compatibility. Do not silently extend v3 or remove its synthetic-only protection. Add a new qualified adapter/profile for authorized SME artifact tasks; keep old imports backward compatible.
+
+Bundle logical contents:
+- manifest.json: schema version; bank ID/version; task IDs/versions; source/exporter identity; immutable revision; source classification; rights references; file paths, sizes and SHA-256 values; task timeouts; allowed tools; output contracts; environment reference and OCI digest; compiler/evaluator requirements; per-task criterion IDs/points; scoring policy; export timestamp.
+- runtime_pack/<task-id>/: actor prompt, authorized context, exhibits and output schema/instructions. Only the selected task's actor material is exposed to that task's sandbox.
+- eval_pack/<task-id>/: complete rubric, oracles, judge templates, calibration cases and evaluation schemas. Stored separately with evaluator-only authorization.
+- signature metadata: signing key ID, algorithm, signature and canonicalization contract over a manifest that hashes every file. Trust roots are configured by an authorized administrator, never accepted from the bundle itself. SHA-256 integrity alone is not an authenticated signature.
+
+The manifest must define what is signed without a self-hash cycle. A detached signature over canonical manifest bytes is the recommended design. Original archive bytes and payload hashes are retained. Unsupported versions, missing files, hash conflicts, duplicate IDs, duplicate paths, conflicting revisions and unknown semantics fail closed. An unknown signer may be quarantined for human verification; it must not be shown as verified.
+
+Safe extraction is mandatory before interpreting any file: deny absolute paths, dot-dot traversal, symlinks/hardlinks, device files, executable auto-run hooks, path alias collisions and archive bombs. Proposed initial pilot ceilings are 100 MiB compressed, 500 MiB expanded, 5,000 files and 50 MiB per file, configurable by installation policy and validated against actual authorized exhibits. Enforce limits while streaming and before committing extraction; never load an unbounded archive into memory.
+
+Idempotency: same project + source identity + version + exact bytes returns the same immutable source receipt. Same version with different content is a conflict. A correction creates a successor version. Source review/client/project IDs are lineage only and cannot select the Anvil destination project or confer roles, approval or spending authority.
+
+6. COMPILATION AND QUALIFICATION
+
+Use a deterministic, versioned compiler around the pinned Harbor release. Record input hashes, compiler version, generated file hashes, supplied image digest/kind, tool-server versions and evaluator binding. Do not assume harbor/agent-runner:v1.2 exists or that the PDF's ATIF v1.2 matches the repository lock. Inspect services/harbor/requirements.lock; qualify against that exact version before considering an upgrade.
+
+The native package must provide Harbor's supported task instructions, environment, verifier hooks and reward/diagnostic artifacts. Preserve original Markdown deliverables; an optional JSON sidecar provides machine-readable extraction. It must not replace or contradict the task's requested report. Schema-invalid or missing required outputs are explicit outcomes.
+
+Package qualification has five gates:
+G1 Integrity/completeness: source hash/signature status, required exhibits, valid rubric, criterion totals and all version bindings.
+G2 Isolation/leakage: actor projection contains only allowed materials; evaluator data/credentials are inaccessible through mounts, processes, environment, tools and artifacts. Use unique private canaries and access attempts as well as content scans. A coincidentally shared number or a legitimately public term is not automatically leakage; shared-content findings need reviewed provenance and disposition.
+G3 Network/identity: candidate is non-root, no Docker socket/host mounts/cloud metadata/provider secrets, no unrestricted egress. Verify effective runtime policy, not just a config string.
+G4 Tools/resources: actual stdio tools match declared schemas; Python REPL has pinned pandas/numpy/scipy if required; execute a real computation and bounded timeout/memory tests. Proposed pilot: 2 GiB per sandbox and 60-second per-tool timeout, bounded by the remaining overall task deadline; architecture reconciles existing limits.
+G5 Fresh workspace/output: read-only inputs, empty writable outputs, fresh per-trial scratch/home, output path and size enforcement. Create disposable owned environments; never purge shared /tmp, history, persistent volumes or user workspaces.
+
+Qualification tests: full-credit authored fixture, empty answer, wrong numeric/boundary answer, deceptive keyword-only answer, prompt injection and hard-constraint violation. For all three tasks run real native Harbor positive/empty/guardrail checks, not only mocked adapter tests. For business cases, fixture outputs verify machinery; they are never measured candidate model performance. SME calibration verifies rubric meaning separately.
+
+Do not mount eval_pack anywhere in a candidate-controlled environment, even root-owned at mode 0700. A separate trusted evaluator container/process receives sealed outputs after candidate execution ends. Its image/code is installation-reviewed and digest-pinned; an imported arbitrary script cannot choose its own privileges or network destinations.
+
+7. THREE-MODEL EXECUTION PROTOCOL
+
+Before any live dispatch freeze: benchmark/task-bank/package versions, ordered task membership, rubric/judge versions, exactly three candidate slots with provider and exact model IDs, adapter versions, temperature/sampling settings, token/context/output limits, tool policy, environment digest, repetitions, seeds/order, timeouts, retry/cancellation policy, rights validity, and separate candidate/judge spend ceilings.
+
+Default repetitions proposed: 2 per task per candidate, matching the mockup. For the three-case pilot this creates 3 tasks x 3 models x 2 repetitions = 18 candidate trials, plus grading operations. This is an operational pilot, not enough evidence for broad model superiority. Additional repetitions require a new protocol/budget; do not quietly change denominators mid-run.
+
+Use the same task inputs, tool surface, environment, rubric and budget policy across candidates. Pin exact model versions where possible; record provider-returned model ID and classify a mismatch. Record unsupported sampling controls rather than pretending identical seeds guarantee equivalent stochastic behavior across vendors. Freeze task order or a reproducible interleaving schedule to avoid systematic provider timing bias.
+
+Build/qualify model-independent package once, then schedule isolated cells by task, model, repetition and attempt ID. Start pilot with at most three active candidate trials and a configurable lower provider-specific concurrency/rate limit. Candidate inference is performed by a trusted host-side broker using existing Anvil project credential bindings. Candidate tools execute in the no-egress sandbox. Do not break network isolation to let SDKs inside the sandbox reach providers; use an explicit, qualified host-orchestrated tool loop/stdio bridge with correlation IDs and allowlisted tool messages.
+
+Provider parity is required: qualify real OpenAI, Anthropic and Gemini tool-call/observation/output handling independently. Do not route a Claude/Gemini selection through the legacy OpenAI key path. A configured provider without a qualified Harbor adapter shows Unsupported/Blocked and cannot silently fall back to another model.
+
+Maximum proposed candidate loop: 15 inference turns per task, with bounded tool calls and output size per turn. Define a turn as one candidate inference response, including its requested tools. Provider calls, artifact I/O and judge work must remain outside locked database transactions. Reuse the recent Anvil finalization fencing/lock-order discipline so completion/cancellation/duplicate deliveries cannot lose counters, emit duplicate finalization events or deadlock.
+
+Durability: project-scoped idempotency key and unique execution cell; fenced lease; durable checkpoint before/after dispatch; bounded queue pages. A duplicate request cannot create a second paid trial. No automatic retry after a provider dispatch whose billing/outcome is ambiguous. Mark dispatch_unknown, retain reservation and reconcile. Safe pre-dispatch failures may retry within the frozen policy. A rerun creates a linked new attempt with explicit budget; never overwrite a previous result.
+
+Cancellation stops future dispatch, terminates only owned sandbox processes, seals available evidence, and reconciles incurred/unknown charges. It never turns an incomplete trial into a passing score. Resume only from a safe checkpoint without redispatching an ambiguous call.
+
+8. SCORING, JUDGE CALIBRATION AND COMPARISON
+
+Each criterion has a stable ID, task binding, possible points, evaluator type, exact rule/tolerance or judge template/version, output evidence requirement, and applicability rule. Deterministic criteria run in trusted code. Judgment criteria use a frozen structured-output judge configuration, separate from candidate identity. Do not call LLM grading deterministic: it can vary even at low temperature.
+
+For a complete repetition: suite_score_pct = 100 x (sum of earned points across all criteria) / 81. The point-weighted metric is primary for this Bodhium suite. An equal-task macro average is optional and separately labeled; it must not silently replace the 81-point score. Sum integer/raw points then round displayed percentages to two decimals. Store unrounded values and score policy version.
+
+Across repetitions: report per-task/per-repetition points, model mean of complete suite repetitions, range and trial completion. Do not combine best attempts from different repetitions. A model with missing/operationally unresolved required cells has Incomplete status and no comparable primary suite score until resolved. Diagnostic completed-only scores must display their numerator, denominator and excluded cells and cannot be ranked as complete-suite performance.
+
+Policy distinction: model-caused deadline/turn-limit exhaustion or missing deliverable scores zero for affected required output criteria under a frozen valid-trial policy, while preserving Model timeout/Missing output status. Infrastructure/provider outage, ambiguous billing, missing rights or broken evaluator is an operationally invalid/unresolved cell, not a model-quality zero. Judge failure yields Pending evaluation/Invalid evaluation, never zero candidate quality by default. A hard safety constraint may zero a task's official reward only if declared in the frozen policy; retain raw diagnostic points and the reason.
+
+Judge JSON must include every expected criterion exactly once, within bounds, with evidence spans/artifact hashes and no invented/unknown criterion IDs. Anvil recomputes totals server-side. Evidence text must exist in the sealed output; contradictory claims or malformed JSON require review. Candidate output and embedded instructions are untrusted data, not instructions to the judge. The judge cannot execute output content or follow external links.
+
+Calibration before live scoring: SME-owned good/bad/borderline cases, expected criterion outcomes, numerical tolerance boundaries, paraphrase/equivalent answer cases and injection cases. Record judge agreement/disagreement. Proposed second review triggers follow current project policy: critical, disputed, borderline within five percentage points of the task pass threshold, and a frozen 10% sample; map to existing assigned grader/adjudicator controls. Never silently substitute a second judge model; record identity, cost authority and adjudication provenance. Human or judge corrections create successor score revisions, preserving originals.
+
+Judge receives only needed case/rubric/oracle/output content after rights checks explicitly authorize that vendor destination. Raw evaluator prompts/oracles never appear to ordinary result viewers. If no external judge permission exists, deterministic checks and local fixtures can proceed; semantic scoring remains blocked.
+
+Comparison columns: exact provider/model; completed/planned/valid/scored cells; points/81 and percent; task scores; declared constraint outcomes; candidate tokens/cost; judge tokens/cost; combined cost; median end-to-end trial duration; error/timeout counts; evidence links. Unknown usage/cost is Unknown, never $0. Charges use recorded provider usage plus versioned pricing/receipt/reconciliation; show estimates separately. For two repetitions show observed range; no significance or broad ranking claims. Future uncertainty intervals must document their sampling unit and method.
+
+9. BENCHMARK UI: REPLACE THE MOCKUP WITH REAL STATES
+
+Keep the modern workspace navigation and visual language. Reuse Tasks, Preparation, Runs and Model management rather than build a parallel console. Keep the existing connected diagnostic catalog accessible. Reference or demo content must remain visibly separate from measured SME benchmark data.
+
+Screen A - Benchmark library
+Cards/table: bank name, source owner/classification, exporter Praxis, source and benchmark versions, task count, domain/capabilities, qualified/blocked task count, rights status, latest run status and score provenance. Search/filter by domain, origin, version and state. Empty state: Import Praxis task bank. Remove illustrative 300/240/200 counts, 740 inventory and fit percentages from the real workflow; recommendation fit appears only if backed by an actual versioned recommendation.
+
+Screen B - Import and qualify
+Upload authorized export, choose destination project, preview exact task list and actor-visible assets. Display source receipt/hash/signature status and row/task errors. Show separate Integrity, Rights, Environment, Tools, Leakage, Rubric and Native Harbor gate results, each with a useful next action and role. Private oracle preview is restricted to authorized evaluators; normal viewers see completeness/status only. Build/qualify cannot automatically publish or spend on inference. Missing actual Bodhium exports show Awaiting source, not Ready.
+
+Screen C - Benchmark version detail
+Tabs: Overview; Tasks & coverage; Qualification; Protocol; Results; Failures & evidence; Run history. Header shows immutable version, provenance, task count, total possible points, environment/evaluator versions and release state. Three case rows show 24/6/51 points and package status. Create successor version for edits after freeze. Explain Package ready, Run admitted and Model performance as distinct concepts.
+
+Screen D - Configure comparison
+Three model slots; exact IDs/config versions; qualified adapter status; repetitions (default two); tools; runtime limits; rubric/judge configuration; candidate and judge cost estimate/cap; rights destinations; required approval. Summary: 18 candidate trials for the proposed pilot. A server-derived readiness panel explains blockers per item with role-safe action links. Launch is disabled until server admission succeeds and rechecks on click. Do not rely on a client-only disabled button for security.
+
+Screen E - Live comparison
+Matrix rows BL-001/002/003, columns three exact models; cell drilldown lists repetitions and lifecycle. Show queued/running/collecting/evaluating/scored/failed/dispatch-unknown/cancelled distinctly. Counts reflect backend events and can refresh/recover after reconnect. Include cancel and safe resume actions with effects explained. Never show progress by fabricating percentages or simulated streaming.
+
+Screen F - Results and evidence
+Replace hard-coded score bars with measured scorecards. Show points/81, completion and evaluation state adjacent to percent, per-task breakdown, constraint failures, costs split candidate/judge, duration and run policy. Incomplete/invalid results have no winner badge. Drill down model -> task -> repetition -> criterion -> exact output citation and permitted tool trace. Private references and judge context remain inaccessible. Show review/disagreement/score revision badges. Export a permitted JSON scorecard, CSV comparison and redacted evidence report, bound to hashes and policy. Sharing/publication is a separate explicit, rights-checked action.
+
+Screen G - Published references
+Keep reference results independent of Anvil-measured results. Require citation, measurement date, model/task/tool/protocol comparability and rights before presenting historical deltas. GDPVal remains explicitly unimplemented unless separately scoped; remove stale date promises. No inferred Bodhium baseline from the attachment's illustrative JSON.
+
+All screens: keyboard navigation, descriptive links, non-color status labels, accessible tables/alerts, sensible focus after errors, loading/empty/partial/error/revoked states, pagination and bounded artifact viewing. Never label fixtures as expert-verified or measured model results.
+
+10. BACKEND, STORAGE AND API DESIGN CONTRACT
+
+Reuse existing entities where equivalent: import receipt, task/package version, suite/protocol, model connection/config version, run/group, episode/job, reservation, artifact, score/review/audit. Architecture must give a current-schema mapping and justify each extension. Proposed added concepts are benchmark bank/version membership, qualification record, frozen comparison protocol, model/task/repetition cell, evaluator run and scorecard revision. These are logical concepts, not instructions to duplicate existing tables.
+
+Every object is project-scoped with authorization on reads, mutations, downloads, background jobs and polling. Unique constraints bind exact source and cell identities. PostgreSQL remains authoritative; graph projections are rebuildable. Raw uploads, outputs, trajectories and private evaluations use separate artifact access classes. Database rows reference content-addressed artifacts with size/type/retention classification. Private evaluator assets cannot be selected through generic artifact-download endpoints.
+
+API capabilities to map onto existing routes: ingest/status/error report; validate/build/qualify; create/freeze benchmark version; validate/freeze protocol; readiness/estimate; launch/status/cancel/resume/reconcile; paginated cells; retrieve permitted deliverables/trajectories; versioned scorecards/reviews; export. Document request/response schemas and error semantics in existing OpenAPI conventions. Hash/version conflicts return conflict; missing rights/unsupported adapter is a typed blocker; cross-project access is denied without leaking existence. Proposed route names are left to architecture after current API inspection.
+
+Separate lifecycle dimensions rather than one overloaded Ready flag:
+- Source: received, validating, quarantined, accepted, superseded.
+- Package: draft, building, qualified, failed, stale.
+- Protocol: draft, frozen, blocked, admitted, revoked.
+- Execution: queued, running, collecting, completed, model_failed, operational_failed, dispatch_unknown, cancelled.
+- Evaluation: pending, running, scored, review_required, failed, adjudicated.
+- Publication: private_draft, reviewed, published, withdrawn.
+
+State transitions must be idempotent, audited, and race-safe. Frozen versions are immutable. Rights revocation/expiration blocks future dispatch and re-evaluation; past authorized evidence follows retention and visibility policy, not silent deletion. Cancellation and late worker events have deterministic precedence. Never hold database locks during network calls. Snapshot/retry/fencing tests must cover interaction with the earlier finalization fix.
+
+11. SECURITY AND OPERATIONS
+
+Restricted case content, outputs and even numeric business details may require partner rights. Preserve source origin and license terms through derived tasks/reports. Record external inference/judge destination approvals and retention policies. No training/fine-tuning or public publishing rights are inferred from SME review.
+
+Use secret references and existing per-project credential binding. No secrets in bundles, candidate sandboxes, front-end responses, tool logs or reports. Secret scans complement access-control tests; they do not prove isolation. Keep candidate and judge logs in separate access classes. Logs capture observable messages/tool calls/results and metrics only when permitted; do not demand hidden chain-of-thought from providers or fabricate it.
+
+Trajectory contract: keep an append-only internal event stream if useful, but export valid ATIF JSON according to the installed Harbor version. JSONL alone must not be advertised as a valid ATIF trajectory. Validate IDs, call/observation correlation and schema using the pinned implementation. Current upstream documentation describes trajectory.json; do not auto-upgrade the locked repository to match latest docs. Cap/redact payloads with explicit truncation markers and keep evidence hashes without exposing private oracles.
+
+Evaluator sandbox has read-only approved rubric and sealed outputs, no candidate write access, no database administration, no unrestricted egress, strict resource limits and a trusted broker for approved judge requests. Restrict filesystem tools to canonical workspace paths, deny symlink escapes and validate output regular files before collection. Tool resource limits must kill the whole owned process tree, not only the REPL parent.
+
+Preflight includes valid image digest, network enforcement, non-root identity, read-only inputs, evaluator absence, tool schema probes, deterministic reset, time/memory/process/output limits, rights and budget admission. Do not weaken auth, RLS, socket permissions, feature gates or provider activation to achieve a test pass. Do not delete persistent volumes or reset shared databases. Existing candidate and judge spend reservations remain distinct, bounded and reconciled.
+
+12. REQUIREMENTS AND ACCEPTANCE TESTS
+
+BM-01 Import authenticity and safety: import the same valid export twice without duplicating tasks; reject conflicting same-version bytes; quarantine unknown signer; reject bad hashes, traversal, symlinks, bombs, missing exhibits and incomplete 81-point rubric. No code runs during import.
+
+BM-02 Backward compatibility: existing task.v1/v2/v3/export.v1 golden tests still pass, with unchanged synthetic labels and readiness checks. Real SME data is not mislabeled synthetic to bypass schema validation.
+
+BM-03 Harbor conversion: all three complete source cases compile to reproducible, digest-bound packages; positive, empty and guardrail native Harbor trials execute for each. Package readiness is separate from model-performance evidence. Missing supplied exhibits stays a blocker, never a fabricated replacement.
+
+BM-04 Isolation: test candidate attempts to read private rubric/oracle/canary, other-task or other-project assets, environment secrets, host paths, cloud metadata, Docker socket and outbound networks; all denied. An allowed actor tool still computes correctly. A legitimate actor/evaluator shared number must not cause an unexplained false-positive rejection.
+
+BM-05 Three-provider parity: mocked transports validate each provider's tool-call IDs, multiple calls, tool errors, turn limits, final output and usage normalization. A separately approved live smoke executes at least one actual task trial for each selected model before the full paid protocol. Unsupported adapters block without fallback. Mocks/native scripted actors do not qualify as real provider smoke.
+
+BM-06 Matrix completeness: frozen three-task/three-model/two-repetition protocol creates exactly 18 unique candidate cells. Duplicate launch, worker lease expiry, restart, simultaneous finalization and cancel-vs-complete races create no duplicate paid dispatch/score/audit and lose no completion. No regression of the earlier finalization/deadlock tests.
+
+BM-07 Scoring: all 81 criterion IDs accounted for; 24/6/51 maxima; server recomputation; zero/full/partial arithmetic; precision/tolerance boundaries; missing/extra/contradictory judge criteria; timeout versus infrastructure failure; incomplete result exclusion; no best-attempt selection. A software test may assert 64/81 rounds to 79.01%, labeled a test fixture only.
+
+BM-08 Judge reliability: SME calibration cases, prompt injection, equivalent correct answer and keyword-only wrong answer; failed/malformed judge response stays unscored/review-required. Second review policy and immutable adjudication evidence are tested. No candidate identity bias is knowingly introduced into judge prompts.
+
+BM-09 Rights, auth and budgets: role and cross-project read/mutation/artifact negatives; expired/revoked rights; exact candidate/judge provider-model approval; denied or exceeded budgets; unknown usage reconciliation; no secrets in candidate artifacts or user APIs. A readiness GET creates no provider call or reservation.
+
+BM-10 UI integration: browser journey import -> qualification -> frozen protocol -> fixture matrix -> result/criterion drilldown; actual counts/status from APIs; three-provider errors and incomplete states; authorized links by role; reconnect/pagination; keyboard/focus/alert checks; no mock scores in real views. Existing Tasks, Preparation, execution-group and run flows still work.
+
+BM-11 Evidence/export: JSON/CSV exports agree with stored raw totals, model IDs, versions and cell outcomes; redacted exports exclude private rubric/oracles/credentials; download and share checks deny other projects. ATIF validates against installed schema; unknown metrics remain unknown.
+
+BM-12 Release: migrations on a fresh and upgrade database, dependency locks, unit/integration/browser/security checks, image build, startup/worker health and rollback procedure. Live acceptance on the authorized environment must prove exact deployed image/source bindings and one complete approved comparison; no paid test without explicit authority. Rehearsal and fixture results remain separately labeled.
+
+Each QA row must report Passed, Failed, Blocked, Skipped or Not run with exact command, test IDs, version/hash, environment, expected/observed outcome and evidence artifact. No green release claim based only on skipped real-Harbor or provider tests. Artifact access isolation and financial limits are release gates, not optional UX issues.
+
+13. IMPLEMENTATION AND APPROVAL HANDOFF
+
+Stage 1 - PRD/architecture reconciliation: read latest OpenHands checkout, role skills, current schemas and prior QA/deployment handoffs. Produce requirement traceability, schema/adapter/UI mapping, threat model, score policy, migration/API plan, exact missing inputs and proposed defaults. Stop for approval before coding. Do not overwrite earlier readiness/finalization documents.
+
+Stage 2 - Planner: dependency-ordered work for bundle contract/fixtures; safe ingestion/private storage; artifact-task compiler and native Harbor qualification; provider-neutral agent loop; evaluator/calibration/scoring; durable matrix orchestration; real benchmark UI; negative/regression tests; operations and rollback. Each item lists acceptance IDs and relevant files, with mocks versus real execution distinguished. Stop for plan approval.
+
+Stage 3 - Coding after plan approval: isolated Anvil branch/worktree preserving current approved snapshot and user edits. No Praxis repo modifications. Use original fictional fixtures for development; keep real Bodhium content out of source control unless expressly authorized. Complete local mechanics even if partner data or live budgets are missing; label blocked end-to-end claims candidly.
+
+Stage 4 - QA/security after coding approval: independent review against BM-01..12, regression of prior finalization fix, true native Harbor execution, role/private-artifact tests and scoring-policy validation. Separate offline conformance from real-model results. A specific candidate/judge model and budget approval is required before real provider smoke/full runs.
+
+Stage 5 - DevOps after release approval: current environment preflight and credentials, exact source/image/package bindings, existing GCP target, preserve feature flags and secrets, data snapshot/rollback and smoke checks. No Praxis deployment or IAM expansion. Previous deployment approval for the readiness increment is not blanket approval for this new benchmark feature.
+
+Required artifacts in a NEW run folder, proposed docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/: approved PRD, architecture, plan, requirements matrix, contract examples/schema, threat model, implementation report, QA report, security review, model-run authority reference (no secrets), fixture/live evidence indexes, deployment and rollback report, approval log. Bind handoffs to actual computed hashes, never invented values.
+
+14. DECISIONS AND MISSING INPUTS
+
+Confirmed: Praxis is the source of SME-authored task banks; assume Bodhium cases arrive by export. Harbor is the execution target. Compare three models. Modify the existing benchmark mockup and integrate with Anvil. Handoff target is the existing Anvil OpenHands conversation. Praxis remains independent and unchanged.
+
+Proposed defaults for review: OpenAI/Claude/Gemini slots with exact IDs still empty; two repetitions; 18 candidate cells for the three-case pilot; primary score is points earned /81; max 15 candidate turns; per-tool 60 seconds and 2 GiB sandbox; case deadlines 900/600/1200 seconds; at most three concurrent candidate trials; separate candidate and judge budget ceilings; trusted evaluator with no candidate-side eval mount.
+
+Needed before authentic Bodhium benchmarking: actual authorized Praxis export with full cases/exhibits and complete criterion/oracle definitions; rights and provider-destination permissions; reviewed task/evaluator images; model IDs/settings; judge ID/version/calibration approval; exact budget/currency/expiry; permitted runtime credentials; source signature trust policy or explicit unverified/quarantine policy. Missing inputs block only dependent stages, not unrelated local implementation after approval.
+
+Not resolved by this draft: whether the partner can supply signed archives immediately; complete oracle tolerances/semantic rules; approved judge configuration and sufficient repetitions for publishable claims. Architecture should present bounded choices with consequences. Do not fabricate current model availability, pricing, source rights, baseline measurements or prior sign-in status.
+
+15. SOURCE REFERENCES
+
+User attachment: Anvil BenchmarkSpec.pdf, 10 pages, read 7 November 2026. Page 1 boundary; pages 2-4 bundle/examples; pages 4-6 gates; pages 6-7 execution/trace; pages 7-10 scoring and illustrative output. It is the source proposal, not evidence of actual case files or measured results.
+
+Repository references: paths listed in section 2, inspected read-only at the stated local HEAD. This document intentionally proposes extensions for observed gaps and does not claim they already exist.
+
+Harbor upstream ATIF documentation (consulted 7 November 2026): https://github.com/harbor-framework/harbor/blob/main/docs-mintlify/agents/atif.mdx . It describes trajectory.json and schema validation; implementation must use the repository's pinned Harbor release rather than assume upstream-main compatibility.
+
+16. COPYABLE OPENHANDS INTAKE MESSAGE
+
+Use the Anvil PRD/Architect roles to review the attached Anvil Benchmark Specification v0.1 for Praxis SME task-bank exports, Bodhium artifact tasks, Harbor execution and three-model comparison. This message authorizes inspection and a proposed PRD/architecture only; stop for my approval before coding, paid calls or deployment. Inspect your actual current Anvil branch/HEAD/working tree, preserve prior approved readiness/finalization changes and all local user edits, and leave Praxis untouched. Reconcile the new SME bundle adapter with existing task.v1/v2/v3/export.v1, the restricted/synthetic provenance boundaries, OpenAI-specific Harbor path, existing provider transports, and BenchmarkPreview/BenchmarkDashboard/WorkspaceBenchmarks. Do not invent missing Bodhium exhibits, the full 81 criteria, model IDs, judge configuration or budget. Produce a source-backed design, requirement-to-code/test matrix, migration/API/UI changes, isolation/spend threat model, score policy, phased plan and explicit blocked inputs. Bind to actual source hashes. No implementation, model requests, auth changes, commits/pushes or deployment in this intake stage. End pending Product Owner approval.

@@ -1,18 +1,14 @@
-import json
-
 import pytest
 from test_api_security import USERS
 
 from anvil import domain
-from anvil.config import ROOT
 from anvil.db import one, transaction, uid
 
 
 @pytest.mark.parametrize("kind", ["task", "rubric", "protocol"])
 def test_successor_is_canonical_draft_with_cas_private_field_preservation_and_history(
-    client_factory, kind
+    client_factory, kind, journey
 ):
-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
     project = journey["project_id"]
     base = f"/api/v1/projects/{project}"
     with transaction(project, USERS["researcher"]) as c:
@@ -122,8 +118,7 @@ def test_successor_is_canonical_draft_with_cas_private_field_preservation_and_hi
     )
 
 
-def test_approved_revision_decision_stays_on_old_hash_after_successor(client_factory):
-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+def test_approved_revision_decision_stays_on_old_hash_after_successor(client_factory, journey):
     project = journey["project_id"]
     base = f"/api/v1/projects/{project}"
     with transaction(project, USERS["researcher"]) as c:

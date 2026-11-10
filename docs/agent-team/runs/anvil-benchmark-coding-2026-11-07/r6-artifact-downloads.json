@@ -1,0 +1,22 @@
+{
+  "observed_at": "2026-11-07T18:18:38.608439+00:00",
+  "source": "Old Anvil sandbox file GET only; no commands or agent resume",
+  "results": [
+    {
+      "path": "/workspace/anvil-prd-validation/docs/agent-team/runs/anvil-task-readiness-explanations-2026-11-06/deployment-evidence/release-r6.patch",
+      "http_status": 200,
+      "bytes": 152768,
+      "sha256": "3e3552e21f37388aca0f7985c54e169f54ce02bc318b0368ec19e334b6389e66",
+      "expected_sha256_match": true,
+      "saved_path": "/workspace/anvil-recovered/recovery-evidence/r6-original/release-r6.patch"
+    },
+    {
+      "path": "/workspace/anvil-prd-validation/.git/objects/15/e35f12725a89be6e507b2eb73d4433e666dd76",
+      "http_status": 200,
+      "bytes": 304,
+      "sha256": "b7b2833af0958e03093cf0088cdb14c896dd2e9099891adffc93f6000a1f354b",
+      "expected_sha256_match": null,
+      "saved_path": "/workspace/anvil-recovered/recovery-evidence/r6-original/release-commit.git-object"
+    }
+  ]
+}

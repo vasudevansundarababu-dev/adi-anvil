@@ -1,4 +1,110 @@
+# Current — isolated cloud QA acceptance setup and bounded real smoke in progress
+
+November10 owner continuation supersedes the historical local-only status below. Actual isolated GCP QA VM/private HTTPS/OIDC/Harbor0.25.0/OpenEnv0.12.0 are operational, with native actor/collection/separate verifier and paid-off technical evidence. Owner explicitly approved the dedicated secret-only workload identity, staged-key binding, bounded real-model smoke and QA availability extension through **November11 noon Chicago /18:00UTC**, same USD100 infrastructure cap and USD75 model total/USD10 initial smoke. Fresh readback confirms native absolute STOP; both exact-resource cleanup automations retain48h throughNovember13 noonChicago. Production/Praxis/original previews remain untouched.
+
+Separate acceptance Project `1c08f1bc-17ec-4480-9f56-b99ac2e22744` has two actual, labelled synthetic OIDC identities and ten checksum-verified draft Praxis source Tasks. It has no provider credentials. Initial QA is being completed with explicit software-control zero/failure cases, immutable original rubric scoring and exact-source paid-off cloud admission; this does not create published human source reviews. Actual reviewed six-template Task/evaluator bindings remain absent and must stay visibly blocked.
+
+First six model attempts failed before provider intent because the nested native Unix socket exceeded AF_UNIX path limits; all preserved, SQLintentcount0, no key leak or model-result claim. Short owned path repair tested. Fresh six attempts each cappedUSD0.50, with priorUSD6 reservations retained: totalUSD9 within initialUSD10. Four stored successes observed; Argon execution_unknown retained/no retry; Flash still executing at this checkpoint. Final receipts and known versus unknown costs must be reported separately. Never turn unknown/not-evaluated into zero. See the current execution log and forthcoming QA-team handoff for final successor evidence; this paragraph is an in-progress checkpoint.
+
+New bounded checks:24 lifecycle/credential/worker/runtime tests, five business-QA admission/control tests andRuff PASS. Original whole-backend930-pass receipt remains source23a1333; successor whole-unit/API/browser checks are pending. No fourth image build; current QA uses originalc08c168 image plus recorded exact source overlays. No production release or independent QA acceptance claim.
+
+# Historical — six local reference environments verified; full revision 2 remains in progress
+
+User launched the six-environment plan on November9. Actual local environment/data/runtime/binding/UI slice now passes885 offline units,38 fresh SQL/API/generator checks,38 existing Node contracts, types/Ruff/build and2 actual both-role browser flows across all six templates. Thirty synthetic reference scenarios are materialized and validated. Existing benchmark UI/scoring and prior preview remain unchanged. No cloud provisioning, deployment or paid calls. Read `docs/agent-team/runs/anvil-codex-transition-2026-11-08/environment-v2-local-handoff.md` for the current preview and AC01–AC22 limits. Native Harbor attempt integration, automatic qualified GCP lifecycle, authentic six-task mappings, selected-model receipts and OpenEnv trial remain outstanding. Do not claim full approved-spec completion.
+
+# Previous completed — integrated local benchmark journey
+
+November9: the approved local dashboard/configuration flow is connected to stored Project imports, optional policy sources, tested deterministic mappings, reusable Execution Groups, durable LangGraph Runs, separate captures/assessments, seven result views and exact-scope PDF/JSON/JSONL exports. The new preview is on loopback53586; older50679/52977 previews remain unchanged. This is a fictional business software execution, not vendor model performance or native isolation.
+
+Five actual local adapter capabilities are integrated into Run assessment: built-in, ZEN2.1.3, OPA1.22.2, NeMo0.24.1 literal checks and Promptfoo0.125.1 literal assertions. Arthur/Openlayer retain bounded wire contracts and disconnected API configuration; no live calls. Unqualified/archived vendor entries stay unavailable rather than becoming Run options.
+
+Evidence and exact limitations: `docs/agent-team/runs/anvil-codex-transition-2026-11-08/benchmark-integrated-handoff.md`. Full offline units933 PASS; broad SQL predecessor238 PASS/38 explicit native-or-optional skips, followed by23 fresh final Run/adapter/authority/intake checks.38 Node contracts, types and production build pass. Real OIDC browser flow exercises Admin and RL Engineer; no report decisions were manufactured. Current native qualification and live API/provider verification remain separate and unrun. No Praxis/original-checkout changes, paid calls, merge, push, cloud build or deployment.
+
+---
+
+# Historical — evaluator foundation milestone
+
+November9: user approved the final design, requested a detailed Praxis coding handoff and QA changes for BOTH products, then Anvil coding. Specifications34/35, rendered Word handoffs, schema and examples are delivered. Praxis remains an independent coding handoff; its repository and the original dirty checkout are untouched.
+
+The first coding milestone adds optional policy validation, migration064, append-only project evaluator configuration/testing/revocation, both-role API/administration UI, installed deterministic local adapter capabilities and two bounded API contracts. Expanded source passed13 fresh SQL/API checks across Admin/RL Engineer and five local options (OPA1.22.2, ZEN2.1.3, NeMo0.24.1 literal checks, Promptfoo0.125.1 literal assertions, built-in templates). TruLens2.16.0 calibration worker passed4 separate actual-library cases; it is not a policy verdict. API contracts are mocked, not live-account verified. Foundation predecessor full930units and locked Next16.4.1 build passed; later adapter extensions have focused SQL/types/Ruff/Node checks, not relabelled full successor regression qualification.
+
+Full Run integration, policy import persistence/extraction, remaining dashboard/PDF changes, browser QA and native qualification remain pending. Existing running previews are unchanged. All paid calls remain off; no deployment/merge/cloud resources. Resume from `docs/agent-team/runs/anvil-codex-transition-2026-11-08/policy-evaluator-implementation-progress.md`. Earlier completion entries below describe the previous fictional comparison only.
+
+---
+
+# Historical — stored fictional comparison and configurable report review
+
+November 9, 2026: product checkpoint `a1ddace319cd6e7e0472877ef5f181099613b63f` is pushed on the existing draft PR16 branch. The local application now executes and persists a complete, explicitly fictional software comparison: three transparent scripted profiles, three public tasks and two repetitions. All four connected views read its saved results and exact-result PDFs. These software scores are not model-performance or current native-qualification evidence.
+
+The user's new report policy is implemented: an authenticated Admin configures zero through ten reviewers (default one); actual Admin execution or explicit exact-result Admin approval requires no additional report sign-off. Frozen policies, actual actor provenance and historical reviews remain immutable. Source rights, qualification and spending gates remain separate. No reviewer decisions are fabricated.
+
+Final backend units: 865 passed. Predecessor full benchmark SQL: 209 passed / 29 explicit native skips; integration: 190 passed / 19 native/authentic-Praxis skips. The bounded successor guard/revocation delta passed 26 focused SQL/API checks. Frontend types, production build and 38 Node checks passed; three real authenticated browser checks passed on exact successor source. Detailed final evidence is in `docs/agent-team/runs/anvil-codex-transition-2026-11-08/rehearsal-final-handoff.md`.
+
+No application deployment, merge or paid calls. Current native requalification and operational staging release remain outstanding. Earlier entries below are preserved historical evidence, not current task scope or acceptance.
+
+---
+
+# Historical T05 recovery — offline Coding verified; native/SQL environment blocked
+
+Tested commit `4e64f54c368d04afcde6faa8c41cdadd9529e0d9`, tree `0c745b5b5f098f2f55ea066f8c4f8228913cfe6f`. Repair checkpoint `e0a7b5fb45dbc73c1e9d6248647a102387ea5cd8`, tree `d807b5ee4f17acdf1d8f582a356e731863ab0c66`. Recovery/publication change documentation/evidence only; product/test/lock bytes are identical, but whole Git trees are not equated. Early checkpoint4e64f54 pushed normally; all15 approved originals rehashed unchanged.
+
+46 gateway;95 provider-loop; exactly3 fixed diagnostic rounds of6 each;96 pricing/capture;33 T06 contracts;729 full units;3 pre-dispatch private-binding negatives;7 adapter;12 Node; Ruff check/format2 files; scanner/diff: PASS. Counts overlap, not additive unique tests. No new test failures/skips; existing Authlib/Node warnings retained.
+
+Fresh full T06 SQL/native57 and combinedSQL136, T04 actual native9 and4 resource probes are BLOCKED/NOT RUN. No approved dedicated preloaded Docker/PostgreSQL runtime/images/socket in this new runtime; no new pull/build/load/substitution authority inferred. The3 private negatives invoke no Docker and are not native isolation. Old last4resource action has no observed result. Historical summaries are not new-runtime proof; expected-red/interrupted outcomes retained. Exact source/environment/commands/log hashes: Coding run t05-recovery-checks.json, t05-recovery-commands.md, t05-recovery-source.sha256, t05-recovery-history.json.
+
+Prices unchanged, verified2026-11-08T15:25:35Z/expires2026-11-15T15:25:35Z; strict production UTC retained, no refresh. PR16 stays draft. STOP human Coding review before T07/QA/paid/merge/deployment.
+
+---
+
+# Current pricing/T06 checkpoint — reviewed sources; STOP full-unit T05 blocker
+
+Tested `b97ac8d2949811d7ec06a00b43fdc8dc391e353e`, tree `1787c39dbd33ae733a775a413e5704afc8babf5f`. Actual maintenance authorityd7bc624; samebranch/draftPR16. All6 exact prices verified unchanged via10 official GETs, asof2026-11-08T15:25:35.450801Z, seven-day expiry2026-11-15T15:25:35.450801Z. Only costs.py/test changed; strict productionUTC/expiry and original billing preserved, deterministic testclock. Exact source:36pricing/57T06 INCLUDING2native/136combined/7adapter/12Node/Ruff2 pass. **Latest full units707pass/1FAILED repeated unchanged T05 wrong-auth Unix bodyBrokenPipe**; one earlier708pass does NOT hide committed failure. Pricing failure fixed but fully green gate BLOCKED; proposed bounded T05 transport repair requires separate authority, not executed. Evidence/official quotes/hashes/commands under Codingrun t06-pricing-*; earlier failures preserved. STOP human Coding review; no T07/QA/paid/secrets/merge/deploy/Praxis/shared/Mac changes.4new evaluator+2actor stopped/retained; isolated mainPG running to preserve tmpfsSQL. Older statuses below historical.
+
+# Current T06 source — reviewable; STOP before T07/QA
+
+Tested `ca8c2792e849ed2c7756a08e633a73a7a5832df2`, tree `2f4fc5f2416cc3e4649ebf4899507e29bbc1fea0`.57 focused pass (33contract/24SQL INCLUDING2native),136 combined non-native backend,7adapter/12Node/Ruff11 pass; fresh/upgrade/repeat049 verified. Full units689pass/1 unchanged expired-pricing failure; **NOT fully green**. Expiry2026-11-08T02:47:35Z left fail-closed; no invented price/clock/authority. Separate reviewed maintenance outsideT06. Exact evidence/commands/hashes under Coding run t06-checks.json/t06-source.sha256/t06-commands.md; current handoff at top. No T07/QA/paid/merge/deploy. All native actor/evaluator and independent freshDB stopped/retained; fresh main private PostgreSQL running to retain tmpfs SQL evidence. No real judge/Bodhium/model-performance/production-trust claim. Earlier pending-scope/T05/T04 statements below are historical.
+
+## T05 offline Coding complete — human review pending
+
+Source `bb7713fdcee6a187a99daaa04b60c8f9f8afac63`, tree `1369a0254476b7dc64d107d7205527ef9addc2be`. Actual user approved T04 source38cc151 andT05-only offline Coding.3 additive modules implement typed bounded multi-tool loop/3 independent real SDK wires and real host tool/Unix bridge; legacy adapters/providers/dispatch/Harbor/locks/SQL/OpenAPI unchanged.120 new/467 combined backend,7 adapter/12 Node/Ruff5 files pass; no final failures/skips. Raw token coercion/schema/framing/correlation negatives fixed. No real keys/models/paid/native-Docker/SQL/API/browser/full acceptance/new role run; no live route/admission enabled. No Praxis/Mac/shared/cloud/auth changes. Original15 unchanged. Source checkpoint654/0 scanner; final evidence rescanned. Exact t05-checks/source/commands/handoff under existing Coding run. STOP human T05 review; no T06–T10/QA/paid/merge/deploy. Offline conformance is NOT native/live qualification or model performance.
+
+## 2026-11-08 T04D — approved fictional local slice focused-verified
+
+Source 38cc1513aaee1069b69392b80566d23cb45d216a/tree 0fe379b77c4168bb905a76d1d83f13c3faa7ca30. Actual approval unblocked exact2 image preloads; new dedicated test-only daemon and PostgreSQL17.6.314 combined backend, native durable1 containing9 actual Harbor+4 resources,3 stale negatives,7 adapter/12 Node pass; fresh/repeat046 verified.17 new SQL capture/immutability/race checks found/fixed2 image/tool holes via additive046 and review-after-lock race. Durable3 qualifications+1 report, trust-stale/notReady/no-reclaim proved.22 native containers and independent fresh046 DB stopped/retained; only main private PostgreSQL remains running for ephemeral SQL evidence. No removals/shared/Praxis/Mac/cloud/auth/paid/QA/merge/deploy. Original15 unchanged; source scanner646/0, final evidence rescanned. Exact evidence/resume in BENCHMARK-PROGRESS and Coding run t04d files. STOP human Coding review before T05–T10/QA. This is NOT general evaluator/image admission, complete benchmark or Bodhium/model performance.
+
+Current focused-tested source: `c0f98b24de4aaeb8ebc72cbd4e6f8ed3eb5d4534` (tree `c161214346de7bd19bb047e968addb93438cc14a`). Actual results/commands and blocked checks: `docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04c-checks.json` / `t04c-commands.md`. Full T04 incomplete.
+
+## 2026-11-08 T04 restart continuation — software checks pass; native/SQL blocked
+
+Recovered checkpoint23bb8f1; current pipeline hardening passes233 focused backend/7 adapter/12 Node checks.60 new tests validate manufactured receipt inputs, real fictional filesystem hash changes and real authenticated Unix sockets, not native conformance. Full T04 incomplete: no fresh SQL/native execution because approved pinned PostgreSQL/Python images are not preloaded.044/045 migration/race guards require real isolated verification; admission remains blocked, features off by default. See current `BENCHMARK-PROGRESS.md` for exact prerequisite/resume. No QA/paid/deployment transition.
+
+## 2026-11-08 T04 restart — recovered source WIP
+
+Read-only history reconstructed11 source files above1b4f412; source compiles, SQL/native checks not yet run. Provenance `docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04-recovery.json`; current resume `BENCHMARK-PROGRESS.md`. Old sandbox ERROR cause unavailable. No QA/deployment or performance claim.
+
+## Benchmark Coding checkpoint — 2026-11-07
+
+Active isolated source: `codex/anvil-agent-team-2026-11-06`; resume from `BENCHMARK-PROGRESS.md` and Coding run `docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/`. Source `fbfcbb868256b809bae252709dccb2eef3900e66`, tree `b04544b27ace0c0d6b4adf9e0b29e4576b02b382`. Actual Yes approved the bounded adapter plan. T04B passes9 real native trials plus7 source/resource checks and7 adapter guards;217 existing backend and12 Node checks pass. Synthetic software conformance only, not Bodhium/model performance or QA. T04 durable build/qualification/product-admission hooks remain incomplete; T05–T10 not started. See source-bound `t04b-checks.json`, exact `t04b-commands.md` and `t04b-source.sha256`; prior failed scope effects/environment retries are preserved. Original15 approved inputs unchanged. Keep PR16 draft and stop for human Coding review; no QA/merge/deployment/paid calls. Historical statuses below are not current acceptance evidence.
+
 # Build status
+
+## Task-readiness explanations: coding increment, uncommitted, not approved — 6 November 2026
+
+Work ID `anvil-task-readiness-explanations-2026-11-06`. These changes are uncommitted on `codex/anvil-agent-team-2026-11-06` (base `8cdc8a8`) and await review. The UI now shows plain-language task-readiness reasons from one shared catalog. The catalog is checked against the backend reason codes by `contracts/readiness/reason-codes.v1.json` and a parity unit test. The Admin-only "Open Models & keys" condition is unchanged, and import states are explained on the task list and detail pages.
+
+Results:
+- Unit tests passed: 350.
+- The catalog and UI-policy Node tests passed: 7 and 9.
+- Ruff and Prettier passed. tsc passed.
+- `next build` passed earlier in this increment; it was not rerun after the final detail-page change.
+- The OpenAPI contract is unchanged.
+- The new no-spend integration tests passed: 2.
+- The three planned browser specs passed: 8 tests, 3 of them new.
+- The full integration suite FAILED: 143 passed, 42 failed, 19 skipped. 40 of the 42 also fail on unchanged HEAD. The other 2 passed when run alone. That is comparative evidence, not proof that the failures are unrelated.
+
+Live providers were off and no spend occurred. No push or deployment was made.
+
+Sandbox deviations are recorded in the run's `implementation-report.md`: a generated Keycloak container and volume were deleted, and the Docker socket was temporarily set to 666 before being restored to 660. Product Owner sign-off on the D-COPY wording is still pending.
 
 ## README review entry points — 2 November 2026
 

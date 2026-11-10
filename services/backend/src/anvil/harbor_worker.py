@@ -99,7 +99,7 @@ def lease(c, job):
 
 def authorized(c, job, user):
     roles = auth.project_roles(c, job["project_id"], user)
-    auth.require(roles, "admin", "researcher", "product-owner")
+    auth.require(roles, "admin", "rl-engineer", "researcher", "product-owner")
     row = one(c, "SELECT * FROM anvil.harbor_checks WHERE id=%s FOR UPDATE", (job["target_id"],))
     if not row:
         raise RuntimeError("check_missing")
@@ -315,6 +315,13 @@ def process(job):
             from anvil.import_execution import process as process_tool_trial
 
             process_tool_trial(job, user, row, package)
+            return
+        if os.environ.get("ANVIL_ENV") == "cloud":
+            # Cloud QA uses the preloaded, no-build/no-pull native custody path.
+            # Never fall through to stock Harbor's implicit image build/cleanup.
+            from anvil.environment_structured_agent import process as process_structured
+
+            process_structured(job, user, row, package)
             return
         workspace.mkdir(parents=True, exist_ok=False, mode=0o700)
         task_dir, results = workspace / "task", workspace / "results"

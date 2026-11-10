@@ -1,0 +1,303 @@
+{
+  "status": "T05_recovery_offline_Coding_passed_native_SQL_blocked_STOP_human_review",
+  "observed_at": "2026-11-08T17:27:14.592954+00:00",
+  "product_source_commit": "4e64f54c368d04afcde6faa8c41cdadd9529e0d9",
+  "recovered_commit": "15e35f12725a89be6e507b2eb73d4433e666dd76",
+  "recovered_tree": "18fca788310f91a35a54df39392a37c026ae16b1",
+  "release_source_files_verified_at_t00": 504,
+  "approved_originals_unchanged": true,
+  "native_failure_not_waived": true,
+  "history_note": "Old failure/evidence files retained unchanged; sanitized platform excerpts historical only, not byte-exact runtime/log recovery. Missing old TAP digest retained as unavailable. Portable current SHA256SUMS lists available files only.",
+  "entries": [
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/approval-log.jsonl",
+      "sha256": "eb04bc53f1196fcbedcc10bfe456e2e15081cc25692555469b0d1734481bd0ed",
+      "bytes": 15344
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/approved-input-snapshot.json",
+      "sha256": "361b135099394e76d9849a5e9e1c8edcb037b4077ed92452cfe73f60587abf97",
+      "bytes": 1415
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/environment-preflight.json",
+      "sha256": "3f3ec55a761c69a0fcac9cbe4c228f3f3d42af7ac5862c52b7a44b99e83fa07d",
+      "bytes": 650
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/focused-check-results.json",
+      "sha256": "b5d99172915ab693e63b9edc7a8d16596fec409033275bd079a681383849dec7",
+      "bytes": 1160
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/focused-readiness-check.tap",
+      "sha256": "dfdd19d474e03740f9dceb77d9bcd84f726ea07a8f8e45139dc8ee70d4050401",
+      "bytes": 2096,
+      "local_only": true,
+      "available_in_restart_runtime": false,
+      "classification": "Historical digest only; original bytes unavailable/not recovered"
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/github-readonly-evidence.json",
+      "sha256": "622fc6cbe7273f6fe937ca130b93b51f1c094fe16df4fe6fbf7f59107a3b9d2f",
+      "bytes": 7668
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/handoff.md",
+      "sha256": "146e512eaedf5e9a8f942d2151165b220baf2de0ea2b818c7da841cf89ef3ad8",
+      "bytes": 38944
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/historical-documents-verified.json",
+      "sha256": "ca8c655098633bcff2299f1ca05de1d4fc0e01b455916fddec1bc04459a33cf4",
+      "bytes": 1087
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/historical-evidence-probes.json",
+      "sha256": "ff5a75389a46982281fa0ab7dbe35042b977a19ef87b0fef7d4d05e1af1af2d9",
+      "bytes": 552
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/historical-release-paths.json",
+      "sha256": "8890ef940eb0edcb2f7962d0e0c0459be66f82f0e06651b5b178091aaa5fd7f4",
+      "bytes": 616
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/implementation-report.md",
+      "sha256": "705b143d481e5049269d28486096aed43710e0914f45f17127200a4b07044c3e",
+      "bytes": 46442
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/isolated-database-evidence.json",
+      "sha256": "dd2a3f6e8ae255c60fb6253725bc0203effdf20b21271aea6c21aad3e94b205b",
+      "bytes": 1348
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/old-anvil-readonly-evidence.json",
+      "sha256": "2b69306a2e63399a478e505140631578ddba8cd960cc7cecfb13e8104beaa6af",
+      "bytes": 1103
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/push-preflight.json",
+      "sha256": "b966b893814eeb1775f6592e62919dfa4942f4d82205e2346d0a1d65ee485e64",
+      "bytes": 2236
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/r6-artifact-downloads.json",
+      "sha256": "2b5a75e0c7ecb0450d3ea94f9c9347ec63c069aac20109abc2ff54658dcc0f68",
+      "bytes": 971
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t00-source-verification.json",
+      "sha256": "294653fa8f5d9ed8ec9ffe7970f4b317593a4e0be833e4cc17940724fa150069",
+      "bytes": 1840
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t01-checks.json",
+      "sha256": "ee51826b0cfe8033d61bc360bee5880e0567fe984fe6d98b9696c7e4c2a0c999",
+      "bytes": 6028
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t02a-checks.json",
+      "sha256": "6af5cc2b2de531f1128a7b8ee420c3b96ee47b848451f202c670f5977de6083b",
+      "bytes": 1642
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t02a-source.sha256",
+      "sha256": "41c22722c7e88e124946d508efbed1887823c89017aba45d7e81b0ea495279e2",
+      "bytes": 969
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t02b-checks.json",
+      "sha256": "5b4454c39db02509a427bec09dae7b23a6240973edf0f7ffc40217b4c0ab5ae6",
+      "bytes": 1919
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t02b-source.sha256",
+      "sha256": "2e3598579cf63c0994f1365ed2754c7d8fa900f7fd4b266c726da5890f8e49f0",
+      "bytes": 656
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t03-checks.json",
+      "sha256": "1bf6102a7e977ba31b5bd7ec9ee64f9886b7e01e7a80faf2899e59d8b57a0a64",
+      "bytes": 5517
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t03-source.sha256",
+      "sha256": "ca4db1452c228513d1c8b6bdc592c6970f13efb946ffae899ac5d7dbe14da1e6",
+      "bytes": 1750
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t03a-checks.json",
+      "sha256": "44b2fef634ffcf232c94be70949bc8b05f317149e7b834c4fbdd1d6d6c34dc8c",
+      "bytes": 1847
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t03a-source.sha256",
+      "sha256": "1934a6d1c07e963f46845d212a01e788cd0b2c19e1b25487fcfe0b5d6d003065",
+      "bytes": 348
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04-fixture-review.json",
+      "sha256": "4d161001bf4103bdec3281e2308ebd95828ef4e337a301d9080a6af6b86601aa",
+      "bytes": 1966
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04-native-blocker.json",
+      "sha256": "b8708e481b7b4068f33754bfd261c35ec613a0d6ea3679e79b5e7aa0a91a1425",
+      "bytes": 4792
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04a-checks.json",
+      "sha256": "930ff6acdc04800cdc0dc276598c5c373c1a1f23f4e04ebeea073bf4ec50058a",
+      "bytes": 1646
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04a-source.sha256",
+      "sha256": "d0be698ee67e00fe70d6f7ee5e7179d03db5c949b1a716a105e657a0178d7b0c",
+      "bytes": 350
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04b-checks.json",
+      "sha256": "7be44d2d3e26fff1205d38bc0b94214f7d83700141b27c9f5da635857ef5c153",
+      "bytes": 34011
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04b-commands.md",
+      "sha256": "902217485b2936c72f67871d3637e6ebf66747a0805b7791000daea44733f5ab",
+      "bytes": 4458
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04b-source.sha256",
+      "sha256": "5441e939315a7e180badd61e8202f7f67eb014054d8dbc5aec5449d26d933e63",
+      "bytes": 894
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04-recovery.json",
+      "sha256": "ef9e8b036fb279a310ef40ca53ebb300d97c189e32f81ba397b4589ecb7e070f",
+      "bytes": 9000
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04c-checks.json",
+      "sha256": "d7d1554d0cf654d1ff78ffc78de60246aefed9e3fd1e82b5a60efe82d1f971b6",
+      "bytes": 6352
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04c-source.sha256",
+      "sha256": "2ac248f01b29cae53a000679b9adca03e9c39acc07711734c71d8dbc36f95350",
+      "bytes": 2002
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04c-commands.md",
+      "sha256": "29b30c41d7b497f1f21633c9e1a8a2c518cd0b5796070226fa8cb436ca3e914a",
+      "bytes": 2935
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04d-environment.json",
+      "sha256": "4cd74bf60d9f148104981d178c6b16158df1f037d8b198cf6b869de22b7dccd0",
+      "bytes": 1364
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04d-checks.json",
+      "sha256": "75ab03fb57c71d7e3586b7d3adb6979c1ea68e863575481796030685cbbbd50a",
+      "bytes": 45524
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04d-source.sha256",
+      "sha256": "fcee938022bdf0e19e78595f18fb562169a8f29b7d374dbac7ca52ff079a4d20",
+      "bytes": 2261
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t04d-commands.md",
+      "sha256": "0eb46b51303ec7b0add27fa090aa17a27745a710160028b24a30b78d9959eacd",
+      "bytes": 6807
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t05-checks.json",
+      "sha256": "91e7a604a43df86c2a7c119bc561608ecd84368a1499f16111075220ac543e8b",
+      "bytes": 7789
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t05-source.sha256",
+      "sha256": "60b0f1101604cbd00d6a0a6c7df5a48360fcb532cfbf58de824f41a506dabd82",
+      "bytes": 1988
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t05-commands.md",
+      "sha256": "c162640261b760ca0a5265ceef9585424518c8877ed0caedbc8c73997b003ada",
+      "bytes": 4503
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t06-checks.json",
+      "sha256": "4a4d6b52ec77c7c814a27e5acd0324255ce7042e26fb9dc29c918f69b51c4059",
+      "bytes": 16575
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t06-source.sha256",
+      "sha256": "91725b76b5143b0f6e0fc6892acabf4cc64ea3f1c9d27a361b0c0fe132f09c89",
+      "bytes": 3199
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t06-commands.md",
+      "sha256": "c7be852cecbc7742be3e871e43ef3ef3cc6b98037a522a1ed07333595cd79587",
+      "bytes": 6604
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t06-pricing-sources.json",
+      "sha256": "3e797be9d3714c0327ad63da5490b2fb2b0dbf8bce595bf9b14377192c2f4fc5",
+      "bytes": 22282
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t06-pricing-checks.json",
+      "sha256": "1ae7d3e87ef6e9605f9377e4aec9d16704e688dba466ff359fcd6a08606fc077",
+      "bytes": 10694
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t06-pricing-source.sha256",
+      "sha256": "80d89ada3edec3fcac72bb50657dff5b65e7dcfef0d6ecb8b8b59435988602bf",
+      "bytes": 3345
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t06-pricing-commands.md",
+      "sha256": "3b9fdb7c34da30f85c88250eac3c8c816848d47b6e41ed9052d8e725a4060fbf",
+      "bytes": 6083
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t05-recovery-checks.json",
+      "sha256": "f71814f326168b0a1eaa983502419e8f12bfa2449a9a473d4f8ca5b587089c14",
+      "bytes": 20032
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t05-recovery-commands.md",
+      "sha256": "2c20dcfff2d30e04be22fa6592c94476e96b299a64589713b251ee16399c0b61",
+      "bytes": 9566
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t05-recovery-history.json",
+      "sha256": "a9ef4cb5f01536a73280197447a5a3cc3303de58de58dee64dd949c381e34170",
+      "bytes": 15775
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t05-recovery-preflight.json",
+      "sha256": "9ab756773b29da5ebb1f04b30f9f6a08c41c84555efc8d79ae7d9f55b1a96117",
+      "bytes": 1398
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-benchmark-coding-2026-11-07/t05-recovery-source.sha256",
+      "sha256": "e6060d23acb9f3e7285ae9706c225f9b90e5f08561295e8888faae9f2e130535",
+      "bytes": 4566
+    }
+  ],
+  "product_source_tree": "0c745b5b5f098f2f55ea066f8c4f8228913cfe6f",
+  "restart_recovery_checkpoint": "4e64f54c368d04afcde6faa8c41cdadd9529e0d9",
+  "native_qualification_current": false,
+  "native_qualification_scope": "Fresh native/SQL blocked without approved dedicated preloaded runtime/images.3pre-dispatch negatives are not native isolation. Old last4resource result unobserved.",
+  "full_unit_status": "New isolated runtime729passed on committed product/test bytes; all3fixed6test diagnostic rounds passed. No source/test/dependency changes.",
+  "pricing_status": "All6 exact existing model rates verified unchanged from10 official HTTP200 sources at2026-11-08T15:25:35.450801Z; existing7day expiry2026-11-15T15:25:35.450801Z;36pricing tests pass.",
+  "tested_source_commit": "4e64f54c368d04afcde6faa8c41cdadd9529e0d9",
+  "tested_source_tree": "0c745b5b5f098f2f55ea066f8c4f8228913cfe6f",
+  "repair_source_checkpoint": "e0a7b5fb45dbc73c1e9d6248647a102387ea5cd8",
+  "repair_source_tree": "d807b5ee4f17acdf1d8f582a356e731863ab0c66",
+  "publication_changes": "Documentation/evidence only; product trees/source manifest unchanged.",
+  "next_gate": "Human Coding review only; no next role or image authority"
+}

@@ -1,0 +1,29 @@
+{
+  "source_sha": "aad39e35ace64c55476f5e29400287a71e99d92a",
+  "label": "browser",
+  "environment": "browser",
+  "cwd": "/private/tmp/anvil-web-security-check-xluq3bpb",
+  "command": [
+    "/usr/local/bin/node",
+    "/private/tmp/anvil-production-advisory-b8757b139d4e45209c4cb650aaffd667/cache/corepack/v1/pnpm/10.34.5/bin/pnpm.cjs",
+    "exec",
+    "playwright",
+    "test",
+    "tests/e2e/benchmark-workspace.spec.ts",
+    "--reporter=list"
+  ],
+  "started_at": "2026-11-09T03:24:09.626319+00:00",
+  "elapsed_seconds": 10.11,
+  "exit_code": 0,
+  "raw_log_path": "/private/tmp/anvil-aad-runtime-e2ff0994be1f476f8059b3600e27e38d/browser.log",
+  "raw_log_sha256": "b237ee56d3f59cc4eebb84e0cdea54e1216c0de2c484b0f4d050ddcea1ca379b",
+  "summary": [
+    "  2 passed (8.9s)"
+  ],
+  "explicit_skips": [],
+  "root_manifest_changes": [],
+  "isolated_backend_source_changes": [],
+  "native_opt_in": false,
+  "paid_provider_flags": false,
+  "prior_edcc_native_proof_not_reused": true
+}

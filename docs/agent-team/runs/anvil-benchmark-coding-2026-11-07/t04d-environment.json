@@ -1,0 +1,32 @@
+{
+  "observed_at": "2026-11-08T04:36:20.359862+00:00",
+  "scope": "User-approved exact-image isolated T04 Coding only",
+  "daemon": {
+    "socket": "unix:///workspace/project/adi-anvil/.local/benchmark-docker/docker.sock",
+    "data_root": "/workspace/project/adi-anvil/.local/benchmark-docker/data",
+    "storage": "vfs",
+    "bridge": "none",
+    "iptables": false,
+    "ip6tables": false,
+    "ip_forward": false,
+    "shared_socket_used": false
+  },
+  "images": [
+    ["postgres@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3"],
+    ["python@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e"]
+  ],
+  "postgres": {
+    "id": "9ede7f91b529220ea4839b2584365c993e90ec9cb00219d9665fa70e8bc74e46",
+    "version": "17.6 Debian17.6-2.pgdg12+1",
+    "network": "none",
+    "ports": {},
+    "user": "10001:10001",
+    "readonly": true,
+    "socket": "/workspace/project/adi-anvil/.local/bm-pg-socket",
+    "data": "fresh owned tmpfs; private Unix local trust only; no passwords copied",
+    "migration": "fresh+repeat045; upgrade+repeat046 actual verified",
+    "shared_services_touched": false
+  },
+  "tests_now": "76 real SQL/API checks passed;1 native deliberately deselected; native pending",
+  "limitations": "No cloud/Praxis/Mac/auth changes, QA/paid/merge/deploy. No native pass inferred from image preparation."
+}

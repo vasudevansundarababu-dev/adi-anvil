@@ -9,7 +9,15 @@ if (ROOT / ".env").exists():
             key, value = line.split("=", 1)
             os.environ.setdefault(key, value)
 
-LOCAL_ORIGIN = "http://127.0.0.1:3202"
+def local_web_origin():
+    # A separate checkout may use an unused loopback port, never a remote origin.
+    value = os.environ.get("ANVIL_LOCAL_WEB_PORT", "3202")
+    if not value.isascii() or not value.isdecimal() or not 1024 <= int(value) <= 65535:
+        raise RuntimeError("Invalid local web port")
+    return f"http://127.0.0.1:{int(value)}"
+
+
+LOCAL_ORIGIN = local_web_origin()
 LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1", "0.0.0.0"}
 
 

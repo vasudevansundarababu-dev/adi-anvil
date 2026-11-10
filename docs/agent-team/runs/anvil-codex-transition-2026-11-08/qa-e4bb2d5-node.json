@@ -1,0 +1,21 @@
+{
+  "candidate_application_sha": "e4bb2d56800b6e2705b359724750c5702a003204",
+  "label": "node",
+  "command": [
+    "/usr/local/bin/node",
+    "--test",
+    "tests/provider_failure.mjs",
+    "tests/readiness_catalog.mjs"
+  ],
+  "started_at": "2026-11-08T19:08:25.143360+00:00",
+  "elapsed_seconds": 0.173,
+  "exit_code": 0,
+  "raw_log_path": "/private/tmp/anvil-codex-testing-runtime/qa-e4bb2d5-node.log",
+  "raw_log_sha256": "0380b0f35f56a5d4fd021c7053e6c322ef7e06e1dfd347eb495631510870a643",
+  "summary": [],
+  "explicit_skips": [],
+  "changed_manifest_paths_after_check": [],
+  "native_opt_in": false,
+  "paid_provider_flags": false,
+  "fresh_database": "anvil_finalqa_e4bb2d5"
+}

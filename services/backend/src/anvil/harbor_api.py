@@ -308,6 +308,10 @@ def routes(context, wrap, idempotent):
 
             def act():
                 package = get(c, "harbor_packages", pid)
+                if package["manifest"].get("binding") == "sme-artifact-v1":
+                    raise HTTPException(
+                        409, "SME qualification is separate from legacy package approval"
+                    )
                 if package["package_sha256"] != body.package_sha256:
                     raise HTTPException(409, "Approval must bind the exact package hash")
                 self_approved = str(package["created_by"]) == str(user)
@@ -339,6 +343,11 @@ def routes(context, wrap, idempotent):
 
             def act():
                 package = get(c, "harbor_packages", pid)
+                if package["manifest"].get("binding") == "sme-artifact-v1":
+                    raise HTTPException(
+                        409,
+                        "SME packages require their exact benchmark qualification workflow; legacy checks cannot admit them",
+                    )
                 if package["manifest"].get("binding") == "mcp-tool-agent-v1":
                     raise HTTPException(
                         409,

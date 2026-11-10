@@ -265,6 +265,8 @@ def rank(profile, candidates, threshold):
 def catalog(c):
     items = c.execute("""SELECT r.id,r.current_revision_id,r.lifecycle,v.content FROM anvil.resources r
         JOIN anvil.revisions v ON v.id=r.current_revision_id WHERE r.kind='benchmark'
+        AND NOT(v.content ? 'profile') AND jsonb_typeof(v.content->'dimensions')='object'
+        AND v.content ?& ARRAY['title','dimensions','task_revision_ids','objective_revision_id','provenance']
         ORDER BY r.id LIMIT 101""").fetchall()
     if len(items) > LIMIT:
         raise HTTPException(
@@ -275,6 +277,12 @@ def catalog(c):
 
 def candidate(c, record):
     content = record["content"]
+    if (
+        content.get("profile")
+        or not isinstance(content.get("dimensions"), dict)
+        or set(content["dimensions"]) != set(FIELDS)
+    ):
+        raise HTTPException(409, "This version is not a legacy TaskProfile catalog entry")
     blockers = []
     if record["lifecycle"] != "registered":
         blockers.append("metadata_not_registered")

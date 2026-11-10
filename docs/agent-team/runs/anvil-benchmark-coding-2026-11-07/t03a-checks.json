@@ -1,0 +1,32 @@
+{
+  "subtask": "T03A bounded archive inspection and streamed private staging",
+  "status": "T03 in progress; streaming HTTP/receipts/quotas/status/error path not implemented yet",
+  "parent_checkpoint": "b83ad212b697e50d9e9cb17a6528330552f408aa",
+  "observed_at": "2026-11-07T19:21:49.928598+00:00",
+  "archive_tests": 26,
+  "focused_backend_total": 167,
+  "result": "all passed; existing Authlib warning only",
+  "parser_profile": "gzip plus canonical regular-file-only USTAR; no extraction or imported execution; GNU/PAX/directory/special/link headers fail closed",
+  "bounds": [
+    "100MiB compressed,500MiB expanded,50MiB/file,5000 regular members including manifest/signature",
+    "64KiB data reads;2MiB metadata; bounded gzip read/header complexity32768 operations",
+    "canonical ASCII names,header checksum/terminator/padding/hash/member-set validation"
+  ],
+  "tests": [
+    "real detached external Ed25519 trust root; unsigned/unknown quarantine",
+    "unsafe and aliased/undeclared paths",
+    "incomplete/gzip/tar corruption and trailers",
+    "all forbidden link/device/directory/PAX types",
+    "low-limit actual bytes/member exhaustion",
+    "gzip optional-header excessive reads reproduced before fix",
+    "archive repacking changes receipt identity but not canonical manifest hash"
+  ],
+  "profile_decision": "Conservative new-profile encoding; exporter must use this canonical form. Does not alter legacy exporters/validators. Partner compatibility/native qualification remains not run.",
+  "storage": "raw stream staging hashes/writes in chunks and atomically publishes content address; existing byte helper wraps same implementation; all27 real DB tests still pass",
+  "not_claimed": [
+    "T03 complete",
+    "source HTTP ingestion or durable receipt acceptance",
+    "native/model performance",
+    "QA/deployment"
+  ]
+}

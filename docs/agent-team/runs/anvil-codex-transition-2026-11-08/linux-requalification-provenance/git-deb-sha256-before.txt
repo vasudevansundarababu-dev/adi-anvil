@@ -1,0 +1,7 @@
+ed8480b621ad574c25aea30d36194d0133ea74093756ecbe3dff157d0510ef7f  /var/cache/apt/archives/libperl5.36_5.36.0-7+deb12u4_amd64.deb
+4af36a590b68d415a78d9238b932b6a4579f515ec8a8016597498acff5b515a4  /var/cache/apt/archives/libgdbm-compat4_1.23-3_amd64.deb
+904dbd8dbc3db34c6780fb0abfe35816d4a90a490126ef0a055a77a0c5dcab82  /var/cache/apt/archives/git-man_1%3a2.39.5-0+deb12u3_all.deb
+5a466348531b9c38c8e5ccb18c231f27a98b9fdab61b37ea22592553de5d2ced  /var/cache/apt/archives/liberror-perl_0.17029-2_all.deb
+637a85ddd6247fab13bdd0592f2f39aff04ce4dbf0655d3ab553ac359a38ce6f  /var/cache/apt/archives/git_1%3a2.39.5-0+deb12u3_amd64.deb
+67e7a883c5d835939638f89a750799282df243ac1446281aa92ef9e19300940b  /var/cache/apt/archives/perl_5.36.0-7+deb12u4_amd64.deb
+3ed38ffa8320e9bf7597cefa01b6a6ace4a08ccc77cdfd15ef7d8b711dea7166  /var/cache/apt/archives/perl-modules-5.36_5.36.0-7+deb12u4_all.deb

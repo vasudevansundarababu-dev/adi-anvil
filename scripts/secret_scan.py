@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PATTERNS = [
     rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----",
-    rb"sk-[A-Za-z0-9_-]{24,}",
+    rb"(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{24,}",
     rb"gh[pousr]_[A-Za-z0-9]{25,}",
     rb"AKIA[0-9A-Z]{16}",
 ]

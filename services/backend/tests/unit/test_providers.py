@@ -7,6 +7,59 @@ from pydantic import ValidationError
 from anvil.providers import PROVIDERS, ActorRequest, execute_contract
 
 
+def test_argon_guarded_sdk_uses_supported_thinking_level_and_single_attempt(monkeypatch):
+    from pydantic import SecretStr
+
+    from anvil.workspace_adapter_contracts import ENV_OVERRIDES
+    from anvil.workspace_dispatch import execute
+
+    for name in ENV_OVERRIDES:
+        monkeypatch.delenv(name, raising=False)
+    requests = []
+
+    def handler(request):
+        requests.append(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "responseId": "synthetic-argon-response",
+                "modelVersion": "gemini-4-argon",
+                "candidates": [
+                    {
+                        "content": {"role": "model", "parts": [{"text": '{"done":true}'}]},
+                        "finishReason": "STOP",
+                    }
+                ],
+                "usageMetadata": {
+                    "promptTokenCount": 10,
+                    "candidatesTokenCount": 5,
+                    "thoughtsTokenCount": 3,
+                    "totalTokenCount": 18,
+                },
+            },
+        )
+
+    result = execute(
+        {
+            "provider": "gemini",
+            "model_id": "gemini-4-argon",
+            "destination": PROVIDERS["gemini"][2],
+            "max_output_tokens": 2048,
+        },
+        SecretStr("synthetic-argon-contract-key-only"),
+        ActorRequest(
+            model="gemini-4-argon",
+            actor_text="Return the synthetic JSON result",
+            max_output_tokens=2048,
+        ),
+        transport=httpx.MockTransport(handler),
+    )
+    assert len(requests) == 1
+    assert requests[0]["generationConfig"]["thinkingConfig"] == {"thinking_level": "LOW"}
+    assert requests[0]["generationConfig"]["maxOutputTokens"] == 2048
+    assert result.status == "completed" and result.model_returned == "gemini-4-argon"
+
+
 def success(provider):
     if provider in ("openai", "meta_muse"):
         return {

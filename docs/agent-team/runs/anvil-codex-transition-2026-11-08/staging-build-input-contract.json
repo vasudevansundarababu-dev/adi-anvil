@@ -1,0 +1,22 @@
+{
+  "build_config_file": "/Users/vasudevansundarababu/Documents/Codex/anvil-codex-transition/docs/agent-team/runs/anvil-codex-transition-2026-11-08/staging-cloudbuild-edcc051.json",
+  "build_context_sha256": "57a7b64884aed1bebb114a89662fec8d417092f9b7ba1fe5cf160818c60ebed4",
+  "build_identity": "anvil-staging-build@adi-anvil-mvp-2026.iam.gserviceaccount.com",
+  "build_tag": "edcc0514c43c-staging-review-01",
+  "context_inventory_file": "/Users/vasudevansundarababu/Documents/Codex/anvil-codex-transition/.local/staging-build-context-edcc051.json",
+  "context_inventory_receipt_sha256": "5a37673c2fa7ca2c9b2091992dda46f8e7b536d56da3df61152388097e1e4954",
+  "fresh_context_directory": "/Users/vasudevansundarababu/Documents/Codex/anvil-codex-transition/.local/staging-build-context-edcc051",
+  "lifecycle_file": "/Users/vasudevansundarababu/Documents/Codex/anvil-codex-transition/infra/gcp/staging_build_lifecycle.json",
+  "lifecycle_sha256": "e3ae995908d1537644653d392074bb59d5b5c979009c0cd6861d5c4b30689963",
+  "project": "adi-anvil-mvp-2026",
+  "region": "us-west1",
+  "registry": "us-west1-docker.pkg.dev/adi-anvil-mvp-2026/anvil-staging-demo",
+  "source_archive_sha256": "8564c5cd5fdd0795a6dc9e041befbce591781ccacd41182288c0fbdc1c7a6b28",
+  "source_manifest_file": "/Users/vasudevansundarababu/Documents/Codex/anvil-codex-transition/docs/agent-team/runs/anvil-codex-transition-2026-11-08/operator-edcc051-source.json",
+  "source_manifest_sha256": "cd9c2d44cd2106658923adc84307d6107ced87e9c33f6f6653d4325f65b536a6",
+  "source_sha": "edcc0514c43ceb614b813566820ee0c2c7311463",
+  "staging_source_bucket": "gs://adi-anvil-mvp-2026-anvil-staging-build-source",
+  "upload_inventory_file": "/Users/vasudevansundarababu/Documents/Codex/anvil-codex-transition/docs/agent-team/runs/anvil-codex-transition-2026-11-08/staging-build-upload-source.json",
+  "upload_inventory_receipt_sha256": "9d6ab17eeff7ba0c368d973008057cc479378c70f06a087183ab451a32ff07ae",
+  "upload_inventory_sha256": "728a66918f33705f7a224ea0bbe98d2e73ac542f814499a6cdc7fe313a613a14"
+}

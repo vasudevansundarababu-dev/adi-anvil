@@ -1,0 +1,38 @@
+[
+  {
+    "path": "finalization-implementation-report.md",
+    "sha256": "7f9506769dec645af40487b80383a9427988f9fc16b8f79144c19c70a8aadfb1",
+    "bytes": 9981,
+    "expected_hash_verified": true
+  },
+  {
+    "path": "finalization-security-review.md",
+    "sha256": "753e9739d2cf1e338565e70d55cac7de3d287fb64544d053f92a0838bf6570f5",
+    "bytes": 7208,
+    "expected_hash_verified": true
+  },
+  {
+    "path": "finalization-qa-report.md",
+    "sha256": "31be324c3848135a2038e67b9e7599dc12218fec70ea52ef0116e9eba2a6d4ad",
+    "bytes": 5897,
+    "expected_hash_verified": true
+  },
+  {
+    "path": "prd.md",
+    "sha256": "eb6e8aac45d305063bf0966b7f7551cac71df6db2dd1ab19c0c0b94e00fbb9af",
+    "bytes": 11486,
+    "expected_hash_verified": true
+  },
+  {
+    "path": "design.md",
+    "sha256": "b490d0d8f4d89bc25571519d98e7bb8d1f43054a9fcbb2575e5f6468733a42d4",
+    "bytes": 11496,
+    "expected_hash_verified": true
+  },
+  {
+    "path": "plan.md",
+    "sha256": "8af2f4b48bbe1a8fac805b613b4b706ef2fb899371b8e9901e076af84543da89",
+    "bytes": 17314,
+    "expected_hash_verified": true
+  }
+]

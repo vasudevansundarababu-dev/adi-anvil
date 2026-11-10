@@ -1,0 +1,33 @@
+{
+  "scope": "actual isolated PostgreSQL transaction/role proof ONLY; manufactured observer is NOT actual GCE/OIDC proof",
+  "helper_sha256": "c4d66a2a51d8bfee6c1b29ebdae0a43a8857239b7555ff211979cf9d5dc17369",
+  "test_sha256": "161950bcc59f3c804330f78c1557f4f17f0e9f96c457024a3b9a9c3598f0ff5b",
+  "started_at": "2026-11-09T02:16:07.296398+00:00",
+  "elapsed_seconds": 4.905,
+  "exit_code": 0,
+  "command": [
+    "/private/tmp/anvil-testing-backend/bin/python",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "infra/gcp",
+    "-p",
+    "staging_identity_bootstrap_sql_test.py",
+    "-v",
+    "-f"
+  ],
+  "raw_log_path": "/private/tmp/anvil-codex-testing-runtime/bootstrap-sql-contract.log",
+  "raw_log_sha256": "2200f937576f65f5bab9e0208ca77ef544836ccacdaeff39cedefc91c5b372ce",
+  "summary": [
+    "Ran 10 tests in 4.808s",
+    "OK"
+  ],
+  "container": "anvil-codex-bootstrap-sql-20261108",
+  "volume": "anvil-codex-bootstrap-sql-20261108-data",
+  "image": "postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3",
+  "port": 5432,
+  "real_gce_metadata_called": false,
+  "real_oidc_account_created": false,
+  "deployment_performed": false
+}

@@ -1,0 +1,31 @@
+{
+  "source_sha": "aad39e35ace64c55476f5e29400287a71e99d92a",
+  "label": "integration-sysctl-correction-tcp",
+  "environment": "regression",
+  "cwd": "/private/tmp/anvil-backend-security-check-acpxstl6",
+  "command": [
+    "/private/tmp/anvil-security-backend-successor/bin/python",
+    "-m",
+    "pytest",
+    "services/backend/tests/integration/test_api_security.py::test_200_synthetic_source_inventory_pagination_and_search",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "--tb=short",
+    "-rs"
+  ],
+  "started_at": "2026-11-09T03:23:09.073159+00:00",
+  "elapsed_seconds": 8.74,
+  "exit_code": 0,
+  "raw_log_path": "/private/tmp/anvil-aad-runtime-e2ff0994be1f476f8059b3600e27e38d/integration-sysctl-correction-tcp.log",
+  "raw_log_sha256": "0a097da8f67af8b82b3b419ccde6a48c98c73c83e9a04dd647c10bfbdf350856",
+  "summary": [
+    "1 passed, 1 warning in 6.27s"
+  ],
+  "explicit_skips": [],
+  "root_manifest_changes": [],
+  "isolated_backend_source_changes": [],
+  "native_opt_in": false,
+  "paid_provider_flags": false,
+  "prior_edcc_native_proof_not_reused": true
+}

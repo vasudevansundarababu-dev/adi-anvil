@@ -1,0 +1,3519 @@
+diff --git a/BUILD-STATUS.md b/BUILD-STATUS.md
+index 44fa7eeba4494f8e87ef603b09e166d1c2a71d9e..f89ecce10b3c96194c6d0fb378c1b58f85a972a6 100644
+--- a/BUILD-STATUS.md
++++ b/BUILD-STATUS.md
+@@ -1,5 +1,23 @@
+ # Build status
+ 
++## Task-readiness explanations: coding increment, uncommitted, not approved — 6 November 2026
++
++Work ID `anvil-task-readiness-explanations-2026-11-06`. These changes are uncommitted on `codex/anvil-agent-team-2026-11-06` (base `8cdc8a8`) and await review. The UI now shows plain-language task-readiness reasons from one shared catalog. The catalog is checked against the backend reason codes by `contracts/readiness/reason-codes.v1.json` and a parity unit test. The Admin-only "Open Models & keys" condition is unchanged, and import states are explained on the task list and detail pages.
++
++Results:
++- Unit tests passed: 350.
++- The catalog and UI-policy Node tests passed: 7 and 9.
++- Ruff and Prettier passed. tsc passed.
++- `next build` passed earlier in this increment; it was not rerun after the final detail-page change.
++- The OpenAPI contract is unchanged.
++- The new no-spend integration tests passed: 2.
++- The three planned browser specs passed: 8 tests, 3 of them new.
++- The full integration suite FAILED: 143 passed, 42 failed, 19 skipped. 40 of the 42 also fail on unchanged HEAD. The other 2 passed when run alone. That is comparative evidence, not proof that the failures are unrelated.
++
++Live providers were off and no spend occurred. No push or deployment was made.
++
++Sandbox deviations are recorded in the run's `implementation-report.md`: a generated Keycloak container and volume were deleted, and the Docker socket was temporarily set to 666 before being restored to 660. Product Owner sign-off on the D-COPY wording is still pending.
++
+ ## README review entry points — 2 November 2026
+ 
+ Both READMEs now start their review navigation with an explicit YC review section:
+diff --git a/apps/web/src/components/ReasonList.tsx b/apps/web/src/components/ReasonList.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..c7991078bbf95734dcdb71f84c3ba744a3f013fd
+--- /dev/null
++++ b/apps/web/src/components/ReasonList.tsx
+@@ -0,0 +1,33 @@
++import { actionLink, type ActionDestinations, type ReasonItem } from '../lib/readinessCatalog';
++
++export default function ReasonList({
++  items,
++  canAdmin,
++  to,
++}: {
++  items: ReasonItem[];
++  canAdmin: boolean;
++  to: ActionDestinations;
++}) {
++  return (
++    <ul>
++      {items.map((item, index) => {
++        const link = actionLink(item, canAdmin, to);
++        return (
++          <li key={(item.subject || '') + ':' + (item.code || item.diagnostic || index)}>
++            {item.subject ? item.subject + ': ' : ''}
++            {item.text} <small>{item.fixerLabel}.</small>
++            {item.diagnostic && (
++              <>
++                <br />
++                <small>Diagnostic code: {item.diagnostic}</small>
++              </>
++            )}
++            <br />
++            <a href={link.href}>{link.label}</a>
++          </li>
++        );
++      })}
++    </ul>
++  );
++}
+diff --git a/apps/web/src/components/WorkspaceExecutionGroups.tsx b/apps/web/src/components/WorkspaceExecutionGroups.tsx
+index e15ce9a503f0b3dc007476470781f0c41c1dd842..f306cf4446ec4d619f809d6f93c154afab83bec6 100644
+--- a/apps/web/src/components/WorkspaceExecutionGroups.tsx
++++ b/apps/web/src/components/WorkspaceExecutionGroups.tsx
+@@ -2,6 +2,13 @@
+ import { useCallback, useEffect, useRef, useState } from 'react';
+ import { money, shortId, workspaceApi as api } from '../lib/workspace';
+ import { runBlockers } from '../lib/executionReadiness';
++import {
++  describeReason,
++  describeRunReason,
++  reasonCatalog,
++  runBlockerItems,
++} from '../lib/readinessCatalog';
++import ReasonList from './ReasonList';
+ import styles from './ModernWorkspace.module.css';
+ type Group = {
+   preparation_id: string;
+@@ -29,19 +36,11 @@ type Group = {
+     };
+   };
+ };
+-const labels: Record<string, string> = {
+-  admin_run_authorization_required:
+-    'Admin can authorize this configuration and budget by selecting Run.',
+-  live_dispatch_disabled_in_runtime: 'Live execution is disabled on this server.',
+-  model_cost_support_unavailable: 'This model is not yet supported for budgeted execution.',
+-  model_cost_support_expired: 'This model needs an Anvil cost-catalog update before running.',
+-  execution_cost_snapshot_changed:
+-    'Use Update configuration to prepare the current execution settings.',
+-  credential_missing: 'Select a saved key for this model.',
+-  adapter_changed_create_new_execution_group:
+-    'Use Update configuration to prepare this group with the current execution settings.',
+-};
+-const describe = (value: string) => labels[value] || value.replaceAll('_', ' ');
++// Status and run error codes keep their previous fallback; readiness codes use the catalog.
++const describe = (value: string, canAdmin: boolean) =>
++  Object.hasOwn(reasonCatalog, value)
++    ? describeRunReason(value, canAdmin)
++    : value.replaceAll('_', ' ');
+ export default function WorkspaceExecutionGroups({
+   base,
+   groupId,
+@@ -136,6 +135,14 @@ export default function WorkspaceExecutionGroups({
+       setBusy(false);
+     }
+   }
++  const workspace = base.replace('/projects/', '/workspace/');
++  const to = {
++    workspace,
++    configure: createHref || href + '/new',
++    share: selected ? href + '/' + selected.id : href,
++    run: selected?.state === 'draft' ? '#execution-group-run' : undefined,
++  };
++  const blockerItems = selected ? runBlockerItems(selected.readiness, canAdmin) : [];
+   const blockers = selected ? runBlockers(selected.readiness, canAdmin) : [];
+   if (
+     selected &&
+@@ -208,7 +215,7 @@ export default function WorkspaceExecutionGroups({
+               ? blockers.length > 0
+                 ? 'Setup needed'
+                 : 'Ready to run'
+-              : describe(selected.status)}
++              : describe(selected.status, canAdmin)}
+           </p>
+           <p>
+             Budget:{' '}
+@@ -220,11 +227,11 @@ export default function WorkspaceExecutionGroups({
+               ? 'unknown'
+               : money(selected.readiness.conservative_cost_micro_usd)}
+           </p>
+-          <ul>
+-            {selected.readiness.missing.map((r) => (
+-              <li key={r}>{describe(r)}</li>
+-            ))}
+-          </ul>
++          <ReasonList
++            items={selected.readiness.missing.map((r) => describeReason(r, canAdmin))}
++            canAdmin={canAdmin}
++            to={to}
++          />
+           {selected.state === 'draft' ? (
+             <>
+               {!!blockers.length && (
+@@ -235,20 +242,8 @@ export default function WorkspaceExecutionGroups({
+                   role={runAttempted ? 'alert' : 'status'}
+                 >
+                   <h3>Run cannot start yet</h3>
+-                  <ul>
+-                    {blockers.map((reason) => (
+-                      <li key={reason}>{reason}</li>
+-                    ))}
+-                  </ul>
++                  <ReasonList items={blockerItems} canAdmin={canAdmin} to={to} />
+                   <p>No model request has been sent for this draft.</p>
+-                  <div className={styles.actions}>
+-                    {canAdmin && (
+-                      <a href={base.replace('/projects/', '/workspace/') + '/models'}>
+-                        Open Models & keys
+-                      </a>
+-                    )}
+-                    <a href={createHref || href + '/new'}>Change run configuration</a>
+-                  </div>
+                 </div>
+               )}
+               {canAdmin && (
+@@ -259,6 +254,7 @@ export default function WorkspaceExecutionGroups({
+               )}
+               <div className={styles.actions}>
+                 <button
++                  id="execution-group-run"
+                   className={styles.primary}
+                   disabled={busy}
+                   onClick={() => void command('launch')}
+@@ -312,18 +308,19 @@ export default function WorkspaceExecutionGroups({
+               <p>
+                 {m.model.provider} / {m.model.model_id}
+               </p>
+-              <ul>
+-                {selected.readiness.models
+-                  .find((s) => s.model_profile_id === m.model.id)
+-                  ?.missing.map((r) => (
+-                    <li key={r}>{describe(r)}</li>
+-                  ))}
+-              </ul>
++              <ReasonList
++                items={(
++                  selected.readiness.models.find((s) => s.model_profile_id === m.model.id)
++                    ?.missing || []
++                ).map((r) => describeReason(r, canAdmin))}
++                canAdmin={canAdmin}
++                to={to}
++              />
+               {m.check ? (
+                 <>
+                   <p>
+                     {m.check.state}
+-                    {m.check.error_code ? ' · ' + describe(m.check.error_code) : ''}
++                    {m.check.error_code ? ' · ' + describe(m.check.error_code, canAdmin) : ''}
+                   </p>
+                   <a href={base.replace('/projects/', '/workspace/') + '/runs?run=' + m.check.id}>
+                     View run dashboard
+diff --git a/apps/web/src/components/WorkspacePreparation.tsx b/apps/web/src/components/WorkspacePreparation.tsx
+index ed9e0b8cd38ae1e0aeab3a57e4028501b480a52f..3f11657f95eb47ff8b3e415735f41266585a64a6 100644
+--- a/apps/web/src/components/WorkspacePreparation.tsx
++++ b/apps/web/src/components/WorkspacePreparation.tsx
+@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
+ import Form from './Form';
+ import { shortId, workspaceApi as api } from '../lib/workspace';
+ import { runBlockers } from '../lib/executionReadiness';
++import { describeReason } from '../lib/readinessCatalog';
++import ReasonList from './ReasonList';
+ import styles from './ModernWorkspace.module.css';
+ 
+ type Model = {
+@@ -426,44 +428,6 @@ export function ExecutionPresets({
+   );
+ }
+ 
+-const messages: Record<string, string> = {
+-  execution_group_required:
+-    'Create an execution group below to review costs, authorization and launch readiness.',
+-  workspace_dispatch_not_qualified: 'Live execution for workspace profiles is not available yet.',
+-  current_pricing_not_bound: 'Current reviewed pricing has not been bound to this preparation.',
+-  reviewed_pricing_admission_not_bound: 'Pricing still needs review for this exact evaluation.',
+-  model_profile_disabled: 'This model profile is disabled for all new preparations.',
+-  model_version_superseded:
+-    'A newer model version exists. Create a preset with the current version.',
+-  model_version_mapping_missing: 'This model version has no valid profile mapping.',
+-  pricing_metadata_missing: 'Declared pricing metadata is missing.',
+-  pricing_metadata_expired: 'Declared pricing metadata has expired.',
+-  pricing_metadata_invalid: 'Declared pricing metadata is invalid.',
+-  exact_user_authority_not_bound: 'No spending authorization is attached to this preparation.',
+-  processing_rights_not_bound: 'No processing-rights decision is attached to this preparation.',
+-  required_run_decisions_not_bound: 'Required run approvals are not attached to this preparation.',
+-  shared_spending_admission_not_implemented:
+-    'Shared spending controls are not ready for these models.',
+-  aggregate_api_cap_missing: 'An explicit aggregate API cap is missing.',
+-  candidate_runtime_not_qualified: 'The selected candidate runtime is not qualified.',
+-  external_tracing_not_qualified_export_disabled:
+-    'External tracing is not qualified; export stays disabled.',
+-  credential_missing: 'Credential missing.',
+-  credential_revoked_or_unavailable: 'Credential revoked or unavailable.',
+-  bound_credential_rotated:
+-    'The bound credential was rotated. Create a new model version and preset.',
+-  provider_task_adapter_not_qualified: 'Provider/task adapter not qualified.',
+-  model_revoked_or_unavailable: 'Model profile revoked or unavailable.',
+-  model_configuration_changed: 'Model configuration changed.',
+-  selected_output_limit_exceeds_profile:
+-    'Selected output limit exceeds this model profile ceiling.',
+-  task_binding_not_supported: 'This task binding is not supported by the planned adapter.',
+-  package_runtime_not_supported: 'The package runtime does not match the pinned Harbor version.',
+-  package_agent_admission_missing:
+-    'Rebuild this package with the current agent admission compiler.',
+-  framework_binding_changed_or_unavailable: 'A bound framework version changed or is unavailable.',
+-};
+-
+ export default function WorkspacePreparation({
+   base,
+   taskId,
+@@ -564,6 +528,12 @@ export default function WorkspacePreparation({
+       active = false;
+     };
+   }, [base, preparationId, refreshKey]);
++  const workspace = base.replace('/projects/', '/workspace/');
++  const destinations = saved && {
++    workspace,
++    configure: workspace + '/execution-groups/new',
++    share: workspace + '/preparation?preparation=' + encodeURIComponent(saved.id),
++  };
+   return (
+     <>
+       {!composing && (
+@@ -896,7 +866,7 @@ export default function WorkspacePreparation({
+           </Form>
+         </section>
+       )}
+-      {saved && (
++      {saved && destinations && (
+         <section className={styles.panel} aria-labelledby="preparation-readiness-heading">
+           <h2 id="preparation-readiness-heading" ref={readinessHeading} tabIndex={-1}>
+             Preparation readiness
+@@ -923,23 +893,24 @@ export default function WorkspacePreparation({
+             .
+           </p>
+           <p>Conservative cost: unknown. Reservation: not created. External tracing: disabled.</p>
+-          <ul>
+-            {saved.readiness.missing.map((reason) => (
+-              <li key={reason}>{messages[reason] || reason}</li>
+-            ))}
+-          </ul>
++          <ReasonList
++            items={saved.readiness.missing.map((reason) => describeReason(reason, canAuthorizeRun))}
++            canAdmin={canAuthorizeRun}
++            to={destinations}
++          />
+           {saved.snapshot.models.map((m) => (
+             <div key={m.id}>
+               <h3>
+                 {m.name} · {m.provider}/{m.model_id}
+               </h3>
+-              <ul>
+-                {saved.readiness.models
+-                  .find((state) => state.model_profile_id === m.id)
+-                  ?.missing.map((reason) => (
+-                    <li key={reason}>{messages[reason] || reason}</li>
+-                  ))}
+-              </ul>
++              <ReasonList
++                items={(
++                  saved.readiness.models.find((state) => state.model_profile_id === m.id)
++                    ?.missing || []
++                ).map((reason) => describeReason(reason, canAuthorizeRun))}
++                canAdmin={canAuthorizeRun}
++                to={destinations}
++              />
+             </div>
+           ))}
+           <p>Use Create execution group to choose the configuration for a new run.</p>
+diff --git a/apps/web/src/components/WorkspaceTasks.tsx b/apps/web/src/components/WorkspaceTasks.tsx
+index dd99076926916503488dbd2dad8258963692a5fa..f4bf473ca21320373b4942bea732fdd132a506ed 100644
+--- a/apps/web/src/components/WorkspaceTasks.tsx
++++ b/apps/web/src/components/WorkspaceTasks.tsx
+@@ -17,6 +17,7 @@ import {
+ import styles from './ModernWorkspace.module.css';
+ import ui from './WorkspaceTasks.module.css';
+ import { providerFailure } from '../lib/providerFailure';
++import { explainImportState } from '../lib/readinessCatalog';
+ 
+ type Actor = {
+   schema_version?: string;
+@@ -212,49 +213,72 @@ export default function WorkspaceTasks({
+               </tr>
+             </thead>
+             <tbody>
+-              {page?.items.map((t) => (
+-                <tr key={t.id}>
+-                  <td>
+-                    <span className={`${ui.badge} ${t.package_built ? ui.ready : ui.draft}`}>
+-                      {t.package_built
+-                        ? t.source_schema_version === 'praxis.anvil.task.v3'
+-                          ? 'Ready to run'
+-                          : 'Package built'
+-                        : t.source_schema_version === 'praxis.anvil.task.v3'
+-                          ? t.import_state?.replaceAll('_', ' ') || 'Needs generation'
+-                          : 'Needs package'}
+-                    </span>
+-                    <strong>{t.title || t.task_id}</strong>
+-                    <small>{t.task_id}</small>
+-                    {t.package_built && t.import_state && t.import_state !== 'ready' && (
+-                      <small>Newer draft: {t.import_state.replaceAll('_', ' ')}</small>
+-                    )}
+-                  </td>
+-                  <td>
+-                    {t.task_version}
+-                    <small>
+-                      {t.versions} version{t.versions === 1 ? '' : 's'}
+-                    </small>
+-                  </td>
+-                  <td>{t.last_run_at ? dateTime(t.last_run_at) : 'Not run yet'}</td>
+-                  <td>{t.run_count}</td>
+-                  <td>
+-                    <div className={ui.rowActions}>
+-                      {canPlan && (
+-                        <a
+-                          className={`button ${t.package_built ? ui.run : ''}`}
+-                          href={taskHref(t.id) + '/run'}
+-                        >
+-                          {t.package_built ? 'Run' : 'Complete setup'}
+-                        </a>
++              {page?.items.map((t) => {
++                const v3 = t.source_schema_version === 'praxis.anvil.task.v3';
++                const importInfo = t.import_state ? explainImportState(t.import_state) : null;
++                const pending = v3 && !t.package_built && importInfo;
++                return (
++                  <tr key={t.id}>
++                    <td>
++                      <span
++                        className={`${ui.badge} ${t.package_built ? ui.ready : pending && importInfo.tone === 'failed' ? ui.failed : ui.draft}`}
++                      >
++                        {t.package_built
++                          ? v3
++                            ? 'Ready to run'
++                            : 'Package built'
++                          : v3
++                            ? importInfo?.label || 'Needs generation'
++                            : 'Needs package'}
++                      </span>
++                      <strong>{t.title || t.task_id}</strong>
++                      <small>{t.task_id}</small>
++                      {t.package_built && v3 && (
++                        <small>
++                          Executable validated. Models, keys and budget are checked when you run.
++                        </small>
+                       )}
+-                      <a className="button" href={taskHref(t.id)}>
+-                        View
+-                      </a>
+-                    </div>
+-                  </td>
+-                </tr>
+-              ))}
++                      {pending && (
++                        <small>
++                          {importInfo.reason} {importInfo.next}
++                          {importInfo.diagnostic && <> Diagnostic code: {importInfo.diagnostic}</>}
++                        </small>
++                      )}
++                      {v3 && !t.package_built && !importInfo && (
++                        <small>
++                          No validated executable yet. Open the task to start generation.
++                        </small>
++                      )}
++                      {t.package_built && importInfo && t.import_state !== 'ready' && (
++                        <small>Newer draft: {importInfo.label}</small>
++                      )}
++                    </td>
++                    <td>
++                      {t.task_version}
++                      <small>
++                        {t.versions} version{t.versions === 1 ? '' : 's'}
++                      </small>
++                    </td>
++                    <td>{t.last_run_at ? dateTime(t.last_run_at) : 'Not run yet'}</td>
++                    <td>{t.run_count}</td>
++                    <td>
++                      <div className={ui.rowActions}>
++                        {canPlan && (
++                          <a
++                            className={`button ${t.package_built ? ui.run : ''}`}
++                            href={taskHref(t.id) + '/run'}
++                          >
++                            {t.package_built ? 'Run' : 'Complete setup'}
++                          </a>
++                        )}
++                        <a className="button" href={taskHref(t.id)}>
++                          View
++                        </a>
++                      </div>
++                    </td>
++                  </tr>
++                );
++              })}
+             </tbody>
+           </table>
+         </div>
+@@ -322,6 +346,15 @@ export default function WorkspaceTasks({
+               ? 'Ready to run · Executable package validated'
+               : 'Not ready to run · Generation and validation required'}
+           </span>
++          {!pkg && canPlan && task.actor.schema_version === 'praxis.anvil.task.v3' && (
++            <ImportStateNote base={base} sourceId={task.id} />
++          )}
++          {pkg && (
++            <p className={styles.muted}>
++              Package readiness only: models, API keys, budget and authorization are checked
++              separately when you run.
++            </p>
++          )}
+           <h2 className={ui.title}>
+             {run ? 'Run: ' : ''}
+             {task.title}
+@@ -625,6 +658,29 @@ export default function WorkspaceTasks({
+     </div>
+   );
+ }
++function ImportStateNote({ base, sourceId }: { base: string; sourceId: string }) {
++  const [state, setState] = useState<string | null>(null);
++  useEffect(() => {
++    let active = true;
++    api(base + '/workspace/tasks/' + sourceId + '/executable-import')
++      .then((family) => {
++        if (active) setState(family?.revisions?.[0]?.state || null);
++      })
++      .catch(() => {});
++    return () => {
++      active = false;
++    };
++  }, [base, sourceId]);
++  if (!state || state === 'ready') return null;
++  const info = explainImportState(state);
++  return (
++    <p className={styles.muted}>
++      {info.label}: {info.reason} {info.next}
++      {info.diagnostic && <> Diagnostic code: {info.diagnostic}</>}
++    </p>
++  );
++}
++
+ function Rubric({ criteria }: { criteria: Criterion[] }) {
+   return (
+     <div>
+diff --git a/apps/web/src/lib/executionReadiness.ts b/apps/web/src/lib/executionReadiness.ts
+index b627cc478715bd6d45f2c794005c37bc1d0f3117..7123762626b2ab45ae9ab962b6cde45fe5211156 100644
+--- a/apps/web/src/lib/executionReadiness.ts
++++ b/apps/web/src/lib/executionReadiness.ts
+@@ -1,47 +1,7 @@
+-export type RunReadiness = {
+-  missing: string[];
+-  models: { model_profile_id: string; model?: string; missing: string[] }[];
+-};
+-
+-const messages: Record<string, string> = {
+-  admin_run_authorization_required: 'An Admin must start this run to authorize its budget.',
+-  credential_missing:
+-    'Select a saved API key for this model in Models & keys, then select the updated model version in a new run.',
+-  credential_revoked_or_unavailable:
+-    'The saved API key is revoked or unavailable. Link an active key to a new model version.',
+-  bound_credential_rotated:
+-    'The API key was rotated. Select a model version linked to its current key version.',
+-  live_dispatch_disabled_in_runtime: 'Live execution is disabled on this server.',
+-  model_cost_support_unavailable: 'This model is not supported by the current Anvil cost catalog.',
+-  model_cost_support_expired: 'Anvil’s cost catalog for this model needs an update.',
+-  execution_cost_snapshot_changed: 'Select Update configuration to bind the current cost estimate.',
+-  adapter_changed_create_new_execution_group:
+-    'Select Update configuration to use the current execution settings.',
+-  group_cap_below_conservative_cost_or_above_authority:
+-    'The budget is below the estimated ceiling or above the authorized limit. Create a run with a sufficient budget.',
+-  aggregate_api_cap_missing: 'Enter an aggregate API budget for the run.',
+-  selected_output_limit_exceeds_profile:
+-    'The selected output-token limit exceeds this model profile’s limit.',
+-  candidate_runtime_not_qualified: 'The selected candidate runtime is not qualified for execution.',
+-  external_tracing_not_qualified_export_disabled:
+-    'This tracing configuration is not qualified. Select a preset without external tracing.',
+-  model_version_superseded:
+-    'This model version has been superseded. Create a run using its current version.',
+-};
+-
+-export const describeRunReason = (reason: string) =>
+-  messages[reason] || reason.replaceAll('_', ' ');
+-export function runBlockers(readiness: RunReadiness, canAdmin: boolean) {
+-  return [
+-    ...new Set([
+-      ...readiness.missing
+-        .filter((reason) => reason !== 'admin_run_authorization_required' || !canAdmin)
+-        .map(describeRunReason),
+-      ...readiness.models.flatMap((model) =>
+-        model.missing.map(
+-          (reason) => (model.model ? model.model + ': ' : '') + describeRunReason(reason),
+-        ),
+-      ),
+-    ]),
+-  ];
+-}
++export {
++  describeRunReason,
++  runBlockerItems,
++  runBlockers,
++  type ReasonItem,
++  type RunReadiness,
++} from './readinessCatalog';
+diff --git a/apps/web/src/lib/readinessCatalog.ts b/apps/web/src/lib/readinessCatalog.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..a4d769e9839956b3ff33a9a6f5854cfff1efbd4b
+--- /dev/null
++++ b/apps/web/src/lib/readinessCatalog.ts
+@@ -0,0 +1,520 @@
++// Explanation copy is presentation only: the server's readiness response is the sole
++// ready/blocked authority. All wording here is DRAFT pending Product Owner review (D-COPY).
++// Keep this module import-free so `node --test` can load it with type stripping.
++
++export type Fixer = 'engineer' | 'admin' | 'operator';
++export type Layer = 'package' | 'setup' | 'admission';
++// `models` and `frameworks` are Admin-only workspace sections; `run` is the Run button itself.
++export type Action =
++  | 'models'
++  | 'frameworks'
++  | 'configure'
++  | 'groups'
++  | 'tasks'
++  | 'escalate'
++  | 'run';
++type Entry = {
++  layer: Layer;
++  fixer: Fixer;
++  action: Action;
++  engineerAction?: Action;
++  text: string;
++  engineerText?: string;
++};
++
++export const UNKNOWN_REASON_TEXT =
++  "This run is blocked by a condition Anvil can't describe yet. Ask a project Admin to review it.";
++export const CODE_FORMAT = /^[a-z][a-z0-9_]{0,63}$/;
++const OPERATOR = ' Contact your Anvil administrator.';
++
++export const reasonCatalog: Record<string, Entry> = {
++  admin_run_authorization_required: {
++    layer: 'admission',
++    fixer: 'admin',
++    action: 'run',
++    text: 'Select Run to authorize this exact configuration and its budget.',
++    engineerText: 'An Admin must start this run to authorize its budget.',
++  },
++  aggregate_api_cap_missing: {
++    layer: 'admission',
++    fixer: 'engineer',
++    action: 'configure',
++    text: 'No aggregate API budget is set. Create a run configuration with an explicit budget.',
++  },
++  group_cap_below_conservative_cost_or_above_authority: {
++    layer: 'admission',
++    fixer: 'engineer',
++    action: 'configure',
++    text: 'The budget is below the estimated cost ceiling or above the authorized limit. Create a run configuration with a budget inside that range.',
++  },
++  reserved_spend_window_inactive_or_insufficient: {
++    layer: 'admission',
++    fixer: 'admin',
++    action: 'configure',
++    text: 'The reserved budget for this run is no longer active or is too small. Authorize a new run before more models can start.',
++    engineerText:
++      'The reserved budget for this run is no longer active or is too small. Ask a project Admin to authorize a new run.',
++  },
++  live_dispatch_disabled_in_runtime: {
++    layer: 'admission',
++    fixer: 'operator',
++    action: 'escalate',
++    text: 'Model execution is turned off on this Anvil server, so no run can start.' + OPERATOR,
++  },
++  model_cost_support_unavailable: {
++    layer: 'admission',
++    fixer: 'operator',
++    action: 'escalate',
++    text: 'Anvil has no cost estimate for this model, so it cannot be budgeted.' + OPERATOR,
++  },
++  model_cost_support_expired: {
++    layer: 'admission',
++    fixer: 'operator',
++    action: 'escalate',
++    text: 'The cost estimate for this model is out of date.' + OPERATOR,
++  },
++  execution_cost_snapshot_changed: {
++    layer: 'setup',
++    fixer: 'engineer',
++    action: 'configure',
++    text: 'The cost estimate changed after this configuration was saved. Select Update configuration to use the current estimate.',
++  },
++  adapter_changed_create_new_execution_group: {
++    layer: 'setup',
++    fixer: 'engineer',
++    action: 'configure',
++    text: 'Anvil execution settings changed after this configuration was saved. Select Update configuration.',
++  },
++  execution_group_required: {
++    layer: 'setup',
++    fixer: 'engineer',
++    action: 'configure',
++    text: 'Create an execution group to review cost, authorization and launch readiness.',
++  },
++  execution_group_not_launched: {
++    layer: 'setup',
++    fixer: 'engineer',
++    action: 'groups',
++    text: 'This model run belongs to an execution group that has not started. Start it from the execution group dashboard.',
++  },
++  exact_package_binding_changed: {
++    layer: 'package',
++    fixer: 'engineer',
++    action: 'configure',
++    text: 'The executable package bound to this configuration is no longer available as saved. Create a new run from the current package.',
++  },
++  initiator_access_revoked: {
++    layer: 'setup',
++    fixer: 'admin',
++    action: 'configure',
++    engineerAction: 'configure',
++    text: 'The person who created this configuration no longer has run access in this project. Create a new run configuration.',
++    engineerText:
++      'The person who created this configuration no longer has run access in this project. Create a new run configuration or ask a project Admin.',
++  },
++  credential_missing: {
++    layer: 'setup',
++    fixer: 'admin',
++    action: 'models',
++    text: 'This model has no saved API key. Link a key in Models & keys, then select the new model version in a new run.',
++    engineerText:
++      'This model has no saved API key. Ask a project Admin to link one in Models & keys.',
++  },
++  credential_revoked_or_unavailable: {
++    layer: 'setup',
++    fixer: 'admin',
++    action: 'models',
++    text: 'The saved API key is revoked or unavailable. Link an active key to a new model version.',
++    engineerText:
++      'The saved API key is revoked or unavailable. Ask a project Admin to link an active key.',
++  },
++  bound_credential_rotated: {
++    layer: 'setup',
++    fixer: 'admin',
++    action: 'models',
++    text: 'The API key was rotated. Select a model version linked to its current key version.',
++    engineerText:
++      'The API key was rotated. Ask a project Admin for a model version linked to the current key.',
++  },
++  model_profile_disabled: {
++    layer: 'setup',
++    fixer: 'admin',
++    action: 'models',
++    text: 'This model profile is disabled for new runs. An Admin must enable it or a different model must be selected.',
++  },
++  model_version_mapping_missing: {
++    layer: 'setup',
++    fixer: 'admin',
++    action: 'models',
++    text: 'This model version is not linked to a model profile. An Admin must select a current model version.',
++  },
++  model_version_superseded: {
++    layer: 'setup',
++    fixer: 'admin',
++    action: 'frameworks',
++    text: 'A newer version of this model exists. An Admin must create a preset with the current version.',
++  },
++  model_revoked_or_unavailable: {
++    layer: 'setup',
++    fixer: 'admin',
++    action: 'configure',
++    engineerAction: 'configure',
++    text: 'This model profile is revoked or unavailable. Select a different model.',
++    engineerText:
++      'This model profile is revoked or unavailable. Select a different model or ask a project Admin.',
++  },
++  model_configuration_changed: {
++    layer: 'setup',
++    fixer: 'admin',
++    action: 'frameworks',
++    text: 'This model profile changed after the configuration was saved. Create a preset with its current version.',
++    engineerText:
++      'This model profile changed after the configuration was saved. Ask a project Admin for a preset with its current version.',
++  },
++  selected_output_limit_exceeds_profile: {
++    layer: 'setup',
++    fixer: 'engineer',
++    action: 'configure',
++    text: 'The output-token limit is higher than this model profile allows. Lower it in a new run configuration.',
++  },
++  candidate_runtime_not_qualified: {
++    layer: 'setup',
++    fixer: 'engineer',
++    action: 'configure',
++    text: 'The selected candidate runtime is not qualified for execution. Choose a preset with a qualified runtime.',
++  },
++  external_tracing_not_qualified_export_disabled: {
++    layer: 'setup',
++    fixer: 'engineer',
++    action: 'configure',
++    text: 'External tracing is not qualified and export stays off. Choose a preset without external tracing.',
++  },
++  framework_binding_changed_or_unavailable: {
++    layer: 'setup',
++    fixer: 'admin',
++    action: 'frameworks',
++    text: 'A framework bound to this preset changed or is unavailable. Create a preset with current frameworks.',
++    engineerText:
++      'A framework bound to this preset changed or is unavailable. Ask a project Admin for an updated preset.',
++  },
++  provider_task_adapter_not_supported: {
++    layer: 'setup',
++    fixer: 'operator',
++    action: 'configure',
++    text: "This model's provider is not supported for task execution. Select an OpenAI, Anthropic or Gemini model.",
++  },
++  task_binding_not_supported: {
++    layer: 'package',
++    fixer: 'operator',
++    action: 'escalate',
++    text: "This task's package format is not supported by the execution adapter." + OPERATOR,
++  },
++  package_runtime_not_supported: {
++    layer: 'package',
++    fixer: 'operator',
++    action: 'escalate',
++    text: "This package targets a Harbor version this server doesn't run." + OPERATOR,
++  },
++  package_agent_admission_missing: {
++    layer: 'package',
++    fixer: 'engineer',
++    action: 'tasks',
++    text: 'This package was built before current agent checks existed. Rebuild the package, then create a new run.',
++  },
++  // Retained for older saved records; not produced by current readiness code.
++  workspace_dispatch_not_qualified: {
++    layer: 'admission',
++    fixer: 'operator',
++    action: 'escalate',
++    text: 'Live execution for workspace profiles is not available yet.' + OPERATOR,
++  },
++  current_pricing_not_bound: {
++    layer: 'admission',
++    fixer: 'engineer',
++    action: 'configure',
++    text: 'Current pricing was not bound to this configuration. Create a new run configuration.',
++  },
++  reviewed_pricing_admission_not_bound: {
++    layer: 'admission',
++    fixer: 'engineer',
++    action: 'configure',
++    text: 'Pricing has not been reviewed for this exact evaluation. Create a new run configuration.',
++  },
++  pricing_metadata_missing: {
++    layer: 'admission',
++    fixer: 'admin',
++    action: 'models',
++    text: 'Pricing details are missing for this model.',
++    engineerText: 'Pricing details are missing for this model. Ask a project Admin.',
++  },
++  pricing_metadata_expired: {
++    layer: 'admission',
++    fixer: 'admin',
++    action: 'models',
++    text: 'Pricing details for this model have expired.',
++    engineerText: 'Pricing details for this model have expired. Ask a project Admin.',
++  },
++  pricing_metadata_invalid: {
++    layer: 'admission',
++    fixer: 'admin',
++    action: 'models',
++    text: 'Pricing details for this model are invalid.',
++    engineerText: 'Pricing details for this model are invalid. Ask a project Admin.',
++  },
++  exact_user_authority_not_bound: {
++    layer: 'admission',
++    fixer: 'admin',
++    action: 'configure',
++    text: 'No spending authorization is attached to this configuration.',
++    engineerText: 'No spending authorization is attached. An Admin must start this run.',
++  },
++  processing_rights_not_bound: {
++    layer: 'admission',
++    fixer: 'admin',
++    action: 'configure',
++    text: 'No processing-rights decision is attached to this configuration.',
++    engineerText: 'No processing-rights decision is attached. An Admin must start this run.',
++  },
++  required_run_decisions_not_bound: {
++    layer: 'admission',
++    fixer: 'admin',
++    action: 'configure',
++    text: 'Required run approvals are not attached to this configuration.',
++    engineerText: 'Required run approvals are not attached. An Admin must start this run.',
++  },
++  shared_spending_admission_not_implemented: {
++    layer: 'admission',
++    fixer: 'operator',
++    action: 'escalate',
++    text: 'Shared spending controls are not ready for these models.' + OPERATOR,
++  },
++  provider_task_adapter_not_qualified: {
++    layer: 'setup',
++    fixer: 'operator',
++    action: 'escalate',
++    text: 'The provider/task adapter is not qualified for this model.' + OPERATOR,
++  },
++};
++
++export const safeDiagnostic = (code: unknown) =>
++  typeof code === 'string' && CODE_FORMAT.test(code) ? code : null;
++
++export type ReasonItem = {
++  code: string | null;
++  subject: string | null;
++  text: string;
++  diagnostic: string | null;
++  known: boolean;
++  layer: Layer | null;
++  fixer: Fixer;
++  fixerLabel: string;
++  action: Action;
++};
++
++const fixerLabel = (fixer: Fixer, canAdmin: boolean) =>
++  fixer === 'operator'
++    ? 'Who can fix: your Anvil administrator'
++    : fixer === 'admin'
++      ? canAdmin
++        ? 'Who can fix: you (Admin)'
++        : 'Who can fix: a project Admin'
++      : 'Who can fix: you';
++
++export function describeReason(reason: unknown, canAdmin = false, subject?: string): ReasonItem {
++  const entry =
++    typeof reason === 'string' && Object.hasOwn(reasonCatalog, reason)
++      ? reasonCatalog[reason]
++      : undefined;
++  if (!entry)
++    return {
++      code: null,
++      subject: subject || null,
++      text: UNKNOWN_REASON_TEXT,
++      diagnostic: safeDiagnostic(reason),
++      known: false,
++      layer: null,
++      fixer: 'admin',
++      fixerLabel: fixerLabel('admin', canAdmin),
++      action: 'escalate',
++    };
++  return {
++    code: reason as string,
++    subject: subject || null,
++    text: canAdmin ? entry.text : entry.engineerText || entry.text,
++    diagnostic: null,
++    known: true,
++    layer: entry.layer,
++    fixer: entry.fixer,
++    fixerLabel: fixerLabel(entry.fixer, canAdmin),
++    action: viewerAction(entry, canAdmin),
++  };
++}
++
++const ADMIN_ONLY: ReadonlySet<Action> = new Set(['models', 'frameworks', 'run']);
++
++// Engineers never get an Admin-only destination: Admin-fixed blockers escalate instead.
++function viewerAction(entry: Entry, canAdmin: boolean): Action {
++  if (canAdmin) return entry.action;
++  const action = entry.fixer === 'admin' ? entry.engineerAction || 'escalate' : entry.action;
++  return ADMIN_ONLY.has(action) ? 'escalate' : action;
++}
++
++export type ActionDestinations = {
++  workspace: string;
++  configure: string;
++  share: string;
++  run?: string;
++};
++
++export type ActionLink = { label: string; href: string };
++
++// One link per blocker. `share` is the current page, so an escalation link never
++// points an Engineer at a page they cannot use.
++export function actionLink(
++  item: ReasonItem,
++  canAdmin: boolean,
++  to: ActionDestinations,
++): ActionLink {
++  const action = !canAdmin && ADMIN_ONLY.has(item.action) ? 'escalate' : item.action;
++  switch (action) {
++    case 'run':
++      return to.run
++        ? { label: 'Go to Run to authorize this run', href: to.run }
++        : { label: 'Create an execution group to authorize a run', href: to.configure };
++    case 'models':
++      return { label: 'Open Models & keys', href: to.workspace + '/models' };
++    case 'frameworks':
++      return { label: 'Open Frameworks & presets', href: to.workspace + '/frameworks' };
++    case 'configure':
++      return { label: 'Change run configuration', href: to.configure };
++    case 'groups':
++      return { label: 'Open Execution groups', href: to.workspace + '/execution-groups' };
++    case 'tasks':
++      return { label: 'Open Tasks to rebuild the package', href: to.workspace + '/tasks' };
++  }
++  return {
++    label:
++      item.fixer === 'operator' || (canAdmin && !item.known)
++        ? 'Link to this page for your Anvil administrator'
++        : 'Link to this page for a project Admin',
++    href: to.share,
++  };
++}
++
++export const describeRunReason = (reason: string, canAdmin = false) =>
++  describeReason(reason, canAdmin).text;
++
++export type RunReadiness = {
++  missing: string[];
++  models: { model_profile_id: string; model?: string; missing: string[] }[];
++};
++
++// The Admin exception mirrors existing behavior: an Admin's Run click is the authorization.
++export function runBlockerItems(readiness: RunReadiness, canAdmin: boolean): ReasonItem[] {
++  const seen = new Set<string>();
++  const items: ReasonItem[] = [];
++  const add = (reason: string, subject?: string) => {
++    const key = (subject || '') + '\u0000' + reason;
++    if (seen.has(key)) return;
++    seen.add(key);
++    items.push(describeReason(reason, canAdmin, subject));
++  };
++  readiness.missing
++    .filter((reason) => reason !== 'admin_run_authorization_required' || !canAdmin)
++    .forEach((reason) => add(reason));
++  readiness.models.forEach((model) => model.missing.forEach((reason) => add(reason, model.model)));
++  return items;
++}
++
++export const itemText = (item: ReasonItem) =>
++  (item.subject ? item.subject + ': ' : '') +
++  item.text +
++  (item.diagnostic ? ' (Diagnostic code: ' + item.diagnostic + ')' : '');
++
++export function runBlockers(readiness: RunReadiness, canAdmin: boolean) {
++  return [...new Set(runBlockerItems(readiness, canAdmin).map(itemText))];
++}
++
++const MODEL_SELECTION_PREFIX = 'Select an enabled current model version: ';
++
++// Replaces the raw codes in the model-selection 409 detail (workspace_preparation.model)
++// with catalog text. Returns null for any other message so it is shown unchanged.
++export function modelSelectionMessage(message: string): string | null {
++  if (!message.startsWith(MODEL_SELECTION_PREFIX)) return null;
++  const codes = message.slice(MODEL_SELECTION_PREFIX.length).split(', ');
++  if (!codes.every((code) => CODE_FORMAT.test(code))) return UNKNOWN_REASON_TEXT;
++  return (
++    "This model selection can't be used. " +
++    [...new Set(codes.map((code) => itemText(describeReason(code))))].join(' ')
++  );
++}
++
++export type ImportStateExplanation = {
++  label: string;
++  reason: string;
++  next: string;
++  tone: 'ready' | 'draft' | 'failed';
++  diagnostic: string | null;
++};
++
++const REPORT = 'Open the task and review the import validation report';
++export const importStates: Record<string, Omit<ImportStateExplanation, 'diagnostic'>> = {
++  queued: {
++    label: 'Queued for generation',
++    reason: 'Waiting for the generation worker to start.',
++    next: 'Open the task to follow live progress.',
++    tone: 'draft',
++  },
++  generating: {
++    label: 'Generating checks',
++    reason: 'The configured generation model is writing executable verifiers and constraints.',
++    next: 'Open the task to follow live progress.',
++    tone: 'draft',
++  },
++  validating: {
++    label: 'Validating',
++    reason: 'Generated checks are being tested against the supplied tools and fixtures.',
++    next: 'Open the task to follow live progress.',
++    tone: 'draft',
++  },
++  needs_clarification: {
++    label: 'Needs clarification',
++    reason: 'Generation stopped because part of the task needs clarification.',
++    next: REPORT + ', then revise the task or edit the generated Python.',
++    tone: 'draft',
++  },
++  generation_failed: {
++    label: 'Generation failed',
++    reason: 'Executable checks could not be generated.',
++    next: REPORT + ' for details.',
++    tone: 'failed',
++  },
++  validation_failed: {
++    label: 'Validation failed',
++    reason: 'Generated checks did not pass required validation.',
++    next: REPORT + ', then inspect or edit the generated Python.',
++    tone: 'failed',
++  },
++  ready: {
++    label: 'Ready to run',
++    reason:
++      'A validated executable package exists. Models, keys, budget and authorization are checked separately when you run.',
++    next: 'Select Run to choose models and a budget.',
++    tone: 'ready',
++  },
++};
++
++export function explainImportState(state: unknown): ImportStateExplanation {
++  const entry =
++    typeof state === 'string' && Object.hasOwn(importStates, state)
++      ? importStates[state]
++      : undefined;
++  if (entry) return { ...entry, diagnostic: null };
++  return {
++    label: 'Needs attention',
++    reason: "This import stopped in a state Anvil can't describe yet.",
++    next: 'Open the import report or ask a project Admin.',
++    tone: 'draft',
++    diagnostic: safeDiagnostic(state),
++  };
++}
+diff --git a/apps/web/src/lib/workspace.ts b/apps/web/src/lib/workspace.ts
+index e47aee62715721c63d2e06250feb89d98a4d9cdb..aa3e55197c192217577e593e7f4490f8d4bfdaf9 100644
+--- a/apps/web/src/lib/workspace.ts
++++ b/apps/web/src/lib/workspace.ts
+@@ -1,4 +1,5 @@
+ import { runBlockers } from './executionReadiness';
++import { modelSelectionMessage } from './readinessCatalog';
+ 
+ export type Metrics = {
+   reward: number | null;
+@@ -113,7 +114,7 @@ export async function workspaceApi(
+         : [];
+     const failure = new Error(
+       typeof detail === 'string'
+-        ? detail
++        ? modelSelectionMessage(detail) || detail
+         : typeof detail?.message === 'string'
+           ? [detail.message, ...reasons].join(' · ')
+           : 'Unable to load this workspace',
+diff --git a/contracts/readiness/reason-codes.v1.json b/contracts/readiness/reason-codes.v1.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..cc2a417c845c056b34704bb013f6365e51973e8f
+--- /dev/null
++++ b/contracts/readiness/reason-codes.v1.json
+@@ -0,0 +1,35 @@
++{
++  "schema": "anvil.readiness.reason_codes.v1",
++  "description": "Test-time contract: literal readiness reason codes produced by workspace_preparation.readiness, workspace_execution.readiness/plan_readiness and workspace_models.selection_issues. The server does not read this file.",
++  "codes": [
++    "adapter_changed_create_new_execution_group",
++    "admin_run_authorization_required",
++    "aggregate_api_cap_missing",
++    "bound_credential_rotated",
++    "candidate_runtime_not_qualified",
++    "credential_missing",
++    "credential_revoked_or_unavailable",
++    "exact_package_binding_changed",
++    "execution_cost_snapshot_changed",
++    "execution_group_not_launched",
++    "execution_group_required",
++    "external_tracing_not_qualified_export_disabled",
++    "framework_binding_changed_or_unavailable",
++    "group_cap_below_conservative_cost_or_above_authority",
++    "initiator_access_revoked",
++    "live_dispatch_disabled_in_runtime",
++    "model_configuration_changed",
++    "model_cost_support_expired",
++    "model_cost_support_unavailable",
++    "model_profile_disabled",
++    "model_revoked_or_unavailable",
++    "model_version_mapping_missing",
++    "model_version_superseded",
++    "package_agent_admission_missing",
++    "package_runtime_not_supported",
++    "provider_task_adapter_not_supported",
++    "reserved_spend_window_inactive_or_insufficient",
++    "selected_output_limit_exceeds_profile",
++    "task_binding_not_supported"
++  ]
++}
+diff --git a/package.json b/package.json
+index 1eb8b8c3a70785074a0c4e6245015d36a813b0d9..ef747e1bef81bc97eb5a3ab8f30486a701db3491 100644
+--- a/package.json
++++ b/package.json
+@@ -14,7 +14,7 @@
+     "worker:restart": "python3 scripts/local.py worker-restart",
+     "check": "python3 scripts/local.py check",
+     "test:unit": "python3 scripts/local.py unit",
+-    "test:ui-policy": "node --test tests/provider_failure.mjs",
++    "test:ui-policy": "node --test tests/provider_failure.mjs tests/readiness_catalog.mjs",
+     "test:integration": "python3 scripts/local.py integration",
+     "test:e2e": "python3 scripts/local.py e2e",
+     "test:load": "node tests/load_fixture_batch.mjs",
+diff --git a/services/backend/src/anvil/worker.py b/services/backend/src/anvil/worker.py
+index a38a1fa2eaafb840f168a0c056ccc8ba3542a5c2..88cf0a8c02804d7854006d20767b7120c99ca8f9 100644
+--- a/services/backend/src/anvil/worker.py
++++ b/services/backend/src/anvil/worker.py
+@@ -15,7 +15,7 @@ from psycopg.rows import dict_row
+ 
+ from anvil import artifacts, domain
+ from anvil.config import ROOT, setting
+-from anvil.db import audit, one, transaction
++from anvil.db import audit, one, project_fence, transaction
+ from anvil.evaluation import EXTERNAL_GRAPH_VERSION, GRAPH_VERSION
+ 
+ STOP = False
+@@ -28,7 +28,21 @@ class State(TypedDict):
+     output_artifact_id: str | None
+ 
+ 
++def lock_run(c, job):
++    """Take the project fence, then the episode's run, before any job or episode row.
++
++    This matches API mutations such as run cancellation (project, run, episodes). Run
++    completion counts sibling episodes; holding the run lock serializes those counts.
++    """
++    project_fence(c, job["project_id"])
++    c.execute(
++        "SELECT r.id FROM anvil.runs r JOIN anvil.episodes e ON e.run_id=r.id WHERE e.id=%s FOR UPDATE OF r",
++        (job["target_id"],),
++    )
++
++
+ def guard(c, job):
++    lock_run(c, job)
+     if not one(
+         c,
+         "SELECT 1 FROM anvil.jobs WHERE id=%s AND status='leased' AND lease_token=%s AND lease_until>now() FOR UPDATE",
+@@ -169,10 +183,12 @@ def graph_for(job, saver):
+             e = guard(c, job)
+             if not e["final_assessment_id"] and not e["invalidity_resolution_id"]:
+                 raise RuntimeError("final_review_missing")
+-            c.execute(
+-                "UPDATE anvil.episodes SET state='finalized',row_version=row_version+1 WHERE id=%s AND state<>'finalized'",
++            if not one(
++                c,
++                "UPDATE anvil.episodes SET state='finalized',row_version=row_version+1 WHERE id=%s AND state<>'finalized' RETURNING id",
+                 (e["id"],),
+-            )
++            ):
++                return {}
+             pending = one(
+                 c,
+                 "SELECT count(*) n FROM anvil.episodes WHERE run_id=%s AND state NOT IN ('finalized','failed_operational','execution_unknown','cancelled','unscorable')",
+@@ -208,8 +224,8 @@ def tick():
+     if not job:
+         return False
+     project = job["project_id"]
++    marketing = job["kind"] == "marketing_episode"
+     try:
+-        marketing = job["kind"] == "marketing_episode"
+         if job["kind"] == "resume":
+             with transaction(project, worker=True) as c:
+                 row = one(
+@@ -323,6 +339,8 @@ def tick():
+ 
+                 if retry_transient(c, job, exc):
+                     return True
++            if job["kind"] in ("episode", "resume") and not marketing:
++                lock_run(c, job)
+             failed = c.execute(
+                 "UPDATE anvil.jobs SET status='failed',error_code=%s WHERE id=%s AND lease_token=%s AND lease_until>now() RETURNING id",
+                 (code, job["id"], job["lease_token"]),
+diff --git a/services/backend/tests/integration/conftest.py b/services/backend/tests/integration/conftest.py
+index 9d12b879f0a3a1e8d6e8ebecb3e8009cc0fd918d..b33cb4877b4dc6cc2d5e5f45c056cff1fb216c59 100644
+--- a/services/backend/tests/integration/conftest.py
++++ b/services/backend/tests/integration/conftest.py
+@@ -1,2 +1,10 @@
+ # Shares the authenticated test-client fixture with every integration module.
++import pytest
++from journey_support import provision_journey
+ from test_api_security import client_factory  # noqa: F401
++
++
++@pytest.fixture(scope="session")
++def journey():
++    """One self-provisioned synthetic journey per session, in its own demo project."""
++    return provision_journey()
+diff --git a/services/backend/tests/integration/journey_support.py b/services/backend/tests/integration/journey_support.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..11602a962a7c446e0da1b2199ca4b7459c3e9a84
+--- /dev/null
++++ b/services/backend/tests/integration/journey_support.py
+@@ -0,0 +1,418 @@
++"""Self-provisioned synthetic journey for integration tests.
++
++Replaces the `artifacts/test-runs/journey.json` file written by the retired classic-UI
++Playwright journey. It performs the same API setup in a new isolated demo project: fixture
++import, rights, approvals, a deterministic two-candidate fixture run, independent reviews,
++a finding, an approved built report and a fixture-sender delivery that sends no real email.
++Only predetermined fixture candidates run; no provider is called.
++"""
++
++import contextlib
++import io
++import json
++import secrets
++import time
++
++from fastapi.testclient import TestClient
++
++from anvil import worker
++from anvil.api import app
++from anvil.auth import hashed
++from anvil.config import ROOT
++from anvil.db import one, transaction, uid
++from anvil.operations import new_demo
++
++USERS = json.loads((ROOT / ".local/demo-identities.json").read_text())
++ACTORS = [
++    "researcher",
++    "advisor",
++    "data-engineer",
++    "reviewer-1",
++    "reviewer-2",
++    "admin-1",
++    "admin-2",
++]
++
++
++class Journey:
++    def __init__(self, name):
++        output = io.StringIO()
++        with contextlib.redirect_stdout(output):
++            new_demo(name)
++        self.project = json.loads(output.getvalue())["project_id"]
++        self.base = f"/api/v1/projects/{self.project}"
++        self.sessions = []
++        self.clients = {actor: self.session(actor) for actor in ACTORS}
++
++    def session(self, actor):
++        token, csrf = secrets.token_urlsafe(48), secrets.token_urlsafe(32)
++        with transaction() as c:
++            c.execute(
++                "INSERT INTO anvil.sessions(token_hash,user_id,csrf_hash) VALUES(%s,%s,%s)",
++                (hashed(token), USERS[actor], hashed(csrf)),
++            )
++        self.sessions.append(hashed(token))
++        client = TestClient(app)
++        client.cookies.set("anvil_session", token)
++        client.headers.update({"Origin": "http://127.0.0.1:3202", "X-CSRF-Token": csrf})
++        return client
++
++    def close(self):
++        with transaction() as c:
++            for token_hash in self.sessions:
++                c.execute(
++                    "UPDATE anvil.sessions SET revoked_at=now() WHERE token_hash=%s", (token_hash,)
++                )
++
++    def call(self, actor, path, method="GET", body=None, version=None, expected=None):
++        headers = {"Idempotency-Key": uid(), **({"If-Match": str(version)} if version else {})}
++        response = self.clients[actor].request(method, self.base + path, json=body, headers=headers)
++        if expected is None:
++            assert response.status_code < 300, response.text
++        else:
++            assert response.status_code == expected, response.text
++        return response.json()["data"]
++
++    def transition(self, actor, collection, record, action, body=None):
++        latest = self.call(actor, f"/{collection}/{record['id']}")
++        return self.call(
++            actor,
++            f"/{collection}/{record['id']}/{action}",
++            "POST",
++            body or {},
++            latest["row_version"],
++        )
++
++    def approve(self, collection, record):
++        # D-SIMPLE: the project Admin is the single approver.
++        return self.transition(
++            "admin-1",
++            collection,
++            record,
++            "decisions",
++            {
++                "purpose": "approval",
++                "decision": "approve",
++                "rationale": "Product Owner approval for local synthetic pipeline verification only.",
++            },
++        )
++
++    def work_until(self, done, timeout=120):
++        """Process only this project's jobs in-process until `done()` holds.
++
++        A running local worker may claim some jobs first; the lease update is atomic,
++        so each job is processed once either way.
++        """
++        deadline = time.monotonic() + timeout
++        while not done():
++            assert time.monotonic() < deadline, "synthetic journey did not reach expected state"
++            with transaction(self.project, worker=True) as c:
++                job = one(
++                    c,
++                    "UPDATE anvil.jobs SET status='leased',lease_token=gen_random_uuid(),lease_until=now()+interval '60 seconds',attempts=attempts+1 "
++                    "WHERE id=(SELECT id FROM anvil.jobs WHERE project_id=%s AND (status='queued' OR (status='leased' AND lease_until<now())) AND attempts<3 "
++                    "ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING *",
++                    (self.project,),
++                )
++            if not job:
++                time.sleep(0.2)
++                continue
++            original = worker.one
++            worker.one = lambda c, query, params=(), job=job: (
++                job if query == "SELECT * FROM anvil.claim_job()" else original(c, query, params)
++            )
++            try:
++                assert worker.tick()
++            finally:
++                worker.one = original
++            with transaction(self.project, worker=True) as c:
++                state = one(c, "SELECT status,error_code FROM anvil.jobs WHERE id=%s", (job["id"],))
++            assert state["status"] == "succeeded", (job["kind"], state)
++
++    def idle(self):
++        with transaction(self.project, worker=True) as c:
++            return not one(
++                c,
++                "SELECT 1 FROM anvil.jobs WHERE project_id=%s AND status IN ('queued','leased') AND attempts<3",
++                (self.project,),
++            )
++
++    def fixture_delivery(self, kit):
++        """Network-free fixture sender; no real email is sent."""
++        contact = self.call(
++            "admin-1",
++            "/sales-contacts",
++            "POST",
++            {
++                "name": "Synthetic lab contact",
++                "email": "evaluation@lab.invalid",
++                "organization_label": "Local fixture lab",
++                "contact_basis": "Explicit synthetic test contact for network-free workflow verification only.",
++            },
++        )
++        self.call(
++            "admin-1",
++            f"/sales-contacts/{contact['id']}/decision",
++            "POST",
++            {"status": "approved"},
++            contact["row_version"],
++        )
++        sender = self.call(
++            "admin-1",
++            "/fixture-senders",
++            "POST",
++            {"name": "Synthetic accepted sender", "scenario": "accepted"},
++        )
++        self.call(
++            "admin-2",
++            f"/fixture-senders/{sender['id']}/activate",
++            "POST",
++            {},
++            sender["row_version"],
++        )
++        approval = self.call(
++            "admin-1",
++            f"/sales-kits/{kit['id']}/delivery-approvals",
++            "POST",
++            {"recipient_contact_id": contact["id"], "sender_connection_id": sender["id"]},
++        )
++        mail = self.call(
++            "admin-1",
++            f"/sales-kits/{kit['id']}/simulate-send",
++            "POST",
++            {"delivery_approval_id": approval["id"], "content_hash": approval["content_hash"]},
++        )
++
++        def delivery():
++            return self.call("admin-1", f"/sales-deliveries/{mail['id']}")
++
++        self.work_until(lambda: delivery()["status"] == "fixture_accepted")
++        assert delivery()["real_email_sent"] is False
++
++    def run(self):
++        objective = self.call(
++            "researcher",
++            "/objectives",
++            "POST",
++            {
++                "title": "Synthetic commercial-constraint diagnostic " + uid()[:8],
++                "origin": "adi_initiated",
++                "entry_type": "capability",
++                "hypothesis": "Supplied hard constraints are preserved in recommendations.",
++                "business_context": "Original synthetic fixture exercise; no measured model performance.",
++                "measurement_plan": "Three original cases; two deterministic candidates; one attempt each; anchored rubric and critical overrides; descriptive results only.",
++                "researcher_id": USERS["researcher"],
++                "advisor_id": USERS["advisor"],
++                "product_owner_id": USERS["product-owner"],
++            },
++        )
++        self.transition("researcher", "objectives", objective, "submit")
++        self.approve("objectives", objective)
++        cases = self.call(
++            "data-engineer",
++            "/fixtures/import",
++            "POST",
++            {
++                "case_ids": ["MKT-001", "FIN-001", "STR-001"],
++                "reviewer_id": USERS["reviewer-1"],
++                "advisor_id": USERS["advisor"],
++            },
++        )
++        for source in cases:
++            self.call(
++                "admin-1",
++                f"/cases/{source['id']}/rights",
++                "POST",
++                {
++                    "operation": "managed_evaluation",
++                    "destination": "local_fixture",
++                    "status": "approved",
++                    "evidence": "Reviewed original synthetic fixture rights for local pipeline testing only; no external processing.",
++                },
++                source["row_version"],
++            )
++        for rubric in self.call("data-engineer", "/rubrics"):
++            if rubric["lifecycle"] == "draft":
++                self.transition("data-engineer", "rubrics", rubric, "submit")
++                self.approve("rubrics", rubric)
++        for task in self.call("data-engineer", "/tasks"):
++            if task["lifecycle"] == "draft":
++                self.transition("data-engineer", "tasks", task, "submit")
++                self.approve("tasks", task)
++                self.transition("data-engineer", "tasks", task, "publish")
++        tasks = self.call("researcher", "/tasks")
++        assert len(tasks) == 3
++        suite = self.call(
++            "researcher",
++            "/suites",
++            "POST",
++            {
++                "title": "Three-case original synthetic suite",
++                "objective_revision_id": objective["current_revision_id"],
++                "task_revision_ids": [t["current_revision_id"] for t in tasks],
++                "selection_method": "All three supplied original fixtures.",
++                "exposure_note": "Known development fixtures; no generalization or faculty validation.",
++                "advisor_id": USERS["advisor"],
++                "planned_source_count": 200,
++            },
++        )
++        self.transition("researcher", "suites", suite, "submit")
++        self.approve("suites", suite)
++        suite = self.transition("researcher", "suites", suite, "freeze")
++        protocol = self.call(
++            "researcher",
++            "/protocols",
++            "POST",
++            {
++                "title": "Deterministic two-candidate pilot",
++                "objective_revision_id": objective["current_revision_id"],
++                "suite_revision_id": suite["current_revision_id"],
++                "candidates": ["fixture-correct", "fixture-constraint-blind"],
++                "reviewer_ids": [USERS["reviewer-1"], USERS["reviewer-2"]],
++                "adjudicator_id": USERS["adjudicator"],
++                "advisor_id": USERS["advisor"],
++                "comparison_policy": "Same frozen actor inputs, descriptive fixture pipeline checks; no model ranking.",
++                "pass_policy": "Rubric threshold and critical override; second grader for critical, borderline and sampled outputs.",
++            },
++        )
++        self.transition("researcher", "protocols", protocol, "submit")
++        self.approve("protocols", protocol)
++        run = self.call(
++            "researcher", "/runs", "POST", {"protocol_revision_id": protocol["current_revision_id"]}
++        )
++        self.call("researcher", f"/runs/{run['id']}/launch", "POST", {}, run["row_version"])
++
++        def episodes():
++            return self.call("researcher", f"/runs/{run['id']}")["episodes"]
++
++        self.work_until(lambda: sum(e["state"] == "awaiting_review" for e in episodes()) == 6)
++        before = episodes()
++        assert all(e["invocation_count"] == 1 for e in before)
++        for episode in before:
++            for name in ["reviewer-1", "reviewer-2"]:
++                # D-SIMPLE: the second grader acts only on critical, borderline or sampled outputs.
++                inbox = self.call(name, "/reviews")
++                if not any(
++                    r["id"] == episode["id"] and not r["my_review_submitted"] for r in inbox
++                ):
++                    continue
++                detail = self.call(name, f"/reviews/{episode['id']}")
++                assert "candidate_key" not in json.dumps(detail)
++                output = json.loads(detail["output"])
++                bad = (
++                    "despite" in output["constraint_checks"]
++                    or "even though" in output["constraint_checks"]
++                )
++                quote = '"selected_option": "' + output["selected_option"] + '"'
++                self.call(
++                    name,
++                    f"/episodes/{episode['id']}/assessments",
++                    "POST",
++                    {
++                        "scores": {"R1": 4, "R2": 0 if bad else 4, "R3": 4},
++                        "critical": detail["rubric"]["critical_rules"] if bad else [],
++                        "evidence": {"R1": quote, "R2": quote, "R3": quote},
++                        "rationale": "Scripted independent synthetic judgment; fixture verification only.",
++                    },
++                    detail["row_version"],
++                )
++        self.work_until(
++            lambda: self.call("researcher", f"/runs/{run['id']}")["state"] == "reviewed"
++        )
++        final = episodes()
++        assert sum(e["outcome"] == "pass" for e in final) == 3
++        assert all(e["invocation_count"] == 1 for e in final)
++        for source in cases:
++            self.call(
++                "admin-1",
++                f"/cases/{source['id']}/rights",
++                "POST",
++                {
++                    "operation": "report_sharing",
++                    "destination": "internal_fixture",
++                    "status": "approved",
++                    "evidence": "Reviewed synthetic aggregate-only internal draft sharing. No raw case redistribution or external customer delivery.",
++                },
++                source["row_version"],
++            )
++        evidence = self.call("researcher", f"/episodes/{final[0]['id']}/evidence")
++        finding = self.call(
++            "researcher",
++            "/findings",
++            "POST",
++            {
++                "title": "Reviewed illustrative output observation",
++                "episode_id": final[0]["id"],
++                "observation": "The scripted fixture output contains the selected option shown in the quoted evidence.",
++                "hypothesis": None,
++                "alternatives": [
++                    "Predetermined fixture behavior; no inference about model reasoning."
++                ],
++                "confidence": "unknown",
++                "criterion": "R2",
++                "output_quote": '"selected_option": "'
++                + json.loads(evidence["output"])["selected_option"]
++                + '"',
++                "capability": "constraint_preservation",
++                "advisor_id": USERS["advisor"],
++            },
++        )
++        # Findings are approved on submit; the report approval covers them.
++        self.transition("researcher", "findings", finding, "submit")
++        report = self.call(
++            "researcher",
++            "/reports",
++            "POST",
++            {
++                "title": "Reviewed synthetic diagnostic",
++                "run_id": run["id"],
++                "finding_revision_ids": [finding["current_revision_id"]],
++                "advisor_id": USERS["advisor"],
++                "reviewer_id": USERS["reviewer-1"],
++                "product_owner_id": USERS["product-owner"],
++                "audience": "internal_fixture",
++            },
++        )
++        self.transition("researcher", "reports", report, "submit")
++        report = self.approve("reports", report)
++
++        def approved_kit():
++            return any(
++                k["content"].get("report_revision_id") == report["current_revision_id"]
++                and k["lifecycle"] == "approved"
++                for k in self.call("researcher", "/sales-kits")
++            )
++
++        self.work_until(approved_kit)
++        self.transition("researcher", "reports", report, "build")
++        for name in ["sales-kit.pdf", "sales-kit.html", "evidence.zip", "email-draft.txt"]:
++            response = self.clients["admin-1"].get(
++                self.base + f"/reports/{report['id']}/download/{name}"
++            )
++            assert response.status_code == 200, (name, response.text)
++        kit = next(
++            k
++            for k in self.call("admin-1", "/sales-kits")
++            if k["content"].get("report_revision_id") == report["current_revision_id"]
++        )
++        assert kit["content"]["artifacts"]["evidence.zip"]
++        self.fixture_delivery(kit)
++        self.work_until(self.idle)
++        return {
++            "project_id": self.project,
++            "run_id": run["id"],
++            "objective": objective,
++            "suite": suite,
++            "protocol": protocol,
++            "report": report,
++            "episodes": final,
++            "tasks": tasks,
++        }
++
++
++def provision_journey():
++    journey = Journey("Synthetic integration journey " + uid()[:12])
++    try:
++        return journey.run()
++    finally:
++        journey.close()
+diff --git a/services/backend/tests/integration/test_api_security.py b/services/backend/tests/integration/test_api_security.py
+index 70c39e4ae367eb67aad8f5a9535863928801f41c..d5bf8ec7e24d55543e45789cf6f78be4af0d6ddf 100644
+--- a/services/backend/tests/integration/test_api_security.py
++++ b/services/backend/tests/integration/test_api_security.py
+@@ -53,12 +53,11 @@ def client_factory():
+     "valid_alternative", [False, True], ids=["missing-answer", "valid-alternative"]
+ )
+ def test_external_results_preserve_origin_and_never_invoke(
+-    client_factory, monkeypatch, valid_alternative
++    client_factory, monkeypatch, valid_alternative, journey
+ ):
+     from anvil import evaluation, external_results, reports, worker
+     from anvil.db import one
+ 
+-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+     project = journey["project_id"]
+     base = f"/api/v1/projects/{project}"
+     clients = {
+@@ -433,7 +432,9 @@ def test_external_results_preserve_origin_and_never_invoke(
+     assert pdf.status_code == 200
+     pages = PdfReader(io.BytesIO(pdf.content)).pages
+     assert len(pages) == 1 and "PARTNER REPORTED" in pages[0].extract_text()
+-    (ROOT / "artifacts/test-runs/external-sales-kit.pdf").write_bytes(pdf.content)
++    output = ROOT / "artifacts/test-runs/external-sales-kit.pdf"
++    output.parent.mkdir(parents=True, exist_ok=True)
++    output.write_bytes(pdf.content)
+     bundle = clients["sales"].get(base + report_path + "/download/evidence.zip")
+     assert bundle.status_code == 200
+     with zipfile.ZipFile(io.BytesIO(bundle.content)) as archive:
+@@ -639,9 +640,9 @@ def test_200_synthetic_source_inventory_pagination_and_search(client_factory):
+         "not_run": ["browser_network_latency"],
+         "separate_batch_evidence": "artifacts/test-runs/load-fixture-performance.json",
+     }
+-    (ROOT / "artifacts/test-runs/inventory-performance.json").write_text(
+-        json.dumps(evidence, indent=2)
+-    )
++    output = ROOT / "artifacts/test-runs/inventory-performance.json"
++    output.parent.mkdir(parents=True, exist_ok=True)
++    output.write_text(json.dumps(evidence, indent=2))
+     assert evidence["target_under_500ms"], evidence["measurements"]
+     assert evidence["graph_target_under_2000ms"], evidence["measurements"]
+ 
+@@ -812,8 +813,7 @@ def test_content_role_required(client_factory, role):
+     assert client.post(BASE + "/objectives", json={}).status_code == 422
+ 
+ 
+-def test_graph_declared_capability_family_and_episode_lineage():
+-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
++def test_graph_declared_capability_family_and_episode_lineage(journey):
+     with transaction(journey["project_id"], USERS["researcher"]) as c:
+         snapshot = graph.canonical(c)
+         kinds = {node["kind"] for node in snapshot["nodes"]}
+@@ -834,8 +834,7 @@ def test_graph_declared_capability_family_and_episode_lineage():
+         assert len(snapshot["nodes"]) <= 200 and len(snapshot["edges"]) <= 500
+ 
+ 
+-def test_task_cannot_relabel_source_family_or_claim_protected_fixture(client_factory):
+-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
++def test_task_cannot_relabel_source_family_or_claim_protected_fixture(client_factory, journey):
+     base = f"/api/v1/projects/{journey['project_id']}"
+     client = client_factory("data-engineer")[0]
+     # Repeated runs retain invalid drafts; start from a qualified fixture so each
+@@ -932,10 +931,9 @@ def test_draft_edit_replay_preserves_one_new_revision(client_factory):
+     assert versions[1]["content"] == changed
+ 
+ 
+-def test_readiness_gap_is_scoped_versioned_and_blocks_launch(client_factory):
++def test_readiness_gap_is_scoped_versioned_and_blocks_launch(client_factory, journey):
+     from anvil.db import one
+ 
+-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+     project = journey["project_id"]
+     base = f"/api/v1/projects/{project}"
+     engineer = client_factory("data-engineer")[0]
+@@ -1026,10 +1024,9 @@ def test_readiness_gap_is_scoped_versioned_and_blocks_launch(client_factory):
+         domain.current_source(c, source["current_revision_id"])
+ 
+ 
+-def test_cross_project_mutation_matrix_preserves_foreign_records(client_factory):
++def test_cross_project_mutation_matrix_preserves_foreign_records(client_factory, journey):
+     from anvil.db import digest
+ 
+-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+     foreign_project = journey["project_id"]
+     assert foreign_project != PROJECT
+     clients = {
+@@ -1168,10 +1165,10 @@ def test_cross_project_mutation_matrix_preserves_foreign_records(client_factory)
+     )
+ 
+ 
+-def test_provider_and_delivery_role_and_project_boundaries(client_factory):
++def test_provider_and_delivery_role_and_project_boundaries(client_factory, journey):
+     from anvil.db import digest
+ 
+-    foreign = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())["project_id"]
++    foreign = journey["project_id"]
+     assert foreign != PROJECT
+     other = f"/api/v1/projects/{foreign}"
+     clients = {
+@@ -1292,10 +1289,11 @@ def test_provider_and_delivery_role_and_project_boundaries(client_factory):
+     assert snapshot() == before
+ 
+ 
+-def test_disabled_and_multi_role_identity_cannot_fill_separated_assignments(client_factory):
++def test_disabled_and_multi_role_identity_cannot_fill_separated_assignments(
++    client_factory, journey
++):
+     import psycopg
+ 
+-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+     project = journey["project_id"]
+     base = f"/api/v1/projects/{project}"
+     researcher = client_factory("researcher")[0]
+@@ -1363,12 +1361,11 @@ def test_disabled_and_multi_role_identity_cannot_fill_separated_assignments(clie
+             c.execute("UPDATE anvil.users SET active=false WHERE id=%s", (person,))
+ 
+ 
+-def test_authenticated_reads_do_not_mutate_canonical_state(client_factory):
++def test_authenticated_reads_do_not_mutate_canonical_state(client_factory, journey):
+     from psycopg import sql
+ 
+     from anvil.db import digest
+ 
+-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+     project = journey["project_id"]
+     base = f"/api/v1/projects/{project}"
+     clients = {
+@@ -1534,8 +1531,7 @@ def test_authenticated_reads_do_not_mutate_canonical_state(client_factory):
+             )
+ 
+ 
+-def test_review_request_cannot_inject_checkpoint_or_graph_commands(client_factory):
+-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
++def test_review_request_cannot_inject_checkpoint_or_graph_commands(client_factory, journey):
+     episode = journey["episodes"][0]["id"]
+     client = client_factory("reviewer-1")[0]
+     path = f"/api/v1/projects/{journey['project_id']}/episodes/{episode}/assessments"
+@@ -1687,7 +1683,9 @@ def test_manifest_dryrun_atomic_commit_dedup_and_quarantine(client_factory):
+         == 409
+     )
+     researcher = client_factory("researcher")[0]
+-    template = researcher.get(BASE + "/tasks?limit=100").json()["data"][0]["content"]
++    tasks = researcher.get(BASE + "/tasks?limit=100")
++    assert tasks.status_code == 200, tasks.text
++    template = tasks.json()["data"][0]["content"]
+     draft = researcher.post(
+         BASE + "/tasks",
+         json={
+@@ -1903,13 +1901,12 @@ def test_signed_oidc_claim_validation(client_factory, monkeypatch, invalid):
+ 
+ 
+ def test_fixture_delivery_bound_approval_unknown_replay_and_suppression(
+-    client_factory, monkeypatch
++    client_factory, monkeypatch, journey
+ ):
+     from anvil import delivery
+ 
+     # Prevent background pickup so revocation can be exercised between queue and worker.
+     monkeypatch.setattr(delivery, "enqueue", lambda *args: None)
+-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+     project = journey.get("project_id", PROJECT)
+     base = f"/api/v1/projects/{project}"
+     clients = {
+@@ -2090,9 +2087,8 @@ def test_oversized_upload_rejected_before_artifact_storage(client_factory):
+         assert c.execute("SELECT count(*) n FROM anvil.artifacts").fetchone()["n"] == before
+ 
+ 
+-def test_task_missing_duplicate_cross_source_and_unsupported_inputs(client_factory):
++def test_task_missing_duplicate_cross_source_and_unsupported_inputs(client_factory, journey):
+     client, _ = client_factory("data-engineer")
+-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+     base = f"/api/v1/projects/{journey['project_id']}"
+     tasks = [
+         t
+diff --git a/services/backend/tests/integration/test_budget.py b/services/backend/tests/integration/test_budget.py
+index 0424d88ce5d797030ac0db87b3c79808304065bf..a0576b397e411412a113172bf4858e4d6993bf83 100644
+--- a/services/backend/tests/integration/test_budget.py
++++ b/services/backend/tests/integration/test_budget.py
+@@ -2,33 +2,24 @@ import json
+ from concurrent.futures import ThreadPoolExecutor
+ from datetime import datetime, timedelta, timezone
+ 
+-import pytest
+ from fastapi import HTTPException
+ 
+ from anvil.budget import reconcile, reserve
+-from anvil.cli import PROJECT as DEFAULT_PROJECT
+ from anvil.config import ROOT
+ from anvil.db import one, transaction, uid
+ 
+ 
+-def test_concurrent_shared_ceiling_and_unknown_reservation():
+-    evidence = ROOT / "artifacts/test-runs/journey.json"
+-    project = (
+-        json.loads(evidence.read_text()).get("project_id", DEFAULT_PROJECT)
+-        if evidence.exists()
+-        else DEFAULT_PROJECT
+-    )
++def test_concurrent_shared_ceiling_and_unknown_reservation(journey):
++    project = journey["project_id"]
+     user = json.loads((ROOT / ".local/demo-identities.json").read_text())["researcher"]
+     window = uid()
+     with transaction(project, user) as c:
+         protocol = one(
+             c,
+-            "SELECT current_revision_id FROM anvil.resources WHERE kind='protocol' AND lifecycle='approved' LIMIT 1",
++            "SELECT current_revision_id FROM anvil.resources WHERE id=%s AND kind='protocol' AND lifecycle='approved'",
++            (journey["protocol"]["id"],),
+         )
+-        if not protocol:
+-            pytest.fail(
+-                "Run fixture E2E before budget integration: approved protocol prerequisite missing"
+-            )
++        assert protocol, "the provisioned journey protocol must be approved"
+         runs = [uid(), uid()]
+         c.execute(
+             "INSERT INTO anvil.evaluation_spend_windows(id,project_id,cap_micro_usd,end_at,status,authority_reference) VALUES(%s,%s,100,%s,'active','synthetic ledger concurrency test - no dispatch authority')",
+diff --git a/services/backend/tests/integration/test_factory.py b/services/backend/tests/integration/test_factory.py
+index 7932dc2c51bdaeb221ab8d5f523b94f89e43b32e..99202595900b9858fa03fce717b3f422694e857b 100644
+--- a/services/backend/tests/integration/test_factory.py
++++ b/services/backend/tests/integration/test_factory.py
+@@ -1,15 +1,11 @@
+-import json
+-
+ import psycopg
+ import pytest
+ from test_api_security import USERS, client_factory  # noqa: F401
+ 
+-from anvil.config import ROOT
+ from anvil.db import transaction, uid
+ 
+ 
+-def test_factory_vertical_versions_rights_and_access(client_factory, monkeypatch):  # noqa: F811
+-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
++def test_factory_vertical_versions_rights_and_access(client_factory, monkeypatch, journey):  # noqa: F811
+     project = journey["project_id"]
+     base = f"/api/v1/projects/{project}/factory"
+     researcher = client_factory("researcher")[0]
+diff --git a/services/backend/tests/integration/test_finalization_concurrency.py b/services/backend/tests/integration/test_finalization_concurrency.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..c47660896bd4da1df965d45d9f7c27768e3efb25
+--- /dev/null
++++ b/services/backend/tests/integration/test_finalization_concurrency.py
+@@ -0,0 +1,395 @@
++"""Concurrent run finalization with real PostgreSQL transactions.
++
++Each test forces one interleaving deterministically. A finalizer is held inside its open
++transaction (at the `episode.finalized` audit write) until either the competing transaction
++has reached the same point or PostgreSQL reports that the competitor is waiting on a lock
++held by the paused transaction. Only this test's own connections, tagged with a unique
++`application_name`, count as competitors, so a local dev worker or API cannot release a
++pause. No sleeps decide the outcome.
++"""
++
++import json
++import threading
++import time
++
++import psycopg
++import pytest
++from test_api_security import client_factory  # noqa: F401
++
++from anvil import evaluation, worker
++from anvil.config import ROOT, setting
++from anvil.db import one, transaction, uid
++from anvil.evaluation import GRAPH_VERSION
++
++USERS = json.loads((ROOT / ".local/demo-identities.json").read_text())
++CANDIDATES = ("fixture-correct", "fixture-constraint-blind")
++TIMEOUT = 20
++REAL_ONE = worker.one
++
++
++@pytest.fixture(autouse=True)
++def tagged_connections(monkeypatch):
++    monkeypatch.setenv("PGAPPNAME", "anvil-finalization-test-" + uid()[:8])
++
++
++def blocked_by(pid):
++    with psycopg.connect(setting("WORKER_DATABASE_URL")) as c:
++        return bool(
++            c.execute(
++                "SELECT 1 FROM pg_stat_activity WHERE application_name=current_setting('application_name') AND %s = ANY(pg_blocking_pids(pid))",
++                (pid,),
++            ).fetchone()
++        )
++
++
++class Rendezvous:
++    """Pause each thread at a hook until `ready()` holds or another backend waits on it."""
++
++    def __init__(self, ready):
++        self.ready = ready
++        self.arrived = []
++        self.lock = threading.Lock()
++
++    def pause(self, conn):
++        with self.lock:
++            self.arrived.append(threading.current_thread().name)
++        deadline = time.monotonic() + TIMEOUT
++        while not (self.ready(self) or blocked_by(conn.info.backend_pid)):
++            assert time.monotonic() < deadline, "rendezvous timed out"
++            time.sleep(0.01)
++
++
++def lease(c, project, kind, eid, key):
++    jid = uid()
++    c.execute(
++        "INSERT INTO anvil.jobs(id,project_id,kind,target_id,operation_key,status,lease_token,lease_until) "
++        "VALUES(%s,%s,%s,%s,%s,'leased',%s,now()+interval '60 seconds')",
++        (jid, project, kind, eid, f"{key}:{jid}", uid()),
++    )
++    return one(c, "SELECT * FROM anvil.jobs WHERE id=%s", (jid,))
++
++
++REMAINING_AFTER_FAILURE = (
++    "SELECT 1 FROM anvil.episodes WHERE run_id=%s AND state NOT IN ('failed_operational'"
++)
++
++
++def tick_as(monkeypatch, assignments, after=None):
++    """Patch claim so the named thread processes exactly its assigned job.
++
++    `after` maps a query prefix to a hook called with the open connection after that query.
++    """
++    original = REAL_ONE
++
++    def claim(c, query, params=()):
++        if query == "SELECT * FROM anvil.claim_job()":
++            return assignments[threading.current_thread().name]
++        row = original(c, query, params)
++        for prefix, hook in (after or {}).items():
++            if query.startswith(prefix):
++                hook(c)
++        return row
++
++    monkeypatch.setattr(worker, "one", claim)
++
++
++def run_threads(targets):
++    errors = {}
++
++    def wrap(name, fn):
++        def go():
++            try:
++                fn()
++            except BaseException as exc:  # surfaced to the test below
++                errors[name] = exc
++
++        return threading.Thread(target=go, name=name)
++
++    threads = [wrap(name, fn) for name, fn in targets.items()]
++    for t in threads:
++        t.start()
++    for t in threads:
++        t.join(TIMEOUT + 10)
++        assert not t.is_alive(), f"{t.name} did not finish"
++    return errors
++
++
++def awaiting_run(journey, monkeypatch, episodes=2):
++    """A fixture run whose episodes have captured output and wait at the durable review interrupt."""
++    project = journey["project_id"]
++    researcher = USERS["researcher"]
++    rid = uid()
++    with transaction(project, researcher) as c:
++        task = one(
++            c,
++            "SELECT task_revision_id FROM anvil.episodes WHERE id=%s",
++            (journey["episodes"][0]["id"],),
++        )["task_revision_id"]
++        c.execute(
++            "INSERT INTO anvil.runs(id,project_id,protocol_revision_id,origin,created_by,state) VALUES(%s,%s,%s,'illustrative',%s,'queued')",
++            (rid, project, journey["protocol"]["current_revision_id"], researcher),
++        )
++        eids = []
++        for candidate in CANDIDATES[:episodes]:
++            eid = uid()
++            c.execute(
++                "INSERT INTO anvil.episodes(id,project_id,run_id,task_revision_id,candidate_key,thread_id,graph_version) VALUES(%s,%s,%s,%s,%s,%s,%s)",
++                (eid, project, rid, task, candidate, uid(), GRAPH_VERSION),
++            )
++            eids.append(eid)
++    for eid in eids:
++        with transaction(project, worker=True) as c:
++            job = lease(c, project, "episode", eid, "finalization-test-episode")
++        tick_as(monkeypatch, {threading.current_thread().name: job})
++        assert worker.tick()
++        monkeypatch.setattr(worker, "one", REAL_ONE)
++    with transaction(project, worker=True) as c:
++        states = [
++            one(c, "SELECT state,invocation_count FROM anvil.episodes WHERE id=%s", (e,))
++            for e in eids
++        ]
++        assert all(s["state"] == "awaiting_review" and s["invocation_count"] == 1 for s in states)
++        assert (
++            one(c, "SELECT state FROM anvil.runs WHERE id=%s", (rid,))["state"] == "review_pending"
++        )
++    return project, rid, eids
++
++
++def final_review(project, eid):
++    """Record a synthetic final assessment directly; review routing is covered elsewhere."""
++    reviewer = USERS["reviewer-1"]
++    aid = uid()
++    with transaction(project, reviewer) as c:
++        c.execute(
++            "INSERT INTO anvil.assessments(id,project_id,episode_id,reviewer_id,scores,critical,evidence,rationale,score,outcome,round) "
++            "VALUES(%s,%s,%s,%s,'{}','[]','{}','Synthetic finalization concurrency test.',80,'pass','independent')",
++            (aid, project, eid, reviewer),
++        )
++        c.execute(
++            "UPDATE anvil.episodes SET final_assessment_id=%s,score=80,outcome='pass',row_version=row_version+1 WHERE id=%s",
++            (aid, eid),
++        )
++
++
++def resume_job(project, eid):
++    with transaction(project, worker=True) as c:
++        return lease(c, project, "resume", eid, "finalization-test-resume")
++
++
++def pause_finalized_audit(monkeypatch, rendezvous):
++    original = worker.audit
++
++    def audit(c, project, user, action, target=None, metadata=None):
++        if action == "episode.finalized":
++            rendezvous.pause(c)
++        return original(c, project, user, action, target, metadata)
++
++    monkeypatch.setattr(worker, "audit", audit)
++
++
++def snapshot(project, rid, eids):
++    with transaction(project, worker=True) as c:
++        return {
++            "run": one(c, "SELECT state FROM anvil.runs WHERE id=%s", (rid,))["state"],
++            "episodes": [
++                one(c, "SELECT state,invocation_count FROM anvil.episodes WHERE id=%s", (e,))
++                for e in eids
++            ],
++            "audits": {
++                e: one(
++                    c,
++                    "SELECT count(*) n FROM anvil.audit_events WHERE action='episode.finalized' AND target_id=%s",
++                    (e,),
++                )["n"]
++                for e in eids
++            },
++        }
++
++
++def job_state(project, job):
++    with transaction(project, worker=True) as c:
++        return one(c, "SELECT status,error_code FROM anvil.jobs WHERE id=%s", (job["id"],))
++
++
++def test_last_two_episodes_finalized_concurrently_mark_run_reviewed(monkeypatch, journey):
++    project, rid, eids = awaiting_run(journey, monkeypatch)
++    for eid in eids:
++        final_review(project, eid)
++    jobs = {
++        "finalizer-a": resume_job(project, eids[0]),
++        "finalizer-b": resume_job(project, eids[1]),
++    }
++    tick_as(monkeypatch, jobs)
++    pause_finalized_audit(monkeypatch, Rendezvous(lambda r: len(r.arrived) >= 2))
++    errors = run_threads({name: worker.tick for name in jobs})
++    assert not errors, errors
++    assert all(
++        job_state(project, j) == {"status": "succeeded", "error_code": None} for j in jobs.values()
++    )
++    state = snapshot(project, rid, eids)
++    assert [e["state"] for e in state["episodes"]] == ["finalized", "finalized"]
++    assert [e["invocation_count"] for e in state["episodes"]] == [1, 1]
++    assert state["audits"] == {e: 1 for e in eids}
++    assert state["run"] == "reviewed"
++
++
++def test_finalization_racing_operational_failure_completes_run(monkeypatch, journey):
++    project, rid, eids = awaiting_run(journey, monkeypatch)
++    final_review(project, eids[0])
++    jobs = {
++        "finalizer": resume_job(project, eids[0]),
++        # No final review: the worker rejects this delivery as an operational failure.
++        "failing": resume_job(project, eids[1]),
++    }
++    meet = Rendezvous(lambda r: len(r.arrived) >= 2)
++    # The failure path pauses after deciding whether other episodes remain unfinished.
++    tick_as(monkeypatch, jobs, after={REMAINING_AFTER_FAILURE: meet.pause})
++    pause_finalized_audit(monkeypatch, meet)
++    errors = run_threads({name: worker.tick for name in jobs})
++    assert not errors, errors
++    assert job_state(project, jobs["finalizer"])["status"] == "succeeded"
++    assert job_state(project, jobs["failing"]) == {
++        "status": "failed",
++        "error_code": "final_review_missing",
++    }
++    state = snapshot(project, rid, eids)
++    assert [e["state"] for e in state["episodes"]] == ["finalized", "failed_operational"]
++    assert state["audits"] == {eids[0]: 1, eids[1]: 0}
++    assert state["run"] == "execution_complete"
++
++
++def test_duplicate_resume_delivery_finalizes_once(monkeypatch, journey):
++    project, rid, eids = awaiting_run(journey, monkeypatch, episodes=1)
++    final_review(project, eids[0])
++    jobs = {"first": resume_job(project, eids[0]), "duplicate": resume_job(project, eids[0])}
++    tick_as(monkeypatch, jobs)
++    pause_finalized_audit(monkeypatch, Rendezvous(lambda r: len(r.arrived) >= 2))
++    errors = run_threads({name: worker.tick for name in jobs})
++    assert not errors, errors
++    assert all(job_state(project, j)["status"] == "succeeded" for j in jobs.values())
++    state = snapshot(project, rid, eids)
++    assert state["episodes"][0] == {"state": "finalized", "invocation_count": 1}
++    assert state["audits"] == {eids[0]: 1}
++    assert state["run"] == "reviewed"
++    # A later redelivery after completion is a no-op.
++    late = resume_job(project, eids[0])
++    tick_as(monkeypatch, {threading.current_thread().name: late})
++    assert worker.tick()
++    assert job_state(project, late)["status"] == "succeeded"
++    assert snapshot(project, rid, eids) == state
++
++
++def test_cancel_racing_last_finalization_does_not_deadlock(monkeypatch, journey, client_factory):  # noqa: F811
++    project, rid, eids = awaiting_run(journey, monkeypatch)
++    for eid in eids:
++        final_review(project, eid)
++    finished = resume_job(project, eids[0])
++    tick_as(monkeypatch, {threading.current_thread().name: finished})
++    assert worker.tick()
++    monkeypatch.setattr(worker, "one", REAL_ONE)
++    last = resume_job(project, eids[1])
++    client, _ = client_factory("researcher")
++    with transaction(project, worker=True) as c:
++        version = one(c, "SELECT row_version FROM anvil.runs WHERE id=%s", (rid,))["row_version"]
++
++    # Cancel holds the run lock and waits until the finalizer is queued behind it.
++    hold = Rendezvous(lambda r: False)
++    original_get_run = evaluation.get_run
++
++    def get_run(c, run_id, lock=False):
++        row = original_get_run(c, run_id, lock)
++        if lock and str(run_id) == rid:
++            hold.pause(c)
++        return row
++
++    monkeypatch.setattr(evaluation, "get_run", get_run)
++    tick_as(monkeypatch, {"finalizer": last})
++    response = {}
++
++    def cancel():
++        response["r"] = client.post(
++            f"/api/v1/projects/{project}/runs/{rid}/cancel", headers={"If-Match": str(version)}
++        )
++
++    errors = run_threads({"canceller": cancel, "finalizer": worker.tick})
++    assert not errors, errors
++    assert response["r"].status_code == 200, response["r"].text
++    # Cancel committed first and cancelled the leased job, so the finalizer's lease is gone.
++    assert job_state(project, last) == {"status": "failed", "error_code": "lease_lost"}
++    state = snapshot(project, rid, eids)
++    assert [e["state"] for e in state["episodes"]] == ["finalized", "cancelled"]
++    assert state["audits"] == {eids[0]: 1, eids[1]: 0}
++    assert state["run"] == "cancelled"
++
++
++def blocked_count():
++    """Test backends waiting on a lock. Later waiters queue behind earlier ones, not the holder."""
++    with psycopg.connect(setting("WORKER_DATABASE_URL")) as c:
++        return c.execute(
++            "SELECT count(*) FROM pg_stat_activity WHERE application_name=current_setting('application_name') AND cardinality(pg_blocking_pids(pid))>0"
++        ).fetchone()[0]
++
++
++def wait_until(predicate):
++    deadline = time.monotonic() + TIMEOUT
++    while not predicate():
++        assert time.monotonic() < deadline, "wait timed out"
++        time.sleep(0.01)
++
++
++def test_cancel_queued_on_project_lock_racing_finalization_does_not_deadlock(
++    monkeypatch,
++    journey,
++    client_factory,  # noqa: F811
++):
++    """A third transaction (such as sales-kit preparation) holds the project row.
++
++    Cancel queues on the project first, then the last finalizer arrives. When the holder
++    commits, both must complete in project -> run order without a deadlock.
++    """
++    project, rid, eids = awaiting_run(journey, monkeypatch)
++    for eid in eids:
++        final_review(project, eid)
++    finished = resume_job(project, eids[0])
++    tick_as(monkeypatch, {threading.current_thread().name: finished})
++    assert worker.tick()
++    monkeypatch.setattr(worker, "one", REAL_ONE)
++    last = resume_job(project, eids[1])
++    client, _ = client_factory("researcher")
++    with transaction(project, worker=True) as c:
++        version = one(c, "SELECT row_version FROM anvil.runs WHERE id=%s", (rid,))["row_version"]
++    tick_as(monkeypatch, {"finalizer": last})
++    response, errors = {}, {}
++
++    def cancel():
++        try:
++            response["r"] = client.post(
++                f"/api/v1/projects/{project}/runs/{rid}/cancel", headers={"If-Match": str(version)}
++            )
++        except BaseException as exc:
++            errors["canceller"] = exc
++
++    def finalize():
++        try:
++            worker.tick()
++        except BaseException as exc:
++            errors["finalizer"] = exc
++
++    canceller = threading.Thread(target=cancel, name="canceller")
++    finalizer = threading.Thread(target=finalize, name="finalizer")
++    with transaction(project, worker=True) as holder:
++        holder.execute("SELECT id FROM anvil.projects WHERE id=%s FOR UPDATE", (project,))
++        canceller.start()
++        wait_until(lambda: blocked_count() >= 1)
++        finalizer.start()
++        wait_until(lambda: blocked_count() >= 2)
++    for t in (canceller, finalizer):
++        t.join(TIMEOUT + 10)
++        assert not t.is_alive(), f"{t.name} did not finish"
++    assert not errors, errors
++    assert response["r"].status_code == 200, response["r"].text
++    assert job_state(project, last) == {"status": "failed", "error_code": "lease_lost"}
++    state = snapshot(project, rid, eids)
++    assert [e["state"] for e in state["episodes"]] == ["finalized", "cancelled"]
++    assert state["audits"] == {eids[0]: 1, eids[1]: 0}
++    assert state["run"] == "cancelled"
+diff --git a/services/backend/tests/integration/test_import_pipeline.py b/services/backend/tests/integration/test_import_pipeline.py
+index da23e608071943039fa70b01ce6362a920b10331..f52a34ce5335c875150dfa24f6b2ab73faf61c26 100644
+--- a/services/backend/tests/integration/test_import_pipeline.py
++++ b/services/backend/tests/integration/test_import_pipeline.py
+@@ -95,6 +95,31 @@ def configure(configured, monkeypatch, cap=1000000, paid=False):
+     return admin
+ 
+ 
++@pytest.fixture
++def container_free_preflight(monkeypatch):
++    """Replaces only the disposable container behind tool-shape probes.
++
++    The real probe shaping, budget, dispatch and permission code still runs. Real container
++    probes are covered by the ANVIL_TEST_HARBOR=1 opt-in tests in this module.
++    """
++    from anvil import import_sandbox
++
++    class Environment:
++        def __init__(self, task):
++            pass
++
++        def __enter__(self):
++            return self
++
++        def __exit__(self, *args):
++            pass
++
++        def call(self, tool, arguments):
++            return {"status": "saved", "path": "output.json"}
++
++    monkeypatch.setattr(import_sandbox, "Environment", Environment)
++
++
+ def claim(project):
+     with transaction(project, worker=True) as c:
+         return one(c, "SELECT * FROM anvil.claim_import_job()")
+@@ -211,7 +236,9 @@ def test_all_three_goldens_generate_validate_publish_and_notebook_roundtrip(
+     target.write_text(json.dumps(summary, indent=2))
+ 
+ 
+-def test_installation_scope_project_boundaries_and_unknown_no_retry(configured, monkeypatch):
++def test_installation_scope_project_boundaries_and_unknown_no_retry(
++    configured, monkeypatch, container_free_preflight
++):
+     from anvil.cli import PROJECT
+ 
+     admin = configured["clients"]["admin-1"]
+@@ -262,7 +289,7 @@ def test_installation_scope_project_boundaries_and_unknown_no_retry(configured,
+ 
+ 
+ def test_whole_import_cap_blocks_before_dispatch_and_default_change_does_not_reset(
+-    configured, monkeypatch
++    configured, monkeypatch, container_free_preflight
+ ):
+     from anvil.cli import PROJECT
+ 
+@@ -288,7 +315,9 @@ def test_whole_import_cap_blocks_before_dispatch_and_default_change_does_not_res
+     assert calls == []
+ 
+ 
+-def test_usage_capture_survives_actor_revocation_after_dispatch(configured, monkeypatch):
++def test_usage_capture_survives_actor_revocation_after_dispatch(
++    configured, monkeypatch, container_free_preflight
++):
+     import psycopg
+ 
+     from anvil.cli import PROJECT
+@@ -404,7 +433,9 @@ def test_invalid_generated_code_is_retained_and_can_be_fixed_as_artifact_success
+     assert fixed["charged_micro_usd"] == 200 and len(calls) == 1
+ 
+ 
+-def test_paid_generation_requires_exact_admin_source_processing_permission(configured, monkeypatch):
++def test_paid_generation_requires_exact_admin_source_processing_permission(
++    configured, monkeypatch, container_free_preflight
++):
+     from anvil import workspace_dispatch
+     from anvil.cli import PROJECT
+     from anvil.import_generation import processing_authorized
+diff --git a/services/backend/tests/integration/test_isolation.py b/services/backend/tests/integration/test_isolation.py
+index f2455733c3fd738fbbe8db1029c2bbb0e7f91cc0..13adc768183b64928b30ae256c82ea8f68b0ae4f 100644
+--- a/services/backend/tests/integration/test_isolation.py
++++ b/services/backend/tests/integration/test_isolation.py
+@@ -65,9 +65,9 @@ def test_runtime_roles_are_nonowners_without_bypass():
+             ).fetchone()["tableowner"] not in ("anvil_app", "anvil_worker")
+ 
+ 
+-def test_web_role_cannot_access_checkpoints_and_worker_cannot_read_private_references():
++def test_web_role_cannot_access_checkpoints_and_worker_cannot_read_private_references(journey):
+     users = json.loads((ROOT / ".local/demo-identities.json").read_text())
+-    project = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())["project_id"]
++    project = journey["project_id"]
+     with transaction(project, users["data-engineer"]) as c:
+         reference = c.execute(
+             "SELECT id FROM anvil.artifacts WHERE classification='hidden_reference' LIMIT 1"
+diff --git a/services/backend/tests/integration/test_task_imports.py b/services/backend/tests/integration/test_task_imports.py
+index 2626a1be1b4ccea2de2971a9aaa71afe6a184556..f2fe3be3ad633bd682dda499887c9a01ccfc15f9 100644
+--- a/services/backend/tests/integration/test_task_imports.py
++++ b/services/backend/tests/integration/test_task_imports.py
+@@ -1,18 +1,56 @@
+ import json
+ import subprocess
+ import sys
++from urllib.parse import urlsplit
+ 
+ import psycopg
+ import pytest
++from alembic import command
++from alembic.config import Config
++from journey_support import provision_journey
++from langgraph.checkpoint.postgres import PostgresSaver
++from psycopg import sql
+ from test_api_security import USERS, client_factory  # noqa: F401
+ 
+-from anvil import ingestion, task_imports
+-from anvil.config import ROOT
++from anvil import cli, ingestion, task_imports
++from anvil.config import ROOT, setting
+ from anvil.db import one, transaction, uid
+ 
+ 
+-def test_import_publish_versions_run_and_resume(client_factory, monkeypatch):  # noqa: F811
+-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
++@pytest.fixture
++def owned_journey(monkeypatch):
++    """A synthetic journey in a fresh, uniquely named database that no worker polls.
++
++    The test leases and processes its own ingestion chunks and checks exact checkpoints, so
++    a background worker on the shared database must not be able to claim its jobs.
++    """
++    target = "anvil_taskimporttest_" + uid().replace("-", "")[:12]
++    admin_url = setting("MIGRATION_DATABASE_URL")
++    with psycopg.connect(admin_url, autocommit=True) as c:
++        c.execute(sql.SQL("CREATE DATABASE {} TEMPLATE template0").format(sql.Identifier(target)))
++    try:
++        for key in ("MIGRATION_DATABASE_URL", "DATABASE_URL", "WORKER_DATABASE_URL"):
++            monkeypatch.setenv(key, urlsplit(setting(key))._replace(path="/" + target).geturl())
++        with psycopg.connect(setting("MIGRATION_DATABASE_URL"), autocommit=True) as c:
++            c.execute("CREATE SCHEMA anvil")
++            command.upgrade(Config(str(ROOT / "services/backend/alembic.ini")), "head")
++            c.execute("SET search_path TO anvil_checkpoints")
++            PostgresSaver(c).setup()
++            c.execute(
++                "GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA anvil_checkpoints TO anvil_worker"
++            )
++            c.execute("GRANT USAGE ON ALL SEQUENCES IN SCHEMA anvil_checkpoints TO anvil_worker")
++        cli.seed()
++        yield provision_journey()
++    finally:
++        with psycopg.connect(admin_url, autocommit=True) as c:
++            c.execute(
++                sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(sql.Identifier(target))
++            )
++
++
++def test_import_publish_versions_run_and_resume(client_factory, monkeypatch, owned_journey):  # noqa: F811
++    journey = owned_journey
+     project = journey["project_id"]
+     base = f"/api/v1/projects/{project}"
+     client, _ = client_factory("researcher")
+diff --git a/services/backend/tests/integration/test_worker_failures.py b/services/backend/tests/integration/test_worker_failures.py
+index ad30a7aaa7303c3aefdd59c4fe7f9f775cb47a26..07949cce2388a1252c02118e2e75aaf3accd006d 100644
+--- a/services/backend/tests/integration/test_worker_failures.py
++++ b/services/backend/tests/integration/test_worker_failures.py
+@@ -13,8 +13,7 @@ from anvil.db import one, transaction, uid
+ from anvil.evaluation import GRAPH_VERSION
+ 
+ 
+-def prepared_job(graph_version, protocol_overrides=None):
+-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
++def prepared_job(journey, graph_version, protocol_overrides=None):
+     project = journey["project_id"]
+     user = json.loads((ROOT / ".local/demo-identities.json").read_text())["researcher"]
+     rid, eid, jid, token = uid(), uid(), uid(), uid()
+@@ -50,8 +49,9 @@ def prepared_job(graph_version, protocol_overrides=None):
+ 
+ 
+ @pytest.mark.parametrize("limit", ["output", "elapsed"])
+-def test_fixture_capture_limits_are_operational_not_candidate_failure(monkeypatch, limit):
++def test_fixture_capture_limits_are_operational_not_candidate_failure(monkeypatch, limit, journey):
+     job = prepared_job(
++        journey,
+         GRAPH_VERSION,
+         {"max_output_tokens": 1} if limit == "output" else {"episode_timeout_seconds": 1},
+     )
+@@ -77,8 +77,8 @@ def test_fixture_capture_limits_are_operational_not_candidate_failure(monkeypatc
+         ] == ("fixture_output_limit" if limit == "output" else "fixture_capture_timeout")
+ 
+ 
+-def test_stale_worker_token_cannot_mutate_or_invoke():
+-    job = prepared_job(GRAPH_VERSION)
++def test_stale_worker_token_cannot_mutate_or_invoke(journey):
++    job = prepared_job(journey, GRAPH_VERSION)
+     with transaction(job["project_id"], worker=True) as c:
+         with pytest.raises(RuntimeError, match="lease_lost"):
+             worker.guard(c, {**job, "lease_token": uid()})
+@@ -90,8 +90,8 @@ def test_stale_worker_token_cannot_mutate_or_invoke():
+         c.execute("UPDATE anvil.episodes SET state='cancelled' WHERE id=%s", (job["target_id"],))
+ 
+ 
+-def test_runtime_bindings_and_checkpoint_thread_are_immutable():
+-    job = prepared_job(GRAPH_VERSION)
++def test_runtime_bindings_and_checkpoint_thread_are_immutable(journey):
++    job = prepared_job(journey, GRAPH_VERSION)
+     with transaction(job["project_id"], worker=True) as c:
+         episode = one(c, "SELECT * FROM anvil.episodes WHERE id=%s", (job["target_id"],))
+         for query, value in [
+@@ -115,8 +115,8 @@ def test_runtime_bindings_and_checkpoint_thread_are_immutable():
+         c.execute("UPDATE anvil.episodes SET state='cancelled' WHERE id=%s", (episode["id"],))
+ 
+ 
+-def test_worker_rechecks_rights_and_active_run_author():
+-    job = prepared_job(GRAPH_VERSION)
++def test_worker_rechecks_rights_and_active_run_author(journey):
++    job = prepared_job(journey, GRAPH_VERSION)
+     with transaction(job["project_id"], worker=True) as c:
+         episode = worker.guard(c, job)
+         task = one(
+@@ -152,8 +152,8 @@ def test_worker_rechecks_rights_and_active_run_author():
+         c.execute("UPDATE anvil.episodes SET state='cancelled' WHERE id=%s", (episode["id"],))
+ 
+ 
+-def test_expired_lease_cannot_commit_even_with_matching_token():
+-    job = prepared_job(GRAPH_VERSION)
++def test_expired_lease_cannot_commit_even_with_matching_token(journey):
++    job = prepared_job(journey, GRAPH_VERSION)
+     with transaction(job["project_id"], worker=True) as c:
+         c.execute(
+             "UPDATE anvil.jobs SET lease_until=now()-interval '1 second' WHERE id=%s", (job["id"],)
+@@ -169,9 +169,9 @@ def test_expired_lease_cannot_commit_even_with_matching_token():
+     [("validate_authorization", 0), ("invoke_fixture_capture_output", 1)],
+ )
+ def test_abrupt_fixture_worker_exit_recovers_without_duplicate_invocation(
+-    monkeypatch, crash_stage, expected_captures
++    monkeypatch, crash_stage, expected_captures, journey
+ ):
+-    job = prepared_job(GRAPH_VERSION)
++    job = prepared_job(journey, GRAPH_VERSION)
+     child = subprocess.run(
+         [
+             sys.executable,
+@@ -215,8 +215,10 @@ def test_abrupt_fixture_worker_exit_recovers_without_duplicate_invocation(
+         )
+ 
+ 
+-def test_graph_version_mismatch_is_operational_invalidity_not_candidate_failure(monkeypatch):
+-    job = prepared_job("unsupported-test-graph-version")
++def test_graph_version_mismatch_is_operational_invalidity_not_candidate_failure(
++    monkeypatch, journey
++):
++    job = prepared_job(journey, "unsupported-test-graph-version")
+     original = worker.one
+ 
+     def claim(c, query, params=()):
+@@ -238,8 +240,8 @@ def test_graph_version_mismatch_is_operational_invalidity_not_candidate_failure(
+         )
+ 
+ 
+-def test_cancelled_durable_review_cannot_be_resumed(monkeypatch):
+-    job = prepared_job(GRAPH_VERSION)
++def test_cancelled_durable_review_cannot_be_resumed(monkeypatch, journey):
++    job = prepared_job(journey, GRAPH_VERSION)
+     claimed = [job]
+     original = worker.one
+     monkeypatch.setattr(
+@@ -278,13 +280,14 @@ def test_cancelled_durable_review_cannot_be_resumed(monkeypatch):
+         )
+ 
+ 
+-def test_episode_updates_enqueue_canonical_graph_projection():
+-    job = prepared_job(GRAPH_VERSION)
++def test_episode_updates_enqueue_canonical_graph_projection(journey):
++    job = prepared_job(journey, GRAPH_VERSION)
++    # Count only rows this transaction wrote; the shared project has concurrent outbox writers.
++    own = "SELECT count(*) n FROM anvil.graph_outbox WHERE xmin = pg_current_xact_id()::xid"
+     with transaction(job["project_id"], worker=True) as c:
+-        before = one(c, "SELECT count(*) n FROM anvil.graph_outbox")["n"]
++        assert one(c, own)["n"] == 0
+         c.execute("UPDATE anvil.episodes SET state='cancelled' WHERE id=%s", (job["target_id"],))
+-        after = one(c, "SELECT count(*) n FROM anvil.graph_outbox")["n"]
+-        assert after == before + 1
++        assert one(c, own)["n"] == 1
+         c.execute("UPDATE anvil.episodes SET state='cancelled' WHERE id=%s", (job["target_id"],))
+-        assert one(c, "SELECT count(*) n FROM anvil.graph_outbox")["n"] == after
++        assert one(c, own)["n"] == 1
+         c.execute("UPDATE anvil.jobs SET status='cancelled' WHERE id=%s", (job["id"],))
+diff --git a/services/backend/tests/integration/test_workspace_access.py b/services/backend/tests/integration/test_workspace_access.py
+index 49e0f08d54a9346b6aa267e7a73bf45190f40b38..5cd5d381a3cbd35357a7f2a1c464aefbabd0a5df 100644
+--- a/services/backend/tests/integration/test_workspace_access.py
++++ b/services/backend/tests/integration/test_workspace_access.py
+@@ -1,23 +1,82 @@
+-import json
++from urllib.parse import urlsplit
+ 
+ import psycopg
+ import pytest
++from alembic import command
++from alembic.config import Config
++from psycopg import sql
+ from test_api_security import USERS
+ 
+ from anvil import auth
+-from anvil.cli import PROJECT
+-from anvil.config import ROOT
+-from anvil.db import transaction
++from anvil.cli import ORG, PROJECT
++from anvil.config import ROOT, setting
++from anvil.db import transaction, uid
+ 
++# Pre-028 legacy grants: (user, role, active). Migrations 028 and 033 must record them.
++LEGACY_GRANTS = [
++    ("admin-1", "admin", True),
++    ("researcher", "researcher", True),
++    ("researcher", "reviewer", True),
++    ("data-engineer", "data-engineer", True),
++    ("advisor", "advisor", True),
++    ("reviewer-1", "reviewer", False),
++]
+ 
+-def test_current_roles_are_exactly_two_and_historical_memberships_are_read_only():
++
++@pytest.fixture
++def legacy_migrated(monkeypatch):
++    """A fresh, uniquely named database holding legacy grants, migrated through 028 and 033."""
++    target = "anvil_migrationhistory_" + uid().replace("-", "")[:12]
++    admin_url = setting("MIGRATION_DATABASE_URL")
++    with psycopg.connect(admin_url, autocommit=True) as c:
++        c.execute(sql.SQL("CREATE DATABASE {} TEMPLATE template0").format(sql.Identifier(target)))
++    try:
++        for name in ("MIGRATION_DATABASE_URL", "DATABASE_URL", "WORKER_DATABASE_URL"):
++            monkeypatch.setenv(name, urlsplit(setting(name))._replace(path="/" + target).geturl())
++        alembic = Config(str(ROOT / "services/backend/alembic.ini"))
++        with psycopg.connect(setting("MIGRATION_DATABASE_URL")) as c:
++            c.execute("CREATE SCHEMA anvil")
++        command.upgrade(alembic, "027")
++        with psycopg.connect(setting("MIGRATION_DATABASE_URL")) as c:
++            c.execute("INSERT INTO anvil.organizations VALUES(%s,'Legacy fixture lab')", (ORG,))
++            c.execute(
++                "INSERT INTO anvil.projects(id,org_id,name) VALUES(%s,%s,'Legacy fixture')",
++                (PROJECT, ORG),
++            )
++            for name in {user for user, _, _ in LEGACY_GRANTS}:
++                c.execute(
++                    "INSERT INTO anvil.users(id,org_id,issuer,subject,name) VALUES(%s,%s,'https://legacy-fixture.invalid',%s,%s)",
++                    (USERS[name], ORG, USERS[name], name),
++                )
++            for name, role, active in LEGACY_GRANTS:
++                c.execute(
++                    "INSERT INTO anvil.memberships(project_id,user_id,role,active) VALUES(%s,%s,%s,%s)",
++                    (PROJECT, USERS[name], role, active),
++                )
++        command.upgrade(alembic, "head")
++        yield
++    finally:
++        with psycopg.connect(admin_url, autocommit=True) as c:
++            c.execute(
++                sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(sql.Identifier(target))
++            )
++
++
++def test_current_roles_are_exactly_two_and_historical_memberships_are_read_only(
++    legacy_migrated,
++):
+     with transaction(PROJECT, USERS["admin-1"]) as c:
+         roles = {
+             r["role"]
+             for r in c.execute("SELECT role FROM anvil.memberships WHERE active").fetchall()
+         }
+         assert roles == {"admin", "rl-engineer"}
+-        assert c.execute("SELECT count(*) n FROM anvil.membership_role_history").fetchone()["n"] > 0
++        history = c.execute(
++            "SELECT user_id,legacy_role,was_active FROM anvil.membership_role_history"
++        ).fetchall()
++        assert {(str(h["user_id"]), h["legacy_role"], h["was_active"]) for h in history} == {
++            (USERS[name], role, active) for name, role, active in LEGACY_GRANTS
++        }
+         assert c.execute(
+             "SELECT is_synthetic FROM anvil.users WHERE id=%s", (USERS["admin-1"],)
+         ).fetchone()["is_synthetic"]
+@@ -26,10 +85,9 @@ def test_current_roles_are_exactly_two_and_historical_memberships_are_read_only(
+             c.execute("UPDATE anvil.membership_role_history SET was_active=false")
+ 
+ 
+-def test_new_task_cannot_self_assign_unowned_private_reference(client_factory):
++def test_new_task_cannot_self_assign_unowned_private_reference(client_factory, journey):
+     from anvil.db import one, uid
+ 
+-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+     project = journey["project_id"]
+     base = f"/api/v1/projects/{project}"
+     with transaction(project, USERS["researcher"]) as c:
+@@ -79,8 +137,7 @@ def test_new_task_cannot_self_assign_unowned_private_reference(client_factory):
+         assert client.get(base + f"/artifacts/{private_id}/content").status_code == 403
+ 
+ 
+-def test_people_profiles_pagination_scope_and_unchanged_grants(client_factory):
+-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
++def test_people_profiles_pagination_scope_and_unchanged_grants(client_factory, journey):
+     project = journey["project_id"]
+     base = f"/api/v1/projects/{project}"
+     admin, _ = client_factory("admin-1")
+@@ -141,10 +198,15 @@ def test_people_profiles_pagination_scope_and_unchanged_grants(client_factory):
+     assert admin.get(base + f"/artifacts/{private['id']}/content").status_code == 403
+ 
+ 
+-def test_recorded_mapping_is_read_only_scoped_and_audited():
++def test_recorded_mapping_is_read_only_scoped_and_audited(legacy_migrated):
+     with transaction(PROJECT, USERS["admin-1"]) as c:
+         rows = c.execute("SELECT * FROM anvil.workspace_profile_mappings").fetchall()
+-        assert rows
++        # Migration 028 maps active admin, researcher and data-engineer grants only.
++        assert {str(row["user_id"]): row["profile"] for row in rows} == {
++            USERS["admin-1"]: "admin",
++            USERS["researcher"]: "rl_engineer",
++            USERS["data-engineer"]: "rl_engineer",
++        }
+         assert all(str(row["project_id"]) == str(PROJECT) for row in rows)
+         assert c.execute(
+             "SELECT count(*) count FROM anvil.audit_events WHERE action='workspace.profile_mapping_recorded'"
+diff --git a/services/backend/tests/integration/test_workspace_diagnostics.py b/services/backend/tests/integration/test_workspace_diagnostics.py
+index bd5f46387220e8a08467707161ae64881b3961c9..6848713880bc979eea60a0866c7b14fffdf66529 100644
+--- a/services/backend/tests/integration/test_workspace_diagnostics.py
++++ b/services/backend/tests/integration/test_workspace_diagnostics.py
+@@ -1,14 +1,10 @@
+-import json
+-
+ from test_api_security import USERS
+ 
+ from anvil import artifacts
+-from anvil.config import ROOT
+ from anvil.db import transaction, uid
+ 
+ 
+-def test_diagnostic_history_snapshots_pagination_and_finalized_output_only(client_factory):
+-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
++def test_diagnostic_history_snapshots_pagination_and_finalized_output_only(client_factory, journey):
+     project = journey["project_id"]
+     base = f"/api/v1/projects/{project}"
+     admin, _ = client_factory("admin-1")
+diff --git a/services/backend/tests/integration/test_workspace_editor.py b/services/backend/tests/integration/test_workspace_editor.py
+index 9728f4ca0f0c637a6534738ee318c049b87b5f43..d798be0f56f0b2583c712607e64d40f293cfabd8 100644
+--- a/services/backend/tests/integration/test_workspace_editor.py
++++ b/services/backend/tests/integration/test_workspace_editor.py
+@@ -1,18 +1,14 @@
+-import json
+-
+ import pytest
+ from test_api_security import USERS
+ 
+ from anvil import domain
+-from anvil.config import ROOT
+ from anvil.db import one, transaction, uid
+ 
+ 
+ @pytest.mark.parametrize("kind", ["task", "rubric", "protocol"])
+ def test_successor_is_canonical_draft_with_cas_private_field_preservation_and_history(
+-    client_factory, kind
++    client_factory, kind, journey
+ ):
+-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+     project = journey["project_id"]
+     base = f"/api/v1/projects/{project}"
+     with transaction(project, USERS["researcher"]) as c:
+@@ -122,8 +118,7 @@ def test_successor_is_canonical_draft_with_cas_private_field_preservation_and_hi
+     )
+ 
+ 
+-def test_approved_revision_decision_stays_on_old_hash_after_successor(client_factory):
+-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
++def test_approved_revision_decision_stays_on_old_hash_after_successor(client_factory, journey):
+     project = journey["project_id"]
+     base = f"/api/v1/projects/{project}"
+     with transaction(project, USERS["researcher"]) as c:
+diff --git a/services/backend/tests/integration/test_workspace_execution.py b/services/backend/tests/integration/test_workspace_execution.py
+index 77696fbef4da229820c14e79b4219c3ec4da2e7b..f04fd545746e93a257a027b3b9c830f8c27d2676 100644
+--- a/services/backend/tests/integration/test_workspace_execution.py
++++ b/services/backend/tests/integration/test_workspace_execution.py
+@@ -755,3 +755,78 @@ def test_existing_admin_and_exact_budget_boundaries(configured):
+             )["n"]
+             == 1
+         )
++
++
++def _effects(c):
++    return {
++        table: one(c, "SELECT count(*) n FROM anvil." + table)["n"]
++        for table in ("evaluation_spend_windows", "harbor_checks", "jobs")
++    }
++
++
++def test_readiness_reads_and_blocked_launches_have_no_provider_or_spend_effects(
++    configured, monkeypatch
++):
++    from anvil import workspace_dispatch
++
++    # A real provider call would spend money; any dispatch attempt fails the test instead.
++    monkeypatch.setattr(
++        workspace_dispatch,
++        "execute",
++        lambda *a, **k: pytest.fail("readiness must not dispatch a provider request"),
++    )
++    data = configured
++    post, path, clients = data["post"], data["path"], data["clients"]
++    blocked = post("/execution-groups", {"preparation_id": data["prep"]["id"]})
++    assert "admin_run_authorization_required" in blocked["readiness"]["missing"]
++    with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
++        before = _effects(c)
++    for name in ("contract-admin-a", "contract-engineer"):
++        for endpoint in (
++            "/preparations/" + data["prep"]["id"],
++            "/execution-groups/" + blocked["id"],
++            "/execution-groups",
++        ):
++            assert clients[name].get(path + endpoint).status_code == 200, endpoint
++    for name in ("contract-engineer", "contract-admin-a"):
++        response = clients[name].post(
++            path + "/execution-groups/" + blocked["id"] + "/launch",
++            headers={"Idempotency-Key": uid()},
++        )
++        assert response.status_code == 409, response.text
++        error = response.json()["error"]["message"]
++        assert error["message"] == "Execution blocked; no model dispatched"
++        assert error["ready"] is False
++        assert "admin_run_authorization_required" in error["missing"]
++    forged = clients["contract-engineer"].post(
++        path + "/execution-groups/" + blocked["id"] + "/launch",
++        json={
++            "subject_hash": blocked["subject_hash"],
++            "aggregate_cap_micro_usd": 1000000,
++            "rights_confirmed": True,
++        },
++        headers={"Idempotency-Key": uid()},
++    )
++    assert forged.status_code in (403, 409), forged.text
++    with transaction(cli.PROJECT, USERS["contract-admin-a"]) as c:
++        assert _effects(c) == before
++        assert (
++            one(
++                c,
++                "SELECT state FROM anvil.workspace_execution_groups WHERE id=%s",
++                (blocked["id"],),
++            )["state"]
++            == "draft"
++        )
++
++
++def test_readiness_is_not_visible_outside_the_project(configured):
++    data = configured
++    outsider = data["clients"]["outsider"]
++    for endpoint in (
++        "/preparations/" + data["prep"]["id"],
++        "/execution-groups/" + data["group"]["id"],
++    ):
++        response = outsider.get(data["path"] + endpoint)
++        assert response.status_code in (403, 404), endpoint
++        assert "missing" not in response.text and "readiness" not in response.text
+diff --git a/services/backend/tests/unit/test_readiness_reason_codes.py b/services/backend/tests/unit/test_readiness_reason_codes.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..0362a3e29d1ee5f4a1ea93d69edfa75e28b688ac
+--- /dev/null
++++ b/services/backend/tests/unit/test_readiness_reason_codes.py
+@@ -0,0 +1,88 @@
++"""Server readiness reason codes must match the checked-in web catalog contract."""
++
++import ast
++import json
++from pathlib import Path
++
++ROOT = Path(__file__).resolve().parents[4]
++CONTRACT = ROOT / "contracts/readiness/reason-codes.v1.json"
++SOURCES = {
++    "workspace_preparation.py": {"readiness"},
++    "workspace_execution.py": {"readiness", "plan_readiness"},
++    "workspace_models.py": {"selection_issues"},
++}
++COLLECTORS = {"missing", "issues", "reasons"}
++
++
++def _strings(node):
++    if isinstance(node, ast.List):
++        return [
++            e.value for e in node.elts if isinstance(e, ast.Constant) and isinstance(e.value, str)
++        ]
++    return []
++
++
++def scan(source, functions):
++    """Literal codes appended to, or assigned/returned as, reason lists in readiness functions.
++
++    Codes built dynamically are not detected; the web catalog's generic fallback covers them.
++    """
++    codes = set()
++    for func in ast.walk(ast.parse(source)):
++        if not isinstance(func, ast.FunctionDef) or func.name not in functions:
++            continue
++        for node in ast.walk(func):
++            if (
++                isinstance(node, ast.Call)
++                and isinstance(node.func, ast.Attribute)
++                and node.func.attr == "append"
++                and isinstance(node.func.value, ast.Name)
++                and node.func.value.id in COLLECTORS
++                and node.args
++                and isinstance(node.args[0], ast.Constant)
++                and isinstance(node.args[0].value, str)
++            ):
++                codes.add(node.args[0].value)
++            elif isinstance(node, ast.Assign) and any(
++                isinstance(t, ast.Name) and t.id in COLLECTORS for t in node.targets
++            ):
++                codes.update(_strings(node.value))
++            elif isinstance(node, ast.Return) and node.value is not None:
++                codes.update(_strings(node.value))
++    return codes
++
++
++def produced_codes():
++    codes = set()
++    for name, functions in SOURCES.items():
++        codes |= scan((ROOT / "services/backend/src/anvil" / name).read_text(), functions)
++    return codes
++
++
++def test_contract_lists_exactly_the_server_produced_reason_codes():
++    contract = json.loads(CONTRACT.read_text())
++    assert contract["codes"] == sorted(contract["codes"])
++    assert len(contract["codes"]) == len(set(contract["codes"]))
++    assert set(contract["codes"]) == produced_codes()
++
++
++def test_scanner_detects_new_codes_and_ignores_filters():
++    source = """
++def readiness(c):
++    obsolete = {"filtered_out"}
++    reasons = ["initial_code"]
++    missing = [r for r in reasons if r not in obsolete]
++    issues = [r for r in missing if r != "not_appended"]
++    missing.append("added_code")
++    other.append("unrelated_list")
++    return {"missing": missing}
++
++def selection_issues(c):
++    return ["returned_code"]
++
++def unrelated():
++    missing = []
++    missing.append("outside_scope")
++"""
++    found = scan(source, {"readiness", "selection_issues"})
++    assert found == {"initial_code", "added_code", "returned_code"}
+diff --git a/tests/e2e/golden-executable-import.spec.ts b/tests/e2e/golden-executable-import.spec.ts
+index 144206e8f0faac9aeaa87f1bc007d1b3e0c28db7..c88d30b2b1722c1fa3a5c40348b4bc7e148f6d34 100644
+--- a/tests/e2e/golden-executable-import.spec.ts
++++ b/tests/e2e/golden-executable-import.spec.ts
+@@ -148,7 +148,7 @@ test('generated-import UI safely retries a lost response and downloads its noteb
+   await page.goto('/workspace/' + project + '/tasks/' + source.id);
+   const generate = page.getByRole('button', { name: 'Import & generate', exact: true });
+   await generate.click();
+-  await expect(page.getByRole('alert')).toBeVisible();
++  await expect(page.getByRole('alert').filter({ hasText: 'Failed to fetch' })).toBeVisible();
+   await expect(generate).toBeEnabled();
+   await generate.click();
+   await expect(
+@@ -173,3 +173,46 @@ test('generated-import UI safely retries a lost response and downloads its noteb
+   await page.getByRole('link', { name: 'Download review notebook', exact: true }).click();
+   expect((await download).suggestedFilename()).toBe('anvil-review.ipynb');
+ });
++
++test('golden ungenerated tasks show plain-language import explanations on list and detail', async ({
++  page,
++}) => {
++  await page.goto('/');
++  await page.getByRole('link', { name: 'Sign in with Keycloak' }).click();
++  await page.locator('#username').fill('researcher');
++  const password = readFileSync('.local/demo-accounts.md', 'utf8')
++    .split('\n')
++    .find((line) => line.startsWith('- researcher:'))!
++    .split('`')[1];
++  await page.locator('#password').fill(password);
++  await page.locator('#kc-login').click();
++  await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
++  const project = 'a0000000-0000-4000-8000-000000000002';
++  const rawCode = /\b[a-z]+(_[a-z]+)+\b/;
++  const payload = JSON.parse(
++    JSON.parse(readFileSync('contracts/praxis/golden-v3/01-marketing.export.json', 'utf8'))
++      .payload_json,
++  );
++  await page.goto('/workspace/' + project + '/tasks');
++  await page.getByLabel('Search tasks', { exact: false }).fill(payload.title);
++  const row = page.getByRole('row').filter({ hasText: payload.title }).first();
++  await expect(row).toBeVisible();
++  const cell = row.getByRole('cell').first();
++  await expect(cell).toContainText('Needs generation');
++  await expect(cell).toContainText(
++    'No validated executable yet. Open the task to start generation.',
++  );
++  const text = (await cell.innerText()).replace(payload.task_id, '');
++  expect(text).not.toMatch(rawCode);
++  expect(text).not.toContain(payload.evaluation_private.canary);
++  await row.getByRole('link', { name: 'View', exact: true }).click();
++  await expect(page.getByRole('heading', { name: payload.title, exact: true })).toBeVisible();
++  await expect(
++    page
++      .getByRole('status')
++      .filter({ hasText: 'Not ready to run · Generation and validation required' }),
++  ).toHaveText('Not ready to run · Generation and validation required');
++  await expect(
++    page.getByRole('heading', { name: 'Make this task executable', exact: true }),
++  ).toBeVisible();
++});
+diff --git a/tests/e2e/workspace-preparation.spec.ts b/tests/e2e/workspace-preparation.spec.ts
+index 93f0e03585fc83f2d7662db088ab26459c2dc428..ed39004f894388f6b45414a697f465b5dbeb242f 100644
+--- a/tests/e2e/workspace-preparation.spec.ts
++++ b/tests/e2e/workspace-preparation.spec.ts
+@@ -1,4 +1,4 @@
+-import { test, expect } from '@playwright/test';
++import { test, expect, type Browser } from '@playwright/test';
+ import { readFileSync } from 'node:fs';
+ 
+ test('saving a Harbor framework immediately populates the runner without resetting the preset form', async ({
+@@ -259,3 +259,151 @@ test('Admin saves a typed preset and multi-model preparation without spending de
+     fullPage: false,
+   });
+ });
++
++const readinessProject = 'a0000000-0000-4000-8000-000000000002';
++const READINESS_RAW_CODE = /\b[a-z]+(_[a-z]+)+\b/;
++
++async function readinessSignIn(browser: Browser, username: string) {
++  const context = await browser.newContext();
++  const page = await context.newPage();
++  await page.goto('/');
++  await page.getByRole('link', { name: 'Sign in with Keycloak' }).click();
++  await page.locator('#username').fill(username);
++  const password = readFileSync('.local/demo-accounts.md', 'utf8')
++    .split('\n')
++    .find((line) => line.startsWith('- ' + username + ':'))!
++    .split('`')[1];
++  await page.locator('#password').fill(password);
++  await page.locator('#kc-login').click();
++  await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
++  return { context, page };
++}
++
++// Browser-only fixture: the same synthetic draft group is shown to both roles with fixed
++// blockers. No launch request is sent and no provider is contacted.
++const readinessBlockedGroup = {
++  id: 'b0000000-0000-4000-8000-00000000a001',
++  preparation_id: 'b0000000-0000-4000-8000-00000000a002',
++  subject_hash: 'synthetic',
++  state: 'draft',
++  status: 'draft',
++  readiness: {
++    ready: false,
++    missing: ['admin_run_authorization_required', 'aggregate_api_cap_missing', 'future_gate'],
++    aggregate_cap_micro_usd: null,
++    conservative_cost_micro_usd: null,
++    models: [{ model_profile_id: 'm1', missing: ['credential_missing'] }],
++  },
++  models: [
++    {
++      trial: 1,
++      plan_id: 'p1',
++      model: { id: 'm1', name: 'Synthetic model', provider: 'openai', model_id: 'synthetic' },
++      check: null,
++    },
++  ],
++  snapshot: {
++    preparation: {
++      package: { manifest: { task_id: 'synthetic-task', task_version: '1' } },
++      preset: { name: 'Synthetic preset' },
++    },
++  },
++};
++
++test('Admin and Engineer see plain-language blockers with the right fixer for the same group', async ({
++  browser,
++}) => {
++  for (const [username, admin] of [
++    ['admin-1', true],
++    ['researcher', false],
++  ] as const) {
++    const { context, page } = await readinessSignIn(browser, username);
++    let launches = 0;
++    await page.route('**/workspace/execution-groups/' + readinessBlockedGroup.id, (route) =>
++      route.fulfill({ json: { data: readinessBlockedGroup } }),
++    );
++    await page.route('**/workspace/execution-groups/*/launch', (route) => {
++      launches++;
++      return route.abort();
++    });
++    await page.goto(
++      '/workspace/' + readinessProject + '/execution-groups/' + readinessBlockedGroup.id,
++    );
++    const panel = page
++      .getByRole('status')
++      .filter({ has: page.getByRole('heading', { name: 'Run cannot start yet', exact: true }) });
++    await expect(panel).toBeVisible();
++    await expect(panel).toHaveAttribute('tabindex', '-1');
++    const items = panel.getByRole('listitem');
++    await expect(items).toHaveCount(admin ? 3 : 4);
++    for (const text of await items.allInnerTexts()) {
++      const main = text.split('\n')[0];
++      expect(main, 'main blocker text').not.toMatch(READINESS_RAW_CODE);
++    }
++    await expect(panel).toContainText(
++      "This run is blocked by a condition Anvil can't describe yet.",
++    );
++    await expect(panel.getByText('Diagnostic code: future_gate', { exact: true })).toBeVisible();
++    await expect(panel).toContainText('No aggregate API budget is set.');
++    const workspace = '/workspace/' + readinessProject;
++    const groupPage = workspace + '/execution-groups/' + readinessBlockedGroup.id;
++    const expectedLinks: [string, string, string][] = admin
++      ? [
++          [
++            'No aggregate API budget is set.',
++            'Change run configuration',
++            workspace + '/execution-groups/new',
++          ],
++          ["can't describe yet", 'Link to this page for your Anvil administrator', groupPage],
++          ['This model has no saved API key.', 'Open Models & keys', workspace + '/models'],
++        ]
++      : [
++          ['An Admin must start this run', 'Link to this page for a project Admin', groupPage],
++          [
++            'No aggregate API budget is set.',
++            'Change run configuration',
++            workspace + '/execution-groups/new',
++          ],
++          ["can't describe yet", 'Link to this page for a project Admin', groupPage],
++          ['Ask a project Admin to link one', 'Link to this page for a project Admin', groupPage],
++        ];
++    for (const [index, [text, name, href]] of expectedLinks.entries()) {
++      const item = items.nth(index);
++      await expect(item).toContainText(text);
++      const links = item.getByRole('link');
++      await expect(links).toHaveCount(1);
++      await expect(links.first()).toHaveAccessibleName(name);
++      await expect(links.first()).toHaveAttribute('href', href);
++    }
++    await expect(panel.getByRole('link')).toHaveCount(expectedLinks.length);
++    if (admin) {
++      await expect(panel).toContainText('Who can fix: you (Admin)');
++      await expect(panel).not.toContainText('An Admin must start this run');
++    } else {
++      await expect(panel).toContainText('An Admin must start this run to authorize its budget.');
++      await expect(panel).toContainText('Ask a project Admin to link one in Models & keys.');
++      await expect(panel).toContainText('Who can fix: a project Admin');
++      await expect(page.locator('a[href$="/models"], a[href$="/frameworks"]')).toHaveCount(0);
++      await expect(page.locator('a[href="#execution-group-run"]')).toHaveCount(0);
++    }
++    if (admin) {
++      await panel.getByRole('link', { name: 'Open Models & keys', exact: true }).click();
++      await expect(page).toHaveURL(new RegExp(workspace + '/models$'));
++      await expect(page.getByRole('heading', { name: 'Models & keys' }).first()).toBeVisible();
++      await page.goBack();
++      await expect(panel).toBeVisible();
++    } else {
++      await items.nth(0).getByRole('link').click();
++      await expect(page).toHaveURL(new RegExp(groupPage + '$'));
++      await expect(panel).toBeVisible();
++    }
++    await page.getByRole('button', { name: 'Run', exact: true }).click();
++    await expect(panel).toHaveCount(0);
++    const alert = page
++      .getByRole('alert')
++      .filter({ has: page.getByRole('heading', { name: 'Run cannot start yet', exact: true }) });
++    await expect(alert).toBeFocused();
++    expect(launches).toBe(0);
++    await context.close();
++  }
++});
+diff --git a/tests/e2e/workspace-task-pages.spec.ts b/tests/e2e/workspace-task-pages.spec.ts
+index f14c77ba7948d8ff0d36a643ef230e91fe786e30..f10916752b0a2340d8bc60a40b31c86a601215be 100644
+--- a/tests/e2e/workspace-task-pages.spec.ts
++++ b/tests/e2e/workspace-task-pages.spec.ts
+@@ -1,4 +1,4 @@
+-import { test, expect } from '@playwright/test';
++import { test, expect, type Browser } from '@playwright/test';
+ import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
+ import { resolve } from 'node:path';
+ 
+@@ -303,3 +303,81 @@ test('task library → version viewer → repeated run configuration and inert D
+   );
+   await expect(page.getByRole('button', { name: 'Run', exact: true })).toHaveCount(0);
+ });
++
++const readinessProject = 'a0000000-0000-4000-8000-000000000002';
++const READINESS_RAW_CODE = /\b[a-z]+(_[a-z]+)+\b/;
++
++async function readinessSignIn(browser: Browser, username: string) {
++  const context = await browser.newContext();
++  const page = await context.newPage();
++  await page.goto('/');
++  await page.getByRole('link', { name: 'Sign in with Keycloak' }).click();
++  await page.locator('#username').fill(username);
++  const password = readFileSync('.local/demo-accounts.md', 'utf8')
++    .split('\n')
++    .find((line) => line.startsWith('- ' + username + ':'))!
++    .split('`')[1];
++  await page.locator('#password').fill(password);
++  await page.locator('#kc-login').click();
++  await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
++  return { context, page };
++}
++
++test('task list explains each import state in plain language without raw state codes', async ({
++  browser,
++}) => {
++  const { context, page } = await readinessSignIn(browser, 'researcher');
++  const states = [
++    'queued',
++    'generating',
++    'validating',
++    'needs_clarification',
++    'generation_failed',
++    'validation_failed',
++    'budget_paused',
++  ];
++  // Browser-only list fixture; the server's task list API remains the source of truth.
++  await page.route('**/workspace/tasks?*', (route) =>
++    route.fulfill({
++      json: {
++        data: {
++          scope: 'project',
++          next_cursor: null,
++          items: states.map((state, i) => ({
++            id: 'c0000000-0000-4000-8000-00000000000' + i,
++            task_id: 'synthetic-' + i,
++            task_version: '1',
++            title: 'Synthetic import ' + state.replaceAll('_', ' '),
++            run_count: 0,
++            versions: 1,
++            source_sha256: 'synthetic',
++            source_schema_version: 'praxis.anvil.task.v3',
++            import_state: state,
++            package_built: false,
++          })),
++        },
++      },
++    }),
++  );
++  await page.goto('/workspace/' + readinessProject + '/tasks');
++  const rows = page.getByRole('row').filter({ hasText: 'Synthetic import' });
++  await expect(rows).toHaveCount(states.length);
++  const expected = [
++    ['Queued for generation', 'Waiting for the generation worker'],
++    ['Generating checks', 'writing executable verifiers'],
++    ['Validating', 'being tested against the supplied tools'],
++    ['Needs clarification', 'review the import validation report'],
++    ['Generation failed', 'review the import validation report'],
++    ['Validation failed', 'review the import validation report'],
++    ['Needs attention', 'Open the import report or ask a project Admin.'],
++  ];
++  for (const [index, [label, detail]] of expected.entries()) {
++    const row = rows.nth(index);
++    await expect(row).toContainText(label);
++    await expect(row).toContainText(detail);
++    const cell = (await row.getByRole('cell').first().innerText()).replace(/synthetic-\d/, '');
++    expect(cell.replace('Diagnostic code: budget_paused', '')).not.toMatch(READINESS_RAW_CODE);
++  }
++  await expect(rows.nth(6)).toContainText('Diagnostic code: budget_paused');
++  await context.close();
++});
+diff --git a/tests/readiness_catalog.mjs b/tests/readiness_catalog.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..a058883f93d7e0f6a51c4efaca06d98e4873c976
+--- /dev/null
++++ b/tests/readiness_catalog.mjs
+@@ -0,0 +1,245 @@
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import { readFileSync } from 'node:fs';
++import {
++  UNKNOWN_REASON_TEXT,
++  actionLink,
++  describeReason,
++  explainImportState,
++  importStates,
++  itemText,
++  modelSelectionMessage,
++  reasonCatalog,
++  runBlockerItems,
++  runBlockers,
++} from '../apps/web/src/lib/readinessCatalog.ts';
++
++const contract = JSON.parse(
++  readFileSync(new URL('../contracts/readiness/reason-codes.v1.json', import.meta.url), 'utf8'),
++);
++const RAW_CODE = /\b[a-z]+(_[a-z]+)+\b/;
++
++test('every server-produced reason code has a complete catalog entry', () => {
++  assert.equal(contract.codes.length, 29);
++  for (const code of contract.codes) {
++    const entry = reasonCatalog[code];
++    assert.ok(entry, 'missing catalog entry: ' + code);
++    assert.ok(['package', 'setup', 'admission'].includes(entry.layer), code);
++    assert.ok(['engineer', 'admin', 'operator'].includes(entry.fixer), code);
++    for (const role of [true, false]) {
++      const item = describeReason(code, role);
++      assert.ok(item.known && item.text.length > 10, code);
++      assert.doesNotMatch(item.text, RAW_CODE, code + ' main text contains a raw code');
++      assert.equal(item.diagnostic, null);
++    }
++  }
++});
++
++test('engineers get admin-directed wording for admin and operator fixes', () => {
++  for (const code of Object.keys(reasonCatalog)) {
++    const engineer = describeReason(code, false);
++    if (reasonCatalog[code].fixer === 'admin') {
++      assert.match(engineer.text, /\bAdmin\b/, code + ' engineer text must direct to an Admin');
++      assert.match(engineer.fixerLabel, /project Admin/);
++      assert.match(describeReason(code, true).fixerLabel, /you \(Admin\)/);
++    }
++    if (reasonCatalog[code].fixer === 'operator') {
++      assert.match(engineer.fixerLabel, /Anvil administrator/);
++    }
++  }
++  assert.match(describeReason('credential_missing', false).text, /Ask a project Admin/);
++});
++
++test('unknown codes use the generic explanation with only a safe secondary diagnostic', () => {
++  const unknown = describeReason('future_gate_added_later', false);
++  assert.equal(unknown.text, UNKNOWN_REASON_TEXT);
++  assert.equal(unknown.diagnostic, 'future_gate_added_later');
++  assert.equal(unknown.known, false);
++  const rendered = itemText(unknown);
++  assert.ok(rendered.indexOf(UNKNOWN_REASON_TEXT) < rendered.indexOf('Diagnostic code:'));
++  for (const unsafe of [
++    'x<script>alert(1)</script>',
++    'a b',
++    'Uppercase_code',
++    'a'.repeat(65),
++    '1starts_with_digit',
++    'sk-live-secret-value',
++    'toString',
++    '__proto__',
++    null,
++    42,
++    { missing: [] },
++  ]) {
++    const item = describeReason(unsafe, true);
++    assert.equal(item.text, UNKNOWN_REASON_TEXT);
++    if (typeof unsafe === 'string' && /^[a-z][a-z0-9_]{0,63}$/.test(unsafe)) {
++      assert.equal(item.diagnostic, unsafe);
++    } else {
++      assert.equal(item.diagnostic, null, String(unsafe));
++      assert.ok(!itemText(item).includes(String(unsafe)));
++    }
++  }
++});
++
++test('blocker semantics are unchanged: same count, unknowns block, Admin exception only', () => {
++  const readiness = {
++    missing: ['admin_run_authorization_required', 'aggregate_api_cap_missing', 'brand_new_gate'],
++    models: [
++      { model_profile_id: 'm1', model: 'gpt-x', missing: ['credential_missing', 'brand_new_gate'] },
++      { model_profile_id: 'm2', missing: [] },
++    ],
++  };
++  const engineer = runBlockerItems(readiness, false);
++  const admin = runBlockerItems(readiness, true);
++  assert.equal(engineer.length, 5);
++  assert.equal(admin.length, 4);
++  assert.ok(!admin.some((item) => item.code === 'admin_run_authorization_required'));
++  assert.ok(engineer.filter((item) => !item.known).length === 2);
++  assert.ok(runBlockers({ missing: ['brand_new_gate'], models: [] }, true).length === 1);
++  assert.ok(
++    runBlockers({ missing: ['admin_run_authorization_required'], models: [] }, false).length === 1,
++  );
++  assert.equal(
++    runBlockers({ missing: ['admin_run_authorization_required'], models: [] }, true).length,
++    0,
++  );
++  assert.equal(runBlockers({ missing: [], models: [] }, false).length, 0);
++  assert.match(runBlockers(readiness, false).join('\n'), /^gpt-x: /m);
++});
++
++test('readiness wording makes no score, quality or performance claims', () => {
++  const all = [
++    ...Object.values(reasonCatalog).flatMap((e) => [e.text, e.engineerText || '']),
++    ...Object.values(importStates).flatMap((e) => [e.label, e.reason, e.next]),
++    UNKNOWN_REASON_TEXT,
++  ].join('\n');
++  assert.doesNotMatch(all, /score|quality|perform|benchmark|accura/i);
++  assert.match(importStates.ready.reason, /checked separately/);
++});
++
++test('the seven approved import states explain reason and next step; others use a fallback', () => {
++  const approved = [
++    'queued',
++    'generating',
++    'validating',
++    'needs_clarification',
++    'generation_failed',
++    'validation_failed',
++    'ready',
++  ];
++  assert.deepEqual(Object.keys(importStates).sort(), [...approved].sort());
++  for (const state of approved) {
++    const explained = explainImportState(state);
++    assert.ok(explained.label && explained.reason && explained.next, state);
++    assert.doesNotMatch(explained.label + explained.reason + explained.next, RAW_CODE, state);
++  }
++  for (const state of ['generation_failed', 'validation_failed', 'needs_clarification']) {
++    assert.match(explainImportState(state).next, /validation report/);
++  }
++  assert.equal(explainImportState('generation_failed').tone, 'failed');
++  assert.equal(explainImportState('validation_failed').tone, 'failed');
++  const other = explainImportState('budget_paused');
++  assert.equal(other.label, 'Needs attention');
++  assert.doesNotMatch(other.label + other.reason + other.next, RAW_CODE);
++  assert.equal(other.diagnostic, 'budget_paused');
++  assert.equal(explainImportState('<b>x</b>').diagnostic, null);
++});
++
++test('model-selection 409 text replaces raw codes only for the exact server prefix', () => {
++  const message = modelSelectionMessage(
++    'Select an enabled current model version: model_version_superseded, model_profile_disabled',
++  );
++  assert.match(message, /newer version of this model/);
++  assert.match(message, /disabled for new runs/);
++  assert.doesNotMatch(message, /model_version_superseded|model_profile_disabled/);
++  assert.match(
++    modelSelectionMessage('Select an enabled current model version: future_code'),
++    /Diagnostic code: future_code/,
++  );
++  const injected = modelSelectionMessage(
++    'Select an enabled current model version: <img src=x onerror=alert(1)>',
++  );
++  assert.equal(injected, UNKNOWN_REASON_TEXT);
++  assert.equal(modelSelectionMessage('Package not found in this project'), null);
++  assert.equal(modelSelectionMessage('select an enabled current model version: x'), null);
++});
++
++const TO = {
++  workspace: '/workspace/p1',
++  configure: '/workspace/p1/execution-groups/new',
++  share: '/workspace/p1/execution-groups/g1',
++  run: '#execution-group-run',
++};
++const ADMIN_ONLY_PATHS = /\/(models|frameworks|people|limits)(\/|$|\?)/;
++
++test('every blocker gets exactly one role-safe next-action link', () => {
++  const codes = [...Object.keys(reasonCatalog), 'future_gate', 'Bad Code!'];
++  for (const code of codes)
++    for (const canAdmin of [true, false]) {
++      const item = describeReason(code, canAdmin, 'Synthetic model');
++      const link = actionLink(item, canAdmin, TO);
++      assert.ok(link.label.length > 12 && /^[A-Z]/.test(link.label), code + ' descriptive label');
++      assert.doesNotMatch(link.label, RAW_CODE, code + ' label contains a raw code');
++      assert.ok(Object.values(TO).some((d) => link.href === d || link.href.startsWith(d + '/')));
++      assert.equal(actionLink(item, canAdmin, { ...TO, run: undefined }).href === TO.run, false);
++      if (!canAdmin) {
++        assert.doesNotMatch(link.href, ADMIN_ONLY_PATHS, code + ' Engineer got Admin-only page');
++        assert.notEqual(link.href, TO.run, code + ' Engineer cannot authorize a run');
++      }
++    }
++});
++
++test('next-action destinations match who can fix the blocker', () => {
++  const link = (code, canAdmin, to = TO) =>
++    actionLink(describeReason(code, canAdmin), canAdmin, to);
++  assert.deepEqual(link('credential_missing', true), {
++    label: 'Open Models & keys',
++    href: '/workspace/p1/models',
++  });
++  assert.deepEqual(link('credential_missing', false), {
++    label: 'Link to this page for a project Admin',
++    href: TO.share,
++  });
++  assert.deepEqual(link('framework_binding_changed_or_unavailable', true), {
++    label: 'Open Frameworks & presets',
++    href: '/workspace/p1/frameworks',
++  });
++  assert.equal(link('framework_binding_changed_or_unavailable', false).href, TO.share);
++  for (const role of [true, false]) {
++    assert.deepEqual(link('aggregate_api_cap_missing', role), {
++      label: 'Change run configuration',
++      href: TO.configure,
++    });
++    assert.equal(link('execution_group_not_launched', role).href, '/workspace/p1/execution-groups');
++    assert.equal(link('package_agent_admission_missing', role).href, '/workspace/p1/tasks');
++    assert.equal(link('provider_task_adapter_not_supported', role).href, TO.configure);
++    assert.deepEqual(link('live_dispatch_disabled_in_runtime', role), {
++      label: 'Link to this page for your Anvil administrator',
++      href: TO.share,
++    });
++  }
++  // Engineers have their own documented path for these Admin-fixed blockers.
++  assert.equal(link('initiator_access_revoked', false).href, TO.configure);
++  assert.equal(link('model_revoked_or_unavailable', false).href, TO.configure);
++  assert.deepEqual(link('admin_run_authorization_required', true), {
++    label: 'Go to Run to authorize this run',
++    href: '#execution-group-run',
++  });
++  assert.equal(
++    link('admin_run_authorization_required', true, { ...TO, run: undefined }).href,
++    TO.configure,
++  );
++  assert.equal(link('admin_run_authorization_required', false).href, TO.share);
++  assert.equal(link('future_gate', false).label, 'Link to this page for a project Admin');
++  assert.equal(link('future_gate', true).label, 'Link to this page for your Anvil administrator');
++});
++
++test('every Admin-fixed blocker gives an Admin a direct destination, not an escalation', () => {
++  for (const [code, entry] of Object.entries(reasonCatalog)) {
++    const admin = actionLink(describeReason(code, true), true, TO);
++    if (entry.fixer === 'admin') assert.notEqual(admin.href, TO.share, code);
++    // Its approved text tells the user to select a supported provider's model.
++    if (entry.fixer === 'operator' && code !== 'provider_task_adapter_not_supported')
++      assert.equal(admin.href, TO.share, code);
++  }
++});

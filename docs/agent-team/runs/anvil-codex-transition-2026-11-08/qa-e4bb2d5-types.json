@@ -1,0 +1,25 @@
+{
+  "candidate_application_sha": "e4bb2d56800b6e2705b359724750c5702a003204",
+  "label": "types",
+  "command": [
+    "/Users/vasudevansundarababu/.local/bin/pnpm",
+    "--filter",
+    "./apps/web",
+    "exec",
+    "tsc",
+    "--noEmit",
+    "--incremental",
+    "false"
+  ],
+  "started_at": "2026-11-08T19:08:06.654465+00:00",
+  "elapsed_seconds": 2.428,
+  "exit_code": 0,
+  "raw_log_path": "/private/tmp/anvil-codex-testing-runtime/qa-e4bb2d5-types.log",
+  "raw_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "summary": [],
+  "explicit_skips": [],
+  "changed_manifest_paths_after_check": [],
+  "native_opt_in": false,
+  "paid_provider_flags": false,
+  "fresh_database": "anvil_finalqa_e4bb2d5"
+}

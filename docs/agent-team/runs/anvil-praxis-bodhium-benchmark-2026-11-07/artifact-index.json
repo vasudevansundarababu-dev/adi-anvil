@@ -1,0 +1,87 @@
+{
+  "work_id": "anvil-praxis-bodhium-benchmark-2026-11-07",
+  "status": "design_and_plan_complete_pending_human_approval",
+  "source_status": "verified_production_overlay_full_r6_unrecovered",
+  "base_commit": "8cdc8a84784c7ae52d7bbb88f36193b387aedb60",
+  "composite_overlay_tree": "cc9925ec8380a56fa3fa988c157b2d5d7563cda2",
+  "expected_r6_tree_not_reproduced": "18fca788310f91a35a54df39392a37c026ae16b1",
+  "generated_at": "2026-11-07T18:04:52.686596+00:00",
+  "entries": [
+    {
+      "path": "docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/approved-specification.txt",
+      "byte_size": 41878,
+      "sha256": "44196cae04b7a399fb70da8d4577345b2cf95ee6a14daa41f3d8c8f2b4921cbc"
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/approval-record.md",
+      "byte_size": 4413,
+      "sha256": "3c02f95ba28a03240a1bc8ae375d024b2d77cb4e33a6f601007cbaf58b20d07c"
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/recovery-report.md",
+      "byte_size": 8255,
+      "sha256": "e7a471372a4fb103b1aba9423285f2a3439977a655a39dd3570f2aacc1bdf694"
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/recovery-inventory.json",
+      "byte_size": 158582,
+      "sha256": "f8060cf3355b629e7990ca5cd2db568355e49ac84f8d44d3a5d3753db60ba603"
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/production-source-manifest.jsonl",
+      "byte_size": 43271,
+      "sha256": "cedfb20d5b3160dcfee2e91f729e237063e16c714eb70dbef52cc7c59e173031"
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/architecture.md",
+      "byte_size": 47811,
+      "sha256": "c200d135bd9dbe171b63e13833349a6486d09adff17c5c27daf870d46c6cf68a"
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/contract-design.md",
+      "byte_size": 8980,
+      "sha256": "6486299f60ec6f58f2acf21b02137cff5402eb4a13a6df01701a30f9b2c58668"
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/threat-model.md",
+      "byte_size": 7147,
+      "sha256": "2ca9cb927254ea2450da4b2c63813993e24fb17da4bc575e52a99fbaf77db673"
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/requirements-to-test.md",
+      "byte_size": 10262,
+      "sha256": "b8608c8225231c9a0581ed32959dbac8ad18aa56ce970bae49ef093483bc209f"
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/implementation-plan.md",
+      "byte_size": 18017,
+      "sha256": "1cdf87e4d48bc483a2e5116509e83d07b35f2652b95c032635b98bbe0e3f9749"
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/verification-record.json",
+      "byte_size": 678,
+      "sha256": "ecdc1f430664d342ae34fce68c8de4af1c356b0b08b57a87e64f787848f87069"
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/execution-evidence-index.json",
+      "byte_size": 303,
+      "sha256": "d193e6ce2fc9c57ce7d081a2c37446dc5e5916260b6072819ee88ff9761caedb"
+    },
+    {
+      "path": "docs/agent-team/runs/anvil-praxis-bodhium-benchmark-2026-11-07/handoff.md",
+      "byte_size": 5822,
+      "sha256": "3463919dbb1aace19c9d18ae1aa01fd5d118c17b4883c69d7aea335e8f7b04df"
+    },
+    {
+      "path": "recovery-evidence/inputs/Anvil-Benchmark-Architecture-Planning-Handoff.txt",
+      "byte_size": 44247,
+      "sha256": "17f34a7831f029782ee3b28b5b6944ac7be82d1899ed29f476e5b7580d27b8ec"
+    },
+    {
+      "path": "recovery-evidence/inputs/anvil-r6-cloud-build-source.tgz",
+      "byte_size": 3041716,
+      "sha256": "5679da027619c50f4a2418514805c2b38730888ce45fa2ed3c7a4f42ec29d8fe"
+    }
+  ],
+  "self_hash_policy": "Index excludes itself and SHA256SUMS; SHA256SUMS includes index, excludes itself. Paths relative to isolated checkout root."
+}

@@ -1,0 +1,23 @@
+{
+  "approval_plan_sha": "d72587e8923ce35496d233c399e745f8f3e5303f",
+  "approval_record_sha256": "20840a53a3aaaf14eaf45854a99fe80a3045232ec884b8f0fe63fdcf45934332",
+  "approved_base_config_sha256": "51b71b5722e2e21fbe3df1f9e759ac9377acc5f2c746580cf1d852458e63ffc5",
+  "build_submitted": false,
+  "cloud_build_id": null,
+  "config_file": "/Users/vasudevansundarababu/Documents/Codex/anvil-codex-transition/docs/agent-team/runs/anvil-codex-transition-2026-11-08/staging-cloudbuild-edcc051-generation-bound.json",
+  "deployment_executed": false,
+  "generation_bound_config_sha256": "efd66f14619d921af87c8b7d0252e4acb8ec1b2adff45956785a6a0438af47c7",
+  "member_count": 381,
+  "only_config_change": "source.storageSource with actual verified object and generation",
+  "package_bytes": 3180751,
+  "package_sha256": "2a66977df5f167c20b1ac5629f9d7dd9c6a23c7f5283398651385548e26c135a",
+  "source": {
+    "storageSource": {
+      "bucket": "adi-anvil-mvp-2026-anvil-staging-build-source",
+      "generation": "1794192336521258",
+      "object": "source/edcc051/sha256-2a66977df5f167c20b1ac5629f9d7dd9c6a23c7f5283398651385548e26c135a.tar.gz"
+    }
+  },
+  "source_sha": "edcc0514c43ceb614b813566820ee0c2c7311463",
+  "status": "verified_generation_bound_config_not_submitted"
+}

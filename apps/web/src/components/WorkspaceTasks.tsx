@@ -17,6 +17,7 @@ import {
 import styles from './ModernWorkspace.module.css';
 import ui from './WorkspaceTasks.module.css';
 import { providerFailure } from '../lib/providerFailure';
+import { explainImportState } from '../lib/readinessCatalog';
 
 type Actor = {
   schema_version?: string;
@@ -212,49 +213,72 @@ export default function WorkspaceTasks({
               </tr>
             </thead>
             <tbody>
-              {page?.items.map((t) => (
-                <tr key={t.id}>
-                  <td>
-                    <span className={`${ui.badge} ${t.package_built ? ui.ready : ui.draft}`}>
-                      {t.package_built
-                        ? t.source_schema_version === 'praxis.anvil.task.v3'
-                          ? 'Ready to run'
-                          : 'Package built'
-                        : t.source_schema_version === 'praxis.anvil.task.v3'
-                          ? t.import_state?.replaceAll('_', ' ') || 'Needs generation'
-                          : 'Needs package'}
-                    </span>
-                    <strong>{t.title || t.task_id}</strong>
-                    <small>{t.task_id}</small>
-                    {t.package_built && t.import_state && t.import_state !== 'ready' && (
-                      <small>Newer draft: {t.import_state.replaceAll('_', ' ')}</small>
-                    )}
-                  </td>
-                  <td>
-                    {t.task_version}
-                    <small>
-                      {t.versions} version{t.versions === 1 ? '' : 's'}
-                    </small>
-                  </td>
-                  <td>{t.last_run_at ? dateTime(t.last_run_at) : 'Not run yet'}</td>
-                  <td>{t.run_count}</td>
-                  <td>
-                    <div className={ui.rowActions}>
-                      {canPlan && (
-                        <a
-                          className={`button ${t.package_built ? ui.run : ''}`}
-                          href={taskHref(t.id) + '/run'}
-                        >
-                          {t.package_built ? 'Run' : 'Complete setup'}
-                        </a>
+              {page?.items.map((t) => {
+                const v3 = t.source_schema_version === 'praxis.anvil.task.v3';
+                const importInfo = t.import_state ? explainImportState(t.import_state) : null;
+                const pending = v3 && !t.package_built && importInfo;
+                return (
+                  <tr key={t.id}>
+                    <td>
+                      <span
+                        className={`${ui.badge} ${t.package_built ? ui.ready : pending && importInfo.tone === 'failed' ? ui.failed : ui.draft}`}
+                      >
+                        {t.package_built
+                          ? v3
+                            ? 'Ready to run'
+                            : 'Package built'
+                          : v3
+                            ? importInfo?.label || 'Needs generation'
+                            : 'Needs package'}
+                      </span>
+                      <strong>{t.title || t.task_id}</strong>
+                      <small>{t.task_id}</small>
+                      {t.package_built && v3 && (
+                        <small>
+                          Executable validated. Models, keys and budget are checked when you run.
+                        </small>
                       )}
-                      <a className="button" href={taskHref(t.id)}>
-                        View
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                      {pending && (
+                        <small>
+                          {importInfo.reason} {importInfo.next}
+                          {importInfo.diagnostic && <> Diagnostic code: {importInfo.diagnostic}</>}
+                        </small>
+                      )}
+                      {v3 && !t.package_built && !importInfo && (
+                        <small>
+                          No validated executable yet. Open the task to start generation.
+                        </small>
+                      )}
+                      {t.package_built && importInfo && t.import_state !== 'ready' && (
+                        <small>Newer draft: {importInfo.label}</small>
+                      )}
+                    </td>
+                    <td>
+                      {t.task_version}
+                      <small>
+                        {t.versions} version{t.versions === 1 ? '' : 's'}
+                      </small>
+                    </td>
+                    <td>{t.last_run_at ? dateTime(t.last_run_at) : 'Not run yet'}</td>
+                    <td>{t.run_count}</td>
+                    <td>
+                      <div className={ui.rowActions}>
+                        {canPlan && (
+                          <a
+                            className={`button ${t.package_built ? ui.run : ''}`}
+                            href={taskHref(t.id) + '/run'}
+                          >
+                            {t.package_built ? 'Run' : 'Complete setup'}
+                          </a>
+                        )}
+                        <a className="button" href={taskHref(t.id)}>
+                          View
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -322,6 +346,15 @@ export default function WorkspaceTasks({
               ? 'Ready to run · Executable package validated'
               : 'Not ready to run · Generation and validation required'}
           </span>
+          {!pkg && canPlan && task.actor.schema_version === 'praxis.anvil.task.v3' && (
+            <ImportStateNote base={base} sourceId={task.id} />
+          )}
+          {pkg && (
+            <p className={styles.muted}>
+              Package readiness only: models, API keys, budget and authorization are checked
+              separately when you run.
+            </p>
+          )}
           <h2 className={ui.title}>
             {run ? 'Run: ' : ''}
             {task.title}
@@ -625,6 +658,29 @@ export default function WorkspaceTasks({
     </div>
   );
 }
+function ImportStateNote({ base, sourceId }: { base: string; sourceId: string }) {
+  const [state, setState] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    api(base + '/workspace/tasks/' + sourceId + '/executable-import')
+      .then((family) => {
+        if (active) setState(family?.revisions?.[0]?.state || null);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [base, sourceId]);
+  if (!state || state === 'ready') return null;
+  const info = explainImportState(state);
+  return (
+    <p className={styles.muted}>
+      {info.label}: {info.reason} {info.next}
+      {info.diagnostic && <> Diagnostic code: {info.diagnostic}</>}
+    </p>
+  );
+}
+
 function Rubric({ criteria }: { criteria: Criterion[] }) {
   return (
     <div>

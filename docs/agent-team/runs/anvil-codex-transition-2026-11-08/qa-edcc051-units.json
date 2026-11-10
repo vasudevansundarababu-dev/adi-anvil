@@ -1,0 +1,29 @@
+{
+  "candidate_application_sha": "edcc0514c43ceb614b813566820ee0c2c7311463",
+  "label": "units",
+  "command": [
+    "/private/tmp/anvil-testing-backend/bin/python",
+    "-m",
+    "pytest",
+    "services/backend/tests/unit",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "--tb=short",
+    "-rs"
+  ],
+  "started_at": "2026-11-09T01:58:00.602016+00:00",
+  "elapsed_seconds": 34.295,
+  "exit_code": 0,
+  "raw_log_path": "/private/tmp/anvil-codex-testing-runtime/qa-edcc051-units.log",
+  "raw_log_sha256": "33d482aa1ed2472127b155069deec3e8c31623da7ab179ae794e079fbe326140",
+  "summary": [
+    "793 passed, 1 warning in 33.17s"
+  ],
+  "explicit_skips": [],
+  "changed_manifest_paths_after_check": [],
+  "native_opt_in": false,
+  "platform": "macOS existing isolated locked Python3.12 environment",
+  "paid_provider_flags": false,
+  "fresh_database": "anvil_finalqa_edcc051"
+}

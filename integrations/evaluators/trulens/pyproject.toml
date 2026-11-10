@@ -1,0 +1,12 @@
+[project]
+name = "anvil-trulens-evaluator"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = ["trulens-feedback==2.16.0"]
+
+[tool.uv]
+package = false
+
+[[tool.uv.index]]
+url = "https://pypi.org/simple"
+default = true

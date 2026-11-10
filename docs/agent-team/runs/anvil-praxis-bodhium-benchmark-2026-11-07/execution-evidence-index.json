@@ -1,0 +1,9 @@
+{
+  "status": "Not run",
+  "reason": "Application tests/model runs/deployment prohibited in this recovery and documentation task",
+  "fixture_runs": [],
+  "native_harbor_runs": [],
+  "live_provider_runs": [],
+  "deployment_runs": [],
+  "historical_r6_evidence": "Not supplied; see recovery-report.md"
+}

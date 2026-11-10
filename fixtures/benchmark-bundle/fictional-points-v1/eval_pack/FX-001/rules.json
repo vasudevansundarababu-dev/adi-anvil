@@ -1,0 +1,122 @@
+[
+  {
+    "expected": 1,
+    "field": "item-001",
+    "id": "criterion-001"
+  },
+  {
+    "expected": 4,
+    "field": "item-002",
+    "id": "criterion-002"
+  },
+  {
+    "expected": 9,
+    "field": "item-003",
+    "id": "criterion-003"
+  },
+  {
+    "expected": 16,
+    "field": "item-004",
+    "id": "criterion-004"
+  },
+  {
+    "expected": 25,
+    "field": "item-005",
+    "id": "criterion-005"
+  },
+  {
+    "expected": 36,
+    "field": "item-006",
+    "id": "criterion-006"
+  },
+  {
+    "expected": 49,
+    "field": "item-007",
+    "id": "criterion-007"
+  },
+  {
+    "expected": 64,
+    "field": "item-008",
+    "id": "criterion-008"
+  },
+  {
+    "expected": 81,
+    "field": "item-009",
+    "id": "criterion-009"
+  },
+  {
+    "expected": 100,
+    "field": "item-010",
+    "id": "criterion-010"
+  },
+  {
+    "expected": 121,
+    "field": "item-011",
+    "id": "criterion-011"
+  },
+  {
+    "expected": 144,
+    "field": "item-012",
+    "id": "criterion-012"
+  },
+  {
+    "expected": 169,
+    "field": "item-013",
+    "id": "criterion-013"
+  },
+  {
+    "expected": 196,
+    "field": "item-014",
+    "id": "criterion-014"
+  },
+  {
+    "expected": 225,
+    "field": "item-015",
+    "id": "criterion-015"
+  },
+  {
+    "expected": 256,
+    "field": "item-016",
+    "id": "criterion-016"
+  },
+  {
+    "expected": 289,
+    "field": "item-017",
+    "id": "criterion-017"
+  },
+  {
+    "expected": 324,
+    "field": "item-018",
+    "id": "criterion-018"
+  },
+  {
+    "expected": 361,
+    "field": "item-019",
+    "id": "criterion-019"
+  },
+  {
+    "expected": 400,
+    "field": "item-020",
+    "id": "criterion-020"
+  },
+  {
+    "expected": 441,
+    "field": "item-021",
+    "id": "criterion-021"
+  },
+  {
+    "expected": 484,
+    "field": "item-022",
+    "id": "criterion-022"
+  },
+  {
+    "expected": 529,
+    "field": "item-023",
+    "id": "criterion-023"
+  },
+  {
+    "expected": 576,
+    "field": "item-024",
+    "id": "criterion-024"
+  }
+]

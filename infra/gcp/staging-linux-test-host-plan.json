@@ -1,0 +1,95 @@
+{
+  "schema": "anvil.native.qa.host.proposal.v1",
+  "status": "approval_required_no_execution",
+  "project": "adi-anvil-mvp-2026",
+  "region": "us-west1",
+  "zone": "us-west1-a",
+  "purpose": "standalone_fictional_native_and_SQL_QA_not_application_deployment",
+  "resources": {
+    "vm": "anvil-staging-native",
+    "machine_type": "e2-standard-4",
+    "boot_disk": "anvil-staging-native-boot",
+    "boot_disk_type": "pd-balanced",
+    "boot_disk_gib": 30,
+    "network": "anvil-staging-native-net",
+    "subnet": "anvil-staging-native-subnet",
+    "candidate_subnet_cidr": "10.22.0.0/24",
+    "router": "anvil-staging-native-router",
+    "nat": "anvil-staging-native-nat",
+    "nat_ip": "anvil-staging-native-nat-ip",
+    "iap_ssh_firewall": "anvil-staging-native-iap-ssh",
+    "public_vm_ip": false,
+    "vm_service_account": null,
+    "vm_oauth_scopes": [],
+    "deployment_principal": "vasudevan.sundarababu@adi-labs.ai",
+    "iap_principal": "vasudevan.sundarababu@adi-labs.ai",
+    "project_wide_ssh_metadata_changes": false
+  },
+  "lifetime": {
+    "maximum_continuous_runtime_seconds": 604800,
+    "instance_termination_action": "STOP",
+    "automatic_restart": false,
+    "absolute_termination_time": "2026-11-15T19:30:00Z",
+    "create_not_before": "2026-11-08T19:30:00Z",
+    "cleanup_owner": "Codex Anvil DevOps under vasudevan.sundarababu@adi-labs.ai; exact created IDs only after evidence export",
+    "stop_is_not_resource_deletion": true
+  },
+  "bindings": {
+    "source_sha": "e4bb2d56800b6e2705b359724750c5702a003204",
+    "source_archive_sha256": "68d37ec7191c64a592a9710bd592cb40e7c002a87ca7d73e88dc3f6279a3f325",
+    "source_archive_relative_path": ".local/native-qa/source-e4bb2d5.tar",
+    "migration_head": "058",
+    "os_image_exact_self_link": "projects/debian-cloud/global/images/debian-12-bookworm-v20261102",
+    "os_image_id": "427288226080875395",
+    "fixture_image": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+    "postgres_image": "postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3",
+    "docker_package_version": "20.10.24+dfsg1-1+deb12u1+b6",
+    "docker_deb_sha256": "daf8ff8f7aa53e8533d38e386fcc2a11e8f3891210776fb78a84b98feb4eea0e",
+    "sudo_package_version": "1.9.13p3-1+deb12u4",
+    "sudo_deb_sha256": "ea9987f92630be504998516e1ed9c821c483131d0576ff35a09d6e7f8deff10f",
+    "compose_package_version": "2.39.1-1~debian.12~bookworm",
+    "compose_deb_sha256": "e41fe6f9fcbf1fecdef8ecab16cfaecf5e3d910cc51825791c4484722d038603",
+    "compose_package_url": "https://download.docker.com/linux/debian/dists/bookworm/pool/stable/amd64/docker-compose-plugin_2.39.1-1~debian.12~bookworm_amd64.deb",
+    "compose_package_size_bytes": 14245872,
+    "package_repository": "https://deb.debian.org/debian bookworm main; Debian archive keyring signed InRelease required",
+    "backend_lock_sha256": "00a917be042f5204926d3149c5e9bcbf57c0717c298afe202a20799ca58d7bb3",
+    "harbor_lock_sha256": "612ab41777d8eb6ec2dee6c3390705130e55d9d1a216c79df34a1597c6156ec3"
+    ,"host_python_proposed_amendment": {
+      "version": "3.12.14",
+      "publisher": "Astral python-build-standalone",
+      "release": "20260901",
+      "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20260901/cpython-3.12.14%2B20260901-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz",
+      "checksum_manifest": "https://github.com/astral-sh/python-build-standalone/releases/download/20260901/SHA256SUMS",
+      "sha256": "72748da13197c1fb161e3afeef20a6a385ff24f2165e6e2758e47008e7faba4c",
+      "independent_signature_verified": false,
+      "system_python_modified": false
+    },
+    "host_uv_proposed_amendment": {
+      "version": "0.12.19",
+      "metadata": "https://pypi.org/pypi/uv/0.12.19/json",
+      "filename": "uv-0.12.19-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "sha256": "a63d18a0aa38ee9f21a5406afbbaeb41303bcd954be9d6b7c1b95ac275e53958",
+      "size_bytes": 20478749
+    }
+  },
+  "isolation": {
+    "postgres": "fresh_same_host_isolated_daemon_loopback_or_Unix_socket_only",
+    "existing_data_or_credentials": false,
+    "source_private_keys_on_host": false,
+    "cloud_credentials_on_host": false,
+    "provider_credentials": false,
+    "shared_docker_socket": false,
+    "stock_harbor_environment": false,
+    "candidate_and_evaluator_egress": false,
+    "public_ports": [],
+    "iap_ssh_source_range": "35.235.240.0/20"
+  },
+  "budget": {
+    "seven_day_envelope_usd": 50.24,
+    "included_contingency_usd": 15,
+    "proposed_approval_ceiling_usd": 60,
+    "monthly_additional_infrastructure_authority_usd": 500,
+    "core_staging_352_48_envelope_is_not_actual_spend": true,
+    "billing_alert_is_not_hard_cap": true
+  }
+}

@@ -53,12 +53,11 @@ def client_factory():
     "valid_alternative", [False, True], ids=["missing-answer", "valid-alternative"]
 )
 def test_external_results_preserve_origin_and_never_invoke(
-    client_factory, monkeypatch, valid_alternative
+    client_factory, monkeypatch, valid_alternative, journey
 ):
     from anvil import evaluation, external_results, reports, worker
     from anvil.db import one
 
-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
     project = journey["project_id"]
     base = f"/api/v1/projects/{project}"
     clients = {
@@ -433,7 +432,9 @@ def test_external_results_preserve_origin_and_never_invoke(
     assert pdf.status_code == 200
     pages = PdfReader(io.BytesIO(pdf.content)).pages
     assert len(pages) == 1 and "PARTNER REPORTED" in pages[0].extract_text()
-    (ROOT / "artifacts/test-runs/external-sales-kit.pdf").write_bytes(pdf.content)
+    output = ROOT / "artifacts/test-runs/external-sales-kit.pdf"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_bytes(pdf.content)
     bundle = clients["sales"].get(base + report_path + "/download/evidence.zip")
     assert bundle.status_code == 200
     with zipfile.ZipFile(io.BytesIO(bundle.content)) as archive:
@@ -639,9 +640,9 @@ def test_200_synthetic_source_inventory_pagination_and_search(client_factory):
         "not_run": ["browser_network_latency"],
         "separate_batch_evidence": "artifacts/test-runs/load-fixture-performance.json",
     }
-    (ROOT / "artifacts/test-runs/inventory-performance.json").write_text(
-        json.dumps(evidence, indent=2)
-    )
+    output = ROOT / "artifacts/test-runs/inventory-performance.json"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(evidence, indent=2))
     assert evidence["target_under_500ms"], evidence["measurements"]
     assert evidence["graph_target_under_2000ms"], evidence["measurements"]
 
@@ -812,8 +813,7 @@ def test_content_role_required(client_factory, role):
     assert client.post(BASE + "/objectives", json={}).status_code == 422
 
 
-def test_graph_declared_capability_family_and_episode_lineage():
-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+def test_graph_declared_capability_family_and_episode_lineage(journey):
     with transaction(journey["project_id"], USERS["researcher"]) as c:
         snapshot = graph.canonical(c)
         kinds = {node["kind"] for node in snapshot["nodes"]}
@@ -834,8 +834,7 @@ def test_graph_declared_capability_family_and_episode_lineage():
         assert len(snapshot["nodes"]) <= 200 and len(snapshot["edges"]) <= 500
 
 
-def test_task_cannot_relabel_source_family_or_claim_protected_fixture(client_factory):
-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+def test_task_cannot_relabel_source_family_or_claim_protected_fixture(client_factory, journey):
     base = f"/api/v1/projects/{journey['project_id']}"
     client = client_factory("data-engineer")[0]
     # Repeated runs retain invalid drafts; start from a qualified fixture so each
@@ -932,10 +931,9 @@ def test_draft_edit_replay_preserves_one_new_revision(client_factory):
     assert versions[1]["content"] == changed
 
 
-def test_readiness_gap_is_scoped_versioned_and_blocks_launch(client_factory):
+def test_readiness_gap_is_scoped_versioned_and_blocks_launch(client_factory, journey):
     from anvil.db import one
 
-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
     project = journey["project_id"]
     base = f"/api/v1/projects/{project}"
     engineer = client_factory("data-engineer")[0]
@@ -1026,10 +1024,9 @@ def test_readiness_gap_is_scoped_versioned_and_blocks_launch(client_factory):
         domain.current_source(c, source["current_revision_id"])
 
 
-def test_cross_project_mutation_matrix_preserves_foreign_records(client_factory):
+def test_cross_project_mutation_matrix_preserves_foreign_records(client_factory, journey):
     from anvil.db import digest
 
-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
     foreign_project = journey["project_id"]
     assert foreign_project != PROJECT
     clients = {
@@ -1168,10 +1165,10 @@ def test_cross_project_mutation_matrix_preserves_foreign_records(client_factory)
     )
 
 
-def test_provider_and_delivery_role_and_project_boundaries(client_factory):
+def test_provider_and_delivery_role_and_project_boundaries(client_factory, journey):
     from anvil.db import digest
 
-    foreign = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())["project_id"]
+    foreign = journey["project_id"]
     assert foreign != PROJECT
     other = f"/api/v1/projects/{foreign}"
     clients = {
@@ -1292,10 +1289,11 @@ def test_provider_and_delivery_role_and_project_boundaries(client_factory):
     assert snapshot() == before
 
 
-def test_disabled_and_multi_role_identity_cannot_fill_separated_assignments(client_factory):
+def test_disabled_and_multi_role_identity_cannot_fill_separated_assignments(
+    client_factory, journey
+):
     import psycopg
 
-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
     project = journey["project_id"]
     base = f"/api/v1/projects/{project}"
     researcher = client_factory("researcher")[0]
@@ -1363,12 +1361,11 @@ def test_disabled_and_multi_role_identity_cannot_fill_separated_assignments(clie
             c.execute("UPDATE anvil.users SET active=false WHERE id=%s", (person,))
 
 
-def test_authenticated_reads_do_not_mutate_canonical_state(client_factory):
+def test_authenticated_reads_do_not_mutate_canonical_state(client_factory, journey):
     from psycopg import sql
 
     from anvil.db import digest
 
-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
     project = journey["project_id"]
     base = f"/api/v1/projects/{project}"
     clients = {
@@ -1534,8 +1531,7 @@ def test_authenticated_reads_do_not_mutate_canonical_state(client_factory):
             )
 
 
-def test_review_request_cannot_inject_checkpoint_or_graph_commands(client_factory):
-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
+def test_review_request_cannot_inject_checkpoint_or_graph_commands(client_factory, journey):
     episode = journey["episodes"][0]["id"]
     client = client_factory("reviewer-1")[0]
     path = f"/api/v1/projects/{journey['project_id']}/episodes/{episode}/assessments"
@@ -1566,7 +1562,7 @@ def test_review_request_cannot_inject_checkpoint_or_graph_commands(client_factor
     assert before == after
 
 
-def test_manifest_dryrun_atomic_commit_dedup_and_quarantine(client_factory):
+def test_manifest_dryrun_atomic_commit_dedup_and_quarantine(client_factory, monkeypatch):
     client, _ = client_factory("data-engineer")
     fixtures = client.post(
         BASE + "/fixtures/import",
@@ -1686,18 +1682,66 @@ def test_manifest_dryrun_atomic_commit_dedup_and_quarantine(client_factory):
         ).status_code
         == 409
     )
-    researcher = client_factory("researcher")[0]
-    template = researcher.get(BASE + "/tasks?limit=100").json()["data"][0]["content"]
-    draft = researcher.post(
+    # Fixture import creates a draft owned by its importing data engineer. Copy
+    # that exact binding, not whichever UUID happens to sort first in this project.
+    fixture_source = fixtures.json()["data"][0]
+    tasks = client.get(BASE + "/tasks?limit=100")
+    assert tasks.status_code == 200, tasks.text
+    template_record = next(
+        item
+        for item in tasks.json()["data"]
+        if item["content"].get("external_case_id") == "MKT-001"
+        and item["content"].get("source_revision_id") == fixture_source["current_revision_id"]
+        and item["created_by"] == USERS["data-engineer"]
+        and item["content"].get("title") == fixture_source["content"]["title"]
+    )
+    assert template_record["lifecycle"] == "draft"
+    template = template_record["content"]
+    task_body = {
+        **template,
+        "title": "Cannot relabel a partner source as an original fixture",
+        "source_revision_id": new_revision,
+    }
+    # A fresh synthetic session has no source ownership or private assignment,
+    # regardless of what earlier tests granted to the seeded researcher.
+    import psycopg
+
+    unassigned = uid()
+    monkeypatch.setitem(USERS, "unassigned-reference-researcher", unassigned)
+    with psycopg.connect(setting("MIGRATION_DATABASE_URL")) as c:
+        org = c.execute("SELECT org_id FROM anvil.projects WHERE id=%s", (PROJECT,)).fetchone()[0]
+        c.execute(
+            "INSERT INTO anvil.users(id,org_id,issuer,subject,name,active,is_synthetic) "
+            "VALUES(%s,%s,'synthetic-integration-no-login',%s,'Unassigned reference fixture',true,true)",
+            (unassigned, org, unassigned),
+        )
+        c.execute(
+            "INSERT INTO anvil.memberships(project_id,user_id,role) VALUES(%s,%s,'rl-engineer')",
+            (PROJECT, unassigned),
+        )
+    try:
+        denied = client_factory("unassigned-reference-researcher")[0].post(
+            BASE + "/tasks", json=task_body, headers={"Idempotency-Key": uid()}
+        )
+        assert denied.status_code == 403, denied.text
+        assert "private reference bindings" in denied.text
+    finally:
+        with psycopg.connect(setting("MIGRATION_DATABASE_URL")) as c:
+            c.execute("UPDATE anvil.users SET active=false WHERE id=%s", (unassigned,))
+    draft_response = client.post(
         BASE + "/tasks",
-        json={
-            **template,
-            "title": "Cannot relabel a partner source as an original fixture",
-            "source_revision_id": new_revision,
-        },
+        json=task_body,
         headers={"Idempotency-Key": uid()},
-    ).json()["data"]
-    rejected_origin = researcher.post(
+    )
+    assert draft_response.status_code == 201, {
+        "status": draft_response.status_code,
+        "body": draft_response.text,
+        "template_id": template_record["id"],
+        "template_lifecycle": template_record["lifecycle"],
+        "template_keys": sorted(template),
+    }
+    draft = draft_response.json()["data"]
+    rejected_origin = client.post(
         BASE + "/tasks/" + draft["id"] + "/submit",
         json={},
         headers={"Idempotency-Key": uid(), "If-Match": str(draft["row_version"])},
@@ -1903,13 +1947,12 @@ def test_signed_oidc_claim_validation(client_factory, monkeypatch, invalid):
 
 
 def test_fixture_delivery_bound_approval_unknown_replay_and_suppression(
-    client_factory, monkeypatch
+    client_factory, monkeypatch, journey
 ):
     from anvil import delivery
 
     # Prevent background pickup so revocation can be exercised between queue and worker.
     monkeypatch.setattr(delivery, "enqueue", lambda *args: None)
-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
     project = journey.get("project_id", PROJECT)
     base = f"/api/v1/projects/{project}"
     clients = {
@@ -2090,9 +2133,8 @@ def test_oversized_upload_rejected_before_artifact_storage(client_factory):
         assert c.execute("SELECT count(*) n FROM anvil.artifacts").fetchone()["n"] == before
 
 
-def test_task_missing_duplicate_cross_source_and_unsupported_inputs(client_factory):
+def test_task_missing_duplicate_cross_source_and_unsupported_inputs(client_factory, journey):
     client, _ = client_factory("data-engineer")
-    journey = json.loads((ROOT / "artifacts/test-runs/journey.json").read_text())
     base = f"/api/v1/projects/{journey['project_id']}"
     tasks = [
         t

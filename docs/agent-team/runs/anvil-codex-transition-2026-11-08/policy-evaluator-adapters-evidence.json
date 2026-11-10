@@ -1,0 +1,68 @@
+{
+  "stage": "evaluator-adapters-foundation",
+  "full_design_complete": false,
+  "provider_calls": 0,
+  "tests": {
+    "focused_units_contracts_actual_opa": {
+      "passed": 68,
+      "failed": 0,
+      "skipped": 0
+    },
+    "actual_sql_api": {
+      "passed": 13,
+      "failed": 0,
+      "skipped": 0,
+      "setup": "all64canonical migrations from scratch; final numeric delta repeated in owned QA DB"
+    },
+    "existing_node_contracts": {
+      "passed": 26
+    },
+    "nemo_library_cases": {
+      "passed": 3
+    },
+    "trulens_library_cases": {
+      "passed": 4
+    },
+    "historical_foundation_whole_units": {
+      "passed": 930,
+      "current_whole_suite_claim": false
+    },
+    "browser": "not_run",
+    "linux_native": "not_run",
+    "live_accounts": "not_run"
+  },
+  "runtime_versions": {
+    "opa": "1.22.2",
+    "zen": "2.1.3",
+    "nemo": "0.24.1",
+    "promptfoo": "0.125.1",
+    "trulens_feedback": "2.16.0"
+  },
+  "qa_container_stopped": true,
+  "source_sha256": {
+    "apps/web/src/components/EvaluatorSettings.tsx": "df3d0e4e3225f9da5ac44f312f85ee639a18d017092074dd72d2f8f7a1837b5e",
+    "apps/web/src/components/ModernWorkspace.tsx": "631a6861bc25b477d3928361d12865692a34045f879b1b1a662465377300d7e8",
+    "integrations/evaluators/README.md": "bd1721ba0e5b8cf21f251f505602e85dd9c47b7f50c9bce7ed9daa4474d9907c",
+    "integrations/evaluators/local_worker.py": "44e7f0cc4ac62435081fc55e744a0525e44207ee88fba2cf99413a9e35adc086",
+    "integrations/evaluators/nemo/pyproject.toml": "8090446b3fbb3e963bae22c16537e68662a4e6be81c566aebdd5a54ce4c37c5c",
+    "integrations/evaluators/nemo/uv.lock": "c928b8ab3d38d0207fa4d324cc19f3cd3203827a57231964de9bb0cd428d295a",
+    "integrations/evaluators/promptfoo/package-lock.json": "5f17c91c2bd33280b50d58d2a4d1ffa2ab5d70ad8be34283b94ff937b75e6cf0",
+    "integrations/evaluators/promptfoo/package.json": "216aa5c6ab7b2323362f3d449b330d97ca43fd5815dce1a9c4cafe6430513fb5",
+    "integrations/evaluators/promptfoo/worker.mjs": "dcbf53ec850f0724c7004d58fab68ecc8e0d4fd28a5e83688ec17cab3cdca686",
+    "integrations/evaluators/trulens/pyproject.toml": "1de47e2d7095605a072f63381609a135d9a1c6272d608945aa3db446b1b447ed",
+    "integrations/evaluators/trulens/uv.lock": "930309d70eaf922e4fdbd0b36d85a9b54218a26004c824dcadb119dd2effe70d",
+    "services/backend/alembic/versions/064_evaluator_configurations.py": "bd658b23dbe50bb9f2ec1d839917a0a84f1bfd30f68d46fe9a4f0bc0df4d72ff",
+    "services/backend/migrations/064_evaluator_configurations.sql": "346edc0c22ed079ffdcbf5be26f9cda828b788c7e223b30d2d77a7999eb7fe0c",
+    "services/backend/pyproject.toml": "bb2ec1ea34f3b79bc0ae0b390e9d727dfbb3dc8202e5d9ff65ea9b2de4038f7b",
+    "services/backend/src/anvil/evaluator_api.py": "776914e620f58476e7286fffa6d532104fc61ead371fe3b3a17033563796f667",
+    "services/backend/src/anvil/evaluator_configurations.py": "52da6dbc0c5edaf36bbdf66e08d788f342d775af9fc6a03aca3255b0c8fef4ac",
+    "services/backend/src/anvil/evaluator_http.py": "2fb09962156e744ce87cdd6aa89e8fc360e8ff09b5b626d4b21bd64994bb7dda",
+    "services/backend/src/anvil/evaluator_runtimes.py": "bda683c4977bae272744a67d8388368c79bdb774b34b52d3f5d8ebb222c5afe3",
+    "services/backend/src/anvil/policy_rules.py": "b1edc6dc8408c1bbcb36e850cebb243d016ff1cea88479e87ce5f2f6abd4f5c4",
+    "services/backend/src/anvil/praxis_policy.py": "eac3172b421f762ec6f6f22b0279425f531fd4f8db7c7da42f13794514400e53",
+    "services/backend/tests/benchmark/test_evaluator_configurations.py": "e5593994151617c966f7717d26184a0a71c05214087162cc5c93c184fdfb35e5",
+    "services/backend/tests/test_policy_evaluators.py": "63ef480b3d6529dd3be0686d2942880bc16b90eac5d01668d3f0bf9586d90bae",
+    "services/backend/tests/test_praxis_policy.py": "8a3cbe34b34d72f4d5be9cb8bea851ef8e84be8beb7ef04f45188a1522a07111",
+    "services/backend/uv.lock": "24f95b1031f45ca473dc539cea9531ae00ffb533f291a2b3fc3481c64b16bacf"
+  }
+}

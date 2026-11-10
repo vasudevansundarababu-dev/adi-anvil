@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Browser } from '@playwright/test';
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -302,4 +302,82 @@ test('task library → version viewer → repeated run configuration and inert D
     'Synthetic browser launch fixture',
   );
   await expect(page.getByRole('button', { name: 'Run', exact: true })).toHaveCount(0);
+});
+
+const readinessProject = 'a0000000-0000-4000-8000-000000000002';
+const READINESS_RAW_CODE = /\b[a-z]+(_[a-z]+)+\b/;
+
+async function readinessSignIn(browser: Browser, username: string) {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Sign in with Keycloak' }).click();
+  await page.locator('#username').fill(username);
+  const password = readFileSync('.local/demo-accounts.md', 'utf8')
+    .split('\n')
+    .find((line) => line.startsWith('- ' + username + ':'))!
+    .split('`')[1];
+  await page.locator('#password').fill(password);
+  await page.locator('#kc-login').click();
+  await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+  return { context, page };
+}
+
+test('task list explains each import state in plain language without raw state codes', async ({
+  browser,
+}) => {
+  const { context, page } = await readinessSignIn(browser, 'researcher');
+  const states = [
+    'queued',
+    'generating',
+    'validating',
+    'needs_clarification',
+    'generation_failed',
+    'validation_failed',
+    'budget_paused',
+  ];
+  // Browser-only list fixture; the server's task list API remains the source of truth.
+  await page.route('**/workspace/tasks?*', (route) =>
+    route.fulfill({
+      json: {
+        data: {
+          scope: 'project',
+          next_cursor: null,
+          items: states.map((state, i) => ({
+            id: 'c0000000-0000-4000-8000-00000000000' + i,
+            task_id: 'synthetic-' + i,
+            task_version: '1',
+            title: 'Synthetic import ' + state.replaceAll('_', ' '),
+            run_count: 0,
+            versions: 1,
+            source_sha256: 'synthetic',
+            source_schema_version: 'praxis.anvil.task.v3',
+            import_state: state,
+            package_built: false,
+          })),
+        },
+      },
+    }),
+  );
+  await page.goto('/workspace/' + readinessProject + '/tasks');
+  const rows = page.getByRole('row').filter({ hasText: 'Synthetic import' });
+  await expect(rows).toHaveCount(states.length);
+  const expected = [
+    ['Queued for generation', 'Waiting for the generation worker'],
+    ['Generating checks', 'writing executable verifiers'],
+    ['Validating', 'being tested against the supplied tools'],
+    ['Needs clarification', 'review the import validation report'],
+    ['Generation failed', 'review the import validation report'],
+    ['Validation failed', 'review the import validation report'],
+    ['Needs attention', 'Open the import report or ask a project Admin.'],
+  ];
+  for (const [index, [label, detail]] of expected.entries()) {
+    const row = rows.nth(index);
+    await expect(row).toContainText(label);
+    await expect(row).toContainText(detail);
+    const cell = (await row.getByRole('cell').first().innerText()).replace(/synthetic-\d/, '');
+    expect(cell.replace('Diagnostic code: budget_paused', '')).not.toMatch(READINESS_RAW_CODE);
+  }
+  await expect(rows.nth(6)).toContainText('Diagnostic code: budget_paused');
+  await context.close();
 });

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Browser } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 
 test('saving a Harbor framework immediately populates the runner without resetting the preset form', async ({
@@ -258,4 +258,152 @@ test('Admin saves a typed preset and multi-model preparation without spending de
     path: 'artifacts/test-runs/modern-execution-group-separated.png',
     fullPage: false,
   });
+});
+
+const readinessProject = 'a0000000-0000-4000-8000-000000000002';
+const READINESS_RAW_CODE = /\b[a-z]+(_[a-z]+)+\b/;
+
+async function readinessSignIn(browser: Browser, username: string) {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Sign in with Keycloak' }).click();
+  await page.locator('#username').fill(username);
+  const password = readFileSync('.local/demo-accounts.md', 'utf8')
+    .split('\n')
+    .find((line) => line.startsWith('- ' + username + ':'))!
+    .split('`')[1];
+  await page.locator('#password').fill(password);
+  await page.locator('#kc-login').click();
+  await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+  return { context, page };
+}
+
+// Browser-only fixture: the same synthetic draft group is shown to both roles with fixed
+// blockers. No launch request is sent and no provider is contacted.
+const readinessBlockedGroup = {
+  id: 'b0000000-0000-4000-8000-00000000a001',
+  preparation_id: 'b0000000-0000-4000-8000-00000000a002',
+  subject_hash: 'synthetic',
+  state: 'draft',
+  status: 'draft',
+  readiness: {
+    ready: false,
+    missing: ['admin_run_authorization_required', 'aggregate_api_cap_missing', 'future_gate'],
+    aggregate_cap_micro_usd: null,
+    conservative_cost_micro_usd: null,
+    models: [{ model_profile_id: 'm1', missing: ['credential_missing'] }],
+  },
+  models: [
+    {
+      trial: 1,
+      plan_id: 'p1',
+      model: { id: 'm1', name: 'Synthetic model', provider: 'openai', model_id: 'synthetic' },
+      check: null,
+    },
+  ],
+  snapshot: {
+    preparation: {
+      package: { manifest: { task_id: 'synthetic-task', task_version: '1' } },
+      preset: { name: 'Synthetic preset' },
+    },
+  },
+};
+
+test('Admin and Engineer see plain-language blockers with the right fixer for the same group', async ({
+  browser,
+}) => {
+  for (const [username, admin] of [
+    ['admin-1', true],
+    ['researcher', false],
+  ] as const) {
+    const { context, page } = await readinessSignIn(browser, username);
+    let launches = 0;
+    await page.route('**/workspace/execution-groups/' + readinessBlockedGroup.id, (route) =>
+      route.fulfill({ json: { data: readinessBlockedGroup } }),
+    );
+    await page.route('**/workspace/execution-groups/*/launch', (route) => {
+      launches++;
+      return route.abort();
+    });
+    await page.goto(
+      '/workspace/' + readinessProject + '/execution-groups/' + readinessBlockedGroup.id,
+    );
+    const panel = page
+      .getByRole('status')
+      .filter({ has: page.getByRole('heading', { name: 'Run cannot start yet', exact: true }) });
+    await expect(panel).toBeVisible();
+    await expect(panel).toHaveAttribute('tabindex', '-1');
+    const items = panel.getByRole('listitem');
+    await expect(items).toHaveCount(admin ? 3 : 4);
+    for (const text of await items.allInnerTexts()) {
+      const main = text.split('\n')[0];
+      expect(main, 'main blocker text').not.toMatch(READINESS_RAW_CODE);
+    }
+    await expect(panel).toContainText(
+      "This run is blocked by a condition Anvil can't describe yet.",
+    );
+    await expect(panel.getByText('Diagnostic code: future_gate', { exact: true })).toBeVisible();
+    await expect(panel).toContainText('No aggregate API budget is set.');
+    const workspace = '/workspace/' + readinessProject;
+    const groupPage = workspace + '/execution-groups/' + readinessBlockedGroup.id;
+    const expectedLinks: [string, string, string][] = admin
+      ? [
+          [
+            'No aggregate API budget is set.',
+            'Change run configuration',
+            workspace + '/execution-groups/new',
+          ],
+          ["can't describe yet", 'Link to this page for your Anvil administrator', groupPage],
+          ['This model has no saved API key.', 'Open Models & keys', workspace + '/models'],
+        ]
+      : [
+          ['An Admin must start this run', 'Link to this page for a project Admin', groupPage],
+          [
+            'No aggregate API budget is set.',
+            'Change run configuration',
+            workspace + '/execution-groups/new',
+          ],
+          ["can't describe yet", 'Link to this page for a project Admin', groupPage],
+          ['Ask a project Admin to link one', 'Link to this page for a project Admin', groupPage],
+        ];
+    for (const [index, [text, name, href]] of expectedLinks.entries()) {
+      const item = items.nth(index);
+      await expect(item).toContainText(text);
+      const links = item.getByRole('link');
+      await expect(links).toHaveCount(1);
+      await expect(links.first()).toHaveAccessibleName(name);
+      await expect(links.first()).toHaveAttribute('href', href);
+    }
+    await expect(panel.getByRole('link')).toHaveCount(expectedLinks.length);
+    if (admin) {
+      await expect(panel).toContainText('Who can fix: you (Admin)');
+      await expect(panel).not.toContainText('An Admin must start this run');
+    } else {
+      await expect(panel).toContainText('An Admin must start this run to authorize its budget.');
+      await expect(panel).toContainText('Ask a project Admin to link one in Models & keys.');
+      await expect(panel).toContainText('Who can fix: a project Admin');
+      await expect(page.locator('a[href$="/models"], a[href$="/frameworks"]')).toHaveCount(0);
+      await expect(page.locator('a[href="#execution-group-run"]')).toHaveCount(0);
+    }
+    if (admin) {
+      await panel.getByRole('link', { name: 'Open Models & keys', exact: true }).click();
+      await expect(page).toHaveURL(new RegExp(workspace + '/models$'));
+      await expect(page.getByRole('heading', { name: 'Models & keys' }).first()).toBeVisible();
+      await page.goBack();
+      await expect(panel).toBeVisible();
+    } else {
+      await items.nth(0).getByRole('link').click();
+      await expect(page).toHaveURL(new RegExp(groupPage + '$'));
+      await expect(panel).toBeVisible();
+    }
+    await page.getByRole('button', { name: 'Run', exact: true }).click();
+    await expect(panel).toHaveCount(0);
+    const alert = page
+      .getByRole('alert')
+      .filter({ has: page.getByRole('heading', { name: 'Run cannot start yet', exact: true }) });
+    await expect(alert).toBeFocused();
+    expect(launches).toBe(0);
+    await context.close();
+  }
 });

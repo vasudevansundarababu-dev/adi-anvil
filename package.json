@@ -14,7 +14,7 @@
     "worker:restart": "python3 scripts/local.py worker-restart",
     "check": "python3 scripts/local.py check",
     "test:unit": "python3 scripts/local.py unit",
-    "test:ui-policy": "node --test tests/provider_failure.mjs",
+    "test:ui-policy": "node --test tests/provider_failure.mjs tests/readiness_catalog.mjs",
     "test:integration": "python3 scripts/local.py integration",
     "test:e2e": "python3 scripts/local.py e2e",
     "test:load": "node tests/load_fixture_batch.mjs",

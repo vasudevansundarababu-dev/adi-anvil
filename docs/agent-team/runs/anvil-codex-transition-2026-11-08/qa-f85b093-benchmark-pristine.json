@@ -1,0 +1,41 @@
+{
+  "candidate_application_sha": "f85b093065a17ba7481941aaec9977733e447e29",
+  "product_runtime_checkpoint": "edcc0514c43ceb614b813566820ee0c2c7311463",
+  "label": "benchmark-pristine",
+  "command": [
+    "/private/tmp/anvil-testing-backend/bin/python",
+    "-m",
+    "pytest",
+    "services/backend/tests/benchmark",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "--tb=short",
+    "-rs"
+  ],
+  "started_at": "2026-11-09T02:10:48.956613+00:00",
+  "elapsed_seconds": 94.635,
+  "exit_code": 0,
+  "raw_log_path": "/private/tmp/anvil-codex-testing-runtime/qa-f85b093-benchmark-pristine.log",
+  "raw_log_sha256": "20e2b723c36e47a1883b45c36dd46c7817400007493be35cfc24cee393c4188c",
+  "summary": [
+    "168 passed, 28 skipped, 23 warnings in 93.55s (0:01:33)"
+  ],
+  "explicit_skips": [
+    "SKIPPED [1] services/backend/tests/benchmark/test_benchmark_evaluation.py:319: Native local opt-in absent; no native pass claim",
+    "SKIPPED [1] services/backend/tests/benchmark/test_benchmark_evaluation.py:412: Native local opt-in absent",
+    "SKIPPED [1] services/backend/tests/benchmark/test_benchmark_native_limits.py:70: Dedicated native opt-in absent; not limits evidence",
+    "SKIPPED [1] services/backend/tests/benchmark/test_benchmark_native_limits.py:111: Dedicated native opt-in absent; not limits evidence",
+    "SKIPPED [1] services/backend/tests/benchmark/test_benchmark_native_limits.py:130: Dedicated native opt-in absent; not limits evidence",
+    "SKIPPED [1] services/backend/tests/benchmark/test_benchmark_native_limits.py:148: Dedicated native opt-in absent; not limits evidence",
+    "SKIPPED [9] services/backend/tests/benchmark/test_benchmark_offline_native.py:25: Exact dedicated Linux native operator required; not native pass evidence",
+    "SKIPPED [1] services/backend/tests/benchmark/test_benchmark_pipeline.py:304: Explicit isolated native opt-in required; not a passing native result",
+    "SKIPPED [9] services/backend/tests/benchmark/test_benchmark_qualification.py:52: Dedicated native opt-in absent; not qualification evidence",
+    "SKIPPED [3] services/backend/tests/benchmark/test_benchmark_qualification.py:88: Explicit isolated native opt-in required"
+  ],
+  "changed_manifest_paths_after_check": [],
+  "native_opt_in": false,
+  "platform": "macOS existing isolated locked Python3.12 environment",
+  "paid_provider_flags": false,
+  "fresh_database": "anvil_benchmark_edcc051"
+}

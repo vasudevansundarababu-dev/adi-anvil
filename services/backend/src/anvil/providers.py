@@ -292,7 +292,7 @@ def _execute_native(provider, request, transport, *, credential, structured=Fals
                                 "response_mime_type": "application/json",
                                 "thinking_config": (
                                     types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW)
-                                    if request.model == "gemini-3.8-flash"
+                                    if request.model in {"gemini-3.8-flash", "gemini-4-argon"}
                                     else types.ThinkingConfig(thinking_budget=0)
                                 ),
                             }

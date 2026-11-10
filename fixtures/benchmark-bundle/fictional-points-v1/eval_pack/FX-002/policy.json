@@ -1,0 +1,8 @@
+{
+  "credit": "one point or zero",
+  "numeric_tolerance": "none",
+  "origin": "original_synthetic_fixture",
+  "private_canary": "PRIVATE-FICTIONAL-ARITHMETIC-V1",
+  "rule": "exact integer equality",
+  "version": "1.0.0"
+}

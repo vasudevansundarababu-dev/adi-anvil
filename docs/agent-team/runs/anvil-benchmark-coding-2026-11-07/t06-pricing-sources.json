@@ -1,0 +1,421 @@
+{
+  "task": "Verified pricing maintenance/final T06 only",
+  "baseline_publication": "8854f71a732eb7f27d3de5ce3cbb9f1bfadca0b0",
+  "approval_checkpoint": "d7bc624",
+  "as_of": "2026-11-08T15:25:35.450801+00:00",
+  "expires_at": "2026-11-15T15:25:35.450801+00:00",
+  "freshness_days": 7,
+  "freshness_policy": "Preserve existing seven-day managed catalog freshness, starting after all10 actual successful official GETs. No automatic renewal; strict runtime expiry<=now blocks. Renew only after new verified evidence.",
+  "http_records": [
+    {
+      "key": "openai-pricing",
+      "url": "https://developers.openai.com/api/docs/pricing.md",
+      "resolved_url": "https://developers.openai.com/api/docs/pricing.md",
+      "http_status": 200,
+      "retrieved_at": "2026-11-08T15:25:33.904130+00:00",
+      "sha256": "f1ade44afc62fd8a12dd6e199bcecaa989a94c9b691aa620a34e1504ff62ff57",
+      "bytes": 22062
+    },
+    {
+      "key": "openai-cache",
+      "url": "https://developers.openai.com/api/docs/guides/prompt-caching.md",
+      "resolved_url": "https://developers.openai.com/api/docs/guides/prompt-caching.md",
+      "http_status": 200,
+      "retrieved_at": "2026-11-08T15:25:34.003025+00:00",
+      "sha256": "8c672dafd6a332d4b9ad7464aefa3ca4f6b0fffa8bf66bb5ee087e1b39152711",
+      "bytes": 56584
+    },
+    {
+      "key": "openai-luna",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6-luna.md",
+      "resolved_url": "https://developers.openai.com/api/docs/models/gpt-6-luna.md",
+      "http_status": 200,
+      "retrieved_at": "2026-11-08T15:25:34.128614+00:00",
+      "sha256": "e3578e39ea91fde7045e386ba3863fa621dbf9a31d44e0cd569b74822721223b",
+      "bytes": 4365
+    },
+    {
+      "key": "openai-astra",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6-astra.md",
+      "resolved_url": "https://developers.openai.com/api/docs/models/gpt-6-astra.md",
+      "http_status": 200,
+      "retrieved_at": "2026-11-08T15:25:34.228405+00:00",
+      "sha256": "a9b79d0f5988c879aea6f4f7adb19743c469ee538d8e19744bdaee13d0c50ae2",
+      "bytes": 3960
+    },
+    {
+      "key": "openai-sol",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6.1-sol.md",
+      "resolved_url": "https://developers.openai.com/api/docs/models/gpt-6.1-sol.md",
+      "http_status": 200,
+      "retrieved_at": "2026-11-08T15:25:34.360294+00:00",
+      "sha256": "02dff9ef937bbc97fb24ba7c936269a549563cfb8a49b91a6ba1c1575d2b77c0",
+      "bytes": 4335
+    },
+    {
+      "key": "openai-terra",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6.1-terra.md",
+      "resolved_url": "https://developers.openai.com/api/docs/models/gpt-6.1-terra.md",
+      "http_status": 200,
+      "retrieved_at": "2026-11-08T15:25:34.465777+00:00",
+      "sha256": "6a73b3e2e941fbe3813636d5bd2d653ff190e49cc3692eaf8daa3bb125c877f8",
+      "bytes": 4438
+    },
+    {
+      "key": "anthropic-pricing",
+      "url": "https://platform.claude.com/docs/en/about-claude/pricing.md",
+      "resolved_url": "https://platform.claude.com/docs/en/about-claude/pricing.md",
+      "http_status": 200,
+      "retrieved_at": "2026-11-08T15:25:34.672869+00:00",
+      "sha256": "5864b14c0eb020db52f96b3f42787810ad65d3f28823e317c03b7e9ca345aa49",
+      "bytes": 52659
+    },
+    {
+      "key": "anthropic-models",
+      "url": "https://platform.claude.com/docs/en/about-claude/models/overview.md",
+      "resolved_url": "https://platform.claude.com/docs/en/models/overview.md",
+      "http_status": 200,
+      "retrieved_at": "2026-11-08T15:25:34.988664+00:00",
+      "sha256": "5761ef315b5a4816697fbdc7e4a653d3cb439ccfe9a0a012f90a2d326aba90a2",
+      "bytes": 22852
+    },
+    {
+      "key": "gemini-pricing",
+      "url": "https://ai.google.dev/gemini-api/docs/pricing",
+      "resolved_url": "https://aistudio.google.com/docs/pricing",
+      "http_status": 200,
+      "retrieved_at": "2026-11-08T15:25:35.275771+00:00",
+      "sha256": "ad2140dd935ccca0a66bb70f7c1b59b5e4c74d6180b599a8c32e0dcf4a422a2e",
+      "bytes": 103583
+    },
+    {
+      "key": "gemini-model",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash",
+      "resolved_url": "https://aistudio.google.com/docs/models/gemini-3.8-flash",
+      "http_status": 200,
+      "retrieved_at": "2026-11-08T15:25:35.450801+00:00",
+      "sha256": "53a3ba46aa82c9cc7f2414959352376660b156aa5c5e114d61b9917351d4ad11",
+      "bytes": 4263
+    }
+  ],
+  "models": [
+    {
+      "provider": "openai",
+      "exact_model_id": "gpt-6-luna",
+      "verified_at": "2026-11-08T15:25:35.450801+00:00",
+      "expires_at": "2026-11-15T15:25:35.450801+00:00",
+      "old_reference": "anvil-openai-standard-2026-10-31-v1",
+      "new_reference": "anvil-openai-standard-2026-11-08-v1",
+      "old_verified_at": "2026-11-01T02:47:35+00:00",
+      "old_expires_at": "2026-11-08T02:47:35+00:00",
+      "currency": "USD",
+      "catalog_unit": "integer micro-USD per million tokens",
+      "tier": "paid Standard/default; global routing; no Batch/Flex/Fast/regional premium",
+      "old_rates": {
+        "input_micro_usd_per_million_tokens": 100000,
+        "cached_input_micro_usd_per_million_tokens": 10000,
+        "cache_write_micro_usd_per_million_tokens": 125000,
+        "output_micro_usd_per_million_tokens": 500000
+      },
+      "current_rates": {
+        "input_micro_usd_per_million_tokens": 100000,
+        "cached_input_micro_usd_per_million_tokens": 10000,
+        "cache_write_micro_usd_per_million_tokens": 125000,
+        "output_micro_usd_per_million_tokens": 500000
+      },
+      "model_substitution": false,
+      "source_keys": ["openai-pricing", "openai-luna", "openai-cache"],
+      "source_quotes": [
+        "| Model | Short context input | Short context output | Short context cached input | Short context 30m write | Short context 12h write | Long context input | Long context output | Long context cached input | Long context 30m write | Long context 12h write |",
+        "| gpt-6-luna | $0.10 | $0.50 | $0.01 | $0.125 | $0.25 | $0.20 | $0.75 | $0.02 | $0.25 | $0.50 |",
+        "- Prompts with more than 272K input tokens are priced at 2x input and cache rates and 1.5x output for the full request."
+      ],
+      "admitted_dimensions": {
+        "context": "<=33792 input-token runtime ceiling; below >272K long-context tier",
+        "cache": "reads and default30m writes only; 12h remains unadmitted",
+        "short_context_USD_per_million": {
+          "input": "$0.10",
+          "output": "$0.50",
+          "cached_input": "$0.01",
+          "30m_write": "$0.125",
+          "12h_write": "$0.25"
+        }
+      },
+      "excluded_rates_USD_per_million": {
+        "long_context": {
+          "input": "$0.20",
+          "output": "$0.75",
+          "cached_input": "$0.02",
+          "30m_write": "$0.25",
+          "12h_write": "$0.50"
+        },
+        "short_context_12h_write": "$0.25"
+      },
+      "context_quote_url": "https://developers.openai.com/api/docs/models/gpt-6-luna.md"
+    },
+    {
+      "provider": "openai",
+      "exact_model_id": "gpt-6-astra",
+      "verified_at": "2026-11-08T15:25:35.450801+00:00",
+      "expires_at": "2026-11-15T15:25:35.450801+00:00",
+      "old_reference": "anvil-openai-standard-2026-10-31-v1",
+      "new_reference": "anvil-openai-standard-2026-11-08-v1",
+      "old_verified_at": "2026-11-01T02:47:35+00:00",
+      "old_expires_at": "2026-11-08T02:47:35+00:00",
+      "currency": "USD",
+      "catalog_unit": "integer micro-USD per million tokens",
+      "tier": "paid Standard/default; global routing; no Batch/Flex/Fast/regional premium",
+      "old_rates": {
+        "input_micro_usd_per_million_tokens": 10000000,
+        "cached_input_micro_usd_per_million_tokens": 1000000,
+        "cache_write_micro_usd_per_million_tokens": 12500000,
+        "output_micro_usd_per_million_tokens": 50000000
+      },
+      "current_rates": {
+        "input_micro_usd_per_million_tokens": 10000000,
+        "cached_input_micro_usd_per_million_tokens": 1000000,
+        "cache_write_micro_usd_per_million_tokens": 12500000,
+        "output_micro_usd_per_million_tokens": 50000000
+      },
+      "model_substitution": false,
+      "source_keys": ["openai-pricing", "openai-astra", "openai-cache"],
+      "source_quotes": [
+        "| Model | Short context input | Short context output | Short context cached input | Short context 30m write | Short context 12h write | Long context input | Long context output | Long context cached input | Long context 30m write | Long context 12h write |",
+        "| gpt-6-astra | $10.00 | $50.00 | $1.00 | $12.50 | $25.00 | $20.00 | $75.00 | $2.00 | $25.00 | $50.00 |",
+        "- Prompts with more than 272K input tokens are priced at 2x input and cache rates and 1.5x output for the full request."
+      ],
+      "admitted_dimensions": {
+        "context": "<=33792 input-token runtime ceiling; below >272K long-context tier",
+        "cache": "reads and default30m writes only; 12h remains unadmitted",
+        "short_context_USD_per_million": {
+          "input": "$10.00",
+          "output": "$50.00",
+          "cached_input": "$1.00",
+          "30m_write": "$12.50",
+          "12h_write": "$25.00"
+        }
+      },
+      "excluded_rates_USD_per_million": {
+        "long_context": {
+          "input": "$20.00",
+          "output": "$75.00",
+          "cached_input": "$2.00",
+          "30m_write": "$25.00",
+          "12h_write": "$50.00"
+        },
+        "short_context_12h_write": "$25.00"
+      },
+      "context_quote_url": "https://developers.openai.com/api/docs/models/gpt-6-astra.md"
+    },
+    {
+      "provider": "openai",
+      "exact_model_id": "gpt-6.1-sol",
+      "verified_at": "2026-11-08T15:25:35.450801+00:00",
+      "expires_at": "2026-11-15T15:25:35.450801+00:00",
+      "old_reference": "anvil-openai-standard-2026-10-31-v1",
+      "new_reference": "anvil-openai-standard-2026-11-08-v1",
+      "old_verified_at": "2026-11-01T02:47:35+00:00",
+      "old_expires_at": "2026-11-08T02:47:35+00:00",
+      "currency": "USD",
+      "catalog_unit": "integer micro-USD per million tokens",
+      "tier": "paid Standard/default; global routing; no Batch/Flex/Fast/regional premium",
+      "old_rates": {
+        "input_micro_usd_per_million_tokens": 2000000,
+        "cached_input_micro_usd_per_million_tokens": 100000,
+        "cache_write_micro_usd_per_million_tokens": 2500000,
+        "output_micro_usd_per_million_tokens": 10000000
+      },
+      "current_rates": {
+        "input_micro_usd_per_million_tokens": 2000000,
+        "cached_input_micro_usd_per_million_tokens": 100000,
+        "cache_write_micro_usd_per_million_tokens": 2500000,
+        "output_micro_usd_per_million_tokens": 10000000
+      },
+      "model_substitution": false,
+      "source_keys": ["openai-pricing", "openai-sol", "openai-cache"],
+      "source_quotes": [
+        "| Model | Short context input | Short context output | Short context cached input | Short context 30m write | Short context 12h write | Long context input | Long context output | Long context cached input | Long context 30m write | Long context 12h write |",
+        "| gpt-6.1-sol | $2.00 | $10.00 | $0.10 | $2.50 | $5.00 | $4.00 | $15.00 | $0.20 | $5.00 | $10.00 |",
+        "- API prompts with more than 272K input tokens are priced at 2x input and cache rates and 1.5x output for the full request."
+      ],
+      "admitted_dimensions": {
+        "context": "<=33792 input-token runtime ceiling; below >272K long-context tier",
+        "cache": "reads and default30m writes only; 12h remains unadmitted",
+        "short_context_USD_per_million": {
+          "input": "$2.00",
+          "output": "$10.00",
+          "cached_input": "$0.10",
+          "30m_write": "$2.50",
+          "12h_write": "$5.00"
+        }
+      },
+      "excluded_rates_USD_per_million": {
+        "long_context": {
+          "input": "$4.00",
+          "output": "$15.00",
+          "cached_input": "$0.20",
+          "30m_write": "$5.00",
+          "12h_write": "$10.00"
+        },
+        "short_context_12h_write": "$5.00"
+      },
+      "context_quote_url": "https://developers.openai.com/api/docs/models/gpt-6.1-sol.md"
+    },
+    {
+      "provider": "openai",
+      "exact_model_id": "gpt-6.1-terra",
+      "verified_at": "2026-11-08T15:25:35.450801+00:00",
+      "expires_at": "2026-11-15T15:25:35.450801+00:00",
+      "old_reference": "anvil-openai-standard-2026-10-31-v1",
+      "new_reference": "anvil-openai-standard-2026-11-08-v1",
+      "old_verified_at": "2026-11-01T02:47:35+00:00",
+      "old_expires_at": "2026-11-08T02:47:35+00:00",
+      "currency": "USD",
+      "catalog_unit": "integer micro-USD per million tokens",
+      "tier": "paid Standard/default; global routing; no Batch/Flex/Fast/regional premium",
+      "old_rates": {
+        "input_micro_usd_per_million_tokens": 1000000,
+        "cached_input_micro_usd_per_million_tokens": 50000,
+        "cache_write_micro_usd_per_million_tokens": 1250000,
+        "output_micro_usd_per_million_tokens": 5000000
+      },
+      "current_rates": {
+        "input_micro_usd_per_million_tokens": 1000000,
+        "cached_input_micro_usd_per_million_tokens": 50000,
+        "cache_write_micro_usd_per_million_tokens": 1250000,
+        "output_micro_usd_per_million_tokens": 5000000
+      },
+      "model_substitution": false,
+      "source_keys": ["openai-pricing", "openai-terra", "openai-cache"],
+      "source_quotes": [
+        "| Model | Short context input | Short context output | Short context cached input | Short context 30m write | Short context 12h write | Long context input | Long context output | Long context cached input | Long context 30m write | Long context 12h write |",
+        "| gpt-6.1-terra | $1.00 | $5.00 | $0.05 | $1.25 | $2.50 | $2.00 | $7.50 | $0.10 | $2.50 | $5.00 |",
+        "- Prompts with more than 272K input tokens are priced at 2x input and cache rates and 1.5x output for the full request."
+      ],
+      "admitted_dimensions": {
+        "context": "<=33792 input-token runtime ceiling; below >272K long-context tier",
+        "cache": "reads and default30m writes only; 12h remains unadmitted",
+        "short_context_USD_per_million": {
+          "input": "$1.00",
+          "output": "$5.00",
+          "cached_input": "$0.05",
+          "30m_write": "$1.25",
+          "12h_write": "$2.50"
+        }
+      },
+      "excluded_rates_USD_per_million": {
+        "long_context": {
+          "input": "$2.00",
+          "output": "$7.50",
+          "cached_input": "$0.10",
+          "30m_write": "$2.50",
+          "12h_write": "$5.00"
+        },
+        "short_context_12h_write": "$2.50"
+      },
+      "context_quote_url": "https://developers.openai.com/api/docs/models/gpt-6.1-terra.md"
+    },
+    {
+      "provider": "anthropic",
+      "exact_model_id": "claude-opus-5-5",
+      "verified_at": "2026-11-08T15:25:35.450801+00:00",
+      "expires_at": "2026-11-15T15:25:35.450801+00:00",
+      "old_reference": "anvil-anthropic-standard-2026-11-02-v1",
+      "new_reference": "anvil-anthropic-standard-2026-11-08-v1",
+      "old_verified_at": "2026-11-02T14:40:00+00:00",
+      "old_expires_at": "2026-11-09T14:40:00+00:00",
+      "currency": "USD",
+      "catalog_unit": "integer micro-USD per million tokens",
+      "tier": "paid Standard/default; global routing; no Batch/Flex/Fast/regional premium",
+      "old_rates": {
+        "input_micro_usd_per_million_tokens": 4000000,
+        "output_micro_usd_per_million_tokens": 20000000
+      },
+      "current_rates": {
+        "input_micro_usd_per_million_tokens": 4000000,
+        "output_micro_usd_per_million_tokens": 20000000
+      },
+      "model_substitution": false,
+      "source_keys": ["anthropic-pricing", "anthropic-models"],
+      "source_quotes": [
+        "| Claude Opus 5.5                                                                                                                                                        | $4 / MTok             | $5 / MTok       | $8 / MTok       | $0.20 / MTok<sup>2</sup> | $20 / MTok             |",
+        "  Regional and multi-region endpoints include a 10 percent premium over global endpoints. The Claude API (first-party) is global by default; for first-party data residency options and pricing, see [Data residency pricing](https://platform.claude.com/docs/en/about-claude/pricing#data-residency-pricing).",
+        "Claude 4.6 and later models (except Claude Haiku 5.5) and [Claude Mythos Preview](https://anthropic.com/glasswing) include the full [1M token context window](https://platform.claude.com/docs/en/build-with-claude/context-windows) at standard pricing. (A 900k-token request is billed at the same per-token rate as a 9k-token request.) Prompt caching and batch processing discounts apply at standard rates across the full context window."
+      ],
+      "admitted_dimensions": {
+        "input_USD_per_million": "4",
+        "output_USD_per_million": "20",
+        "context": "full1M context at Standard; actual runtime ceiling33792",
+        "cache": "not admitted; existing nonzero cache usage rejected"
+      },
+      "excluded_rates": {
+        "cache_5m_write_USD_per_million": "5",
+        "cache_1h_write_USD_per_million": "8",
+        "cache_hit_USD_per_million": "0.20",
+        "fast_input_output_USD_per_million": ["8", "40"],
+        "batch_input_output_USD_per_million": ["2", "10"],
+        "US_regional_multiplier": "1.1"
+      }
+    },
+    {
+      "provider": "gemini",
+      "exact_model_id": "gemini-3.8-flash",
+      "verified_at": "2026-11-08T15:25:35.450801+00:00",
+      "expires_at": "2026-11-15T15:25:35.450801+00:00",
+      "old_reference": "anvil-gemini-standard-2026-11-02-v1",
+      "new_reference": "anvil-gemini-standard-2026-11-08-v1",
+      "old_verified_at": "2026-11-02T14:32:00+00:00",
+      "old_expires_at": "2026-11-09T14:32:00+00:00",
+      "currency": "USD",
+      "catalog_unit": "integer micro-USD per million tokens",
+      "tier": "paid Standard/default; global routing; no Batch/Flex/Fast/regional premium",
+      "old_rates": {
+        "input_micro_usd_per_million_tokens": 750000,
+        "output_micro_usd_per_million_tokens": 3750000
+      },
+      "current_rates": {
+        "input_micro_usd_per_million_tokens": 750000,
+        "output_micro_usd_per_million_tokens": 3750000
+      },
+      "model_substitution": false,
+      "source_keys": ["gemini-pricing", "gemini-model"],
+      "source_quotes": [
+        "Input price\n  * Free of charge\n  * $0.75 through December 31, 2026.   \n  $1.50 starting January 1, 2027.\n\n  ---\n\n  * Output price (including thinking tokens)\n  * Free of charge\n  * $3.75 through December 31, 2026.   \n  $7.50 starting January 1, 2027.\n\n  ---\n\n  * Context caching price\n  * Free of charge\n  * $0.075 through December 31, 2026.   \n  $0.15 starting January 1, 2027.   \n  $0.50 / 1,000,000 tokens per hour (storage price) through December 31, 2026.   \n  $1.00 / 1,000,000 tokens per hour (storage price) starting January 1, 2027.\n\n  ---\n\n  *"
+      ],
+      "admitted_dimensions": {
+        "input_USD_per_million": "0.75",
+        "output_USD_per_million_including_thinking": "3.75",
+        "effective_period": "through2026-12-31; new seven-day expiry2026-11-15 precedes announced change",
+        "cache": "no new cache/storage/grounding admission"
+      },
+      "excluded_rates": {
+        "from2027-01-01_input_output_USD_per_million": ["1.50", "7.50"],
+        "cached_input_USD_per_million_until2026-12-31": "0.075",
+        "cache_storage_USD_per_million_token_hour_until2026-12-31": "0.50",
+        "free_tier": "not used",
+        "batch": "not admitted"
+      }
+    }
+  ],
+  "openai_cache_quotes": [
+    "For GPT-5.6 and later, cache writes cost 1.25\u00d7 the standard, uncached input-token rate for the default 30-minute lifetime. In the Responses API, you can choose a [12-hour minimum lifetime](#cache-lifetime) at a write rate of 2.5\u00d7 ordinary input. Subsequent reads cost 0.1\u00d7 the ordinary input rate on most of these models and 0.05\u00d7 on [GPT-6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol) and [GPT-6.1 Terra](https://developers.openai.com/api/docs/models/gpt-6.1-terra), regardless of the selected lifetime.",
+    "| `\"30m\"` (default) | 30 minutes       | 1.25\u00d7 the uncached input-token rate | Conversations and agent steps that reuse context frequently.         |",
+    "| `\"12h\"`           | 12 hours         | 2.5\u00d7 the uncached input-token rate  | Stable instructions or reference material reused across longer gaps. |",
+    "These are total write rates, not surcharges on top of ordinary input. Cache-read rates are the same for both lifetimes. OpenAI may retain entries longer than the requested minimum; `\"12h\"` does not set a deletion deadline or change the [maximum data-retention policy](https://developers.openai.com/api/docs/guides/your-data#storage-requirements-and-retention-controls-per-endpoint)."
+  ],
+  "all_existing_models_verified": true,
+  "unverifiable_models": [],
+  "unknown_models": "Still None/unavailable; gpt-6-sol publicly documented but NOT added/substituted. No account access or live availability assertion.",
+  "numeric_rate_changes": "None: all6 exact existing rate entries independently match current official rows; only references/verification/bounded expiry refreshed.",
+  "scope_limits": [
+    "OpenAI short context/global Standard/default30m only; long-context/12h/region/other tiers excluded",
+    "Anthropic direct global Standard noncached only; no Fast/Batch/region/cache support added",
+    "Gemini paid Standard outputs include thinking; intro price through2026-12-31, future2027rates/cache storage/grounding not enabled",
+    "No model call, secrets, model substitution, paid authority/runtime activation, QA/T07/deploy",
+    "Existing immutable frozen price snapshots not backfilled; old expired groups remain blocked until normal explicit new/updated configuration and run approval"
+  ],
+  "retrieval_limitations": [
+    "Tavily search quota exhausted; direct official URLs succeeded. Python urllib403 on Anthropic; curl alternative10GETs allHTTP200, no auth.",
+    "Public official full bodies remain ignored locally, sanitized model rows/quotes+URL/time/hash only versioned."
+  ]
+}

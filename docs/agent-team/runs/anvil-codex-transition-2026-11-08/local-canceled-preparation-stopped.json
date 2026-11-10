@@ -1,0 +1,69 @@
+{
+  "recorded_at": "2026-11-09T04:52:24.668144+00:00",
+  "action": "stop_only_canceled_owned_preparation",
+  "containers": [
+    {
+      "name": "anvil-codex-replay-pg-20261109",
+      "id": "7845372f6c467c45e6e9318cb647c56d01fc36fda4fb501d7c64cdd9e561e67b",
+      "ports": [
+        50674
+      ],
+      "volumes_retained": [
+        "anvil-codex-replay-pg-20261109-data"
+      ],
+      "was_running": true,
+      "stopped_verified": true
+    },
+    {
+      "name": "anvil-codex-replay-graph-20261109",
+      "id": "ebb28aac6060fdd407248d2122382cb8edc2218142e56535f3ad9873de450d83",
+      "ports": [
+        50675,
+        50676
+      ],
+      "volumes_retained": [
+        "anvil-codex-replay-graph-20261109-data",
+        "618bc766cb4f3ea2395dc5fc93764455b4958714caad5523f9104193b22a560f"
+      ],
+      "was_running": true,
+      "stopped_verified": true
+    },
+    {
+      "name": "anvil-codex-replay-oidc-20261109",
+      "id": "ebdf60553506cbf0fdae2e1b6a9d1f6f9f40681d1ae1125eb71b9b72b6f148ba",
+      "ports": [
+        50677
+      ],
+      "volumes_retained": [
+        "anvil-codex-replay-oidc-20261109-data",
+        "anvil-codex-replay-oidc-20261109-config"
+      ],
+      "was_running": true,
+      "stopped_verified": true
+    },
+    {
+      "name": "anvil-codex-evidence-roleprobe-20261109",
+      "id": "f881c3dcc6d368b9372ca38ba208854f7e0bff12ab51e0c72da5301e128a87a6",
+      "ports": [
+        55406
+      ],
+      "volumes_retained": [
+        "anvil-codex-evidence-roleprobe-20261109-data"
+      ],
+      "was_running": true,
+      "stopped_verified": true
+    }
+  ],
+  "older_aad_container_ids_and_states_unchanged": true,
+  "containers_removed": false,
+  "volumes_removed": false,
+  "private_evidence_and_source_retained": true,
+  "actual_snapshot_data_was_not_loaded": true,
+  "api_web_were_not_started": true,
+  "older_browser_preview_processes_not_touched": true,
+  "initial_validation_stopped_before_mutation": true,
+  "preparation_metadata_notes": [
+    "Replay containers retained original copied aad-independent-qa purpose label; creation script and exact IDs/images/ports/timestamps verified.",
+    "Neo4j image-created anonymous logs volume retained as well as every named volume."
+  ]
+}

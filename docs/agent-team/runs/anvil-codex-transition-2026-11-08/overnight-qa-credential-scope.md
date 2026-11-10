@@ -1,0 +1,16 @@
+# Proposed exact QA credential resources
+
+Status: owner explicitly approved both resources and their retention cleanup, then requested resuming credential setup and real model smoke tests after the morning handoff. Noon Chicago shutdown remains unchanged. The earlier automatic-review rejection is historical; the newly approved cleanup automation `anvil-qa-credential-resource-cleanup` is active.
+
+Actual resources were created and read back on November 10 at 14:21 UTC: service-account unique ID `101753247390317332245`; secret `projects/676933531888/secrets/anvil-qa-model-credentials`, created `2026-11-10T14:21:36.640559Z`. Exact two secret-scoped roles and absence of project-level grants were verified. Exact VM ID `9165875445833338817` was stopped, attached to that identity, restarted, and revalidated with its unchanged 18:00 UTC STOP. Dedicated actor bridge and existing QA services restored; temporary post-boot SSH/HTTPS readiness failures retained as operational history, not model attempts.
+
+All three staged owner keys were transferred by the encrypted-store client through authenticated QA credential APIs. No key values were printed; three immutable credential/version bindings are recorded in public `credential-bindings-public.json`. This created no source/package approvals or human review. Six exact-model smoke groups on fictional draft `SEED-PHONE-001` are prepared, one attempt each with USD1 group cap (USD6 total within the USD10 initial smoke cap and USD75 total authority). Runtime activation is QA-only, legacy live paths remain disabled. Actual provider receipts are still required before claiming model results.
+
+- Secret: `anvil-qa-model-credentials`, in `adi-anvil-mvp-2026`, user-managed replication only in `us-west1`.
+- Service account: `anvil-qa-20261110@adi-anvil-mvp-2026.iam.gserviceaccount.com`.
+- Access: only `roles/secretmanager.secretAccessor` and `roles/secretmanager.secretVersionAdder` on that new secret. No project-level role, service-account key, production secret, operator credential mount or Praxis access.
+- Qualification: immutable service-account ID, secret creation time, exact policy and project number must match fresh readback. Default VM admission continues to reject workload identities. A deliberate qualified-identity readback is required before attaching this identity to the exact owned QA VM; absolute stop, private networking and actor metadata denial remain required.
+- Retention: no deletion before 2026-11-12 18:00 UTC. Delete only these newly owned resources after the QA VM is absent, verify immutable identities immediately before deletion, and verify absence afterward. Partial cleanup may resume only the same immutable identity.
+- Boundaries: configuring credential storage grants no processing-rights review, source approval, model activation or spending authority. Paid paths remain disabled until all existing application controls pass.
+
+Historical initial exact-name inventory found zero matching service accounts and secrets. Eight pure credential boundary tests plus four model-worker tests pass, including refusal before retention, replacement identity refusal, explicit QA activation and shutdown refusal. Simulated cleanup output in unit tests is not actual resource deletion. Current public ownership receipts and cloud readback supersede the earlier empty inventory.

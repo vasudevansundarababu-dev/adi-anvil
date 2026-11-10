@@ -1,0 +1,39 @@
+{
+  "source_sha": "abb4348a6eb38bb5696cb89062d9fb5c00d3e0b4",
+  "absolute_stop_utc": "2026-11-10T04:13:25.780440+00:00",
+  "resources": {
+    "anvil-staging-native-net": {
+      "id": "14450652421617289",
+      "creationTimestamp": "2026-11-08T20:13:26.806-08:00"
+    },
+    "anvil-staging-native-subnet": {
+      "id": "1177464664454133403",
+      "creationTimestamp": "2026-11-08T20:13:40.704-08:00"
+    },
+    "anvil-staging-native-nat-ip": {
+      "id": "6086832916252128912",
+      "creationTimestamp": "2026-11-08T20:13:51.781-08:00"
+    },
+    "anvil-staging-native-router": {
+      "id": "5294962567458649709",
+      "creationTimestamp": "2026-11-08T20:13:54.372-08:00"
+    },
+    "anvil-staging-native-iap-ssh": {
+      "id": "1284464424490169958",
+      "creationTimestamp": "2026-11-08T20:14:02.158-08:00"
+    },
+    "anvil-staging-native": {
+      "id": "2931597834343741053",
+      "creationTimestamp": "2026-11-08T20:14:11.014-08:00"
+    },
+    "anvil-staging-native-boot": {
+      "id": "4521431763378828925",
+      "creationTimestamp": "2026-11-08T20:14:11.022-08:00"
+    }
+  },
+  "nat_child": "anvil-staging-native-nat",
+  "no_public_ip": true,
+  "no_service_account": true,
+  "native_result_pending": true,
+  "cleanup_after_verified_export": true
+}

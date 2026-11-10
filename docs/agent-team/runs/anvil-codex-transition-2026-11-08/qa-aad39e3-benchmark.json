@@ -1,0 +1,42 @@
+{
+  "source_sha": "aad39e35ace64c55476f5e29400287a71e99d92a",
+  "label": "benchmark",
+  "environment": "benchmark",
+  "cwd": "/private/tmp/anvil-backend-security-check-acpxstl6",
+  "command": [
+    "/private/tmp/anvil-security-backend-successor/bin/python",
+    "-m",
+    "pytest",
+    "services/backend/tests/benchmark",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "--tb=short",
+    "-rs"
+  ],
+  "started_at": "2026-11-09T03:19:39.434851+00:00",
+  "elapsed_seconds": 88.465,
+  "exit_code": 0,
+  "raw_log_path": "/private/tmp/anvil-aad-runtime-e2ff0994be1f476f8059b3600e27e38d/benchmark.log",
+  "raw_log_sha256": "ac385e2ebbdf38b4100173a82c43dacdff2e6a074ee8ab7ce5e82a9c357a0f3a",
+  "summary": [
+    "168 passed, 28 skipped, 23 warnings in 87.60s (0:01:27)"
+  ],
+  "explicit_skips": [
+    "SKIPPED [1] services/backend/tests/benchmark/test_benchmark_evaluation.py:319: Native local opt-in absent; no native pass claim",
+    "SKIPPED [1] services/backend/tests/benchmark/test_benchmark_evaluation.py:412: Native local opt-in absent",
+    "SKIPPED [1] services/backend/tests/benchmark/test_benchmark_native_limits.py:70: Dedicated native opt-in absent; not limits evidence",
+    "SKIPPED [1] services/backend/tests/benchmark/test_benchmark_native_limits.py:111: Dedicated native opt-in absent; not limits evidence",
+    "SKIPPED [1] services/backend/tests/benchmark/test_benchmark_native_limits.py:130: Dedicated native opt-in absent; not limits evidence",
+    "SKIPPED [1] services/backend/tests/benchmark/test_benchmark_native_limits.py:148: Dedicated native opt-in absent; not limits evidence",
+    "SKIPPED [9] services/backend/tests/benchmark/test_benchmark_offline_native.py:25: Exact dedicated Linux native operator required; not native pass evidence",
+    "SKIPPED [1] services/backend/tests/benchmark/test_benchmark_pipeline.py:304: Explicit isolated native opt-in required; not a passing native result",
+    "SKIPPED [9] services/backend/tests/benchmark/test_benchmark_qualification.py:52: Dedicated native opt-in absent; not qualification evidence",
+    "SKIPPED [3] services/backend/tests/benchmark/test_benchmark_qualification.py:88: Explicit isolated native opt-in required"
+  ],
+  "root_manifest_changes": [],
+  "isolated_backend_source_changes": [],
+  "native_opt_in": false,
+  "paid_provider_flags": false,
+  "prior_edcc_native_proof_not_reused": true
+}

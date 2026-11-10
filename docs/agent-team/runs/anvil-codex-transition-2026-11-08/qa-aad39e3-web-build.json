@@ -1,0 +1,25 @@
+{
+  "source_sha": "aad39e35ace64c55476f5e29400287a71e99d92a",
+  "label": "web-build",
+  "environment": "web",
+  "cwd": "/private/tmp/anvil-web-security-check-xluq3bpb",
+  "command": [
+    "/usr/local/bin/node",
+    "/private/tmp/anvil-production-advisory-b8757b139d4e45209c4cb650aaffd667/cache/corepack/v1/pnpm/10.34.5/bin/pnpm.cjs",
+    "--filter",
+    "./apps/web",
+    "build"
+  ],
+  "started_at": "2026-11-09T03:22:36.494400+00:00",
+  "elapsed_seconds": 6.617,
+  "exit_code": 0,
+  "raw_log_path": "/private/tmp/anvil-aad-runtime-e2ff0994be1f476f8059b3600e27e38d/web-build.log",
+  "raw_log_sha256": "83e8ed618d2260a2471b2b0e84376d675f762c65976984a016363c08c68b0bf8",
+  "summary": [],
+  "explicit_skips": [],
+  "root_manifest_changes": [],
+  "isolated_backend_source_changes": [],
+  "native_opt_in": false,
+  "paid_provider_flags": false,
+  "prior_edcc_native_proof_not_reused": true
+}

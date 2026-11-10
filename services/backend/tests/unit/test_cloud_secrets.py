@@ -7,6 +7,62 @@ import pytest
 from anvil import cloud_secrets
 
 
+def test_qa_profile_never_falls_back_to_production(monkeypatch):
+    monkeypatch.setenv(
+        "ANVIL_GENERATION_SECRET_RESOURCE", "projects/123/secrets/anvil-import-generation"
+    )
+    monkeypatch.setenv("ANVIL_CREDENTIAL_STORE_PROFILE", "qa")
+    monkeypatch.delenv("ANVIL_QA_SECRET_RESOURCE", raising=False)
+    assert not cloud_secrets.available()
+    monkeypatch.setenv("ANVIL_QA_SECRET_RESOURCE", "projects/123/secrets/anvil-import-generation")
+    assert not cloud_secrets.available()
+    monkeypatch.setenv(
+        "ANVIL_QA_SECRET_RESOURCE", "projects/123/secrets/anvil-qa-model-credentials"
+    )
+    assert cloud_secrets.resource().endswith("/anvil-qa-model-credentials")
+    binding = {
+        "scope": "installation_import_generation",
+        "settings_id": "test",
+        "provider": "openai",
+    }
+    with pytest.raises(ValueError, match="project binding"):
+        cloud_secrets.save("synthetic", binding)
+    monkeypatch.setenv("ANVIL_CREDENTIAL_STORE_PROFILE", "typo")
+    assert not cloud_secrets.available()
+
+
+def test_qa_profile_project_roundtrip_and_production_locator_rejection(tmp_path, monkeypatch):
+    from uuid import uuid4
+
+    os.chmod(tmp_path, 0o700)
+    monkeypatch.setenv("ANVIL_CLOUD_SECRET_INDEX", str(tmp_path))
+    monkeypatch.setenv("ANVIL_CREDENTIAL_STORE_PROFILE", "qa")
+    resource = "projects/123/secrets/anvil-qa-model-credentials"
+    monkeypatch.setenv("ANVIL_QA_SECRET_RESOURCE", resource)
+    payload = {}
+    calls = []
+
+    def request(method, path, body=None):
+        calls.append(path)
+        if body:
+            payload.update(body)
+        return {"name": resource + "/versions/1", **payload}
+
+    monkeypatch.setattr(cloud_secrets, "request", request)
+    binding = {key: str(uuid4()) for key in ("project_id", "credential_id", "version_id")}
+    binding["provider"] = "openai"
+    identifier = cloud_secrets.save("synthetic-key", binding)
+    assert cloud_secrets.load(identifier, binding) == "synthetic-key"
+    assert all(path.startswith(resource) for path in calls)
+    (tmp_path / identifier).write_text(
+        json.dumps({"version": "projects/123/secrets/anvil-import-generation/versions/1"})
+    )
+    before = len(calls)
+    with pytest.raises(ValueError, match="locator"):
+        cloud_secrets.load(identifier, binding)
+    assert len(calls) == before
+
+
 def test_managed_generation_secret_roundtrip_and_binding_fence(tmp_path, monkeypatch):
     os.chmod(tmp_path, 0o700)
     monkeypatch.setenv("ANVIL_CLOUD_SECRET_INDEX", str(tmp_path))

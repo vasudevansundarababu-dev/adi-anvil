@@ -1,0 +1,65 @@
+{
+  "status": "T04B native qualification FAILED/BLOCKED pending reviewed SDK adapter change; T04A remains independently passed",
+  "observed_at": "2026-11-07T20:25:01.521935+00:00",
+  "source_checkpoint": "6060fd8ab2b2c174b0bee837634089139dd696ea",
+  "actual_approval": "User Ok resolved bounded Python-only native fixture/evaluator scope, not arbitrary image pull/delete permission",
+  "attempt": {
+    "command": "ANVIL_ENV=local WEB_ORIGIN=http://127.0.0.1:3202 ANVIL_LIVE_PROVIDERS_ENABLED=false ANVIL_REAL_EMAIL_ENABLED=false ANVIL_TEST_HARBOR=1 ANVIL_HARBOR_DOCKER_HOST=unix:///workspace/anvil-recovered/.local/benchmark-docker/docker.sock ANVIL_BENCHMARK_DOCKER_COMMAND=operator_explicit_sudo_docker_isolated_socket services/backend/.venv/bin/python -m pytest services/backend/tests/benchmark/test_benchmark_qualification.py -q -x -k \"positive and FX-002\"",
+    "result": "1 failed,8 deselected, existing Authlib warning; no candidate or separate evaluator trial started/completed",
+    "owned_local_log": ".local/benchmark-native/641e49c0e6024b1aa6824226b29e5efe/harbor.log",
+    "owned_exception": ".local/benchmark-native/641e49c0e6024b1aa6824226b29e5efe/trials/anvil-bm-e0ac582dbf374ed9843b/exception.txt",
+    "failure": "Harbor SDK static no-network path initiated egress sidecar setup; its hardcoded default_docker_platform Docker command lacked permission for dedicated root-owned socket. No permission was changed."
+  },
+  "unexpected_sdk_effect": {
+    "sdk": "Harbor0.25.0",
+    "method": "DockerEnvironment._egress_control_kernel_support called from constructor before start",
+    "image": "alpine:3.23.4@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11",
+    "command_behavior": "SDK automatically pulled pinned Alpine and ran unnamed container with --rm; run exits0 and SDK auto-removes that new probe",
+    "observed_probe_name": "sad_hamilton",
+    "observed_isolated_events": [
+      "image pull",
+      "container create",
+      "container attach",
+      "container start",
+      "container die",
+      "container destroy"
+    ],
+    "event_window_utc": [
+      "2026-11-07T20:22:25Z",
+      "2026-11-07T20:23:00Z"
+    ],
+    "authority_assessment": "outside approved Python-only/no-container-deletion boundary; candidly reported, not retroactively approved",
+    "unapproved_sidecar_build": "not executed; failed before platform detection completed",
+    "retained_local_extra_image": true,
+    "known_shared_or_existing_service_changes": false,
+    "known_secrets_copied_or_sent": false
+  },
+  "containment": [
+    "stopped native execution after first observed error; no retry or permission expansion",
+    "did not delete unexpected Alpine image or any existing/new retained container",
+    "approved Python preflight container still stopped and retained; dedicated PostgreSQL remains running and intact",
+    "discarded only three new uncommitted native prototype files; no product native entrypoint shipped",
+    "tracked actor-only compiler separate verifier stub still exits78; no runtime build/qualification route exists",
+    "all actual15 approved input artifacts and original fictional input bytes unchanged"
+  ],
+  "sdk_source_hashes": {
+    "docker.py": "4f74e08941b3534864643405dd6ff43543597248539d7f5de7208ec5c2f5b511",
+    "utils.py": "1e21dc6547b0af0659ed8de980f7155d03d43a85de1cb2f8dd9cd1fbd96c706a"
+  },
+  "proposed_plan_pending_confirmation": [
+    "Keep official Harbor0.25.0 pinned and independently installed; do not patch site-packages or grant socket access to API/ordinary worker.",
+    "Implement a narrow Anvil-owned environment adapter supporting only constant static no-network; reject any public/allowlist/dynamic policy rather than use privileged egress sidecar. Verify actual network none/read-only/non-root/caps/mount/cgroup policy at runtime and negative tests.",
+    "Use only approved preloaded pinned Python image for both actor and separate evaluator; reject implicit pull/build and SDK Alpine kernel probe. Freeze adapter/compiler digests in qualification.",
+    "Reject SDK startup down/rm/remove-orphans and all cleanup deletion; use fresh unique names, fail on an existing session and retain stopped trial containers. Route every SDK Docker helper to explicit isolated CLI without inheriting credentials.",
+    "Write focused adapter negative tests first, then explicitly retry nine native trials and G1-G5; record failure/blocked honestly until all measured controls pass. No new registry/data/model/budget/rights or QA authority."
+  ],
+  "not_run": [
+    "nine complete native trials",
+    "G1-G5 package/runtime qualification",
+    "durable build/qualification API and worker",
+    "T05-T10 features",
+    "full QA/acceptance",
+    "Bodhium/model/judge/live evaluations",
+    "deployment"
+  ]
+}

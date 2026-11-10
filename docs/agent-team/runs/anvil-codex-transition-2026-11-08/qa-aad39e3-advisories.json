@@ -1,0 +1,72 @@
+{
+  "source_sha": "aad39e35ace64c55476f5e29400287a71e99d92a",
+  "checked_at": "2026-11-09T03:20:31.459142+00:00",
+  "source_file_hashes": {
+    "pnpm-lock.yaml": "aca63f223856b6ebd415765934a7332b792e5797cba2aec2706ff7b61b8369b6",
+    "pnpm-workspace.yaml": "01a2e5bc955db255030f223e98826ced0fa2617ebfb95c1eddf22f12552d14bf",
+    "package.json": "939774dcb95ad25cb804684de51e5a029eb5062a07a0d36a2f28a080f4fee242",
+    "apps/web/package.json": "74172a2b9f1ef903d0101da441e78ada46a0a1eeb6b4b4eba150649f8e52cd02",
+    "services/backend/pyproject.toml": "b8f470f90101b14f497e33a616d17bfe53321053cad4b9779cfa34fa944e6cc0",
+    "services/backend/uv.lock": "22bef436122e38ca72554a0e540688124397fc624394003ddd4066175f68b5fd",
+    "services/harbor/requirements.lock": "2daf87656097906db875028e92840767e16a62562704a3b58ffd76d134461757"
+  },
+  "frontend": {
+    "production_reported_nodes": 102,
+    "advisory_count": 0,
+    "method": "Existing directpnpm10.34.5 executable/privatecopiedmanifests/privatecache/publicregistry; noCorepackinvocation",
+    "receipt": {
+      "command": [
+        "/usr/local/bin/node",
+        "/private/tmp/anvil-production-advisory-b8757b139d4e45209c4cb650aaffd667/cache/corepack/v1/pnpm/10.34.5/bin/pnpm.cjs",
+        "audit",
+        "--prod",
+        "--json",
+        "--registry=https://registry.npmjs.org/"
+      ],
+      "started_at": "2026-11-09T03:11:50.804359+00:00",
+      "elapsed_seconds": 0.33,
+      "exit_code": 0,
+      "stdout_sha256": "f2d7e4aabba1355422cbc12c78a5d8f9f73318648996606ef13c1a69204b63b8",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_pnpm_lock_sha256": "aca63f223856b6ebd415765934a7332b792e5797cba2aec2706ff7b61b8369b6",
+      "raw_stdout_path": "/private/tmp/anvil-aad-advisory-4a7bcd47bdc84440897951b0bbeb28a7/frontend-audit.stdout",
+      "raw_stderr_path": "/private/tmp/anvil-aad-advisory-4a7bcd47bdc84440897951b0bbeb28a7/frontend-audit.stderr"
+    }
+  },
+  "backend": {
+    "queried_public_production_pins": 78,
+    "advisory_id_count": 0,
+    "target": "Linux x86_64 CPython3.12.14 production --no-dev",
+    "raw_batch_sha256": "29d715b2212c209ee38cf0a93ae147e23e5eda0314ff917d4c40ee446eb16694",
+    "platform_excluded_requirements": [
+      {
+        "name": "colorama",
+        "version": "0.4.6",
+        "marker": "sys_platform == \"win32\""
+      },
+      {
+        "name": "httpx2-jsfetch",
+        "version": "1.0",
+        "marker": "sys_platform == \"emscripten\""
+      },
+      {
+        "name": "tzdata",
+        "version": "2026.4",
+        "marker": "sys_platform == \"win32\""
+      }
+    ]
+  },
+  "harbor": {
+    "queried_public_locked_pins": 91,
+    "sdk_version": "0.25.0",
+    "advisory_id_count": 0,
+    "raw_batch_sha256": "97e3d01ce7f321b6f3c3db1d9fc82cac7a772693a407dec41f1872a01eb5b0ed"
+  },
+  "public_api_errors": [],
+  "tool_or_dependency_downloads_installs": false,
+  "source_or_lock_changes": false,
+  "private_raw_results_root": "/private/tmp/anvil-aad-advisory-4a7bcd47bdc84440897951b0bbeb28a7",
+  "image_or_OS_vulnerability_scan": "NOT_RUN; no container scanning API enabled",
+  "security_verdict": "No advisorymatches returned by these databases for these pins at this time; NOT a blanketsecurity/exploitability/image verdict",
+  "native_qualification": "Oldedcc28passes not proof of successor dependency runtime; newnativeapproval/proof separate"
+}

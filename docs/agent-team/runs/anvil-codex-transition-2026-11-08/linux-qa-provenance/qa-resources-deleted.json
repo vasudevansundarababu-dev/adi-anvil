@@ -1,0 +1,61 @@
+{
+  "project": "adi-anvil-mvp-2026",
+  "scope": "exact_disposable_QA_resources_only",
+  "evidence_export_clearance": true,
+  "deleted": [
+    {
+      "resource": "instances",
+      "name": "anvil-staging-native",
+      "verified_prior_id": "4723949448594237365",
+      "verified_after": "NOT_FOUND"
+    },
+    {
+      "resource": "disks",
+      "name": "anvil-staging-native-boot",
+      "verified_prior_id": "8660101875172681653",
+      "verified_after": "NOT_FOUND"
+    },
+    {
+      "resource": "firewall-rules",
+      "name": "anvil-staging-native-iap-ssh",
+      "verified_prior_id": "9051667802961520580",
+      "verified_after": "NOT_FOUND"
+    },
+    {
+      "resource": "NAT_config",
+      "name": "anvil-staging-native-nat",
+      "verified_parent_id": "8927032357452294091",
+      "verified_after": "ABSENT_IN_ROUTER"
+    },
+    {
+      "resource": "routers",
+      "name": "anvil-staging-native-router",
+      "verified_prior_id": "8927032357452294091",
+      "verified_after": "NOT_FOUND"
+    },
+    {
+      "resource": "addresses",
+      "name": "anvil-staging-native-nat-ip",
+      "verified_prior_id": "7265975432424237005",
+      "verified_after": "NOT_FOUND"
+    },
+    {
+      "resource": "subnets",
+      "name": "anvil-staging-native-subnet",
+      "verified_prior_id": "159611463170566136",
+      "verified_after": "NOT_FOUND"
+    },
+    {
+      "resource": "networks",
+      "name": "anvil-staging-native-net",
+      "verified_prior_id": "8017050090191235044",
+      "verified_after": "NOT_FOUND"
+    }
+  ],
+  "complete": true,
+  "bill_reconciled": false,
+  "ongoing_created_resource_charges": "No listed created QA resources remain; prior usage/log retention billing may post later",
+  "verified_at_utc": "2026-11-09T02:24:28.069445+00:00",
+  "user_authorization": "Delete these temporary test resources",
+  "earlier_rejection_preserved": true
+}

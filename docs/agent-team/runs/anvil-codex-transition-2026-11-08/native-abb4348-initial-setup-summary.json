@@ -1,0 +1,38 @@
+{
+  "source_sha": "abb4348a6eb38bb5696cb89062d9fb5c00d3e0b4",
+  "kind": "native_baseline28",
+  "command": [
+    "/opt/anvil/.local/backend-venv/bin/python3.12",
+    "-m",
+    "pytest",
+    "-q",
+    "-x",
+    "-p",
+    "no:cacheprovider",
+    "--tb=short",
+    "-rs",
+    "--junitxml=/opt/anvil/.local/native-qa-results/abb-baseline-dd4d977e5bc8487093da410bda08051b/pytest.xml",
+    "services/backend/tests/benchmark/test_benchmark_qualification.py::test_real_native_harbor_trial",
+    "services/backend/tests/benchmark/test_benchmark_qualification.py::test_native_rejects_stale_package_or_evaluator_before_execution",
+    "services/backend/tests/benchmark/test_benchmark_native_limits.py",
+    "services/backend/tests/benchmark/test_benchmark_offline_native.py::test_real_native_offline_sdk_and_separate_evaluator",
+    "services/backend/tests/benchmark/test_benchmark_evaluation.py::test_real_native_separate_evaluator_captures_fenced_private_result",
+    "services/backend/tests/benchmark/test_benchmark_evaluation.py::test_native_actor_stops_before_its_bytes_enter_separate_evaluator",
+    "services/backend/tests/benchmark/test_benchmark_pipeline.py::test_real_native_receipts_persist_through_durable_pipeline"
+  ],
+  "started_at": "2026-11-09T04:20:59.762594+00:00",
+  "elapsed_seconds": 412.045,
+  "exit_code": 1,
+  "summary": [
+    "25 passed, 1 warning, 1 error in 408.58s (0:06:48)"
+  ],
+  "raw_log_path": "/opt/anvil/.local/native-qa-results/abb-baseline-dd4d977e5bc8487093da410bda08051b/pytest.log",
+  "raw_log_sha256": "a91f9587273f63be3e3896a417a24b14f804be32ad78218e433359f14c79a6a1",
+  "junit_path": "/opt/anvil/.local/native-qa-results/abb-baseline-dd4d977e5bc8487093da410bda08051b/pytest.xml",
+  "junit_sha256": "4200a5fb0a5c3da5da3b49607d7be72e1e3df07d5f71970d8e8db318b0806fba",
+  "source_changes_after": [],
+  "paid_calls_enabled": false,
+  "new_individual_demo_not_yet_run": true,
+  "classification": "25 actual native passes; remaining evaluation fixture blocked by testprocess feature-flag omission (503). Not full baseline pass; newdemo not run.",
+  "raw_logs_exported_owner_only": true
+}

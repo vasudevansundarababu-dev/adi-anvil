@@ -1,4 +1,5 @@
 import { runBlockers } from './executionReadiness';
+import { modelSelectionMessage } from './readinessCatalog';
 
 export type Metrics = {
   reward: number | null;
@@ -113,7 +114,7 @@ export async function workspaceApi(
         : [];
     const failure = new Error(
       typeof detail === 'string'
-        ? detail
+        ? modelSelectionMessage(detail) || detail
         : typeof detail?.message === 'string'
           ? [detail.message, ...reasons].join(' · ')
           : 'Unable to load this workspace',

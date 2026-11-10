@@ -1,0 +1,15 @@
+{
+  "source_sha": "abb4348a6eb38bb5696cb89062d9fb5c00d3e0b4",
+  "suite": "benchmark",
+  "started_at": "2026-11-09T04:10:56.501156+00:00",
+  "finished_at": "2026-11-09T04:12:23.463007+00:00",
+  "exit_code": 0,
+  "summary": [
+    "175 passed, 29 skipped, 23 warnings in 86.08s (0:01:26)"
+  ],
+  "log_sha256": "da7c785b57be1560e280cc5d9f824ea6fe36cdb7531af7addd1f1d22346efd05",
+  "manifested_paths": 875,
+  "changed_paths": [],
+  "native_opt_in": false,
+  "paid_calls": false
+}

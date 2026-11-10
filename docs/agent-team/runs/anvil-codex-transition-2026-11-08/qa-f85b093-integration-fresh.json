@@ -1,0 +1,44 @@
+{
+  "candidate_application_sha": "f85b093065a17ba7481941aaec9977733e447e29",
+  "product_runtime_checkpoint": "edcc0514c43ceb614b813566820ee0c2c7311463",
+  "label": "integration-fresh",
+  "command": [
+    "/private/tmp/anvil-testing-backend/bin/python",
+    "-m",
+    "pytest",
+    "services/backend/tests/integration",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "--tb=short",
+    "-rs"
+  ],
+  "started_at": "2026-11-09T02:11:11.650258+00:00",
+  "elapsed_seconds": 104.766,
+  "exit_code": 0,
+  "raw_log_path": "/private/tmp/anvil-codex-testing-runtime/qa-f85b093-integration-fresh.log",
+  "raw_log_sha256": "73d12002c6a87dff03b0db2f94666274a2c297416bb31f4abd3c838836600c67",
+  "summary": [
+    "190 passed, 19 skipped, 62 warnings in 101.69s (0:01:41)"
+  ],
+  "explicit_skips": [
+    "SKIPPED [1] services/backend/tests/integration/test_import_pipeline.py:128: Explicit native Docker/Harbor opt-in required",
+    "SKIPPED [1] services/backend/tests/integration/test_import_pipeline.py:357: Explicit isolated Docker opt-in required",
+    "SKIPPED [1] services/backend/tests/integration/test_import_pipeline.py:384: Explicit native Docker/Harbor opt-in required",
+    "SKIPPED [1] services/backend/tests/integration/test_import_pipeline.py:496: Explicit isolated Docker opt-in required",
+    "SKIPPED [1] services/backend/tests/integration/test_import_pipeline.py:530: Explicit isolated Docker opt-in required",
+    "SKIPPED [1] services/backend/tests/integration/test_import_pipeline.py:602: Explicit isolated Docker opt-in required",
+    "SKIPPED [6] services/backend/tests/integration/test_praxis_harbor.py:153: Opt-in real Docker Harbor test; not a model test",
+    "SKIPPED [2] services/backend/tests/integration/test_praxis_harbor.py:201: Actual Praxis API export and Docker opt-in required",
+    "SKIPPED [1] services/backend/tests/integration/test_praxis_harbor.py:249: Real Docker isolation probe is opt-in",
+    "SKIPPED [1] services/backend/tests/integration/test_praxis_harbor.py:301: Real Docker replay is opt-in",
+    "SKIPPED [1] services/backend/tests/integration/test_praxis_harbor.py:343: Real Docker cancellation is opt-in",
+    "SKIPPED [1] services/backend/tests/integration/test_praxis_harbor.py:486: Real Harbor adapter with fixture-only gateway is opt-in",
+    "SKIPPED [1] services/backend/tests/integration/test_workspace_execution.py:439: Opt-in Docker Harbor gateway test; provider remains MockTransport"
+  ],
+  "changed_manifest_paths_after_check": [],
+  "native_opt_in": false,
+  "platform": "macOS existing isolated locked Python3.12 environment",
+  "paid_provider_flags": false,
+  "fresh_database": "anvil_regression_f85b093"
+}

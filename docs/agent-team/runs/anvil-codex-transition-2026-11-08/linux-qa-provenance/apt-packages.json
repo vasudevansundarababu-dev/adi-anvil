@@ -1,0 +1,11 @@
+{
+  "source": "signed Debian package indexes and downloaded archive checksums on isolated QA host",
+  "correction": "The original multi-file dpkg-deb --show export reported only the first package; this per-archive read-only verification completes it without changing installed packages.",
+  "packages": [
+    {"name": "containerd", "version": "1.6.20~ds1-1+deb12u3", "sha256": "8669d264eeb0fcdb4a0b1ba436ab88ec5dafde4a66e1278ec279d830db4c2216"},
+    {"name": "docker.io", "version": "20.10.24+dfsg1-1+deb12u1+b6", "sha256": "daf8ff8f7aa53e8533d38e386fcc2a11e8f3891210776fb78a84b98feb4eea0e"},
+    {"name": "runc", "version": "1.1.5+ds1-1+deb12u1", "sha256": "a00351f8c0318de0b424ecf5cd0fdb69880a89f3511cae4f6fff7de3e57881c5"},
+    {"name": "sudo", "version": "1.9.13p3-1+deb12u4", "sha256": "ea9987f92630be504998516e1ed9c821c483131d0576ff35a09d6e7f8deff10f"},
+    {"name": "tini", "version": "0.19.0-1+b3", "sha256": "7d1947665fa40e55f218fefad773dc6de66458d0b39eaa292cdcadfc7c996632"}
+  ]
+}
