@@ -67,7 +67,7 @@ class InstalledEpisode:
         import subprocess
         from pathlib import Path
 
-        from anvil.config import ROOT, setting
+        from anvil.config import CLOUD, ROOT, setting
         from anvil.environment_temp import workspace
 
         if os.environ.get("ANVIL_ENVIRONMENT_OPENENV_ENABLED") != "true":
@@ -82,8 +82,8 @@ class InstalledEpisode:
             "LANG": "en_US.UTF-8",
             "PYTHONPATH": str(ROOT / "services/backend/src"),
             "ANVIL_ROOT": str(ROOT),
-            "ANVIL_ENV": "local",
-            "WEB_ORIGIN": "http://127.0.0.1:3202",
+            "ANVIL_ENV": setting("ANVIL_ENV"),
+            "WEB_ORIGIN": setting("WEB_ORIGIN"),
             "WORKER_DATABASE_URL": setting("WORKER_DATABASE_URL"),
             "ANVIL_ENVIRONMENT_OPENENV_ENABLED": "true",
             "DO_NOT_TRACK": "1",
@@ -93,6 +93,13 @@ class InstalledEpisode:
             "ANVIL_REAL_EMAIL_ENABLED": "false",
             "ANVIL_GENERATION_ENABLED": "false",
         }
+        if CLOUD:
+            # The child must pass the same cloud validation as its parent.
+            # No provider credentials or migration-owner DSN are inherited.
+            env["OIDC_ISSUER"] = setting("OIDC_ISSUER")
+            env["ANVIL_SESSION_KEY"] = setting("ANVIL_SESSION_KEY")
+        elif "ANVIL_LOCAL_WEB_PORT" in os.environ:
+            env["ANVIL_LOCAL_WEB_PORT"] = os.environ["ANVIL_LOCAL_WEB_PORT"]
         self.log = (self.home / "operator-private.log").open("wb")
         self.process = subprocess.Popen(
             [str(python), "-m", "anvil.environment_openenv_bridge"],

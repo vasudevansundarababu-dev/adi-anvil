@@ -1,5 +1,6 @@
 """Actual QA API/worker six-world technical rehearsal; zero model performance."""
 
+import argparse
 import importlib.util
 import json
 import socket
@@ -12,6 +13,14 @@ import httpx
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--harness",
+        choices=("local-components-v1", "openenv-0.12-local-v1", "harbor-host-mediated-v1"),
+        default="local-components-v1",
+    )
+    parser.add_argument("--role", choices=("admin", "rl-engineer"))
+    args = parser.parse_args()
     assert socket.gethostname() == "anvil-overnight-qa-20261110"
     root = Path("/var/lib/anvil-overnight-qa")
     fixture = json.loads((root / "synthetic-oidc-test-fixture.json").read_text())
@@ -26,6 +35,8 @@ def main():
     verify = ssl.create_default_context(cafile=str(root / "config/qa-root-ca.crt"))
     receipts = []
     for role, identity in fixture["users"].items():
+        if args.role and role != args.role:
+            continue
         with httpx.Client(
             verify=verify, trust_env=False, follow_redirects=False, timeout=30
         ) as client:
@@ -102,7 +113,7 @@ def main():
                     "members": members,
                     "candidates": ["configured-tools-v1", "empty-tools-v1"],
                     "purpose": "technical_rehearsal",
-                    "harness": "local-components-v1",
+                    "harness": args.harness,
                 },
             )
             run = post(
@@ -117,11 +128,15 @@ def main():
                 time.sleep(1)
             assert result["run"]["state"] == "completed", "Actual QA durable Run did not complete"
             assert len(result["cells"]) == 12
+            assert result["failures"]["cells"] == 0
+            if args.harness == "openenv-0.12-local-v1":
+                assert result["selected_cell"]["capture"]["openenv_adapter"]["version"] == "0.12.0"
             assert (
                 result["run"]["provider_calls"] == 0 and result["run"]["model_performance"] is False
             )
             assert all(cell["assessment"]["earned_points"] is None for cell in result["cells"])
             item = {
+                "harness": args.harness,
                 "role": role,
                 "run_id": run["id"],
                 "cells": 12,
@@ -132,7 +147,7 @@ def main():
                 "report_review": result["run"]["report_review"],
             }
             receipts.append(item)
-            (root / "six-worlds-public.json").write_text(
+            (root / ("six-worlds-" + args.harness + "-public.json")).write_text(
                 json.dumps(
                     {
                         "runs": receipts,
@@ -148,7 +163,9 @@ def main():
                         params={"format": format, "expected_view_sha256": result["view_sha256"]},
                     )
                     assert export.status_code == 200
-                    (root / ("six-world-admin." + format)).write_bytes(export.content)
+                    (root / ("six-world-admin-" + args.harness + "." + format)).write_bytes(
+                        export.content
+                    )
     print(
         json.dumps(
             {
