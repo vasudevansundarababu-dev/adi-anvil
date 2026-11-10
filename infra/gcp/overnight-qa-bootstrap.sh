@@ -49,7 +49,7 @@ Type=notify
 RuntimeDirectory=anvil-qa-docker
 RuntimeDirectoryMode=0750
 ExecStartPre=/bin/chown root:anvilqa /run/anvil-qa-docker
-ExecStart=/usr/bin/dockerd --host=unix:///run/anvil-qa-docker/docker.sock --group=anvilqa --data-root=/var/lib/anvil-qa-actor-docker --exec-root=/run/anvil-qa-docker/exec --pidfile=/run/anvil-qa-docker/pid --bridge=none --iptables=false --ip-forward=false --ip-masq=false
+ExecStart=/usr/bin/dockerd --host=unix:///run/anvil-qa-docker/docker.sock --group=anvilqa --data-root=/var/lib/anvil-qa-actor-docker --exec-root=/run/anvil-qa-docker/exec --pidfile=/run/anvil-qa-docker/pid --containerd-namespace=anvil-qa-actor --containerd-plugins-namespace=anvil-qa-actor-plugins --bridge=none --iptables=false --ip-forward=false --ip-masq=false
 Restart=no
 TimeoutStartSec=90
 TimeoutStopSec=120
