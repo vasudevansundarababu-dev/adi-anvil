@@ -49,7 +49,10 @@ Type=notify
 RuntimeDirectory=anvil-qa-docker
 RuntimeDirectoryMode=0750
 ExecStartPre=/bin/chown root:anvilqa /run/anvil-qa-docker
-ExecStart=/usr/bin/dockerd --host=unix:///run/anvil-qa-docker/docker.sock --group=anvilqa --data-root=/var/lib/anvil-qa-actor-docker --exec-root=/run/anvil-qa-docker/exec --pidfile=/run/anvil-qa-docker/pid --containerd-namespace=anvil-qa-actor --containerd-plugins-namespace=anvil-qa-actor-plugins --bridge=none --iptables=false --ip-forward=false --ip-masq=false
+ExecStartPre=/bin/sh -c '/usr/sbin/ip link show anvilqaactor0 >/dev/null 2>&1 || /usr/sbin/ip link add name anvilqaactor0 type bridge'
+ExecStartPre=/usr/sbin/ip address replace 172.30.90.1/24 dev anvilqaactor0
+ExecStartPre=/usr/sbin/ip link set anvilqaactor0 up
+ExecStart=/usr/bin/dockerd --host=unix:///run/anvil-qa-docker/docker.sock --group=anvilqa --data-root=/var/lib/anvil-qa-actor-docker --exec-root=/run/anvil-qa-docker/exec --pidfile=/run/anvil-qa-docker/pid --containerd-namespace=anvil-qa-actor --containerd-plugins-namespace=anvil-qa-actor-plugins --bridge=anvilqaactor0 --iptables=false --ip-forward=false --ip-masq=false
 Restart=no
 TimeoutStartSec=90
 TimeoutStopSec=120
