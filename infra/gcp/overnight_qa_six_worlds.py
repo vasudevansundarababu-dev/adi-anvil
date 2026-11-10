@@ -120,7 +120,17 @@ def main():
                 bench + "/runs",
                 {"plan_id": plan["id"], "expected_plan_sha256": plan["snapshot_sha256"]},
             )
-            deadline = time.monotonic() + 180
+            (root / ("six-worlds-" + args.harness + "-dispatch-public.json")).write_text(
+                json.dumps(
+                    {
+                        "role": role,
+                        "run_id": run["id"],
+                        "harness": args.harness,
+                        "status": "dispatched_no_automatic_retry",
+                    }
+                )
+            )
+            deadline = time.monotonic() + 600
             while time.monotonic() < deadline:
                 result = client.get(bench + "/runs/" + run["id"]).json()["data"]
                 if result["run"]["state"] in {"completed", "failed", "blocked", "cancelled"}:

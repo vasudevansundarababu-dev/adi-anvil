@@ -12,6 +12,11 @@ def main():
     if socket.gethostname() != "anvil-overnight-qa-20261110" or os.getuid() != 0:
         raise ValueError("QA operator identity required")
     root = Path("/var/lib/anvil-overnight-qa")
+    native = Path("/var/lib/anvil-qa-native")
+    native.mkdir(mode=0o700, exist_ok=True)
+    assert native.resolve() == native and native.is_dir()
+    native.chmod(0o700)
+    os.chown(native, 10001, 10001)
     config = root / "config/compose.json"
     sha = subprocess.check_output(
         [
@@ -55,7 +60,7 @@ NoNewPrivileges=true
 ProtectHome=true
 ProtectSystem=strict
 PrivateTmp=true
-ReadWritePaths=/opt/anvil-overnight-qa/source/.data /opt/anvil-overnight-qa/source/.local /run/anvil-qa-docker
+ReadWritePaths=/opt/anvil-overnight-qa/source/.data /opt/anvil-overnight-qa/source/.local /run/anvil-qa-docker /var/lib/anvil-qa-native
 KillMode=control-group
 TimeoutStopSec=120
 [Install]

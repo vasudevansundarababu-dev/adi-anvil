@@ -39,6 +39,7 @@ def environment(values, source_sha256):
         "ANVIL_ENVIRONMENT_HARBOR_PYTHON": "/opt/anvil-overnight-qa/harbor/bin/python",
         "ANVIL_ENVIRONMENT_OPENENV_PYTHON": "/opt/anvil-overnight-qa/openenv/bin/python",
         "ANVIL_HARBOR_DOCKER_HOST": "unix:///run/anvil-qa-docker/docker.sock",
+        "ANVIL_ENVIRONMENT_NATIVE_TMP_ROOT": "/var/lib/anvil-qa-native",
     }
     for key in (
         "ANVIL_LIVE_PROVIDERS_ENABLED",
