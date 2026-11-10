@@ -16,7 +16,7 @@ def test_private_additive_profile_does_not_change_legacy():
     before = render_demo(images())
     result = render(images(), "b" * 64)
     assert render_demo(images()) == before
-    assert result["services"]["caddy"]["ports"] == ["127.0.0.1:8080:80"]
+    assert result["services"]["caddy"]["ports"] == ["127.0.0.1:8443:8443"]
     assert result["services"]["postgres"]["ports"] == ["127.0.0.1:55432:5432"]
     wire = json.dumps(result)
     assert "docker.sock" not in wire and "/opt/anvil/" not in wire
