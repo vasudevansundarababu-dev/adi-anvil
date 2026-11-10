@@ -47,11 +47,22 @@ def routes(context, wrap, idempotent):
                 "SELECT id FROM anvil.benchmark_runs ORDER BY created_at DESC,id DESC LIMIT 100"
             ).fetchall()
             current_source = runs.source_hash()
+            from anvil.environment_execution import source_hash as environment_source_hash
+
             return wrap(
                 {
                     "groups": [imports.public_group(g) for g in groups],
                     "plans": [
-                        p | {"runnable": p["snapshot"]["source_sha256"] == current_source}
+                        p
+                        | {
+                            "runnable": p["snapshot"]["source_sha256"]
+                            == (
+                                environment_source_hash()
+                                if p["snapshot"].get("schema_version")
+                                == "anvil.environment-execution-plan.v1"
+                                else current_source
+                            )
+                        }
                         for p in plans
                     ],
                     "runs": [runs.get(c, r["id"]) for r in rows],

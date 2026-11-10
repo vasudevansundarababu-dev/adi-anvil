@@ -11,7 +11,7 @@ export default function BenchmarkExecutionGroups({ base, route }: { base: string
         name: string;
         snapshot_sha256: string;
         runnable: boolean;
-        snapshot: { planned_cells: number; source_project: { name: string } };
+        snapshot: { planned_cells: number; source_project?: { name: string } };
       }[]
     >([]),
     [error, setError] = useState(''),
@@ -41,7 +41,8 @@ export default function BenchmarkExecutionGroups({ base, route }: { base: string
             <div>
               <strong>{p.name}</strong>
               <small>
-                {p.snapshot.source_project.name} · {p.snapshot.planned_cells} executions
+                {p.snapshot.source_project?.name || 'Imported Task Group'} ·{' '}
+                {p.snapshot.planned_cells} executions
               </small>
             </div>
             <button

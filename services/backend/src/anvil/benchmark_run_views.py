@@ -36,8 +36,9 @@ def profile(cells):
                 for cr in cell["assessment"]["criteria"]
                 if cr["dimension"] == key
             ]
-            earned = sum(Decimal(cr["earned_points"]) for cr in criteria)
-            possible = sum(Decimal(cr["possible_points"]) for cr in criteria)
+            decided = [cr for cr in criteria if cr.get("earned_points") is not None]
+            earned = sum(Decimal(cr["earned_points"]) for cr in decided)
+            possible = sum(Decimal(cr["possible_points"]) for cr in decided)
             axes.append(
                 {
                     "id": key,
@@ -45,9 +46,9 @@ def profile(cells):
                     "value": percent(earned, possible),
                     "numerator": str(earned),
                     "denominator": str(possible),
-                    "decided": len(criteria),
+                    "decided": len(decided),
                     "planned": len(criteria),
-                    "unknown": 0,
+                    "unknown": len(criteria) - len(decided),
                     "basis": "Source Task rubric points in this exact cohort",
                 }
             )
@@ -109,13 +110,14 @@ def remediation(tasks, cells, run):
             cr["id"]: cr["description"]
             for cell in failing
             for cr in cell["assessment"]["criteria"]
-            if not cr["passed"]
+            if cr["passed"] is False
         }
         exemplar = next(
             (
                 cell
                 for cell in cells
                 if cell["task_key"] == task["task_id"]
+                and cell["assessment"]["earned_points"] is not None
                 and Decimal(cell["assessment"]["earned_points"])
                 == Decimal(cell["assessment"]["possible_points"])
                 and (not run["snapshot"]["policy_set_id"] or cell["assessment"]["policy_findings"])
@@ -251,7 +253,7 @@ def view(
     failed = [
         cell
         for cell in cells
-        if any(not cr["passed"] for cr in cell["assessment"]["criteria"])
+        if any(cr["passed"] is False for cr in cell["assessment"]["criteria"])
         or any(f["outcome"] == "fail" for f in cell["assessment"]["policy_findings"])
     ]
     method_rows = []
@@ -296,6 +298,22 @@ def view(
             }
         )
     public = projects.public_group(group)
+    environment_run = snapshot.get("schema_version") == "anvil.environment-execution-plan.v1"
+    if environment_run:
+        public = public | {
+            "environments": snapshot["environments"],
+            "tasks": [
+                t
+                | {
+                    "environment_ids": [
+                        m["environment_id"]
+                        for m in snapshot["members"]
+                        if m["task_id"] == t["task_id"]
+                    ]
+                }
+                for t in public["tasks"]
+            ],
+        }
     content = {
         "schema_version": "anvil.benchmark-dashboard.v2",
         "run": row,
@@ -354,6 +372,36 @@ def view(
     from fastapi.encoders import jsonable_encoder
 
     content["view_sha256"] = digest(jsonable_encoder(content))
+    if environment_run:
+        decided = [
+            cell
+            for cell in cells
+            if cell["assessment"].get("earned_points") is not None
+            and all(
+                f["outcome"] in ("pass", "fail", "not_applicable")
+                for f in cell["assessment"]["policy_findings"]
+            )
+        ]
+        unknown = [cell for cell in cells if cell not in decided and cell not in failed]
+        denominator = len(decided) + sum(cell not in decided for cell in failed)
+        content["failures"].update(
+            decided_cells=denominator,
+            unknown_cells=len(unknown),
+            percent=percent(len(failed), denominator),
+        )
+        for series in content["series"]:
+            series["axes"][5]["basis"] = (
+                "Actual native actor probe outcomes only when captured; host business state and injection resistance remain separate"
+            )
+        content["limitations"] = [
+            "Explicit software tool scripts, not vendor model inference; paid calls are off",
+            "Actual application-owned component state; native/network containment is not inferred",
+            "Technical rehearsals and missing evidence have unresolved Task scores, never zero",
+            "Environment, pack, source, binding, collector and attempt hashes are retained in each capture",
+        ]
+        content["view_sha256"] = digest(
+            jsonable_encoder({k: v for k, v in content.items() if k != "view_sha256"})
+        )
     return content
 
 

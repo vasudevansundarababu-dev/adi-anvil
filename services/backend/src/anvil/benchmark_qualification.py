@@ -401,9 +401,19 @@ class _GatewayServer(UnixHTTPServer):
 
 
 class NativeGateway:
-    def __init__(self, folder, callback):
+    def __init__(self, folder, callback, *, socket_root=None):
         # Unix socket limits apply to the full path, not only the basename.
-        self.socket_home = tempfile.TemporaryDirectory(prefix=".bm-gw-", dir=ROOT / ".local")
+        parent = Path(socket_root) if socket_root is not None else ROOT / ".local"
+        if socket_root is not None:
+            info = parent.lstat()
+            if (
+                not stat.S_ISDIR(info.st_mode)
+                or parent.is_symlink()
+                or info.st_uid != os.getuid()
+                or info.st_mode & 0o077
+            ):
+                raise ValueError("Owned private socket root required")
+        self.socket_home = tempfile.TemporaryDirectory(prefix=".bm-gw-", dir=parent)
         os.chmod(self.socket_home.name, 0o700)
         self.path = str(Path(self.socket_home.name) / "gateway.sock")
         self.token = uuid4().hex + uuid4().hex

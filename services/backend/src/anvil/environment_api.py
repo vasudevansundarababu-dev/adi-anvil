@@ -10,6 +10,7 @@ from pydantic import Field, StrictInt, model_validator
 
 from anvil import auth
 from anvil import environment_bindings as bindings
+from anvil import environment_builds as builds
 from anvil import environment_data as data_packs
 from anvil import environment_runtime as runtime
 from anvil import environment_seeds as seeds
@@ -46,6 +47,7 @@ class ImportCSV(Generate):
 class Build(Generate):
     name: str = Field(min_length=1, max_length=120, pattern=r".*\S.*")
     runtime_profile: str = Field(default="local-reference-v1", max_length=120)
+    defer: bool = Field(default=False, strict=True)
 
 
 class Version(Strict):
@@ -55,6 +57,15 @@ class Version(Strict):
 
 class Generation(Strict):
     expected_generation: StrictInt = Field(ge=0)
+
+
+class Revision(Strict):
+    expected_revision: StrictInt = Field(ge=0)
+
+
+class BuildJob(Strict):
+    environment_id: UUID
+    runtime_profile_id:UUID|None=None
 
 
 class Operation(Generation):
@@ -86,6 +97,233 @@ def routes(context, wrap, idempotent):
 
     def permit(roles):
         auth.require(roles, "admin", "rl-engineer")
+
+    @router.get("/runtime-profiles")
+    def profiles(project: UUID, request: Request):
+        with context(request, project) as (c, user, roles):
+            permit(roles)
+            rows = c.execute(
+                "SELECT * FROM anvil.environment_runtime_profiles ORDER BY created_at DESC,id DESC LIMIT 100"
+            ).fetchall()
+            return wrap(
+                [
+                    r | {"status": "configured_not_cloud_qualified", "cloud_enabled": False}
+                    for r in rows
+                ],
+                request,
+            )
+
+    @router.post("/runtime-profiles")
+    def configure_profile(project: UUID, body: dict, request: Request):
+        from pydantic import ValidationError
+
+        from anvil.db import Jsonb, digest, uid
+        from anvil.environment_cloud_build import BuildProfile
+
+        with context(request, project) as (c, user, roles):
+            auth.require(roles, "admin")
+            if (
+                set(body) != {"name", "configuration"}
+                or not isinstance(body["name"], str)
+                or not 1 <= len(body["name"].strip()) <= 120
+            ):
+                raise HTTPException(422, "Name and exact runtime configuration required")
+            try:
+                profile = BuildProfile.model_validate(body["configuration"]).model_dump()
+            except ValidationError as exc:
+                raise HTTPException(
+                    422, "Invalid bounded GCP runtime profile; no credentials are accepted"
+                ) from exc
+
+            def store():
+                return one(
+                    c,
+                    "INSERT INTO anvil.environment_runtime_profiles(id,project_id,name,configuration,content_sha256,created_by) VALUES(%s,%s,%s,%s,%s,%s) RETURNING *",
+                    (uid(), project, body["name"].strip(), Jsonb(profile), digest(profile), user),
+                ) | {"status": "configured_not_cloud_qualified", "cloud_enabled": False}
+
+            return wrap(idempotent(c, project, user, request, body, store), request)
+
+    @router.get("/execution-capabilities")
+    def execution_capabilities(project: UUID, request: Request):
+        import os
+
+        with context(request, project) as (c, user, roles):
+            permit(roles)
+            return wrap(
+                {
+                    "local_components": True,
+                    "openenv_local_protocol": True,
+                    "installed_openenv_qualified": False,
+                    "installed_openenv_available": os.environ.get(
+                        "ANVIL_ENVIRONMENT_OPENENV_ENABLED"
+                    )
+                    == "true",
+                    "harbor_host_mediated": os.environ.get("ANVIL_ENVIRONMENT_NATIVE_ENABLED")
+                    == "true",
+                    "paid_models": False,
+                    "cloud_provisioning": False,
+                },
+                request,
+            )
+
+    @router.get("/build-jobs")
+    def build_jobs(project: UUID, request: Request):
+        with context(request, project) as (c, user, roles):
+            permit(roles)
+            return wrap(
+                c.execute(
+                    "SELECT * FROM anvil.environment_build_jobs ORDER BY created_at DESC,id DESC LIMIT 100"
+                ).fetchall(),
+                request,
+            )
+
+    @router.post("/build-jobs")
+    def new_build_job(project: UUID, body: BuildJob, request: Request):
+        with context(request, project) as (c, user, roles):
+            permit(roles)
+            return wrap(
+                idempotent(
+                    c,
+                    project,
+                    user,
+                    request,
+                    body,
+                    lambda: builds.create(c, project, user, body.environment_id,body.runtime_profile_id),
+                ),
+                request,
+            )
+
+    @router.get("/build-jobs/{identifier}")
+    def build_job(project: UUID, identifier: UUID, request: Request):
+        with context(request, project) as (c, user, roles):
+            permit(roles)
+            return wrap(builds.get(c, identifier), request)
+
+    @router.post("/build-jobs/{identifier}/{action}")
+    def step_build(
+        project: UUID,
+        identifier: UUID,
+        action: Literal["resume", "cancel"],
+        body: Revision,
+        request: Request,
+    ):
+        with context(request, project) as (c, user, roles):
+            permit(roles)
+            return wrap(
+                idempotent(
+                    c,
+                    project,
+                    user,
+                    request,
+                    body.model_dump() | {"action": action},
+                    lambda: builds.advance(
+                        c, user, identifier, body.expected_revision, cancel=action == "cancel"
+                    ),
+                ),
+                request,
+            )
+
+    @router.post("/execution-plans")
+    def new_execution_plan(project: UUID, request: Request, body: dict):
+        from pydantic import ValidationError
+
+        from anvil.environment_execution import Plan, create_plan
+
+        try:
+            parsed = Plan.model_validate(body)
+        except ValidationError as exc:
+            raise HTTPException(422, "Invalid bounded environment execution plan") from exc
+        with context(request, project) as (c, user, roles):
+            permit(roles)
+            return wrap(
+                idempotent(
+                    c, project, user, request, parsed, lambda: create_plan(c, project, user, parsed)
+                ),
+                request,
+            )
+
+    @router.post("/runs/{identifier}/cancel")
+    def cancel_run(project: UUID, identifier: UUID, request: Request):
+        with context(request, project) as (c, user, roles):
+            permit(roles)
+            changed = c.execute(
+                "UPDATE anvil.environment_run_controls SET cancel_requested=true WHERE run_id=%s RETURNING run_id",
+                (identifier,),
+            ).fetchone()
+            if not changed:
+                raise HTTPException(404, "Environment Run not found")
+            return wrap(
+                {"run_id": identifier, "cancel_requested": True, "provider_calls": 0}, request
+            )
+
+    @router.get("/runs/{identifier}/attempts")
+    def attempts(project: UUID, identifier: UUID, request: Request):
+        with context(request, project) as (c, user, roles):
+            permit(roles)
+            if not one(
+                c,
+                "SELECT run_id FROM anvil.environment_run_controls WHERE run_id=%s",
+                (identifier,),
+            ):
+                raise HTTPException(404, "Environment Run not found")
+            return wrap(
+                c.execute(
+                    "SELECT id,environment_id,model_key,repetition,parent_attempt_id,state,instance_id,evidence_receipt_id,evaluation_id,error_code,created_at FROM anvil.environment_attempts WHERE run_id=%s ORDER BY created_at,id",
+                    (identifier,),
+                ).fetchall(),
+                request,
+            )
+
+    @router.post("/runs/{identifier}/retry")
+    def retry(project: UUID, identifier: UUID, request: Request):
+        from anvil import benchmark_runs as runs
+
+        with context(request, project) as (c, user, roles):
+            permit(roles)
+            parent = one(c, "SELECT * FROM anvil.benchmark_runs WHERE id=%s", (identifier,))
+            if (
+                not parent
+                or parent["snapshot"].get("schema_version") != "anvil.environment-execution-plan.v1"
+            ):
+                raise HTTPException(404, "Environment Run not found")
+            if parent["state"] not in ("completed", "failed", "blocked"):
+                raise HTTPException(409, "Wait for the current Run to terminate before retrying")
+
+            def start_retry():
+                child = runs.start(
+                    c,
+                    project,
+                    user,
+                    runs.Start(
+                        plan_id=parent["plan_id"], expected_plan_sha256=parent["snapshot_sha256"]
+                    ),
+                )
+                c.execute(
+                    "INSERT INTO anvil.environment_run_lineage(run_id,project_id,parent_run_id,created_by) VALUES(%s,%s,%s,%s)",
+                    (child["id"], project, identifier, user),
+                )
+                return child | {"parent_run_id": str(identifier)}
+
+            return wrap(
+                idempotent(
+                    c, project, user, request, {"parent_run_id": str(identifier)}, start_retry
+                ),
+                request,
+            )
+
+    @router.get("/receipts/{identifier}")
+    def retained_receipt(project: UUID, identifier: UUID, request: Request):
+        with context(request, project) as (c, user, roles):
+            permit(roles)
+            receipt = one(
+                c,
+                "SELECT * FROM anvil.environment_receipts WHERE id=%s AND kind='evidence'",
+                (identifier,),
+            )
+            if not receipt:
+                raise HTTPException(404, "Evidence receipt not found")
+            return wrap(receipt, request)
 
     @router.get("")
     def listing(project: UUID, request: Request):
@@ -150,12 +388,29 @@ def routes(context, wrap, idempotent):
             def run():
                 stored = runtime.pack_store(c, project, user, pack)
                 version = runtime.create_version(c, project, user, stored["id"], body.name.strip())
-                receipt = validation.validate(c, project, user, version["id"])
+                job = builds.create(c, project, user, version["id"])
+                if body.defer:
+                    return {
+                        "environment": version,
+                        "job": job,
+                        "state": "queued_local",
+                        "provider_calls": 0,
+                        "cloud_provisioned": False,
+                    }
+                for revision in range(4):
+                    job = builds.advance(c, user, job["id"], revision)
+                step = next(s for s in job["steps"] if s["phase"] == "validate")
+                receipt = one(
+                    c,
+                    "SELECT * FROM anvil.environment_receipts WHERE id=%s",
+                    (step["content"]["receipt_id"],),
+                )
                 return {
                     "environment": version,
                     "validation": receipt,
                     "state": "validated_local" if receipt["content"]["passed"] else "failed_local",
                     "registration": "explicit_action_required",
+                    "job": job,
                     "cloud_provisioned": False,
                     "provider_calls": 0,
                 }

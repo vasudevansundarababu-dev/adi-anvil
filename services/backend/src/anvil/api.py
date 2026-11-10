@@ -20,9 +20,9 @@ from anvil.benchmark_run_api import routes as benchmark_run_routes
 from anvil.config import harbor_live_enabled
 from anvil.db import audit, digest, one, transaction, uid
 from anvil.delivery import routes as delivery_routes
+from anvil.environment_api import routes as environment_factory_routes
 from anvil.evaluation import routes as evaluation_routes
 from anvil.evaluator_api import routes as evaluator_configuration_routes
-from anvil.environment_api import routes as environment_factory_routes
 from anvil.external_results import routes as external_routes
 from anvil.factory import routes as factory_routes
 from anvil.graph import routes as graph_routes

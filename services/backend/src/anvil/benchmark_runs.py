@@ -479,9 +479,16 @@ def start(c, project, user, body):
     plan = one(c, "SELECT * FROM anvil.benchmark_execution_plans WHERE id=%s", (body.plan_id,))
     if not plan:
         raise HTTPException(404, "Execution plan not found")
+    environment_plan = (
+        plan["snapshot"].get("schema_version") == "anvil.environment-execution-plan.v1"
+    )
+    if environment_plan:
+        from anvil.environment_execution import source_hash as plan_source
+    else:
+        plan_source = source_hash
     if (
         body.expected_plan_sha256 != plan["snapshot_sha256"]
-        or plan["snapshot"]["source_sha256"] != source_hash()
+        or plan["snapshot"]["source_sha256"] != plan_source()
     ):
         raise HTTPException(409, "Execution source changed; save a new exact-version plan")
     identifier = uid()
@@ -502,6 +509,11 @@ def start(c, project, user, body):
         "INSERT INTO anvil.benchmark_run_jobs(id,project_id,run_id) VALUES(%s,%s,%s)",
         (uid(), project, identifier),
     )
+    if environment_plan:
+        c.execute(
+            "INSERT INTO anvil.environment_run_controls(run_id,project_id) VALUES(%s,%s)",
+            (identifier, project),
+        )
     audit(
         c,
         project,
@@ -543,7 +555,9 @@ def get(c, identifier):
         else "pending_review"
     )
     return row | {
-        "origin": "fictional_business_software_run",
+        "origin": "environment_software_tool_execution"
+        if row["snapshot"].get("schema_version") == "anvil.environment-execution-plan.v1"
+        else "fictional_business_software_run",
         "provider_calls": 0,
         "model_performance": False,
         "official_primary": None,
@@ -602,14 +616,16 @@ def evaluator_function(mapping):
 def result_summary(cells):
     observations, summaries = [], []
     for model in sorted({c["model_key"] for c in cells}):
-        entries = [c for c in cells if c["model_key"] == model]
+        all_entries = [c for c in cells if c["model_key"] == model]
+        entries = [c for c in all_entries if c["assessment"].get("earned_points") is not None]
         earned = sum(Decimal(c["assessment"]["earned_points"]) for c in entries)
         possible = sum(Decimal(c["assessment"]["possible_points"]) for c in entries)
         summaries.append(
             {
                 "model_key": model,
                 "cells": len(entries),
-                "mean_points": format(earned / len(entries), ".2f"),
+                "mean_points": format(earned / len(entries), ".2f") if entries else None,
+                "unresolved_cells": len(all_entries) - len(entries),
                 "possible_points": "81",
                 "percent": format(earned / possible * 100, ".2f") if possible else None,
             }

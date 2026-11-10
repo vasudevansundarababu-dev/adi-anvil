@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { workspaceApi as api } from '../lib/workspace';
 import s from './BenchmarkRunDashboard.module.css';
+import EnvironmentRunControls from './EnvironmentRunControls';
 
 type Axis = {
   id: string;
@@ -18,8 +19,8 @@ type Axis = {
 type Criterion = {
   id: string;
   description: string;
-  passed: boolean;
-  earned_points: string;
+  passed: boolean | null;
+  earned_points: string | null;
   possible_points: string;
 };
 type Finding = {
@@ -42,7 +43,7 @@ type Cell = {
   repetition: number;
   capture_sha256: string;
   assessment: {
-    earned_points: string;
+    earned_points: string | null;
     possible_points: string;
     criteria: Criterion[];
     policy_findings: Finding[];
@@ -80,6 +81,7 @@ type Run = {
   created_at: string;
   result_sha256: string;
   snapshot: {
+    schema_version?: string;
     task_group_id: string;
     models: { id: string; name: string }[];
     environments: { id: string; name: string }[];
@@ -119,7 +121,13 @@ type View = {
   view_sha256: string;
   context: { cell_id: string | null };
   summary: {
-    models: { model_key: string; mean_points: string; cells: number; percent: string }[];
+    models: {
+      model_key: string;
+      mean_points: string | null;
+      cells: number;
+      percent: string | null;
+      unresolved_cells?: number;
+    }[];
     ranking: unknown;
   };
   cells: Cell[];
@@ -136,6 +144,7 @@ type View = {
   failures: {
     cells: number;
     total_cells: number;
+    unknown_cells?: number;
     percent: number | null;
     by_task: { task_id: string; name: string; failed: number; total: number }[];
     policy_findings: Finding[];
@@ -996,6 +1005,9 @@ export default function BenchmarkRunDashboard({
               </button>
             ))}
           </nav>
+          {view.run.snapshot.schema_version === 'anvil.environment-execution-plan.v1' && (
+            <EnvironmentRunControls base={base} run={view.run.id} state={view.run.state} />
+          )}
           {view.run.state !== 'completed' && (
             <p role="status">
               Run {view.run.state}. The durable worker preserves capture and assessment separately.{' '}
@@ -1022,6 +1034,9 @@ export default function BenchmarkRunDashboard({
                 <div>
                   <small>FAILURE CELLS</small>
                   <strong>{view.failures.cells}</strong>
+                  {view.failures.unknown_cells !== undefined && (
+                    <small>{view.failures.unknown_cells} unresolved · not counted as Pass</small>
+                  )}
                 </div>
               </div>
               <div className={s.grid}>
@@ -1030,7 +1045,9 @@ export default function BenchmarkRunDashboard({
                   {view.summary.models.map((m, i) => (
                     <div className={s.score} key={m.model_key}>
                       <span>{names[m.model_key]}</span>
-                      <strong>{m.mean_points} / 81</strong>
+                      <strong>
+                        {m.mean_points === null ? 'Not evaluated' : `${m.mean_points} / 81`}
+                      </strong>
                       <div>
                         <i
                           style={{
@@ -1144,7 +1161,11 @@ export default function BenchmarkRunDashboard({
                       </td>
                       <td>{names[c.model_key]}</td>
                       <td>{c.environment_key}</td>
-                      <td>{Number(c.assessment.earned_points).toFixed(1)}</td>
+                      <td>
+                        {c.assessment.earned_points === null
+                          ? 'Not evaluated'
+                          : Number(c.assessment.earned_points).toFixed(1)}
+                      </td>
                       <td>
                         <button disabled={loadingView} onClick={() => update({ cell: c.id })}>
                           View rubric
@@ -1185,9 +1206,17 @@ export default function BenchmarkRunDashboard({
                         <tr key={c.id}>
                           <td>{c.id}</td>
                           <td>{c.description}</td>
-                          <td>{c.passed ? 'Pass' : 'Fail'}</td>
                           <td>
-                            {c.earned_points}/{c.possible_points}
+                            {c.passed === null
+                              ? 'Unknown / not evaluated'
+                              : c.passed
+                                ? 'Pass'
+                                : 'Fail'}
+                          </td>
+                          <td>
+                            {c.earned_points === null
+                              ? 'Unresolved'
+                              : `${c.earned_points}/${c.possible_points}`}
                           </td>
                         </tr>
                       ))}

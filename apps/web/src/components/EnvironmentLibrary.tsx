@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { workspaceApi as api } from '../lib/workspace';
 import s from './BenchmarkRunDashboard.module.css';
 import EnvironmentTaskBindings from './EnvironmentTaskBindings';
+import EnvironmentBuildJobs from './EnvironmentBuildJobs';
+import EnvironmentRuntimeProfiles from './EnvironmentRuntimeProfiles';
 import EnvironmentDataImport from './EnvironmentDataImport';
 
 type Template = {
@@ -136,6 +138,7 @@ export default function EnvironmentLibrary({
   const [result, setResult] = useState<unknown>(null);
   const [evidenceId, setEvidenceId] = useState<string | undefined>();
   const [componentTab, setComponentTab] = useState('Database');
+  const [buildRevision, setBuildRevision] = useState(0);
   const template = library?.templates.find((t) => t.id === templateId);
   const load = async () => setLibrary(await api(endpoint));
   useEffect(() => {
@@ -162,6 +165,7 @@ export default function EnvironmentLibrary({
       setError((e as Error).message);
     } finally {
       setBusy(false);
+      setBuildRevision((v) => v + 1);
     }
   };
   const inspect = async (id: string) => {
@@ -214,10 +218,17 @@ export default function EnvironmentLibrary({
                 seed: Number(form.get('seed')),
                 name: form.get('name'),
                 runtime_profile: 'local-reference-v1',
+                defer: true,
               });
+              let job = built.job;
+              for (let phase = 0; phase < 4 && ['queued', 'running'].includes(job.state); phase++)
+                job = await api(endpoint + '/build-jobs/' + job.id + '/resume', 'POST', {
+                  expected_revision: job.revision,
+                });
+              setBuildRevision((v) => v + 1);
               await inspect(built.environment.id);
               setMessage(
-                built.state === 'validated_local'
+                job.state === 'completed'
                   ? 'Built locally: components populated, read back, mutated, isolated and reset. Inspect the checks and register the exact version.'
                   : 'Local validation failed. Inspect the retained checks.',
               );
@@ -272,6 +283,15 @@ export default function EnvironmentLibrary({
       </div>
       <div className={s.card}>
         <h3>Saved environment versions</h3>
+        <EnvironmentRuntimeProfiles base={base} canAdmin={canAdmin} />
+        <EnvironmentBuildJobs
+          base={base}
+          revision={buildRevision}
+          onUpdated={() => {
+            void load();
+            if (selected) void inspect(selected.id);
+          }}
+        />
         <div
           style={{ maxHeight: '24rem', overflow: 'auto' }}
           role="region"

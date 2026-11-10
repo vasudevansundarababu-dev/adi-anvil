@@ -50,6 +50,11 @@ def render(data):
     add("Benchmark evaluation report", "Title")
     add(data["task_group"]["name"], "Heading2")
     add("FICTIONAL SOFTWARE RUN - no vendor model inference, no paid calls", "Heading3")
+    if data["failures"].get("unknown_cells") is not None:
+        add(
+            f"Unresolved executions: {data['failures']['unknown_cells']}. Unavailable Task or policy checks are not zero scores or passing executions. Native actor probes, where present, do not certify host business-system containment.",
+            "SmallBody",
+        )
     add(
         f"Run {data['run']['id']} | Source Project {data['task_group']['source_project_id']} v{data['task_group']['source_version']}",
         "SmallBody",
@@ -62,7 +67,11 @@ def render(data):
         [
             ["Agent / model", "Task score / 81", "Executions"],
             *[
-                [names[m["model_key"]], m["mean_points"], m["cells"]]
+                [
+                    names[m["model_key"]],
+                    m["mean_points"] if m["mean_points"] is not None else "Not evaluated",
+                    m["cells"] + m.get("unresolved_cells", 0),
+                ]
                 for m in data["summary"]["models"]
             ],
         ],
@@ -72,6 +81,9 @@ def render(data):
     for i, model in enumerate(data["summary"]["models"]):
         y = drawing.height - 22 - i * 40
         drawing.add(String(0, y, names[model["model_key"]], fontSize=8))
+        if model["mean_points"] is None:
+            drawing.add(String(180, y, "Not evaluated", fontSize=8))
+            continue
         drawing.add(
             Line(
                 180,
@@ -233,7 +245,7 @@ def render(data):
     grouped = {}
     for cell in data["cells"]:
         assessment = cell["assessment"]
-        failed = [c for c in assessment["criteria"] if not c["passed"]]
+        failed = [c for c in assessment["criteria"] if c["passed"] is False]
         policy = [
             f
             for f in assessment["policy_findings"]

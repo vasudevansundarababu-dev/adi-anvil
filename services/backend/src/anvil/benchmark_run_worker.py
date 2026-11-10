@@ -32,6 +32,10 @@ class State(TypedDict):
 
 def validate(c, row):
     enabled()
+    if row["snapshot"].get("schema_version") == "anvil.environment-execution-plan.v1":
+        from anvil.environment_execution import validate as environment_validate
+
+        return environment_validate(c, row)
     plan = row["snapshot"]
     if plan["source_sha256"] != runs.source_hash() or digest(plan) != row["snapshot_sha256"]:
         raise ValueError("source_changed")
@@ -110,6 +114,10 @@ def capture_node(state):
         row = one(c, "SELECT * FROM anvil.benchmark_runs WHERE id=%s", (state["run_id"],))
         group = validate(c, row)
         plan = row["snapshot"]
+        if plan.get("schema_version") == "anvil.environment-execution-plan.v1":
+            from anvil.environment_execution import capture_node as environment_capture
+
+            return environment_capture(state)
         selected = {t["task_id"] for t in plan["tasks"]}
         attack = any(m["id"] == "safety-observed-v1" for m in plan["methods"])
         for model in plan["models"]:
@@ -356,6 +364,10 @@ def assess_node(state):
         row = one(c, "SELECT * FROM anvil.benchmark_runs WHERE id=%s", (state["run_id"],))
         group = validate(c, row)
         plan = row["snapshot"]
+        if plan.get("schema_version") == "anvil.environment-execution-plan.v1":
+            from anvil.environment_execution import assess_node as environment_assess
+
+            return environment_assess(state)
         policy = (
             one(
                 c,
@@ -407,11 +419,36 @@ def claim():
 
 
 def process(job):
+    # Session-level single execution owner spans committed per-attempt captures
+    # and external native work. It is released by PostgreSQL if the process dies.
+    with psycopg.connect(setting("WORKER_DATABASE_URL"), autocommit=True) as owner:
+        locked = owner.execute(
+            "SELECT pg_try_advisory_lock(hashtextextended(%s,0))", (str(job["id"]),)
+        ).fetchone()[0]
+        if not locked:
+            return
+        try:
+            return _process_owned(job)
+        finally:
+            owner.execute("SELECT pg_advisory_unlock(hashtextextended(%s,0))", (str(job["id"]),))
+
+
+def _process_owned(job):
     project, identifier = str(job["project_id"]), str(job["run_id"])
     try:
         with transaction(project, worker=True) as c:
             row = one(c, "SELECT * FROM anvil.benchmark_runs WHERE id=%s FOR UPDATE", (identifier,))
+            if not row or row["state"] in ("completed", "failed", "blocked"):
+                return
+            owned = one(
+                c,
+                "SELECT 1 FROM anvil.benchmark_run_jobs WHERE id=%s AND state='running' AND claim_token=%s",
+                (job["id"], job["claim_token"]),
+            )
+            if not owned:
+                raise ValueError("execution_claim_lost")
             actor = str(row["created_by"])
+            c.execute("SELECT set_config('anvil.user',%s,true)", (actor,))
             validate(c, row)
             c.execute(
                 "UPDATE anvil.benchmark_runs SET state='running',executed_by=%s,admin_execution=%s WHERE id=%s",

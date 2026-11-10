@@ -73,7 +73,12 @@ def test_compute_wire_contract_private_worker_idempotency_and_owned_cleanup():
     worker = Worker(
         p,
         Authority(
-            digest(p.model_dump()), job, datetime.now(timezone.utc) + timedelta(hours=1), 1, True
+            digest(p.model_dump()),
+            job,
+            datetime.now(timezone.utc) + timedelta(hours=1),
+            1,
+            True,
+            manifest_sha256="a" * 64,
         ),
         lambda: "synthetic-token",
         httpx.Client(transport=httpx.MockTransport(respond)),

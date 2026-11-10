@@ -50,6 +50,8 @@ class Authority:
     expires_at: datetime
     max_workers: int
     provisioning_enabled: bool = False
+    source_sha256: str | None = None
+    manifest_sha256: str | None = None
 
 
 class CloudBlocked(RuntimeError):
@@ -105,6 +107,8 @@ class Worker:
 
         if self.authority.expires_at <= datetime.now(timezone.utc):
             raise CloudBlocked("Provisioning authority expired; no create request sent")
+        if self.authority.manifest_sha256 != manifest_sha256:
+            raise CloudBlocked("Exact authorized manifest digest required; no create request sent")
         if (
             not re.fullmatch(r"environments/[a-f0-9]{64}\.json", manifest_object)
             or not re.fullmatch(r"[1-9][0-9]{0,22}", manifest_generation)

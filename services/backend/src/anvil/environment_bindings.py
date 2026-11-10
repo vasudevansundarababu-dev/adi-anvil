@@ -285,20 +285,7 @@ def assess(c, project, user, binding_id, evidence_id):
         or digest(captured) != evidence["content_sha256"]
     ):
         raise HTTPException(409, "Evidence does not match the frozen environment/binding")
-    facts, missing = {}, []
-    for m in snapshot["fields"]:
-        rows = captured["state"]["records"].get(m["collection"], [])
-        row = next((r for r in rows if r["id"] == m["record_id"]), None)
-        if row is None or row.get(m["field"]) is None:
-            missing.append(m["target"])
-        else:
-            value = row[m["field"]]
-            if m.get("transform") == "count":
-                if not isinstance(value, list):
-                    missing.append(m["target"])
-                    continue
-                value = len(value)
-            facts[m["target"]] = value
+    facts, missing = resolve_fields(captured, snapshot["fields"])
     findings = []
     for m in snapshot["evaluators"]:
         configuration = evaluators.get(c, m["configuration_id"])
@@ -352,3 +339,34 @@ def assess(c, project, user, binding_id, evidence_id):
         "INSERT INTO anvil.environment_evaluations(id,project_id,binding_id,evidence_receipt_id,content,content_sha256,created_by) VALUES(%s,%s,%s,%s,%s,%s,%s) RETURNING *",
         (uid(), project, binding_id, evidence_id, Jsonb(content), digest(content), user),
     )
+
+
+def resolve_fields(captured, mappings):
+    facts, missing = {}, []
+    for m in mappings:
+        rows = captured["state"]["records"].get(m["collection"], [])
+        record_id = m["record_id"]
+        if record_id.startswith("$result:"):
+            operation = record_id[len("$result:") :]
+            event = next(
+                (
+                    e
+                    for e in reversed(captured.get("events", []))
+                    if e["operation"] == operation and e["result"].get("status") == "ok"
+                ),
+                None,
+            )
+            value = (event or {}).get("result", {}).get("value", {})
+            record_id = value.get("id") if isinstance(value, dict) else None
+        row = next((r for r in rows if r["id"] == record_id), None)
+        if row is None or row.get(m["field"]) is None:
+            missing.append(m["target"])
+        else:
+            value = row[m["field"]]
+            if m.get("transform") == "count":
+                if not isinstance(value, list):
+                    missing.append(m["target"])
+                    continue
+                value = len(value)
+            facts[m["target"]] = value
+    return facts, missing

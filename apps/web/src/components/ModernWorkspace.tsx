@@ -12,6 +12,7 @@ import EvaluatorSettings from './EvaluatorSettings';
 import BenchmarkRunDashboard from './BenchmarkRunDashboard';
 import BenchmarkMethods from './BenchmarkMethods';
 import BenchmarkExecutionGroups from './BenchmarkExecutionGroups';
+import EnvironmentExecutionGroups from './EnvironmentExecutionGroups';
 import EnvironmentLibrary from './EnvironmentLibrary';
 import DiagnosticResults from './DiagnosticResults';
 import WorkspaceRevisionEditor from './WorkspaceRevisionEditor';
@@ -632,9 +633,14 @@ function WorkspaceView() {
               {section === 'models' && admin && <ModelProfiles key={base} base={base} />}
               {section === 'evaluators' && canEdit && <EvaluatorSettings key={base} base={base} />}
               {section === 'benchmark-methods' && canEdit && <BenchmarkMethods base={base} />}
-              {section === 'environments' && canEdit && <EnvironmentLibrary base={base} canAdmin={admin} />}
+              {section === 'environments' && canEdit && (
+                <EnvironmentLibrary base={base} canAdmin={admin} />
+              )}
               {section === 'execution-groups' && canEdit && (
-                <BenchmarkExecutionGroups base={base} route={route} />
+                <>
+                  <BenchmarkExecutionGroups base={base} route={route} />
+                  <EnvironmentExecutionGroups base={base} route={route} />
+                </>
               )}
               {section === 'benchmarks' &&
                 (!query.get('rehearsal_id') &&

@@ -1,0 +1,157 @@
+{
+  "recorded_at": "2026-11-10T01:56:30.615315+00:00",
+  "scope": "authorized local six-environment reference integration; not complete cloud/authentic-model acceptance",
+  "base_commit": "05ebf16",
+  "published": false,
+  "deployed": false,
+  "paid_calls": 0,
+  "praxis_modified": false,
+  "new_cloud_resources": [],
+  "preview": {
+    "root": "/private/tmp/anvil-environment-v2-preview-74cf5c4ee2",
+    "runtime": "/private/tmp/anvil-environment-v2-runtime-74cf5c4ee2",
+    "web_port": 63154,
+    "api_port": 63155,
+    "oidc_port": 63156,
+    "url": "http://127.0.0.1:63154/workspace/3621113d-d1b6-4da2-977b-373efd46c4e1/environments",
+    "project": "3621113d-d1b6-4da2-977b-373efd46c4e1",
+    "database": "anvil_environment_preview_74cf5c4ee2",
+    "oidc_container": "anvil-environment-v2-oidc-74cf5c4ee2",
+    "oidc_container_id": "49a410b6c5ec2842f9c833cb09d98858ebedf476db4cebb0a8185c6b48b6a4bc",
+    "processes": {
+      "api": 16515,
+      "worker": 16516,
+      "web": 16517
+    },
+    "provider_calls": 0,
+    "cloud_resources": [],
+    "deployment": false,
+    "reference_versions": 30,
+    "source_manifest_sha256": "d4c6d665d7b793c17f0288e0d7f1d8735af550f79b68c4211b0aac5abf2f1e0b",
+    "run_id": "55434235-f2aa-4eb6-a2df-b436d25307f5",
+    "task_group_id": "4f79ac7c-f5b0-4cd2-aa9b-189fd196656d",
+    "dashboard_url": "http://127.0.0.1:63154/workspace/3621113d-d1b6-4da2-977b-373efd46c4e1/benchmarks?benchmark_run=55434235-f2aa-4eb6-a2df-b436d25307f5"
+  },
+  "fictional_policy_dashboard": {
+    "url": "http://127.0.0.1:63154/workspace/3621113d-d1b6-4da2-977b-373efd46c4e1/benchmarks?benchmark_run=66772e3a-a522-4b57-bb3b-8f7da16668e7",
+    "run_id": "66772e3a-a522-4b57-bb3b-8f7da16668e7",
+    "provider_calls": 0,
+    "result_sha256": "4bd4da9e08a71104d1d3a0553e7c664f857eb8c08b614015fe37e97afa41cb67"
+  },
+  "verification": {
+    "runs": [
+      {
+        "id": "55434235-f2aa-4eb6-a2df-b436d25307f5",
+        "state": "completed",
+        "admin_execution": true,
+        "result_sha256": "9b670c51c3dedc6526c161a1e0c8a1b973df7f1080dbdb68d50b538f59888029",
+        "cells": 12,
+        "provider_calls": 0,
+        "report_decisions": 0,
+        "assessed_attempts": 12
+      },
+      {
+        "id": "d4a541c7-a7ec-4184-94ff-43b7488babcd",
+        "state": "completed",
+        "admin_execution": false,
+        "result_sha256": "0f38cfa7e0aea0246b5ef57f10792fa2743808f70a97d92497dcc1de24110136",
+        "cells": 12,
+        "provider_calls": 0,
+        "report_decisions": 0,
+        "assessed_attempts": 12
+      },
+      {
+        "id": "66772e3a-a522-4b57-bb3b-8f7da16668e7",
+        "state": "completed",
+        "admin_execution": true,
+        "result_sha256": "4bd4da9e08a71104d1d3a0553e7c664f857eb8c08b614015fe37e97afa41cb67",
+        "cells": 18,
+        "provider_calls": 0,
+        "report_decisions": 0,
+        "assessed_attempts": 0
+      }
+    ],
+    "health": [
+      {
+        "url": "http://127.0.0.1:63155/api/v1/health",
+        "status": 200
+      },
+      {
+        "url": "http://127.0.0.1:63154/workspace/3621113d-d1b6-4da2-977b-373efd46c4e1/environments",
+        "status": 200
+      },
+      {
+        "url": "http://127.0.0.1:53587/api/v1/health",
+        "status": 200
+      },
+      {
+        "url": "http://127.0.0.1:52138/api/v1/health",
+        "status": 200
+      }
+    ]
+  },
+  "checks": {
+    "backend_units": {
+      "passed": 892,
+      "log": "artifacts/test-runs/environment-integration-release/backend_units.log"
+    },
+    "six_environment_sql_api_native": {
+      "passed": 68,
+      "log": "artifacts/test-runs/environment-integration-release/six_environment_sql_api_native.log"
+    },
+    "legacy_policy_review_regressions": {
+      "passed": 60,
+      "log": "artifacts/test-runs/environment-integration-release/legacy_policy_review_regressions.log"
+    },
+    "installed_openenv_websocket": {
+      "passed": 7,
+      "log": "artifacts/test-runs/environment-integration-release/installed_openenv_websocket.log"
+    },
+    "oidc_browser_journeys": {
+      "passed": 5,
+      "log": "artifacts/test-runs/environment-integration-release/oidc_browser_journeys.log"
+    },
+    "pdf_count_regression": {
+      "passed": 1,
+      "log": "artifacts/test-runs/environment-integration-release/pdf_count_regression.log"
+    },
+    "frontend_node": {
+      "passed": 38,
+      "log": "artifacts/test-runs/environment-integration-release/frontend_node.log"
+    }
+  },
+  "additional_checks": {
+    "types": "PASS",
+    "ruff": "PASS",
+    "locked_frozen_production_build": "PASS",
+    "pdfs": {
+      "count": 2,
+      "pages_each": 7,
+      "actual_ui_downloads": true,
+      "all_pages_rendered_and_visually_inspected": true
+    }
+  },
+  "source_audit": {
+    "public_text_files_checked": 1062,
+    "credential_pattern_findings": [],
+    "private_files_read": false,
+    "product_files_compared": 298,
+    "source_mismatches": []
+  },
+  "boundaries": [
+    "All agents are explicitly software controls, not vendor model results.",
+    "Thirty scenarios are synthetic materialized component packs.",
+    "Native Harbor actors use host-mediated PostgreSQL business tools.",
+    "Authentic published six-seed task/evaluator bindings and actual model receipts are absent. Unsupported task contracts are refused.",
+    "GCP Build/Storage/Compute/metadata contracts are offline tests; no cloud provisioning or deployment occurred.",
+    "Independent QA acceptance is not asserted."
+  ],
+  "retained_failures": [
+    "Initial test configuration/feature flags and socket restrictions",
+    "Execution Groups source-project compatibility defect, fixed and browser-tested",
+    "Test API projection/selector/CSRF/idempotency setup, corrected without relaxing production controls",
+    "Source hash changed during one native verification, correctly rejected; final stable run passed",
+    "PDF count of unscored executions corrected and tested",
+    "Bundled font cache error; final reports re-rendered with owned temporary font configuration"
+  ]
+}
