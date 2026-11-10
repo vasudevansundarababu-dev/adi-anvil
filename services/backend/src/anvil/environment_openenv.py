@@ -65,17 +65,17 @@ class InstalledEpisode:
     def __init__(self, project, user, environment, instance, manifest_sha256, pack_sha256):
         import os
         import subprocess
-        import tempfile
         from pathlib import Path
 
         from anvil.config import ROOT, setting
+        from anvil.environment_temp import workspace
 
         if os.environ.get("ANVIL_ENVIRONMENT_OPENENV_ENABLED") != "true":
             raise ValueError("Dedicated OpenEnv runtime is disabled")
         python = Path(os.environ.get("ANVIL_ENVIRONMENT_OPENENV_PYTHON", ""))
         if not python.is_absolute() or not python.is_file():
             raise ValueError("Exact installed OpenEnv interpreter required")
-        self.home = Path(tempfile.mkdtemp(prefix="anvil-openenv-episode-", dir="/private/tmp"))
+        self.home = workspace("anvil-openenv-episode-")
         env = {
             "PATH": "/usr/bin:/bin",
             "HOME": str(self.home),

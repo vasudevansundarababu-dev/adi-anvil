@@ -99,13 +99,12 @@ def capture_attempt(c, run, user, member, candidate, repetition):
             )
         if run["snapshot"]["harness"] == "harbor-host-mediated-v1":
             import os
-            import tempfile
-            from pathlib import Path
 
             from anvil.config import ROOT
             from anvil.environment_harbor import execute
+            from anvil.environment_temp import workspace
 
-            home = Path(tempfile.mkdtemp(prefix="anvil-env-native-", dir="/private/tmp"))
+            home = workspace("anvil-env-native-")
             native = execute(
                 home / "attempt",
                 {

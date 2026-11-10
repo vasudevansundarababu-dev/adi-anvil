@@ -79,6 +79,7 @@ def source_hash():
                     root / "environment_execution.py",
                     root / "environment_admission.py",
                     root / "environment_collect.py",
+                    root / "environment_temp.py",
                     root / "environment_openenv.py",
                     root / "environment_harbor.py",
                     root / "environment_openenv_installed.py",
