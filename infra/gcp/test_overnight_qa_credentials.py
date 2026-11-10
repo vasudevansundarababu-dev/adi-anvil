@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import overnight_qa_credentials as credentials
 from overnight_qa_credentials import EMAIL, ROLES, SECRET, identity
-from overnight_qa_lifecycle import NAME, PROJECT, validate_vm
+from overnight_qa_lifecycle import DELETE, NAME, PROJECT, validate_vm
 
 
 class CredentialBoundary(unittest.TestCase):
@@ -71,7 +71,7 @@ class CredentialBoundary(unittest.TestCase):
                 patch.object(credentials, "datetime") as clock,
                 patch.object(credentials, "call", respond),
             ):
-                clock.now.return_value = datetime(2026, 11, 13, tzinfo=timezone.utc)
+                clock.now.return_value = DELETE
                 with self.assertRaisesRegex(ValueError, "replaced"):
                     credentials.cleanup()
 
@@ -101,7 +101,7 @@ class CredentialBoundary(unittest.TestCase):
                 patch.object(credentials, "datetime") as clock,
                 patch.object(credentials, "call", respond),
             ):
-                clock.now.return_value = datetime(2026, 11, 13, tzinfo=timezone.utc)
+                clock.now.return_value = DELETE
                 credentials.cleanup()
             self.assertEqual(deleted, [EMAIL])
 
@@ -143,7 +143,7 @@ class CredentialBoundary(unittest.TestCase):
             "scheduling": {
                 "automaticRestart": False,
                 "instanceTerminationAction": "STOP",
-                "terminationTime": "2026-11-10T18:00:00Z",
+                "terminationTime": "2026-11-11T18:00:00Z",
             },
             "networkInterfaces": [
                 {

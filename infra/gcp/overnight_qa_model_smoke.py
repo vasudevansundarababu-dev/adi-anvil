@@ -19,7 +19,17 @@ RECEIPT = OPERATOR / "real-model-smoke-public.json"
 
 
 def main(action):
-    assert datetime.now(timezone.utc) < datetime(2026, 11, 10, 18, tzinfo=timezone.utc)
+    global RECEIPT
+    repaired = action.endswith("-repaired")
+    if repaired:
+        action = action.removesuffix("-repaired")
+        previous = json.loads(RECEIPT.read_text())
+        assert len(previous["groups"]) == 6 and all(v["status"] == "failed" for v in previous["groups"])
+        proof = json.loads((OPERATOR / "pre-dispatch-failure-public.json").read_text())
+        assert proof["provider_call_intents"] == 0
+        RECEIPT = OPERATOR / "real-model-smoke-repaired-public.json"
+    group_cap = 500000 if repaired else 1000000
+    assert datetime.now(timezone.utc) < datetime(2026, 11, 11, 18, tzinfo=timezone.utc)
     fixture = json.loads((OPERATOR / "browser-synthetic-fixture.json").read_text())
     assert fixture["origin"] == "synthetic_oidc_protocol_qa_only"
     project = "b3337332-aff7-4041-93f8-6adf9ca276d3"
@@ -63,7 +73,7 @@ def main(action):
             for provider, model in MODELS:
                 old = next(v for v in current if v["name"] == "Overnight QA " + model and v["is_current"])
                 credential = credentials[provider]
-                item = post("/models/" + old["id"] + "/versions", {"name": old["name"], "provider": provider, "model_id": model, "max_output_tokens": 2048, "credential_id": credential["credential_id"], "credential_version_id": credential["version_id"], "processing_terms_reviewed": False}, version=old["profile_row_version"])
+                item = old if repaired else post("/models/" + old["id"] + "/versions", {"name": old["name"], "provider": provider, "model_id": model, "max_output_tokens": 2048, "credential_id": credential["credential_id"], "credential_version_id": credential["version_id"], "processing_terms_reviewed": False}, version=old["profile_row_version"])
                 assert item["credential_present"] and item["model_id"] == model
                 selected.append(item)
             frameworks = get("/frameworks")["items"]
@@ -73,17 +83,19 @@ def main(action):
             preset = post("/presets", {"name": "Owner authorized six-model smoke, no human source review", "runner_profile_id": runner["id"], "candidate_runtime": "anvil-structured-json-v1", "model_profile_ids": [v["id"] for v in selected]})
             package = get("/packages?task_id=SEED-PHONE-001")["items"]
             assert len(package) == 1 and package[0]["manifest"]["binding"] == "structured-decision-v1"
-            receipt = {"project": project, "task": "SEED-PHONE-001", "source_status": "fictional_draft_no_human_review", "initial_smoke_cap_micro_usd": 10000000, "allocated_micro_usd": 6000000, "source_approvals_created": 0, "groups": []}
+            receipt = {"project": project, "task": "SEED-PHONE-001", "source_status": "fictional_draft_no_human_review", "initial_smoke_cap_micro_usd": 10000000, "allocated_micro_usd": 6 * group_cap, "previous_retained_cap_micro_usd": 6000000 if repaired else 0, "source_approvals_created": 0, "groups": []}
             RECEIPT.write_text(json.dumps(receipt))
             for item in selected:
-                prep = post("/preparations", {"preset_id": preset["id"], "package_id": package[0]["id"], "model_profile_ids": [item["id"]], "max_output_tokens": 2048, "episode_timeout_seconds": 180, "aggregate_cap_micro_usd": 1000000, "trials_per_model": 1, "max_agent_steps": 1})
+                prep = post("/preparations", {"preset_id": preset["id"], "package_id": package[0]["id"], "model_profile_ids": [item["id"]], "max_output_tokens": 2048, "episode_timeout_seconds": 180, "aggregate_cap_micro_usd": group_cap, "trials_per_model": 1, "max_agent_steps": 1})
                 group = post("/execution-groups", {"preparation_id": prep["id"]})
-                receipt["groups"].append({"id": group["id"], "subject_hash": group["subject_hash"], "model": item["model_id"], "provider": item["provider"], "cap_micro_usd": 1000000, "launch_attempted": False, "readiness": group["readiness"]})
+                parent = next((v["id"] for v in previous["groups"] if v["model"] == item["model_id"]), None) if repaired else None
+                receipt["groups"].append({"id": group["id"], "subject_hash": group["subject_hash"], "model": item["model_id"], "provider": item["provider"], "cap_micro_usd": group_cap, "previous_failed_group_id": parent, "launch_attempted": False, "readiness": group["readiness"]})
                 RECEIPT.write_text(json.dumps(receipt))
             print(json.dumps(receipt))
         else:
             receipt = json.loads(RECEIPT.read_text())
-            assert len(receipt["groups"]) == 6 and sum(v["cap_micro_usd"] for v in receipt["groups"]) == 6000000
+            assert len(receipt["groups"]) == 6 and sum(v["cap_micro_usd"] for v in receipt["groups"]) == 6 * group_cap
+            assert receipt["allocated_micro_usd"] + receipt.get("previous_retained_cap_micro_usd", 0) <= 10000000
             for entry in receipt["groups"]:
                 if action == "launch":
                     assert entry["launch_attempted"] is False, "No repeated launch after uncertain outcome"
@@ -102,7 +114,7 @@ def main(action):
 if __name__ == "__main__":
     import sys
     try:
-        assert sys.argv[1] in {"prepare", "launch", "status"}
+        assert sys.argv[1] in {"prepare", "launch", "status", "prepare-repaired", "launch-repaired", "status-repaired"}
         main(sys.argv[1])
     except Exception as error:
         detail = str(error) if type(error) is ValueError else type(error).__name__

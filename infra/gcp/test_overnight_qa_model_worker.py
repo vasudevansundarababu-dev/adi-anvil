@@ -23,6 +23,8 @@ class ModelWorkerBoundary(unittest.TestCase):
         self.assertNotIn("OPENAI_API_KEY", result)
         self.assertNotIn("MIGRATION_DATABASE_URL", result)
         self.assertNotIn("ANVIL_QA_SECRET_RESOURCE", result)
+        path = result["ANVIL_HARBOR_WORK_ROOT"] + "/" + "0" * 36 + "/attempt/.bm-gw-12345678/gateway.sock"
+        self.assertLess(len(path.encode()), 104, "Nested native socket needs AF_UNIX headroom")
 
     def test_owner_identity_and_production_secret_refused(self):
         for field, value in (
@@ -54,7 +56,7 @@ class ModelWorkerBoundary(unittest.TestCase):
         self.assertEqual(result["ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED"], "true")
         self.assertEqual(result["ANVIL_LIVE_PROVIDERS_ENABLED"], "false")
         with self.assertRaises(ValueError):
-            environment(values, "a" * 64, now=datetime(2026, 11, 10, 18, tzinfo=timezone.utc))
+            environment(values, "a" * 64, now=datetime(2026, 11, 11, 18, tzinfo=timezone.utc))
 
 
 if __name__ == "__main__":

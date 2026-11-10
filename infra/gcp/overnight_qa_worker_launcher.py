@@ -49,6 +49,13 @@ def environment(values, source_sha256):
         "ANVIL_REAL_EMAIL_ENABLED",
     ):
         result[key] = "false"
+    if values.get("ANVIL_QA_ACCEPTANCE_CONTROLS_ENABLED") == "true":
+        result["ANVIL_QA_ACCEPTANCE_CONTROLS_ENABLED"] = "true"
+    if values.get("ANVIL_BUSINESS_QA_ENABLED") == "true":
+        bound = values.get("ANVIL_BUSINESS_QA_SOURCE_SHA256", "")
+        if not re.fullmatch(r"[0-9a-f]{64}", bound):
+            raise ValueError("Exact fictional business QA source required")
+        result.update(ANVIL_BUSINESS_QA_ENABLED="true", ANVIL_BUSINESS_QA_SOURCE_SHA256=bound)
     return result
 
 

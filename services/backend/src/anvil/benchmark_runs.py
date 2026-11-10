@@ -16,7 +16,7 @@ from anvil import benchmark_project_import as projects
 from anvil import benchmark_report_policy as report_policy
 from anvil import evaluator_configurations as evaluators
 from anvil.benchmark_rankings import paired_rankings
-from anvil.benchmark_rehearsal import enabled
+from anvil.benchmark_business_admission import enabled
 from anvil.db import Jsonb, audit, digest, one, uid
 from anvil.evaluator_runtimes import evaluate_library
 from anvil.policy_rules import Rule, evaluate, evaluate_opa, evaluate_zen
@@ -89,6 +89,7 @@ METHODS = [
 ]
 MODEL_IDS = {m["id"] for m in fixture.MODELS}
 CODE_FILES = [
+    "benchmark_business_admission.py",
     "benchmark_runs.py",
     "benchmark_business_fixture.py",
     "benchmark_project_import.py",

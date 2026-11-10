@@ -118,7 +118,7 @@ def create_commands(public_key_file):
             + "-boot,boot=yes,auto-delete=yes,size=150GB,type=pd-standard,image=debian-12-bookworm-v20261109,image-project=debian-cloud",
             "--no-restart-on-failure",
             "--instance-termination-action=STOP",
-            "--termination-time=2026-11-10T18:00:00Z",
+            "--termination-time=" + STOP.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "--metadata=block-project-ssh-keys=TRUE,enable-oslogin=TRUE",
             "--tags=" + NAME,
             "--labels=application=anvil,purpose=overnight-qa,expiry=2026-11-10",

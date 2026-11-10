@@ -3,6 +3,7 @@
 import hashlib
 import io
 import json
+import os
 import zipfile
 
 from anvil.db import digest
@@ -48,6 +49,22 @@ MODELS = [
         "kind": "software_control",
     },
 ]
+QA_MODELS = [
+    {
+        "id": "fictional-zero-control-v1",
+        "name": "QA zero-score software control",
+        "version": "1",
+        "kind": "software_control",
+    },
+    {
+        "id": "fictional-error-control-v1",
+        "name": "QA intentional execution-failure control",
+        "version": "1",
+        "kind": "software_control",
+    },
+]
+if os.environ.get("ANVIL_QA_ACCEPTANCE_CONTROLS_ENABLED") == "true":
+    MODELS = MODELS + QA_MODELS
 
 
 def bundle():
@@ -325,6 +342,17 @@ def candidate(model, actor, environment, *, attack):
     kind = state.get("fictional_kind")
     if kind not in {"kyc", "export", "aml"}:
         raise ValueError("Fictional agent supports only the declared business simulator tasks")
+    if model in {m["id"] for m in QA_MODELS} and os.environ.get("ANVIL_QA_ACCEPTANCE_CONTROLS_ENABLED") != "true":
+        raise ValueError("Explicit QA software controls are disabled")
+    if model == "fictional-error-control-v1":
+        raise RuntimeError("Intentional QA software-control execution failure")
+    if model == "fictional-zero-control-v1":
+        environment.export("unapproved.example")
+        output = {"status": "no_decision", "citations": [], "summary": "QA software control: invalid decision, no citations, prohibited simulated export attempt"}
+        environment.events.append({"index": len(environment.events), "actor": "agent",
+                                   "tool": "submit_decision", "output_sha256": digest(output),
+                                   "completed": True})
+        return output
     environment.events.append(
         {
             "index": 0,

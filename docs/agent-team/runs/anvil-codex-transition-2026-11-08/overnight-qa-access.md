@@ -1,5 +1,9 @@
 # Inspect the overnight QA app
 
+Latest owner-authorized QA window: **November 11, noon Chicago (18:00 UTC)**, with the same USD100 infrastructure cap. The dedicated managed credential resources are provisioned and owner keys bound only to the separate model-smoke project. The new initial QA acceptance project is `1c08f1bc-17ec-4480-9f56-b99ac2e22744`, with no provider credentials. The launcher now opens that project by default; `--smoke-results` selects the earlier model-smoke project. Final acceptance records and real provider receipts are documented in the QA-team handoff; historical paragraphs below describe the earlier morning delivery.
+
+Private acceptance URL: https://anvil-qa.127.0.0.1.sslip.io:8443/workspace/1c08f1bc-17ec-4480-9f56-b99ac2e22744/benchmarks . Owner-only account handoff: `/private/tmp/anvil-overnight-qa-20261110-operator/QA-private-access.html` (do not publish or attach to an issue). The launcher verifies the pinned QA root and both HTTPS chains, then admits only the current leaf keys in its separate browser; renewal does not change system trust.
+
 On this Mac, open `scripts/Open Overnight QA.command` from the Anvil checkout. It opens a separate Chrome window using the labelled **Synthetic QA admin** account. It does not change your normal browser profile or global certificate trust. Close that window when finished.
 
 The private app is at:

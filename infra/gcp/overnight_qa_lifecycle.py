@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 
 PROJECT = "adi-anvil-mvp-2026"
 NAME = "anvil-overnight-qa-20261110"
-STOP = datetime(2026, 11, 10, 18, tzinfo=timezone.utc)
+STOP = datetime(2026, 11, 11, 18, tzinfo=timezone.utc)
 DELETE = STOP + timedelta(hours=48)
 
 

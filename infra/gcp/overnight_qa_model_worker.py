@@ -30,7 +30,7 @@ def environment(values, source_sha256, *, now=None):
     result.update(
         {
             "ARTIFACT_ROOT": "/opt/anvil-overnight-qa/source/.data/artifacts",
-            "ANVIL_HARBOR_WORK_ROOT": "/var/lib/anvil-qa-native/structured-checks",
+            "ANVIL_HARBOR_WORK_ROOT": "/var/lib/anvil-qa-native/s",
             "ANVIL_HARBOR_EXECUTABLE": "/opt/anvil-overnight-qa/harbor/bin/harbor",
             "ANVIL_HARBOR_AGENT_PATH": "/opt/anvil-overnight-qa/source/services/harbor/src",
             "ANVIL_HARBOR_WORKER_ENABLED": "synthetic-checks-only",
@@ -45,7 +45,7 @@ def environment(values, source_sha256, *, now=None):
             raise ValueError("Only the separate QA project credential secret is allowed")
         result["ANVIL_QA_SECRET_RESOURCE"] = resource
     if values.get("ANVIL_QA_MODEL_SMOKE_ENABLED") == "true":
-        stop = datetime(2026, 11, 10, 18, tzinfo=timezone.utc)
+        stop = datetime(2026, 11, 11, 18, tzinfo=timezone.utc)
         if (now or datetime.now(timezone.utc)) >= stop or not resource:
             raise ValueError("Qualified QA store and unexpired shutdown window required")
         result["ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED"] = "true"
