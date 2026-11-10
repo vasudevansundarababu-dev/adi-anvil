@@ -3,12 +3,13 @@
 import os
 import re
 import socket
+from datetime import datetime, timezone
 from urllib.parse import urlsplit, urlunsplit
 
 from overnight_qa_worker_launcher import environment as run_environment
 
 
-def environment(values, source_sha256):
+def environment(values, source_sha256, *, now=None):
     result = run_environment(values, source_sha256)
     app = urlsplit(values["DATABASE_URL"])
     if (
@@ -43,6 +44,11 @@ def environment(values, source_sha256):
         if not re.fullmatch(r"projects/[0-9]+/secrets/anvil-qa-model-credentials", resource):
             raise ValueError("Only the separate QA project credential secret is allowed")
         result["ANVIL_QA_SECRET_RESOURCE"] = resource
+    if values.get("ANVIL_QA_MODEL_SMOKE_ENABLED") == "true":
+        stop = datetime(2026, 11, 10, 18, tzinfo=timezone.utc)
+        if (now or datetime.now(timezone.utc)) >= stop or not resource:
+            raise ValueError("Qualified QA store and unexpired shutdown window required")
+        result["ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED"] = "true"
     return result
 
 

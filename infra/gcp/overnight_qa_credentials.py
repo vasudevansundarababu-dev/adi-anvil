@@ -8,7 +8,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from overnight_qa_lifecycle import DELETE, NAME, PROJECT
+from overnight_qa_lifecycle import DELETE, NAME, PROJECT, STOP
 from overnight_qa_provision import call
 
 ACCOUNT = "anvil-qa-20261110"
@@ -80,8 +80,8 @@ def readback():
 
 
 def provision():
-    if datetime.now(timezone.utc) >= datetime(2026, 11, 10, 14, tzinfo=timezone.utc):
-        raise ValueError("No new credential provisioning after handoff")
+    if datetime.now(timezone.utc) >= STOP:
+        raise ValueError("No new credential provisioning after QA shutdown")
     if (ROOT / "credential-resources.jsonl").exists():
         raise ValueError("Existing credential journal requires explicit reconciliation")
     accounts = call(["iam", "service-accounts", "list", "--filter=email=" + EMAIL, "--format=json"])

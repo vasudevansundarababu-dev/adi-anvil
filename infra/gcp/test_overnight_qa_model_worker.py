@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime, timezone
 
 from overnight_qa_model_worker import environment, unit
 
@@ -42,6 +43,18 @@ class ModelWorkerBoundary(unittest.TestCase):
         )
         self.assertNotIn("cloud-config", text)
         self.assertNotIn("docker.sock:/", text)
+
+    def test_explicit_qa_smoke_requires_store_and_rejects_shutdown(self):
+        values = self.values()
+        values["ANVIL_QA_MODEL_SMOKE_ENABLED"] = "true"
+        with self.assertRaises(ValueError):
+            environment(values, "a" * 64)
+        values["ANVIL_QA_SECRET_RESOURCE"] = "projects/123/secrets/anvil-qa-model-credentials"
+        result = environment(values, "a" * 64, now=datetime(2026, 11, 10, 15, tzinfo=timezone.utc))
+        self.assertEqual(result["ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED"], "true")
+        self.assertEqual(result["ANVIL_LIVE_PROVIDERS_ENABLED"], "false")
+        with self.assertRaises(ValueError):
+            environment(values, "a" * 64, now=datetime(2026, 11, 10, 18, tzinfo=timezone.utc))
 
 
 if __name__ == "__main__":
