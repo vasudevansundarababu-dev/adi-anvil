@@ -1,7 +1,10 @@
-"""Real isolated SQL admission/accounting; only native transport and SDK are mocked."""
+"""Real isolated SQL admission/accounting, optional actual Harbor, mocked SDK only."""
 
 import hashlib
 import json
+import os
+import tempfile
+from pathlib import Path
 
 import httpx
 import pytest
@@ -30,13 +33,27 @@ def test_guarded_bridge_keeps_real_sql_intent_accounting_and_unknown(
         row = one(c, "SELECT * FROM anvil.harbor_checks WHERE id=%s", (job["target_id"],))
         package = one(c, "SELECT * FROM anvil.harbor_packages WHERE id=%s", (row["package_id"],))
     monkeypatch.setenv("ANVIL_HARBOR_HOST_MEDIATED_STRUCTURED_ENABLED", "true")
-    monkeypatch.setenv("ANVIL_HARBOR_DOCKER_HOST", "unix:///synthetic-sql-transport-only.sock")
-    monkeypatch.setenv("ANVIL_ENVIRONMENT_HARBOR_PYTHON", "/synthetic/native/python")
-    monkeypatch.setattr(harbor_worker, "check_workspace", lambda _: tmp_path / "native-check")
+    actual_native = os.environ.get("ANVIL_STRUCTURED_NATIVE_TEST") == "true"
+    original_native = environment_harbor.execute
+    if actual_native:
+        assert os.environ["ANVIL_HARBOR_DOCKER_HOST"].startswith("unix:///")
+        assert Path(os.environ["ANVIL_ENVIRONMENT_HARBOR_PYTHON"]).is_file()
+        monkeypatch.setenv("ANVIL_ENVIRONMENT_NATIVE_ENABLED", "true")
+        work = Path(tempfile.mkdtemp(prefix="sn-", dir="/private/tmp")) / "check"
+    else:
+        monkeypatch.setenv("ANVIL_HARBOR_DOCKER_HOST", "unix:///synthetic-sql-transport-only.sock")
+        monkeypatch.setenv("ANVIL_ENVIRONMENT_HARBOR_PYTHON", "/synthetic/native/python")
+        work = tmp_path / "native-check"
+    monkeypatch.setattr(harbor_worker, "check_workspace", lambda _: work)
     native_calls = []
+    native_receipts = []
 
     def native(folder, actor, callback, **kwargs):
         native_calls.append(actor)
+        if actual_native:
+            receipt = original_native(folder, actor, callback, **kwargs)
+            native_receipts.append(receipt)
+            return receipt
         output, receipt = callback()
         return {
             "collection": {
@@ -70,7 +87,7 @@ def test_guarded_bridge_keeps_real_sql_intent_accounting_and_unknown(
 
     transport = httpx.MockTransport(provider)
     if fault:
-        with pytest.raises(RuntimeError, match="unknown_no_retry"):
+        with pytest.raises(RuntimeError, match="unknown_no_retry|Native Harbor lifecycle failed"):
             agent.process(job, row["created_by"], row, package, transport=transport)
         with transaction(cli.PROJECT, row["created_by"]) as c:
             call = one(
@@ -97,3 +114,9 @@ def test_guarded_bridge_keeps_real_sql_intent_accounting_and_unknown(
                 and 0 <= call["actual_micro_usd"] <= call["reserved_micro_usd"]
             )
     assert len(wire) == 1 and len(native_calls) == 1
+    if actual_native and not fault:
+        assert len(native_receipts) == 1
+        assert native_receipts[0]["collection"]["complete"] is True
+        assert native_receipts[0]["native_container_isolation"] is True
+        assert native_receipts[0]["actor_probe"]["private_path_denials"] == 3
+        assert native_receipts[0]["actor_probe"]["egress_blocked"] == 2
