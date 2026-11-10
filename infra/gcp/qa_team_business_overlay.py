@@ -41,7 +41,9 @@ def main():
     subprocess.run([*compose, "up", "-d", "api", "worker"], check=True)
     dropin = Path("/etc/systemd/system/anvil-qa-run-worker.service.d/business-qa.conf")
     dropin.write_text("[Service]\nEnvironment=ANVIL_BUSINESS_QA_ENABLED=true\nEnvironment=ANVIL_BUSINESS_QA_SOURCE_SHA256=" + sha + "\n")
-    Path("/opt/anvil-overnight-qa/overnight_qa_worker_launcher.py").write_bytes(Path("/home/vasudevan_sundarababu_adi_labs_a/qa-controls-worker-helper.py").read_bytes())
+    helper = Path("/home/vasudevan_sundarababu_adi_labs_a/qa-controls-worker-helper.py").read_bytes()
+    for name in ("overnight_qa_worker_launcher.py", "worker-launcher.py"):
+        Path("/opt/anvil-overnight-qa/" + name).write_bytes(helper)
     subprocess.run(["systemctl", "daemon-reload"], check=True)
     subprocess.run(["systemctl", "restart", "anvil-qa-run-worker"], check=True)
     result = {"business_qa_source_sha256": sha, "files": files, "paid_enabled": False, "image_rebuilt": False, "authentic_source_qualification": False}

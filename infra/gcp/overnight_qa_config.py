@@ -164,7 +164,8 @@ SQL
 }
 https://anvil-qa.127.0.0.1.sslip.io:8443 {
  tls internal
- handle /api/* {
+ @api path /api/* /docs /docs/* /redoc /openapi.json
+ handle @api {
   reverse_proxy api:8200
  }
  handle {

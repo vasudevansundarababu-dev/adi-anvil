@@ -42,7 +42,8 @@ try {
   const health = await get(web + '/api/v1/health');
   const discovery = await get(auth + '/realms/anvil-overnight-qa/.well-known/openid-configuration');
   if (health.data.api !== 'ready' || discovery.issuer !== auth + '/realms/anvil-overnight-qa') throw new Error();
-  const file = path.join(root, 'browser-synthetic-fixture.json');
+  const qaTeam = fs.existsSync(path.join(root, 'qa-team-access-fixture.json')) && !process.argv.includes('--smoke-results');
+  const file = path.join(root, qaTeam ? 'qa-team-access-fixture.json' : 'browser-synthetic-fixture.json');
   const info = fs.lstatSync(file);
   if (!info.isFile() || info.isSymbolicLink() || info.uid !== os.userInfo().uid || (info.mode & 0o077)) throw new Error();
   if (process.argv.includes('--check')) {
@@ -50,14 +51,14 @@ try {
     process.exit(0);
   }
   const fixture = JSON.parse(fs.readFileSync(file, 'utf8'));
-  if (fixture.origin !== 'synthetic_oidc_protocol_qa_only') throw new Error();
+  if (fixture.origin !== (qaTeam ? 'qa_team_acceptance_only' : 'synthetic_oidc_protocol_qa_only')) throw new Error();
   const role = process.argv.includes('--engineer') ? 'rl-engineer' : 'admin';
   const identity = fixture.users[role];
   const qaProjectFile = path.join(root, 'qa-team-project-public.json');
   const targetProject = fs.existsSync(qaProjectFile) && !process.argv.includes('--smoke-results')
     ? JSON.parse(fs.readFileSync(qaProjectFile, 'utf8')).project_id : fixture.project;
   if (!/^[0-9a-f-]{36}$/.test(targetProject)) throw new Error();
-  if (!identity.username.startsWith('synthetic-qa-')) throw new Error();
+  if (!identity.username.startsWith(qaTeam ? 'qa-team-' : 'synthetic-qa-')) throw new Error();
   const profile = fs.mkdtempSync(path.join(root, 'inspection-browser-'));
   fs.chmodSync(profile, 0o700);
   const browserEnv = Object.fromEntries(['PATH', 'HOME', 'TMPDIR', 'LANG', 'LC_ALL', 'USER', 'LOGNAME', 'SHELL'].filter(key => process.env[key]).map(key => [key, process.env[key]]));
@@ -74,7 +75,7 @@ try {
   await expect(page.getByRole('navigation', { name: 'Workspace navigation' })).toBeVisible({ timeout: 30000 });
   await page.goto(web + `/workspace/${targetProject}/benchmarks`);
   await expect(page.getByRole('region', { name: 'Benchmark dashboard' })).toBeVisible();
-  console.log('Synthetic QA inspection browser opened. This account does not represent owner approval or model performance.');
+  console.log('Labelled QA test browser opened. This account does not represent owner approval or model performance.');
   if (process.argv.includes('--smoke')) {
     await context.close();
     console.log('Launcher browser smoke passed; no model calls.');

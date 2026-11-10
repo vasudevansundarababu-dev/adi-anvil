@@ -10,9 +10,9 @@ from overnight_qa_bind_staged_credentials import AUTH, OPERATOR, WEB, Form
 
 
 @contextmanager
-def client(role="admin"):
-    fixture = json.loads((OPERATOR / "browser-synthetic-fixture.json").read_text())
-    assert fixture["origin"] == "synthetic_oidc_protocol_qa_only"
+def client(role="admin", *, qa_team=False):
+    fixture = json.loads((OPERATOR / ("qa-team-access-fixture.json" if qa_team else "browser-synthetic-fixture.json")).read_text())
+    assert fixture["origin"] == ("qa_team_acceptance_only" if qa_team else "synthetic_oidc_protocol_qa_only")
     assert role in {"admin", "rl-engineer"}
     verify = ssl.create_default_context(cafile=str(OPERATOR / "qa-root-ca.crt"))
     with httpx.Client(verify=verify, trust_env=False, follow_redirects=False, timeout=30) as http:
@@ -40,5 +40,9 @@ def client(role="admin"):
                 response = http.get(WEB + path)
                 assert response.status_code == 200
                 return response.content
+
+            def status(self, method, path, *, body=None):
+                headers = {"origin": WEB, "x-csrf-token": http.cookies.get("anvil_csrf"), "idempotency-key": uuid4().hex}
+                return http.request(method, WEB + path, json=body, headers=headers).status_code
 
         yield API()
