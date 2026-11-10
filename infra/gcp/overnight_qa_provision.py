@@ -113,12 +113,11 @@ def create_commands(public_key_file):
             "--no-scopes",
             "--create-disk=name="
             + NAME
-            + "-boot,boot=yes,auto-delete=yes,size=150GB,type=pd-balanced,image=debian-12-bookworm-v20261109,image-project=debian-cloud",
+            + "-boot,boot=yes,auto-delete=yes,size=150GB,type=pd-standard,image=debian-12-bookworm-v20261109,image-project=debian-cloud",
             "--no-restart-on-failure",
             "--instance-termination-action=STOP",
             "--termination-time=2026-11-10T18:00:00Z",
-            "--metadata=block-project-ssh-keys=TRUE,enable-oslogin=FALSE",
-            "--metadata-from-file=ssh-keys=" + str(public_key_file),
+            "--metadata=block-project-ssh-keys=TRUE,enable-oslogin=TRUE",
             "--tags=" + NAME,
             "--labels=application=anvil,purpose=overnight-qa,expiry=2026-11-10",
         ],
