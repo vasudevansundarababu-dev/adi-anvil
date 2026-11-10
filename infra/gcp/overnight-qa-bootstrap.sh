@@ -46,6 +46,7 @@ Description=Isolated Anvil QA actor daemon
 After=network.target docker.service
 [Service]
 Type=notify
+Group=anvilqa
 RuntimeDirectory=anvil-qa-docker
 RuntimeDirectoryMode=0750
 ExecStartPre=/bin/chown root:anvilqa /run/anvil-qa-docker
@@ -53,6 +54,8 @@ ExecStartPre=/bin/sh -c '/usr/sbin/ip link show anvilqaactor0 >/dev/null 2>&1 ||
 ExecStartPre=/usr/sbin/ip address replace 172.30.90.1/24 dev anvilqaactor0
 ExecStartPre=/usr/sbin/ip link set anvilqaactor0 up
 ExecStart=/usr/bin/dockerd --host=unix:///run/anvil-qa-docker/docker.sock --group=anvilqa --data-root=/var/lib/anvil-qa-actor-docker --exec-root=/run/anvil-qa-docker/exec --pidfile=/run/anvil-qa-docker/pid --containerd-namespace=anvil-qa-actor --containerd-plugins-namespace=anvil-qa-actor-plugins --bridge=anvilqaactor0 --iptables=false --ip-forward=false --ip-masq=false
+ExecStartPost=/bin/chown root:anvilqa /run/anvil-qa-docker
+ExecStartPost=/bin/chmod 0750 /run/anvil-qa-docker
 Restart=no
 TimeoutStartSec=90
 TimeoutStopSec=120
