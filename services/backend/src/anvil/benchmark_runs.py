@@ -475,7 +475,6 @@ def create_plan(c, project, user, body):
 
 
 def start(c, project, user, body):
-    enabled()
     plan = one(c, "SELECT * FROM anvil.benchmark_execution_plans WHERE id=%s", (body.plan_id,))
     if not plan:
         raise HTTPException(404, "Execution plan not found")
@@ -483,8 +482,12 @@ def start(c, project, user, body):
         plan["snapshot"].get("schema_version") == "anvil.environment-execution-plan.v1"
     )
     if environment_plan:
+        from anvil.environment_admission import enabled as environment_enabled
         from anvil.environment_execution import source_hash as plan_source
+
+        environment_enabled()
     else:
+        enabled()
         plan_source = source_hash
     if (
         body.expected_plan_sha256 != plan["snapshot_sha256"]

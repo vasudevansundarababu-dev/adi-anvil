@@ -31,11 +31,13 @@ class State(TypedDict):
 
 
 def validate(c, row):
-    enabled()
     if row["snapshot"].get("schema_version") == "anvil.environment-execution-plan.v1":
+        from anvil.environment_admission import enabled as environment_enabled
         from anvil.environment_execution import validate as environment_validate
 
+        environment_enabled()
         return environment_validate(c, row)
+    enabled()
     plan = row["snapshot"]
     if plan["source_sha256"] != runs.source_hash() or digest(plan) != row["snapshot_sha256"]:
         raise ValueError("source_changed")

@@ -77,6 +77,7 @@ def source_hash():
                 p.name: hashlib.sha256(p.read_bytes()).hexdigest()
                 for p in [
                     root / "environment_execution.py",
+                    root / "environment_admission.py",
                     root / "environment_collect.py",
                     root / "environment_openenv.py",
                     root / "environment_harbor.py",

@@ -1,0 +1,34 @@
+# Overnight Anvil QA execution plan
+
+Owner: root, sole writer. Authorized by the user's request to code and test overnight. Starting baseline: a7b7fad. Target handoff: **10 November 2026, 08:00 America/Chicago (14:00 UTC)**, pending any user correction. A target is not a promise that missing authorization or external inputs will arrive.
+
+## Work queue and exit evidence
+
+| Order | Work | Exit evidence | Initial state |
+|---|---|---|---|
+| 1 | Prepare stage-specific Run worker/runtime deployment wiring and explicit configuration | Rendered current-source configuration, worker identities/paths and migration/checkpoint contract; tests prove no API Docker socket, inherited provider keys or legacy configuration changes | In progress |
+| 2 | Integrate real-model dispatch for component environments behind the existing model/rights/budget controls | Real SDK loops with offline transport tests, frozen model/Task/environment tuples, accounting and unknown-dispatch handling; no enabled paid default | Pending coding |
+| 3 | Bind authentic task/evaluator contracts supplied by Praxis | Published snapshots and source versions, permitted data, exact field mappings and pass/fail/Unknown fixtures; original scoring preserved | Waiting for published source/package paths; independent adapter work continues |
+| 4 | Finish Linux deployment/bootstrap/lifecycle preparation | Locked source/runtime manifest, Linux/amd64 image context, startup/health, restart/cancel/cleanup and rollback tests; no mocked claim of GCP success | Pending coding/testing |
+| 5 | Reauthenticate and validate cloud infrastructure | Explicit resource/build/budget/lifetime approval plus actual GCP readback, build/provision/tool/collect/cleanup receipts | Blocked on account reauthentication and exact cloud scope; no provisioning/deployment yet |
+| 6 | Complete end-to-end verification and independent QA handoff | Both roles, all six environments, persistence/restart, isolation, policy findings and real PDF/JSON exports; reviewed QA cases mapped to observed evidence | Existing synthetic baseline passes; successor checks required |
+| 7 | Morning handoff | Exact local commit/source/runtime, passed/failed/not-run tests, runnable preview/release packet, material blockers and narrow next authorization | Due by target |
+
+## Boundaries
+
+- Work only in the isolated Anvil checkout. Preserve existing UI/scoring and older preview data. Praxis, current deployed Anvil and unrelated work are untouched.
+- No subagents or resumed historical agents. Continue as one writer; preserve initial failures and checkpoint exact source changes locally.
+- Paid calls remain off unless the user supplies exact models, securely stored credentials, permitted inputs and an explicit spending cap. Offline SDK tests are not model-performance receipts.
+- Do not provision, submit a paid cloud image build, change cloud IAM/networking or deploy until the user approves a concrete reviewed scope. The existing monthly allowance does not replace that scope. Existing GCP authentication currently requires sign-in; do not read credential files or use Praxis's CLI/configuration.
+- Do all independent coding/preparation before asking for cloud approval. Missing sources do not authorize invented rubric rules or fake human approvals.
+- Continue meaningful independent work when another lane is blocked. At the deadline report the observed state honestly, including anything unrun; do not turn a fixture, schema validation or mocked API response into production acceptance.
+
+## Execution log
+
+- Started source/infra review. Confirmed current staging recipes predate the new durable Run worker and installed OpenEnv bridge. Preparing an additive configuration contract rather than changing legacy deployment defaults.
+- Asked the user asynchronously for the overnight resource budget/lifetime, published Praxis and reviewed QA package locations, and exact model/call budget if live inference is desired. Default target is08:00 Chicago. No resource changes or paid calls made.
+- Implemented a separate exact-source, explicitly enabled, paid-off cloud environment-QA admission guard. Legacy local rehearsal admission remains unchanged and rejects cloud mode. Updated only environment-plan start/worker validation to use the new guard; its source is now part of the execution digest. Ten unit admission checks passed, plus one actual local six-world Run/PDF regression and60 existing benchmark/review SQL/API checks. These are not cloud qualification. Logs: `/private/tmp/anvil-overnight-local-admission.log`, `/private/tmp/anvil-overnight-legacy-regression.log`.
+- Created the `anvil-overnight-qa-coding-and-testing` continuation, every15minutes in the current chat until the morning stop/report. The separate monitor remains read-only.
+- User is okay with the plan and asks what GCP/key setup is required. Existing Anvil-only CLI authentication needs reauthentication. User proposes GPT6.1, Sonnet, another latest Claude, Gemini Argon and Flash; exact IDs and paid cap still need confirmation. No paid execution authority is inferred from asking for a cost estimate. User will point to the Praxis OpenHands chat; no source snapshot is assumed supplied yet.
+- Deployment credential-store work must preserve current production defaults: existing cloud secret code is bound to `anvil-import-generation`; do not copy/reuse that production secret or assume arbitrary new secret IDs already work. Prepare a separate QA credential-store binding before asking the user to enter working keys in the QA application.
+- User completed normal browser Google OAuth login. Anvil-only CLI account `vasudevan.sundarababu@adi-labs.ai` reauthenticated successfully; a read-only inventory observed the existing running `anvil-mvp-v1` e2-standard-4 in us-west1-a. No VM changed. Initial terminal password prompt was cancelled without entering/collecting a password; `auth login --force` used browser OAuth. Provider keys, exact paid model IDs/cap and Praxis OpenHands reference remain pending.
