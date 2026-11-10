@@ -37,6 +37,28 @@ def current(price, *, now=None):
 
 
 def managed(provider, model):
+    if (provider, model) in {
+        ("anthropic", "claude-fable-5-2"),
+        ("gemini", "gemini-4-argon"),
+    }:
+        # Exact standard text rates, verified against provider documentation.
+        # Argon introductory rates end November 30; this snapshot expires first.
+        verified = "2026-11-10T09:38:33+00:00"
+        anthropic = provider == "anthropic"
+        return {
+            "source_kind": "anvil_managed_anthropic" if anthropic else "anvil_managed_gemini",
+            "reference": "anvil-overnight-standard-2026-11-10-v1",
+            "source_url": "https://platform.claude.com/docs/en/models/fable-5-2/overview"
+            if anthropic
+            else "https://ai.google.dev/gemini-api/docs/pricing",
+            "verified_at": verified,
+            "provider": provider,
+            "model_id": model,
+            "expires_at": (datetime.fromisoformat(verified) + timedelta(days=7)).isoformat(),
+            "input_micro_usd_per_million_tokens": 8000000 if anthropic else 2000000,
+            "output_micro_usd_per_million_tokens": 40000000 if anthropic else 10000000,
+            "service_tier": "default",
+        }
     if provider == "gemini" and model == "gemini-3.8-flash":
         return {
             "source_kind": "anvil_managed_gemini",

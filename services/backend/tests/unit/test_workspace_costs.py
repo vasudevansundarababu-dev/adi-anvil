@@ -8,6 +8,26 @@ from anvil.workspace_execution import billed_usage, required_cost
 AS_OF = datetime(2026, 11, 8, 16, tzinfo=timezone.utc)
 
 
+@pytest.mark.parametrize(
+    "provider,model,input_rate,output_rate",
+    [
+        ("anthropic", "claude-fable-5-2", 8000000, 40000000),
+        ("gemini", "gemini-4-argon", 2000000, 10000000),
+    ],
+)
+def test_overnight_exact_rates_expire_before_price_transition(
+    provider, model, input_rate, output_rate
+):
+    price = costs.managed(provider, model)
+    assert price["input_micro_usd_per_million_tokens"] == input_rate
+    assert price["output_micro_usd_per_million_tokens"] == output_rate
+    assert costs.current(price, now=datetime(2026, 11, 10, 10, tzinfo=timezone.utc))
+    assert not costs.current(price, now=datetime(2026, 11, 18, tzinfo=timezone.utc))
+    assert costs.managed(provider, model + "-latest") is None
+    actual = costs.billed_cost(price, {}, 32768 + 1024, 2048)
+    assert actual <= required_cost({"pricing": price, "max_output_tokens": 2048, "max_calls": 1})
+
+
 def test_opus_standard_rates_fit_reservation_and_cache_remains_fail_closed():
     price = costs.managed("anthropic", "claude-opus-5-5")
     assert costs.current(price, now=AS_OF)

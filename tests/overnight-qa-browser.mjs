@@ -25,6 +25,24 @@ try {
     await page.getByLabel('Password', { exact: true }).fill(identity.password);
     await page.getByRole('button', { name: 'Sign In', exact: true }).click();
     await expect(page.getByRole('navigation', { name: 'Workspace navigation' })).toBeVisible({ timeout: 30000 });
+    if (process.env.ANVIL_QA_BROWSER_SCOPE === 'configuration') {
+      await page.goto(web + `/workspace/${fixture.project}/tasks`);
+      const tasks = await page.evaluate(async project => (await (await fetch(`/api/v1/projects/${project}/workspace/tasks`)).json()).data.items, fixture.project);
+      if (tasks.length !== 10) throw new Error('Expected ten exact draft source Tasks');
+      await expect(page.getByText(tasks[0].title, { exact: true }).first()).toBeVisible({ timeout: 30000 });
+      await page.screenshot({ path: path.join(root, `browser-${role}-tasks.png`), fullPage: true });
+      if (role === 'admin') {
+        await page.goto(web + `/workspace/${fixture.project}/models`);
+        for (const model of ['gpt-6.1-sol', 'gpt-6-luna', 'claude-fable-5-2', 'claude-opus-5-5', 'gemini-4-argon', 'gemini-3.8-flash']) {
+          await expect(page.getByText('Overnight QA ' + model, { exact: true }).first()).toBeVisible({ timeout: 30000 });
+        }
+        await page.screenshot({ path: path.join(root, 'browser-admin-models.png'), fullPage: true });
+      }
+      results.push({ role, exact_draft_tasks: 10, model_profiles: role === 'admin' ? 6 : 'admin_only', provider_calls: 0 });
+      await context.close();
+      fs.writeFileSync(path.join(root, 'browser-configuration-public.json'), JSON.stringify({ results, real_owner_acceptance: false }));
+      continue;
+    }
     await page.goto(web + `/workspace/${fixture.project}/environments`);
     await expect(page.getByRole('heading', { name: 'Environments', exact: true }).last()).toBeVisible();
     await expect(page.locator('select').first().locator('option')).toHaveCount(6, { timeout: 30000 });
