@@ -45,23 +45,23 @@
     "anvil-keycloak-db-password": "projects/adi-anvil-mvp-2026/secrets/anvil-keycloak-db-password"
   },
   "last_web_deployment": {
-    "commit": "185059c",
-    "image_tag": "185059c-1793661384",
-    "cloud_build_id": "d428f882-b191-429a-9e10-15cb840dafb2",
-    "verified_at": "2026-11-02T23:21:34+00:00",
-    "scope": "login access-request email link; prior benchmark mockup retained",
-    "backend_and_harbor_containers_unchanged": true,
-    "smoke": ["public_login_assets", "encoded_mailto_local_browser", "authenticated_workspace", "api_health"]
+    "commit": "d50388076f9f66181ed470afe4a0ecf10cd92801",
+    "image_tag": "d503880-main-20261116",
+    "cloud_build_id": "b8abf3d6-25ae-4f37-b980-eacbcc07f2ee",
+    "verified_at": "2026-11-16T21:37:47+00:00",
+    "scope": "benchmark branch main-site release with private vault and schema069",
+    "backend_and_harbor_containers_unchanged": false,
+    "smoke": ["public_login_assets", "keycloak_login_form", "api_health", "benchmark_anonymous_401"]
   },
   "last_deployment": {
-    "commit": "b0eec40",
-    "image_tag": "b0eec40-1793655919",
+    "commit": "d50388076f9f66181ed470afe4a0ecf10cd92801",
+    "image_tag": "d503880-main-20261116",
     "load_balancer_ip": "34.36.217.66",
     "web_origin": "https://anvil-34-36-217-66.sslip.io",
     "oidc_issuer": "https://auth-34-36-217-66.sslip.io/realms/anvil",
     "vm": "anvil-mvp-v1",
-    "verified_at": "2026-11-02T21:52:00+00:00",
-    "smoke": ["api_health", "oidc_discovery", "tls", "keycloak_admin_private"],
+    "verified_at": "2026-11-16T21:37:47+00:00",
+    "smoke": ["api_health", "oidc_discovery", "tls", "keycloak_admin_private", "exact_running_images", "schema069", "unchanged_ledger_and_identities"],
     "edge": "global external Application Load Balancer, Google-managed certificate"
   }
 }

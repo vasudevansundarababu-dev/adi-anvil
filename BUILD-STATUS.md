@@ -1,5 +1,74 @@
 # Build status
 
+## Main benchmark branch deployed — 16 November 2026
+
+**Main-site rollout completed**, verified2026-11-16T21:37UTC. User explicitly chose
+the main site for the benchmark branch. Source `a8a1a42` plus reviewed production
+wiring checkpoint `d50388076f9f66181ed470afe4a0ecf10cd92801`; image tag
+`d503880-main-20261116`. Web/API/ordinary worker/Harbor worker independently
+verified running this release; schema069. Existing main data, identity and cost
+ledger fingerprints and runtime env files are unchanged. Main HTTPS/API/database,
+OIDC issuer, browser sign-in flow and public Keycloak Admin404 passed. New
+benchmark dashboard denies anonymous access with401. Full units935, Node26,
+frontend types/build and isolated fresh/038→069 repeated migrations passed.
+Cloud Build `b8abf3d6-25ae-4f37-b980-eacbcc07f2ee` and migration rehearsal
+`21501f89-9fb2-4d87-87cd-29419fe98cc1` both SUCCESS. VM metadata updated so
+reboot retains the release. Backup snapshot READY; root-only SQL/config backups
+are retained on the main VM. No inference, generation, email, approval or QA-data
+copy was performed as a smoke test. Full authenticated benchmark operation was
+not exercised in this session; execution-specific qualifications remain gated.
+
+**Source-resume warning:** original working tree remains on its older branch to
+preserve unrelated edits. Current deployed source is the isolated release worktree
+`.local/main-release-20261116` at `d503880`, not original HEAD `8cdc8a8`.
+No GitHub push/merge or other product change. Detailed release/rollback evidence:
+`docs/generated/main-benchmark-release-2026-11-16.md`.
+
+## Development/deployment resume — 16 November 2026
+
+Main-site release authorized explicitly by the user after destination clarification.
+Prepared isolated worktree `.local/main-release-20261116` from benchmark branch
+`a8a1a42`; local source checkpoint `d503880` adds the missing OpenEnv build-context
+directory and production benchmark API/private-vault wiring. Existing working-tree
+edits are preserved. Cloud Build `b8abf3d6-25ae-4f37-b980-eacbcc07f2ee` SUCCESS:
+tag `d503880-main-20261116`. Full backend units935 PASS after correcting test
+environment/runtime setup (original collection/setup failures retained under
+`/private/tmp/anvil-main-20261116-unit*.log`); frontend types/build and26 Node
+benchmark checks PASS. Disposable Cloud Build migration rehearsal
+`21501f89-9fb2-4d87-87cd-29419fe98cc1` passed fresh069 and038→069, both repeated.
+Production snapshot `anvil-before-benchmark-20261116` READY. Bounded rollout is in
+progress on `anvil-mvp-v1`, with SQL dump/config/image rollback records retained
+under `/var/lib/anvil/releases/d503880-main-20261116`. No deployed success yet.
+Runtime generation/provider/email flags are preserved, no model smoke authorized.
+
+Authentication follow-up: user completed browser sign-in; Anvil-scoped CLI access
+now works. Read-only VM/container inspection confirms production runs
+`15e35f1-1794018124` across web/API/worker/Harbor, newer than this checkout.
+Public health reports API/database ready, live inference and Harbor live dispatch
+disabled. Fetched origin without changing working files: benchmark development
+is at `a8a1a42` on `codex/anvil-agent-team-2026-11-06`. Its QA handoff describes
+an expired November11 availability window, paid execution off, retained unknown
+cost outcomes and source overlays rather than a new production image. Inventory
+confirms `anvil-overnight-qa-20261110` TERMINATED; separate `anvil-qa-v1` and
+`anvil-staging-v1` RUNNING. Destination clarification is pending before cloud
+mutation: private benchmark QA versus main-site benchmark release. No rollback,
+VM start, image build or deployment performed. Earlier authentication blocker below
+is historical and resolved.
+
+User requested resuming unfinished development and deployment to GCP. Inspected
+the existing target: `adi-anvil-mvp-2026/us-west1-a/anvil-mvp-v1`.
+`pnpm check` passed lint, formatting, TypeScript, production build and generated
+API contract. No new feature implementation or cloud rollout is claimed.
+`pnpm preflight` failed because Docker's configured local socket is absent;
+outside-sandbox port checks confirm the local service ports are available.
+Anvil-scoped `gcloud compute instances describe` was blocked by expired
+authentication. Started `gcloud auth login` using only `.local/gcloud-anvil`;
+browser sign-in is pending. No cloud mutation or inference was performed.
+Next: finish browser authentication, inspect actual running images and gates,
+prepare an isolated committed release preserving unrelated edits, and deploy
+only to the existing target with post-rollout identity/health checks. Do not
+use the generic rollout script without reviewing its runtime flag defaults.
+
 ## README review entry points — 2 November 2026
 
 Both READMEs now start their review navigation with an explicit YC review section:
