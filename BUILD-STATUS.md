@@ -1,5 +1,80 @@
 # Build status
 
+## Current: actual ADI Forge deployed to main and QA — 16 November 2026
+
+Corrected the older-branch rollout after the user's report. Actual current source
+is sealed build32/candidate12, manifest
+`9398adfdfe9f92cd965090370649f19b3bac49eab4fe66a7c92892a50943b763`,
+1024 verified files, recovered at `.local/forge-main-release-20261116`.
+Only frontend package/lock were changed for Next16.4.5 security remediation.
+**Do not redeploy original HEAD or d503880; they are superseded older code.**
+
+Verified22:36UTC /2:36PM Pacific: current Forge API/web/worker source and schema127
+on main `anvil-mvp-v1/us-west1-a` and existing QA `anvil-qa-v1/us-west1-b`.
+Public title, exact new Forge logo and new navigation assets verified on both;
+main browser and Keycloak display say ADI Forge. PostgreSQL/Neo4j readiness PASS.
+QA new protected APIs401, internal readiness/public Keycloak Admin404, OIDC form
+and exact-source paid-off software guards PASS. All preexisting identity/cost/data
+fields verified unchanged; QA083 generated display_id validated separately.
+Snapshots and root-only SQL/config backups retained. Main image metadata persisted;
+QA canonical Compose now pins actual backend/web digests. Existing idle Golden
+scheduler/grader containers and core services were preserved.
+
+Frontend security build `e0b9bd11-3abd-4825-9621-145030c1d38c` SUCCESS;
+worker build `51f07a1f-0ddf-4a29-a698-414687628598` SUCCESS;
+fresh/repeated127 and069→127 rehearsal `4c1bad0c-5295-4faa-8d1f-1f3e829baea7`
+SUCCESS; current readiness units7 PASS, frontend types/build PASS, production
+dependency audit0 advisories. Earlier935-unit evidence belongs to the superseded
+branch; it is not relabelled current-source validation.
+
+Failures retained: disposable PostgreSQL initialization race; full main boot disk
+(unused old web-image caches removed, active/rollback/task images and volumes kept);
+QA unauthenticated registry pull (existing VM identity helper configured, no IAM
+expansion); one initial QA private readiness503 (independent PG/Neo passed and
+subsequent bounded readiness passed1.729s; exact initial cause unestablished);
+full-row hash difference from083 new generated display_id (all original fields
+hash-identical under explicit original-column projection). No job/migration replay
+was used for the final post-rollout checks.
+
+Authenticated Admin/RL user journeys, native Golden qualification and new real-model
+benchmark/report/export trials NOT RUN in this session. No new inference, generation,
+email from the application, source approvals or QA→main dataset copy. Deployment
+retry authority did not authorize inference retries. Existing spending/rights gates
+remain. Full product/benchmark acceptance is not claimed from release smoke checks.
+
+At the user's explicit request, sent exactly ONE completion/status email only to
+vasudevan.sundarababu@adi-labs.ai, Gmail message `1a1e681794a64667`, covering build,
+fixes, smoke scope, QA/main links and remaining verification limits. Detailed record:
+`docs/generated/forge-release-2026-11-16.md`.
+
+## Correction underway: actual ADI Forge release — 16 November 2026
+
+User correctly reported that the d503880 deployment omitted the current work.
+That branch was older than the team release workspace. The intended current
+package is build32/candidate12, sealed source manifest
+`9398adfdfe9f92cd965090370649f19b3bac49eab4fe66a7c92892a50943b763`,
+1024 files, migration head127, with ADI Forge branding and Home/Projects/Execution/
+Admin navigation. All source bytes were verified against the sealed manifest and
+recovered read-only into `.local/forge-main-release-20261116`; external workspaces
+are unchanged. User explicitly started corrected main deployment, authorized
+build/deployment retries, and requested a completion email to
+vasudevan.sundarababu@adi-labs.ai. No new model-call authority was inferred.
+
+Qualified backend image `anvil-qa-v1/backend@sha256:a2819e51c44c933b61329067aee68c327ec1ebddba7e2658c0607aee6abe230a`
+is reused exactly. Frontend validation detected GHSA-mfr8-8qww-v76h; minimal
+Next16.4.1→16.4.5 package/lock-only patch passed types/build and production audit
+(zero reported advisories). Original sealed source is preserved externally;
+only package.json/pnpm-lock differ in the recovered source copy.
+Seven current deployment-readiness tests PASS. Fresh127 and069→127 repeated
+migrations PASS in corrected disposable Cloud Build
+`4c1bad0c-5295-4faa-8d1f-1f3e829baea7`; initial admission build
+`cd851667-d7d6-4c63-93e4-f77afcc4f7ae` failed on a test-database initialization
+readiness race before migrations, now corrected. Web security build
+`e0b9bd11-3abd-4825-9621-145030c1d38c` and current-source/locked-Harbor runtime
+build `51f07a1f-0ddf-4a29-a698-414687628598` are in progress.
+Pre-correction snapshot `anvil-before-forge-build32-20261116` READY. Do not
+describe the intended Forge release as deployed until actual switch and checks.
+
 ## Main benchmark branch deployed — 16 November 2026
 
 **Main-site rollout completed**, verified2026-11-16T21:37UTC. User explicitly chose

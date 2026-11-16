@@ -1,5 +1,9 @@
 # Main Anvil benchmark release — 16 November 2026
 
+Historical, superseded: this older-branch rollout did not contain the intended
+current Forge changes. The corrected main/QA deployment is recorded in
+[forge-release-2026-11-16.md](forge-release-2026-11-16.md). Do not redeploy d503880.
+
 Deployed to https://anvil-34-36-217-66.sslip.io/workspace on the existing
 `adi-anvil-mvp-2026/us-west1-a/anvil-mvp-v1`. Verified21:37UTC /1:37PM Pacific.
 User explicitly selected updating the main site with the benchmark branch.

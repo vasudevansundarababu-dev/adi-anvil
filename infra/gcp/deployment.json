@@ -1,7 +1,7 @@
 {
   "schema_version": "anvil.gcp.deployment.v1",
   "application": "adi-anvil",
-  "release_label": "mvp-v1",
+  "release_label": "forge-build32-20261116",
   "status": "deployed",
   "project_id": "adi-anvil-mvp-2026",
   "region": "us-west1",
@@ -45,23 +45,42 @@
     "anvil-keycloak-db-password": "projects/adi-anvil-mvp-2026/secrets/anvil-keycloak-db-password"
   },
   "last_web_deployment": {
-    "commit": "d50388076f9f66181ed470afe4a0ecf10cd92801",
-    "image_tag": "d503880-main-20261116",
-    "cloud_build_id": "b8abf3d6-25ae-4f37-b980-eacbcc07f2ee",
-    "verified_at": "2026-11-16T21:37:47+00:00",
-    "scope": "benchmark branch main-site release with private vault and schema069",
+    "commit": null,
+    "source_manifest_sha256": "9398adfdfe9f92cd965090370649f19b3bac49eab4fe66a7c92892a50943b763",
+    "source_overlay": "Next.js16.4.5 security patch; package and lock hashes in release report",
+    "image_tag": "forge-build32-security-20261116",
+    "image_digest": "sha256:bf35dddaf41ef576ba90400153db150b0459473f9df52314a24f56fd3a40f810",
+    "cloud_build_id": "e0b9bd11-3abd-4825-9621-145030c1d38c",
+    "verified_at": "2026-11-16T22:36:24+00:00",
+    "scope": "actual current ADI Forge release; corrected older-branch rollout; schema127",
     "backend_and_harbor_containers_unchanged": false,
     "smoke": ["public_login_assets", "keycloak_login_form", "api_health", "benchmark_anonymous_401"]
   },
   "last_deployment": {
-    "commit": "d50388076f9f66181ed470afe4a0ecf10cd92801",
-    "image_tag": "d503880-main-20261116",
+    "commit": null,
+    "source_manifest_sha256": "9398adfdfe9f92cd965090370649f19b3bac49eab4fe66a7c92892a50943b763",
+    "image_tag": "forge-build32-main-20261116",
+    "web_image_tag": "forge-build32-security-20261116",
+    "schema_revision": "127",
     "load_balancer_ip": "34.36.217.66",
     "web_origin": "https://anvil-34-36-217-66.sslip.io",
     "oidc_issuer": "https://auth-34-36-217-66.sslip.io/realms/anvil",
     "vm": "anvil-mvp-v1",
-    "verified_at": "2026-11-16T21:37:47+00:00",
-    "smoke": ["api_health", "oidc_discovery", "tls", "keycloak_admin_private", "exact_running_images", "schema069", "unchanged_ledger_and_identities"],
+    "verified_at": "2026-11-16T22:36:24+00:00",
+    "smoke": ["api_health", "postgres_neo4j_private_readiness", "oidc_discovery", "tls", "keycloak_admin_private", "forge_logo_title_and_login", "exact_running_images", "schema127", "unchanged_ledger_and_identities"],
     "edge": "global external Application Load Balancer, Google-managed certificate"
+  },
+  "last_qa_deployment": {
+    "vm": "anvil-qa-v1",
+    "zone": "us-west1-b",
+    "web_origin": "https://anvil-qa.adi-labs.ai",
+    "verified_at": "2026-11-16T22:36:24+00:00",
+    "source_manifest_sha256": "9398adfdfe9f92cd965090370649f19b3bac49eab4fe66a7c92892a50943b763",
+    "backend_digest": "sha256:a2819e51c44c933b61329067aee68c327ec1ebddba7e2658c0607aee6abe230a",
+    "web_digest": "sha256:bf35dddaf41ef576ba90400153db150b0459473f9df52314a24f56fd3a40f810",
+    "schema_revision": "127",
+    "smoke_status": "passed_with_retained_initial_readiness_503",
+    "authenticated_full_journeys": "not_run",
+    "new_model_calls": "not_run"
   }
 }
