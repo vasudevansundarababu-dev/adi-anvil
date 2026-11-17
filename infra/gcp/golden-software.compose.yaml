@@ -27,11 +27,11 @@ services:
   golden-software-scheduler:
     <<: *golden
     env_file: ['${ANVIL_GOLDEN_SCHEDULER_ENV:?Dedicated scheduler env file required}']
-    command: [--role, scheduler, --project, '${ANVIL_GOLDEN_PROJECT_ID:?Exact project UUID required}', --max-cycles, '300', --max-seconds, '600']
+    command: [--role, scheduler, --project, '${ANVIL_GOLDEN_PROJECT_ID:?Exact project UUID required}', --max-cycles, '300', --max-seconds, '600', --poll-seconds, '10', --continuous]
   golden-software-grader:
     <<: *golden
     env_file: ['${ANVIL_GOLDEN_GRADER_ENV:?Dedicated grader env file required}']
-    command: [--role, grader, --project, '${ANVIL_GOLDEN_PROJECT_ID:?Exact project UUID required}', --max-cycles, '300', --max-seconds, '600']
+    command: [--role, grader, --project, '${ANVIL_GOLDEN_PROJECT_ID:?Exact project UUID required}', --max-cycles, '300', --max-seconds, '600', --poll-seconds, '10', --continuous]
 networks:
   golden-data:
     external: true

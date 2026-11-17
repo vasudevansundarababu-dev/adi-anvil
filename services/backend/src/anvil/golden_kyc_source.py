@@ -24,6 +24,7 @@ def source_hash():
         + [
             root / "policy_rules.py",
             root / "qualification_resources.py",
+            root / "owned_process_group.py",
             root / "evaluator_runtimes.py",
             root / "evaluator_configurations.py",
             root / "benchmark_project_import.py",

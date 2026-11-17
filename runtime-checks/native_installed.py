@@ -4,6 +4,7 @@ import hashlib
 import importlib
 import importlib.metadata as metadata
 import json
+import os
 from pathlib import Path
 from threading import Event
 from time import monotonic
@@ -14,6 +15,10 @@ import anvil
 from anvil.golden_kyc_evaluators import OPA_POLICIES, opa_guard
 from anvil.golden_kyc_service import run_worker
 from anvil.golden_kyc_source import source_hash
+from anvil.marketing_native_private_records import (
+    OPERATOR_PROOF_SHA256,
+    original_operator_repository,
+)
 
 VERSIONS = {
     "harbor": "0.25.0",
@@ -48,6 +53,16 @@ for folder, package in (("backend", anvil), ("harbor", anvil_harbor)):
         assert path.read_bytes() == (installed / path.relative_to(source)).read_bytes()
         matched += 1
 source_sha256 = source_hash()
+if os.environ.get("EXPECTED_SOURCE_SHA256"):
+    assert source_sha256 == os.environ["EXPECTED_SOURCE_SHA256"]
+repository = original_operator_repository()
+assert repository == Path("/opt/anvil-runtime-source")
+assert (
+    hashlib.sha256(
+        (repository / "services/harbor/src/anvil_harbor/operator_proof.py").read_bytes()
+    ).hexdigest()
+    == OPERATOR_PROOF_SHA256
+)
 facts = {name: True for name in OPA_POLICIES}
 assert opa_guard(facts)["allow"] is True
 assert opa_guard(facts | {"assigned_case": False})["allow"] is False

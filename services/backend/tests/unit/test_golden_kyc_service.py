@@ -190,3 +190,33 @@ def test_deadline_also_stops_descendant_that_ignores_sigterm(tmp_path, monkeypat
                 os.killpg(child.pid, signal.SIGKILL)
             except ProcessLookupError:
                 pass
+
+
+def test_continuous_mode_renews_only_clean_windows_and_stops_on_signal(monkeypatch):
+    stopped, calls = Event(), []
+    monkeypatch.setattr(service, "Event", lambda: stopped)
+
+    def clean(role, projects, **kwargs):
+        calls.append((role, projects))
+        if len(calls) == 2:
+            stopped.set()
+        return 1
+
+    monkeypatch.setattr(service, "serve", clean)
+    service.main(
+        ["--role", "scheduler", "--project", PROJECT, "--continuous", "--poll-seconds", ".1"]
+    )
+    assert len(calls) == 2
+
+
+def test_continuous_mode_never_restarts_failed_window(monkeypatch):
+    calls = []
+
+    def fail(*args, **kwargs):
+        calls.append(1)
+        raise RuntimeError("retained_unknown_no_retry")
+
+    monkeypatch.setattr(service, "serve", fail)
+    with pytest.raises(RuntimeError, match="retained_unknown_no_retry"):
+        service.main(["--role", "scheduler", "--project", PROJECT, "--continuous"])
+    assert calls == [1]

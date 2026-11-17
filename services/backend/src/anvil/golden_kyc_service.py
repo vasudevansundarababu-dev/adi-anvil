@@ -8,10 +8,12 @@ import argparse
 import os
 import signal
 import sys
-from subprocess import Popen, TimeoutExpired
+from subprocess import Popen
 from threading import Event
 from time import monotonic
 from uuid import UUID
+
+from anvil.owned_process_group import UnreapedProcessGroup
 
 PHASES = {"scheduler": ("commands", "capture", "finish"), "grader": ("grade",)}
 DSNS = {
@@ -49,35 +51,38 @@ def run_worker(argv, *, deadline, stop):
         [sys.executable, "-I", "-B", "-m", "anvil.golden_kyc_worker", *argv],
         start_new_session=True,
     )
+    group = UnreapedProcessGroup(child, fixed_same_uid=True)
     try:
-        while child.poll() is None:
+        while not group.exited():
             if stop.is_set() or monotonic() >= deadline:
                 raise RuntimeError(
                     "Software worker interrupted; inspect retained custody, no retry"
                 )
             stop.wait(min(0.1, max(0, deadline - monotonic())))
-        if child.returncode:
-            raise RuntimeError("Software worker failed; inspect retained custody, no retry")
     finally:
         # A reaped leader does not prove same-group descendants exited. Finish
         # the owned group on normal completion, interruption and BaseException.
-        if child.poll() is None:
-            try:
-                os.killpg(child.pid, signal.SIGTERM)
-            except ProcessLookupError:
-                pass
-            try:
-                child.wait(timeout=2)
-            except TimeoutExpired:
-                pass
+        errors = []
         try:
-            os.killpg(child.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
+            group.signal(signal.SIGTERM)
+            grace = monotonic() + 2
+            while not group.exited() and monotonic() < grace:
+                # Do not reap the leader: retain PGID even if it exits first.
+                Event().wait(0.01)
+        except BaseException as error:
+            errors.append(error)
         try:
-            child.wait(timeout=2)
-        except TimeoutExpired:
-            raise RuntimeError("Software worker cleanup unknown; no retry") from None
+            group.signal(signal.SIGKILL)
+        except BaseException as error:
+            errors.append(error)
+        try:
+            group.reap(2)
+        except BaseException as error:
+            errors.append(error)
+        if errors:
+            raise RuntimeError("Software worker cleanup unknown; no retry") from errors[0]
+    if child.returncode:
+        raise RuntimeError("Software worker failed; inspect retained custody, no retry")
 
 
 def serve(role, projects, *, max_cycles, interval, max_seconds, stop, worker=None):
@@ -115,20 +120,30 @@ def main(argv=None):
     parser.add_argument("--max-cycles", type=int, default=1)
     parser.add_argument("--poll-seconds", type=float, default=2)
     parser.add_argument("--max-seconds", type=int, default=600)
+    parser.add_argument(
+        "--continuous",
+        action="store_true",
+        help="Continue polling after clean bounded windows; never restart a failure",
+    )
     args = parser.parse_args(argv)
     stop = Event()
     previous = {}
     try:
         for sig in (signal.SIGINT, signal.SIGTERM):
             previous[sig] = signal.signal(sig, lambda *_: stop.set())
-        completed = serve(
-            args.role,
-            args.project,
-            max_cycles=args.max_cycles,
-            interval=args.poll_seconds,
-            max_seconds=args.max_seconds,
-            stop=stop,
-        )
+        completed = 0
+        while not stop.is_set():
+            completed += serve(
+                args.role,
+                args.project,
+                max_cycles=args.max_cycles,
+                interval=args.poll_seconds,
+                max_seconds=args.max_seconds,
+                stop=stop,
+            )
+            if not args.continuous:
+                break
+            stop.wait(args.poll_seconds)
         print(f"Golden {args.role}: {completed} software-control polling cycles; no model calls")
     finally:
         for sig, handler in previous.items():

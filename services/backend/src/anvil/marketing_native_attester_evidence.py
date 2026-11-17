@@ -18,7 +18,7 @@ from anvil.marketing_native_records import _parse_record
 from anvil.marketing_native_world_binding import _read_source_file
 from anvil.praxis_generic_contract import canonical
 
-PRODUCER_FILES = frozenset({
+PRODUCER_FILES_V1 = frozenset({
     'marketing_native_attester_key.py', 'marketing_native_attester_worker.py',
     'marketing_native_attester_process.py', 'marketing_native_attester_peer.py',
     'marketing_native_attester_evidence.py', 'marketing_native_enrollment_receiver.py',
@@ -40,6 +40,15 @@ PRODUCER_FILES = frozenset({
     'marketing_native_enrollment_client.py', 'marketing_native_actor_hardening.py',
     'marketing_capture_peer.py', 'marketing_attester_enrollment.py', 'marketing_operator_database.py',
 })
+
+# Successor policy closure. Existing retained policy hashes/receipts are never
+# rewritten; their smaller dependency set cannot qualify this new source epoch.
+PRODUCER_FILES_V2 = PRODUCER_FILES_V1 | frozenset({
+    'marketing_native_private_sources_v2.py', 'qualification_resources.py',
+    'marketing_native_operator_observation.py', 'owned_process_group.py',
+    'marketing_native_operator_driver.py',
+})
+PRODUCER_FILES = PRODUCER_FILES_V2
 
 
 def _namespace(proc, pid, name, deadline):
