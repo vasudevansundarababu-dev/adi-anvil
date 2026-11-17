@@ -1,5 +1,73 @@
 # Build status
 
+## Current mandatory-runtime correction — 17 November 2026
+
+Continuation authorized by user: finish and test RL Gym while Authoring exports
+and another small fix are pending. Do not import their three tasks or dispatch
+live calls yet. Read-only KYC/Marketing reviews complete; one source writer.
+QA realm display now ADI-Forge QA; authenticated operator comparison verified all
+other realm fields unchanged; actual application login redirect HTML verified.
+User-visible branding only; issuer/realm IDs, users and access unchanged.
+
+In isolated runtime worktree: added pinned OPA to KYC task image, new bounded
+software-only scheduler/grader service plus Compose overlay, explicit project
+selection, disjoint credentials and no retry after worker failure. Thirty targeted
+service/Marketing graph/contract/deadline checks passed. Fresh/repeated schema127
+and21 SQL isolation/checkpoint tests passed in a NEW local PostgreSQL container;
+four canonical import/run tests initially failed because the SDK development
+environment installed source as a nonsealed wheel. Correcting that development
+environment to explicit editable checkout; do not weaken runtime source custody.
+New source changes have not been deployed. Marketing native completion remains
+unfinished; do not describe Gym as stable or ready for live benchmarking yet.
+
+Current local source checkpoint: `38c398bdfffad1607598128704719b665ccf3af7`
+on `codex/runtime-correction-20261117`. Expanded SDK unit regression:
+**1019 passed,10 subtests passed** (one existing Authlib deprecation warning).
+Actual child-group SIGTERM-resistance reproduction now passes read-only review.
+Standalone Compose rendered successfully without mounts/ports/inherited env or
+automatic restarts. A concurrent-source SQL rerun was correctly rejected409;
+retained that failure and rerunning from the frozen checkpoint with start/end
+source hashes. Installed Linux image policy/source build
+`4200658b-fd60-425c-a781-cfa6c0a55da5` is pending. One queued build was cancelled
+before execution to correct its source-label typo; do not use cancelled
+build176d8a96-39b8-41bc-88d9-6312861a507e as evidence.
+
+Frozen-source final SQL rerun PASS28; start/end source hash unchanged:
+`1dc0c3f7a90f26d4ef5e98aedb523266957c24fa38366e24c0a8f28ddd23386b`.
+Build4200658b-fd60-425c-a781-cfa6c0a55da5 SUCCESS:452 installed source files
+matched that same hash; three actual OPA policy controls and installed child-entry
+check passed with network disabled. Corrected KYC/Marketing images pulled onto QA;
+actual-host isolated verification PASS for both identities, including matching
+452 source files/source hash and real OPA controls. These are installed images, not serving
+execution roles. Software Compose is standalone (not an overlay), reviewed and
+rendered, but not activated against user data. Current root disk2.5GB free; retained
+data/rollback images/volumes preserved. Full evidence and remaining gates:
+`docs/generated/gym-software-verification-2026-11-17.md`.
+
+The November 16 deployment smoke results below do **not** satisfy the mandatory
+KYC and Marketing execution-runtime requirement. QA inspection after renewed
+Google sign-in found zero runtime observations/allowlist/admissions/update jobs;
+Golden scheduler and grader still run old-image sleep placeholders. The cached
+combined runtime has stale first-party source. Marketing's current source contains
+an unconditional `marketing_native_operator_world_and_lifecycle_not_admitted`
+gate; native world/lifecycle implementation and qualification are incomplete.
+Do not mark these roles Ready or bypass that gate.
+
+Current correction source: isolated branch `codex/runtime-correction-20261117`,
+commit `6a3ee57ab256529e761127815262f74fe29fe7c2`, worktree
+`.local/runtime-correction-20261117`. Cloud Build
+`b7f3a4bf-71c5-47af-b595-7af57b683ad3` SUCCESS: locked dependency/import checks,
+byte matching installed first-party Python source, isolated evaluator controls,
+and separate KYC/Marketing image identities passed. These are technical controls,
+not model performance or complete native execution qualification. No model calls.
+KYC, Marketing and private-evaluator images pulled onto QA. Actual QA KYC source
+and dependency check passed; actual QA evaluator controls14 passed with
+release_ready=false. These isolated images are not serving execution workers.
+Service wiring and genuine runtime admission remain incomplete. Preserve all
+existing approvals, rights and spending gates. See
+`docs/generated/runtime-correction-2026-11-17.md` for digests and limitations.
+
+
 ## Current: actual ADI Forge deployed to main and QA — 16 November 2026
 
 Corrected the older-branch rollout after the user's report. Actual current source
