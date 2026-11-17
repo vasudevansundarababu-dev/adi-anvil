@@ -11,6 +11,7 @@
 !integrations/evaluators
 !infra/docker
 !contracts
+!runtime-checks
 !fixtures
 !task-packs
 !assets/brand

@@ -13,6 +13,7 @@
 !/infra/
 !/contracts/
 !/integrations/
+!/runtime-checks/
 node_modules/
 .next/
 .venv/
