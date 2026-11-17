@@ -1,5 +1,25 @@
 # Build status
 
+## Current RL Gym software correction — 17 November 2026
+
+Source checkpoint38c398bdfffad1607598128704719b665ccf3af7 on
+codex/runtime-correction-20261117.1019 units+10 subtests and28 real SQL checks pass;
+source hash1dc0c3f7a90f26d4ef5e98aedb523266957c24fa38366e24c0a8f28ddd23386b
+unchanged across final fresh/repeated migration and200-cell KYC/twelve-window
+Marketing software execution. GCP build4200658b-fd60-425c-a781-cfa6c0a55da5
+SUCCESS; exact KYC/Marketing images installed on QA; both actual-host isolated
+source/OPA controls pass. New software service/standalone Compose prepared and
+reviewed, not serving. QA login branding ADI-Forge QA verified; other realm fields
+unchanged. No new model calls, Authoring integration, source approvals or email.
+
+Gym native/live stability remains incomplete. Next missing integration is the
+outer operator bootstrap driver and real qualified process/container/cgroup/private
+API/capture custody; Marketing gate must remain closed until actual admission.
+Do not treat package/source/SQL software results as native qualification or seed
+Ready records. Preserve unrelated root and untracked recovered infra files.
+Evidence and exact commands: docs/generated/gym-software-verification-2026-11-17.md.
+
+
 ## Current: actual ADI Forge deployed to main and QA — 16 November 2026
 
 Corrected the older-branch rollout after the user's report. Actual current source

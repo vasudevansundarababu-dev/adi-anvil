@@ -55,5 +55,11 @@ runtime still installs separately frozen hashed wheels with no path overlay.
 
 Fresh/repeated schema127 and28 actual PostgreSQL tests have passed, including
 200-cell disjoint KYC capture/grade/report and twelve Marketing graph windows.
-Final regression and installed-image policy/source build checks are in progress.
-No full-product stability, native qualification or paid benchmark claim.
+Frozen source38c398bdfffad1607598128704719b665ccf3af7 final regression:
+1019 units+10 subtests and28 SQL checks passed. GCP build4200658b-fd60-425c-a781-cfa6c0a55da5
+passed452 installed source files and actual OPA controls; source hash matches the
+frozen SQL run. Both exact task image identities are installed on QA and repeated
+those isolated checks successfully. Software service configuration is prepared,
+not serving against user data. No full-product stability, native qualification
+or paid benchmark claim. Next gate and exact evidence:
+docs/generated/gym-software-verification-2026-11-17.md.
