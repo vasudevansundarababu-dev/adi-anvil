@@ -7,6 +7,10 @@
 !apps/web
 !services/backend
 !services/harbor
+!services/openenv
+!integrations/evaluators
+!infra/docker
+!contracts
 !fixtures
 !task-packs
 !assets/brand

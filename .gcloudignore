@@ -11,6 +11,8 @@
 !/task-packs/
 !/assets/
 !/infra/
+!/contracts/
+!/integrations/
 node_modules/
 .next/
 .venv/
