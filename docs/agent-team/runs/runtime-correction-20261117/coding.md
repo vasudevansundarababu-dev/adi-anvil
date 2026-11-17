@@ -29,5 +29,31 @@ advertised as installed/qualified merely by adding packages.
 No paid inference, hidden-reference relaxation, authentic source approval, spend
 release or existing unknown-request retry is authorized by runtime installation.
 Technical runtime qualification and business/source readiness remain distinct.
-Current state: packaging prepared; actual builds, operation proofs, installation
-and serving observations pending. No completion or independent QA claim.
+November17 continuation: user explicitly directed finishing/testing RL Gym while
+Authoring exports and another small fix are pending. Authoring integration and
+live calls remain deferred. The existing reviewed Marketing test fixture pack is
+used only for software controls; it is not the user's three pending exports.
+
+Original runtime build b7f3a4bf-71c5-47af-b595-7af57b683ad3 succeeded; KYC,
+Marketing and private evaluator images were pulled onto QA. Installed-source and
+14 evaluator controls passed. These images were not serving workers. Subsequent
+review found scheduler OPA missing despite successful library imports.
+
+New source adds exact-hash OPA and a bounded software-only service. The standalone
+Compose configuration uses distinct names, separate role env files, no inherited
+app configuration, no mounts/ports/privilege, and an explicit existing DB network.
+The supervisor owns each process group, stops descendants on timeout/exception
+and normal completion, retains interrupted custody and never restarts failures.
+Read-only code review reproduced and verified repair of a SIGTERM-resistant
+descendant leak. This is code/process review, not native qualification approval.
+
+Recovered current tests omitted by the sealed release; repaired stale fixtures
+for original deadlines, bounded cleanup reserve, service records and pricing
+expiry. Pricing data itself remains unchanged and expired prices stay blocked.
+Development OpenEnv now explicitly uses the current editable checkout; production
+runtime still installs separately frozen hashed wheels with no path overlay.
+
+Fresh/repeated schema127 and28 actual PostgreSQL tests have passed, including
+200-cell disjoint KYC capture/grade/report and twelve Marketing graph windows.
+Final regression and installed-image policy/source build checks are in progress.
+No full-product stability, native qualification or paid benchmark claim.

@@ -12,7 +12,7 @@ from psycopg_pool import ConnectionPool
 from anvil.golden_kyc_runtime import process_one
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--project", type=UUID, required=True)
     parser.add_argument("--max-commands", type=int, default=100)
@@ -37,7 +37,7 @@ def main():
     parser.add_argument(
         "--rationale", default="Inspect and consume retained private coordinator result"
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if (
         (
             os.environ.get("ANVIL_GOLDEN_KYC_ENABLED") != "true"

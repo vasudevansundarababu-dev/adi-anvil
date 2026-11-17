@@ -8,4 +8,6 @@ dependencies = ["openenv==0.12.0", "adi-anvil", "pytest>=8,<10", "pydantic==2.13
 package = false
 
 [tool.uv.sources]
-adi-anvil = { path = "../backend" }
+# Development SDK checks execute the current source checkout. Production task
+# images retain the separate frozen wheel-only services/harbor/runtime closure.
+adi-anvil = { path = "../backend", editable = true }

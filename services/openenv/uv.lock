@@ -10,7 +10,7 @@ resolution-markers = [
 [[package]]
 name = "adi-anvil"
 version = "0.2.1"
-source = { directory = "../backend" }
+source = { editable = "../backend" }
 dependencies = [
     { name = "alembic" },
     { name = "anthropic" },
@@ -53,7 +53,7 @@ requires-dist = [
     { name = "pillow", specifier = "==13.0.0" },
     { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.2,<4" },
     { name = "pydantic", specifier = ">=2.10,<3" },
-    { name = "pypdf", specifier = ">=6.19,<7" },
+    { name = "pypdf", specifier = ">=6.21.4,<7" },
     { name = "python-multipart", specifier = ">=0.0.20" },
     { name = "reportlab", specifier = ">=4.3,<5" },
     { name = "rfc8785", specifier = "==0.1.4" },
@@ -64,7 +64,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "pypdf", specifier = ">=5,<7" },
+    { name = "pypdf", specifier = ">=6.21.4,<7" },
     { name = "pytest", specifier = ">=8,<10" },
     { name = "ruff", specifier = ">=0.11" },
 ]
@@ -146,7 +146,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "adi-anvil", directory = "../backend" },
+    { name = "adi-anvil", editable = "../backend" },
     { name = "openenv", specifier = "==0.12.0" },
     { name = "psycopg", extras = ["binary", "pool"], specifier = "==3.3.6" },
     { name = "pydantic", specifier = "==2.13.5" },

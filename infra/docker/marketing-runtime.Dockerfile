@@ -22,6 +22,7 @@ COPY services/openenv/uv.lock services/openenv/uv.lock
 COPY integrations/evaluators/promptfoo/redteam-worker.mjs integrations/evaluators/promptfoo/redteam-worker.mjs
 COPY integrations/evaluators/local_worker.py integrations/evaluators/local_worker.py
 COPY contracts contracts
+COPY runtime-checks/native_installed.py /opt/forge-runtime-checks/native_installed.py
 COPY integrations/evaluators/nemo/uv.lock integrations/evaluators/nemo/uv.lock
 COPY integrations/evaluators/promptfoo/worker.mjs integrations/evaluators/promptfoo/worker.mjs
 COPY integrations/evaluators/promptfoo/package-lock.json integrations/evaluators/promptfoo/package-lock.json
@@ -49,6 +50,8 @@ RUN set -eux; test -n "${UV_VERSION}" \
        --project services/harbor/runtime --frozen --no-dev --no-editable --no-build --no-install-local \
     && uv pip install --python /opt/anvil-runtime/bin/python --no-deps --no-index \
        --no-build --require-hashes -r /opt/anvil-runtime-wheels/first-party.requirements.lock
+RUN python -c "import hashlib; from pathlib import Path; from urllib.request import urlopen; response=urlopen('https://github.com/open-policy-agent/opa/releases/download/v1.22.2/opa_linux_amd64_static',timeout=60); raw=response.read(80000001); response.close(); assert len(raw)<=80000000 and hashlib.sha256(raw).hexdigest()=='24e344d1fc394cd93dc75666f584cfb97c6981f7255af25f8d2979834317317b'; p=Path('/opt/anvil/opa'); p.parent.mkdir(parents=True,exist_ok=True); p.write_bytes(raw); p.chmod(0o555)"
+ENV ANVIL_OPA_BINARY=/opt/anvil/opa ANVIL_OPA_SHA256=24e344d1fc394cd93dc75666f584cfb97c6981f7255af25f8d2979834317317b
 ENV ANVIL_ROOT=/opt/anvil-runtime-source HOME=/tmp LANGSMITH_TRACING=false DO_NOT_TRACK=1 OTEL_SDK_DISABLED=true
 USER 10001:10001
 # Both first-party packages are installed into this one venv's site-packages.

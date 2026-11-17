@@ -1,0 +1,38 @@
+# Standalone software-control configuration; never merge with another Compose file.
+# Never a paid/native qualification profile. Unique names prevent merging with
+# existing app/sleep-placeholder services. Attach only to the exact existing DB network.
+# Role env files contain origin settings and only the matching non-owner DSN.
+# Never use app.env, migration credentials, provider keys or Docker mounts.
+x-golden-software: &golden
+  image: ${ANVIL_GOLDEN_SOFTWARE_IMAGE:?Exact current-source image digest required}
+  profiles: [golden-software]
+  restart: 'no'
+  user: '10001:10001'
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  pids_limit: 128
+  mem_limit: 1g
+  cpus: 1
+  tmpfs: [/tmp:rw,noexec,nosuid,size=64m]
+  networks: [golden-data]
+  environment:
+    ANVIL_GOLDEN_KYC_ENABLED: 'true'
+    ANVIL_LIVE_PROVIDERS_ENABLED: 'false'
+    ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED: 'false'
+    ANVIL_GOLDEN_KYC_PAID_WORKER_ENABLED: 'false'
+    ANVIL_REAL_EMAIL_ENABLED: 'false'
+  entrypoint: [/opt/anvil-runtime/bin/python, -I, -B, -m, anvil.golden_kyc_service]
+services:
+  golden-software-scheduler:
+    <<: *golden
+    env_file: ['${ANVIL_GOLDEN_SCHEDULER_ENV:?Dedicated scheduler env file required}']
+    command: [--role, scheduler, --project, '${ANVIL_GOLDEN_PROJECT_ID:?Exact project UUID required}', --max-cycles, '300', --max-seconds, '600']
+  golden-software-grader:
+    <<: *golden
+    env_file: ['${ANVIL_GOLDEN_GRADER_ENV:?Dedicated grader env file required}']
+    command: [--role, grader, --project, '${ANVIL_GOLDEN_PROJECT_ID:?Exact project UUID required}', --max-cycles, '300', --max-seconds, '600']
+networks:
+  golden-data:
+    external: true
+    name: ${ANVIL_GOLDEN_NETWORK:?Exact existing PostgreSQL network required}

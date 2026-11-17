@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 import pytest
 
 from anvil import workspace_costs as costs
@@ -6,7 +8,7 @@ from anvil.workspace_execution import billed_usage, required_cost
 
 def test_opus_standard_rates_fit_reservation_and_cache_remains_fail_closed():
     price = costs.managed("anthropic", "claude-opus-5-5")
-    assert costs.current(price)
+    assert costs.current(price, now=datetime.fromisoformat(price["verified_at"]))
     usage = {"input_tokens": 1000, "output_tokens": 100}
     inputs, outputs = billed_usage("anthropic", usage)
     assert costs.billed_cost(price, usage, inputs, outputs) == 6000
@@ -29,7 +31,7 @@ def test_gemini_standard_rates_include_thinking_and_do_not_admit_mutable_alias()
     inputs, outputs = billed_usage("gemini", usage)
     assert outputs == 200
     assert costs.billed_cost(price, usage, inputs, outputs) == 1500
-    assert costs.current(price)
+    assert costs.current(price, now=datetime.fromisoformat(price["verified_at"]))
     assert costs.managed("gemini", "gemini-flash-latest") is None
 
 
@@ -43,11 +45,27 @@ def test_managed_rates_are_exact_expiring_and_do_not_use_a_fake_zero_default():
     assert price["input_micro_usd_per_million_tokens"] == 100000
     assert price["output_micro_usd_per_million_tokens"] == 500000
     assert price["model_id"] == row["model_id"] and price["cache_ttl"] == "30m"
-    assert costs.current(price)
+    assert costs.current(price, now=datetime.fromisoformat(price["verified_at"]))
     assert not costs.current({**price, "expires_at": "2020-01-01T00:00:00Z"})
     assert costs.managed("anthropic", "gpt-6-luna") is None
     assert costs.managed("openai", "gpt-6-luna-any-alias") is None
     assert costs.for_model({**row, "model_id": "unknown", "config": {}}) is None
+
+
+@pytest.mark.parametrize(
+    "provider,model",
+    [
+        ("openai", "gpt-6-luna"),
+        ("anthropic", "claude-opus-5-5"),
+        ("gemini", "gemini-3.8-flash"),
+    ],
+)
+def test_price_freshness_stops_exactly_at_expiry(provider, model):
+    price = costs.managed(provider, model)
+    expires = datetime.fromisoformat(price["expires_at"])
+    assert costs.current(price, now=expires - timedelta(microseconds=1))
+    assert not costs.current(price, now=expires)
+    assert not costs.current(price, now=expires + timedelta(days=1))
 
 
 def test_cache_partitions_and_rounding_fit_the_reserved_conservative_bound():

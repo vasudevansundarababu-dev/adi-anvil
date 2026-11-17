@@ -9,7 +9,19 @@ def test_root_worker_preserves_volume_owner_and_private_file_modes(tmp_path, mon
     owner = root.stat().st_uid
     monkeypatch.setattr(artifacts, "storage_root", lambda: root)
     monkeypatch.setattr(artifacts.os, "geteuid", lambda: 0)
-    monkeypatch.setattr(artifacts.os, "fstat", lambda fd: SimpleNamespace(st_uid=-1))
+    actual_fstat = artifacts.os.fstat
+
+    def other_owner(fd):
+        actual = actual_fstat(fd)
+        return SimpleNamespace(
+            **{
+                name: -1 if name == "st_uid" else getattr(actual, name)
+                for name in dir(actual)
+                if name.startswith("st_")
+            }
+        )
+
+    monkeypatch.setattr(artifacts.os, "fstat", other_owner)
     changes = []
     monkeypatch.setattr(artifacts.os, "fchown", lambda fd, uid, gid: changes.append((uid, gid)))
 
