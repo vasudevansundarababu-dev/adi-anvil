@@ -86,7 +86,7 @@ export default function BenchmarkDashboard({ title, domain }: { title: string; d
           <h3>Published references</h3>
           <p>
             No external reference results are loaded in this preview. Published results will remain
-            separate from Anvil-measured results.
+            separate from Forge-measured results.
           </p>
           <button onClick={() => setDetail('gdpval')}>View GDPVal planned scope</button>
         </div>
@@ -355,9 +355,9 @@ export default function BenchmarkDashboard({ title, domain }: { title: string; d
             <span aria-hidden="true">→</span>
             <button onClick={() => setDetail('review')}>Review evidence</button>
             <span aria-hidden="true">→</span>
-            <button onClick={() => setDetail('review')}>Create version in Praxis</button>
+            <button onClick={() => setDetail('review')}>Create version in Authoring</button>
             <span aria-hidden="true">→</span>
-            <button onClick={() => setDetail('rerun')}>Re-run in Anvil</button>
+            <button onClick={() => setDetail('rerun')}>Re-run in Forge</button>
           </section>
         </>
       )}
@@ -406,8 +406,8 @@ export default function BenchmarkDashboard({ title, domain }: { title: string; d
           )}
           {detail === 'review' && (
             <p>
-              Planned Anvil/Praxis integration: completed run → assigned SME review in Praxis →
-              review returned and logged in Anvil → approved task revision → new evaluation. This
+              Planned Forge/Authoring integration: completed run → assigned SME review in Authoring →
+              review returned and logged in Forge → approved task revision → new evaluation. This
               API handoff is roadmap work. These preview controls send no task or message and change
               no review records.
             </p>
@@ -415,14 +415,14 @@ export default function BenchmarkDashboard({ title, domain }: { title: string; d
           {detail === 'rerun' && (
             <p>
               No run has started. A real run requires qualified task versions, exact model/provider
-              selection, reviewed rights and a separately approved budget through Anvil's existing
+              selection, reviewed rights and a separately approved budget through Forge's existing
               execution controls. Unknown requests are never retried by this preview.
             </p>
           )}
         </section>
       )}
       <footer className={styles.bottom}>
-        Published references and Anvil-measured results remain separate. Preview values are
+        Published references and Forge-measured results remain separate. Preview values are
         illustrative; GDPVal is not connected.
       </footer>
     </section>

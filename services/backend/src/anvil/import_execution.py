@@ -62,10 +62,16 @@ def actor_prompt(c, record, package, step):
     return prompt
 
 
-def loop(project, user, record, package, container, *, heartbeat=lambda: None, transport=None):
+def loop(
+    project, user, record, package, container, *, heartbeat=lambda: None, transport=None, job=None
+):
+    from anvil import pilot_environment
     from anvil.workspace_execution import decision
 
-    with transaction(project, user) as c:
+    pilot = pilot_environment.current()
+    if pilot and job is None:
+        raise RuntimeError("pilot_worker_job_required")
+    with transaction(project, user, worker=pilot is not None) as c:
         _, task, bundle = binding(c, package)
     events = []
     dense_credits = set()
@@ -80,9 +86,21 @@ def loop(project, user, record, package, container, *, heartbeat=lambda: None, t
             )
             if remaining < 1:
                 raise RuntimeError("agent_timeout")
-            text = decision(
-                project, user, record["id"], step, transport=transport, remaining_seconds=remaining
-            )
+            if pilot:
+                from anvil.worker_dispatch_broker import forward
+
+                text = forward(
+                    job, user, record["id"], step, remaining_seconds=remaining, transport=transport
+                )
+            else:
+                text = decision(
+                    project,
+                    user,
+                    record["id"],
+                    step,
+                    transport=transport,
+                    remaining_seconds=remaining,
+                )
             from anvil.task_parser import json_value
 
             action = json_value(text.encode())
@@ -121,7 +139,7 @@ def loop(project, user, record, package, container, *, heartbeat=lambda: None, t
                 dense_awards.append({"step": step, "components_bps": awarded})
             if len(json.dumps(event).encode()) > 65536:
                 raise RuntimeError("Tool observation exceeds capture bound")
-            with transaction(project, user) as c:
+            with transaction(project, user, worker=pilot is not None) as c:
                 c.execute(
                     "INSERT INTO anvil.import_tool_observations(id,project_id,plan_id,stage_index,event) VALUES(%s,%s,%s,%s,%s)",
                     (uid(), project, record["id"], step, Jsonb(event)),
@@ -145,7 +163,7 @@ def loop(project, user, record, package, container, *, heartbeat=lambda: None, t
 
 
 class Gateway:
-    def __init__(self, project, user, record, package, heartbeat, grade_path):
+    def __init__(self, project, user, record, package, heartbeat, grade_path, job=None):
         from anvil.harbor_agents import UnixHTTPServer
 
         self.folder = tempfile.TemporaryDirectory(prefix="anvil-mcp-gateway-")
@@ -199,7 +217,7 @@ class Gateway:
                         raise RuntimeError("Harbor trial container is unavailable")
                     gateway.started = True
                     gateway.result = loop(
-                        project, user, record, package, identifiers[0], heartbeat=heartbeat
+                        project, user, record, package, identifiers[0], heartbeat=heartbeat, job=job
                     )
                     grade_path.write_text(
                         json.dumps(
@@ -274,7 +292,7 @@ def process(job, user, row, package):
         unpack(archive, target, package["package_sha256"])
         (target / "tests/test.sh").chmod(0o755)
         grade_path = target / "tests/worker-result.json"
-        gateway = Gateway(job["project_id"], user, record, package, heartbeat, grade_path)
+        gateway = Gateway(job["project_id"], user, record, package, heartbeat, grade_path, job=job)
         env = child_environment(workspace)
         env.update(
             ANVIL_HARBOR_GATEWAY_SOCKET=gateway.path,

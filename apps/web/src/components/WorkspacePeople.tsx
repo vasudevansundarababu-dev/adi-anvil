@@ -5,7 +5,7 @@ import { workspaceApi as api } from '../lib/workspace';
 import styles from './ModernWorkspace.module.css';
 
 export type WorkspaceAccess = {
-  profile: 'admin' | 'rl_engineer' | null;
+  profile: 'admin' | 'rl_engineer' | 'sme_reviewer' | null;
   label: string;
   capabilities: string[];
   mapping_state: 'recorded' | 'current_grants_changed' | 'not_recorded' | 'legacy_only';
@@ -17,6 +17,8 @@ export default function WorkspacePeople({ base }: { base: string }) {
   const [page, setPage] = useState<PeoplePage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState<string | null>(null);
+  const [message, setMessage] = useState('');
   const generation = useRef(0);
   useEffect(() => {
     const current = ++generation.current;
@@ -43,8 +45,13 @@ export default function WorkspacePeople({ base }: { base: string }) {
       <p>
         Admin includes engineering work. Each person keeps one account and their project history.
       </p>
+      <p>
+        Assign SME review to an existing project member to review results and score skills. This
+        does not grant execution or deployment access.
+      </p>
       {loading && <p role="status">Loading people…</p>}
       {error && <p role="alert">{error}</p>}
+      {message && <p role="status">{message}</p>}
       {page && (
         <>
           <p className={styles.notice}>{page.management_reason}</p>
@@ -54,6 +61,7 @@ export default function WorkspacePeople({ base }: { base: string }) {
                 <tr>
                   <th>Person</th>
                   <th>Workspace profile</th>
+                  <th>SME result review</th>
                   <th>Access history</th>
                 </tr>
               </thead>
@@ -63,12 +71,67 @@ export default function WorkspacePeople({ base }: { base: string }) {
                     <td>{person.name}</td>
                     <td>{person.access.label}</td>
                     <td>
+                      <span>
+                        {person.preserved_duties.includes('sme-reviewer')
+                          ? 'Assigned'
+                          : 'Not assigned'}
+                      </span>{' '}
+                      <button
+                        disabled={saving !== null}
+                        onClick={async () => {
+                          const active = !person.preserved_duties.includes('sme-reviewer');
+                          const current = generation.current;
+                          setSaving(person.id);
+                          setError('');
+                          setMessage('');
+                          try {
+                            await api(
+                              base + '/workspace/benchmark/expert-review-membership',
+                              'PUT',
+                              { user_id: person.id, active },
+                            );
+                            if (current !== generation.current) return;
+                            setPage(
+                              (previous) =>
+                                previous && {
+                                  ...previous,
+                                  items: previous.items.map((item) =>
+                                    item.id === person.id
+                                      ? {
+                                          ...item,
+                                          preserved_duties: active
+                                            ? [...item.preserved_duties, 'sme-reviewer']
+                                            : item.preserved_duties.filter(
+                                                (role) => role !== 'sme-reviewer',
+                                              ),
+                                        }
+                                      : item,
+                                  ),
+                                },
+                            );
+                            setMessage(
+                              `${person.name}: SME review ${active ? 'assigned' : 'removed'}.`,
+                            );
+                          } catch (e) {
+                            if (current === generation.current) setError((e as Error).message);
+                          } finally {
+                            if (current === generation.current) setSaving(null);
+                          }
+                        }}
+                      >
+                        {saving === person.id
+                          ? 'Saving…'
+                          : person.preserved_duties.includes('sme-reviewer')
+                            ? 'Remove SME review'
+                            : 'Assign SME review'}
+                      </button>
+                    </td>
+                    <td>
                       <details>
                         <summary>Access record</summary>
                         <p>{person.access.label}</p>
                         <p className={styles.muted}>
-                          Current access uses Admin or RL Engineer. Prior decisions and access
-                          history are preserved.
+                          Prior decisions and access history are preserved.
                         </p>
                       </details>
                     </td>

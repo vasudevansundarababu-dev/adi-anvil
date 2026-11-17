@@ -413,7 +413,7 @@ export default function ExecutableImport({
             <p>
               Download the notebook, then use File → Upload notebook in Colab or open it in
               JupyterLab. It contains code but no private reference fixtures or credentials. Upload
-              your edited notebook below; Anvil reruns authoritative checks in a fresh supplied
+              your edited notebook below; Forge reruns authoritative checks in a fresh supplied
               environment. Hosted notebook results do not certify that environment.
             </p>
             <a href="https://colab.research.google.com/" target="_blank" rel="noreferrer">

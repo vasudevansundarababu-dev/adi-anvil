@@ -18,6 +18,47 @@ from anvil.config import private_file_owner
 
 
 def resource():
+    from anvil import pilot_environment
+
+    pilot = pilot_environment.current()
+    if pilot:
+        if os.environ.get("ANVIL_WORKER_BROKER_ROLE") != "api":
+            raise ValueError("Only the API may resolve pilot provider credentials")
+        number = os.environ.get("ANVIL_PILOT_GCP_PROJECT_NUMBER", "")
+        value = os.environ.get("ANVIL_PILOT_SECRET_RESOURCE", "")
+        prefix = pilot_environment.TARGETS[pilot][1]
+        if (
+            not re.fullmatch(r"[1-9][0-9]{0,19}", number)
+            or value != f"projects/{number}/secrets/{prefix}-model-credentials"
+        ):
+            raise ValueError("Exact isolated permanent-pilot credential resource required")
+        if os.environ.get("ANVIL_QA_SECRET_RESOURCE") or os.environ.get(
+            "ANVIL_GENERATION_SECRET_RESOURCE"
+        ):
+            raise ValueError("Legacy/temporary credential resources cannot be inherited")
+        if any(
+            os.environ.get(k)
+            for k in (
+                "GOOGLE_APPLICATION_CREDENTIALS",
+                "OPENAI_API_KEY",
+                "ANTHROPIC_API_KEY",
+                "GOOGLE_API_KEY",
+                "GEMINI_API_KEY",
+                "OPENAI_API_KEY_FILE",
+                "ANTHROPIC_API_KEY_FILE",
+                "GOOGLE_API_KEY_FILE",
+                "GEMINI_API_KEY_FILE",
+            )
+        ):
+            raise ValueError("Ambient provider/service-account keys are forbidden")
+        return value
+    if os.environ.get("ANVIL_CREDENTIAL_STORE_PROFILE", "legacy") == "qa":
+        value = os.environ.get("ANVIL_QA_SECRET_RESOURCE", "")
+        if not re.fullmatch(r"projects/[0-9]+/secrets/anvil-qa-model-credentials", value):
+            raise ValueError("Separate QA credential secret is not configured")
+        return value
+    if os.environ.get("ANVIL_CREDENTIAL_STORE_PROFILE", "legacy") != "legacy":
+        raise ValueError("Unsupported credential store profile")
     value = os.environ.get("ANVIL_GENERATION_SECRET_RESOURCE", "")
     if not re.fullmatch(r"projects/[0-9]+/secrets/anvil-import-generation", value):
         raise ValueError("Managed generation secret is not configured")
@@ -51,9 +92,29 @@ def validate_binding(binding):
 
 
 def request(method, path, body=None):
+    from anvil import pilot_environment
+
+    pilot = pilot_environment.current()
+    if pilot:
+        selected = resource()
+        if not (
+            (method == "POST" and path == selected + ":addVersion")
+            or (
+                method == "GET"
+                and re.fullmatch(re.escape(selected) + r"/versions/[0-9]+:access", path)
+            )
+        ):
+            raise ValueError("Pilot secret operation outside exact resource")
+    from anvil.golden_kyc_dispatch_scope import current
+
+    if current() is not None:
+        from anvil.golden_kyc_deadline_http import secret_request
+
+        return secret_request(method,path,body)
     with httpx.Client(trust_env=False, timeout=15, follow_redirects=False) as client:
         token = client.get(
-            "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
+            ("http://169.254.169.254" if pilot else "http://metadata.google.internal")
+            + "/computeMetadata/v1/instance/service-accounts/default/token",
             headers={"Metadata-Flavor": "Google"},
         )
         token.raise_for_status()
@@ -81,6 +142,12 @@ def index():
 
 def save(value, binding):
     validate_binding(binding)
+    selected_resource = resource()
+    if (
+        os.environ.get("ANVIL_CREDENTIAL_STORE_PROFILE", "legacy") in {"qa", "qa-v1", "staging-v1"}
+        and "scope" in binding
+    ):
+        raise ValueError("QA credential store requires a project binding")
     identifier = str(uuid4())
     data = json.dumps({"id": identifier, "binding": binding, "secret": value}).encode()
     if len(data) > 32768:
@@ -89,10 +156,10 @@ def save(value, binding):
     try:
         version = request(
             "POST",
-            resource() + ":addVersion",
+            selected_resource + ":addVersion",
             {"payload": {"data": base64.b64encode(data).decode()}},
         )["name"]
-        if not re.fullmatch(re.escape(resource()) + r"/versions/[0-9]+", version):
+        if not re.fullmatch(re.escape(selected_resource) + r"/versions/[0-9]+", version):
             raise ValueError("Unexpected managed secret version")
         out = os.open(
             identifier, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=fd
@@ -109,6 +176,12 @@ def save(value, binding):
 
 def load(identifier, binding):
     validate_binding(binding)
+    selected_resource = resource()
+    if (
+        os.environ.get("ANVIL_CREDENTIAL_STORE_PROFILE", "legacy") in {"qa", "qa-v1", "staging-v1"}
+        and "scope" in binding
+    ):
+        raise ValueError("QA credential store requires a project binding")
     name = str(UUID(str(identifier)))
     fd = index()
     try:
@@ -125,7 +198,7 @@ def load(identifier, binding):
             version = json.load(stream)["version"]
     finally:
         os.close(fd)
-    if not re.fullmatch(re.escape(resource()) + r"/versions/[0-9]+", version):
+    if not re.fullmatch(re.escape(selected_resource) + r"/versions/[0-9]+", version):
         raise ValueError("Unexpected managed secret locator")
     response = request("GET", version + ":access")
     if response.get("name") != version:

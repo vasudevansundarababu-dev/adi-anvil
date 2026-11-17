@@ -1,0 +1,32 @@
+[
+  {
+    "expected": 1,
+    "field": "item-001",
+    "id": "criterion-001"
+  },
+  {
+    "expected": 4,
+    "field": "item-002",
+    "id": "criterion-002"
+  },
+  {
+    "expected": 9,
+    "field": "item-003",
+    "id": "criterion-003"
+  },
+  {
+    "expected": 16,
+    "field": "item-004",
+    "id": "criterion-004"
+  },
+  {
+    "expected": 25,
+    "field": "item-005",
+    "id": "criterion-005"
+  },
+  {
+    "expected": 36,
+    "field": "item-006",
+    "id": "criterion-006"
+  }
+]

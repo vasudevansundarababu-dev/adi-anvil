@@ -1,0 +1,48 @@
+{
+  "schema_version": "praxis.authored-task-export.v1",
+  "package_id": "synthetic-non-golden-export",
+  "package_version": "1",
+  "batch": {
+    "id": "synthetic-batch-1",
+    "part_index": 1,
+    "part_count": 1
+  },
+  "content_classification": "synthetic",
+  "tasks": [
+    {
+      "task_id": "NEW-SME-9001",
+      "revision_id": "r1",
+      "template": {
+        "id": "94cd922a-5aae-4bab-82a3-bdf5b730c521",
+        "version": 2,
+        "sha256": "7fbf4b08f5c0668a2b6c621ece0b10b67f9b2d478047d5cdfdc850a67e59aa10"
+      },
+      "form": {
+        "path": "forms/account-opening-v2.json",
+        "sha256": "bc11ddf06748e710609dd992ab13ed803494b861384b3f406b74ee5a3607c91d"
+      },
+      "actor": {
+        "path": "tasks/NEW-SME-9001/actor.json",
+        "sha256": "14da882f5e20b517a38eed46cc2a1244d444895c89d742e307dc41538b470c92"
+      },
+      "private_assets": [
+        {
+          "path": "private/NEW-SME-9001/reference.json",
+          "sha256": "dcaf9f28c8ba4d0db2fbb323f28da3199927c10d84db803ae0e6b972e0694e33",
+          "purpose": "grader_only_reference_and_rubric",
+          "access": "private_rubric"
+        }
+      ],
+      "agent_mode": "SINGLE",
+      "review": {
+        "status": "approved",
+        "revision_id": "r1",
+        "receipt_ref": "synthetic-provenance-not-real-human-approval"
+      }
+    }
+  ],
+  "execution": {
+    "location": "anvil_only",
+    "paid_calls": false
+  }
+}

@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:anvil:evaluator-task-export:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "package_id",
+    "package_version",
+    "profile",
+    "environment",
+    "tasks",
+    "execution"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "anvil.evaluator-task-export.v1"
+    },
+    "package_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$"
+    },
+    "package_version": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$"
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "id": {
+          "const": "golden-kyc-run-evidence-v1"
+        },
+        "path": {
+          "const": "evaluation-profile.json"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "version",
+        "source_sha256",
+        "logical_environment_sha256",
+        "data_sha256",
+        "policy_sha256",
+        "seed",
+        "runtime",
+        "openenv",
+        "harbor"
+      ],
+      "properties": {
+        "key": {
+          "const": "golden-kyc-v1"
+        },
+        "version": {
+          "const": "golden-kyc-1.0.0-8e5a29c363ad"
+        },
+        "source_sha256": {
+          "const": "8e5a29c363ade6b869ee3af4f238dac131c838e44da7d57fdc34b3024f46ff0b"
+        },
+        "logical_environment_sha256": {
+          "const": "15a4fe5453402cfbfac5bbc42e901a9b1a4cc3ee595ccc9d8846a3e813aa31f3"
+        },
+        "data_sha256": {
+          "const": "e8d5cb8b4c84ec58049bba9259a04662fef732b536d3663bcfdb425fb7f74653"
+        },
+        "policy_sha256": {
+          "const": "2bcdb7b2656dea0840f5d862d9cd39d9ce3e63d8b29b59776483f803c114098d"
+        },
+        "seed": {
+          "type": "integer",
+          "const": 20261111
+        },
+        "runtime": {
+          "const": "golden-kyc-postgres-v1"
+        },
+        "openenv": {
+          "const": "0.12.0"
+        },
+        "harbor": {
+          "const": "0.25.0"
+        }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task_id",
+          "task_version",
+          "path",
+          "task_payload_sha256",
+          "application_sha256",
+          "profile_id"
+        ],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$"
+          },
+          "task_version": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$"
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 240,
+            "pattern": "^[A-Za-z0-9_-][A-Za-z0-9_.-]*(/[A-Za-z0-9_-][A-Za-z0-9_.-]*)*$"
+          },
+          "task_payload_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "application_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "profile_id": {
+            "const": "golden-kyc-run-evidence-v1"
+          }
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "location",
+        "paid_calls",
+        "origin",
+        "model_performance"
+      ],
+      "properties": {
+        "location": {
+          "const": "anvil_only"
+        },
+        "paid_calls": {
+          "const": false
+        },
+        "origin": {
+          "const": "software_control_not_model"
+        },
+        "model_performance": {
+          "const": false
+        }
+      }
+    }
+  }
+}

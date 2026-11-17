@@ -20,7 +20,7 @@ export default function ImportGenerationSettings({ base }: { base: string }) {
     <section className={styles.panel} aria-label="Standard import generation model">
       <h2>Standard import generation model</h2>
       <p>
-        One model for the entire Anvil installation generates task verifiers and constraints.
+        One model for the entire Forge installation generates task verifiers and constraints.
         Evaluation models below run your tasks separately.
       </p>
       {error && <p role="alert">{error}</p>}

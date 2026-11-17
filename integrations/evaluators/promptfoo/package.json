@@ -1,0 +1,8 @@
+{
+  "name": "anvil-promptfoo-evaluator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": { "promptfoo": "0.125.1" },
+  "overrides": { "basic-ftp": "6.2.3" }
+}

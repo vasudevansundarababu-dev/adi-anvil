@@ -1,0 +1,29 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "algorithm": {
+      "const": "Ed25519",
+      "title": "Algorithm",
+      "type": "string"
+    },
+    "key_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+      "title": "Key Id",
+      "type": "string"
+    },
+    "profile": {
+      "const": "ed25519-jcs-v1",
+      "title": "Profile",
+      "type": "string"
+    },
+    "signature_base64": {
+      "maxLength": 88,
+      "minLength": 88,
+      "title": "Signature Base64",
+      "type": "string"
+    }
+  },
+  "required": ["profile", "key_id", "algorithm", "signature_base64"],
+  "title": "Signature",
+  "type": "object"
+}

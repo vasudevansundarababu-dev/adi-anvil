@@ -1,17 +1,18 @@
 """Server-managed standard text rates; no model-form pricing or terms ceremony.
 
-Published rates checked 2026-11-01 UTC. Sources:
+Exact catalog rates reverified 2026-11-08 UTC; seven-day freshness. Sources:
 https://developers.openai.com/api/docs/pricing
 https://developers.openai.com/api/docs/guides/prompt-caching
 Only exact listed model IDs/global standard processing are admitted by this catalog.
 Unknown or expired support never invents a zero price or unlimited spending authority.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 SOURCE = "https://developers.openai.com/api/docs/pricing"
-REFERENCE = "anvil-openai-standard-2026-10-31-v1"
-EXPIRES = "2026-11-08T02:47:35+00:00"
+REFERENCE = "anvil-openai-standard-2026-11-08-v1"
+VERIFIED_AT = "2026-11-08T15:25:35.450801+00:00"
+EXPIRES = (datetime.fromisoformat(VERIFIED_AT) + timedelta(days=7)).isoformat()
 # micro-USD per million tokens: uncached input, cached input, 30m write, output.
 RATES = {
     "gpt-6-luna": (100000, 10000, 125000, 500000),
@@ -21,30 +22,52 @@ RATES = {
 }
 
 
-def current(price):
+def current(price, *, now=None):
     try:
         if not price or any(
             type(price.get(key)) is not int or price[key] < 0
             for key in ("input_micro_usd_per_million_tokens", "output_micro_usd_per_million_tokens")
         ):
             return False
-        return datetime.fromisoformat(price["expires_at"].replace("Z", "+00:00")) > datetime.now(
-            timezone.utc
+        return datetime.fromisoformat(price["expires_at"].replace("Z", "+00:00")) > (
+            now if now is not None else datetime.now(timezone.utc)
         )
     except (ValueError, TypeError, KeyError, AttributeError):
         return False
 
 
 def managed(provider, model):
+    if (provider, model) in {
+        ("anthropic", "claude-fable-5-2"),
+        ("gemini", "gemini-4-argon"),
+    }:
+        # Exact standard text rates, verified against provider documentation.
+        # Argon introductory rates end November 30; this snapshot expires first.
+        verified = "2026-11-10T09:38:33+00:00"
+        anthropic = provider == "anthropic"
+        return {
+            "source_kind": "anvil_managed_anthropic" if anthropic else "anvil_managed_gemini",
+            "reference": "anvil-overnight-standard-2026-11-10-v1",
+            "source_url": "https://platform.claude.com/docs/en/models/fable-5-2/overview"
+            if anthropic
+            else "https://ai.google.dev/gemini-api/docs/pricing",
+            "verified_at": verified,
+            "provider": provider,
+            "model_id": model,
+            "expires_at": (datetime.fromisoformat(verified) + timedelta(days=7)).isoformat(),
+            "input_micro_usd_per_million_tokens": 8000000 if anthropic else 2000000,
+            "output_micro_usd_per_million_tokens": 40000000 if anthropic else 10000000,
+            "service_tier": "default",
+        }
     if provider == "gemini" and model == "gemini-3.8-flash":
         return {
             "source_kind": "anvil_managed_gemini",
-            "reference": "anvil-gemini-standard-2026-11-02-v1",
+            "reference": "anvil-gemini-standard-2026-11-08-v1",
             "source_url": "https://ai.google.dev/gemini-api/docs/pricing",
-            "verified_at": "2026-11-02T14:32:00+00:00",
+            "verified_at": VERIFIED_AT,
             "provider": provider,
             "model_id": model,
-            "expires_at": "2026-11-09T14:32:00+00:00",
+            "expires_at": EXPIRES,
             "input_micro_usd_per_million_tokens": 750000,
             "output_micro_usd_per_million_tokens": 3750000,
             "service_tier": "default",
@@ -54,12 +77,12 @@ def managed(provider, model):
         # billed_usage rejects nonzero cache usage rather than undercounting it.
         return {
             "source_kind": "anvil_managed_anthropic",
-            "reference": "anvil-anthropic-standard-2026-11-02-v1",
+            "reference": "anvil-anthropic-standard-2026-11-08-v1",
             "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
-            "verified_at": "2026-11-02T14:40:00+00:00",
+            "verified_at": VERIFIED_AT,
             "provider": provider,
             "model_id": model,
-            "expires_at": "2026-11-09T14:40:00+00:00",
+            "expires_at": EXPIRES,
             "input_micro_usd_per_million_tokens": 4000000,
             "output_micro_usd_per_million_tokens": 20000000,
             "service_tier": "default",
@@ -72,7 +95,7 @@ def managed(provider, model):
         "source_kind": "anvil_managed",
         "reference": REFERENCE,
         "source_url": SOURCE,
-        "verified_at": "2026-11-01T02:47:35+00:00",
+        "verified_at": VERIFIED_AT,
         "provider": provider,
         "model_id": model,
         "expires_at": EXPIRES,

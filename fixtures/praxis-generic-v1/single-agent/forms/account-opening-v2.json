@@ -1,0 +1,133 @@
+{
+  "schemaVersion": "praxis.template_profile.v1",
+  "profileId": "account-opening-v2",
+  "version": 2,
+  "agentMode": "SINGLE",
+  "sections": [
+    {
+      "key": "S1",
+      "fields": [
+        {
+          "key": "title",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "businessContext",
+          "type": "long_text",
+          "required": true
+        }
+      ]
+    },
+    {
+      "key": "S2",
+      "fields": [
+        {
+          "key": "evidence",
+          "type": "evidence_record",
+          "required": true
+        }
+      ]
+    },
+    {
+      "key": "S3",
+      "fields": [
+        {
+          "key": "environment",
+          "type": "pick_list",
+          "options": [
+            {
+              "value": "none"
+            }
+          ],
+          "required": true
+        },
+        {
+          "key": "recordedResponses",
+          "type": "tool_call",
+          "visibility": "private_reference"
+        }
+      ]
+    },
+    {
+      "key": "S4",
+      "fields": [
+        {
+          "key": "policies",
+          "type": "policy_citation"
+        }
+      ]
+    },
+    {
+      "key": "S5",
+      "fields": [
+        {
+          "key": "steps",
+          "type": "repeated_array",
+          "itemFields": [
+            {
+              "key": "id",
+              "type": "text"
+            },
+            {
+              "key": "instruction",
+              "type": "long_text"
+            },
+            {
+              "key": "expectedResult",
+              "type": "long_text",
+              "visibility": "private_reference"
+            }
+          ]
+        },
+        {
+          "key": "rationale",
+          "type": "long_text",
+          "visibility": "private_reference",
+          "required": true
+        }
+      ]
+    },
+    {
+      "key": "S6",
+      "fields": [
+        {
+          "key": "decisionFields",
+          "type": "repeated_array",
+          "itemFields": [
+            {
+              "key": "name",
+              "type": "text"
+            },
+            {
+              "key": "referenceValue",
+              "type": "text",
+              "visibility": "private_reference"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "S7",
+      "fields": [
+        {
+          "key": "criteria",
+          "type": "criterion",
+          "visibility": "private_rubric",
+          "required": true
+        }
+      ]
+    },
+    {
+      "key": "S8",
+      "fields": [
+        {
+          "key": "sourcesUsed",
+          "type": "text",
+          "visibility": "private_reference"
+        }
+      ]
+    }
+  ]
+}

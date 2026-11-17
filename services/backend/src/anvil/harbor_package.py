@@ -5,11 +5,21 @@ import io
 import json
 import zipfile
 
+from anvil.native_image_profile import IMAGE as BASE_IMAGE
 from anvil.praxis_contract import PraxisTask, actor_view, grade
 
 HARBOR_VERSION = "0.25.0"
-COMPILER_VERSION = "anvil-harbor-structured-v1"
-BASE_IMAGE = "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e"
+COMPILER_VERSION = "anvil-harbor-structured-v1.1-security"
+
+
+def structured_profile_current(manifest):
+    return (
+        manifest.get("binding") in {"structured-decision-v1", "staged-decision-v1"}
+        and manifest.get("harbor_version") == HARBOR_VERSION
+        and manifest.get("compiler_version") == COMPILER_VERSION
+        and manifest.get("base_image") == BASE_IMAGE
+    )
+
 
 # Verifier is trusted compiler code, not source task text. No eval, shell interpolation,
 # generated imports or arbitrary paths. It is uploaded by Harbor only after actor execution.

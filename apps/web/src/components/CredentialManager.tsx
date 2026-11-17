@@ -307,7 +307,7 @@ export default function CredentialManager({
             />
           </label>
           <p className={styles.muted}>
-            Local encrypted storage only. Saving grants no spending authority. Credential changes
+            Keys are stored securely. Saving grants no spending authority. Credential changes
             require a recent sign-in. Rotation invalidates profiles bound to the older version for
             future dispatch.
           </p>

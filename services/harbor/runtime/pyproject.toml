@@ -1,0 +1,26 @@
+[project]
+name = "anvil-marketing-native-runtime"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "adi-anvil==0.2.1",
+  "anvil-harbor-adapter==0.1.0",
+  "harbor==0.25.0",
+  "openenv==0.12.0",
+  "langgraph==1.2.14",
+  "langgraph-checkpoint-postgres==3.1.3",
+]
+
+[tool.uv]
+package = false
+build-constraint-dependencies = ["hatchling==1.27.0"]
+# One resolver owns the complete combined closure. Never concatenate the backend,
+# OpenEnv and Harbor locks or splice their site-packages directories together.
+
+[tool.uv.sources]
+adi-anvil = { path = "../../backend" }
+anvil-harbor-adapter = { path = ".." }
+
+[[tool.uv.index]]
+url = "https://pypi.org/simple"
+default = true

@@ -1,5 +1,5 @@
-<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Anvil task import help</title><body><main>
-<h1>Anvil task import — foundation v1</h1>
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Forge task import help</title><body><main>
+<h1>Forge task import — foundation v1</h1>
 <p>Approved Objective → Import tasks → upload CSV/JSONL → map → validate → publish → attach to suite → Configure run.</p>
 <h2>Required fields</h2><p>TaskSpec 1.0 requires schema_version, external_id, instruction and input. Input is a JSON object. Title, reference and metadata are optional. CSV requires explicit external_id, instruction and input mappings; schema_version defaults to 1.0. Reference answers are excluded from actor previews.</p>
 <h2>Errors</h2><ul><li>REQUIRED: supply the named field or mapping.</li><li>INVALID_TYPE: correct the JSON type.</li><li>INVALID_JSON: correct the JSON line or nested cell.</li><li>DUPLICATE_EXTERNAL_ID: give both reported rows distinct IDs.</li><li>UNSUPPORTED_SCHEMA_VERSION: use 1.0.</li></ul>

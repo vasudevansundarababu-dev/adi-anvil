@@ -16,6 +16,8 @@ def profile_for(roles):
         return "admin"
     if ENGINEER_ROLES.intersection(roles):
         return "rl_engineer"
+    if "sme-reviewer" in roles:
+        return "sme_reviewer"
     return None
 
 
@@ -38,6 +40,12 @@ def capabilities_for(roles):
                 "limits.read",
             ]
         )
+    if {"admin", "sme-reviewer"}.intersection(roles):
+        capabilities.extend(["result_reviews.read", "result_reviews.assess"])
+    if "sme-reviewer" in roles and not READ_ROLES.intersection(roles):
+        capabilities.append("workspace.read")
+    if {"admin", "rl-engineer"}.intersection(roles):
+        capabilities.extend(["result_reviews.read", "result_reviews.diagnose"])
     return sorted(capabilities)
 
 
@@ -49,7 +57,11 @@ def access_projection(roles, mapping=None):
     )
     return {
         "profile": profile,
-        "label": {"admin": "Admin", "rl_engineer": "RL Engineer"}.get(profile, "No active access"),
+        "label": {
+            "admin": "Admin",
+            "rl_engineer": "RL Engineer",
+            "sme_reviewer": "SME Reviewer",
+        }.get(profile, "No active access"),
         "capabilities": capabilities_for(roles),
         "mapping_state": "recorded"
         if matches

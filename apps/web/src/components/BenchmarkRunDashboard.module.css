@@ -1,0 +1,264 @@
+.root {
+  color: #193b51;
+  font-size: 14px;
+}
+.root h2 {
+  font-size: 30px;
+  margin: 6px 0;
+}
+.root h3 {
+  font-size: 18px;
+  margin: 8px 0 16px;
+}
+.root p {
+  line-height: 1.6;
+}
+.header,
+.actions,
+.context,
+.plan {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.header {
+  margin-bottom: 24px;
+}
+.header small {
+  letter-spacing: 0.13em;
+  font-size: 10px;
+}
+.header p {
+  margin: 0;
+  color: #677d8a;
+}
+.root button,
+.root select,
+.root input:not([type='checkbox']) {
+  border: 1px solid #c8d8e1;
+  border-radius: 7px;
+  padding: 9px 12px;
+  background: #fff;
+  color: #1c4d67;
+  font: inherit;
+}
+.root button {
+  cursor: pointer;
+}
+.root button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+.root .primary {
+  background: #146f83;
+  color: white;
+  border-color: #146f83;
+}
+.pill {
+  border-radius: 20px;
+  background: #e7f3ec;
+  color: #277245;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.filters {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: #eff5f8;
+  padding: 18px;
+  border-radius: 12px;
+}
+.root label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 12px;
+  margin: 8px 0;
+}
+.filters label {
+  flex: 1;
+  min-width: 135px;
+}
+.context {
+  padding: 18px 2px;
+  font-size: 12px;
+}
+.tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid #d3e0e7;
+  margin-bottom: 20px;
+  overflow: auto;
+}
+.tabs button {
+  border: 0;
+  border-radius: 0;
+  white-space: nowrap;
+  padding: 14px;
+}
+.tabs button[aria-current='page'] {
+  border-bottom: 3px solid #128894;
+  background: #eaf5f5;
+  font-weight: 600;
+}
+.card {
+  padding: 24px;
+  border: 1px solid #dce6ec;
+  border-radius: 13px;
+  background: white;
+  margin: 16px 0;
+  min-width: 0;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.metrics > div {
+  padding: 20px;
+  border: 1px solid #dce6ec;
+  border-radius: 12px;
+  background: #fff;
+}
+.metrics small {
+  font-size: 10px;
+  color: #6a8392;
+  letter-spacing: 0.1em;
+  display: block;
+}
+.metrics strong {
+  font-size: 31px;
+  display: block;
+  margin-top: 9px;
+}
+.score {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  margin: 24px 0;
+}
+.score > div {
+  grid-column: 1/-1;
+  border-radius: 4px;
+  background: #eff4f7;
+  height: 10px;
+  overflow: hidden;
+}
+.score i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+}
+.radar {
+  display: block;
+  width: 100%;
+  max-height: 350px;
+}
+.legend {
+  font-size: 11px;
+  margin-right: 12px;
+}
+.note {
+  font-size: 12px;
+  color: #697f8e;
+}
+.root table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin: 18px 0;
+}
+.root td,
+.root th {
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid #e2e9ee;
+  vertical-align: top;
+}
+.root th {
+  font-weight: 600;
+  color: #6c8393;
+  background: #f5f8fa;
+}
+.root td button {
+  padding: 4px 7px;
+  font-size: 12px;
+}
+.selected {
+  background: #eaf6f6;
+}
+.root pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #f4f8fa;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 11px;
+  max-height: 400px;
+  overflow: auto;
+}
+.root code,
+.root small {
+  overflow-wrap: anywhere;
+}
+.root details {
+  margin: 16px 0;
+}
+.root summary {
+  cursor: pointer;
+  color: #22697c;
+  padding: 8px 0;
+  font-weight: 600;
+}
+.root fieldset {
+  border: 1px solid #d8e4eb;
+  border-radius: 8px;
+  margin: 16px 0;
+}
+.root fieldset label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  line-height: 1.4;
+}
+.root article {
+  border-top: 1px solid #dce5eb;
+  padding: 22px 0;
+}
+.plan {
+  padding: 15px 0;
+  border-bottom: 1px solid #e5edf2;
+}
+.plan small {
+  display: block;
+  margin-top: 6px;
+}
+.error {
+  background: #fff1eb;
+  color: #9e3c21;
+  padding: 14px;
+  border-radius: 8px;
+}
+@media (max-width: 950px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .root table {
+    display: block;
+    overflow: auto;
+  }
+  .header {
+    align-items: flex-start;
+  }
+}

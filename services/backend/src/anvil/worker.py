@@ -15,7 +15,7 @@ from psycopg.rows import dict_row
 
 from anvil import artifacts, domain
 from anvil.config import ROOT, setting
-from anvil.db import audit, one, transaction
+from anvil.db import audit, one, project_fence, transaction
 from anvil.evaluation import EXTERNAL_GRAPH_VERSION, GRAPH_VERSION
 
 STOP = False
@@ -28,7 +28,21 @@ class State(TypedDict):
     output_artifact_id: str | None
 
 
+def lock_run(c, job):
+    """Take the project fence, then the episode's run, before any job or episode row.
+
+    This matches API mutations such as run cancellation (project, run, episodes). Run
+    completion counts sibling episodes; holding the run lock serializes those counts.
+    """
+    project_fence(c, job["project_id"])
+    c.execute(
+        "SELECT r.id FROM anvil.runs r JOIN anvil.episodes e ON e.run_id=r.id WHERE e.id=%s FOR UPDATE OF r",
+        (job["target_id"],),
+    )
+
+
 def guard(c, job):
+    lock_run(c, job)
     if not one(
         c,
         "SELECT 1 FROM anvil.jobs WHERE id=%s AND status='leased' AND lease_token=%s AND lease_until>now() FOR UPDATE",
@@ -169,10 +183,12 @@ def graph_for(job, saver):
             e = guard(c, job)
             if not e["final_assessment_id"] and not e["invalidity_resolution_id"]:
                 raise RuntimeError("final_review_missing")
-            c.execute(
-                "UPDATE anvil.episodes SET state='finalized',row_version=row_version+1 WHERE id=%s AND state<>'finalized'",
+            if not one(
+                c,
+                "UPDATE anvil.episodes SET state='finalized',row_version=row_version+1 WHERE id=%s AND state<>'finalized' RETURNING id",
                 (e["id"],),
-            )
+            ):
+                return {}
             pending = one(
                 c,
                 "SELECT count(*) n FROM anvil.episodes WHERE run_id=%s AND state NOT IN ('finalized','failed_operational','execution_unknown','cancelled','unscorable')",
@@ -208,8 +224,8 @@ def tick():
     if not job:
         return False
     project = job["project_id"]
+    marketing = job["kind"] == "marketing_episode"
     try:
-        marketing = job["kind"] == "marketing_episode"
         if job["kind"] == "resume":
             with transaction(project, worker=True) as c:
                 row = one(
@@ -323,6 +339,8 @@ def tick():
 
                 if retry_transient(c, job, exc):
                     return True
+            if job["kind"] in ("episode", "resume") and not marketing:
+                lock_run(c, job)
             failed = c.execute(
                 "UPDATE anvil.jobs SET status='failed',error_code=%s WHERE id=%s AND lease_token=%s AND lease_until>now() RETURNING id",
                 (code, job["id"], job["lease_token"]),

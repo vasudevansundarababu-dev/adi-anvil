@@ -1,0 +1,32 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "item-001": {
+      "type": "integer"
+    },
+    "item-002": {
+      "type": "integer"
+    },
+    "item-003": {
+      "type": "integer"
+    },
+    "item-004": {
+      "type": "integer"
+    },
+    "item-005": {
+      "type": "integer"
+    },
+    "item-006": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "item-001",
+    "item-002",
+    "item-003",
+    "item-004",
+    "item-005",
+    "item-006"
+  ],
+  "type": "object"
+}

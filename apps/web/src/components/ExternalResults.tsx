@@ -44,7 +44,7 @@ export default function ExternalResults({ base, runId }: { base: string; runId: 
     <details className="card">
       <summary>Import reported results</summary>
       <p>
-        Execution stays customer- or partner-reported after Anvil review. No candidate is invoked.
+        Execution stays customer- or partner-reported after Forge review. No candidate is invoked.
         Missing output remains unscorable; missing traces remain missing.
       </p>
       <p className="muted">
@@ -94,7 +94,7 @@ export default function ExternalResults({ base, runId }: { base: string; runId: 
                   });
                   setBatch({ ...batch, status: 'committed' });
                   setMessage(
-                    'Imported. Refresh the run to inspect reported attempts and pending Anvil reviews.',
+                    'Imported. Refresh the run to inspect reported attempts and pending Forge reviews.',
                   );
                 } catch (e) {
                   setMessage((e as Error).message);

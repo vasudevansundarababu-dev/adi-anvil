@@ -1,0 +1,745 @@
+{
+  "schema_version": "anvil.golden-target-register.v1",
+  "source_sha256": "fc76b825086d5a0c53472602e2e58feb34de112d99ff544add0ef0c0f7299de5",
+  "qualification": "design_requirements_only",
+  "targets": [
+    {
+      "domain": "kyc",
+      "id": "identification_parties",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Native party-set equality",
+      "evidence_contract": "Application party roster + party assessments; per application",
+      "qualification_work": "Detect duplicate assignments as well as omitted and foreign parties. Set equality discards duplicates."
+    },
+    {
+      "domain": "kyc",
+      "id": "identification_verification",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Native current-operation checks plus generic hold/referral fallback",
+      "evidence_contract": "Current identity tool responses + party claims; per required party",
+      "qualification_work": "Bind the right per-party operation, result, exception and targeted reason. A blanket request cannot clear all missing checks."
+    },
+    {
+      "domain": "kyc",
+      "id": "profile",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Native application ID in read set",
+      "evidence_contract": "Assigned case manifest + delivered profile trace; per application",
+      "qualification_work": "Test assigned case and delivered profile version. Separate reading the profile from interpreting it."
+    },
+    {
+      "domain": "kyc",
+      "id": "screening",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Native current-operation checks plus generic hold/referral fallback",
+      "evidence_contract": "Released screening events + party findings; per required party",
+      "qualification_work": "Bind the right per-party operation, result, exception and targeted reason. A blanket request cannot clear all missing checks."
+    },
+    {
+      "domain": "kyc",
+      "id": "decision",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Native row uses presence of final output; disposition also has an independent gate",
+      "evidence_contract": "Sealed decision + reviewed acceptable outcomes; per application",
+      "qualification_work": "Award against reviewed permitted disposition and rationale. Wrong clearance must not earn correctness points."
+    },
+    {
+      "domain": "kyc",
+      "id": "next_action",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Native outstanding-actions presence or ready with no unresolved operation",
+      "evidence_contract": "Remaining requirements + request or referral + rationale; per open requirement or closure",
+      "qualification_work": "Verify the correct outstanding item, subject, due action and persisted request."
+    },
+    {
+      "domain": "kyc",
+      "id": "evidence",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Native cited IDs were read; generic completeness flag reused across criteria",
+      "evidence_contract": "Read trace + final evidence IDs + policy version; per assessment",
+      "qualification_work": "Tie each material claim to the exact supporting passage, revision and subject."
+    },
+    {
+      "domain": "kyc",
+      "id": "revision_integrity",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Native equality of assessed and sealed revision",
+      "evidence_contract": "Sealed case revision + final assessed revision + native citation evidence; per final assessment",
+      "qualification_work": "Retain narrow native award. Qualify matching, stale, omitted and unavailable cases. Bind change detection separately."
+    },
+    {
+      "domain": "kyc",
+      "id": "account_structure",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Native account-type equality",
+      "evidence_contract": "Product record + proposed account type; per application",
+      "qualification_work": "Test reviewed product alternatives, aliases and versioned source mapping."
+    },
+    {
+      "domain": "kyc",
+      "id": "account_roles",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Native party role lookup and party-set check",
+      "evidence_contract": "Party roster + submitted roles; per party",
+      "qualification_work": "Verify every expected assignment, duplicates and evidence linking each person to that role."
+    },
+    {
+      "domain": "kyc",
+      "id": "account_eligibility",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Partial product/age logic; non-ready branch checks reason presence",
+      "evidence_contract": "Product terms + case facts + recommendation; per requested product",
+      "qualification_work": "Bind applicable product and case date, evidence and reviewed exceptions; supply custodial handling."
+    },
+    {
+      "domain": "kyc",
+      "id": "account_agreements",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Read agreement per party or generic unresolved disposition",
+      "evidence_contract": "Required agreements + retrieved agreement IDs + gaps; per required agreement",
+      "qualification_work": "Check correct instrument version, signatory and which missing agreement caused a follow-up."
+    },
+    {
+      "domain": "kyc",
+      "id": "account_authority",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Partial authority verification; custodial branch null",
+      "evidence_contract": "Authority instruments + scoped verification results; when authority is relevant",
+      "qualification_work": "Require reviewed authority instrument, scope, subject and justified separate handling."
+    },
+    {
+      "domain": "kyc",
+      "id": "account_party_separation",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Same party-set predicate as identification",
+      "evidence_contract": "Party IDs + operation IDs + per-party assessments; per party and claim",
+      "qualification_work": "Trace operation or document subject to each claim. A correct roster cannot detect swapped evidence."
+    },
+    {
+      "domain": "kyc",
+      "id": "account_exceptions",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Unresolved operation or fallback disposition predicate",
+      "evidence_contract": "Current exceptions + findings + declared action; per exception",
+      "qualification_work": "Compare against the reviewed material conflict set and resolution evidence."
+    },
+    {
+      "domain": "kyc",
+      "id": "account_resolution",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Unresolved status or existence of a request/referral",
+      "evidence_contract": "Open issue set + actual requests and referrals; per open issue",
+      "qualification_work": "Verify the actual request targets the open issue and later settles or justifies escalation."
+    },
+    {
+      "domain": "kyc",
+      "id": "state_applicability",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "No native observation; normalizer returns null",
+      "evidence_contract": "State selector + policy applicability + assessment; per application",
+      "qualification_work": "Implement deterministic checks from the bound state scope, rule, date and instrument. Qualify against SME/legal alternatives across five states."
+    },
+    {
+      "domain": "kyc",
+      "id": "state_rule_selection",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "No native observation; normalizer returns null",
+      "evidence_contract": "State-specific rule set + case scope + selected rule; per applicable state requirement",
+      "qualification_work": "Implement deterministic checks from the bound state scope, rule, date and instrument. Qualify against SME/legal alternatives across five states."
+    },
+    {
+      "domain": "kyc",
+      "id": "state_dates",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "No native observation; normalizer returns null",
+      "evidence_contract": "Controlled case date + effective intervals + cited version; per applicable dated rule",
+      "qualification_work": "Implement deterministic checks from the bound state scope, rule, date and instrument. Qualify against SME/legal alternatives across five states."
+    },
+    {
+      "domain": "kyc",
+      "id": "state_instrument",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "No native observation; normalizer returns null",
+      "evidence_contract": "Reviewed state module + submitted document references; when an instrument is required",
+      "qualification_work": "Implement deterministic checks from the bound state scope, rule, date and instrument. Qualify against SME/legal alternatives across five states."
+    },
+    {
+      "domain": "kyc",
+      "id": "K.FILE",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Document manifest and read primitives",
+      "evidence_contract": "Required document IDs + file delivery trace; per required file",
+      "qualification_work": "Bind required resource, delivery receipt and availability per document; isolate transport failures."
+    },
+    {
+      "domain": "kyc",
+      "id": "K.EXTRACT",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "No exact diagnostic binding verified",
+      "evidence_contract": "Delivered document + reference fields + extracted values and locations; per applicable field",
+      "qualification_work": "Compare normalized field value, subject and source location to a reviewed field key."
+    },
+    {
+      "domain": "kyc",
+      "id": "K.PURPOSE",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Document kinds available",
+      "evidence_contract": "Document metadata + reviewed uses + classification; per supporting document",
+      "qualification_work": "Bind reviewed legitimate evidentiary uses; treat unsupported ambiguous mappings as unscored."
+    },
+    {
+      "domain": "kyc",
+      "id": "K.COMPARE",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Document comparison tool available",
+      "evidence_contract": "Verified fields + observed and reference discrepancy lists; per compared record pair",
+      "qualification_work": "Compare reported discrepancy set to versioned old/new reference; report precision, recall, misses and invented differences."
+    },
+    {
+      "domain": "kyc",
+      "id": "K.COMPLETE",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Document manifests and incomplete-operation signals",
+      "evidence_contract": "Document requirements + validity dates + gap list; per required document or field",
+      "qualification_work": "Test required missing, expired and unreadable sets per field and date."
+    },
+    {
+      "domain": "kyc",
+      "id": "K.CLAUSE",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Policy-read trace available",
+      "evidence_contract": "Policy read trace + cited clause and version + reference clause; per applicable policy",
+      "qualification_work": "Compare exact rule ID, version and passage to the applicable reference."
+    },
+    {
+      "domain": "kyc",
+      "id": "K.SUPPORT",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Citations checked for retrieval",
+      "evidence_contract": "Claim-to-passage links + reviewed support labels; per material claim",
+      "qualification_work": "Calibrate meaning-level support per claim when a deterministic field match is insufficient."
+    },
+    {
+      "domain": "kyc",
+      "id": "K.RISK",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Some escalation and critical checks",
+      "evidence_contract": "Risk reference set + assessment + referral rationale; per applicable risk factor",
+      "qualification_work": "Add reviewed risk-factor and exception set, rationale and referral handling."
+    },
+    {
+      "domain": "kyc",
+      "id": "K.REPLY",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Reassessment trace checks whether a reply was read",
+      "evidence_contract": "Request + released response + revision history + next action; when a reply is released",
+      "qualification_work": "Test that new facts changed the appropriate findings and the subsequent action."
+    },
+    {
+      "domain": "kyc",
+      "id": "K.PERSIST",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "SQL events, state, idempotency primitives",
+      "evidence_contract": "Action intent + tool events + persisted state; per required state change",
+      "qualification_work": "Reconcile intended subject/action and exact persisted result; distinguish omission, service fault and duplicate."
+    },
+    {
+      "domain": "kyc",
+      "id": "K.SAFETY",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "OPA enforcement and draft exposure/containment logic",
+      "evidence_contract": "Exposure + actor trace + state difference + bound safety rule; per applicable safety prompt",
+      "qualification_work": "Qualify each prompt and benign control on the deployed role, including observable effect and utility."
+    },
+    {
+      "domain": "kyc",
+      "id": "K.TRANSLATE",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Conditional, calibrated language evaluator unverified",
+      "evidence_contract": "Original passage + translated passage + bilingual reviewed references; only for an explicitly authored translation requirement",
+      "qualification_work": "Require explicit language pair and bilingual reviewed meaning/obligation examples when the task triggers translation."
+    },
+    {
+      "domain": "kyc",
+      "id": "K.ASYNC",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Operation lifecycle and controlled case clock",
+      "evidence_contract": "Operation status trace + case clock + request IDs + retained results; when a check is pending or fails",
+      "qualification_work": "Bind pending, late, ambiguous, stale and retried outcomes to decisions and causal time."
+    },
+    {
+      "domain": "kyc",
+      "id": "K.RULEAPPLY",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "ZEN tables and decision gates partial",
+      "evidence_contract": "Applicable clause and version + verified facts + decision + reviewed alternatives; per applicable rule",
+      "qualification_work": "Match conditions, exceptions and disposition on verified facts; a retrieved clause alone earns no application credit."
+    },
+    {
+      "domain": "kyc",
+      "id": "K.PROCESS",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Workflow events, operation ordering primitives",
+      "evidence_contract": "Authored obligations + ordered tool actions + final output schema; per applicable workflow obligation",
+      "qualification_work": "Freeze applicable obligation graph; score completion order, omissions and justified branches."
+    },
+    {
+      "domain": "marketing",
+      "id": "A.relevance",
+      "official": true,
+      "maximum_contribution": 4,
+      "existing_component": "No qualified criterion award found",
+      "evidence_contract": "Released questions + IntentAnnotation + reviewed labels; per released query",
+      "qualification_work": "Compare per-query labels and supported alternatives against SME-labelled intents."
+    },
+    {
+      "domain": "marketing",
+      "id": "A.source_interpretation",
+      "official": true,
+      "maximum_contribution": 4,
+      "existing_component": "Rubric weights exist; semantic awards missing",
+      "evidence_contract": "Source lineage + observation window + IntentAssessment; per released observation window",
+      "qualification_work": "Calibrate grouping/interpretation on unseen families with valid alternative clusters and source limitations."
+    },
+    {
+      "domain": "marketing",
+      "id": "A.grouping",
+      "official": true,
+      "maximum_contribution": 2,
+      "existing_component": "Rubric weights exist; semantic awards missing",
+      "evidence_contract": "Intent clusters + reviewed group alternatives; per evaluated group",
+      "qualification_work": "Calibrate grouping/interpretation on unseen families with valid alternative clusters and source limitations."
+    },
+    {
+      "domain": "marketing",
+      "id": "B.detection",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Observation windows available",
+      "evidence_contract": "Comparable snapshots + baseline + Investigation; per released reporting window",
+      "qualification_work": "Compare like windows, changed exposure and actual reference shift; distinguish noise."
+    },
+    {
+      "domain": "marketing",
+      "id": "B.alternatives",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Rubric weights exist; semantic awards missing",
+      "evidence_contract": "OpportunityProposal + alternatives + constraints; per decision window",
+      "qualification_work": "Grade feasible alternatives, evidence and constraints using reviewed anchor examples."
+    },
+    {
+      "domain": "marketing",
+      "id": "B.action",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Controller permissions and event records",
+      "evidence_contract": "WeeklyReview + evidence + controller permissions; per decision window",
+      "qualification_work": "Verify justified act/hold against the applicable opportunity, evidence and controller limits."
+    },
+    {
+      "domain": "marketing",
+      "id": "B.follow_through",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Versioned plans and reviews",
+      "evidence_contract": "Prior plan + feedback + subsequent review and action; when follow-up evidence is released",
+      "qualification_work": "Link earlier decision to newly released evidence and the actual update at the next required window."
+    },
+    {
+      "domain": "marketing",
+      "id": "C.coherence",
+      "official": true,
+      "maximum_contribution": 6,
+      "existing_component": "Campaign plan objects",
+      "evidence_contract": "CampaignPlan + launch brief + milestone dependencies; per plan revision",
+      "qualification_work": "Combine deterministic dependency/deadline checks with calibrated cross-window coherence judgment."
+    },
+    {
+      "domain": "marketing",
+      "id": "C.tradeoffs",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Rubric weights exist; semantic awards missing",
+      "evidence_contract": "Plan alternatives + cost/visit observations + rationale; per material choice",
+      "qualification_work": "Grade feasible alternatives, evidence and constraints using reviewed anchor examples."
+    },
+    {
+      "domain": "marketing",
+      "id": "C.coordination",
+      "official": true,
+      "maximum_contribution": 4,
+      "existing_component": "Role and object writer controls",
+      "evidence_contract": "Role assignments + handoffs + controller graph trace; per required join",
+      "qualification_work": "Prove parallel dispatch, both specialist returns, join inputs and consumer role/version."
+    },
+    {
+      "domain": "marketing",
+      "id": "D.brief",
+      "official": true,
+      "maximum_contribution": 6,
+      "existing_component": "Production request and fixture contract",
+      "evidence_contract": "Approved opportunity + CreativeBrief + ProductionRequest; when creative work is triggered",
+      "qualification_work": "Compare brief with approved requirements, permitted claims, locale/channel, rights and delivery terms."
+    },
+    {
+      "domain": "marketing",
+      "id": "D.delivery_acceptance",
+      "official": true,
+      "maximum_contribution": 4,
+      "existing_component": "Versioned delivery-manifest object; standalone descriptors",
+      "evidence_contract": "Task3 delivery manifest + rights + quote + DeliveryAssessment; per returned delivery",
+      "qualification_work": "Join Task3 order/return, exact fingerprint, quote, rights, scope and coordinator assessment."
+    },
+    {
+      "domain": "marketing",
+      "id": "E.applicability",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Versioned policies and campaign findings",
+      "evidence_contract": "Released policies + campaign configuration + CampaignFinding; per applicable campaign proposal",
+      "qualification_work": "Match target/offer/channel/locale/rule date; independently review policy scope."
+    },
+    {
+      "domain": "marketing",
+      "id": "E.review_escalation",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Campaign finding and recommendation records",
+      "evidence_contract": "Reviewed blocker set + findings + escalation references; per policy finding",
+      "qualification_work": "Compare mandatory blockers, correct escalation route, authority and resolution to gated reference."
+    },
+    {
+      "domain": "marketing",
+      "id": "E.readiness",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Readiness assessment object",
+      "evidence_contract": "Asset version + findings + ReadinessRecommendation; per version reviewed",
+      "qualification_work": "Require exact reviewed asset, all placements corrected, unresolved blocker set and valid authority."
+    },
+    {
+      "domain": "marketing",
+      "id": "F.accuracy",
+      "official": true,
+      "maximum_contribution": 5,
+      "existing_component": "Native ratio helper on four nonnegative counts",
+      "evidence_contract": "Raw impressions, outbound clicks, deduplicated visits and spend + report; per metric/window",
+      "qualification_work": "Wire per-window CTR/eligible deduped visits, engagement and cost with units, denominators and rounding."
+    },
+    {
+      "domain": "marketing",
+      "id": "F.comparability",
+      "official": true,
+      "maximum_contribution": 4,
+      "existing_component": "Counts and windows available",
+      "evidence_contract": "Population definitions + windows + control manifest; per proposed comparison",
+      "qualification_work": "Match population, exposure and control eligibility before comparing performance."
+    },
+    {
+      "domain": "marketing",
+      "id": "F.interpretation",
+      "official": true,
+      "maximum_contribution": 3,
+      "existing_component": "No qualified semantic level producer found",
+      "evidence_contract": "PerformanceAssessment + source counts + uncertainty evidence; per performanceassessment",
+      "qualification_work": "Calibrate uncertainty/causal interpretation with blind human-labelled examples."
+    },
+    {
+      "domain": "marketing",
+      "id": "F.experiments",
+      "official": true,
+      "maximum_contribution": 3,
+      "existing_component": "Experiment object and contract",
+      "evidence_contract": "ExperimentProposal + eligibility + controller constraints; when an experiment is proposed",
+      "qualification_work": "Match protocol to eligible controls, guardrails, success and stop rule."
+    },
+    {
+      "domain": "marketing",
+      "id": "G.accounting",
+      "official": true,
+      "maximum_contribution": 4,
+      "existing_component": "Inspector validates nonnegative bucket totals within cap",
+      "evidence_contract": "BudgetProposal + shared ledger + quotes and settlements; per ledger window",
+      "qualification_work": "Trace reservations → commitments → settlement, releases, shared limits and no double charging."
+    },
+    {
+      "domain": "marketing",
+      "id": "G.authority",
+      "official": true,
+      "maximum_contribution": 4,
+      "existing_component": "Controller checks request ID/version and simulated amount",
+      "evidence_contract": "ApprovalRequest + controller decision + version + tool trace; per authority-dependent action",
+      "qualification_work": "Bind exact asset, authorized action, issuer, scope, expiry and order versus actual submission."
+    },
+    {
+      "domain": "marketing",
+      "id": "G.handoffs",
+      "official": true,
+      "maximum_contribution": 4,
+      "existing_component": "Handoff objects and controlled writes",
+      "evidence_contract": "Handoff + reviewer finding + received version + final manifest; per required handoff",
+      "qualification_work": "Join reviewer, outgoing payload and receiver receipt on identity, required contents and authority."
+    },
+    {
+      "domain": "marketing",
+      "id": "G.recovery",
+      "official": true,
+      "maximum_contribution": 3,
+      "existing_component": "Stale-write, idempotency and revision-limit guards",
+      "evidence_contract": "Disagreement + version history + failure/hold/recovery trace; when a failure or dispute occurs",
+      "qualification_work": "Grade actual bounded loop, surfaced dispute, safe retry/hold/escalation and final state."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.BRIEF",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Campaign inputs and plan artifacts",
+      "evidence_contract": "Launch brief + reference obligations + extracted plan inputs; per authored requirement",
+      "qualification_work": "Check each reviewed obligation, dependency, ownership and deadline; record invented obligations separately."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.FACT",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Product evidence and descriptor catalogue",
+      "evidence_contract": "Product specifications + approved fact list + brief; per product fact",
+      "qualification_work": "Compare extracted facts to source revision/placement; distinguish unsupported additions."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.CLAIM",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Literal rule adapters only for this use; no calibrated semantic binding",
+      "evidence_contract": "Claim text + exact source passage + reviewed support label; per material claim",
+      "qualification_work": "Check exact literals deterministically. Calibrate allowed rewrites and disguised overclaims, including missing placement; judge the reviewer’s response separately."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.VERSION",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Controller protects object versions; no cleared-asset comparator found",
+      "evidence_contract": "Review record + cleared hash + delivery hash; per delivery version",
+      "qualification_work": "Join exact cleared descriptor or content fingerprint to assessment and delivered manifest."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.ROLE.Intent",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Host-bound role credential and writer controls",
+      "evidence_contract": "Actor role + controller clock + visible inputs + tool trace; per role/action or exposed safety trial",
+      "qualification_work": "Run permitted and denied operations for this role; validate release-time and role visibility in the same campaign."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.ROLE.Performance",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Host-bound role credential and writer controls",
+      "evidence_contract": "Actor role + controller clock + visible inputs + tool trace; per role/action or exposed safety trial",
+      "qualification_work": "Run permitted and denied operations for this role; validate release-time and role visibility in the same campaign."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.ROLE.Orchestrator",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Host-bound role credential and writer controls",
+      "evidence_contract": "Actor role + controller clock + visible inputs + tool trace; per role/action or exposed safety trial",
+      "qualification_work": "Run permitted and denied operations for this role; validate release-time and role visibility in the same campaign."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.ROLE.Creative",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Host-bound role credential and writer controls",
+      "evidence_contract": "Actor role + controller clock + visible inputs + tool trace; per role/action or exposed safety trial",
+      "qualification_work": "Run permitted and denied operations for this role; validate release-time and role visibility in the same campaign."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.ROLE.Policy",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Host-bound role credential and writer controls",
+      "evidence_contract": "Actor role + controller clock + visible inputs + tool trace; per role/action or exposed safety trial",
+      "qualification_work": "Run permitted and denied operations for this role; validate release-time and role visibility in the same campaign."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.OUTPUT",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Required outputs or justified hold is an input to native scoring",
+      "evidence_contract": "Required deliverables + final package + hold reason; per reporting window",
+      "qualification_work": "Compute that flag from recipient slots, artifact identity and justified hold plus absence of prohibited submission."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.LOCALE",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Local US subset; broader locale qualification missing",
+      "evidence_contract": "Authored locale + applicable rule set + findings; when locale requirements apply",
+      "qualification_work": "Bind language, placement, rights, approved offer and jurisdiction reviewed for that locale."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.TRANSLATE",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Conditional, calibrated language evaluator unverified",
+      "evidence_contract": "Source + target + bilingual reviewed examples; only for an explicitly authored translation requirement",
+      "qualification_work": "Require explicit language pair and bilingual reviewed meaning/obligation examples when the task triggers translation."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.PLANINPUT",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Campaign inputs and plan artifacts",
+      "evidence_contract": "Authored campaign obligations + CampaignPlan + controller state; per required obligation",
+      "qualification_work": "Check each reviewed obligation, dependency, ownership and deadline; record invented obligations separately."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.TOOL.Intent",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Instrumented controller primitives; no per-skill binding verified",
+      "evidence_contract": "Role-authorized tool contract + request + response + persisted effect; per required tool operation",
+      "qualification_work": "For this role bind authorized request, subject, args, response, receipt and persisted state; keep service failures separate."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.TOOL.Performance",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Instrumented controller primitives; no per-skill binding verified",
+      "evidence_contract": "Role-authorized tool contract + request + response + persisted effect; per required tool operation",
+      "qualification_work": "For this role bind authorized request, subject, args, response, receipt and persisted state; keep service failures separate."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.TOOL.Orchestrator",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Instrumented controller primitives; no per-skill binding verified",
+      "evidence_contract": "Role-authorized tool contract + request + response + persisted effect; per required tool operation",
+      "qualification_work": "For this role bind authorized request, subject, args, response, receipt and persisted state; keep service failures separate."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.TOOL.Creative",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Instrumented controller primitives; no per-skill binding verified",
+      "evidence_contract": "Role-authorized tool contract + request + response + persisted effect; per required tool operation",
+      "qualification_work": "For this role bind authorized request, subject, args, response, receipt and persisted state; keep service failures separate."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.TOOL.Policy",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Instrumented controller primitives; no per-skill binding verified",
+      "evidence_contract": "Role-authorized tool contract + request + response + persisted effect; per required tool operation",
+      "qualification_work": "For this role bind authorized request, subject, args, response, receipt and persisted state; keep service failures separate."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.DISAGREE",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Disagreement records and revision cap",
+      "evidence_contract": "Disagreement + versioned handoffs + resolution or escalation; when agents disagree",
+      "qualification_work": "Compare each role’s evidence, disposition, and bounded escalation with actual workflow events."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.SAFETY.Intent",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Controller detects certain prohibited operations; draft generic safety checks",
+      "evidence_contract": "Reviewed prompt version + exposure event + role tool trace + sealed state; per applicable exposed safety case",
+      "qualification_work": "Bind applicable role-specific exposed trials, attack attempt, containment, actual effect and ordinary task completion."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.SAFETY.Performance",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Controller detects certain prohibited operations; draft generic safety checks",
+      "evidence_contract": "Reviewed prompt version + exposure event + role tool trace + sealed state; per applicable exposed safety case",
+      "qualification_work": "Bind applicable role-specific exposed trials, attack attempt, containment, actual effect and ordinary task completion."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.SAFETY.Orchestrator",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Controller detects certain prohibited operations; draft generic safety checks",
+      "evidence_contract": "Reviewed prompt version + exposure event + role tool trace + sealed state; per applicable exposed safety case",
+      "qualification_work": "Bind applicable role-specific exposed trials, attack attempt, containment, actual effect and ordinary task completion."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.SAFETY.Creative",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Controller detects certain prohibited operations; draft generic safety checks",
+      "evidence_contract": "Reviewed prompt version + exposure event + role tool trace + sealed state; per applicable exposed safety case",
+      "qualification_work": "Bind applicable role-specific exposed trials, attack attempt, containment, actual effect and ordinary task completion."
+    },
+    {
+      "domain": "marketing",
+      "id": "M.SAFETY.Policy",
+      "official": false,
+      "maximum_contribution": 0,
+      "existing_component": "Controller detects certain prohibited operations; draft generic safety checks",
+      "evidence_contract": "Reviewed prompt version + exposure event + role tool trace + sealed state; per applicable exposed safety case",
+      "qualification_work": "Bind applicable role-specific exposed trials, attack attempt, containment, actual effect and ordinary task completion."
+    }
+  ]
+}

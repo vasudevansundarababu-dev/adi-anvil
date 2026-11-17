@@ -1,0 +1,24 @@
+"""Distinct current private source nomination; never loaded/native admission.
+
+Old operating, candidate and2cca opening pins remain separate and unchanged.
+The corresponding canonical manifest is in docs/generated, not an approval.
+"""
+
+PRIVATE_SOURCE_MANIFEST_SHA256 = '3e74f8a196c5f34ae905dd245ddcda2736239065868c2290df71f512e56b6767'
+PRIVATE_GRAPH_SOURCES = {
+    'db.py': '7b85a5ba64e44087faa35b4f352ea5dc81cb7c6d3250385e9cd0319eea86871c',
+    'golden_mcp_client.py': 'efabb3715e5af325e434203ff3246efaa37a36afd19ae90613fd080c3bdfc837',
+    'marketing_graph_result.py': '577a57b7dc81cbe73aa4941770e94720e419206f19fd7ab18e9fe3729864e367',
+    'marketing_native_mcp_support.py': '4c91f79ace568f2d09bff1232ef72e5eb5d8db1105b3a8095cffa3e00dfe6638',
+    'marketing_native_worker_flags.py': '1c982aa0bec02075fa1ab736cd2bb91c0e07bfb323c67dc37b77c63278ea47a4',
+    'marketing_paid_dispatch_rpc.py': '167fe95fec59ed3818c34b508b46fd178d59007530e862678b193f37baada99e',
+    'marketing_paid_dispatch_transport.py': '4dd8c06845c6b1318646c6bdf81c55a845640eb41e9e9c0b9e6ab86197a9014b',
+    'marketing_paid_execution.py': 'e3166a8f0a72abf07c65d002075e484adda67b4566d246e6868b1ec92c144919',
+    'marketing_paid_graph.py': '8222adda18f5994343c38918911635a047fdabf0a2b51b7adbe3c35aae2af1f4',
+    'marketing_paid_world.py': '5f5b15876001e10562f306739deba7f177ca5c24d377c057c115b731e6a758a0',
+    'marketing_paid_world_rpc.py': '6098089949b7c538793b51870ba127061318a049c6ff8d046689e403d626da8e',
+    'marketing_paid_world_transport.py': '10a1ad6bbd7858cf2c1d3dfe7c54f87a5763f73c3fa80d5cdd2779519b6fdc85',
+    'marketing_world_quiescence.py': '4cdb918d16aa0aea7223a4e5c4658952b7d4fd9ec3ef31eaf4d65cbdd2df9441',
+    'marketing_world_role.py': '8926b03fb7915cc78ec8c5b6e3b12e3eb2182b3578f6ac16a101d636a5770327',
+    'worker_dispatch_broker.py': '09bdcce3e6530ed531d039177b2f6bf4976d5bbd1a41a0f82d89aef4fdc12c6c',
+}

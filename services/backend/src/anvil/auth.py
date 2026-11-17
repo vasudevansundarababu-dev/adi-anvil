@@ -75,6 +75,7 @@ def require(roles, *allowed):
     permitted = (
         "admin" in roles and bool(requested.intersection(admin_actions | engineering_actions))
     ) or ("rl-engineer" in roles and bool(requested.intersection(engineering_actions)))
+    permitted = permitted or ("sme-reviewer" in roles and "sme-reviewer" in requested)
     if not permitted:
         raise HTTPException(403, "Role does not permit this action")
 

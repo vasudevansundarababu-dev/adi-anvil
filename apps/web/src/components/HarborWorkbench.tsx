@@ -133,20 +133,20 @@ export default function HarborWorkbench({
   }
 
   return (
-    <section className="card" aria-label="Praxis to Harbor">
-      <h2>Praxis → Harbor</h2>
+    <section className="card" aria-label="Authoring to Harbor">
+      <h2>Authoring → Harbor</h2>
       <p>
-        Import a structured Praxis export, inspect the actor view, build an immutable package, then
+        Import a structured Authoring export, inspect the actor view, build an immutable package, then
         request a synthetic software check.
       </p>
       <p>
         Reference and empty-output checks verify the harness. They do not measure a model. Live
         agent execution is blocked until spending and isolation controls are qualified. Source
-        review and declared rights do not grant Anvil approval.
+        review and declared rights do not grant Forge approval.
       </p>
       {error && <p role="alert">{error}</p>}
       <label>
-        Praxis task export (.json){' '}
+        Authoring task export (.json){' '}
         <input
           type="file"
           accept=".json,application/json"
@@ -204,7 +204,7 @@ export default function HarborWorkbench({
           </details>
           {!!selected.export_receipts?.length && (
             <details>
-              <summary>Praxis source lineage</summary>
+              <summary>Authoring source lineage</summary>
               <pre>{JSON.stringify(selected.export_receipts, null, 2)}</pre>
             </details>
           )}
@@ -436,7 +436,7 @@ function AgentPlanPanel({
     <section aria-label="Agent model run">
       <h3>Run an agent in Harbor</h3>
       <p>
-        The Anvil structured JSON agent requests one provider response per stage. Responses are
+        The Forge structured JSON agent requests one provider response per stage. Responses are
         data, not executable code. A saved plan does not authorize spending.
       </p>
       {error && <p role="alert">{error}</p>}

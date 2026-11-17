@@ -11,26 +11,49 @@ from psycopg.types.json import Jsonb
 from pydantic import ValidationError
 
 from anvil import artifacts, auth, domain, fixtures
+from anvil.benchmark_api import routes as benchmark_routes
+from anvil.benchmark_dashboard_api import routes as benchmark_dashboard_routes
+from anvil.benchmark_golden_api import routes as benchmark_golden_routes
+from anvil.benchmark_rehearsal_api import routes as benchmark_rehearsal_routes
+from anvil.benchmark_rehearsal_report import routes as benchmark_rehearsal_report_routes
+from anvil.benchmark_run_api import routes as benchmark_run_routes
 from anvil.config import harbor_live_enabled
+from anvil.custom_evaluators import routes as custom_evaluator_routes
+from anvil.dataset_export_api import routes as dataset_export_routes
 from anvil.db import audit, digest, one, transaction, uid
 from anvil.delivery import routes as delivery_routes
+from anvil.deployment_readiness import routes as deployment_readiness_routes
+from anvil.environment_api import routes as environment_factory_routes
 from anvil.evaluation import routes as evaluation_routes
+from anvil.evaluator_api import routes as evaluator_configuration_routes
+from anvil.expert_reviews import routes as expert_review_routes
 from anvil.external_results import routes as external_routes
 from anvil.factory import routes as factory_routes
+from anvil.golden_kyc_api import routes as golden_kyc_routes
+from anvil.governed_ai_runtime import internal_routes as governed_ai_internal_routes
+from anvil.governed_ai_runtime import routes as governed_ai_routes
 from anvil.graph import routes as graph_routes
 from anvil.harbor_agents import routes as harbor_agent_routes
 from anvil.harbor_api import routes as harbor_routes
 from anvil.import_generation import routes as import_generation_routes
 from anvil.intake import routes as intake_routes
+from anvil.marketing_capture_api import routes as marketing_capture_routes
 from anvil.plans import routes as plan_routes
+from anvil.project_bindings import routes as project_binding_routes
+from anvil.project_inputs import routes as project_input_routes
 from anvil.provider_api import routes as provider_routes
 from anvil.readiness import routes as readiness_routes
 from anvil.reports import prepare_report
 from anvil.reports import routes as report_routes
 from anvil.request_limits import RequestLimits
+from anvil.runtime_admin import routes as runtime_admin_routes
 from anvil.schemas import Decision, FixtureImport, Rights, Withdrawal
+from anvil.shared_execution_budget import routes as shared_budget_routes
 from anvil.support import routes as support_routes
 from anvil.task_imports import routes as task_import_routes
+from anvil.task_safety import routes as task_safety_routes
+from anvil.worker_dispatch_broker import routes as worker_dispatch_routes
+from anvil.workflow_api import routes as workflow_routes
 from anvil.workspace import routes as workspace_routes
 from anvil.workspace_access import routes as workspace_access_routes
 from anvil.workspace_credentials import routes as workspace_credential_routes
@@ -44,6 +67,7 @@ from anvil.workspace_preparation import routes as workspace_preparation_routes
 app = FastAPI(title="ADI Anvil", version="0.2.1")
 app.add_middleware(RequestLimits)
 app.include_router(auth.router)
+app.include_router(marketing_capture_routes())
 
 
 @app.middleware("http")
@@ -159,6 +183,11 @@ def idempotent(c, project, user, request, body, fn):
 
 
 app.include_router(evaluation_routes(context, wrap, idempotent))
+app.include_router(golden_kyc_routes(context, wrap, idempotent))
+app.include_router(dataset_export_routes(context, wrap, idempotent))
+app.include_router(evaluator_configuration_routes(context, wrap, idempotent))
+app.include_router(environment_factory_routes(context, wrap, idempotent))
+app.include_router(benchmark_run_routes(context, wrap, idempotent))
 app.include_router(graph_routes(context, wrap))
 app.include_router(report_routes(context, wrap, idempotent))
 app.include_router(provider_routes(context, wrap, idempotent))
@@ -166,7 +195,22 @@ app.include_router(intake_routes(context, wrap, idempotent))
 app.include_router(external_routes(context, wrap, idempotent))
 app.include_router(delivery_routes(context, wrap, idempotent))
 app.include_router(readiness_routes(context, wrap, idempotent))
+app.include_router(deployment_readiness_routes())
+app.include_router(project_binding_routes(context, wrap, idempotent))
+app.include_router(custom_evaluator_routes(context, wrap, idempotent))
+app.include_router(shared_budget_routes(context, wrap, idempotent))
+app.include_router(governed_ai_routes(context, wrap, idempotent))
+app.include_router(governed_ai_internal_routes())
+app.include_router(expert_review_routes(context, wrap, idempotent))
+app.include_router(task_safety_routes(context, wrap, idempotent))
+app.include_router(runtime_admin_routes(context, wrap, idempotent))
+app.include_router(project_input_routes(context, wrap, idempotent))
 app.include_router(task_import_routes(context, wrap, idempotent))
+app.include_router(benchmark_routes(context, wrap, idempotent))
+app.include_router(benchmark_dashboard_routes(context, wrap, idempotent))
+app.include_router(benchmark_golden_routes(context, wrap, idempotent))
+app.include_router(benchmark_rehearsal_routes(context, wrap, idempotent))
+app.include_router(benchmark_rehearsal_report_routes(context, wrap))
 app.include_router(harbor_routes(context, wrap, idempotent))
 app.include_router(import_generation_routes(context, wrap, idempotent))
 app.include_router(workspace_routes(context, wrap, idempotent))
@@ -178,6 +222,8 @@ app.include_router(workspace_preparation_routes(context, wrap, idempotent))
 app.include_router(workspace_execution_routes(context, wrap, idempotent))
 app.include_router(workspace_environment_routes(context, wrap, idempotent))
 app.include_router(workspace_access_routes(context, wrap))
+app.include_router(workflow_routes(context, wrap, idempotent))
+app.include_router(worker_dispatch_routes())
 app.include_router(harbor_agent_routes(context, wrap, idempotent))
 app.include_router(factory_routes(context, wrap, idempotent))
 app.include_router(plan_routes(context, wrap, idempotent))
@@ -286,6 +332,8 @@ def artifact_content(project: UUID, aid: UUID, request: Request):
         a = one(c, "SELECT * FROM anvil.artifacts WHERE id=%s", (aid,))
         if not a:
             raise HTTPException(404, "Artifact not found")
+        if a["classification"] in artifacts.BENCHMARK_PRIVATE_CLASSES:
+            raise HTTPException(403, "Private benchmark artifacts are not available on this route")
         if a["classification"] == "hidden_reference":
             auth.require(roles, "data-engineer", "reviewer", "advisor", "adjudicator")
             linked = c.execute(

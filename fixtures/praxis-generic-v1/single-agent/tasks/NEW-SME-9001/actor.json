@@ -1,0 +1,42 @@
+{
+  "profile": {
+    "id": "account-opening-v2",
+    "version": 2
+  },
+  "title": "Synthetic new application case",
+  "sections": {
+    "S1": {
+      "title": "Synthetic new application case",
+      "businessContext": "Assess synthetic evidence and recommend the next action. No real customer data."
+    },
+    "S2": {
+      "evidence": [
+        {
+          "id": "E1",
+          "content": "Synthetic application lacks a required supporting record."
+        }
+      ]
+    },
+    "S3": {
+      "environment": "none"
+    },
+    "S4": {
+      "policies": []
+    },
+    "S5": {
+      "steps": [
+        {
+          "id": "STEP1",
+          "instruction": "Compare supplied evidence and identify the supported next step."
+        }
+      ]
+    },
+    "S6": {
+      "decisionFields": [
+        {
+          "name": "recommendation"
+        }
+      ]
+    }
+  }
+}

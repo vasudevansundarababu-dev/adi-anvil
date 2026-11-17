@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Form from './Form';
 import { shortId, workspaceApi as api } from '../lib/workspace';
 import { runBlockers } from '../lib/executionReadiness';
+import { describeReason } from '../lib/readinessCatalog';
+import ReasonList from './ReasonList';
 import styles from './ModernWorkspace.module.css';
 
 type Model = {
@@ -35,7 +37,33 @@ type Package = {
   id: string;
   title: string;
   package_sha256: string;
-  manifest: { task_id: string; task_version: string };
+  manifest: {
+    task_id: string;
+    task_version: string;
+    native_binding?: {
+      task_mode?: string;
+      template_sha256?: string;
+      runtime_sha256?: string;
+      import_sha256?: string;
+      evaluator_sha256?: string;
+      case_dataset?: { sha256: string; case_count: number };
+      case_selector?: { value: string; case_count: number };
+    };
+  };
+};
+type Workflow = {
+  id: string;
+  package_id: string;
+  subject_hash: string;
+  revoked_at: string | null;
+  definition: {
+    binding: {
+      graph: {
+        nodes: { id: string; role: string; human_mode?: string }[];
+        bounds: { calls: number };
+      };
+    };
+  };
 };
 type Draft = {
   id: string;
@@ -235,7 +263,7 @@ function ToggleModels({
                 ? ' · ' + m.credential_state
                 : ''}
               {allowedIds && !allowedIds.includes(m.id)
-                ? ' · Ask an Admin to add this model to the preset'
+                ? ' · Not included in this authorized run configuration'
                 : ''}
             </small>
           )}
@@ -305,8 +333,8 @@ export function ExecutionPresets({
               name: data.get('name'),
               runner_profile_id: data.get('runner'),
               candidate_runtime: runtime,
-              candidate_profile_id: runtime === 'semantic_kernel' ? data.get('candidate') : null,
-              tracing_profile_id: data.get('tracing') || null,
+              candidate_profile_id: null,
+              tracing_profile_id: null,
               model_profile_ids: selected,
             });
             setMessage('Preset saved. Prepare a task to review costs and launch requirements.');
@@ -356,36 +384,13 @@ export function ExecutionPresets({
         </select>
         <label htmlFor="preset-runtime">Candidate runtime</label>
         <select id="preset-runtime" value={runtime} onChange={(e) => setRuntime(e.target.value)}>
-          <option value="anvil-structured-json-v1">Anvil structured JSON agent</option>
-          <option value="semantic_kernel">Semantic Kernel · adapter unavailable</option>
-        </select>
-        {runtime === 'semantic_kernel' && (
-          <>
-            <label htmlFor="preset-candidate">Semantic Kernel profile</label>
-            <select id="preset-candidate" name="candidate" required defaultValue="">
-              <option value="" disabled>
-                Select a Semantic Kernel profile
-              </option>
-              {frameworks.items
-                .filter((f) => f.framework === 'semantic_kernel')
-                .map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.name}
-                  </option>
-                ))}
-            </select>
-          </>
-        )}
-        <label htmlFor="preset-tracing">External tracing</label>
-        <select id="preset-tracing" name="tracing" defaultValue="">
-          <option value="">None · keep evidence in Anvil</option>
-          {frameworks.items
-            .filter((f) => f.framework === 'langsmith')
-            .map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name} · export disabled
-              </option>
-            ))}
+          <option value="anvil-structured-json-v1">Forge structured JSON agent</option>
+          <option value="golden-kyc-openenv-tool-agent-v1">
+            Golden KYC · Harbor and OpenEnv tool agent
+          </option>
+          <option value="marketing-task2-five-role-v1">
+            Headphone launch · Harbor and LangGraph five-role campaign
+          </option>
         </select>
         <ToggleModels
           models={models.items.filter((m) => m.workspace_profile)}
@@ -426,44 +431,6 @@ export function ExecutionPresets({
   );
 }
 
-const messages: Record<string, string> = {
-  execution_group_required:
-    'Create an execution group below to review costs, authorization and launch readiness.',
-  workspace_dispatch_not_qualified: 'Live execution for workspace profiles is not available yet.',
-  current_pricing_not_bound: 'Current reviewed pricing has not been bound to this preparation.',
-  reviewed_pricing_admission_not_bound: 'Pricing still needs review for this exact evaluation.',
-  model_profile_disabled: 'This model profile is disabled for all new preparations.',
-  model_version_superseded:
-    'A newer model version exists. Create a preset with the current version.',
-  model_version_mapping_missing: 'This model version has no valid profile mapping.',
-  pricing_metadata_missing: 'Declared pricing metadata is missing.',
-  pricing_metadata_expired: 'Declared pricing metadata has expired.',
-  pricing_metadata_invalid: 'Declared pricing metadata is invalid.',
-  exact_user_authority_not_bound: 'No spending authorization is attached to this preparation.',
-  processing_rights_not_bound: 'No processing-rights decision is attached to this preparation.',
-  required_run_decisions_not_bound: 'Required run approvals are not attached to this preparation.',
-  shared_spending_admission_not_implemented:
-    'Shared spending controls are not ready for these models.',
-  aggregate_api_cap_missing: 'An explicit aggregate API cap is missing.',
-  candidate_runtime_not_qualified: 'The selected candidate runtime is not qualified.',
-  external_tracing_not_qualified_export_disabled:
-    'External tracing is not qualified; export stays disabled.',
-  credential_missing: 'Credential missing.',
-  credential_revoked_or_unavailable: 'Credential revoked or unavailable.',
-  bound_credential_rotated:
-    'The bound credential was rotated. Create a new model version and preset.',
-  provider_task_adapter_not_qualified: 'Provider/task adapter not qualified.',
-  model_revoked_or_unavailable: 'Model profile revoked or unavailable.',
-  model_configuration_changed: 'Model configuration changed.',
-  selected_output_limit_exceeds_profile:
-    'Selected output limit exceeds this model profile ceiling.',
-  task_binding_not_supported: 'This task binding is not supported by the planned adapter.',
-  package_runtime_not_supported: 'The package runtime does not match the pinned Harbor version.',
-  package_agent_admission_missing:
-    'Rebuild this package with the current agent admission compiler.',
-  framework_binding_changed_or_unavailable: 'A bound framework version changed or is unavailable.',
-};
-
 export default function WorkspacePreparation({
   base,
   taskId,
@@ -475,6 +442,10 @@ export default function WorkspacePreparation({
   environments = [],
   runOnSave = false,
   canAuthorizeRun = false,
+  projectBinding,
+  allowedPackageIds,
+  executionBudgetId,
+  budgetModelIds,
 }: {
   base: string;
   taskId?: string | null;
@@ -486,6 +457,10 @@ export default function WorkspacePreparation({
   environments?: { id: string; name: string; status: string }[];
   runOnSave?: boolean;
   canAuthorizeRun?: boolean;
+  projectBinding?: { task_group_id: string; id: string; snapshot_sha256: string };
+  allowedPackageIds?: string[];
+  executionBudgetId?: string;
+  budgetModelIds?: string[];
 }) {
   const packages = useList<Package>(
     base +
@@ -502,6 +477,76 @@ export default function WorkspacePreparation({
     0,
     true,
   );
+  const workflows = useList<Workflow>(base + '/workspace/workflows/definitions');
+  const responders = useList<{ id: string; name: string }>(
+    base + '/workspace/workflows/responders',
+  );
+  const [chosenPackage, setChosenPackage] = useState('');
+  const [additionalStatePackages, setAdditionalStatePackages] = useState<string[]>([]);
+  const [workflowId, setWorkflowId] = useState('');
+  const [environmentChoice, setEnvironmentChoice] = useState<{
+    packageId: string;
+    value: string;
+  } | null>(null);
+  const [timeoutChoice, setTimeoutChoice] = useState<{ packageId: string; value: string } | null>(
+    null,
+  );
+  const visiblePackages = packages.items.filter(
+    (p) =>
+      (!packageId || p.id === packageId) &&
+      (!allowedPackageIds || allowedPackageIds.includes(p.id)),
+  );
+  const exactPackage =
+    visiblePackages.length === 1 && !packages.more ? visiblePackages[0].id : chosenPackage;
+  const primaryPackage = packages.items.find((p) => p.id === exactPackage);
+  const nativeBinding = primaryPackage?.manifest.native_binding;
+  const reusableKyc = nativeBinding?.task_mode === 'reusable_state_workflow';
+  const reusableMarketing = nativeBinding?.task_mode === 'reusable_campaign_workflow';
+  const environmentValue =
+    environmentChoice?.packageId === exactPackage
+      ? environmentChoice.value
+      : reusableKyc
+        ? 'golden-kyc-openenv-v2'
+        : reusableMarketing
+          ? 'marketing-task2-us-v1'
+          : 'package-docker';
+  const timeoutValue =
+    timeoutChoice?.packageId === exactPackage
+      ? timeoutChoice.value
+      : reusableMarketing
+        ? '600'
+        : '300';
+  const compatibleStatePackages = reusableKyc
+    ? packages.items.filter((p) => {
+        const binding = p.manifest.native_binding;
+        return (
+          p.id !== exactPackage &&
+          (!allowedPackageIds || allowedPackageIds.includes(p.id)) &&
+          binding?.task_mode === 'reusable_state_workflow' &&
+          binding.case_selector?.value !== nativeBinding?.case_selector?.value &&
+          ['template_sha256', 'runtime_sha256', 'import_sha256', 'evaluator_sha256'].every(
+            (key) =>
+              binding[key as keyof typeof binding] ===
+              nativeBinding?.[key as keyof typeof nativeBinding],
+          ) &&
+          binding.case_dataset?.sha256 === nativeBinding?.case_dataset?.sha256
+        );
+      })
+    : [];
+  const availableWorkflows = workflows.items.filter(
+    (w) => !w.revoked_at && w.package_id === exactPackage,
+  );
+  const workflow =
+    reusableKyc || reusableMarketing
+      ? undefined
+      : availableWorkflows.find((w) => w.id === workflowId);
+  const humanRoles = [
+    ...new Set(
+      workflow?.definition.binding.graph.nodes
+        .filter((n) => n.human_mode === 'actual')
+        .map((n) => n.role) || [],
+    ),
+  ];
   const drafts = useList<Draft>(runOnSave ? null : base + '/workspace/preparations');
   const [presetId, setPresetId] = useState(''),
     [composing, setComposing] = useState(!preparationId),
@@ -511,6 +556,7 @@ export default function WorkspacePreparation({
     [refreshKey, setRefreshKey] = useState(0),
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false);
+  const submitting = useRef(false);
   const selectedPresetId =
     !presets.loading && !presets.error && !presets.more && presets.items.length === 1
       ? presets.items[0].id
@@ -564,6 +610,12 @@ export default function WorkspacePreparation({
       active = false;
     };
   }, [base, preparationId, refreshKey]);
+  const workspace = base.replace('/projects/', '/workspace/');
+  const destinations = saved && {
+    workspace,
+    configure: workspace + '/execution-groups/new',
+    share: workspace + '/preparation?preparation=' + encodeURIComponent(saved.id),
+  };
   return (
     <>
       {!composing && (
@@ -593,7 +645,7 @@ export default function WorkspacePreparation({
           )}
           <p>
             {runOnSave ? (
-              'Select your configuration and Run. Anvil starts execution when all requirements are met, or shows exactly what needs attention.'
+              'Select your configuration and Run. Forge starts execution when all requirements are met, or shows exactly what needs attention.'
             ) : (
               <>
                 Choose the task package, preset, models and budget. Create saves the group and opens
@@ -609,7 +661,9 @@ export default function WorkspacePreparation({
           <Form
             onSubmit={async (e) => {
               e.preventDefault();
+              if (submitting.current) return;
               const data = new FormData(e.currentTarget);
+              submitting.current = true;
               setBusy(true);
               setError('');
               try {
@@ -628,6 +682,14 @@ export default function WorkspacePreparation({
                     'A selected model version is no longer available. Clear unavailable selections and select its current version.',
                   );
                 if (!preset) throw new Error('Run cannot start yet: select an execution preset.');
+                if (
+                  allowedPackageIds &&
+                  (!allowedPackageIds.includes(String(data.get('package'))) ||
+                    additionalStatePackages.some((id) => !allowedPackageIds.includes(id)))
+                )
+                  throw new Error(
+                    'Selected execution packages must belong to the frozen Project bindings.',
+                  );
                 const dollars = String(data.get('cap') || '');
                 if (dollars && !/^\d+(\.\d{1,6})?$/.test(dollars))
                   throw new Error('Enter a USD amount with at most six decimal places.');
@@ -653,17 +715,43 @@ export default function WorkspacePreparation({
                   exactPresetId = exact.id;
                 }
                 const result = await api(base + '/workspace/preparations', 'POST', {
+                  ...(projectBinding ? { project_binding: projectBinding } : {}),
+                  ...(executionBudgetId ? { execution_budget_id: executionBudgetId } : {}),
                   preset_id: exactPresetId,
                   package_id: data.get('package'),
                   model_profile_ids: selected,
+                  workflow_definition_id:
+                    reusableKyc || reusableMarketing ? null : workflow?.id || null,
+                  ...(reusableKyc
+                    ? {
+                        task_package_ids: [String(data.get('package')), ...additionalStatePackages],
+                        ...(String(data.get('applicationCases') || '').trim()
+                          ? {
+                              case_ids: String(data.get('applicationCases'))
+                                .split(/[\s,]+/)
+                                .filter(Boolean),
+                            }
+                          : {}),
+                      }
+                    : {}),
+                  human_assignments: Object.fromEntries(
+                    humanRoles.map((role) => [role, data.get('human:' + role)]),
+                  ),
                   max_output_tokens: Number(data.get('tokens')),
                   episode_timeout_seconds: Number(data.get('timeout')),
                   aggregate_cap_micro_usd: dollars
                     ? Number(whole) * 1000000 + Number(fraction.padEnd(6, '0'))
                     : null,
                   trials_per_model: Number(data.get('trials') || 1),
-                  max_agent_steps: data.get('steps') ? Number(data.get('steps')) : null,
-                  environment: 'package-docker',
+                  max_agent_steps: reusableKyc
+                    ? Number(data.get('agentSteps'))
+                    : reusableMarketing
+                      ? data.get('steps')
+                        ? Number(data.get('steps'))
+                        : null
+                      : workflow?.definition.binding.graph.bounds.calls ||
+                        (data.get('steps') ? Number(data.get('steps')) : null),
+                  environment: String(data.get('environment') || 'package-docker'),
                 });
                 if (createGroup) {
                   const group = await api(base + '/workspace/execution-groups', 'POST', {
@@ -701,19 +789,25 @@ export default function WorkspacePreparation({
               } catch (e) {
                 setError((e as Error).message);
               } finally {
+                submitting.current = false;
                 setBusy(false);
               }
             }}
           >
-            <VersionChoice
-              id="preparation-package"
-              name="package"
-              label="Task package version"
-              complete={!packages.more && !packages.error}
-              loading={packages.loading}
-              choices={packages.items
-                .filter((p) => !packageId || p.id === packageId)
-                .map((p) => ({
+            <fieldset disabled={busy} aria-busy={busy} style={{ border: 0, padding: 0, margin: 0 }}>
+              <VersionChoice
+                id="preparation-package"
+                name="package"
+                label="Task package version"
+                value={chosenPackage}
+                change={(value) => {
+                  setChosenPackage(value);
+                  setAdditionalStatePackages([]);
+                  setWorkflowId('');
+                }}
+                complete={!packages.more && !packages.error}
+                loading={packages.loading}
+                choices={visiblePackages.map((p) => ({
                   id: p.id,
                   label:
                     (p.title || p.manifest.task_id) +
@@ -722,181 +816,334 @@ export default function WorkspacePreparation({
                     ' · ' +
                     shortId(p.package_sha256),
                 }))}
-            />
-            <label htmlFor="preparation-environment">Target environment</label>
-            <select id="preparation-environment" name="environment" defaultValue="package-docker">
-              <option value="package-docker">Harbor isolated Docker · task-bound image</option>
-              {environments.map((env) => (
-                <option key={env.id} value={env.id} disabled>
-                  {env.name} · Awaiting qualification
-                </option>
-              ))}
-            </select>
-            <p className={styles.muted}>
-              Uses the selected package’s immutable environment. Additional environments require
-              configuration.
-            </p>
-            {packages.more && (
-              <button
-                type="button"
-                disabled={packages.loading}
-                onClick={() => void packages.more?.()}
-              >
-                Load more package choices
-              </button>
-            )}
-            {!packages.loading && !packages.items.length && (
-              <p>No built packages in this view. Import and build a task package first.</p>
-            )}
-            <VersionChoice
-              id="preparation-preset"
-              label="Execution preset"
-              complete={!presets.more && !presets.error}
-              loading={presets.loading}
-              value={presetId}
-              change={(id) => {
-                setPresetId(id);
-                setSelected([]);
-              }}
-              choices={presets.items.map((p) => ({
-                id: p.id,
-                label: p.snapshot.name + ' · ' + shortId(p.subject_hash),
-              }))}
-            />
-            {presets.more && (
-              <button
-                type="button"
-                disabled={presets.loading}
-                onClick={() => void presets.more?.()}
-              >
-                Load more preset choices
-              </button>
-            )}
-            {!presets.loading && !presets.items.length && (
-              <p>An Admin must save an execution preset in Frameworks first.</p>
-            )}
-            {preset && (
-              <ToggleModels
-                models={runOnSave ? availableModels : preset.snapshot.models}
-                selected={selected}
-                change={setSelected}
-                showKeys={runOnSave}
-                allowedIds={
-                  runOnSave && !canAuthorizeRun
-                    ? preset.snapshot.models.map((m) => m.id)
-                    : undefined
-                }
               />
-            )}
-            {!!staleSelections.length && (
-              <p role="alert">
-                A selected model changed or became unavailable.{' '}
+              {reusableKyc && (
+                <fieldset>
+                  <legend>Shared KYC application cases</legend>
+                  <p>
+                    These state tasks share one dataset, environment and evaluator library.
+                    Application cases do not create more authored tasks. Every selected case gets an
+                    isolated episode; all selected tasks and models share this group’s spending cap.
+                  </p>
+                  <p>
+                    Primary state: {nativeBinding?.case_selector?.value} ·{' '}
+                    {nativeBinding?.case_selector?.case_count} cases in its partition.
+                  </p>
+                  {compatibleStatePackages.map((p) => (
+                    <label key={p.id}>
+                      <input
+                        type="checkbox"
+                        checked={additionalStatePackages.includes(p.id)}
+                        onChange={(e) =>
+                          setAdditionalStatePackages((current) =>
+                            e.target.checked
+                              ? [...current, p.id]
+                              : current.filter((id) => id !== p.id),
+                          )
+                        }
+                      />
+                      Include {p.title || p.manifest.task_id} ·{' '}
+                      {p.manifest.native_binding?.case_selector?.case_count} cases
+                    </label>
+                  ))}
+                  <label htmlFor="application-cases">Application cases to run (optional)</label>
+                  <textarea
+                    id="application-cases"
+                    name="applicationCases"
+                    placeholder="Comma-separated application IDs; leave empty for all cases in the selected states"
+                  />
+                  <p>
+                    Forge verifies case membership and prices the complete plan before admission. A
+                    budget limit can block the plan; it does not silently reduce case coverage.
+                  </p>
+                  <label htmlFor="native-agent-steps">Maximum model turns per application</label>
+                  <input
+                    id="native-agent-steps"
+                    name="agentSteps"
+                    type="number"
+                    min={1}
+                    max={100}
+                    defaultValue={3}
+                    required
+                  />
+                </fieldset>
+              )}
+              {reusableMarketing && (
+                <section aria-label="Marketing campaign execution scope">
+                  <h3>Complete five-role campaign</h3>
+                  <p>
+                    Each selected model runs all five roles through all 12 reporting windows,
+                    including parallel work, handoffs and revision loops in the published workflow.
+                    Models are compared in separate campaigns. This is not a mixed-model team.
+                  </p>
+                  <p>
+                    The default uses the bound campaign dataset. The server prices the full plan
+                    before admission. A budget blocker never reduces the windows or case coverage.
+                  </p>
+                </section>
+              )}
+              {workflows.error && (
+                <p role="alert">Workflow choices could not be loaded: {workflows.error}</p>
+              )}
+              <label htmlFor="preparation-workflow">Workflow</label>
+              <select
+                id="preparation-workflow"
+                disabled={reusableKyc || reusableMarketing}
+                value={workflow?.id || ''}
+                onChange={(e) => setWorkflowId(e.target.value)}
+              >
+                <option value="">Task’s standard execution</option>
+                {availableWorkflows.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    Reviewed workflow · {shortId(w.subject_hash)}
+                  </option>
+                ))}
+              </select>
+              {workflow && (
+                <p>
+                  Uses the reviewed graph with at most{' '}
+                  {workflow.definition.binding.graph.bounds.calls} model calls per trial. Human
+                  responses do not approve spending.
+                </p>
+              )}
+              {humanRoles.map((role) => (
+                <div key={role}>
+                  <label htmlFor={'human-' + role}>Responder for {role}</label>
+                  <select id={'human-' + role} name={'human:' + role} required defaultValue="">
+                    <option value="" disabled>
+                      Select a project member
+                    </option>
+                    {responders.items.map((person) => (
+                      <option key={person.id} value={person.id}>
+                        {person.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+              {humanRoles.length > 0 && responders.error && (
+                <p role="alert">Responders could not be loaded: {responders.error}</p>
+              )}
+              <label htmlFor="preparation-environment">Target environment</label>
+              <select
+                key={'environment:' + exactPackage}
+                id="preparation-environment"
+                name="environment"
+                value={environmentValue}
+                onChange={(e) =>
+                  setEnvironmentChoice({ packageId: exactPackage, value: e.target.value })
+                }
+              >
+                <option value="package-docker">Harbor isolated Docker · task-bound image</option>
+                {reusableKyc && (
+                  <option value="golden-kyc-openenv-v2">
+                    Golden KYC · shared OpenEnv, isolated per application
+                  </option>
+                )}
+                {reusableMarketing && (
+                  <option value="marketing-task2-us-v1">
+                    Headphone launch · shared campaign environment, isolated per model
+                  </option>
+                )}
+                {environments.map((env) => (
+                  <option key={env.id} value={env.id} disabled>
+                    {env.name} · Awaiting qualification
+                  </option>
+                ))}
+              </select>
+              <p className={styles.muted}>
+                Uses the selected package’s immutable environment. Additional environments require
+                configuration.
+              </p>
+              {packages.more && (
                 <button
                   type="button"
-                  onClick={() =>
-                    setSelected(selected.filter((id) => !staleSelections.includes(id)))
-                  }
+                  disabled={packages.loading}
+                  onClick={() => void packages.more?.()}
                 >
-                  Clear unavailable selections
+                  Load more package choices
                 </button>
-              </p>
-            )}
-            <h3>Settings for all selected models</h3>
-            <p>
-              The output-token limit, repetitions and episode time limit apply to every selected
-              model. The API budget is one total cap across all models and repetitions.
-            </p>
-            <label htmlFor="preparation-tokens">Selected maximum output tokens</label>
-            <input
-              id="preparation-tokens"
-              name="tokens"
-              type="number"
-              required
-              min={1}
-              max={2048}
-              defaultValue={2048}
-            />
-            <label htmlFor="preparation-trials">Repetitions per model</label>
-            <input
-              id="preparation-trials"
-              name="trials"
-              type="number"
-              required
-              min={1}
-              max={10}
-              defaultValue={1}
-            />
-            <label htmlFor="preparation-steps">Maximum agent steps per trial</label>
-            <input
-              id="preparation-steps"
-              name="steps"
-              type="number"
-              min={1}
-              max={100}
-              placeholder="Use task horizon"
-            />
-            <label htmlFor="preparation-timeout">Episode time limit (seconds)</label>
-            <input
-              id="preparation-timeout"
-              name="timeout"
-              type="number"
-              required
-              min={1}
-              max={600}
-              defaultValue={300}
-            />
-            <p>
-              New Gemini 3.8 Flash groups allow up to 180 seconds per request; other models use 90
-              seconds. Requests remain bounded by the episode time left. Existing saved groups
-              retain their original limits. No automatic retry is performed.
-            </p>
-            <label htmlFor="preparation-cap">
-              {createGroup
-                ? 'Aggregate API budget (USD)'
-                : 'Aggregate API budget (USD, optional while planning)'}
-            </label>
-            <input
-              id="preparation-cap"
-              name="cap"
-              required={createGroup}
-              type="number"
-              min={0.000001}
-              max={1000}
-              step={0.000001}
-            />
-            <p>
-              Each repetition creates a separate trial, in sequence. The cap covers every model and
-              trial. A blank cap grants no spending authority.
-            </p>
-            {runOnSave && canAuthorizeRun && (
+              )}
+              {!packages.loading && !packages.items.length && (
+                <p>No built packages in this view. Import and build a task package first.</p>
+              )}
+              <VersionChoice
+                id="preparation-preset"
+                label="Execution preset"
+                complete={!presets.more && !presets.error}
+                loading={presets.loading}
+                value={presetId}
+                change={(id) => {
+                  setPresetId(id);
+                  setSelected([]);
+                }}
+                choices={presets.items.map((p) => ({
+                  id: p.id,
+                  label: p.snapshot.name + ' · ' + shortId(p.subject_hash),
+                }))}
+              />
+              {presets.more && (
+                <button
+                  type="button"
+                  disabled={presets.loading}
+                  onClick={() => void presets.more?.()}
+                >
+                  Load more preset choices
+                </button>
+              )}
+              {!presets.loading && !presets.items.length && (
+                <p>An Admin must save an execution preset in Frameworks first.</p>
+              )}
+              {preset && (
+                <ToggleModels
+                  models={runOnSave ? availableModels : preset.snapshot.models}
+                  selected={selected}
+                  change={setSelected}
+                  showKeys={runOnSave}
+                  allowedIds={
+                    budgetModelIds
+                      ? budgetModelIds.filter(
+                          (id) =>
+                            canAuthorizeRun ||
+                            preset.snapshot.models.some((model) => model.id === id),
+                        )
+                      : runOnSave && !canAuthorizeRun
+                        ? preset.snapshot.models.map((m) => m.id)
+                        : undefined
+                  }
+                />
+              )}
+              {!!staleSelections.length && (
+                <p role="alert">
+                  A selected model changed or became unavailable.{' '}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelected(selected.filter((id) => !staleSelections.includes(id)))
+                    }
+                  >
+                    Clear unavailable selections
+                  </button>
+                </p>
+              )}
+              <h3>Settings for all selected models</h3>
               <p>
-                By selecting Run, you confirm permission to process this task with the selected
-                models and authorize the budget entered above.
+                The output-token limit, repetitions and episode time limit apply to every selected
+                model. The API budget is one total cap across all models and repetitions.
               </p>
-            )}
-            <button
-              disabled={
-                busy ||
-                (!runOnSave &&
-                  (!selected.length ||
-                    packages.loading ||
-                    presets.loading ||
-                    !!packages.error ||
-                    !!presets.error))
-              }
-            >
-              {busy && runOnSave
-                ? 'Starting run…'
-                : runOnSave
-                  ? 'Run'
-                  : createGroup
-                    ? 'Create execution group'
-                    : 'Save preparation'}
-            </button>
+              <label htmlFor="preparation-tokens">Selected maximum output tokens</label>
+              <input
+                id="preparation-tokens"
+                name="tokens"
+                type="number"
+                required
+                min={1}
+                max={2048}
+                defaultValue={2048}
+              />
+              <label htmlFor="preparation-trials">Repetitions per model</label>
+              <input
+                id="preparation-trials"
+                name="trials"
+                type="number"
+                required
+                min={1}
+                max={10}
+                defaultValue={1}
+              />
+              {!reusableKyc && (
+                <>
+                  <label htmlFor="preparation-steps">
+                    {reusableMarketing
+                      ? 'Maximum model calls per campaign (optional)'
+                      : 'Maximum agent steps per trial'}
+                  </label>
+                  <input
+                    id="preparation-steps"
+                    name="steps"
+                    type="number"
+                    min={1}
+                    max={reusableMarketing ? 1000 : 100}
+                    placeholder={
+                      reusableMarketing ? 'Use the complete bound campaign plan' : 'Use task horizon'
+                    }
+                    disabled={!reusableMarketing && !!workflow}
+                  />
+                </>
+              )}
+              <label htmlFor="preparation-timeout">
+                {reusableMarketing ? 'Campaign time limit (seconds)' : 'Episode time limit (seconds)'}
+              </label>
+              <input
+                id="preparation-timeout"
+                key={'timeout:' + exactPackage}
+                name="timeout"
+                type="number"
+                required
+                min={1}
+                max={600}
+                value={timeoutValue}
+                onChange={(e) => setTimeoutChoice({ packageId: exactPackage, value: e.target.value })}
+              />
+              {reusableMarketing && (
+                <p>
+                  All five roles and all 12 reporting windows share this time limit. If time runs out,
+                  the execution remains incomplete and its recorded progress is retained.
+                </p>
+              )}
+              <p>
+                New Gemini 3.8 Flash groups allow up to 180 seconds per request; other models use 90
+                seconds. Requests remain bounded by the episode time left. Existing saved groups
+                retain their original limits. No automatic retry is performed.
+              </p>
+              <label htmlFor="preparation-cap">
+                {createGroup
+                  ? 'Aggregate API budget (USD)'
+                  : 'Aggregate API budget (USD, optional while planning)'}
+              </label>
+              <input
+                id="preparation-cap"
+                name="cap"
+                required={createGroup}
+                type="number"
+                min={0.000001}
+                max={1000}
+                step={0.000001}
+              />
+              <p>
+                Each repetition creates a separate trial, in sequence. The cap covers every model and
+                trial. A blank cap grants no spending authority.
+              </p>
+              {runOnSave && canAuthorizeRun && (
+                <p>
+                  By selecting Run, you confirm permission to process this task with the selected
+                  models and authorize the budget entered above.
+                </p>
+              )}
+              <button
+                disabled={
+                  busy ||
+                  (!runOnSave &&
+                    (!selected.length ||
+                      packages.loading ||
+                      presets.loading ||
+                      !!packages.error ||
+                      !!presets.error))
+                }
+              >
+                {busy && runOnSave
+                  ? 'Starting run…'
+                  : runOnSave
+                    ? 'Run'
+                    : createGroup
+                      ? 'Create execution group'
+                      : 'Save preparation'}
+              </button>
+            </fieldset>
           </Form>
         </section>
       )}
-      {saved && (
+      {saved && destinations && (
         <section className={styles.panel} aria-labelledby="preparation-readiness-heading">
           <h2 id="preparation-readiness-heading" ref={readinessHeading} tabIndex={-1}>
             Preparation readiness
@@ -923,23 +1170,24 @@ export default function WorkspacePreparation({
             .
           </p>
           <p>Conservative cost: unknown. Reservation: not created. External tracing: disabled.</p>
-          <ul>
-            {saved.readiness.missing.map((reason) => (
-              <li key={reason}>{messages[reason] || reason}</li>
-            ))}
-          </ul>
+          <ReasonList
+            items={saved.readiness.missing.map((reason) => describeReason(reason, canAuthorizeRun))}
+            canAdmin={canAuthorizeRun}
+            to={destinations}
+          />
           {saved.snapshot.models.map((m) => (
             <div key={m.id}>
               <h3>
                 {m.name} · {m.provider}/{m.model_id}
               </h3>
-              <ul>
-                {saved.readiness.models
-                  .find((state) => state.model_profile_id === m.id)
-                  ?.missing.map((reason) => (
-                    <li key={reason}>{messages[reason] || reason}</li>
-                  ))}
-              </ul>
+              <ReasonList
+                items={(
+                  saved.readiness.models.find((state) => state.model_profile_id === m.id)
+                    ?.missing || []
+                ).map((reason) => describeReason(reason, canAuthorizeRun))}
+                canAdmin={canAuthorizeRun}
+                to={destinations}
+              />
             </div>
           ))}
           <p>Use Create execution group to choose the configuration for a new run.</p>

@@ -83,7 +83,9 @@ def child_environment(home):
 
 @contextmanager
 def scoped(job, user):
-    with transaction(job["project_id"], user) as c:
+    from anvil import pilot_environment
+
+    with transaction(job["project_id"], user, worker=pilot_environment.current() is not None) as c:
         project_fence(c, job["project_id"])
         yield c
 
@@ -99,7 +101,7 @@ def lease(c, job):
 
 def authorized(c, job, user):
     roles = auth.project_roles(c, job["project_id"], user)
-    auth.require(roles, "admin", "researcher", "product-owner")
+    auth.require(roles, "admin", "rl-engineer", "researcher", "product-owner")
     row = one(c, "SELECT * FROM anvil.harbor_checks WHERE id=%s FOR UPDATE", (job["target_id"],))
     if not row:
         raise RuntimeError("check_missing")
@@ -117,11 +119,17 @@ def authorized(c, job, user):
         ):
             raise RuntimeError("approval_revoked")
     if row["candidate"] == "agent":
+        from anvil import pilot_environment
         from anvil.harbor_agents import plan, readiness
 
-        ready = readiness(c, plan(c, row["agent_plan_id"]))
-        if not ready["ready"]:
-            raise RuntimeError("live_agent_gates_revoked")
+        if pilot_environment.current():
+            from anvil.worker_dispatch_broker import forward
+
+            forward(job, user, row["agent_plan_id"], 0, operation="readiness")
+        else:
+            ready = readiness(c, plan(c, row["agent_plan_id"]))
+            if not ready["ready"]:
+                raise RuntimeError("live_agent_gates_revoked")
     return row
 
 
@@ -268,6 +276,13 @@ def process(job):
     if not owner:
         raise RuntimeError("check_missing")
     user = owner["created_by"]
+    from anvil import pilot_environment
+
+    if pilot_environment.current():
+        from anvil.pilot_native_worker import process as process_pilot
+
+        process_pilot(job, user)
+        return
     child = None
     gateway = None
     model = None
@@ -315,6 +330,13 @@ def process(job):
             from anvil.import_execution import process as process_tool_trial
 
             process_tool_trial(job, user, row, package)
+            return
+        if os.environ.get("ANVIL_ENV") == "cloud":
+            # Cloud QA uses the preloaded, no-build/no-pull native custody path.
+            # Never fall through to stock Harbor's implicit image build/cleanup.
+            from anvil.environment_structured_agent import process as process_structured
+
+            process_structured(job, user, row, package)
             return
         workspace.mkdir(parents=True, exist_ok=False, mode=0o700)
         task_dir, results = workspace / "task", workspace / "results"
@@ -532,6 +554,10 @@ def tick():
     if import_tick():
         return True
     with transaction(worker=True) as c:
+        from anvil import pilot_environment
+
+        if pilot_environment.current():
+            c.execute("SELECT anvil.wake_workflow_jobs()")
         job = one(c, "SELECT * FROM anvil.claim_harbor_job()")
     if not job:
         return False

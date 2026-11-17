@@ -5,9 +5,15 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import HarborWorkbench from './HarborWorkbench';
 import WorkspaceTasks from './WorkspaceTasks';
 import WorkspaceBenchmarks from './WorkspaceBenchmarks';
+import GoldenKycWorkbench from './GoldenKycWorkbench';
 import WorkspaceExecutionGroups from './WorkspaceExecutionGroups';
 import ModelProfiles from './ModelProfiles';
+import WorkflowHumanInbox from './WorkflowHumanInbox';
 import FrameworkProfiles from './FrameworkProfiles';
+import EvaluatorSettings from './EvaluatorSettings';
+import BenchmarkRunDashboard from './BenchmarkRunDashboard';
+import BenchmarkMethods from './BenchmarkMethods';
+import EnvironmentLibrary from './EnvironmentLibrary';
 import DiagnosticResults from './DiagnosticResults';
 import WorkspaceRevisionEditor from './WorkspaceRevisionEditor';
 import WorkspacePeople, { WorkspaceAccess } from './WorkspacePeople';
@@ -26,18 +32,20 @@ import {
 import styles from './ModernWorkspace.module.css';
 import { providerFailure } from '../lib/providerFailure';
 import AccessRequest from './AccessRequest';
+import ImportedProjects from './ImportedProjects';
+import WorkspaceAdmin from './WorkspaceAdmin';
+import ExecutionOverview from './ExecutionOverview';
+import WorkspaceHome from './WorkspaceHome';
+import NewProjectExecution from './NewProjectExecution';
+import ExpertReviewReports from './ExpertReviewReports';
 
 type Project = { id: string; name: string; roles: string[]; workspace_access: WorkspaceAccess };
 type User = { id: string; name: string; projects: Project[] };
 const navigation = [
-  ['overview', 'Overview'],
-  ['tasks', 'Tasks'],
-  ['benchmarks', 'Benchmarks'],
-  ['execution-groups', 'Execution groups'],
-  ['models', 'Models & keys'],
-  ['frameworks', 'Frameworks'],
-  ['people', 'People'],
-  ['limits', 'Limits & usage'],
+  ['overview', 'Home'],
+  ['projects', 'Projects'],
+  ['execution-groups', 'Execution'],
+  ['admin', 'Admin'],
 ];
 const runTabs = [
   'Dashboard',
@@ -82,6 +90,13 @@ function WorkspaceView() {
     route = project ? '/workspace/' + project.id : '/workspace';
   const taskFilter = query.get('task'),
     runId = query.get('run');
+  const goldenKycRoute = section === 'benchmarks' && parts[4] === 'golden-kyc';
+  const connectedBenchmark =
+    section === 'benchmarks' &&
+    parts[4] !== 'golden-kyc' &&
+    !query.get('rehearsal_id') &&
+    !query.get('trace_id') &&
+    !query.get('source_class');
   const diagnostic = query.get('kind') === 'diagnostic';
   const tasksEndpoint = diagnostic ? 'diagnostic-tasks' : 'tasks';
   const runsEndpoint = diagnostic ? 'diagnostic-runs' : 'runs';
@@ -112,6 +127,18 @@ function WorkspaceView() {
   const load = useCallback(async () => {
     if (!base || !allowed) return;
     const current = ++generation.current;
+    if (
+      connectedBenchmark ||
+      goldenKycRoute ||
+      section === 'expert-review' ||
+      section === 'admin' ||
+      section === 'projects' ||
+      (section === 'execution-groups' && !parts[4])
+    ) {
+      setLoading(false);
+      setError('');
+      return;
+    }
     setLoading(true);
     setError('');
     setDetail(null);
@@ -137,7 +164,17 @@ function WorkspaceView() {
     } finally {
       if (current === generation.current) setLoading(false);
     }
-  }, [base, allowed, taskFilter, runId, section, tasksEndpoint, runsEndpoint]);
+  }, [
+    base,
+    allowed,
+    taskFilter,
+    runId,
+    section,
+    tasksEndpoint,
+    runsEndpoint,
+    connectedBenchmark,
+    goldenKycRoute,
+  ]);
   useEffect(() => {
     void load();
     setPrepare(false);
@@ -155,6 +192,13 @@ function WorkspaceView() {
   }, [detail, load]);
   function go(page: string) {
     setTab('Dashboard');
+    if (page === 'benchmarks') {
+      const saved = sessionStorage.getItem('anvil-benchmark:' + base);
+      if (saved?.startsWith(route + '/benchmarks?')) {
+        router.push(saved);
+        return;
+      }
+    }
     router.push(route + '/' + page + (scopeQuery ? '?' + scopeQuery : ''));
   }
   function openRun(run: WorkspaceRun) {
@@ -169,25 +213,27 @@ function WorkspaceView() {
   }
   const selectedRuns = (runs?.items || []).filter((r) => selected.includes(r.id));
   const title =
-    section === 'runs'
-      ? 'Run history'
-      : section === 'tasks' && parts[4]
-        ? parts[4] === 'import'
-          ? 'Import Task'
-          : parts[5] === 'run'
-            ? 'Run Task'
-            : 'View Task'
-        : section === 'execution-groups'
-          ? parts[4] === 'new'
-            ? 'Create execution group'
-            : parts[4]
-              ? 'Execution group'
-              : 'Execution groups'
-          : section === 'preparation'
-            ? 'Saved preparation'
-            : section === 'editor'
-              ? 'Edit as new version'
-              : navigation.find(([key]) => key === section)?.[1] || 'Overview';
+    section === 'expert-review'
+      ? 'Expert Review'
+      : section === 'runs'
+        ? 'Run history'
+        : section === 'tasks' && parts[4]
+          ? parts[4] === 'import'
+            ? 'Import Task'
+            : parts[5] === 'run'
+              ? 'Run Task'
+              : 'View Task'
+          : section === 'execution-groups'
+            ? parts[4] === 'new'
+              ? 'Create execution group'
+              : parts[4]
+                ? 'Execution group'
+                : 'Execution groups'
+            : section === 'preparation'
+              ? 'Saved preparation'
+              : section === 'editor'
+                ? 'Edit as new version'
+                : navigation.find(([key]) => key === section)?.[1] || 'Overview';
   const canEdit = capabilities.includes('task_drafts.write');
   const editorHref = (id: string, returnRun = query.get('return_run') || runId || '') =>
     route +
@@ -198,13 +244,13 @@ function WorkspaceView() {
   if (!ready)
     return (
       <main className={styles.login} role="status">
-        Loading your Anvil session…
+        Loading your Forge session…
       </main>
     );
   if (!user)
     return (
       <main className={styles.login}>
-        <img src="/brand/adi-anvil-logo-v1.png" alt="ADI Anvil" />
+        <img src="/brand/adi-anvil-logo-v1.png" alt="ADI Forge" />
         <h1>One workspace for evaluation</h1>
         <p>Configure models, work with tasks and inspect the evidence behind every run.</p>
         <a className="button primary" href="/api/v1/auth/login">
@@ -217,15 +263,21 @@ function WorkspaceView() {
     <div className={`${styles.workspace} ${dark ? styles.night : ''}`}>
       <aside className={styles.sidebar}>
         <a className={styles.brand} href={route + '/overview'}>
-          ADI Anvil<small>Frontier evaluations</small>
+          ADI Forge<small>Frontier evaluations</small>
         </a>
         <nav aria-label="Workspace navigation">
           {navigation
-            .filter(([key]) => admin || !['models', 'frameworks', 'people', 'limits'].includes(key))
+            .filter(([key]) => admin || key !== 'admin')
             .map(([key, label]) => (
               <a
                 key={key}
                 href={route + '/' + key}
+                onClick={(e) => {
+                  if (key === 'benchmarks') {
+                    e.preventDefault();
+                    go(key);
+                  }
+                }}
                 aria-current={section === key ? 'page' : undefined}
               >
                 {key === 'models' && <small>Administration</small>}
@@ -234,7 +286,13 @@ function WorkspaceView() {
             ))}
         </nav>
         <div className={styles.sidebarFoot}>
-          <span>{admin ? 'Admin includes engineering work' : 'Engineering workspace'}</span>
+          <span>
+            {admin
+              ? 'Admin includes engineering work'
+              : capabilities.includes('result_reviews.assess') && !canEdit
+                ? 'SME Reviewer'
+                : 'Engineering workspace'}
+          </span>
         </div>
       </aside>
       <div className={styles.body}>
@@ -363,13 +421,13 @@ function WorkspaceView() {
                   </p>
                 </section>
               )}
-              {section === 'overview' && (
-                <Overview
-                  tasks={tasks?.items || []}
-                  runs={runs?.items || []}
-                  admin={admin}
-                  go={go}
-                  openRun={openRun}
+              {section === 'overview' && <WorkspaceHome base={base} route={route} />}
+              {section === 'expert-review' && query.get('benchmark_run') && (
+                <ExpertReviewReports
+                  key={base + query.get('benchmark_run')}
+                  base={base}
+                  runId={query.get('benchmark_run')!}
+                  initialView={query.get('view')}
                 />
               )}
               {section === 'tasks' && !diagnostic && (
@@ -389,7 +447,7 @@ function WorkspaceView() {
                   <p className={styles.muted}>
                     {diagnostic
                       ? 'Versioned diagnostic tasks. History spans all revisions; metrics describe the whole run.'
-                      : 'Praxis imports and immutable Harbor packages.'}
+                      : 'Authoring imports and immutable Harbor packages.'}
                   </p>
                   {tasks?.items.length ? (
                     <div className={styles.tableScroll}>
@@ -445,7 +503,7 @@ function WorkspaceView() {
                     !loading && (
                       <Empty
                         title="No imported tasks yet"
-                        text="Use Import / prepare run to bring a Praxis task into this project."
+                        text="Use Import / prepare run to bring a Authoring task into this project."
                       />
                     )
                   )}
@@ -599,16 +657,51 @@ function WorkspaceView() {
                   <p>Open an exact task, rubric or evaluation version from a run snapshot.</p>
                 ))}
               {section === 'models' && admin && <ModelProfiles key={base} base={base} />}
-              {section === 'benchmarks' && (
-                <WorkspaceBenchmarks
-                  key={base}
-                  base={base}
-                  route={route}
-                  userId={user.id}
-                  canWrite={canEdit}
-                  tasks={tasks?.items || []}
-                />
+              {section === 'projects' && canEdit && (
+                <ImportedProjects key={base} base={base} canAdmin={admin} />
               )}
+              {section === 'admin' && admin && (
+                <WorkspaceAdmin key={base} base={base} route={route} />
+              )}
+              {section === 'evaluators' && canEdit && <EvaluatorSettings key={base} base={base} />}
+              {section === 'benchmark-methods' && canEdit && <BenchmarkMethods base={base} />}
+              {section === 'environments' && canEdit && (
+                <EnvironmentLibrary base={base} canAdmin={admin} />
+              )}
+              {section === 'execution-groups' &&
+                (canEdit || capabilities.includes('result_reviews.read')) && (
+                  <>
+                    {!parts[4] && (
+                      <ExecutionOverview base={base} route={route} canCreate={canEdit} />
+                    )}
+                  </>
+                )}
+              {section === 'benchmarks' &&
+                (parts[4] === 'golden-kyc' ? (
+                  <GoldenKycWorkbench base={base} route={route} canAdmin={admin} />
+                ) : !query.get('rehearsal_id') &&
+                  !query.get('trace_id') &&
+                  !query.get('source_class') ? (
+                  <>
+                    <p>
+                      <a href={route + '/benchmarks/golden-kyc'}>
+                        Golden Bank KYC · import, run and report
+                      </a>
+                    </p>
+                    <WorkflowHumanInbox base={base + '/workspace'} />
+                    <BenchmarkRunDashboard base={base} canAdmin={admin} />
+                  </>
+                ) : (
+                  <WorkspaceBenchmarks
+                    key={base}
+                    base={base}
+                    route={route}
+                    userId={user.id}
+                    canWrite={canEdit}
+                    canAdmin={admin}
+                    tasks={tasks?.items || []}
+                  />
+                ))}
               {section === 'frameworks' && admin && (
                 <>
                   <FrameworkProfiles
@@ -625,20 +718,22 @@ function WorkspaceView() {
               )}
               {section === 'execution-groups' &&
                 (parts[4] === 'new' ? (
-                  <WorkspacePreparation
-                    key={base + ':new:' + (query.get('task') || 'all')}
+                  <NewProjectExecution
+                    key={base}
                     base={base}
-                    taskId={query.get('task')}
-                    createGroup
+                    canAdmin={admin}
                     open={(id) => router.push(route + '/execution-groups/' + id)}
                   />
                 ) : (
-                  <WorkspaceExecutionGroups
-                    key={base + ':' + (parts[4] || 'list')}
-                    base={base}
-                    groupId={parts[4]}
-                    canAdmin={admin}
-                  />
+                  <details open={!!parts[4]}>
+                    <summary>Operational execution details</summary>
+                    <WorkspaceExecutionGroups
+                      key={base + ':' + (parts[4] || 'list')}
+                      base={base}
+                      groupId={parts[4]}
+                      canAdmin={admin}
+                    />
+                  </details>
                 ))}
               {section === 'preparation' &&
                 (capabilities.includes('harbor.prepare') ? (
@@ -1381,7 +1476,7 @@ function Frameworks() {
       <section className={styles.panel}>
         <h2>Platform orchestration</h2>
         <p>
-          Anvil / LangGraph retains durable checkpoints, authorization and accounting. Adding
+          Forge / LangGraph retains durable checkpoints, authorization and accounting. Adding
           framework metadata will not install an SDK or enable execution.
         </p>
       </section>

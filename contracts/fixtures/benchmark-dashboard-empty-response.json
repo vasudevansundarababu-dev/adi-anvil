@@ -1,0 +1,104 @@
+{
+  "fixture_notice": "Actual empty isolated PostgreSQL API response for frontend contract tests; not execution or model measurement evidence.",
+  "data": {
+    "schema_version": "anvil-dashboard-v1",
+    "context": {
+      "model": [],
+      "task": "all",
+      "period": "all",
+      "environment": "all",
+      "run_id": null,
+      "score_revision_id": null,
+      "trace_id": null,
+      "cluster": null
+    },
+    "options": {
+      "models": [],
+      "tasks": [],
+      "environments": []
+    },
+    "origin_notice": "Fictional and offline control observations are not live model performance. Only reviewed, current eligible comparison observations can rank.",
+    "limitations": [
+      "Judge, retrieval relevance and semantic drift measurements require separately supported observations.",
+      "No hidden chain-of-thought is captured or reconstructed.",
+      "Historical control points are software conformance only and excluded from all model rankings.",
+      "No active endpoint count is inferred from configured or previously observed model IDs."
+    ],
+    "overview": {
+      "leader": null,
+      "average_score_percent": null,
+      "total_traces": 0,
+      "model_trace_count": 0,
+      "control_trace_count": 0,
+      "ranked_models": 0,
+      "models": [],
+      "ranking": {
+        "observed_win_rate": {
+          "status": "insufficient_data",
+          "method": "wins_plus_half_ties_over_matchups",
+          "pair_count": 0,
+          "rows": []
+        },
+        "bradley_terry": {
+          "status": "insufficient_data",
+          "method": "bradley_terry_mm_fractional_ties_v1",
+          "tie_policy": "one_half_win_each; not a fitted tie-probability model",
+          "pair_count": 0,
+          "rows": [],
+          "iterations": 0,
+          "reason": "At least two models with matched reviewed observations are required"
+        }
+      }
+    },
+    "traces": [],
+    "failures": {
+      "classification_basis": "Declared terminal states and frozen task thresholds only; no inferred hallucination or root cause",
+      "rate_basis": "diagnostic valid captured model cells with available points; controls and infrastructure excluded",
+      "eligible_traces": 0,
+      "failed_traces": 0,
+      "error_rate_percent": null,
+      "control_traces": 0,
+      "infrastructure_events": 0,
+      "categories": [],
+      "heatmap": [],
+      "traces": []
+    },
+    "availability": {
+      "judge": {
+        "status": "not_run",
+        "value": null,
+        "reason": "No separately approved judge observations are stored; paid calls remain off"
+      },
+      "logprobs": {
+        "status": "unavailable",
+        "value": null,
+        "reason": "No supported token-likelihood telemetry is stored; likelihood is not factual accuracy"
+      },
+      "retrieval_noise": {
+        "status": "unavailable",
+        "value": null,
+        "reason": "No judged retrieval relevance observations are stored"
+      },
+      "multi_step_drift": {
+        "status": "unavailable",
+        "value": null,
+        "reason": "No reviewed constraint-drift labels are stored"
+      }
+    },
+    "report": {
+      "path": "/dashboard/report",
+      "raw_prompts_included": false
+    },
+    "curation": {
+      "datasets": 0,
+      "case_versions": 0,
+      "verified_cases": 0,
+      "proposals": 0,
+      "blocked_intents": 0,
+      "cases": [],
+      "proposal_refs": []
+    },
+    "snapshot_sha256": "b1b3062f03034e665bcf149ede8abe17a6e89abcdd6f468220a5b2299f6b8a1c",
+    "generated_at": "2026-11-09T05:18:47.504415+00:00"
+  }
+}

@@ -1,0 +1,5 @@
+# Separate complete isolated wheel-builder closure; application lock is distinct.
+hatchling==1.27.0
+packaging==26.3
+pathspec==1.1.1
+pluggy==1.6.0

@@ -118,7 +118,7 @@ const labels: Record<string, string> = {
   rubrics: 'Rubrics',
   tasks: 'Qualification',
   factory: 'Benchmarks',
-  harbor: 'Praxis → Harbor',
+  harbor: 'Authoring → Harbor',
   suites: 'Suites',
   protocols: 'Protocols',
   runs: 'Run console',
@@ -135,7 +135,7 @@ const notes: Record<string, string> = {
   rubrics: 'Anchored criteria and calibration evidence, bound to exact versions.',
   tasks: 'Publish only after content, research and rights reviews.',
   factory: 'Confirm task requirements, compare catalog metadata and prepare a Suite draft.',
-  harbor: 'Versioned Praxis imports and isolated synthetic software verification.',
+  harbor: 'Versioned Authoring imports and isolated synthetic software verification.',
   suites: 'Freeze exact task versions and disclose selection limits.',
   protocols: 'Bind the suite, candidates and independent reviewers.',
   runs: 'Explicit execution through the durable queue. Fixture results are illustrative.',
@@ -504,8 +504,8 @@ export default function Console() {
   if (!user)
     return (
       <main className="login">
-        <img src="/brand/adi-anvil-logo-v1.png" alt="ADI Anvil" />
-        <h1>ADI Anvil</h1>
+        <img src="/brand/adi-anvil-logo-v1.png" alt="ADI Forge" />
+        <h1>ADI Forge</h1>
         <p>Frontier Evaluation &amp; Diagnostics Platform</p>
         <div className="banner">Local synthetic workspace · no live inference</div>
         <p className="muted">
@@ -520,7 +520,7 @@ export default function Console() {
     <div className={dark ? 'dark' : ''}>
       <header>
         <div>
-          <strong>ADI Anvil</strong>
+          <strong>ADI Forge</strong>
           <small>Frontier Evaluation &amp; Diagnostics Platform</small>
         </div>
         <div className="tools">
@@ -1282,7 +1282,7 @@ export default function Console() {
                       ? 'Actual model cost: not applicable to network-free fixtures'
                       : r.origin === 'adi_executed'
                         ? 'Real model execution on original synthetic inputs. Review pending; billing is not independently verified.'
-                        : 'External execution is reported, not independently reproduced. Cost is not verified by Anvil.'}
+                        : 'External execution is reported, not independently reproduced. Cost is not verified by Forge.'}
                   </p>
                   <p>
                     {r.episode_count ?? 0} episodes · {r.pending_execution ?? 0} pending execution ·{' '}
@@ -1657,7 +1657,7 @@ export default function Console() {
             </div>
           )}
         <footer>
-          ADI Anvil · Local diagnostic workspace · External inference and sending require separate
+          ADI Forge · Local diagnostic workspace · External inference and sending require separate
           authorization.
         </footer>
       </main>

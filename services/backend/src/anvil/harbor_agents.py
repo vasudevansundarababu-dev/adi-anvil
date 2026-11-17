@@ -40,42 +40,9 @@ MAX_OUTPUT_TOKENS = 2048
 
 
 def code_digest():
-    paths = [
-        ROOT / "services/backend/src/anvil" / name
-        for name in (
-            "harbor_agents.py",
-            "harbor_worker.py",
-            "harbor_package.py",
-            "praxis_contract.py",
-            "praxis_executable.py",
-            "task_parser.py",
-            "praxis_staged.py",
-            "providers.py",
-            "db.py",
-            "auth.py",
-            "config.py",
-            "domain.py",
-            "artifacts.py",
-            "marketing_authority.py",
-            "workspace_execution.py",
-            "workspace_costs.py",
-            "workspace_dispatch.py",
-            "workspace_adapter_contracts.py",
-            "workspace_preparation.py",
-            "workspace_models.py",
-            "workspace_credentials.py",
-            "workspace_secrets.py",
-            "import_codegen.py",
-            "import_execution.py",
-            "import_sandbox.py",
-            "import_generation.py",
-        )
-    ]
-    paths.append(ROOT / "services/harbor/src/anvil_harbor/agent.py")
-    paths.append(ROOT / "services/harbor/src/anvil_harbor/tool_agent.py")
-    return digest(
-        {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
-    )
+    from anvil.harbor_agent_source import code_digest as pure_code_digest
+
+    return pure_code_digest()
 
 
 class Authority(Strict):
@@ -171,6 +138,13 @@ def readiness(c, record):
     connection = one(c, "SELECT * FROM anvil.connections WHERE id=%s", (record["connection_id"],))
     package = one(c, "SELECT * FROM anvil.harbor_packages WHERE id=%s", (record["package_id"],))
     missing = []
+    from anvil import pilot_environment
+
+    try:
+        if pilot_environment.current():
+            missing.append("pilot_requires_workspace_shared_budget_path")
+    except ValueError:
+        missing.append("pilot_namespace_binding_invalid")
     if connection and connection["config"].get("workspace_profile_version"):
         missing.append("workspace_profile_dispatch_binding_not_qualified")
     policy = authority()
@@ -434,7 +408,7 @@ def decision(project, user, plan_id, stage_index, transport=execute_provider):
         if actual > bound or result.model_returned != record["config"]["model"]:
             raise ValueError()
     except (ValueError, TypeError, RecursionError):
-        with transaction(project, worker=True) as c:
+        with transaction(project, user) as c:
             project_fence(c, project)
             c.execute(
                 "UPDATE anvil.harbor_agent_calls SET status='execution_unknown',finished_at=now() WHERE id=%s",
@@ -442,7 +416,7 @@ def decision(project, user, plan_id, stage_index, transport=execute_provider):
             )
             audit(c, project, user, "harbor.agent_dispatch_unknown", cid)
         raise RuntimeError("provider_output_or_usage_unknown_no_retry") from None
-    with transaction(project, worker=True) as c:
+    with transaction(project, user) as c:
         project_fence(c, project)
         c.execute(
             "UPDATE anvil.harbor_agent_calls SET status='completed',output_json=%s,usage=%s,request_id=%s,actual_micro_usd=%s,finished_at=now() WHERE id=%s",

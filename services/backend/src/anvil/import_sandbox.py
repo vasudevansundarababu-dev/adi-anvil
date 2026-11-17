@@ -17,8 +17,7 @@ from uuid import uuid4
 
 from anvil.config import ROOT
 from anvil.import_codegen import SAFE_BUILTINS, score
-
-TRUSTED_IMAGE = "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e"
+from anvil.native_image_profile import IMAGE as TRUSTED_IMAGE
 
 
 def docker_env():

@@ -21,7 +21,7 @@ const definitions = [
   },
   {
     keys: ['publish', 'publication', 'blocked'],
-    text: 'Publish is available only after ingestion completes with zero blocking errors and the objective remains approved. Publication freezes a data version; it does not grant rights, approve scoring or start a model. Use the primary publication control; Anvil Help cannot publish or approve.',
+    text: 'Publish is available only after ingestion completes with zero blocking errors and the objective remains approved. Publication freezes a data version; it does not grant rights, approve scoring or start a model. Use the primary publication control; Forge Help cannot publish or approve.',
     field: 'task-source',
   },
   {
@@ -66,7 +66,7 @@ export default function AnvilHelp({ screen }: { screen: string }) {
     setFeedback('');
   }
   return (
-    <aside className="card" aria-label="Anvil Help">
+    <aside className="card" aria-label="Forge Help">
       <button
         ref={launcher}
         aria-expanded={open}
@@ -75,7 +75,7 @@ export default function AnvilHelp({ screen }: { screen: string }) {
           if (!open) requestAnimationFrame(() => input.current?.focus());
         }}
       >
-        Anvil Help
+        Forge Help
       </button>
       {open && (
         <div
@@ -86,7 +86,7 @@ export default function AnvilHelp({ screen }: { screen: string }) {
             }
           }}
         >
-          <h2>Anvil Help — {screen}</h2>
+          <h2>Forge Help — {screen}</h2>
           <p>
             Static grounded help · TaskSpec 1.0 / ingestion foundation v1. No model calls. Questions
             stay in this component’s memory and are not sent or saved. Do not enter secrets.

@@ -1,0 +1,1148 @@
+{
+  "bank": {
+    "id": "fictional-points",
+    "revision": "fictional-revision-1",
+    "title": "Original fictional arithmetic — software tests only",
+    "version": "1.0.0"
+  },
+  "compiler_requirement": {
+    "profile": "sme-artifact-v1",
+    "version": "1.0.0"
+  },
+  "exported_at": "2026-11-07T18:00:00Z",
+  "exporter": {
+    "identity": "anvil-original-fixtures",
+    "version": "1.0.0"
+  },
+  "files": [
+    {
+      "byte_size": 370,
+      "media_type": "text/markdown",
+      "path": "runtime_pack/FX-001/prompt.md",
+      "sha256": "080f1e2fb29292ab30027f46a4d53d797609d2e917d328feff58d147b154133f",
+      "task_id": "FX-001",
+      "visibility": "actor"
+    },
+    {
+      "byte_size": 1235,
+      "media_type": "application/json",
+      "path": "runtime_pack/FX-001/items.json",
+      "sha256": "12a36dee635c786561aa58b0c0f9d9e7ddfeb1c5bb38869efd4a53c6d7c420d8",
+      "task_id": "FX-001",
+      "visibility": "actor"
+    },
+    {
+      "byte_size": 1625,
+      "media_type": "text/plain",
+      "path": "runtime_pack/FX-001/tool-server.py",
+      "sha256": "a2f4197652df6a03503b18b1c20fa195f5cd596c47b450322ac958aab1af138d",
+      "task_id": "FX-001",
+      "visibility": "actor"
+    },
+    {
+      "byte_size": 433,
+      "media_type": "application/json",
+      "path": "runtime_pack/FX-001/tools.json",
+      "sha256": "52c261d91b0315037f78807c25295177998f40d28589ad670591d89f6c2e8e2d",
+      "task_id": "FX-001",
+      "visibility": "actor"
+    },
+    {
+      "byte_size": 1658,
+      "media_type": "application/json",
+      "path": "runtime_pack/FX-001/output.schema.json",
+      "sha256": "3ffb0cf559d35b0c6b0b278b41ca9a1db9217cbf1eb64fff7e44e6e475ebbdec",
+      "task_id": "FX-001",
+      "visibility": "actor"
+    },
+    {
+      "byte_size": 1935,
+      "media_type": "application/json",
+      "path": "eval_pack/FX-001/rules.json",
+      "sha256": "fb55a6eef47308734433253814e7107f2cfb5eee7cd2d04439d6fd15da1b315f",
+      "task_id": "FX-001",
+      "visibility": "evaluation_private"
+    },
+    {
+      "byte_size": 255,
+      "media_type": "text/plain",
+      "path": "eval_pack/FX-001/evaluator.py",
+      "sha256": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+      "task_id": "FX-001",
+      "visibility": "evaluation_private"
+    },
+    {
+      "byte_size": 222,
+      "media_type": "application/json",
+      "path": "eval_pack/FX-001/policy.json",
+      "sha256": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+      "task_id": "FX-001",
+      "visibility": "evaluation_private"
+    },
+    {
+      "byte_size": 1223,
+      "media_type": "application/json",
+      "path": "eval_pack/FX-001/calibration.json",
+      "sha256": "a2158c255d12773ee34db904d302e8f5576616309a19b1717a55bcba1f775008",
+      "task_id": "FX-001",
+      "visibility": "evaluation_private"
+    },
+    {
+      "byte_size": 370,
+      "media_type": "text/markdown",
+      "path": "runtime_pack/FX-002/prompt.md",
+      "sha256": "5f40339bc52a2cc17e4e76d1b53f4f5bb7525f2c22d7c8d5859be11ede385f36",
+      "task_id": "FX-002",
+      "visibility": "actor"
+    },
+    {
+      "byte_size": 320,
+      "media_type": "application/json",
+      "path": "runtime_pack/FX-002/items.json",
+      "sha256": "4887f2653cebbb185379faf032a495369250f5d3aa589363d895a16e704edda6",
+      "task_id": "FX-002",
+      "visibility": "actor"
+    },
+    {
+      "byte_size": 1625,
+      "media_type": "text/plain",
+      "path": "runtime_pack/FX-002/tool-server.py",
+      "sha256": "a2f4197652df6a03503b18b1c20fa195f5cd596c47b450322ac958aab1af138d",
+      "task_id": "FX-002",
+      "visibility": "actor"
+    },
+    {
+      "byte_size": 433,
+      "media_type": "application/json",
+      "path": "runtime_pack/FX-002/tools.json",
+      "sha256": "52c261d91b0315037f78807c25295177998f40d28589ad670591d89f6c2e8e2d",
+      "task_id": "FX-002",
+      "visibility": "actor"
+    },
+    {
+      "byte_size": 488,
+      "media_type": "application/json",
+      "path": "runtime_pack/FX-002/output.schema.json",
+      "sha256": "7991446fcd2d3d6c68dd16739e89221f55f7c12538147e237e51248bee5a8855",
+      "task_id": "FX-002",
+      "visibility": "actor"
+    },
+    {
+      "byte_size": 480,
+      "media_type": "application/json",
+      "path": "eval_pack/FX-002/rules.json",
+      "sha256": "b4b4753f4c77cd2dd2964eb5437777f2f9f70d73c851f8eca14b3697686940df",
+      "task_id": "FX-002",
+      "visibility": "evaluation_private"
+    },
+    {
+      "byte_size": 255,
+      "media_type": "text/plain",
+      "path": "eval_pack/FX-002/evaluator.py",
+      "sha256": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+      "task_id": "FX-002",
+      "visibility": "evaluation_private"
+    },
+    {
+      "byte_size": 222,
+      "media_type": "application/json",
+      "path": "eval_pack/FX-002/policy.json",
+      "sha256": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+      "task_id": "FX-002",
+      "visibility": "evaluation_private"
+    },
+    {
+      "byte_size": 488,
+      "media_type": "application/json",
+      "path": "eval_pack/FX-002/calibration.json",
+      "sha256": "0863a6ec94c488538d684a7d71a05f8c9bcb204713a2ee0e7e3ada2d0a20bf34",
+      "task_id": "FX-002",
+      "visibility": "evaluation_private"
+    },
+    {
+      "byte_size": 370,
+      "media_type": "text/markdown",
+      "path": "runtime_pack/FX-003/prompt.md",
+      "sha256": "d59340acf9f22324d2498287416d020b8ed32947956c3cf19dda420709d6bfa8",
+      "task_id": "FX-003",
+      "visibility": "actor"
+    },
+    {
+      "byte_size": 2612,
+      "media_type": "application/json",
+      "path": "runtime_pack/FX-003/items.json",
+      "sha256": "425d2a9190ef001789aca99c5013822dce687ddf245eb020f473a6240cf4f881",
+      "task_id": "FX-003",
+      "visibility": "actor"
+    },
+    {
+      "byte_size": 1625,
+      "media_type": "text/plain",
+      "path": "runtime_pack/FX-003/tool-server.py",
+      "sha256": "a2f4197652df6a03503b18b1c20fa195f5cd596c47b450322ac958aab1af138d",
+      "task_id": "FX-003",
+      "visibility": "actor"
+    },
+    {
+      "byte_size": 433,
+      "media_type": "application/json",
+      "path": "runtime_pack/FX-003/tools.json",
+      "sha256": "52c261d91b0315037f78807c25295177998f40d28589ad670591d89f6c2e8e2d",
+      "task_id": "FX-003",
+      "visibility": "actor"
+    },
+    {
+      "byte_size": 3413,
+      "media_type": "application/json",
+      "path": "runtime_pack/FX-003/output.schema.json",
+      "sha256": "f52c6c6bd612917b19632464ea2e71c7df1ce1e46435afa15fb2c675f0ac8b9c",
+      "task_id": "FX-003",
+      "visibility": "actor"
+    },
+    {
+      "byte_size": 4142,
+      "media_type": "application/json",
+      "path": "eval_pack/FX-003/rules.json",
+      "sha256": "bff5ac30f858c49965ad7b52db321798e0c97d2ee09b506a4b4dabaf68a6c8f3",
+      "task_id": "FX-003",
+      "visibility": "evaluation_private"
+    },
+    {
+      "byte_size": 255,
+      "media_type": "text/plain",
+      "path": "eval_pack/FX-003/evaluator.py",
+      "sha256": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+      "task_id": "FX-003",
+      "visibility": "evaluation_private"
+    },
+    {
+      "byte_size": 222,
+      "media_type": "application/json",
+      "path": "eval_pack/FX-003/policy.json",
+      "sha256": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+      "task_id": "FX-003",
+      "visibility": "evaluation_private"
+    },
+    {
+      "byte_size": 2350,
+      "media_type": "application/json",
+      "path": "eval_pack/FX-003/calibration.json",
+      "sha256": "3273db732a4aaade3cdae8831cd0e45a0dc1615888dea2899c4d0be4634f1b9f",
+      "task_id": "FX-003",
+      "visibility": "evaluation_private"
+    }
+  ],
+  "schema_version": "praxis.anvil.benchmark_bundle.v1",
+  "scoring": {
+    "display_rounding": "half_up_2dp",
+    "hard_constraint_policy": "zero_official_keep_diagnostics",
+    "policy_version": "1.0.0",
+    "profile": "sme_points_v1",
+    "suite_maximum": 81,
+    "task_maxima": {
+      "FX-001": 24,
+      "FX-002": 6,
+      "FX-003": 51
+    },
+    "valid_trial_policy": "model_failure_zero_operational_invalid"
+  },
+  "signature_profile": "ed25519-jcs-v1",
+  "source": {
+    "classification": "original_synthetic_fixture",
+    "owner": "Anvil original software fixtures",
+    "rights_references": ["Original fictional software fixture, no partner exhibits"]
+  },
+  "tasks": [
+    {
+      "actor_asset_paths": ["runtime_pack/FX-001/items.json", "runtime_pack/FX-001/tool-server.py"],
+      "calibration_paths": ["eval_pack/FX-001/calibration.json"],
+      "constraints": [],
+      "criteria": [
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-001",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-002",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-003",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-004",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-005",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-006",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-007",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-008",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-009",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-010",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-011",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-012",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-013",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-014",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-015",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-016",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-017",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-018",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-019",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-020",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-021",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-022",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-023",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-024",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-001/rules.json"
+        }
+      ],
+      "domain": "fictional-arithmetic",
+      "environment": {
+        "cpus": 1,
+        "image_reference": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "memory_mb": 2048,
+        "network": "none",
+        "oci_manifest_digest": "sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "pids_limit": 64
+      },
+      "evaluator_requirement": {
+        "image_digest": "sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "implementation_sha256": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+        "policy_sha256": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+        "registry_id": "fictional-arithmetic-unreviewed",
+        "version": "1.0.0"
+      },
+      "id": "FX-001",
+      "outputs": [
+        {
+          "max_bytes": 8192,
+          "media_type": "text/markdown",
+          "path": "report.md",
+          "required": true
+        },
+        {
+          "max_bytes": 16384,
+          "media_type": "application/json",
+          "path": "answers.json",
+          "required": true,
+          "schema_ref": "runtime_pack/FX-001/output.schema.json"
+        }
+      ],
+      "prompt_path": "runtime_pack/FX-001/prompt.md",
+      "revision": "FX-001-revision-1",
+      "timeout_seconds": 60,
+      "tools": [
+        {
+          "command": ["python", "inputs/tool-server.py"],
+          "id": "arithmetic",
+          "schema_path": "runtime_pack/FX-001/tools.json",
+          "schema_sha256": "52c261d91b0315037f78807c25295177998f40d28589ad670591d89f6c2e8e2d",
+          "tool_timeout_seconds": 10,
+          "transport": "stdio",
+          "version": "1.0.0"
+        }
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "actor_asset_paths": ["runtime_pack/FX-002/items.json", "runtime_pack/FX-002/tool-server.py"],
+      "calibration_paths": ["eval_pack/FX-002/calibration.json"],
+      "constraints": [],
+      "criteria": [
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-001",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-002/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-002",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-002/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-003",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-002/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-004",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-002/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-005",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-002/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-006",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-002/rules.json"
+        }
+      ],
+      "domain": "fictional-arithmetic",
+      "environment": {
+        "cpus": 1,
+        "image_reference": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "memory_mb": 2048,
+        "network": "none",
+        "oci_manifest_digest": "sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "pids_limit": 64
+      },
+      "evaluator_requirement": {
+        "image_digest": "sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "implementation_sha256": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+        "policy_sha256": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+        "registry_id": "fictional-arithmetic-unreviewed",
+        "version": "1.0.0"
+      },
+      "id": "FX-002",
+      "outputs": [
+        {
+          "max_bytes": 8192,
+          "media_type": "text/markdown",
+          "path": "report.md",
+          "required": true
+        },
+        {
+          "max_bytes": 16384,
+          "media_type": "application/json",
+          "path": "answers.json",
+          "required": true,
+          "schema_ref": "runtime_pack/FX-002/output.schema.json"
+        }
+      ],
+      "prompt_path": "runtime_pack/FX-002/prompt.md",
+      "revision": "FX-002-revision-1",
+      "timeout_seconds": 60,
+      "tools": [
+        {
+          "command": ["python", "inputs/tool-server.py"],
+          "id": "arithmetic",
+          "schema_path": "runtime_pack/FX-002/tools.json",
+          "schema_sha256": "52c261d91b0315037f78807c25295177998f40d28589ad670591d89f6c2e8e2d",
+          "tool_timeout_seconds": 10,
+          "transport": "stdio",
+          "version": "1.0.0"
+        }
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "actor_asset_paths": ["runtime_pack/FX-003/items.json", "runtime_pack/FX-003/tool-server.py"],
+      "calibration_paths": ["eval_pack/FX-003/calibration.json"],
+      "constraints": [],
+      "criteria": [
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-001",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-002",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-003",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-004",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-005",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-006",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-007",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-008",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-009",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-010",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-011",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-012",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-013",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-014",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-015",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-016",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-017",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-018",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-019",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-020",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-021",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-022",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-023",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-024",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-025",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-026",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-027",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-028",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-029",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-030",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-031",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-032",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-033",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-034",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-035",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-036",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-037",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-038",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-039",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-040",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-041",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-042",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-043",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-044",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-045",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-046",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-047",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-048",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-049",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-050",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        },
+        {
+          "applicability_rule": "always",
+          "category": "criterion",
+          "evaluator_type": "deterministic",
+          "evidence_requirement": "sealed_output_span_or_absence",
+          "id": "criterion-051",
+          "possible_points": 1,
+          "rule_ref": "eval_pack/FX-003/rules.json"
+        }
+      ],
+      "domain": "fictional-arithmetic",
+      "environment": {
+        "cpus": 1,
+        "image_reference": "python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "memory_mb": 2048,
+        "network": "none",
+        "oci_manifest_digest": "sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "pids_limit": 64
+      },
+      "evaluator_requirement": {
+        "image_digest": "sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
+        "implementation_sha256": "87cf1f67287e96d2e7f581b5aabe52243b5c29f6f380a946a81fd91aced7bf4b",
+        "policy_sha256": "f1ddb919481f83200e93e4e2a13346b8a7603c8a38a0eb155d03a2396ba43d46",
+        "registry_id": "fictional-arithmetic-unreviewed",
+        "version": "1.0.0"
+      },
+      "id": "FX-003",
+      "outputs": [
+        {
+          "max_bytes": 8192,
+          "media_type": "text/markdown",
+          "path": "report.md",
+          "required": true
+        },
+        {
+          "max_bytes": 16384,
+          "media_type": "application/json",
+          "path": "answers.json",
+          "required": true,
+          "schema_ref": "runtime_pack/FX-003/output.schema.json"
+        }
+      ],
+      "prompt_path": "runtime_pack/FX-003/prompt.md",
+      "revision": "FX-003-revision-1",
+      "timeout_seconds": 60,
+      "tools": [
+        {
+          "command": ["python", "inputs/tool-server.py"],
+          "id": "arithmetic",
+          "schema_path": "runtime_pack/FX-003/tools.json",
+          "schema_sha256": "52c261d91b0315037f78807c25295177998f40d28589ad670591d89f6c2e8e2d",
+          "tool_timeout_seconds": 10,
+          "transport": "stdio",
+          "version": "1.0.0"
+        }
+      ],
+      "version": "1.0.0"
+    }
+  ]
+}

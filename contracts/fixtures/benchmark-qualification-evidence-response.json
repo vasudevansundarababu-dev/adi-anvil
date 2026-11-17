@@ -1,0 +1,129 @@
+{
+  "fixture_notice": "Manufactured contract fixture only; never native execution, qualification or human approval proof.",
+  "data": {
+    "operation_id": "11111111-1111-4111-8111-111111111111",
+    "build_id": "22222222-2222-4222-8222-222222222222",
+    "state": "passed",
+    "scope": "qualification_evidence",
+    "model_performance": false,
+    "comparison_admitted": false,
+    "primary": null,
+    "qualifications": [
+      {
+        "qualification_id": "qualification-contract-only",
+        "task_id": "FX-001",
+        "outcome": "passed",
+        "report_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "subject_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "binding_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "trials": [
+          {
+            "mode": "positive",
+            "points": 0,
+            "possible_points": 1,
+            "seal_sha256": "470e2b355aa39b27174dfd375d7b38ddf4e2d377bdda1097c3205e388f6879ae",
+            "native_receipt_sha256": "600885da8069d0e57ace7f9d1a5b7601def1b6adb2b3ba9fe32a10f1cc16f07d",
+            "provider_calls": 0,
+            "source_hashes": {
+              "qualification_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "compiler_source_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+              "adapter_sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            "controls": {
+              "non_root_readonly_no_egress_cgroups": true,
+              "fresh_actor": true
+            },
+            "public_capture": {
+              "outputs": [
+                {
+                  "path": "answers.json",
+                  "sha256": "ecf59a2696ca44a417e20e2a7eabb1b26e82c779f8546bea354a2cc80e8e1eed",
+                  "byte_size": 13,
+                  "text": "{\"answer\":42}"
+                }
+              ],
+              "missing": [],
+              "criteria": [
+                {
+                  "criterion_id": "criterion-1",
+                  "earned_points": "1",
+                  "possible_points": "1"
+                }
+              ]
+            }
+          },
+          {
+            "mode": "empty",
+            "points": 0,
+            "possible_points": 1,
+            "seal_sha256": "470e2b355aa39b27174dfd375d7b38ddf4e2d377bdda1097c3205e388f6879ae",
+            "native_receipt_sha256": "131bf9c50c8f1b2acdc1f91a77d42e047c4c5416b059687fff5eab4716dc8192",
+            "provider_calls": 0,
+            "source_hashes": {
+              "qualification_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "compiler_source_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+              "adapter_sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            "controls": {
+              "non_root_readonly_no_egress_cgroups": true,
+              "fresh_actor": true
+            },
+            "public_capture": {
+              "outputs": [
+                {
+                  "path": "answers.json",
+                  "sha256": "ecf59a2696ca44a417e20e2a7eabb1b26e82c779f8546bea354a2cc80e8e1eed",
+                  "byte_size": 13,
+                  "text": "{\"answer\":42}"
+                }
+              ],
+              "missing": [],
+              "criteria": [
+                {
+                  "criterion_id": "criterion-1",
+                  "earned_points": "1",
+                  "possible_points": "1"
+                }
+              ]
+            }
+          },
+          {
+            "mode": "guardrail",
+            "points": 0,
+            "possible_points": 1,
+            "seal_sha256": "470e2b355aa39b27174dfd375d7b38ddf4e2d377bdda1097c3205e388f6879ae",
+            "native_receipt_sha256": "3e5e0220bde1a9d6a63cfe144d9c69d0fd2f675be9f41a3e805d03717759e0f8",
+            "provider_calls": 0,
+            "source_hashes": {
+              "qualification_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "compiler_source_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+              "adapter_sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            "controls": {
+              "non_root_readonly_no_egress_cgroups": true,
+              "fresh_actor": true
+            },
+            "public_capture": {
+              "outputs": [
+                {
+                  "path": "answers.json",
+                  "sha256": "ecf59a2696ca44a417e20e2a7eabb1b26e82c779f8546bea354a2cc80e8e1eed",
+                  "byte_size": 13,
+                  "text": "{\"answer\":42}"
+                }
+              ],
+              "missing": [],
+              "criteria": [
+                {
+                  "criterion_id": "criterion-1",
+                  "earned_points": "1",
+                  "possible_points": "1"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

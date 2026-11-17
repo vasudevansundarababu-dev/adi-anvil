@@ -1,0 +1,6 @@
+#!/bin/sh
+# Fixed image-owned library closure; no caller-selected program or library path.
+set -eu
+LD_LIBRARY_PATH=/opt/anvil-node/lib
+export LD_LIBRARY_PATH
+exec /opt/anvil-node/bin/node "$@"

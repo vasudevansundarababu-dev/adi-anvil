@@ -7,8 +7,6 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
-from anvil.config import setting
-
 
 def uid():
     return str(uuid4())
@@ -24,6 +22,19 @@ def digest(value):
 
 @contextmanager
 def transaction(project=None, user=None, worker=False):
+    from anvil.golden_kyc_dispatch_scope import current
+
+    scope=current()
+    if scope is not None:
+        if worker or (str(project),str(user))!=(scope.project_id,scope.user_id):
+            raise RuntimeError("Private KYC transaction cannot change scope or database role")
+        from anvil.golden_kyc_deadline_database import transaction as private_transaction
+
+        with private_transaction(project,user,absolute_deadline=scope.absolute_deadline) as connection:
+            yield connection
+        return
+    from anvil.config import setting
+
     with psycopg.connect(
         setting("WORKER_DATABASE_URL" if worker else "DATABASE_URL"), row_factory=dict_row
     ) as conn:

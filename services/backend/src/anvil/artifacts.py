@@ -7,6 +7,10 @@ from fastapi import HTTPException
 from anvil.config import ROOT
 from anvil.db import one, uid
 
+BENCHMARK_PRIVATE_CLASSES = frozenset(
+    {"benchmark_raw", "benchmark_eval", "benchmark_judge", "benchmark_trace", "benchmark_sealed"}
+)
+
 
 def storage_root():
     configured = Path(os.environ.get("ARTIFACT_ROOT", ".data/artifacts"))
@@ -25,6 +29,8 @@ def store(
     origin="illustrative",
     scan="clean",
 ):
+    if classification in BENCHMARK_PRIVATE_CLASSES:
+        raise HTTPException(403, "Private benchmark objects require the separate vault")
     aid = uid()
     folder = storage_root() / str(project)
     folder.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -60,6 +66,8 @@ def read(c, aid, actor_only=False, *, structured_import=False):
     a = one(c, "SELECT * FROM anvil.artifacts WHERE id=%s", (aid,))
     if not a:
         raise HTTPException(404, "Artifact not found")
+    if a["classification"] in BENCHMARK_PRIVATE_CLASSES:
+        raise HTTPException(403, "Private benchmark artifacts require assigned access")
     structured_source = (
         structured_import
         and not actor_only

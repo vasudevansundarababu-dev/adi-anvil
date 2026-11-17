@@ -2,6 +2,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { money, shortId, workspaceApi as api } from '../lib/workspace';
 import { runBlockers } from '../lib/executionReadiness';
+import {
+  describeReason,
+  describeRunReason,
+  reasonCatalog,
+  runBlockerItems,
+} from '../lib/readinessCatalog';
+import ReasonList from './ReasonList';
+import WorkflowHumanInbox from './WorkflowHumanInbox';
 import styles from './ModernWorkspace.module.css';
 type Group = {
   preparation_id: string;
@@ -21,6 +29,12 @@ type Group = {
     plan_id: string;
     model: { id: string; name: string; provider: string; model_id: string };
     check: { id: string; state: string; error_code: string | null } | null;
+    workflow?: {
+      execution_id: string;
+      status: string;
+      nodes: Record<string, string>;
+      timeline: { index: number; node: string; outcome: string }[];
+    } | null;
   }[];
   snapshot: {
     preparation: {
@@ -29,19 +43,11 @@ type Group = {
     };
   };
 };
-const labels: Record<string, string> = {
-  admin_run_authorization_required:
-    'Admin can authorize this configuration and budget by selecting Run.',
-  live_dispatch_disabled_in_runtime: 'Live execution is disabled on this server.',
-  model_cost_support_unavailable: 'This model is not yet supported for budgeted execution.',
-  model_cost_support_expired: 'This model needs an Anvil cost-catalog update before running.',
-  execution_cost_snapshot_changed:
-    'Use Update configuration to prepare the current execution settings.',
-  credential_missing: 'Select a saved key for this model.',
-  adapter_changed_create_new_execution_group:
-    'Use Update configuration to prepare this group with the current execution settings.',
-};
-const describe = (value: string) => labels[value] || value.replaceAll('_', ' ');
+// Status and run error codes keep their previous fallback; readiness codes use the catalog.
+const describe = (value: string, canAdmin: boolean) =>
+  Object.hasOwn(reasonCatalog, value)
+    ? describeRunReason(value, canAdmin)
+    : value.replaceAll('_', ' ');
 export default function WorkspaceExecutionGroups({
   base,
   groupId,
@@ -69,23 +75,32 @@ export default function WorkspaceExecutionGroups({
     [error, setError] = useState('');
   const [runAttempted, setRunAttempted] = useState(false);
   const blockerPanel = useRef<HTMLDivElement>(null);
+  const refreshGeneration = useRef(0);
+  const refreshing = useRef(false);
   const reload = useCallback(
     async (after?: string) => {
+      if (refreshing.current) return;
+      refreshing.current = true;
+      const generation = ++refreshGeneration.current;
       setLoading(true);
       setError('');
       try {
         const value = await api(
           endpoint + (groupId ? '/' + groupId : after ? '?after=' + after : ''),
         );
+        if (generation !== refreshGeneration.current) return;
         if (groupId) setSelected(value);
         else {
           setItems((old) => (after ? [...old, ...value.items] : value.items));
           setCursor(value.next_cursor);
         }
       } catch (e) {
-        setError((e as Error).message);
+        if (generation === refreshGeneration.current) setError((e as Error).message);
       } finally {
-        setLoading(false);
+        if (generation === refreshGeneration.current) {
+          refreshing.current = false;
+          setLoading(false);
+        }
       }
     },
     [endpoint, groupId],
@@ -94,14 +109,21 @@ export default function WorkspaceExecutionGroups({
     setSelected(null);
     setItems([]);
     void reload();
+    return () => {
+      refreshGeneration.current++;
+      refreshing.current = false;
+    };
   }, [reload]);
   useEffect(() => {
-    if (!selected || !['queued', 'running'].includes(selected.status)) return;
+    if (busy || !selected || !['queued', 'running'].includes(selected.status)) return;
     const timer = setInterval(() => void reload(), 3000);
     return () => clearInterval(timer);
-  }, [selected?.status, reload]);
+  }, [selected?.status, busy, reload]);
   async function command(action: string) {
-    if (!selected) return;
+    if (!selected || busy) return;
+    refreshGeneration.current++;
+    refreshing.current = false;
+    setLoading(false);
     if (action === 'launch') onRunAttempt?.();
     setBusy(true);
     setError('');
@@ -136,6 +158,14 @@ export default function WorkspaceExecutionGroups({
       setBusy(false);
     }
   }
+  const workspace = base.replace('/projects/', '/workspace/');
+  const to = {
+    workspace,
+    configure: createHref || href + '/new',
+    share: selected ? href + '/' + selected.id : href,
+    run: selected?.state === 'draft' ? '#execution-group-run' : undefined,
+  };
+  const blockerItems = selected ? runBlockerItems(selected.readiness, canAdmin) : [];
   const blockers = selected ? runBlockers(selected.readiness, canAdmin) : [];
   if (
     selected &&
@@ -208,7 +238,7 @@ export default function WorkspaceExecutionGroups({
               ? blockers.length > 0
                 ? 'Setup needed'
                 : 'Ready to run'
-              : describe(selected.status)}
+              : describe(selected.status, canAdmin)}
           </p>
           <p>
             Budget:{' '}
@@ -220,11 +250,11 @@ export default function WorkspaceExecutionGroups({
               ? 'unknown'
               : money(selected.readiness.conservative_cost_micro_usd)}
           </p>
-          <ul>
-            {selected.readiness.missing.map((r) => (
-              <li key={r}>{describe(r)}</li>
-            ))}
-          </ul>
+          <ReasonList
+            items={selected.readiness.missing.map((r) => describeReason(r, canAdmin))}
+            canAdmin={canAdmin}
+            to={to}
+          />
           {selected.state === 'draft' ? (
             <>
               {!!blockers.length && (
@@ -235,20 +265,8 @@ export default function WorkspaceExecutionGroups({
                   role={runAttempted ? 'alert' : 'status'}
                 >
                   <h3>Run cannot start yet</h3>
-                  <ul>
-                    {blockers.map((reason) => (
-                      <li key={reason}>{reason}</li>
-                    ))}
-                  </ul>
+                  <ReasonList items={blockerItems} canAdmin={canAdmin} to={to} />
                   <p>No model request has been sent for this draft.</p>
-                  <div className={styles.actions}>
-                    {canAdmin && (
-                      <a href={base.replace('/projects/', '/workspace/') + '/models'}>
-                        Open Models & keys
-                      </a>
-                    )}
-                    <a href={createHref || href + '/new'}>Change run configuration</a>
-                  </div>
                 </div>
               )}
               {canAdmin && (
@@ -259,6 +277,7 @@ export default function WorkspaceExecutionGroups({
               )}
               <div className={styles.actions}>
                 <button
+                  id="execution-group-run"
                   className={styles.primary}
                   disabled={busy}
                   onClick={() => void command('launch')}
@@ -304,6 +323,7 @@ export default function WorkspaceExecutionGroups({
             </button>
           )}
           <h3>Model runs</h3>
+          <WorkflowHumanInbox base={base + '/workspace'} />
           {selected.models.map((m) => (
             <article key={m.plan_id} className={styles.panel}>
               <h4>
@@ -312,18 +332,19 @@ export default function WorkspaceExecutionGroups({
               <p>
                 {m.model.provider} / {m.model.model_id}
               </p>
-              <ul>
-                {selected.readiness.models
-                  .find((s) => s.model_profile_id === m.model.id)
-                  ?.missing.map((r) => (
-                    <li key={r}>{describe(r)}</li>
-                  ))}
-              </ul>
+              <ReasonList
+                items={(
+                  selected.readiness.models.find((s) => s.model_profile_id === m.model.id)
+                    ?.missing || []
+                ).map((r) => describeReason(r, canAdmin))}
+                canAdmin={canAdmin}
+                to={to}
+              />
               {m.check ? (
                 <>
                   <p>
                     {m.check.state}
-                    {m.check.error_code ? ' · ' + describe(m.check.error_code) : ''}
+                    {m.check.error_code ? ' · ' + describe(m.check.error_code, canAdmin) : ''}
                   </p>
                   <a href={base.replace('/projects/', '/workspace/') + '/runs?run=' + m.check.id}>
                     View run dashboard
@@ -331,6 +352,28 @@ export default function WorkspaceExecutionGroups({
                 </>
               ) : (
                 <p>Not started</p>
+              )}
+              {m.workflow && (
+                <section aria-label="Workflow progress">
+                  <h5>Workflow: {m.workflow.status.replaceAll('_', ' ')}</h5>
+                  <ul>
+                    {Object.entries(m.workflow.nodes).map(([node, status]) => (
+                      <li key={node}>
+                        {node}: {status.replaceAll('_', ' ')}
+                      </li>
+                    ))}
+                  </ul>
+                  <details>
+                    <summary>Recent workflow events</summary>
+                    <ol>
+                      {m.workflow.timeline.map((event) => (
+                        <li key={event.index}>
+                          {event.node}: {event.outcome.replaceAll('_', ' ')}
+                        </li>
+                      ))}
+                    </ol>
+                  </details>
+                </section>
               )}
             </article>
           ))}

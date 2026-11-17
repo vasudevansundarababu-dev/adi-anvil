@@ -2,15 +2,17 @@
 
 import hashlib
 import io
+import os
 import zipfile
 from datetime import datetime, timedelta, timezone
+from time import monotonic
 from uuid import UUID
 
 import httpx
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import AwareDatetime, Field
 
-from anvil import artifacts, auth, providers, workspace_costs, workspace_credentials
+from anvil import artifacts, auth, pilot_budget, providers, workspace_costs, workspace_credentials
 from anvil import harbor_agents as ha
 from anvil.config import harbor_live_enabled
 from anvil.db import Jsonb, audit, digest, one, project_fence, transaction, uid
@@ -285,6 +287,21 @@ def readiness(c, row, policy=_UNSET):
         "shared_spending_admission_not_implemented",
     }
     missing = [reason for reason in base["missing"] if reason not in obsolete]
+    missing.extend(pilot_budget.issues(c, row))
+    workflow = prep.get("workflow")
+    if workflow:
+        from anvil import workflow_registry
+
+        try:
+            registered, definition = workflow_registry.current(
+                c, workflow["id"], prep["package"]["id"]
+            )
+            if registered["subject_hash"] != workflow["subject_hash"]:
+                raise ValueError("workflow_snapshot_changed")
+        except ValueError:
+            missing.append("workflow_definition_unavailable_or_changed")
+        if os.environ.get("ANVIL_HARBOR_WORKFLOW_ENABLED") != "true":
+            missing.append("native_workflow_disabled")
     if not harbor_live_enabled():
         missing.append("live_dispatch_disabled_in_runtime")
     if snapshot["adapter_sha256"] != ha.code_digest():
@@ -313,6 +330,14 @@ def readiness(c, row, policy=_UNSET):
         config = child["config"]
         state = model_states[config["workspace_model"]["id"]]
         issues = [r for r in state["missing"] if r != "provider_task_adapter_not_qualified"]
+        if config.get("golden_kyc_paid"):
+            from anvil.golden_kyc_paid_budget import issues as golden_paid_issues
+
+            issues.extend(golden_paid_issues(c, child))
+        if config.get("marketing_paid"):
+            from anvil.marketing_paid_budget import issues as marketing_paid_issues
+
+            issues.extend(marketing_paid_issues(c, child))
         binding = config["workspace_model"]
         if binding["provider"] not in ("openai", "anthropic", "gemini"):
             issues.append("provider_task_adapter_not_supported")
@@ -325,6 +350,13 @@ def readiness(c, row, policy=_UNSET):
         elif price != config["pricing"]:
             issues.append("execution_cost_snapshot_changed")
         cost = required_cost(config)
+        if workflow and (
+            cost is None
+            or cost > workflow["bounds"]["cost_micro_usd"]
+            or config["max_calls"] * (33792 + config["max_output_tokens"])
+            > workflow["bounds"]["tokens"]
+        ):
+            issues.append("workflow_global_token_or_cost_bound_insufficient")
         if cost is None:
             issues.append("execution_cost_snapshot_changed")
         else:
@@ -340,6 +372,16 @@ def readiness(c, row, policy=_UNSET):
             }
         )
     cost = sum(required) if len(required) == len(plans) else None
+    if (
+        prep.get("semantic_judge_templates")
+        or prep.get("semantic_judge_gaps")
+        or row["snapshot"].get("shared_call_quote")
+    ):
+        from anvil.campaign_semantic_budget import issues as semantic_quote_issues
+
+        missing.extend(semantic_quote_issues(c, row, plans))
+        quote = row["snapshot"].get("shared_call_quote")
+        cost = quote["required_micro_usd"] if quote and cost is not None else None
     cap = prep["aggregate_cap_micro_usd"]
     if (
         cost is not None
@@ -373,6 +415,14 @@ def plan_readiness(c, record):
     row = group(c, record["config"]["workspace_execution_group"])
     ready = readiness(c, row)
     missing = ready["missing"] + [reason for m in ready["models"] for reason in m["missing"]]
+    if record["config"].get("golden_kyc_paid"):
+        from anvil.golden_kyc_paid_budget import issues as golden_paid_issues
+
+        missing.extend(golden_paid_issues(c, record))
+    if record["config"].get("marketing_paid"):
+        from anvil.marketing_paid_budget import issues as marketing_paid_issues
+
+        missing.extend(marketing_paid_issues(c, record))
     if record["state"] == "launched" and row["state"] != "launched":
         missing.append("execution_group_not_launched")
     return {
@@ -396,6 +446,26 @@ def public(c, row):
             if child["child_check_id"]
             else None
         )
+        workflow = None
+        if child["config"].get("workflow"):
+            execution = one(
+                c,
+                "SELECT e.id,e.state,e.cancel_requested,e.expires_at FROM anvil.workflow_native_links l JOIN anvil.workflow_executions e ON e.id=l.execution_id WHERE l.plan_id=%s",
+                (child["id"],),
+            )
+            if execution:
+                state = execution["state"]
+                workflow = {
+                    "execution_id": str(execution["id"]),
+                    "status": state["status"],
+                    "nodes": state["nodes"],
+                    "cancel_requested": execution["cancel_requested"],
+                    "expires_at": execution["expires_at"],
+                    "timeline": [
+                        {k: event[k] for k in ("index", "node", "outcome") if k in event}
+                        for event in state["trace"][-100:]
+                    ],
+                }
         members.append(
             {
                 "plan_id": str(child["id"]),
@@ -404,6 +474,7 @@ def public(c, row):
                 "trial": child["config"].get("trial", 1),
                 "model": child["config"]["workspace_model"],
                 "check": check,
+                "workflow": workflow,
             }
         )
     checks = [m["check"] for m in members if m["check"]]
@@ -443,8 +514,63 @@ def request_timeout_seconds(binding, episode_seconds):
     return min(ceiling, episode_seconds)
 
 
-def decision(project, user, plan_id, stage_index, *, transport=None, remaining_seconds=None):
-    from anvil import workspace_dispatch
+def _marketing_dispatch_deadline(budget):
+    """Keep the original capture cleanup reserve inside the provider timeout."""
+    if (
+        type(budget) is not dict
+        or type(budget.get("remaining_seconds")) is not int
+        or budget["remaining_seconds"] < 1
+        or budget.get("capture_accepted") is not False
+        or type(budget.get("dispatch_before_utc")) is not str
+    ):
+        raise RuntimeError("marketing_original_dispatch_budget_required")
+    before = datetime.fromisoformat(budget["dispatch_before_utc"].replace("Z", "+00:00"))
+    if before.tzinfo is None:
+        raise RuntimeError("marketing_original_dispatch_deadline_required")
+    return min(
+        before,
+        datetime.now(timezone.utc) + timedelta(seconds=min(600, budget["remaining_seconds"])),
+    )
+
+
+def _marketing_dispatch_request(c, plan_id, stage_index, call_id, request, deadline):
+    from anvil.marketing_capture_evidence_store import require_dispatch_prompt
+
+    current = require_dispatch_prompt(c, plan_id, stage_index, call_id, request.actor_text)
+    before = min(deadline, _marketing_dispatch_deadline(current))
+    remaining = int((before - datetime.now(timezone.utc)).total_seconds())
+    if remaining < 1:
+        raise RuntimeError("marketing_original_cleanup_reserve_elapsed_no_retry")
+    return providers.ActorRequest(
+        model=request.model,
+        actor_text=request.actor_text,
+        max_output_tokens=request.max_output_tokens,
+        timeout_seconds=min(request.timeout_seconds, remaining),
+    )
+
+
+def decision(
+    project,
+    user,
+    plan_id,
+    stage_index,
+    *,
+    transport=None,
+    remaining_seconds=None,
+    broker_claim=None,
+):
+    from anvil import pilot_environment, worker_dispatch_broker, workspace_dispatch
+
+    if pilot_environment.current():
+        if not worker_dispatch_broker.api_enabled() or broker_claim is None:
+            raise RuntimeError("pilot_dispatch_requires_api_broker")
+        if (
+            str(broker_claim.project_id),
+            str(broker_claim.actor_id),
+            str(broker_claim.plan_id),
+            broker_claim.stage_index,
+        ) != (str(project), str(user), str(plan_id), stage_index):
+            raise RuntimeError("pilot_broker_binding_changed")
 
     if type(stage_index) is not int or stage_index < 0:
         raise RuntimeError("unsupported_stage")
@@ -455,8 +581,17 @@ def decision(project, user, plan_id, stage_index, *, transport=None, remaining_s
     if transport is not None and type(transport) is not httpx.MockTransport:
         raise ValueError("Only an explicit MockTransport test override is supported")
     dispatch_origin = "sdk_mock" if transport is not None else "provider"
+    kyc_policy_deadline = monotonic() + remaining_seconds if remaining_seconds is not None else None
+    from anvil.golden_kyc_dispatch_scope import current as current_kyc_scope
+
+    active_kyc_scope=current_kyc_scope()
+    if active_kyc_scope is not None:
+        kyc_policy_deadline=min(kyc_policy_deadline,active_kyc_scope.absolute_deadline) if kyc_policy_deadline is not None else active_kyc_scope.absolute_deadline
+    marketing_deadline = None
     with transaction(project, user) as c:
         project_fence(c, project)
+        if broker_claim is not None:
+            worker_dispatch_broker.authorize(c, broker_claim)
         initial = ha.plan(c, plan_id)
         group(c, initial["config"]["workspace_execution_group"], True)
         record = ha.plan(c, plan_id, True)
@@ -476,19 +611,80 @@ def decision(project, user, plan_id, stage_index, *, transport=None, remaining_s
             or group(c, record["config"]["workspace_execution_group"])["state"] != "launched"
         ):
             raise RuntimeError("execution_group_not_launched")
+        graph_prompt = None
+        if record["config"].get("workflow"):
+            if broker_claim is None or not broker_claim.effect_key:
+                raise RuntimeError("workflow_effect_claim_required")
+            from anvil.workflow_native_execution import prompt as workflow_prompt
+
+            graph_prompt, graph_remaining = workflow_prompt(c, record, broker_claim)
+            remaining_seconds = min(remaining_seconds or 600, graph_remaining)
+        elif record["config"].get("golden_kyc_paid"):
+            if pilot_environment.current() != "qa":
+                raise RuntimeError("golden_paid_scope_is_qa_only")
+            # plan_readiness above verifies the append-only manifest against
+            # the immutable group subject. Its hash cannot be required in the
+            # plan created before that manifest exists.
+            from anvil.golden_kyc_paid_session import actor_prompt as golden_actor_prompt
+
+            graph_prompt = golden_actor_prompt(c, record, stage_index, absolute_deadline=kyc_policy_deadline)
+        elif record["config"].get("marketing_paid"):
+            if pilot_environment.current() != "qa":
+                raise RuntimeError("marketing_paid_scope_is_qa_only")
+            from anvil.marketing_paid_session import actor_prompt as marketing_actor_prompt
+            from anvil.marketing_world_registry import require_sdk as require_marketing_world_sdk
+
+            capture_budget = require_marketing_world_sdk(c, broker_claim, record)
+            marketing_deadline = _marketing_dispatch_deadline(capture_budget)
+            if (
+                type(capture_budget.get("manifest_id")) is not str
+                or str(UUID(capture_budget["manifest_id"])) != capture_budget["manifest_id"]
+            ):
+                raise RuntimeError("marketing_original_capture_manifest_required")
+
+            if not check["started_at"]:
+                raise RuntimeError("marketing_campaign_start_required")
+            server_remaining = int(
+                (
+                    check["started_at"]
+                    + timedelta(seconds=record["config"]["episode_timeout_seconds"])
+                    - datetime.now(timezone.utc)
+                ).total_seconds()
+            )
+            if server_remaining < 1:
+                raise RuntimeError("marketing_campaign_elapsed_limit")
+            remaining_seconds = min(
+                remaining_seconds or 600, server_remaining, capture_budget["remaining_seconds"]
+            )
+            marketing_deadline = min(
+                marketing_deadline,
+                datetime.now(timezone.utc) + timedelta(seconds=remaining_seconds),
+                check["started_at"]
+                + timedelta(seconds=record["config"]["episode_timeout_seconds"]),
+            )
+            graph_prompt = marketing_actor_prompt(c, record, stage_index)
         old = c.execute(
             "SELECT * FROM anvil.harbor_agent_calls WHERE plan_id=%s ORDER BY stage_index",
             (plan_id,),
         ).fetchall()
         current = next((r for r in old if r["stage_index"] == stage_index), None)
         if current:
+            if (
+                record["config"].get("workflow")
+                and current["usage"].get("workflow_effect_key") != broker_claim.effect_key
+            ):
+                raise RuntimeError("workflow_call_binding_changed")
             if current["status"] == "completed":
                 return current["output_json"]["text"]
             raise RuntimeError("dispatch_outcome_unknown_no_retry")
-        if len(old) != stage_index or any(r["status"] != "completed" for r in old):
+        if not record["config"].get("workflow") and (
+            len(old) != stage_index or any(r["status"] != "completed" for r in old)
+        ):
             raise RuntimeError("stage_sequence_mismatch")
         package = one(c, "SELECT * FROM anvil.harbor_packages WHERE id=%s", (record["package_id"],))
-        if package["manifest"].get("binding") == "mcp-tool-agent-v1":
+        if graph_prompt is not None:
+            prompt = graph_prompt
+        elif package["manifest"].get("binding") == "mcp-tool-agent-v1":
             from anvil.import_execution import actor_prompt
 
             prompt = actor_prompt(c, record, package, stage_index)
@@ -516,6 +712,10 @@ def decision(project, user, plan_id, stage_index, *, transport=None, remaining_s
         if not locked or locked["status"] == "revoked" or model_snapshot(locked) != binding:
             raise RuntimeError("model_binding_changed")
         cred = binding["credential"]
+        if marketing_deadline is not None and (
+            marketing_deadline - datetime.now(timezone.utc)
+        ).total_seconds() < 1:
+            raise RuntimeError("marketing_original_cleanup_reserve_elapsed_no_retry")
         one(c, "SELECT id FROM anvil.workspace_credentials WHERE id=%s FOR SHARE", (cred["id"],))
         secret = workspace_credentials.resolve(c, cred["id"], cred["version_id"])
         bound = required_cost(record["config"]) // record["config"]["max_calls"]
@@ -525,6 +725,16 @@ def decision(project, user, plan_id, stage_index, *, transport=None, remaining_s
         ):
             raise RuntimeError("spend_ceiling")
         cid = uid()
+        dispatch_usage = {"dispatch_origin": dispatch_origin}
+        if broker_claim is not None:
+            dispatch_usage.update(
+                worker_broker_job=str(broker_claim.job_id),
+                worker_broker_lease_sha256=hashlib.sha256(
+                    str(broker_claim.lease_token).encode()
+                ).hexdigest(),
+            )
+            if broker_claim.effect_key:
+                dispatch_usage["workflow_effect_key"] = broker_claim.effect_key
         c.execute(
             "INSERT INTO anvil.harbor_agent_calls(id,project_id,plan_id,stage_index,request_sha256,reserved_micro_usd,status,usage) VALUES(%s,%s,%s,%s,%s,%s,'dispatching',%s)",
             (
@@ -534,7 +744,7 @@ def decision(project, user, plan_id, stage_index, *, transport=None, remaining_s
                 stage_index,
                 hashlib.sha256(prompt.encode()).hexdigest(),
                 bound,
-                Jsonb({"dispatch_origin": dispatch_origin}),
+                Jsonb(dispatch_usage),
             ),
         )
         audit(
@@ -544,6 +754,9 @@ def decision(project, user, plan_id, stage_index, *, transport=None, remaining_s
             "workspace.dispatch_intent",
             cid,
             {"stage_index": stage_index, "reserved_micro_usd": bound},
+        )
+        pilot_ticket = pilot_budget.ticket(
+            group(c, record["config"]["workspace_execution_group"]), str(record["id"]), cid
         )
     request = providers.ActorRequest(
         model=binding["model_id"],
@@ -556,9 +769,33 @@ def decision(project, user, plan_id, stage_index, *, transport=None, remaining_s
     )
     result = None
     try:
-        result = workspace_dispatch.execute(binding, secret, request, transport=transport)
+        if record["config"].get("golden_kyc_paid") and kyc_policy_deadline is not None:
+            from anvil.marketing_native_wire_bounds import remaining
+
+            seconds = int(remaining(kyc_policy_deadline))
+            if seconds < 1:
+                raise TimeoutError("Original KYC provider deadline elapsed; no retry")
+            request = providers.ActorRequest(model=request.model,actor_text=request.actor_text,
+                max_output_tokens=request.max_output_tokens,timeout_seconds=min(request.timeout_seconds,seconds))
+        if marketing_deadline is not None:
+            # The intent above is committed. Check its retained prompt against
+            # the actual SDK request, never a separately reconstructed string.
+            with transaction(project, user) as c:
+                worker_dispatch_broker.authorize(c, broker_claim)
+                request = _marketing_dispatch_request(
+                    c, plan_id, stage_index, cid, request, marketing_deadline
+                )
+        if pilot_ticket is None:
+            result = workspace_dispatch.execute(binding, secret, request, transport=transport)
+        else:
+            result = workspace_dispatch.execute(
+                binding, secret, request, transport=transport, pilot_ticket=pilot_ticket
+            )
         output = result.text or ""
         usage = result.usage or {}
+        # The transport owns this label; a test adapter may inject MockTransport
+        # inside the API broker rather than through this function's argument.
+        dispatch_usage["dispatch_origin"] = usage.get("dispatch_origin", dispatch_origin)
         inputs, outputs = billed_usage(binding["provider"], usage)
         if (
             result.status not in ("completed", "refused", "truncated")
@@ -578,6 +815,7 @@ def decision(project, user, plan_id, stage_index, *, transport=None, remaining_s
     except Exception:
         if result and (result.usage or {}).get("dispatch_origin") == "sdk_mock":
             dispatch_origin = "sdk_mock"
+        dispatch_usage["dispatch_origin"] = dispatch_origin
         safe_errors = {
             "ambiguous_dispatch",
             "unauthorized",
@@ -597,16 +835,17 @@ def decision(project, user, plan_id, stage_index, *, transport=None, remaining_s
             else "response_model_or_usage_not_admitted"
         )
         evidence = provider_evidence(result)
-        with transaction(project, worker=True) as c:
+        with transaction(project, user) as c:
             project_fence(c, project)
             c.execute(
-                "UPDATE anvil.harbor_agent_calls SET status='execution_unknown',usage=%s,request_id=%s,finished_at=now() WHERE id=%s",
+                "UPDATE anvil.harbor_agent_calls SET status='execution_unknown',usage=usage||%s::jsonb,request_id=%s,finished_at=now() WHERE id=%s",
                 (
                     Jsonb(
                         {
                             "dispatch_origin": dispatch_origin,
                             "error_code": error_code,
                             "provider_evidence": evidence,
+                            **dispatch_usage,
                         }
                     ),
                     evidence.get("request_id"),
@@ -622,10 +861,10 @@ def decision(project, user, plan_id, stage_index, *, transport=None, remaining_s
                 {"dispatch_origin": dispatch_origin, "check_id": str(record["check_id"])},
             )
         raise RuntimeError("provider_output_or_usage_unknown_no_retry") from None
-    with transaction(project, worker=True) as c:
+    with transaction(project, user) as c:
         project_fence(c, project)
         c.execute(
-            "UPDATE anvil.harbor_agent_calls SET status='completed',output_json=%s,usage=%s,request_id=%s,actual_micro_usd=%s,finished_at=now() WHERE id=%s",
+            "UPDATE anvil.harbor_agent_calls SET status='completed',output_json=%s,usage=usage||%s::jsonb,request_id=%s,actual_micro_usd=%s,finished_at=now() WHERE id=%s",
             (
                 Jsonb({"text": output}),
                 Jsonb(
@@ -636,6 +875,7 @@ def decision(project, user, plan_id, stage_index, *, transport=None, remaining_s
                         "normalized_status": result.status,
                         "finish_reason": result.finish_reason,
                         "returned_model": result.model_returned,
+                        **dispatch_usage,
                     }
                 ),
                 result.request_id,
@@ -644,6 +884,16 @@ def decision(project, user, plan_id, stage_index, *, transport=None, remaining_s
             ),
         )
         audit(c, project, user, "workspace.output_captured", cid, {"actual_micro_usd": actual})
+    if (
+        record["config"].get("golden_kyc_paid")
+        and os.environ.get("ANVIL_TASK_SAFETY_HOST_ENABLED") == "true"
+    ):
+        from anvil.task_safety_runtime import broker_capture
+
+        # Preserve the completed SDK/billing ledger even if safety evidence
+        # capture fails; that failure blocks safety scoring, never re-dispatches.
+        with transaction(project, user) as c:
+            broker_capture(c, project, plan_id, cid, prompt, output)
     return output
 
 
@@ -664,6 +914,11 @@ def routes(context, wrap, idempotent):
                 if not prep:
                     raise HTTPException(404, "Preparation not found in this project")
                 gid = uid()
+                if prep["snapshot"].get("semantic_judge_gaps"):
+                    raise HTTPException(
+                        409,
+                        "Anvil semantic judge qualification is incomplete; the task population was preserved",
+                    )
                 snapshot = {
                     "preparation": prep["snapshot"],
                     "preparation_hash": prep["subject_hash"],
@@ -679,19 +934,87 @@ def routes(context, wrap, idempotent):
                     snapshot["processing_terms"].append(
                         row["config"].get("workspace_terms") if row else None
                     )
+                trials = prep["snapshot"].get("trials_per_model", 1)
+                package_snapshots = {
+                    p["id"]: p
+                    for p in prep["snapshot"].get("task_packages", [prep["snapshot"]["package"]])
+                }
+                members = [
+                    (index, bound, trial, case_assignment)
+                    for index, bound in enumerate(prep["snapshot"]["models"])
+                    for case_assignment in prep["snapshot"].get("case_assignments", [None])
+                    for trial in range(1, trials + 1)
+                ]
+                if (
+                    prep["snapshot"].get("case_assignments")
+                    and len(members) * prep["snapshot"].get("max_agent_steps", 1) > 1000
+                ):
+                    raise HTTPException(
+                        422,
+                        "This aggregate native run exceeds1000 priced physical request slots; select fewer cases, models, repeats or turns",
+                    )
+                plan_ids = [uid() for _ in members]
+                templates = prep["snapshot"].get("semantic_judge_templates", [])
+                if templates:
+                    from anvil.campaign_semantic_budget import (
+                        fixed_judge_snapshots,
+                        plan_blueprints,
+                    )
+                    from anvil.campaign_semantic_budget import quote as semantic_quote
+
+                    candidates, blueprints = [], {}
+                    for ordinal, (index, bound, trial, assignment) in enumerate(members):
+                        selected = (
+                            package_snapshots.get(assignment["package_id"]) if assignment else None
+                        )
+                        native = selected["manifest"].get("native_binding", {}) if selected else {}
+                        if native.get("task_mode") != "reusable_campaign_workflow":
+                            raise HTTPException(
+                                422,
+                                "Private campaign judge requires the exact Marketing task population",
+                            )
+                        pid = plan_ids[ordinal]
+                        candidates.append(
+                            {
+                                "plan_id": pid,
+                                "max_calls": prep["snapshot"]["max_agent_steps"],
+                                "max_output_tokens": prep["snapshot"]["max_output_tokens"],
+                                "model_binding": bound,
+                                "pricing": snapshot["pricing"][index],
+                            }
+                        )
+                        try:
+                            blueprints[pid] = plan_blueprints(
+                                prep["snapshot"], native | {"case_assignment": assignment}, bound
+                            )
+                        except ValueError as error:
+                            raise HTTPException(409, str(error)) from None
+                    try:
+                        snapshot["shared_call_quote"] = semantic_quote(
+                            candidates,
+                            blueprints,
+                            prep["snapshot"]["aggregate_cap_micro_usd"],
+                            fixed_judges=fixed_judge_snapshots(prep["snapshot"]),
+                        )
+                    except ValueError as error:
+                        raise HTTPException(422, str(error)) from None
                 subject = digest({"id": gid, "created_by": str(user), "snapshot": snapshot})
                 c.execute(
                     "INSERT INTO anvil.workspace_execution_groups(id,project_id,preparation_id,created_by,snapshot,subject_hash) VALUES(%s,%s,%s,%s,%s,%s)",
                     (gid, project, body.preparation_id, user, Jsonb(snapshot), subject),
                 )
-                trials = prep["snapshot"].get("trials_per_model", 1)
-                members = [
-                    (index, bound, trial)
-                    for index, bound in enumerate(prep["snapshot"]["models"])
-                    for trial in range(1, trials + 1)
-                ]
-                for ordinal, (index, bound, trial) in enumerate(members):
-                    pid = uid()
+                for ordinal, (index, bound, trial, case_assignment) in enumerate(members):
+                    selected_package_id = (
+                        case_assignment["package_id"]
+                        if case_assignment
+                        else prep["snapshot"]["package"]["id"]
+                    )
+                    selected_package = package_snapshots.get(selected_package_id)
+                    if not selected_package:
+                        raise HTTPException(
+                            409, "Case assignment is outside the immutable task package set"
+                        )
+                    pid = plan_ids[ordinal]
                     config = {
                         "workspace_execution_group": gid,
                         "workspace_model": bound,
@@ -699,10 +1022,10 @@ def routes(context, wrap, idempotent):
                         "environment": prep["snapshot"].get("environment"),
                         "model": bound["model_id"],
                         "connection_hash": bound["config_hash"],
-                        "package_sha256": prep["snapshot"]["package"]["package_sha256"],
+                        "package_sha256": selected_package["package_sha256"],
                         "max_calls": prep["snapshot"].get(
                             "max_agent_steps",
-                            len(prep["snapshot"]["package"]["manifest"]["stage_order"]),
+                            len(selected_package["manifest"]["stage_order"]),
                         ),
                         "max_output_tokens": prep["snapshot"]["max_output_tokens"],
                         "request_timeout_seconds": request_timeout_seconds(
@@ -713,13 +1036,50 @@ def routes(context, wrap, idempotent):
                         "adapter_sha256": snapshot["adapter_sha256"],
                     }
                     config["max_total_micro_usd"] = required_cost(config)
+                    native = selected_package["manifest"].get("native_binding")
+                    if (
+                        selected_package["manifest"].get("binding")
+                        == "golden-kyc-openenv-tool-agent-v1"
+                    ):
+                        if not native:
+                            raise HTTPException(409, "Native Golden package binding is absent")
+                        if native.get("task_mode") in {"reusable_state_workflow", "reusable_application_workflow"}:
+                            if not case_assignment:
+                                raise HTTPException(
+                                    409,
+                                    "Reusable state-task plan requires an immutable case assignment",
+                                )
+                            native = native | {
+                                "application_id": case_assignment["application_id"],
+                                "application_sha256": case_assignment["application_sha256"],
+                                "case_assignment": case_assignment,
+                            }
+                        config.update(golden_kyc_paid=True, golden_native_binding=native)
+                    elif (
+                        selected_package["manifest"].get("binding")
+                        == "marketing-task2-five-role-v1"
+                    ):
+                        if (
+                            not native
+                            or not case_assignment
+                            or native.get("task_mode") != "reusable_campaign_workflow"
+                        ):
+                            raise HTTPException(
+                                409, "Marketing requires one frozen campaign assignment per plan"
+                            )
+                        config.update(
+                            marketing_paid=True,
+                            marketing_native_binding=native | {"case_assignment": case_assignment},
+                        )
+                    if prep["snapshot"].get("workflow"):
+                        config["workflow"] = prep["snapshot"]["workflow"]
                     child_hash = digest({"id": pid, "created_by": str(user), "config": config})
                     c.execute(
                         "INSERT INTO anvil.harbor_agent_plans(id,project_id,package_id,connection_id,created_by,config,subject_hash) VALUES(%s,%s,%s,%s,%s,%s,%s)",
                         (
                             pid,
                             project,
-                            prep["package_id"],
+                            selected_package_id,
                             bound["id"],
                             user,
                             Jsonb(config),
@@ -730,6 +1090,46 @@ def routes(context, wrap, idempotent):
                         "INSERT INTO anvil.workspace_execution_models(project_id,group_id,ordinal,plan_id) VALUES(%s,%s,%s,%s)",
                         (project, gid, ordinal, pid),
                     )
+                    if config.get("marketing_paid"):
+                        from anvil.marketing_paid_budget import bind as bind_marketing
+
+                        bind_marketing(
+                            c, one(c, "SELECT * FROM anvil.harbor_agent_plans WHERE id=%s", (pid,))
+                        )
+                        for reservation in snapshot.get("shared_call_quote", {}).get(
+                            "judge_reservations", []
+                        ):
+                            if reservation["plan_id"] == pid:
+                                extra_columns, extra_values = "", ()
+                                if reservation["blueprint"]["schema_version"] == (
+                                    "anvil.campaign-semantic-judge-blueprint.v2"
+                                ):
+                                    extra_columns = ",model_binding,pricing"
+                                    extra_values = (
+                                        Jsonb(reservation["model_binding"]),
+                                        Jsonb(reservation["pricing"]),
+                                    )
+                                c.execute(
+                                    "INSERT INTO marketing_runtime.semantic_quotes(id,project_id,group_id,plan_id,batch_index,blueprint,blueprint_sha256,model_binding_sha256,pricing_sha256,bound_micro_usd,physical_calls"
+                                    + extra_columns
+                                    + ") VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s"
+                                    + (",%s,%s" if extra_values else "")
+                                    + ")",
+                                    (
+                                        uid(),
+                                        project,
+                                        gid,
+                                        pid,
+                                        reservation["batch_index"],
+                                        Jsonb(reservation["blueprint"]),
+                                        reservation["blueprint_sha256"],
+                                        reservation["model_binding_sha256"],
+                                        reservation["pricing_sha256"],
+                                        reservation["bound_micro_usd"],
+                                        reservation["physical_calls"],
+                                    )
+                                    + extra_values,
+                                )
                 audit(
                     c,
                     project,
@@ -828,6 +1228,10 @@ def routes(context, wrap, idempotent):
 
             def act():
                 row = group(c, gid, True)
+                if row["snapshot"].get("profile") == "sme-offline-comparison-v1":
+                    raise HTTPException(
+                        409, "Launch benchmark children only through their parent comparison"
+                    )
                 if row["state"] == "launched":
                     return public(c, row)
                 if body is not None:
@@ -872,6 +1276,7 @@ def routes(context, wrap, idempotent):
                         c, "SELECT * FROM anvil.evaluation_spend_windows WHERE id=%s", (wid,)
                     )
                 cap = row["snapshot"]["preparation"]["aggregate_cap_micro_usd"]
+                pilot_budget.reserve(c, row)
                 if (
                     window["status"] != "active"
                     or window["end_at"] <= datetime.now(timezone.utc)
@@ -901,10 +1306,15 @@ def routes(context, wrap, idempotent):
                         (hid, child["id"]),
                     )
                     c.execute(
-                        "INSERT INTO anvil.jobs(id,project_id,kind,target_id,operation_key) VALUES(%s,%s,'harbor_check',%s,%s)",
+                        "INSERT INTO anvil.jobs(id,project_id,kind,target_id,operation_key) VALUES(%s,%s,%s,%s,%s)",
                         (
                             uid(),
                             project,
+                            "benchmark_golden_paid"
+                            if child["config"].get("golden_kyc_paid")
+                            else "benchmark_marketing_paid"
+                            if child["config"].get("marketing_paid")
+                            else "harbor_check",
                             hid,
                             "workspace:" + str(gid) + ":" + str(child["ordinal"]),
                         ),

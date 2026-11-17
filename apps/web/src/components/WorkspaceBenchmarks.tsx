@@ -4,26 +4,49 @@ import BenchmarkFactory from './BenchmarkFactory';
 import AnvilHelp from './AnvilHelp';
 import { workspaceApi, WorkspaceTask } from '../lib/workspace';
 import styles from './ModernWorkspace.module.css';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import BenchmarkPreview from './BenchmarkPreview';
+import BenchmarkWorkspace from './BenchmarkWorkspace';
+import BenchmarkWorkbench from './BenchmarkWorkbench';
+import BenchmarkRehearsalWorkbench from './BenchmarkRehearsalWorkbench';
+import GoldenKycWorkbench from './GoldenKycWorkbench';
 
 export default function WorkspaceBenchmarks({
   base,
   route,
   userId,
   canWrite,
+  canAdmin,
   tasks,
 }: {
   base: string;
   route: string;
   userId: string;
   canWrite: boolean;
+  canAdmin: boolean;
   tasks: WorkspaceTask[];
 }) {
-  const connected = usePathname().split('/')[4] === 'catalog';
+  const section = usePathname().split('/')[4];
+  const query = useSearchParams();
+  const connected = section === 'catalog';
+  const preparation =
+    section === 'setup' ||
+    (!section && ['receipt', 'qualification', 'version', 'protocol'].some((key) => query.has(key)));
   return (
     <>
-      {!connected ? (
+      <p>
+        <a href={route + '/benchmarks/golden-kyc'}>Golden Bank KYC pilot</a>
+      </p>
+      {section === 'golden-kyc' ? (
+        <GoldenKycWorkbench base={base} canAdmin={canAdmin} />
+      ) : section === 'rehearsal' || query.has('rehearsal_id') || (!section && !preparation) ? (
+        <BenchmarkRehearsalWorkbench
+          base={base}
+          route={route}
+          canWrite={canWrite}
+          canAdmin={canAdmin}
+        />
+      ) : section === 'preview' ? (
         <>
           <aside className={styles.mockupBanner} aria-label="UI mockup disclosure">
             <strong>UI MOCKUP</strong>
@@ -31,6 +54,28 @@ export default function WorkspaceBenchmarks({
           </aside>
           <BenchmarkPreview />
         </>
+      ) : preparation ? (
+        <>
+          <p>
+            <a href={route + '/benchmarks'}>← Return to connected benchmark views</a>
+          </p>
+          <BenchmarkWorkspace
+            key={base}
+            base={base}
+            userId={userId}
+            canWrite={canWrite}
+            canAdmin={canAdmin}
+          />
+        </>
+      ) : !connected ? (
+        <BenchmarkWorkbench
+          key={base}
+          base={base}
+          route={route}
+          canWrite={canWrite}
+          canAdmin={canAdmin}
+          userId={userId}
+        />
       ) : (
         <>
           <section className={styles.panel} aria-label="Benchmark scope">

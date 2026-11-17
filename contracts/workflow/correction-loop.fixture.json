@@ -1,0 +1,167 @@
+{
+  "graph": {
+    "schema_version": "praxis.anvil.workflow-graph.v1",
+    "template_id": "case-review",
+    "template_version": "1",
+    "entry": "start",
+    "roles": [
+      {
+        "id": "analyst",
+        "responsibility": "Review supplied facts",
+        "tools": []
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start",
+        "kind": "input",
+        "label": "Start",
+        "instruction": "Read inputs",
+        "role": null,
+        "inputs": [],
+        "outputs": [],
+        "decision_artifact": null,
+        "decision_field": null,
+        "human_mode": null,
+        "timeout_seconds": null
+      },
+      {
+        "id": "review",
+        "kind": "agent_step",
+        "label": "Review",
+        "instruction": "Check facts",
+        "role": "analyst",
+        "inputs": [],
+        "outputs": [
+          "decision"
+        ],
+        "decision_artifact": null,
+        "decision_field": null,
+        "human_mode": null,
+        "timeout_seconds": null
+      },
+      {
+        "id": "route",
+        "kind": "decision",
+        "label": "Complete?",
+        "instruction": "Route captured result",
+        "role": null,
+        "inputs": [
+          "decision"
+        ],
+        "outputs": [],
+        "decision_artifact": "decision",
+        "decision_field": "complete",
+        "human_mode": null,
+        "timeout_seconds": null
+      },
+      {
+        "id": "done",
+        "kind": "output",
+        "label": "Complete",
+        "instruction": "Seal result",
+        "role": null,
+        "inputs": [
+          "decision"
+        ],
+        "outputs": [],
+        "decision_artifact": null,
+        "decision_field": null,
+        "human_mode": null,
+        "timeout_seconds": null
+      },
+      {
+        "id": "stop",
+        "kind": "escalation",
+        "label": "Escalate",
+        "instruction": "Keep incomplete evidence",
+        "role": null,
+        "inputs": [],
+        "outputs": [],
+        "decision_artifact": null,
+        "decision_field": null,
+        "human_mode": null,
+        "timeout_seconds": null
+      }
+    ],
+    "edges": [
+      {
+        "id": "begin",
+        "source": "start",
+        "target": "review",
+        "outcome": "next",
+        "loop": null
+      },
+      {
+        "id": "inspect",
+        "source": "review",
+        "target": "route",
+        "outcome": "next",
+        "loop": null
+      },
+      {
+        "id": "yes",
+        "source": "route",
+        "target": "done",
+        "outcome": "true",
+        "loop": null
+      },
+      {
+        "id": "retry",
+        "source": "route",
+        "target": "review",
+        "outcome": "false",
+        "loop": "correction"
+      },
+      {
+        "id": "unsure",
+        "source": "route",
+        "target": "stop",
+        "outcome": "unknown",
+        "loop": null
+      },
+      {
+        "id": "failed",
+        "source": "route",
+        "target": "stop",
+        "outcome": "error",
+        "loop": null
+      },
+      {
+        "id": "limit",
+        "source": "route",
+        "target": "stop",
+        "outcome": "exhausted",
+        "loop": null
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "decision",
+        "producer": "review",
+        "readers": [
+          "analyst"
+        ],
+        "fields": {
+          "complete": "boolean"
+        }
+      }
+    ],
+    "loops": [
+      {
+        "id": "correction",
+        "edge": "retry",
+        "max_iterations": 3,
+        "exhausted": "stop"
+      }
+    ],
+    "bounds": {
+      "transitions": 50,
+      "calls": 5,
+      "wall_seconds": 60,
+      "tokens": 500,
+      "cost_micro_usd": 0
+    }
+  },
+  "graph_sha256": "d8b2f43199095db9a9e11f38b6a1fed8872b0ac1f4435b68f7cb7c80d7110799"
+}

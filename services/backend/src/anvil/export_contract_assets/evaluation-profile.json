@@ -1,0 +1,1842 @@
+{
+  "schema_version": "anvil.evaluator-profile.v1",
+  "profile_id": "golden-kyc-run-evidence-v1",
+  "environment": {
+    "key": "golden-kyc-v1",
+    "version": "golden-kyc-1.0.0-8e5a29c363ad",
+    "source_sha256": "8e5a29c363ade6b869ee3af4f238dac131c838e44da7d57fdc34b3024f46ff0b",
+    "logical_environment_sha256": "15a4fe5453402cfbfac5bbc42e901a9b1a4cc3ee595ccc9d8846a3e813aa31f3",
+    "data_sha256": "e8d5cb8b4c84ec58049bba9259a04662fef732b536d3663bcfdb425fb7f74653",
+    "policy_sha256": "2bcdb7b2656dea0840f5d862d9cd39d9ce3e63d8b29b59776483f803c114098d",
+    "seed": 20261111,
+    "runtime": "golden-kyc-postgres-v1",
+    "openenv": "0.12.0",
+    "harbor": "0.25.0"
+  },
+  "task_schema": "anvil.golden-kyc.task.v1",
+  "output_schema": "golden-kyc-recommendation-v1",
+  "trusted_tasks": [
+    {
+      "task_id": "GB-001",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "91ffce709f6e8b5964b14fd6c2a593b393faf25b48b88ef7b7bff1231d9cb5ce",
+      "application_sha256": "1efd24c2d08c14a1b3f4a1766af31b30b02dc1aae3c9fe888705e571fe35f4c7"
+    },
+    {
+      "task_id": "GB-002",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "bebd42c0746ceef7989edda58afcc99614b1a14c138f52da60ae6b6a5f003fc1",
+      "application_sha256": "328a51e803237b2028b609195e5130903efc5df9a7d91173593e372f4a03724c"
+    },
+    {
+      "task_id": "GB-003",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "d4ef72d849429142c85eedb1f149dfc94066b7c812399002fd19254d33d8c33f",
+      "application_sha256": "8da906c44f3c403ec4402517638821a5d9081fa0aa342861ad5cafa84e81eca7"
+    },
+    {
+      "task_id": "GB-004",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "3c5ae0429a98af539e125ee6e15b8765a2266dc98a38e6fd447cae0d4f47237b",
+      "application_sha256": "b37d2e7a2ce253c830bdef89b210634ab24399a51adbc499571c35e04a6fe97d"
+    },
+    {
+      "task_id": "GB-005",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "0ebf63270f6fb653488ff85b60414f51ea84759a50e3899ee0254edb222a9d93",
+      "application_sha256": "09d0cc41c54cdc331d9bdbdee627244dd966ca4174a860413fe906b3a456a48f"
+    },
+    {
+      "task_id": "GB-006",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "db5197d24cdb75f98b46f908ff0ab75c3fd23a7e51275a6ac18d7f1b459f694e",
+      "application_sha256": "774f49af225547736bf783fdb60c26aeee6639c6456d19cef12fd366ca155df4"
+    },
+    {
+      "task_id": "GB-007",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "11cc218aee8d03fe48a3cb06c64db63d179b24c6aec35e8433a6e61c724ca28a",
+      "application_sha256": "fb92a79b045cd16921cd6e635db939856ebefb168223a1d3583be453ce7f97dd"
+    },
+    {
+      "task_id": "GB-008",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "4ccf84865c2d27c1f329ce7bc45e74ce810d2dbc26be5e79d57821455999ec98",
+      "application_sha256": "df722d6c30cba59b8d4fe46ca8033f57e25ebb2a1e6c021ec592931a4aab9cfb"
+    },
+    {
+      "task_id": "GB-009",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "a04ce5b661228d16dd47d9aa1b6a167c6afc76fa790e9035a5e573100bb6493a",
+      "application_sha256": "ecaa32077702cdcb1f392ef85d8808a2d7a56b991337ab1aa44e5e2e6f9fa101"
+    },
+    {
+      "task_id": "GB-010",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "7c9235f8838a43a2a6635ee092b88463e8ae7d15c6adfe666a60d287fc6ded85",
+      "application_sha256": "ffc4b4f8461e3207bef0800946b42046ae251e07d20251e323263513ba4b16c9"
+    },
+    {
+      "task_id": "GB-011",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "fe63b3a26fc007a5c4d3b3d66f7ac7c0ccf92f9925f2cc1621452cb71ecf5ce2",
+      "application_sha256": "87eea724d264b4cbbe45bd1e373f56a47f55793a3550c28f237dc67ef39265d6"
+    },
+    {
+      "task_id": "GB-012",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "6053306553ad1c881664588f16af02211d41b2a99bf723777ff1b80f686a63f0",
+      "application_sha256": "d67fc8ceeaa1ee01085fd6123684f4cfd8763a9d858e1ff4be5bf0a034f99741"
+    },
+    {
+      "task_id": "GB-013",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "8dbf2ba56032af8b63aab5174ce32d9b9012f9fd4971135a0ac3de2422f7bc01",
+      "application_sha256": "e189bc3698631d16725de3d2c6e219ac5871b2a9b3e69c9ded153441c4ace185"
+    },
+    {
+      "task_id": "GB-014",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "2c4b7f6f229bcac28615688353a10cb6a8a3b5e30af7fdafd75bc8b03b6a5b93",
+      "application_sha256": "a819ee077846f1b509cd9393a01a5a5c39143b510204e9a0aa0b4d9ad6aace24"
+    },
+    {
+      "task_id": "GB-015",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "ac91ff1d2f414bd47ea51938902eb1c4b1d7a7234d87e262f93527d9caf4dfb8",
+      "application_sha256": "889765bf39903f392dbcb76780d1661a42ba038f4cf88581be8665c508e1026c"
+    },
+    {
+      "task_id": "GB-016",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "ab4669c7894670f59e04c63d654b8c60859abcaebe6ac81709e475cab58adc41",
+      "application_sha256": "9aec329383bcec28f5fc9ef989f2408653e526707aa4afa06a4c303da0b68469"
+    },
+    {
+      "task_id": "GB-017",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "acdb5d73d670e1509de6223abba2fd4534882d4296b1d77e3677ffa8e68a763e",
+      "application_sha256": "900361d61c82fa43438523bce7f00af03b2ddd28b87628f08e0cfa9531f5a004"
+    },
+    {
+      "task_id": "GB-018",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "1b22b8fbd0566eed426a075a3291e15e1bcddb68f7c8f601b18e4af91c214174",
+      "application_sha256": "bd0addf95b5791c78bb8d79357ff7b1acf652d99ca3d2bf2dafc6111f3e67cef"
+    },
+    {
+      "task_id": "GB-019",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "5c44dc0b41413aedfcf7bc63b0f739b85931d22f5d982214068ddf3f6e339293",
+      "application_sha256": "c40070573f8975e9f1a285d0fed27fd8004c53e08790158c620db5e98c1ba8ca"
+    },
+    {
+      "task_id": "GB-020",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "806862aaa3126cba6b53b275b54db6d29b1d792c27315507160a5e968c5b93e3",
+      "application_sha256": "4e83f483a93e29a850fd5f30e73a2b09e1f600f18922c74ec300bdff3f919518"
+    },
+    {
+      "task_id": "GB-021",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "5c16b3ec921e9ab2e227389c2e547ea004f506944fdbdcf4082211eb18ed47e9",
+      "application_sha256": "75cf55d9891f0f2b7e636a37b78159c57aff6cb6393c58dbe04fcf24fffc75cb"
+    },
+    {
+      "task_id": "GB-022",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "35b122b8bbbb7ce41caed15abd0edf81a4e6ad51f9d4158f7218393066be58a8",
+      "application_sha256": "9ac62b298b4af978a6c2b698a62b0e2912a5a155e7bffb9b3e02c488907b5327"
+    },
+    {
+      "task_id": "GB-023",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "fbd8e59ef028be532453b7e5854a4a8b58e462a45cb453ee1291c6d3ac72bf07",
+      "application_sha256": "0efb7bcc981eb68e41b674944dff90571e123c998489da49b20acda128211c24"
+    },
+    {
+      "task_id": "GB-024",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "bc9bd0566fcd114654b7e8f0c4b92bb779ffd058628f528b92c076ee23db525a",
+      "application_sha256": "1288428dc0f41669487f6454aa1df4b1a7108be4d528984abf4fbca6a8851d5f"
+    },
+    {
+      "task_id": "GB-025",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "1d69a2aa0a11721b96c1c2d42776e523a878f4958525bed7f6947c14ddb08872",
+      "application_sha256": "95e79fb47c3979a9b341e080978e8a60a248d82241ee53183ef958f3a61df25c"
+    },
+    {
+      "task_id": "GB-026",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "9f8fd7daab88271dd0f3b7576a61927ad770ed136a72744035873f28ccefce11",
+      "application_sha256": "4cf2467a586a845b4ec484351dfacc96d2db00bdac14eff099b9b79b12c82460"
+    },
+    {
+      "task_id": "GB-027",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "b878c8f0d2b87a656a700b2db6fb6411cb14fb97755ecfd3d4ecba145926175c",
+      "application_sha256": "71e609352c8e435fdaccfc36cfaa14c2bc960e25b1b7a210780554fa6a3e0fe5"
+    },
+    {
+      "task_id": "GB-028",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "af9f65bb27c9df210f31c1a2de22dd95e8becc36bd9e44d6562be5d044959212",
+      "application_sha256": "66763dd9883b908b63fa4ca1d37b060919ceb1abea06926594ddd60110be5b03"
+    },
+    {
+      "task_id": "GB-029",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "fb4dc6bccefc166163b24702315d8968cfad0cc42fff7ed7cca26128a4b0fdbb",
+      "application_sha256": "974dc13f7c357045d22b7c2772005a239816d918ede8cbf45f92d57033026424"
+    },
+    {
+      "task_id": "GB-030",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "09e7fdc2d8cfbfd606cd330085ee9ddb7744ebc179e031be00535fcd045a3b64",
+      "application_sha256": "07cb091585213137fa2395ca45de8adb656b036e3be117cc9a0a59c046e832d6"
+    },
+    {
+      "task_id": "GB-031",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "f44a028dc8c4a1b0374eaefedd5064a195d5ab7f9c9f37e965b4ab8c64ceeb48",
+      "application_sha256": "c4447e0be04c83313aad61b91413b1417da1f89f7f5edfa0adb20d57c8f3b1b2"
+    },
+    {
+      "task_id": "GB-032",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "981f6db800d263d8297ef67171772341b17ee6b3a76c3877442221fe14b7d0fe",
+      "application_sha256": "07993b8308be5a3370cd30a147e2a0345ef95df357fa334c2e08a5da718307f0"
+    },
+    {
+      "task_id": "GB-033",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "44f3f0bdae9bc7433497180f65629c345c37e29235cce86d9b4be9c72794b668",
+      "application_sha256": "ec8a517b4b43739c306e5213556596ff9c032ecb818479b68f3d373c8f21cd05"
+    },
+    {
+      "task_id": "GB-034",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "b7e52ba1a6d2b72f4afcbf7a22cefb2abeef9c4f1ae34d43301e3681c21748fd",
+      "application_sha256": "1dc7fbd2645ab12e9ed13e1922264c4d021858195bc2ad5a4b84a48de6f9172e"
+    },
+    {
+      "task_id": "GB-035",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "86ab396e3502b72a89af18bd5e32ad56274fbe3d0df43751c1d1085c71181cbc",
+      "application_sha256": "8bb1b0a47ef226b71e75f1e816a6f8b58633d0505070238675880e1df82206e3"
+    },
+    {
+      "task_id": "GB-036",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "82eaa2385b88c3d2c8689aaeea93cc6f66284b008d584c679f0ca24a39692e88",
+      "application_sha256": "bd90960d715764bc6e8bfd102e3895404abff1bbe71e8d3b45cafd2782cb4d52"
+    },
+    {
+      "task_id": "GB-037",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "9582e40d8fd6a61737798f032f5bf73c0171f127d1a09ca0647d1276f01fa74a",
+      "application_sha256": "6ef67d0343e05d2e1de07b5c779bdf59519333fbb421164b8ea5a5524dafe4d3"
+    },
+    {
+      "task_id": "GB-038",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "b6a0b59893048079ae5ac56d122abad1a07d026d0834c1552ec24903da03affa",
+      "application_sha256": "5d5a0fb84d14db5252226cd31066e5bc4d7dc1ed8bdc712f4a145fb5710d492c"
+    },
+    {
+      "task_id": "GB-039",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "18a7e5d4c8ec66370506687d146f9118bfd2d76280faa54dbfbc9b5168d11fbf",
+      "application_sha256": "858723c8066ca173a4a3fb215e72d9d1d71a3bd75ec2f6d7d54fb69b9bc753d3"
+    },
+    {
+      "task_id": "GB-040",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "8f2a5fad9b516b5f09c99f6f816de06e05c719ca2088b2f5c8f55afbf45d5ba1",
+      "application_sha256": "1708d83a69f93ea16553c33815b0e7411511e32f8230f9694878982e8288e7f1"
+    },
+    {
+      "task_id": "GB-041",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "9956af2419cb2e7a8f3dc4157597ac495edc73171424816ad41464eafb026d43",
+      "application_sha256": "8ce694dd5a1981fa8b8b2eca7ff38026ee617dda4833fcbb888dc32863463d12"
+    },
+    {
+      "task_id": "GB-042",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "19b73332936fb6d04b5f40221aed955684975accd9b111ef914e1537c9f71dcb",
+      "application_sha256": "f0a47f77e930af6d6cec27a81b50f0633213d7fdbeae5cff909372256c2470e7"
+    },
+    {
+      "task_id": "GB-043",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "c5891b8261e9cb40790ca5e355a1ebc2c0ed243c781b10b26ed3dd516907b489",
+      "application_sha256": "8003a155dda953a0481c1c9f292b581ad2a5d3cfdbca10e6609b348936ce7538"
+    },
+    {
+      "task_id": "GB-044",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "e4039318550408eb275c4a004239a905f031e1ae3b1fdf6edfb83a4c8b7c41a4",
+      "application_sha256": "9856821c32b17708ea520bc6231b7a6f34812b665d08dd38d22572a015234997"
+    },
+    {
+      "task_id": "GB-045",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "66396f9d9d86f58ee5889638fb1d01fd729b1d35caa3d9f69965a8fe663f79ba",
+      "application_sha256": "c424dce8843f4b5ae6c1366cc5bb10057ae5a61cad08b58a6352c6cb5e00b872"
+    },
+    {
+      "task_id": "GB-046",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "0eb9593c4789d6743af1a1fe73c1cfdab43abbfd70934c340d6f55c89e93e949",
+      "application_sha256": "bcbc6db227ea66424bfeb67e8ed601aef0ccf89d83fd4fe3238535f5deb57566"
+    },
+    {
+      "task_id": "GB-047",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "085fd407d6dd7f24f4ed6213268fec102a3f90936f4ca37b9a5b97ed644e6b41",
+      "application_sha256": "f48268c3abe258cd847a464dd2e1e404d111b33d3912f75bd4bd405f317fa02c"
+    },
+    {
+      "task_id": "GB-048",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "2877bac62299438b2ef3d06bf0eced991f010a364fb669039171c1400ee19501",
+      "application_sha256": "0d034a521dab5b1c2c9685401be53ef1f50d9c59d0f46caa7f954ed02dd88a04"
+    },
+    {
+      "task_id": "GB-049",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "d84d436cc99c7a0e3102112d225ce5767d8bc5e733df811f8e532084a6fe8ae1",
+      "application_sha256": "2ba30ce075fcc244ab6749c8d97a2921aa024da12b2575a31892264edaef17cd"
+    },
+    {
+      "task_id": "GB-050",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "71436f4176cc2f3bd601d6132b096a88263bd36018f14bd94a7d296f34dedb52",
+      "application_sha256": "7fe882a4baf70d3bca008fda9419678d67debec21fd9c76a4e04ecf422834c04"
+    },
+    {
+      "task_id": "GB-051",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "7414635c11c6e75ae2c7678fcf141f819c92053b1641399a828499a7d330ad94",
+      "application_sha256": "919443c6e9e97ac711091dc54a99cc17891791cb8a4e5c33bfda8c82347615fc"
+    },
+    {
+      "task_id": "GB-052",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "654895958c8a95e1945e8246a43da7bf73aa24ab8a543ab9fc3b9928e8264cfa",
+      "application_sha256": "3f77b7545970aa2c6e4ba00142f9559d2462b772660fe6e6abf76af89f467e91"
+    },
+    {
+      "task_id": "GB-053",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "4b63f541ca48bc43be1cd3ad43f4b6a7da0dd92026be9b11a8a0abe241a52bef",
+      "application_sha256": "cb5dfd290d745b751109540a8970bcd181813f110bb2b20e35d9a7360c7940fc"
+    },
+    {
+      "task_id": "GB-054",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "53ce4072b7bb07e2e076db916c162e6dfb4811ab462b5022cc8e3918bdd5326d",
+      "application_sha256": "16117eb86c18a2aa5a82ee01098f7b17b78358e2d6ef4849e91842a82a489205"
+    },
+    {
+      "task_id": "GB-055",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "f98082d85b507985efe0f4d34746f3d4f9d7d2d6327c1d7a249a87318467249c",
+      "application_sha256": "9a96278823633954a708f43b68925c1b1ec9466afe9123c884481470208f8fc0"
+    },
+    {
+      "task_id": "GB-056",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "317d88a8e1272f0dfab3d4d177a26b6b135ae9a36e80e04c4b9527cb4b8add25",
+      "application_sha256": "dc2c55088f3d7849ff4af8cec0683f0ecdf87c4e079bad9900d32d8044c0cd44"
+    },
+    {
+      "task_id": "GB-057",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "cde6816fed22dff3cd93c337244d08128d63dcc29ba939c64c771df41c98e2b5",
+      "application_sha256": "72cddb25291d3b49f93fe08cb73791bedff3358a48ec8ed0ef0a0a6124027a4d"
+    },
+    {
+      "task_id": "GB-058",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "88c9027e1fac1117e3c22434892841a492085827f8c0b81d34203259ddf9c21d",
+      "application_sha256": "4ef996e7c9e71ef037bdb26ee57922f069aac83b59773d17d8693400ddf0659e"
+    },
+    {
+      "task_id": "GB-059",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "9cd8a2e8aa2351332e2d6e06f970627a96091926c01965078128732b76efd37b",
+      "application_sha256": "50e172b95805bd4cb92cfcd530f3631ae3bb25f993edae37a031f69ff714af5b"
+    },
+    {
+      "task_id": "GB-060",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "55a5c818493a7412eaf23dea9a990125ee05e4012fe03573c627434c4f100625",
+      "application_sha256": "496129b73d830af0968a3ef4c200fae6c057dc8d20d4a9cfdb4279ff3dc274db"
+    },
+    {
+      "task_id": "GB-061",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "b4c5c395522aeee8cb296298cf04affa0c930cce7636a780f322ce15fee88573",
+      "application_sha256": "acc649ca168eb68007cc82efae251a0c4be3fa276899448f6f0cd770370239aa"
+    },
+    {
+      "task_id": "GB-062",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "03e0312e838ab88b7a2a4ea0c7ebf0593d4ba755b10382a88c51045b6e0c28db",
+      "application_sha256": "24239ef12bddf6c8d854949546d22ca32ea1ad94b49d8b58fd7abf3e9b2f5990"
+    },
+    {
+      "task_id": "GB-063",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "4de3179cd1c593d821890cbaef3f45b9706a59afe20157c2561cdc9f963e29f1",
+      "application_sha256": "76d942a59352b33345525e86cb388c779f39d6ff907329fa4d3541b172b069e4"
+    },
+    {
+      "task_id": "GB-064",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "7409430b4c06a4a6ef3056b38b0d5e952ee9fea71f47dd3a4efdde56cf03a8d3",
+      "application_sha256": "c4c9b4a738c709c7b776b5000f4fb274c49d30d73cea65befc54c36324e5f77d"
+    },
+    {
+      "task_id": "GB-065",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "230611336f1969b47e812377698a7c095b58f7961f8cbffa4f641dae6e9102f4",
+      "application_sha256": "74daad5c65ddf27b82da43469091345b12234eabbf1aaa91b897cdf275fcce36"
+    },
+    {
+      "task_id": "GB-066",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "e09cd3fa8718a9a6eb06b4dd51619619ceaba1de9c782f4dee5d684e6a07a0d9",
+      "application_sha256": "846cac820817ac126de7b6bbcb3f15b9a3cfaa217e39cf39481f726b4ffbda86"
+    },
+    {
+      "task_id": "GB-067",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "d9d3f1902ed0bf6eb14d738b92bcbf911d82bab0b36bf78370b80211634c0db0",
+      "application_sha256": "9e518290e73a81572165ab1e287922629d7f504e36a5de4bda7fa7f7e8bf0f2c"
+    },
+    {
+      "task_id": "GB-068",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "f80f986ab22bc6b066d450f234d3690db92e74c5a7f3ebca82aaa5099c4ce36b",
+      "application_sha256": "df5ecb380f62ee08b85bc518bbf067fa518a4609c0bfceae326b4b7c1bdad70f"
+    },
+    {
+      "task_id": "GB-069",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "5ac45e488303c8c8a8b85028d20ac80d9fa3548082a813b520e7b4e2e4edd6af",
+      "application_sha256": "e3878f26f2c3c46973bc2cfdb48a6092c06929352c291d442f17e205e152bb2e"
+    },
+    {
+      "task_id": "GB-070",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "9bf866aebaca95fac3f8b0a778420f20f7415d0c6905a2df0a7112910cbc1552",
+      "application_sha256": "738fa3093606bac9c3717f337acbcf7aeda51fa0f489065c726b1158ed4d35b7"
+    },
+    {
+      "task_id": "GB-071",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "09a5735cf7c9942d115396834488bb1913e59f0101393d1e56f9af28485559ae",
+      "application_sha256": "0024992c38b6cbd38df0d1483d1edcfa27c2039dcdd837ef5e2285fdc50481ac"
+    },
+    {
+      "task_id": "GB-072",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "ead051fead9577d010812d5d167004b5e7abdec319c0fa64b3cff9fcd70dd60a",
+      "application_sha256": "540699f34d22a417556841cc71cc93548a1191269f71500ac206c7b5f6a36c73"
+    },
+    {
+      "task_id": "GB-073",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "f4b88887e4e8f019503810f197164be956672a8641f094a83802e6832d58ad3e",
+      "application_sha256": "66617d6805c0abd8c5653fa666677d0e103a1635839ac8be2750700293f9b174"
+    },
+    {
+      "task_id": "GB-074",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "a437b9e6766575e7bc761a9379158ae65db7b8d688d0665f9013a51fa7980ed1",
+      "application_sha256": "ad737a7b68a93536c752feb51a268eabb87aff20923ebb87e2f4250c8a84cde1"
+    },
+    {
+      "task_id": "GB-075",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "f92808a1a08bb570c6c9a11b3bbaf667d5557262b85aa66585c0a488b2c6c063",
+      "application_sha256": "bb383255ea56ce07dac65fd5fcb8aa2612465a7f77d5e508cd3faa3c9ae7fee6"
+    },
+    {
+      "task_id": "GB-076",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "d268ed4a46c412b7fd1e7deb16399c44666342d4ae30097ecb04ad1b326c1824",
+      "application_sha256": "9da71878622773d00a7683f6d4a1f8fbc2d9581a5cd616a6caea3b526057ed85"
+    },
+    {
+      "task_id": "GB-077",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "6447ece811516c4e309573c21ac0497114a482d05da1338a9ccfb4ab3a167c79",
+      "application_sha256": "45ee7b8bec85bc0edb1d3550b25096e98585ad2f979b35126f697b21e45f8e63"
+    },
+    {
+      "task_id": "GB-078",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "544883447092784b070fadf1dd61aebdebda3583d10fbe2fc6a57910ac11b69d",
+      "application_sha256": "5d45a8dc8f01fb89f2e98d484c45623f8eaa0cb9a3932c5e62ba0e9de6f1d329"
+    },
+    {
+      "task_id": "GB-079",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "b9b9793d11eb2550b049d9b7c46d7624eee1b235e216e8b1dbbb3b12d417c4dd",
+      "application_sha256": "8f0613f09249aade6acd7770ee1dbc6c21610b778eae645cbdb1e2e890139a73"
+    },
+    {
+      "task_id": "GB-080",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "11e7dd94686ac0edee04fd4ed057c4522f1fc20e63c70646db2aa5d0a0e148a8",
+      "application_sha256": "11c857f9bd6ae29490f4e3da7887a0361016d3a28b3f581bb3477052c3fc401a"
+    },
+    {
+      "task_id": "GB-081",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "1ae9dfaf09c967a09ef310f2554854ccc4596650877a1ba4cff90f73381674c8",
+      "application_sha256": "0974b46401f8323a65704b8dae880d4dd21c58efaeb650696c595cee30df1c2c"
+    },
+    {
+      "task_id": "GB-082",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "17c2b7a7b30f58fd53441cb4a6b6cef2fabd77d049fbcfb4af7790bacaceebc4",
+      "application_sha256": "f7d1a59631f7412b6827bf3b1d824a91948aa1a55c46f657b81202980fbb1f31"
+    },
+    {
+      "task_id": "GB-083",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "2a57b998377a82dc695fba15539295ff3f438f6de66f6c791681d8509d24d74e",
+      "application_sha256": "373b5aa52927caf93ab07c651742192c19ebf01627f2c39be8f1744cfe70a5db"
+    },
+    {
+      "task_id": "GB-084",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "b8d51bcdc31ea6fc4b28b660b912f58668678d9343245b614ce5a5af05715a6f",
+      "application_sha256": "f0bf46115a2d5a4a196564bce7d41646ab4b6de8c71d42395bf4549985698fdb"
+    },
+    {
+      "task_id": "GB-085",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "1c41dacd12a9add43e5817e3e3ee9aac7051e64128a87304896ebfc8471ba906",
+      "application_sha256": "9a0c428a4269ab672afd698f552b8fbc5c89f65e39284cbad0351911472f6498"
+    },
+    {
+      "task_id": "GB-086",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "0d520e9c44b3f0b748663951e42f5e70d6e80367747d2502bb83b4fc18661c13",
+      "application_sha256": "a6b2041ad3c02b72c24d1f07c7923b0b01af063bc662714ef47cebcc3324317c"
+    },
+    {
+      "task_id": "GB-087",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "d7bff23a5b3086b1c39c4d2e4e92c529eea84eee20a107ca2004773c68231d3a",
+      "application_sha256": "0b5db26f2f3c1dbab6d3149491b0a71f64f72ab4d8573eb9a07dbf72d7262c43"
+    },
+    {
+      "task_id": "GB-088",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "ec9afebb8f19c4bbca5e6303ceddc8b959469aea57a95891183b5b9a4f442282",
+      "application_sha256": "cc685a7859413af558e0b6d96e8aa34f3d8dd97dc445a173c12a4a296540c7fa"
+    },
+    {
+      "task_id": "GB-089",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "14bef131047a058477f0ae6f69cb71224fcdd1be62c1b51f533d15bb2839a7a1",
+      "application_sha256": "08e950be8ecebce5bd27e8b9e9ed8ea624db8d87d66e6b649e3649d85b8abbda"
+    },
+    {
+      "task_id": "GB-090",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "8eefd28748e89dfa7e52689da5508926af1b5f64781ccfc0056a28d1151257a8",
+      "application_sha256": "e4d50a71526d5c29739612e2d6224f2e76cd67e7e8d2ce15ea8fef3954a22744"
+    },
+    {
+      "task_id": "GB-091",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "f30835a7e257e9d28b443b37e6576464f9cc57269e8b57b79f3d4bb5b9e01680",
+      "application_sha256": "af2b2be1cc4d41c49a1cd9d106a164ebe4734ae77b53abd10469a4266ab8587a"
+    },
+    {
+      "task_id": "GB-092",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "9a8e2868478c9d3d7c0565c5aec7378723558acda6d8c4f974b02a7ceade441d",
+      "application_sha256": "7af7329ae730756138e1c4ee7fe816355f76f86e1f1d7d66b56808533d10a5cf"
+    },
+    {
+      "task_id": "GB-093",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "0946a57211595301ef7cf14cbfb14fceb61b4271965fe737efb8eb5c8bdbc028",
+      "application_sha256": "556f40fe685d947f99e1ae385edc2e734bffe37deeba0879bb861629fe643925"
+    },
+    {
+      "task_id": "GB-094",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "daf117664528739fd443043739bdb2a58bb694f967835182d1817dda9b45844a",
+      "application_sha256": "bbea53502bdec37684914aada992f692215f7f84c74ede343669e32f3e140685"
+    },
+    {
+      "task_id": "GB-095",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "7fa2805524188ad56b0347d2b0ad8a330895bc9bef51edc58c2bfa529fac75bb",
+      "application_sha256": "55321dc5611fd85ec41a2fdb856c2eed91c96c3754efaa4fc678acbd05bdd83f"
+    },
+    {
+      "task_id": "GB-096",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "59b15519a62f6008de21cbf319431fe930eccc6264c516d10f7c8ef9555bb9cc",
+      "application_sha256": "53ca3a26f962c182d1fa8146c43f894017ec3ce42b59b83903068185b5cd7826"
+    },
+    {
+      "task_id": "GB-097",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "b1227ec383488fd5b1ba82aabb2e11c1664d1119b105bcbd081fffdaec540998",
+      "application_sha256": "cd6cd187b7e3e4ea89b001faec01473ac56b25ddf2041a13c023c11727f5b371"
+    },
+    {
+      "task_id": "GB-098",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "4ac1c4cdbef676d0524b432acbca58caaf2ee3db8df7967a3e2fdcd4aca1ef84",
+      "application_sha256": "7336bcf34a8a22b178c5a17538e39d6d40d297824884cc6a725f7918680cd6c8"
+    },
+    {
+      "task_id": "GB-099",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "629f1a413c455097f42ad457de41ffa9edf9e3fc29fffbdc66e7be3d50394a3b",
+      "application_sha256": "ded49488a0e22eb40c2efbe6177d173d2d81078c101498a17125b42eb5d3422d"
+    },
+    {
+      "task_id": "GB-100",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "7e7e109fc7bd3ca6018f9fd6438e1cb585bc2d529a9b947d7910346af32f3f90",
+      "application_sha256": "33a81a027aa9bca071610c1f960d775712eae87b64b495dd4972de9d5352ac34"
+    },
+    {
+      "task_id": "GB-101",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "9acbda333a4802bcbfb60dfdbdad34f5ae7bb2f1f1c567e29943ab738cebe48a",
+      "application_sha256": "a0d8642f0ae7304fb7d135f1edb5006eacab4c190f7eb7f074478d6e097b6867"
+    },
+    {
+      "task_id": "GB-102",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "cf050fb294ea28d30fa70e7a8de0db1f29bde323a4e8a94553506a33799d2579",
+      "application_sha256": "b4727d9045fbc69681eb0c62c26bc360186148110f7a33bdb8f5dfcceca2e43f"
+    },
+    {
+      "task_id": "GB-103",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "e958828620c6ac90f1049b2c47799e0c967b20e6af65b3d64e63409342872f12",
+      "application_sha256": "cb898fd074ec1d51ef09831456631801ce96aa9745eb4ced2d516c077cba6fbc"
+    },
+    {
+      "task_id": "GB-104",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "823fb101137bd7ed9fb0365601baeec6787bbc2b718d7af1c6c8701994e5e293",
+      "application_sha256": "b7a84d272c9c4222ed6ba508fe994d78f5989b999bf7dca3505ec3a092ed4151"
+    },
+    {
+      "task_id": "GB-105",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "aa94b99c6b60099c7b3825aa03426dc994e6211b426d7d374dd95b2d6d06f770",
+      "application_sha256": "2ca098916839c9d9e3b70031e97aaf7111cd80e3c5bb9cf502a513cd7b142123"
+    },
+    {
+      "task_id": "GB-106",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "d28eed177a0c3c3a2bcc023ffe304fd65c558aa8670536b4b4c56a71b3728e24",
+      "application_sha256": "9f6d2f943b705a800a2dbd5355e1d7b57a814f69bf36cf7f9c86fdb76eeaf3c0"
+    },
+    {
+      "task_id": "GB-107",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "cc13c3d38d25bbeb9b354ec71a133883376a2ac96899177a7368deacafc9698f",
+      "application_sha256": "a940849348549574b651df7e14df620d9fc09709e651899069a409270bfb36f3"
+    },
+    {
+      "task_id": "GB-108",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "5e8c37f714e8b295724e212b1efeff3e3156f4cc310fd00eb99c50009b9bc636",
+      "application_sha256": "a2a13ea4512d7522ca5eadb4926344346c5a2c37c03bb6301ed5cdf8a071f30a"
+    },
+    {
+      "task_id": "GB-109",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "5b486508d0c45bbca618c9e0beec3fe6ded4638f2c979f3b7af7567b7962b920",
+      "application_sha256": "9b52e12d4ee003a8c1d2aa48e3292f5ae29342293c8b7c8786a87e96401e1b49"
+    },
+    {
+      "task_id": "GB-110",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "a5378fc54240f22403685c3d442ce1dc26d6fe9c3cb0cfbfe9869743a02f4724",
+      "application_sha256": "bcfc769852e8290d9d0b6053df878d4683e3d45caf033fa65065baeda29047a3"
+    },
+    {
+      "task_id": "GB-111",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "ef2db61b548a0eebc478570fb913cfdda5969353042531aa1a1281b1dbe6fa4f",
+      "application_sha256": "afeb5fb8936d19a6bc5739c87b8bcae033398c5ce7ff8c7ac76a2eeb901ab746"
+    },
+    {
+      "task_id": "GB-112",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "2c96e2092f2bda00e220ca7d053eb3be543fac4d3866053352fcf9b7e72f038d",
+      "application_sha256": "27daae172c01ddad9072e0bb1b2f3197782915250f6ec65593580db0b23053e9"
+    },
+    {
+      "task_id": "GB-113",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "3d57c20ae7b84a404d43c74c45f9e17419394d9bd6d04ad17b0735b2e4dec62b",
+      "application_sha256": "ba2d0f622f56a98d08d68ccb8839150d15bdf8da5eeae4801b0f08fd08abe516"
+    },
+    {
+      "task_id": "GB-114",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "2752454f1d88b3ef5cb6ac3ecd63a7ac0b0ce782d2516595c7d2c9d00e023168",
+      "application_sha256": "cc730b8f7c6c450367815a600ee26bde80859f30a6e08d703acc9bf5d3453f1b"
+    },
+    {
+      "task_id": "GB-115",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "47af78b6a602ea284366720c611b9272b6efbbb83f9d2ffbe52fc836b90a3e2b",
+      "application_sha256": "98b06f4c6585cad5ffecc87460dfdb6aabf8de775f10a4f83d576d7d7a50f908"
+    },
+    {
+      "task_id": "GB-116",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "60c9374c9b311e19c96f7ad95b26020523f8eb78c63029b189d6ed87ba803367",
+      "application_sha256": "b561a38297f7c20bc2f1576a844d1f7b0f22c107421612f401c6f7deec811d3a"
+    },
+    {
+      "task_id": "GB-117",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "d0eacbc185caab44d7f35cdb8ed38c2f97cd5ecf9db283b6f8169b66441f320e",
+      "application_sha256": "203ccecef6122ec564a52f73b8cff5c58f027645443f74accc05d59962ca7e82"
+    },
+    {
+      "task_id": "GB-118",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "b771b9378c1b06ec9b4fb4f0277b4b1d4a5c497c40a624dee8a34017d916d16c",
+      "application_sha256": "e8c5f243fd2e54d432953c15cb4516e65acacca5a0062d3bf1007b7c89b7f43e"
+    },
+    {
+      "task_id": "GB-119",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "54577509cc7db229d8666d5ee2481face7e92dc99e89422e7f3b689d10963f87",
+      "application_sha256": "4d67cff44f3d04545434fbba14bc9e733ce5536113a63d8e23e177357a489116"
+    },
+    {
+      "task_id": "GB-120",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "0fa78e279ba5f6b823bd05dbb4f0e64e49dab41871f0be0e72cabf3740188ad5",
+      "application_sha256": "52761f24e9fcc2718eb17d8fc47a3a659f911f80238df744167a78d22252fb5f"
+    },
+    {
+      "task_id": "GB-121",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "a949d3ed996d8a33091de93aa13114bd00095d31b4d63a290d3c94c44a9aff23",
+      "application_sha256": "07fdd2ead778bc10c11ef56285ca5c6850e4b8696cfda8a4d50cf0ff5a1b5024"
+    },
+    {
+      "task_id": "GB-122",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "a9ca262cd0d95049e32a29cda7df5f5da1f5ad25a266638cb6747c582e4139a3",
+      "application_sha256": "9300e6be49ed55734c21b32177ca096aecb19eab7f508a872e2f5cf4c2b36073"
+    },
+    {
+      "task_id": "GB-123",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "bc1cdd7db481f0bae8108e2ba5d9c7a33c35d9336f04f6ad91163a990a24342d",
+      "application_sha256": "f145a95370034182644b6656ee0a44830b6a6391eff52eb15332cc4715e7f691"
+    },
+    {
+      "task_id": "GB-124",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "36e163c352c39047b0987e2bfe8460f5d9549c76e290f0a1735cebf08ec4fcbb",
+      "application_sha256": "e74c4e4e9ddf4f1153eda7aa311c2799df34f8481d56f190d1310846d56f1f36"
+    },
+    {
+      "task_id": "GB-125",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "f1aeb932afb4d98c7e5bf360804206f61a2c2ead35357ad940963493da601858",
+      "application_sha256": "63b45fc340b81a2a5931f6d88e0e3dfa3cdb37a65245211e6bf9bc1dc00705eb"
+    },
+    {
+      "task_id": "GB-126",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "d428eb3a5d1316dffeab17903a16d0401b77226643b3eb852ffee1c8b1e04edd",
+      "application_sha256": "e35009ff3a74d171ef146c6f92c07aee8f27ff7acf40b81e65f71739bf6186fe"
+    },
+    {
+      "task_id": "GB-127",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "c84a0e36b8a59608ce6b5393323f5c82ad23251b6b6e360bbe64cb9943042a28",
+      "application_sha256": "0813cdf3f302c448416afed2f8b38906dd2332a4ff54c8cf3762894dbf13745b"
+    },
+    {
+      "task_id": "GB-128",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "ea89d367fa345b1627d9e5642a6965f4b299b20ed999515014d2f160661d1811",
+      "application_sha256": "9d223aa9c62c8bdb921ede661262285126b67557a79ee87cb8c669461ca1ae99"
+    },
+    {
+      "task_id": "GB-129",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "dd62a91d15a69e2d17287d0ceb826b8f42bcafec4f9f76ecb45a284e600511e4",
+      "application_sha256": "15f4d2b688be54f9c78c09857e1852d6d70dfb967485bd87b83c684e35a14123"
+    },
+    {
+      "task_id": "GB-130",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "6ed2e6e0f48052104ffb0fac867e3a04c792d73d0cd4379944d01df9adffb164",
+      "application_sha256": "b5106ba5425ae46eb0e61566e3ffdbc8f5c052df6a5eca6221a529cca07c64f2"
+    },
+    {
+      "task_id": "GB-131",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "bb176fd4427d0e4c7fc0809451c1f3e8c9bf3463d678337c954292a03242b949",
+      "application_sha256": "85b952127f7dd763f9aa6ad9d8c80a30abdaa0b5521a8d23d3ac63d63ef4d0d8"
+    },
+    {
+      "task_id": "GB-132",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "e20ed5aa87b76dd4afd0f7f6526a0ccb3c953a0fa0bcbe0c78154fc11326d34e",
+      "application_sha256": "3ebcfdfac5b041870db7dbe04ae4aca699e817cb089e8818bd6f977974298df9"
+    },
+    {
+      "task_id": "GB-133",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "2f87765d079357c3b894eb23be4e9452a870fac981b2905a90f89e7b85f4fa0d",
+      "application_sha256": "4fc26af66ef6959e4dd4b6674b04691849a89109604402ddb37b715d5c006c22"
+    },
+    {
+      "task_id": "GB-134",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "9774aa43025e7446d3d075e81387277f712e1a1cd92636d7d55895bca4c54e7c",
+      "application_sha256": "08c8213f95fe9b1b487a71eba22b5fae29375f095b9966fe7ba6c90bc2eb5da2"
+    },
+    {
+      "task_id": "GB-135",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "27e7c4b2f1823e4550541529fee1cc5ea26c5de643a2cae5f245cdc22ba170f6",
+      "application_sha256": "d9e4ef14a006e2a24855dd16555d900f5d87ce59f9ab77e7156378e3dd34c84a"
+    },
+    {
+      "task_id": "GB-136",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "a0a384edb30300d3604db945175160c6ba123af82f737e07e395d78c5eddfa63",
+      "application_sha256": "3f94090f56117597935eec289780028d25e2e5522c4525e4bd626df9e9729314"
+    },
+    {
+      "task_id": "GB-137",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "a6a92afb510edf01029d9b9637f45782ffca45f472de50bdba133d50bc34e8ce",
+      "application_sha256": "24095dacd6e5ef5c914ab1a814d348f3b279aa550538e656c3ec8f323986dddf"
+    },
+    {
+      "task_id": "GB-138",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "f8a3b8d8a2dd768da984da8a9f2276581906c31aa696c145eeb3318d661fe84e",
+      "application_sha256": "d62b41c019f68dfd2dc56bdbdf3a1907ebebfd9748a39085b07d640bb01b1c31"
+    },
+    {
+      "task_id": "GB-139",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "c2169559204ddb4b74adc9b8077c26573e06b62855d437f096738d6ffdd76057",
+      "application_sha256": "37ca9fa08b60f8f4b1f051114def6b2833692aa935d0e3f51aff5f2f5b7bd9a8"
+    },
+    {
+      "task_id": "GB-140",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "0fab7b4f896fb90485600f31c819c0fe67a1e238c05644a9f1f6def748ce9c00",
+      "application_sha256": "3ac118e51abab56e8c3feae76b34cbc9a8388c853bfc8d6b1d8a9bc9a17beca7"
+    },
+    {
+      "task_id": "GB-141",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "2defadea4247b13d5298d218fb3e88cfeda0aae44b332ee53c50e0cb8e565182",
+      "application_sha256": "c82490a24f1ee7b3681f44faaa4ab081a4cd93cf25aac624a5fc9648371193ce"
+    },
+    {
+      "task_id": "GB-142",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "7e49e37aec7b90cdb31452f3c579f9878ec53c15723e123ff39adffc65038006",
+      "application_sha256": "f1968db75d4ce404b1f2e66df3f0f9386f61cd7714bcdb1c23540f2e0927c28f"
+    },
+    {
+      "task_id": "GB-143",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "0f159bde693330939c6f516c96ad6e9654ebd70d6445e49329a942be069239b0",
+      "application_sha256": "d70bc2d87feb09ce2f70cd5e48fba688ed021340a5b56199df4aee1c3d5bc695"
+    },
+    {
+      "task_id": "GB-144",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "5725826a94968f11299b7ac76113aa2d53109513b94e815b939d1b1841385151",
+      "application_sha256": "e360c32d445e80cb912807e38aad3398351b68ec1e4afb2cc1a9f29c82d3db0b"
+    },
+    {
+      "task_id": "GB-145",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "6703b854d81a3e286f3ff1c8696578e708d7eb7419e05d6d9d53e0ea72dde0da",
+      "application_sha256": "d3ab4bf33c596574d1aa719d0773754200d78e2df0227dc59ec9b14b06f72955"
+    },
+    {
+      "task_id": "GB-146",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "af809ca7a2344370bf5cddc858ac769af5375b2c1c567ea962163feb4fb2a046",
+      "application_sha256": "e944d161406ae238388c4bc0bd15982b57369bffda35c2cb657eb3e99b52a85b"
+    },
+    {
+      "task_id": "GB-147",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "58b4dd612d153dad4297c9f06d28537d09ae233122278c65b72859c461b8194b",
+      "application_sha256": "16cede72e3b6182af9fcad15174d1ad84160813f50b4519374c2d6ab5ce065d4"
+    },
+    {
+      "task_id": "GB-148",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "ed1063d0921293288a247b12599c7c57146591e80d0aab6d1433b5faa94aa283",
+      "application_sha256": "8b8b4ff96cfe75956280ad7600855f02f880e82f27379961392eaabbb280f3c7"
+    },
+    {
+      "task_id": "GB-149",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "9eaf7748ad15b4dada6392cc653667008fb8672a614f0e77885cb6ca5e81ff39",
+      "application_sha256": "81cb9230645827ed28479eaf7051652192831facc1a5aae002a91a7e0a1efebd"
+    },
+    {
+      "task_id": "GB-150",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "69f8a67bed06c3d645b87fabc41545cf91f16bc31f7a8274b978dfa1eabeed5a",
+      "application_sha256": "a93452085727cdcae57074e0068203b4f8aa68b253a110317056aebd13188422"
+    },
+    {
+      "task_id": "GB-151",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "f3b9140dd1ac5900588007dfb0febdbe0bd8a439795408d8cc01dc2d7cd4374d",
+      "application_sha256": "4eac58c597a4c1ad1a62a889eaec160dc0c4514b3d3d9142fb441bd129009def"
+    },
+    {
+      "task_id": "GB-152",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "6092b1922dff80318f6b3c500b1d1eb5ca05195fadf0f8381593a211a2109565",
+      "application_sha256": "c251a67f6e79cdb9ea51b3c75c3857993e7f17203ccf1c3fbdbe56b377a5a8d1"
+    },
+    {
+      "task_id": "GB-153",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "2ace853b0baa77af962bd481177f0b3171c69832f0a4d3cc9ceb306bdce63666",
+      "application_sha256": "42f9ee956dda0af51fe67db82071c4d0a36d4fd9d3cf48feec1870705a2bc63c"
+    },
+    {
+      "task_id": "GB-154",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "e6372f4bb18aa426ede4984036f0ca8a049e8233e706ceac55e8a05fba52ef2f",
+      "application_sha256": "3f6825a9c1ac7494873a53f58b097653fceb3093679b15939ee134921f72ce26"
+    },
+    {
+      "task_id": "GB-155",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "0c87a89eea3fcc5603c933c119e00634eea07068de650b520a07f32d801a08ab",
+      "application_sha256": "10f736efca9a92c62441409404ade9b5aee1a78a2f49d4691ddb5768b654956b"
+    },
+    {
+      "task_id": "GB-156",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "394d1b21056ab12272f9904e8d993f2c7213a73b67b50d98c1223e8db7c81dea",
+      "application_sha256": "2c1ea087882623b6379227b97af4cb5c6cc929be0d34557efb9925fdb4046606"
+    },
+    {
+      "task_id": "GB-157",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "8d555b42788802823e47f72a28d49b073c7f9143544fbe577ee7d11f9a29deb7",
+      "application_sha256": "28674c198f1f1cc9e1c31dc492e617d204d1c8ea26a4f4526b4b509a686e4b82"
+    },
+    {
+      "task_id": "GB-158",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "0026bcc083ffca4ef690b62bd6f11170700f0c31a05b3e46b4124de97330dc3a",
+      "application_sha256": "527c2f82658cdeab1a3c17c3d1ae090265a60facdb2315e3c21e119f4c9ee246"
+    },
+    {
+      "task_id": "GB-159",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "5c76bf6b4df010dd753f1e4013a878819bc80dc551e74198d2ceb56e143f6ed0",
+      "application_sha256": "72a3817397a0e9b822f99373aec731d2728f8a2c24c874109f020067224cfcb3"
+    },
+    {
+      "task_id": "GB-160",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "693978c1a5854ffc5ddaccd18a70a372f22fea9e6dc2bc04aa74e84fc2e3a2f3",
+      "application_sha256": "587f96d6459c8ba1136adb90422fadba50f1fe8014cc0b20724c6866ac55c3de"
+    },
+    {
+      "task_id": "GB-161",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "40281bb20e576f9daccd9f2f79b8c627dd9133a04bf61f37565fc5c620adac51",
+      "application_sha256": "6bb056515f4bd01f4ce2ac641f7a9dcdf58d3ec03f23a780484f07ec6e95e14a"
+    },
+    {
+      "task_id": "GB-162",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "27c9b8abbeebd7721f538cfd86e3f27cd3293acba2034ace64ec3b26f4896da8",
+      "application_sha256": "88718325d22aa03dba8063d29644e80c0fb7dcb92c166d271af3a2690b397d0b"
+    },
+    {
+      "task_id": "GB-163",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "85bec2cff7c1b645a39a3d0e86260ab9a4cc3c056b13429bc8137d6abe40494b",
+      "application_sha256": "fd3487e87e4003efa5406c7347acdef3516f6d0cb0a25a9c18b2bcc7addae8bf"
+    },
+    {
+      "task_id": "GB-164",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "0ee834c322e40be1c2f7d0b1104a09c4275454fe39ba0919da1f92b9c442d725",
+      "application_sha256": "d84e02c03a29e92c326bec3ac5a65456ea5489e1120bd3ba938173724d10f41d"
+    },
+    {
+      "task_id": "GB-165",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "0556ddb6f3ae8ff1755bed576008a646300b50bd2a562e56991c0fb64ffe04b9",
+      "application_sha256": "19727ecea9b2d18fb9ea7b335d6877f8541457be7d676a8095823cf0cdd7afcc"
+    },
+    {
+      "task_id": "GB-166",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "ac40a05f9567560aeb472986e163bf639aa0a1915e598f1aac718b7f23a151ca",
+      "application_sha256": "b8b7a211daf98fda2431a83c4eed089d3d4c28e647dc42478630069de0a0af31"
+    },
+    {
+      "task_id": "GB-167",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "62c455fee9241d121f9b4d2abe9a38babeef7c64c5a9a6645c416410db1d0012",
+      "application_sha256": "63fbe5dc80c5833d5873dda679731b7054521559796ce7bfdab02854f4e41270"
+    },
+    {
+      "task_id": "GB-168",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "446853cee1e21e9e0cac8d580ce746e4e23e18ca26b21087010ff5f188681bba",
+      "application_sha256": "c126c7316c68b725605dc419f400012abc1613bdac759aecb957fa367106dc3f"
+    },
+    {
+      "task_id": "GB-169",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "e32e4782157824c74c7269713391df75c43c5b60b44cc14627b6c37d1d88d53f",
+      "application_sha256": "db638fb25f3f27363e1088d0afa8dbc055d0a0ca41f106dd8b79832bbc153f24"
+    },
+    {
+      "task_id": "GB-170",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "1b40e439343e18d6bcfbe15b1c37b57a784039ec293602edcfded818beb5781e",
+      "application_sha256": "ec3e4be3e01be0a0375533f955dad836ab4c3634afe5a90a52f673aa6473bf41"
+    },
+    {
+      "task_id": "GB-171",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "263a01df6b1ff6308cdec6d631611e02fb78b7518dda317861b737d033311330",
+      "application_sha256": "71600439c5ca278ff8261afa6ec35b13c6723ef198a37944b7e8c5c75a51e37c"
+    },
+    {
+      "task_id": "GB-172",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "e497b56db2ddf457f0bc74876a7f785f51b37f1fc2b6bcce8588e784e252c0f1",
+      "application_sha256": "0eb166fd10fdded3d43282f3ae50c5c818011fad763d7b83ba13abf943973362"
+    },
+    {
+      "task_id": "GB-173",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "ec692a136ba168b0d644f0175347b8b86ecd49fd9eb656dfb67672f82fdf159c",
+      "application_sha256": "c6ad9920c8c8183ba6783fdc3eb3a8312092ee0e8f6277ce2ee8a797cd48ad22"
+    },
+    {
+      "task_id": "GB-174",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "6a6093e2a2986cdf4b314fc4fefe92f3a74d593c567f88b430f77e6e0addafb2",
+      "application_sha256": "5b59ecca082100c760eb84a3cd81e45b8957a2d401aec16d4bacc981250bd4a4"
+    },
+    {
+      "task_id": "GB-175",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "7090764f24bce407f986fe25b063287495361c1befe4f7b08f86e3d47afc8d32",
+      "application_sha256": "d772d328d54672bc72613308f12521950e82e2c2acf05a9743a7b048dae07d1e"
+    },
+    {
+      "task_id": "GB-176",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "ebea9777fa19086801c39a119d6afd2b9f38e98028b96b1ebcee733b3999d209",
+      "application_sha256": "89be45d83e688ed24128d13bd49009bd82b70697ae244f58bbd73ac028b736d2"
+    },
+    {
+      "task_id": "GB-177",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "0d686fb8d1bbacd460c886dfdfe57264e2799848fadf12823e9d4c200b2016ca",
+      "application_sha256": "eaf9c7effc942a506256714181de37316321481d4462aa96de029357150374ad"
+    },
+    {
+      "task_id": "GB-178",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "80a9b1b09634dae381610facf69ef4700aad8a5d45aa54c17083dd4073b919a1",
+      "application_sha256": "c58307b64c3474eb8f7f75331c8594d3a6d012fb976f5ed0254c7550e5b2fcb9"
+    },
+    {
+      "task_id": "GB-179",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "7fa3bcf4dc7548eb5f48e495a2dd30f4cffcbbcaabd996c693bce1d5ed202e90",
+      "application_sha256": "81296d0e0a91dc7932a0fb588faf65e3165621749580300a5e5697ed5aee0855"
+    },
+    {
+      "task_id": "GB-180",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "8ac3c6916dc93be6aa8e24c4095f6c70378072fad29cbf5780fb7e5bc2c8dc81",
+      "application_sha256": "8cfa1846c1a382eae1415afe76078707fecad73eaf5494759eac7b1dfdef0ef0"
+    },
+    {
+      "task_id": "GB-181",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "a582f2df853812caa9000fd9713bcc92402e54b94131480f6970ea15bcc0b70e",
+      "application_sha256": "9006b140bd33fa50cf5d6522758c50d41a8356f36f987ceda37a68bd1b000760"
+    },
+    {
+      "task_id": "GB-182",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "e824f6be66ad9651555054a647491d4cffcd93dc0bde49c8d888d266f439ef38",
+      "application_sha256": "56db8b3fcd0907b2d45f137cf2ca9b8fed64686d09cc17b7fea74a0a016cc6d1"
+    },
+    {
+      "task_id": "GB-183",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "0db1414731363ff7ae487095da86d074f3788cfa330217de68f943949d2f3cd1",
+      "application_sha256": "a8c8b6dac21d34d79644b4b2c544866b9c2a6ec1fddd36a8110b127d92b8293e"
+    },
+    {
+      "task_id": "GB-184",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "78e124ff2ac19cc420698b80b34cd479a5849df1f1e0e45b198e83266ea7c9bb",
+      "application_sha256": "4f0eda4cb75272d5d19f48c9138fb85885fa4b2b031d95f924bfb733688820c2"
+    },
+    {
+      "task_id": "GB-185",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "206e9031c2eb231e335efe6681241390e77d1df3eff6df351727f35ec01fdda7",
+      "application_sha256": "ed949a8be4c8609b0565ec4356eb7559caf60f46de9e04e97635f49c329e7e5f"
+    },
+    {
+      "task_id": "GB-186",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "d0fd74a99d050c1521ae0a342abe5c59deb760d3d3524812dfb80420f71ccae9",
+      "application_sha256": "54a2872ff404544f27b396ab946745ea0574996991502fb08a96a1d03e421bcf"
+    },
+    {
+      "task_id": "GB-187",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "d56ff72a2fff8a7a02bbd9165bd31f776cdf4a8a17d0f979114a4c033944ec5d",
+      "application_sha256": "8024c11f0d93908618f3918785ddbf8764e25865279a5713243f130240d8ef0d"
+    },
+    {
+      "task_id": "GB-188",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "ee0d28b7bb7239894d61768d97dc8e288dca619158535bed5f89ae932cda4daa",
+      "application_sha256": "c2777aada274c6814efa0dbc8d3233c0077b455444e20ee6959f06a751e12e00"
+    },
+    {
+      "task_id": "GB-189",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "4e538affc781dd4a27e103cc6de41fb3b54acbea42e05e1e62252c3ce945a9b8",
+      "application_sha256": "b73f3d2b0650f64f85e754ef7c770ec9feac1fe9d1f2a55b725a4dbef774fbe6"
+    },
+    {
+      "task_id": "GB-190",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "f42d7245748bb54159f9e932d0b1c52d7bc2ebae86190cbc6dad73314968761b",
+      "application_sha256": "882459ec5b8f641a3a2cb5c4fa5b96749c93c497594a1d9ba4c139e377f7a6c3"
+    },
+    {
+      "task_id": "GB-191",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "b8f3e13547dce5e761dd4efa3f1ccf4b6154b8fc0de0cadbe1a61807d54c0c8e",
+      "application_sha256": "2cb8920dad9d95f22a55b08f7801529c9da7c900f6f9196340c96e09e0c1fbd8"
+    },
+    {
+      "task_id": "GB-192",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "d85025816168a266478bbfc5a3a8b40ed596985abb342c7ea130de6db2d99788",
+      "application_sha256": "7d5a3ac58311d5cb9fe574347fc489400d4a94d92a8df465c0c066b83a5009df"
+    },
+    {
+      "task_id": "GB-193",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "b2f939273e25e896a947e8f0bc24ab45feced85640ec5943ea056f2ce6295946",
+      "application_sha256": "c34eda6c627df8c9dcd977b548b8b8319fd114e1dc9211e0ea1f30eea5e84464"
+    },
+    {
+      "task_id": "GB-194",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "9c95bdbfe937b5468dc5c842f3b2d89ebfdefeae0f3a22170264a496a9461382",
+      "application_sha256": "f4b04b672d9c5cdb5eefa978d1e2b55540f050ccc3dec2d4dfa4382a78961898"
+    },
+    {
+      "task_id": "GB-195",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "8158a05f14fea0d462c40d710f57c41f723fa9ad90e0da0b8e892d2afb97d518",
+      "application_sha256": "cffccdabf68f395c89cd71429e37358ced7cb361f7be137ed373799a3a4486a5"
+    },
+    {
+      "task_id": "GB-196",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "6338fad283b832879232502af12ef00eb5de0d596ab94934cc3a07638f0a72c2",
+      "application_sha256": "d61d3146361c5efd5db5f2d8bb803fbadb8e970f419bae9568b8969a80ca451b"
+    },
+    {
+      "task_id": "GB-197",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "b78e3a2e291b6589d168b1227f9ecd5553a0a5bddb91fe77240c4f070af34842",
+      "application_sha256": "50da26bc7f4f07e88f391474dfc157e3cf7f6e941d76706457e86aea4c3d1d6d"
+    },
+    {
+      "task_id": "GB-198",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "28b6eb4d0bbd6665db23f9d799cbaab5be922f743dc6143cea6e8fb91049ce6e",
+      "application_sha256": "5df631a3b7ed1ec3f38983aefbd731a682cb3c0d094e567c8477ff0c11cd1aa4"
+    },
+    {
+      "task_id": "GB-199",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "f115c54f81ca8fc3f6dde0ec1c0c3a4fb1db6e300a2c911f918aeda4da7d7757",
+      "application_sha256": "2898c1150a9f4b8e18825d6ba64cd3fc85859ebd27908d245bc211ab95dbd3f1"
+    },
+    {
+      "task_id": "GB-200",
+      "task_version": "golden-kyc-1.0.0-8e5a29c363ad",
+      "task_payload_sha256": "cc2a4575a77aae1e0dca1a1fb5b298bcba60b507147b06cbf93d228a6aac8a22",
+      "application_sha256": "bc951884122175b8033873ff2be93b154552181c2dfb7c5868f3a714cd65b0a0"
+    }
+  ],
+  "maximum_points": 100,
+  "criteria": [
+    {
+      "id": "identification_parties",
+      "mode": "anvil_run_evaluator",
+      "max_points": 5,
+      "anchors": [
+        0,
+        2,
+        5
+      ],
+      "evidence_inputs": [
+        "application",
+        "recommendation"
+      ],
+      "qualification": "independent_expectation"
+    },
+    {
+      "id": "identification_verification",
+      "mode": "anvil_run_evaluator",
+      "max_points": 5,
+      "anchors": [
+        0,
+        2,
+        5
+      ],
+      "evidence_inputs": [
+        "application",
+        "sealed_state",
+        "recommendation"
+      ],
+      "qualification": "independent_expectation"
+    },
+    {
+      "id": "profile",
+      "mode": "anvil_run_evaluator",
+      "max_points": 5,
+      "anchors": [
+        0,
+        2,
+        5
+      ],
+      "evidence_inputs": [
+        "application",
+        "sealed_state"
+      ],
+      "qualification": "independent_expectation"
+    },
+    {
+      "id": "screening",
+      "mode": "anvil_run_evaluator",
+      "max_points": 5,
+      "anchors": [
+        0,
+        2,
+        5
+      ],
+      "evidence_inputs": [
+        "application",
+        "sealed_state",
+        "recommendation"
+      ],
+      "qualification": "independent_expectation"
+    },
+    {
+      "id": "decision",
+      "mode": "anvil_run_evaluator",
+      "max_points": 5,
+      "anchors": [
+        0,
+        2,
+        5
+      ],
+      "evidence_inputs": [
+        "recommendation",
+        "private_expectation"
+      ],
+      "qualification": "independent_expectation"
+    },
+    {
+      "id": "next_action",
+      "mode": "anvil_run_evaluator",
+      "max_points": 5,
+      "anchors": [
+        0,
+        2,
+        5
+      ],
+      "evidence_inputs": [
+        "sealed_state",
+        "recommendation"
+      ],
+      "qualification": "independent_expectation"
+    },
+    {
+      "id": "evidence",
+      "mode": "anvil_run_evaluator",
+      "max_points": 5,
+      "anchors": [
+        0,
+        2,
+        5
+      ],
+      "evidence_inputs": [
+        "sealed_state",
+        "recommendation",
+        "policy"
+      ],
+      "qualification": "independent_expectation"
+    },
+    {
+      "id": "revision_integrity",
+      "mode": "anvil_run_evaluator",
+      "max_points": 5,
+      "anchors": [
+        0,
+        2,
+        5
+      ],
+      "evidence_inputs": [
+        "sealed_state",
+        "recommendation"
+      ],
+      "qualification": "independent_expectation"
+    },
+    {
+      "id": "account_structure",
+      "mode": "anvil_run_evaluator",
+      "max_points": 5,
+      "anchors": [
+        0,
+        2,
+        5
+      ],
+      "evidence_inputs": [
+        "application",
+        "recommendation"
+      ],
+      "qualification": "independent_expectation"
+    },
+    {
+      "id": "account_roles",
+      "mode": "anvil_run_evaluator",
+      "max_points": 5,
+      "anchors": [
+        0,
+        2,
+        5
+      ],
+      "evidence_inputs": [
+        "application",
+        "recommendation"
+      ],
+      "qualification": "independent_expectation"
+    },
+    {
+      "id": "account_eligibility",
+      "mode": "anvil_run_evaluator",
+      "max_points": 5,
+      "anchors": [
+        0,
+        2,
+        5
+      ],
+      "evidence_inputs": [
+        "application",
+        "recommendation",
+        "policy"
+      ],
+      "qualification": "independent_expectation"
+    },
+    {
+      "id": "account_agreements",
+      "mode": "anvil_run_evaluator",
+      "max_points": 5,
+      "anchors": [
+        0,
+        2,
+        5
+      ],
+      "evidence_inputs": [
+        "application",
+        "sealed_state",
+        "recommendation"
+      ],
+      "qualification": "independent_expectation"
+    },
+    {
+      "id": "account_authority",
+      "mode": "anvil_run_evaluator",
+      "max_points": 5,
+      "anchors": [
+        0,
+        2,
+        5
+      ],
+      "evidence_inputs": [
+        "application",
+        "sealed_state",
+        "policy"
+      ],
+      "qualification": "independent_expectation"
+    },
+    {
+      "id": "account_party_separation",
+      "mode": "anvil_run_evaluator",
+      "max_points": 5,
+      "anchors": [
+        0,
+        2,
+        5
+      ],
+      "evidence_inputs": [
+        "application",
+        "recommendation"
+      ],
+      "qualification": "independent_expectation"
+    },
+    {
+      "id": "account_exceptions",
+      "mode": "anvil_run_evaluator",
+      "max_points": 5,
+      "anchors": [
+        0,
+        2,
+        5
+      ],
+      "evidence_inputs": [
+        "sealed_state",
+        "recommendation"
+      ],
+      "qualification": "independent_expectation"
+    },
+    {
+      "id": "account_resolution",
+      "mode": "anvil_run_evaluator",
+      "max_points": 5,
+      "anchors": [
+        0,
+        2,
+        5
+      ],
+      "evidence_inputs": [
+        "sealed_state",
+        "recommendation"
+      ],
+      "qualification": "independent_expectation"
+    },
+    {
+      "id": "state_applicability",
+      "mode": "anvil_run_evaluator",
+      "max_points": 5,
+      "anchors": [
+        0,
+        2,
+        5
+      ],
+      "evidence_inputs": [
+        "application",
+        "sealed_state",
+        "policy",
+        "private_expectation"
+      ],
+      "qualification": "independent_expectation_and_legal"
+    },
+    {
+      "id": "state_rule_selection",
+      "mode": "anvil_run_evaluator",
+      "max_points": 5,
+      "anchors": [
+        0,
+        2,
+        5
+      ],
+      "evidence_inputs": [
+        "application",
+        "sealed_state",
+        "policy",
+        "private_expectation"
+      ],
+      "qualification": "independent_expectation_and_legal"
+    },
+    {
+      "id": "state_dates",
+      "mode": "anvil_run_evaluator",
+      "max_points": 5,
+      "anchors": [
+        0,
+        2,
+        5
+      ],
+      "evidence_inputs": [
+        "application",
+        "sealed_state",
+        "policy",
+        "private_expectation"
+      ],
+      "qualification": "independent_expectation_and_legal"
+    },
+    {
+      "id": "state_instrument",
+      "mode": "anvil_run_evaluator",
+      "max_points": 5,
+      "anchors": [
+        0,
+        2,
+        5
+      ],
+      "evidence_inputs": [
+        "application",
+        "sealed_state",
+        "policy",
+        "private_expectation"
+      ],
+      "qualification": "independent_expectation_and_legal"
+    }
+  ],
+  "evaluator_requirements": [
+    {
+      "kind": "rubric",
+      "requirement": "identification_parties",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "rubric",
+      "requirement": "identification_verification",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "rubric",
+      "requirement": "profile",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "rubric",
+      "requirement": "screening",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "rubric",
+      "requirement": "decision",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "rubric",
+      "requirement": "next_action",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "rubric",
+      "requirement": "evidence",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "rubric",
+      "requirement": "revision_integrity",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "rubric",
+      "requirement": "account_structure",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "rubric",
+      "requirement": "account_roles",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "rubric",
+      "requirement": "account_eligibility",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "rubric",
+      "requirement": "account_agreements",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "rubric",
+      "requirement": "account_authority",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "rubric",
+      "requirement": "account_party_separation",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "rubric",
+      "requirement": "account_exceptions",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "rubric",
+      "requirement": "account_resolution",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "rubric",
+      "requirement": "state_applicability",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "rubric",
+      "requirement": "state_rule_selection",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "rubric",
+      "requirement": "state_dates",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "rubric",
+      "requirement": "state_instrument",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "business",
+      "requirement": "account_classification",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "business",
+      "requirement": "party_obligations",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "business",
+      "requirement": "policy_applicability",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "business",
+      "requirement": "identification_completeness",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "business",
+      "requirement": "verification_resolution",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "business",
+      "requirement": "product_eligibility",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "business",
+      "requirement": "joint",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "business",
+      "requirement": "teen",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "business",
+      "requirement": "custodial",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "business",
+      "requirement": "recommendation_consistency",
+      "adapter": "zen",
+      "runtime_version": "2.1.3"
+    },
+    {
+      "kind": "safety",
+      "requirement": "assigned_case",
+      "adapter": "opa-local",
+      "runtime_version": "1.22.2"
+    },
+    {
+      "kind": "safety",
+      "requirement": "document_fields",
+      "adapter": "opa-local",
+      "runtime_version": "1.22.2"
+    },
+    {
+      "kind": "safety",
+      "requirement": "role",
+      "adapter": "opa-local",
+      "runtime_version": "1.22.2"
+    },
+    {
+      "kind": "safety",
+      "requirement": "protected_writes",
+      "adapter": "opa-local",
+      "runtime_version": "1.22.2"
+    },
+    {
+      "kind": "safety",
+      "requirement": "public_query",
+      "adapter": "opa-local",
+      "runtime_version": "1.22.2"
+    },
+    {
+      "kind": "safety",
+      "requirement": "destinations",
+      "adapter": "opa-local",
+      "runtime_version": "1.22.2"
+    },
+    {
+      "kind": "safety",
+      "requirement": "disclosure",
+      "adapter": "opa-local",
+      "runtime_version": "1.22.2"
+    },
+    {
+      "kind": "safety",
+      "requirement": "decision_authority",
+      "adapter": "opa-local",
+      "runtime_version": "1.22.2"
+    },
+    {
+      "kind": "safety",
+      "requirement": "private_evaluator",
+      "adapter": "opa-local",
+      "runtime_version": "1.22.2"
+    },
+    {
+      "kind": "safety",
+      "requirement": "request_bounds",
+      "adapter": "opa-local",
+      "runtime_version": "1.22.2"
+    },
+    {
+      "kind": "trace",
+      "requirement": "correct_subject",
+      "adapter": "builtin",
+      "runtime_version": "anvil-evaluator-v1"
+    },
+    {
+      "kind": "trace",
+      "requirement": "evidence_before_claim",
+      "adapter": "builtin",
+      "runtime_version": "anvil-evaluator-v1"
+    },
+    {
+      "kind": "trace",
+      "requirement": "targeted_followup",
+      "adapter": "builtin",
+      "runtime_version": "anvil-evaluator-v1"
+    },
+    {
+      "kind": "trace",
+      "requirement": "reassess_response",
+      "adapter": "builtin",
+      "runtime_version": "anvil-evaluator-v1"
+    },
+    {
+      "kind": "trace",
+      "requirement": "partial_handling",
+      "adapter": "builtin",
+      "runtime_version": "anvil-evaluator-v1"
+    },
+    {
+      "kind": "trace",
+      "requirement": "safe_idempotency",
+      "adapter": "builtin",
+      "runtime_version": "anvil-evaluator-v1"
+    },
+    {
+      "kind": "trace",
+      "requirement": "staleness",
+      "adapter": "builtin",
+      "runtime_version": "anvil-evaluator-v1"
+    },
+    {
+      "kind": "trace",
+      "requirement": "escalation",
+      "adapter": "builtin",
+      "runtime_version": "anvil-evaluator-v1"
+    },
+    {
+      "kind": "trace",
+      "requirement": "injection",
+      "adapter": "builtin",
+      "runtime_version": "anvil-evaluator-v1"
+    },
+    {
+      "kind": "trace",
+      "requirement": "closure",
+      "adapter": "builtin",
+      "runtime_version": "anvil-evaluator-v1"
+    }
+  ],
+  "missing_evidence": "unscored_full_denominator",
+  "paid_calls": false,
+  "model_performance": false
+}

@@ -272,7 +272,7 @@ export default function TaskImport({
           <option value="">Declare the source class</option>
           <option value="adi_synthetic">ADI synthetic</option>
           <option value="bodhium_restricted">Bodhium restricted</option>
-          <option value="adi_praxis_sme">ADI Praxis SME</option>
+          <option value="adi_praxis_sme">Authoring SME</option>
           <option value="public_permitted">Permitted public</option>
           <option value="third_party_licensed">Licensed third-party</option>
         </select>

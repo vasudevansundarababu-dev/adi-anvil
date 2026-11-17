@@ -24,18 +24,6 @@ const catalog = [
     'Evaluation runner',
     'Existing pinned 0.25.0 structured/staged adapter. Profile binding remains separate from live readiness.',
   ],
-  [
-    'langsmith',
-    'LangSmith',
-    'Tracing / evaluation',
-    'Adapter not implemented. No external traces are sent.',
-  ],
-  [
-    'semantic_kernel',
-    'Semantic Kernel',
-    'Candidate agent orchestration',
-    'Adapter not implemented. SDK selection does not replace Anvil / LangGraph.',
-  ],
 ];
 export default function FrameworkProfiles({
   base,
@@ -54,7 +42,7 @@ export default function FrameworkProfiles({
   const load = useCallback(async () => {
     try {
       const result = await api(base + '/workspace/frameworks');
-      setProfiles(result.items);
+      setProfiles(result.items.filter((p: Profile) => p.framework === 'harbor'));
       setCursor(result.next_cursor);
     } catch (e) {
       setError((e as Error).message);
@@ -111,10 +99,7 @@ export default function FrameworkProfiles({
                     framework === 'harbor'
                       ? '0.25.0'
                       : String(form.get('runtime_version') || '') || null,
-                  tracing_project:
-                    framework === 'langsmith'
-                      ? String(form.get('tracing_project') || '') || null
-                      : null,
+                  tracing_project: null,
                 });
                 setMessage(
                   'Framework metadata saved. No SDK installed, trace exported or execution enabled.',
@@ -154,32 +139,6 @@ export default function FrameworkProfiles({
                   placeholder="Leave unset until reviewed"
                 />
               </label>
-            )}
-            {framework === 'langsmith' && (
-              <>
-                <label>
-                  Tracing project
-                  <input
-                    name="tracing_project"
-                    maxLength={100}
-                    placeholder="Permitted project reference"
-                  />
-                </label>
-                <label>
-                  LangSmith API key
-                  <input type="password" disabled placeholder="Credential integration pending" />
-                </label>
-                <p>
-                  External trace export is off. Saving a project reference sends nothing to
-                  LangSmith.
-                </p>
-              </>
-            )}
-            {framework === 'semantic_kernel' && (
-              <p>
-                Semantic Kernel compatibility is explicit. Microsoft Agent Framework is a separate
-                future choice. No arbitrary plugins or code are installed here.
-              </p>
             )}
             <button className={styles.primary} disabled={busy}>
               {busy ? 'Saving…' : 'Save framework profile'}
@@ -227,7 +186,10 @@ export default function FrameworkProfiles({
             onClick={async () => {
               try {
                 const next = await api(base + '/workspace/frameworks?after=' + cursor);
-                setProfiles([...profiles, ...next.items]);
+                setProfiles([
+                  ...profiles,
+                  ...next.items.filter((p: Profile) => p.framework === 'harbor'),
+                ]);
                 setCursor(next.next_cursor);
               } catch (e) {
                 setError((e as Error).message);

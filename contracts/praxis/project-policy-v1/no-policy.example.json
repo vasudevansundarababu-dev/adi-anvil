@@ -1,0 +1,12 @@
+{
+  "schema_version": "praxis.anvil.project_policy.v1",
+  "source_project": {
+    "id": "banking",
+    "version": "1",
+    "name": "Fictional KYC"
+  },
+  "project_default_policy_refs": [],
+  "sources": [],
+  "policies": [],
+  "task_bindings": []
+}

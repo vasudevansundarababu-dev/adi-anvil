@@ -15,7 +15,7 @@ from psycopg.rows import dict_row
 from anvil.config import CLOUD, setting
 from anvil.db import audit
 
-ROLES = {"admin", "rl-engineer"}
+ROLES = {"admin", "rl-engineer", "sme-reviewer"}
 CAPABILITIES = {"rights_reviewer", "release_owner"}
 CLOUD_ORG = "c0000000-0000-4000-8000-000000000001"
 USERNAME = re.compile(r"^[a-z0-9][a-z0-9._-]{2,62}$")

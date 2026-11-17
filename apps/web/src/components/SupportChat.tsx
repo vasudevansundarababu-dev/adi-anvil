@@ -92,7 +92,7 @@ export default function SupportChat({ base, api }: { base: string; api: Api }) {
       });
       setTurns((t) => [...t, { role: 'assistant', text: result.answer }]);
     } catch (e) {
-      setError((e as Error).message + ' The Anvil Help topics on this page still work.');
+      setError((e as Error).message + ' The Forge Help topics on this page still work.');
     } finally {
       setBusy(false);
     }
@@ -101,15 +101,15 @@ export default function SupportChat({ base, api }: { base: string; api: Api }) {
   return (
     <div className="support" data-support-ignore>
       {open && (
-        <section className="support-panel card" role="dialog" aria-label="Ask Anvil">
+        <section className="support-panel card" role="dialog" aria-label="Ask Forge">
           <div className="toolbar">
-            <strong>Ask Anvil</strong>
-            <button type="button" onClick={() => setOpen(false)} aria-label="Close Ask Anvil">
+            <strong>Ask Forge</strong>
+            <button type="button" onClick={() => setOpen(false)} aria-label="Close Ask Forge">
               Close
             </button>
           </div>
           <p className="muted">
-            Answers about this screen and Anvil’s process. It explains; it never approves or changes
+            Answers about this screen and Forge’s process. It explains; it never approves or changes
             anything.
           </p>
           <div className="support-log" aria-live="polite">
@@ -161,7 +161,7 @@ export default function SupportChat({ base, api }: { base: string; api: Api }) {
       )}
       {!open && (
         <button type="button" className="primary support-open" onClick={() => setOpen(true)}>
-          Ask Anvil
+          Ask Forge
         </button>
       )}
     </div>

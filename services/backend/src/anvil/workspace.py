@@ -12,6 +12,7 @@ from anvil.schemas import Strict
 from anvil.workspace_models import ModelProfile, model_public, save_model
 
 READ_ROLES = ("admin", "rl-engineer")
+PERMITTED_EVIDENCE_KINDS = {"output.json", "output.txt", "diagnostics.json", "trajectory.json", "structured-native-capture"}
 
 
 class FrameworkProfile(Strict):
@@ -137,7 +138,7 @@ def public_run(c, row, detail=False):
                 {k: e[k] for k in ("artifact_id", "kind", "sha256")}
                 for e in result.get("evidence", [])
                 if e.get("kind")
-                in {"output.json", "output.txt", "diagnostics.json", "trajectory.json"}
+                in PERMITTED_EVIDENCE_KINDS
                 and all(k in e for k in ("artifact_id", "kind", "sha256"))
             ],
             calls=observed_calls(c, row, calls),
@@ -543,7 +544,7 @@ def routes(context, wrap, idempotent):
                     for e in (row.get("result") or {}).get("evidence", [])
                     if e.get("artifact_id") == str(aid)
                     and e.get("kind")
-                    in {"output.json", "output.txt", "diagnostics.json", "trajectory.json"}
+                    in PERMITTED_EVIDENCE_KINDS
                 ),
                 None,
             )

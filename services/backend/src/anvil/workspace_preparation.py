@@ -8,6 +8,7 @@ from pydantic import Field
 
 from anvil import auth, workspace_costs
 from anvil.db import Jsonb, audit, digest, one, uid
+from anvil.project_bindings import FrozenBinding
 from anvil.schemas import Strict
 from anvil.workspace import READ_ROLES
 from anvil.workspace_models import selection_issues
@@ -18,7 +19,12 @@ PLAN_ROLES = ("admin", "rl-engineer")
 class Preset(Strict):
     name: str = Field(min_length=1, max_length=100, pattern=r".*\S.*")
     runner_profile_id: UUID
-    candidate_runtime: Literal["anvil-structured-json-v1", "semantic_kernel"]
+    candidate_runtime: Literal[
+        "anvil-structured-json-v1",
+        "semantic_kernel",
+        "golden-kyc-openenv-tool-agent-v1",
+        "marketing-task2-five-role-v1",
+    ]
     candidate_profile_id: UUID | None = None
     tracing_profile_id: UUID | None = None
     model_profile_ids: list[UUID] = Field(min_length=1, max_length=8)
@@ -32,13 +38,32 @@ class Preparation(Strict):
     episode_timeout_seconds: int = Field(ge=1, le=600, strict=True)
     aggregate_cap_micro_usd: int | None = Field(default=None, gt=0, le=1000000000, strict=True)
     trials_per_model: int = Field(default=1, ge=1, le=10, strict=True)
-    environment: Literal["package-docker"] = "package-docker"
-    max_agent_steps: int | None = Field(default=None, ge=1, le=100, strict=True)
+    environment: Literal["package-docker", "golden-kyc-openenv-v2", "marketing-task2-us-v1"] = (
+        "package-docker"
+    )
+    max_agent_steps: int | None = Field(default=None, ge=1, le=1000, strict=True)
+    workflow_definition_id: UUID | None = None
+    human_assignments: dict[str, UUID] = Field(default_factory=dict, max_length=30)
+    case_ids: list[str] | None = Field(default=None, min_length=1, max_length=10000)
+    task_package_ids: list[UUID] | None = Field(default=None, min_length=1, max_length=5)
+    project_binding: FrozenBinding | None = None
+    execution_budget_id: UUID | None = None
 
 
 def unique(ids):
     if len(ids) != len(set(ids)):
         raise HTTPException(422, "Select each model profile only once")
+
+
+def turn_bound(package, requested):
+    """Explicit physical bounds never silently truncate a native campaign."""
+    marketing = package["manifest"].get("binding") == "marketing-task2-five-role-v1"
+    available = len(package["manifest"]["stage_order"])
+    ceiling = 1000 if marketing else 100
+    selected = requested if requested is not None else min(ceiling, available)
+    if not 1 <= selected <= min(ceiling, available):
+        raise HTTPException(422, "Selected model turn bound exceeds the package/runtime ceiling")
+    return selected
 
 
 def record(c, table, identifier):
@@ -106,6 +131,7 @@ def package_snapshot(row):
         "harbor_version",
         "stage_order",
         "base_image",
+        "native_binding",
     )
     return {
         "id": str(row["id"]),
@@ -121,19 +147,85 @@ def readiness(c, snapshot):
     if snapshot["aggregate_cap_micro_usd"] is None:
         reasons.append("aggregate_api_cap_missing")
     package = snapshot["package"]
+    for bound in snapshot.get("task_packages", []):
+        current_package = one(c, "SELECT * FROM anvil.harbor_packages WHERE id=%s", (bound["id"],))
+        if not current_package or package_snapshot(current_package) != bound:
+            reasons.append("state_task_package_binding_changed")
     if package["manifest"].get("binding") not in (
         "structured-decision-v1",
         "staged-decision-v1",
         "mcp-tool-agent-v1",
+        "golden-kyc-openenv-tool-agent-v1",
+        "marketing-task2-five-role-v1",
     ):
         reasons.append("task_binding_not_supported")
-    if package["manifest"].get("harbor_version") != "0.25.0":
+    from anvil.harbor_package import structured_profile_current
+
+    if package["manifest"].get("harbor_version") != "0.25.0" or (
+        package["manifest"].get("binding") in {"structured-decision-v1", "staged-decision-v1"}
+        and not structured_profile_current(package["manifest"])
+    ):
         reasons.append("package_runtime_not_supported")
     if not package["agent_admission_present"]:
         reasons.append("package_agent_admission_missing")
     preset = snapshot["preset"]
-    if preset["candidate_runtime"] != "anvil-structured-json-v1":
+    native = package["manifest"].get("binding") == "golden-kyc-openenv-tool-agent-v1"
+    marketing = package["manifest"].get("binding") == "marketing-task2-five-role-v1"
+    expected_runtime = (
+        package["manifest"]["binding"] if native or marketing else "anvil-structured-json-v1"
+    )
+    if preset["candidate_runtime"] != expected_runtime:
         reasons.append("candidate_runtime_not_qualified")
+    if native or marketing or snapshot.get("project_binding"):
+        from anvil.project_bindings import execution_issues
+
+        source_package = one(
+            c, "SELECT project_id FROM anvil.harbor_packages WHERE id=%s", (package["id"],)
+        )
+        if not source_package:
+            reasons.append("project_binding_package_unavailable")
+        else:
+            reasons.extend(
+                execution_issues(
+                    c,
+                    source_package["project_id"],
+                    snapshot.get("project_binding"),
+                    snapshot.get("task_packages", [package]),
+                )
+            )
+    if native:
+        if snapshot.get("environment", {}).get("id") != "golden-kyc-openenv-v2" or not package[
+            "manifest"
+        ].get("native_binding"):
+            reasons.append("golden_native_environment_binding_required")
+        from anvil.golden_kyc_paid_qualification import installed
+
+        reasons.extend(installed()["missing"])
+    elif marketing:
+        from anvil.marketing_paid_qualification import installed
+        from anvil.marketing_paid_session import task_context
+
+        binding = package["manifest"].get("native_binding") or {}
+        if snapshot.get("environment", {}).get("id") != "marketing-task2-us-v1":
+            reasons.append("marketing_native_environment_binding_required")
+        reasons.extend(installed(binding.get("workflow_graph_sha256"))["missing"])
+        try:
+            current_context = task_context(
+                c,
+                source_package["project_id"],
+                binding["resolved_task_id"],
+                binding["task_group_id"],
+                execution_data=binding.get("execution_data"),
+            )
+            if current_context["native_binding"] != binding:
+                reasons.append("marketing_current_source_binding_changed")
+        except (ValueError, RuntimeError, KeyError, TypeError):
+            reasons.append("marketing_current_source_qualification_required")
+    elif snapshot.get("environment", {}).get("id") in (
+        "golden-kyc-openenv-v2",
+        "marketing-task2-us-v1",
+    ):
+        reasons.append("golden_native_package_required")
     if preset["tracing"]:
         reasons.append("external_tracing_not_qualified_export_disabled")
     for field in ("runner", "candidate", "tracing"):
@@ -373,16 +465,152 @@ def routes(context, wrap, idempotent):
                     "aggregate_cap_micro_usd": body.aggregate_cap_micro_usd,
                     "execution_order": "sequential",
                     "trials_per_model": body.trials_per_model,
-                    "max_agent_steps": min(
-                        body.max_agent_steps or 100, len(package["manifest"]["stage_order"])
-                    ),
+                    "max_agent_steps": turn_bound(package, body.max_agent_steps),
                     "environment": {
                         "id": body.environment,
-                        "name": "Harbor isolated Docker",
+                        "name": "Golden KYC OpenEnv"
+                        if body.environment == "golden-kyc-openenv-v2"
+                        else "Marketing five-role OpenEnv"
+                        if body.environment == "marketing-task2-us-v1"
+                        else "Harbor isolated Docker",
                         "base_image": package["manifest"].get("base_image"),
                         "package_sha256": package["package_sha256"],
                     },
                 }
+                if body.project_binding is not None:
+                    snapshot["project_binding"] = body.project_binding.model_dump(mode="json")
+                    from anvil.project_bindings import current as current_binding
+
+                    selected = current_binding(c, project, body.project_binding.task_group_id)
+                    if (
+                        not selected
+                        or str(selected["id"]) != str(body.project_binding.id)
+                        or selected["snapshot_sha256"] != body.project_binding.snapshot_sha256
+                    ):
+                        raise HTTPException(
+                            409, "Project binding changed before method preparation"
+                        )
+                    snapshot["method_binding"] = selected["snapshot"].get("method_binding")
+                    snapshot["skill_mapping_bindings"] = selected["snapshot"].get(
+                        "skill_mapping_bindings", []
+                    )
+                    if selected["snapshot"].get("semantic_judge_batches"):
+                        from anvil.campaign_semantic_contract import parse_template
+
+                        snapshot["semantic_judge_templates"] = [
+                            parse_template(item).model_dump(mode="json")
+                            for item in selected["snapshot"]["semantic_judge_batches"]
+                        ]
+                        snapshot["semantic_judge_model_support"] = selected["snapshot"].get(
+                            "semantic_judge_model_support", {}
+                        )
+                    from anvil.native_semantic import prepare_fixed_models
+
+                    snapshot.update(
+                        prepare_fixed_models(
+                            c, selected["snapshot"].get("semantic_judge_models", {})
+                        )
+                    )
+                    if selected["snapshot"].get("semantic_judge_gaps"):
+                        snapshot["semantic_judge_gaps"] = selected["snapshot"][
+                            "semantic_judge_gaps"
+                        ]
+                if body.execution_budget_id is not None:
+                    snapshot["execution_budget_id"] = str(body.execution_budget_id)
+                native_binding = package["manifest"].get("native_binding") or {}
+                if native_binding.get("task_mode") in {"reusable_state_workflow", "reusable_application_workflow"}:
+                    from anvil.golden_kyc_paid_package import task_set_assignments
+
+                    identifiers = body.task_package_ids or [body.package_id]
+                    if body.package_id not in identifiers or len(set(identifiers)) != len(
+                        identifiers
+                    ):
+                        raise HTTPException(
+                            422, "Include the primary package once in the unique state task set"
+                        )
+                    packages = [
+                        one(c, "SELECT * FROM anvil.harbor_packages WHERE id=%s", (identifier,))
+                        for identifier in identifiers
+                    ]
+                    if any(p is None for p in packages):
+                        raise HTTPException(404, "State task package not found in this project")
+                    if any(
+                        p["manifest"].get("stage_order") != package["manifest"].get("stage_order")
+                        for p in packages
+                    ):
+                        raise HTTPException(
+                            422,
+                            "State tasks in one comparison must use the same bounded turn configuration",
+                        )
+                    snapshot["task_packages"] = [package_snapshot(p) for p in packages]
+                    snapshot["case_assignments"] = task_set_assignments(
+                        c, project, packages, body.case_ids
+                    )
+                    snapshot["case_count"] = len(snapshot["case_assignments"])
+                elif native_binding.get("task_mode") == "reusable_campaign_workflow":
+                    from anvil.marketing_paid_package import assignments
+
+                    if (
+                        body.task_package_ids is not None
+                        or body.workflow_definition_id is not None
+                        or body.human_assignments
+                    ):
+                        raise HTTPException(
+                            422, "Marketing uses its published five-role graph and one package"
+                        )
+                    try:
+                        snapshot["case_assignments"] = assignments(package, case_ids=body.case_ids)
+                    except ValueError as exc:
+                        raise HTTPException(422, str(exc)) from None
+                    snapshot["case_count"] = len(snapshot["case_assignments"])
+                elif body.case_ids is not None or body.task_package_ids is not None:
+                    raise HTTPException(
+                        422, "Case selection requires a reusable state-task package"
+                    )
+                if body.project_binding is not None:
+                    from anvil.campaign_reference_bindings import (
+                        freeze as freeze_campaign_references,
+                    )
+                    from anvil.golden_targets import family
+
+                    imported_source = one(
+                        c,
+                        "SELECT content FROM anvil.benchmark_task_groups WHERE project_id=%s AND id=%s",
+                        (project, body.project_binding.task_group_id),
+                    )
+                    source_tasks = (
+                        imported_source["content"].get("tasks", []) if imported_source else []
+                    )
+                    if source_tasks and all(family(task) == "marketing" for task in source_tasks):
+                        if not snapshot.get("case_assignments"):
+                            raise HTTPException(
+                                409, {"code": "campaign_case_assignment_required", "owner": "anvil"}
+                            )
+                        snapshot.update(
+                            freeze_campaign_references(
+                                c, body.project_binding.task_group_id, snapshot["case_assignments"]
+                            )
+                        )
+                if body.workflow_definition_id:
+                    from anvil import workflow_registry
+
+                    try:
+                        workflow = workflow_registry.preparation(
+                            c, body.workflow_definition_id, body.package_id, body.human_assignments
+                        )
+                    except ValueError:
+                        raise HTTPException(
+                            409,
+                            "Current exact graph testing definition and human assignments required",
+                        ) from None
+                    if body.max_agent_steps not in (None, workflow["bounds"]["calls"]):
+                        raise HTTPException(
+                            422, "Graph call ceiling is fixed by the registered definition"
+                        )
+                    snapshot["workflow"] = workflow
+                    snapshot["max_agent_steps"] = workflow["bounds"]["calls"]
+                elif body.human_assignments:
+                    raise HTTPException(422, "Human assignments require a registered workflow")
                 identifier, checksum = uid(), digest(snapshot)
                 c.execute(
                     "INSERT INTO anvil.workspace_run_preparations(id,project_id,preset_id,package_id,snapshot,subject_hash,created_by) VALUES(%s,%s,%s,%s,%s,%s,%s)",

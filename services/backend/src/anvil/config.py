@@ -9,7 +9,16 @@ if (ROOT / ".env").exists():
             key, value = line.split("=", 1)
             os.environ.setdefault(key, value)
 
-LOCAL_ORIGIN = "http://127.0.0.1:3202"
+
+def local_web_origin():
+    # A separate checkout may use an unused loopback port, never a remote origin.
+    value = os.environ.get("ANVIL_LOCAL_WEB_PORT", "3202")
+    if not value.isascii() or not value.isdecimal() or not 1024 <= int(value) <= 65535:
+        raise RuntimeError("Invalid local web port")
+    return f"http://127.0.0.1:{int(value)}"
+
+
+LOCAL_ORIGIN = local_web_origin()
 LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1", "0.0.0.0"}
 
 
@@ -52,6 +61,9 @@ def validate_cloud():
         raise RuntimeError("Unqualified cloud Harbor admission flag")
     if len(setting("ANVIL_SESSION_KEY")) < 32:
         raise RuntimeError("ANVIL_SESSION_KEY too short for cloud mode")
+    from anvil.pilot_environment import check_flags
+
+    check_flags()
 
 
 def environment() -> str:

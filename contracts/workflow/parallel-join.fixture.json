@@ -1,0 +1,160 @@
+{
+  "graph": {
+    "schema_version": "praxis.anvil.workflow-graph.v1",
+    "template_id": "case-review",
+    "template_version": "1",
+    "entry": "start",
+    "roles": [
+      {
+        "id": "analyst",
+        "responsibility": "Review supplied facts",
+        "tools": []
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start",
+        "kind": "input",
+        "label": "Start",
+        "instruction": "Read inputs",
+        "role": null,
+        "inputs": [],
+        "outputs": [],
+        "decision_artifact": null,
+        "decision_field": null,
+        "human_mode": null,
+        "timeout_seconds": null
+      },
+      {
+        "id": "left",
+        "kind": "agent_step",
+        "label": "Specialist A",
+        "instruction": "Produce A",
+        "role": "analyst",
+        "inputs": [],
+        "outputs": [
+          "a"
+        ],
+        "decision_artifact": null,
+        "decision_field": null,
+        "human_mode": null,
+        "timeout_seconds": null
+      },
+      {
+        "id": "right",
+        "kind": "agent_step",
+        "label": "Specialist B",
+        "instruction": "Produce B",
+        "role": "analyst",
+        "inputs": [],
+        "outputs": [
+          "b"
+        ],
+        "decision_artifact": null,
+        "decision_field": null,
+        "human_mode": null,
+        "timeout_seconds": null
+      },
+      {
+        "id": "join",
+        "kind": "join",
+        "label": "Join both",
+        "instruction": "Require both outputs",
+        "role": null,
+        "inputs": [
+          "a",
+          "b"
+        ],
+        "outputs": [],
+        "decision_artifact": null,
+        "decision_field": null,
+        "human_mode": null,
+        "timeout_seconds": null
+      },
+      {
+        "id": "done",
+        "kind": "output",
+        "label": "Complete",
+        "instruction": "Seal both",
+        "role": null,
+        "inputs": [
+          "a",
+          "b"
+        ],
+        "outputs": [],
+        "decision_artifact": null,
+        "decision_field": null,
+        "human_mode": null,
+        "timeout_seconds": null
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-0",
+        "source": "start",
+        "target": "left",
+        "outcome": "next",
+        "loop": null
+      },
+      {
+        "id": "edge-1",
+        "source": "start",
+        "target": "right",
+        "outcome": "next",
+        "loop": null
+      },
+      {
+        "id": "edge-2",
+        "source": "left",
+        "target": "join",
+        "outcome": "next",
+        "loop": null
+      },
+      {
+        "id": "edge-3",
+        "source": "right",
+        "target": "join",
+        "outcome": "next",
+        "loop": null
+      },
+      {
+        "id": "edge-4",
+        "source": "join",
+        "target": "done",
+        "outcome": "next",
+        "loop": null
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "a",
+        "producer": "left",
+        "readers": [
+          "analyst"
+        ],
+        "fields": {
+          "value": "string"
+        }
+      },
+      {
+        "id": "b",
+        "producer": "right",
+        "readers": [
+          "analyst"
+        ],
+        "fields": {
+          "value": "string"
+        }
+      }
+    ],
+    "loops": [],
+    "bounds": {
+      "transitions": 50,
+      "calls": 5,
+      "wall_seconds": 60,
+      "tokens": 500,
+      "cost_micro_usd": 0
+    }
+  },
+  "graph_sha256": "cdad69fdd173a6590d3397bb4576eb81c6e6051114b3c00388b73a87c096763a"
+}

@@ -14,13 +14,18 @@ from anvil import providers
 from anvil.workspace_adapter_contracts import ENV_OVERRIDES, bytes_echo, contains_secret
 
 
-def execute(binding, secret, request, *, transport=None, generation=False):
+def execute(binding, secret, request, *, transport=None, generation=False, pilot_ticket=None):
     provider = binding["provider"]
     key = secret.get_secret_value()
     origin = "sdk_mock" if type(transport) is httpx.MockTransport else "provider"
 
     def outcome(status, code):
         return providers.Result(status, usage={"dispatch_origin": origin}, error_code=code)
+
+    from anvil import pilot_budget
+
+    if not pilot_budget.dispatch_allowed(binding, pilot_ticket, generation, request):
+        return outcome("failed_operational", "pilot_dispatch_admission_blocked")
 
     if provider not in ("openai", "anthropic", "gemini") or any(
         os.environ.get(k) for k in ENV_OVERRIDES
@@ -38,7 +43,14 @@ def execute(binding, secret, request, *, transport=None, generation=False):
         or contains_secret((request.actor_text, request.model), key)
     ):
         return outcome("failed_operational", "broker_request_blocked")
-    inner = transport or httpx.HTTPTransport(retries=0, trust_env=False)
+    from anvil.golden_kyc_dispatch_scope import current
+
+    if transport is None and current() is not None:
+        from anvil.golden_kyc_deadline_http import ProviderTransport
+
+        inner = ProviderTransport()
+    else:
+        inner = transport or httpx.HTTPTransport(retries=0, trust_env=False)
     flags = {"attempts": 0, "unsafe": False, "blocked": False}
 
     class Guard(httpx.BaseTransport):

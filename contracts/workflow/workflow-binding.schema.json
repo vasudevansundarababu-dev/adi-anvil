@@ -1,0 +1,479 @@
+{
+  "$defs": {
+    "Artifact": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "producer": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Producer",
+          "type": "string"
+        },
+        "readers": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+            "type": "string"
+          },
+          "maxItems": 30,
+          "minItems": 1,
+          "title": "Readers",
+          "type": "array"
+        },
+        "fields": {
+          "maxProperties": 100,
+          "minProperties": 1,
+          "patternProperties": {
+            "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$": {
+              "enum": [
+                "string",
+                "boolean",
+                "boolean_or_unknown",
+                "integer"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Fields",
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "producer",
+        "readers",
+        "fields"
+      ],
+      "title": "Artifact",
+      "type": "object"
+    },
+    "Bounds": {
+      "additionalProperties": false,
+      "properties": {
+        "transitions": {
+          "maximum": 10000,
+          "minimum": 1,
+          "title": "Transitions",
+          "type": "integer"
+        },
+        "calls": {
+          "maximum": 1000,
+          "minimum": 0,
+          "title": "Calls",
+          "type": "integer"
+        },
+        "wall_seconds": {
+          "maximum": 86400,
+          "minimum": 1,
+          "title": "Wall Seconds",
+          "type": "integer"
+        },
+        "tokens": {
+          "maximum": 10000000,
+          "minimum": 0,
+          "title": "Tokens",
+          "type": "integer"
+        },
+        "cost_micro_usd": {
+          "maximum": 1000000000,
+          "minimum": 0,
+          "title": "Cost Micro Usd",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "transitions",
+        "calls",
+        "wall_seconds",
+        "tokens",
+        "cost_micro_usd"
+      ],
+      "title": "Bounds",
+      "type": "object"
+    },
+    "Edge": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "source": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Source",
+          "type": "string"
+        },
+        "target": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Target",
+          "type": "string"
+        },
+        "outcome": {
+          "enum": [
+            "next",
+            "true",
+            "false",
+            "unknown",
+            "error",
+            "timeout",
+            "exhausted"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "loop": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Loop"
+        }
+      },
+      "required": [
+        "id",
+        "source",
+        "target",
+        "outcome"
+      ],
+      "title": "Edge",
+      "type": "object"
+    },
+    "Loop": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "edge": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Edge",
+          "type": "string"
+        },
+        "max_iterations": {
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Max Iterations",
+          "type": "integer"
+        },
+        "exhausted": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Exhausted",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "edge",
+        "max_iterations",
+        "exhausted"
+      ],
+      "title": "Loop",
+      "type": "object"
+    },
+    "Node": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "input",
+            "agent_step",
+            "decision",
+            "join",
+            "human_step",
+            "output",
+            "escalation"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "instruction": {
+          "maxLength": 20000,
+          "minLength": 1,
+          "title": "Instruction",
+          "type": "string"
+        },
+        "role": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Role"
+        },
+        "inputs": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+            "type": "string"
+          },
+          "maxItems": 50,
+          "title": "Inputs",
+          "type": "array"
+        },
+        "outputs": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+            "type": "string"
+          },
+          "maxItems": 50,
+          "title": "Outputs",
+          "type": "array"
+        },
+        "decision_artifact": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decision Artifact"
+        },
+        "decision_field": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decision Field"
+        },
+        "human_mode": {
+          "anyOf": [
+            {
+              "enum": [
+                "scripted_fixture",
+                "actual"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Human Mode"
+        },
+        "timeout_seconds": {
+          "anyOf": [
+            {
+              "maximum": 86400,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timeout Seconds"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "label",
+        "instruction"
+      ],
+      "title": "Node",
+      "type": "object"
+    },
+    "Role": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "responsibility": {
+          "maxLength": 20000,
+          "minLength": 1,
+          "title": "Responsibility",
+          "type": "string"
+        },
+        "tools": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+            "type": "string"
+          },
+          "maxItems": 50,
+          "title": "Tools",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "responsibility",
+        "tools"
+      ],
+      "title": "Role",
+      "type": "object"
+    },
+    "WorkflowGraph": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "praxis.anvil.workflow-graph.v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "template_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Template Id",
+          "type": "string"
+        },
+        "template_version": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Template Version",
+          "type": "string"
+        },
+        "entry": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Entry",
+          "type": "string"
+        },
+        "roles": {
+          "items": {
+            "$ref": "#/$defs/Role"
+          },
+          "maxItems": 30,
+          "minItems": 1,
+          "title": "Roles",
+          "type": "array"
+        },
+        "nodes": {
+          "items": {
+            "$ref": "#/$defs/Node"
+          },
+          "maxItems": 100,
+          "minItems": 2,
+          "title": "Nodes",
+          "type": "array"
+        },
+        "edges": {
+          "items": {
+            "$ref": "#/$defs/Edge"
+          },
+          "maxItems": 300,
+          "minItems": 1,
+          "title": "Edges",
+          "type": "array"
+        },
+        "artifacts": {
+          "items": {
+            "$ref": "#/$defs/Artifact"
+          },
+          "maxItems": 100,
+          "title": "Artifacts",
+          "type": "array"
+        },
+        "loops": {
+          "items": {
+            "$ref": "#/$defs/Loop"
+          },
+          "maxItems": 20,
+          "title": "Loops",
+          "type": "array"
+        },
+        "bounds": {
+          "$ref": "#/$defs/Bounds"
+        }
+      },
+      "required": [
+        "schema_version",
+        "template_id",
+        "template_version",
+        "entry",
+        "roles",
+        "nodes",
+        "edges",
+        "bounds"
+      ],
+      "title": "WorkflowGraph",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "praxis.anvil.workflow-binding.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "task_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+      "title": "Task Id",
+      "type": "string"
+    },
+    "task_version": {
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Task Version",
+      "type": "string"
+    },
+    "revision_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+      "title": "Revision Id",
+      "type": "string"
+    },
+    "payload_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Payload Sha256",
+      "type": "string"
+    },
+    "graph_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Graph Sha256",
+      "type": "string"
+    },
+    "graph": {
+      "$ref": "#/$defs/WorkflowGraph"
+    }
+  },
+  "required": [
+    "schema_version",
+    "task_id",
+    "task_version",
+    "revision_id",
+    "payload_sha256",
+    "graph_sha256",
+    "graph"
+  ],
+  "title": "WorkflowBinding",
+  "type": "object"
+}

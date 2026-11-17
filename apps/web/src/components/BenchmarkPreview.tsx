@@ -48,8 +48,8 @@ const stages = ['Benchmark library', 'Task profile', 'Recommendations', 'Suite c
 export default function BenchmarkPreview() {
   const pathname = usePathname();
   const router = useRouter();
-  const libraryPath = pathname.split('/').slice(0, 4).join('/');
-  const active = benchmarks.find((b) => b.id === pathname.split('/')[4]);
+  const libraryPath = pathname.split('/').slice(0, 5).join('/');
+  const active = benchmarks.find((b) => b.id === pathname.split('/')[5]);
   const [stage, setStage] = useState<(typeof stages)[number]>('Benchmark library');
   const [domain, setDomain] = useState('All domains');
   const [search, setSearch] = useState('');
@@ -328,7 +328,7 @@ export default function BenchmarkPreview() {
             <strong>Release gates still required</strong>
             <p>
               Expert-authored tasks → professor/guide verification → rights and verifier
-              qualification → pinned protocol → approved budget. Praxis SME assignment and
+              qualification → pinned protocol → approved budget. Authoring SME assignment and
               returned-review logging are planned integrations.
             </p>
           </div>

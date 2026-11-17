@@ -174,13 +174,20 @@ def execute_contract(
     transport: httpx.MockTransport,
     *,
     credential: SecretStr | None = None,
+    structured: bool = False,
 ):
     """Network-free qualification entry point; refuses a real transport."""
-    if provider not in PROVIDERS or not isinstance(transport, httpx.MockTransport):
+    if (
+        provider not in PROVIDERS
+        or not isinstance(transport, httpx.MockTransport)
+        or type(structured) is not bool
+    ):
         raise ValueError(
             "Mock transport required; live dispatch must use paid authorization service"
         )
-    return _execute_native(provider, request, transport, credential=credential)
+    return _execute_native(
+        provider, request, transport, credential=credential, structured=structured
+    )
 
 
 def _execute_native(provider, request, transport, *, credential, structured=False):
@@ -292,7 +299,7 @@ def _execute_native(provider, request, transport, *, credential, structured=Fals
                                 "response_mime_type": "application/json",
                                 "thinking_config": (
                                     types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW)
-                                    if request.model == "gemini-3.8-flash"
+                                    if request.model in {"gemini-3.8-flash", "gemini-4-argon"}
                                     else types.ThinkingConfig(thinking_budget=0)
                                 ),
                             }
@@ -389,6 +396,13 @@ def _execute_native(provider, request, transport, *, credential, structured=Fals
 
 def execute_marketing(request: ActorRequest):
     """Server-only transport; caller must commit authorization, intent and reservation first."""
+    from anvil import pilot_environment
+
+    try:
+        if pilot_environment.current():
+            return Result("failed_operational", error_code="pilot_legacy_path_disabled")
+    except ValueError:
+        return Result("failed_operational", error_code="pilot_namespace_binding_invalid")
     if (
         request.model != "gpt-6-sol"
         or len(request.actor_text.encode("utf-8")) > 100000

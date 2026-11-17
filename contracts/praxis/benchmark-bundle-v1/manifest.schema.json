@@ -1,0 +1,633 @@
+{
+  "$defs": {
+    "Bank": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "revision": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Revision",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 20000,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "version": {
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": ["id", "version", "revision", "title"],
+      "title": "Bank",
+      "type": "object"
+    },
+    "CompilerRequirement": {
+      "additionalProperties": false,
+      "properties": {
+        "profile": {
+          "const": "sme-artifact-v1",
+          "title": "Profile",
+          "type": "string"
+        },
+        "version": {
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": ["profile", "version"],
+      "title": "CompilerRequirement",
+      "type": "object"
+    },
+    "Constraint": {
+      "additionalProperties": false,
+      "properties": {
+        "hard_failure": {
+          "title": "Hard Failure",
+          "type": "boolean"
+        },
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "rule_ref": {
+          "title": "Rule Ref",
+          "type": "string"
+        }
+      },
+      "required": ["id", "rule_ref", "hard_failure"],
+      "title": "Constraint",
+      "type": "object"
+    },
+    "Criterion": {
+      "additionalProperties": false,
+      "properties": {
+        "applicability_rule": {
+          "const": "always",
+          "title": "Applicability Rule",
+          "type": "string"
+        },
+        "category": {
+          "enum": ["criterion", "assignment", "justification"],
+          "title": "Category",
+          "type": "string"
+        },
+        "evaluator_type": {
+          "enum": ["deterministic", "semantic"],
+          "title": "Evaluator Type",
+          "type": "string"
+        },
+        "evidence_requirement": {
+          "const": "sealed_output_span_or_absence",
+          "title": "Evidence Requirement",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "possible_points": {
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Possible Points",
+          "type": "integer"
+        },
+        "rule_ref": {
+          "title": "Rule Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "category",
+        "possible_points",
+        "evaluator_type",
+        "rule_ref",
+        "evidence_requirement",
+        "applicability_rule"
+      ],
+      "title": "Criterion",
+      "type": "object"
+    },
+    "Environment": {
+      "additionalProperties": false,
+      "properties": {
+        "cpus": {
+          "maximum": 4,
+          "minimum": 1,
+          "title": "Cpus",
+          "type": "integer"
+        },
+        "image_reference": {
+          "maxLength": 300,
+          "minLength": 1,
+          "title": "Image Reference",
+          "type": "string"
+        },
+        "memory_mb": {
+          "maximum": 4096,
+          "minimum": 128,
+          "title": "Memory Mb",
+          "type": "integer"
+        },
+        "network": {
+          "const": "none",
+          "title": "Network",
+          "type": "string"
+        },
+        "oci_manifest_digest": {
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "title": "Oci Manifest Digest",
+          "type": "string"
+        },
+        "pids_limit": {
+          "maximum": 128,
+          "minimum": 1,
+          "title": "Pids Limit",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "image_reference",
+        "oci_manifest_digest",
+        "cpus",
+        "memory_mb",
+        "pids_limit",
+        "network"
+      ],
+      "title": "Environment",
+      "type": "object"
+    },
+    "EvaluatorRequirement": {
+      "additionalProperties": false,
+      "properties": {
+        "image_digest": {
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "title": "Image Digest",
+          "type": "string"
+        },
+        "implementation_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Implementation Sha256",
+          "type": "string"
+        },
+        "policy_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Policy Sha256",
+          "type": "string"
+        },
+        "registry_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Registry Id",
+          "type": "string"
+        },
+        "version": {
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "registry_id",
+        "version",
+        "implementation_sha256",
+        "image_digest",
+        "policy_sha256"
+      ],
+      "title": "EvaluatorRequirement",
+      "type": "object"
+    },
+    "Exporter": {
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Identity",
+          "type": "string"
+        },
+        "version": {
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": ["identity", "version"],
+      "title": "Exporter",
+      "type": "object"
+    },
+    "Output": {
+      "additionalProperties": false,
+      "properties": {
+        "max_bytes": {
+          "maximum": 16777216,
+          "minimum": 1,
+          "title": "Max Bytes",
+          "type": "integer"
+        },
+        "media_type": {
+          "enum": ["text/markdown", "application/json", "text/plain", "text/csv"],
+          "title": "Media Type",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "schema_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Schema Ref"
+        }
+      },
+      "required": ["path", "media_type", "required", "max_bytes"],
+      "title": "Output",
+      "type": "object"
+    },
+    "PayloadFile": {
+      "additionalProperties": false,
+      "properties": {
+        "byte_size": {
+          "maximum": 52428800,
+          "minimum": 0,
+          "title": "Byte Size",
+          "type": "integer"
+        },
+        "media_type": {
+          "enum": [
+            "text/markdown",
+            "text/plain",
+            "text/csv",
+            "application/json",
+            "application/pdf",
+            "application/octet-stream"
+          ],
+          "title": "Media Type",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "task_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Task Id",
+          "type": "string"
+        },
+        "visibility": {
+          "enum": ["actor", "evaluation_private"],
+          "title": "Visibility",
+          "type": "string"
+        }
+      },
+      "required": ["path", "byte_size", "sha256", "media_type", "visibility", "task_id"],
+      "title": "PayloadFile",
+      "type": "object"
+    },
+    "Scoring": {
+      "additionalProperties": false,
+      "properties": {
+        "display_rounding": {
+          "const": "half_up_2dp",
+          "title": "Display Rounding",
+          "type": "string"
+        },
+        "hard_constraint_policy": {
+          "const": "zero_official_keep_diagnostics",
+          "title": "Hard Constraint Policy",
+          "type": "string"
+        },
+        "policy_version": {
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Policy Version",
+          "type": "string"
+        },
+        "profile": {
+          "enum": ["sme_points_v1", "bodhium_pilot_v1"],
+          "title": "Profile",
+          "type": "string"
+        },
+        "suite_maximum": {
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Suite Maximum",
+          "type": "integer"
+        },
+        "task_maxima": {
+          "maxProperties": 100,
+          "minProperties": 1,
+          "patternProperties": {
+            "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$": {
+              "maximum": 1000000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "title": "Task Maxima",
+          "type": "object"
+        },
+        "valid_trial_policy": {
+          "const": "model_failure_zero_operational_invalid",
+          "title": "Valid Trial Policy",
+          "type": "string"
+        }
+      },
+      "required": [
+        "profile",
+        "policy_version",
+        "task_maxima",
+        "suite_maximum",
+        "hard_constraint_policy",
+        "valid_trial_policy",
+        "display_rounding"
+      ],
+      "title": "Scoring",
+      "type": "object"
+    },
+    "Source": {
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "enum": ["original_synthetic_fixture", "partner_restricted", "public_licensed"],
+          "title": "Classification",
+          "type": "string"
+        },
+        "owner": {
+          "maxLength": 20000,
+          "minLength": 1,
+          "title": "Owner",
+          "type": "string"
+        },
+        "rights_references": {
+          "items": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 50,
+          "minItems": 1,
+          "title": "Rights References",
+          "type": "array"
+        }
+      },
+      "required": ["owner", "classification", "rights_references"],
+      "title": "Source",
+      "type": "object"
+    },
+    "Task": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_asset_paths": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Actor Asset Paths",
+          "type": "array"
+        },
+        "calibration_paths": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "title": "Calibration Paths",
+          "type": "array"
+        },
+        "constraints": {
+          "items": {
+            "$ref": "#/$defs/Constraint"
+          },
+          "maxItems": 100,
+          "title": "Constraints",
+          "type": "array"
+        },
+        "criteria": {
+          "items": {
+            "$ref": "#/$defs/Criterion"
+          },
+          "maxItems": 1000,
+          "minItems": 1,
+          "title": "Criteria",
+          "type": "array"
+        },
+        "domain": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Domain",
+          "type": "string"
+        },
+        "environment": {
+          "$ref": "#/$defs/Environment"
+        },
+        "evaluator_requirement": {
+          "$ref": "#/$defs/EvaluatorRequirement"
+        },
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "outputs": {
+          "items": {
+            "$ref": "#/$defs/Output"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Outputs",
+          "type": "array"
+        },
+        "prompt_path": {
+          "title": "Prompt Path",
+          "type": "string"
+        },
+        "revision": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Revision",
+          "type": "string"
+        },
+        "timeout_seconds": {
+          "maximum": 1800,
+          "minimum": 1,
+          "title": "Timeout Seconds",
+          "type": "integer"
+        },
+        "tools": {
+          "items": {
+            "$ref": "#/$defs/ToolServer"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Tools",
+          "type": "array"
+        },
+        "version": {
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "revision",
+        "domain",
+        "prompt_path",
+        "actor_asset_paths",
+        "outputs",
+        "timeout_seconds",
+        "environment",
+        "tools",
+        "criteria",
+        "constraints",
+        "evaluator_requirement",
+        "calibration_paths"
+      ],
+      "title": "Task",
+      "type": "object"
+    },
+    "ToolServer": {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Command",
+          "type": "array"
+        },
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "schema_path": {
+          "title": "Schema Path",
+          "type": "string"
+        },
+        "schema_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Schema Sha256",
+          "type": "string"
+        },
+        "tool_timeout_seconds": {
+          "maximum": 60,
+          "minimum": 1,
+          "title": "Tool Timeout Seconds",
+          "type": "integer"
+        },
+        "transport": {
+          "const": "stdio",
+          "title": "Transport",
+          "type": "string"
+        },
+        "version": {
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "transport",
+        "schema_path",
+        "schema_sha256",
+        "command",
+        "tool_timeout_seconds"
+      ],
+      "title": "ToolServer",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "bank": {
+      "$ref": "#/$defs/Bank"
+    },
+    "compiler_requirement": {
+      "$ref": "#/$defs/CompilerRequirement"
+    },
+    "exported_at": {
+      "title": "Exported At",
+      "type": "string"
+    },
+    "exporter": {
+      "$ref": "#/$defs/Exporter"
+    },
+    "files": {
+      "items": {
+        "$ref": "#/$defs/PayloadFile"
+      },
+      "maxItems": 5000,
+      "minItems": 1,
+      "title": "Files",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "praxis.anvil.benchmark_bundle.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "scoring": {
+      "$ref": "#/$defs/Scoring"
+    },
+    "signature_profile": {
+      "const": "ed25519-jcs-v1",
+      "title": "Signature Profile",
+      "type": "string"
+    },
+    "source": {
+      "$ref": "#/$defs/Source"
+    },
+    "tasks": {
+      "items": {
+        "$ref": "#/$defs/Task"
+      },
+      "maxItems": 100,
+      "minItems": 1,
+      "title": "Tasks",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "signature_profile",
+    "exporter",
+    "bank",
+    "exported_at",
+    "source",
+    "files",
+    "tasks",
+    "scoring",
+    "compiler_requirement"
+  ],
+  "title": "Manifest",
+  "type": "object"
+}
