@@ -1,5 +1,23 @@
 # Build status
 
+## Tested KYC runtime/cohort checkpoint — 18 November 2026
+
+Resume source at .local/open-weight-models-20261117, checkpoint843bd45. Four real
+worker fixes (disjoint LOGIN role entry, sealed OPA binding, durable denied action,
+unreaped group cleanup) plus bounded1–4 approved product cohort preparation with
+immutable ancestry and full original-input conservation.1082 units PASS,1 Linux-
+specific skip,10 subtests PASS;30 fresh/repeated-schema SQL PASS. Actual isolated
+QA Linux cleanup control PASS. Source fingerprintbb430b85fc1955bbdf4f494b68d35fc7bdd27a517911dcb08eecbf407015ba48.
+Details in worktree docs/generated/kyc-runtime-corrections-2026-11-18.md.
+Candidate NOT deployed; QA frontend e0ec104/backend818afca unchanged. No live calls.
+
+Async question pending: location of exact reviewed KYC public policy artifact bundle
+and scoped applicability reviews. Spec only contains CIP reference hash0c05f57a...af3fe,
+not matching artifact bytes; authoring approval is not policy approval. Production
+native technical-probe admission and authenticated policy-review resolver/producer
+remain unfinished engineering, not supplied by these fixes. No native admission
+gates weakened, no false qualification records. Template remains registered/blocked.
+
 ## Latest actual KYC setup result — 18 November 2026
 
 KYCv7 registered through real user's signed-in Admin UI, exactc8c4eddf...f248a8d
