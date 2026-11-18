@@ -48,7 +48,8 @@ PRODUCER_FILES_V2 = PRODUCER_FILES_V1 | frozenset({
     'marketing_native_operator_observation.py', 'owned_process_group.py',
     'marketing_native_operator_driver.py',
 })
-PRODUCER_FILES = PRODUCER_FILES_V2
+PRODUCER_FILES_V3 = PRODUCER_FILES_V2 | frozenset({'marketing_native_private_sources_v3.py'})
+PRODUCER_FILES = PRODUCER_FILES_V3
 
 
 def _namespace(proc, pid, name, deadline):

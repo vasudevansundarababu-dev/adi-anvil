@@ -106,7 +106,7 @@ def forward(
     if transport is not None and type(transport) is not httpx.MockTransport:
         raise ValueError("Only explicit MockTransport is supported")
     if absolute_deadline is not None:
-        if (operation not in {"dispatch", "readiness"} or transport is not None
+        if (operation not in {"dispatch", "readiness", "prepare"} or transport is not None
                 or type(absolute_deadline) not in (int, float)
                 or not math.isfinite(absolute_deadline)):
             raise ValueError("Exact fixed phased broker transport required")

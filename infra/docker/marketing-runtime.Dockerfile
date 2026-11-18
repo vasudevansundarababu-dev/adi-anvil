@@ -27,6 +27,7 @@ COPY integrations/evaluators/nemo/uv.lock integrations/evaluators/nemo/uv.lock
 COPY integrations/evaluators/promptfoo/worker.mjs integrations/evaluators/promptfoo/worker.mjs
 COPY integrations/evaluators/promptfoo/package-lock.json integrations/evaluators/promptfoo/package-lock.json
 COPY infra/docker/marketing-runtime.Dockerfile infra/docker/seal-runtime-wheels.py infra/docker/
+COPY infra/docker/marketing-task.Dockerfile infra/docker/
 # Missing final reviewed lock must fail the build, never resolve in a build step.
 COPY services/harbor/runtime/pyproject.toml services/harbor/runtime/uv.lock services/harbor/runtime/
 COPY services/harbor/runtime/build-requirements.in services/harbor/runtime/build-requirements.lock services/harbor/runtime/

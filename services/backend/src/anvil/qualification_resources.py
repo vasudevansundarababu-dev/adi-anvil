@@ -19,6 +19,7 @@ PACKAGING_INPUTS = (
     "services/harbor/runtime/pyproject.toml",
     "services/harbor/runtime/uv.lock",
     "infra/docker/marketing-runtime.Dockerfile",
+    "infra/docker/marketing-task.Dockerfile",
     "services/harbor/runtime/build-requirements.in",
     "services/harbor/runtime/build-requirements.lock",
     "infra/docker/seal-runtime-wheels.py",

@@ -150,16 +150,19 @@ def test_operator_source_root_is_build_bound_not_environment(monkeypatch):
 
 def test_successor_source_map_matches_actual_files_without_rewriting_predecessor():
     from anvil import marketing_native_private_sources as old
-    from anvil import marketing_native_private_sources_v2 as current
+    from anvil import marketing_native_private_sources_v2 as previous
+    from anvil import marketing_native_private_sources_v3 as current
 
     assert (
         old.PRIVATE_SOURCE_MANIFEST_SHA256
         == "3e74f8a196c5f34ae905dd245ddcda2736239065868c2290df71f512e56b6767"
     )
     assert current.PRIVATE_GRAPH_SOURCES["db.py"] != old.PRIVATE_GRAPH_SOURCES["db.py"]
+    assert previous.PRIVATE_SOURCE_MANIFEST_SHA256 == "d4785383278e20e3a4cf88326cbe493d13de30b24bd00c6a30fb3fcc6740fc7f"
+    assert current.PRIVATE_GRAPH_SOURCES["worker_dispatch_broker.py"] != previous.PRIVATE_GRAPH_SOURCES["worker_dispatch_broker.py"]
     assert set(verify_opening_graph_sources(private=True)) == set(current.PRIVATE_GRAPH_SOURCES)
     raw = (
-        (Path(__file__).parents[4] / "docs/generated/marketing-private-source-nomination-v2.json")
+        (Path(__file__).parents[4] / "docs/generated/marketing-private-source-nomination-v3.json")
         .read_bytes()
         .rstrip(b"\n")
     )

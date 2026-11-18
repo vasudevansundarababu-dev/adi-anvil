@@ -1,4 +1,4 @@
-"""Fixed stdlib-only dispatch/readiness child; capability input is never logged."""
+"""Fixed stdlib-only dispatch/readiness/prepare child; capabilities never logged."""
 
 import http.client
 import json
@@ -14,7 +14,7 @@ def exchange(raw, seconds):
         raise ValueError("Bounded dispatch input required")
     envelope = json.loads(raw)
     if (type(envelope) is not dict or set(envelope) != {"operation", "request"}
-            or envelope["operation"] not in {"dispatch", "readiness"}
+            or envelope["operation"] not in {"dispatch", "readiness", "prepare"}
             or type(envelope["request"]) is not dict):
         raise ValueError("Fixed dispatch/readiness envelope required")
     body = json.dumps(envelope["request"], allow_nan=False, separators=(",", ":")).encode()

@@ -1,5 +1,20 @@
 # Build status
 
+## Marketing native candidate — 17 November 2026
+
+Open Weight successor dc9a144 deployed separately to QA; this worktree is NOT
+serving. Bounded once-only prepare transport and immutable nominationv3 added;
+old evidence preserved.46 focused checks and earlier1071 units+10 subtests PASS.
+Minimal task/verifier image now uses a clean base, exact venv Python, public-schema
+projection and actual interpreter/stdlib identity check. Actual QA packaging/privacy/
+sealed-root/fixed-verifier guard checks PASS using original fc23 source payload;
+not a grade, current-source runtime qualification or native admission.
+
+Native activation BLOCKED by reproduced shared-UID helper proc-root authority
+bypass and missing genuine independent exact-source/process/capture admission.
+Native remains closed. No live calls or Authoring integration. Details:
+docs/generated/marketing-native-candidate-2026-11-17.md.
+
 ## Open Weight configuration successor — 17 November 2026
 
 User-authorized QA worker sourcefc23fb8 is deployed (rollout evidence commit98f4bf7

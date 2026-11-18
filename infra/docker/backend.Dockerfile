@@ -43,6 +43,7 @@ COPY services/harbor/src services/harbor/src
 COPY services/harbor/pyproject.toml services/harbor/requirements.lock services/harbor/
 COPY services/harbor/runtime/pyproject.toml services/harbor/runtime/uv.lock services/harbor/runtime/build-requirements.in services/harbor/runtime/build-requirements.lock services/harbor/runtime/
 COPY infra/docker/marketing-runtime.Dockerfile infra/docker/seal-runtime-wheels.py infra/docker/
+COPY infra/docker/marketing-task.Dockerfile infra/docker/
 COPY integrations/evaluators/local_worker.py integrations/evaluators/local_worker.py
 COPY integrations/evaluators/nemo/uv.lock integrations/evaluators/nemo/uv.lock
 COPY services/openenv/uv.lock services/openenv/uv.lock

@@ -15,7 +15,7 @@ from anvil.praxis_generic_contract import canonical
 
 
 def execute(operation, payload, *, absolute_deadline, request_seconds):
-    if (operation not in {"dispatch", "readiness"} or type(payload) is not dict
+    if (operation not in {"dispatch", "readiness", "prepare"} or type(payload) is not dict
             or type(absolute_deadline) not in (int, float)
             or not math.isfinite(absolute_deadline)
             or type(request_seconds) is not int or not 1 <= request_seconds <= 600):
