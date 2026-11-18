@@ -1,5 +1,18 @@
 # Build status
 
+## MAC predicate investigation — 17 November 2026
+
+Unserved candidate27cd2c6 plus unwired MAC prototype:1080 units+10 subtests
+PASS;28 fresh/repeated-schema SQL checks PASS, source hash
+b945277e8bb36a0ff3ad87cde167a73d59fde677df76e159eb48c6950eebf573.
+Actual isolated QA fake-socket probe confirms combined private mount masks plus
+additive AppArmor can block foreign proc-root/fd/signal and reverse transitions
+while retaining intended control access, actor NNP and zero capabilities.
+This probe does NOT qualify native Marketing. Prototype is intentionally unwired;
+production per-attempt isolation/owner/capture and independent qualification remain.
+Evidence: docs/generated/marketing-mac-probe-2026-11-17.md.
+QA separately serves818afca; no live calls or Authoring integration.
+
 ## Marketing native candidate — 17 November 2026
 
 Open Weight successor dc9a144 deployed separately to QA; this worktree is NOT

@@ -1,0 +1,30 @@
+# FAKE-RESOURCE SOFTWARE PROBE ONLY. Never attach to a native business runtime.
+# Per-attempt production filesystem/peer policy and independent review are absent.
+abi <abi/3.0>,
+profile forge-mkt-proc-probe-20261117-v3-operator flags=(mediate_deleted) {
+  capability sys_admin,
+  capability setpcap,
+  mount,
+  /** mrwlk,
+  /usr/** rix,
+  /opt/** rix,
+  /lib/** rix,
+  /bin/** rix,
+  network unix,
+  ptrace,
+  signal,
+  change_profile -> &forge-mkt-proc-probe-20261117-v3-actor,
+}
+profile forge-mkt-proc-probe-20261117-v3-actor flags=(mediate_deleted) {
+  /** mrwlk,
+  /usr/** rix,
+  /opt/** rix,
+  /lib/** rix,
+  /bin/** rix,
+  network unix,
+  deny ptrace (read, trace),
+  ptrace (readby, tracedby),
+  signal (receive),
+  signal (send) peer=**forge-mkt-proc-probe-20261117-v3-actor**,
+  deny /tmp/forge-fake-admin-*/fake-admin.sock mrwlk,
+}
