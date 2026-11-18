@@ -1,5 +1,20 @@
 # Build status
 
+## UI correction checkpoint — 18 November 2026
+
+Source .local/open-weight-models-20261117 checkpointb8ebb5a implements the
+user-requested Open Weight selectable tables in catalog and creation, shared
+credential batch attach, and aligned wide Projects/Execution search toolbars.
+Defects UI-20261118-01/02 logged in docs/generated/ui-defects-2026-11-18.md
+inside that worktree. TypeScript, production build and final Chrome synthetic
+journey PASS (1 test3.4s), including32 selections/credential binding and desktop/
+mobile geometry checks; screenshots visually inspected. Local server stopped.
+NOT deployed: QA still818afca. No live calls or Authoring integration.
+User KYC ZIP import attempted in signed-in QA UI: blocked on missing exact template
+6d8f9cae-7c06-4c36-a207-522978d5486b v7, SHA
+c8c4eddfed5d018f69a739bc0280538dd5011ce79d4e52ede77f6e101f248a8d.
+User obtaining full joint specification/publication receipt from Authoring.
+
 ## Latest verified QA hotfix — 17 November 2026
 
 QA serves818afca90c61b77a3de955c35c30881ca6567069. Cloud Build
