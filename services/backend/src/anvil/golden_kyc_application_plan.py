@@ -40,6 +40,7 @@ class PolicyQualification:
     policy_set_sha256: str
     charter_profile: str
     revoked: bool = False
+    state_applicability: str = "applicable"
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,8 +62,8 @@ def _sha(value):
     return type(value) is str and len(value) == 64 and all(c in "0123456789abcdef" for c in value)
 
 
-def _refs(refs):
-    if (type(refs) is not tuple or not refs or len(refs) > 100
+def _refs(refs, *, allow_empty=False):
+    if (type(refs) is not tuple or (not refs and not allow_empty) or len(refs) > 100
             or any(type(ref) is not PolicyRef for ref in refs)):
         raise ValueError("Exact nonempty policy reference tuples required")
     values = [ref.model_dump() for ref in refs]
@@ -116,7 +117,10 @@ def plan(dataset, reference, snapshots, workflows, qualifications, *, now):
                 or qualification.valid_until.utcoffset() is None):
             raise ValueError("Exact dated policy qualification projection required")
         _refs(qualification.federal_refs)
-        _refs(qualification.state_refs)
+        if (qualification.state_applicability not in {"applicable", "not_applicable"}
+                or qualification.state_applicability == "not_applicable" and qualification.state_refs):
+            raise ValueError("Explicit state applicability decision required")
+        _refs(qualification.state_refs, allow_empty=qualification.state_applicability == "not_applicable")
     workflow_index, policy_index = {}, {}
     for workflow in workflows:
         workflow_index.setdefault(workflow.product, []).append(workflow)
@@ -157,7 +161,8 @@ def plan(dataset, reference, snapshots, workflows, qualifications, *, now):
                                     party_document_ids=evidence, **review))
             continue
         selected = policies[0]
-        binding = {"federal": _refs(selected.federal_refs), "state": _refs(selected.state_refs),
+        binding = {"federal": _refs(selected.federal_refs), "state": _refs(selected.state_refs,
+                   allow_empty=selected.state_applicability == "not_applicable"),
                    "governing_state": row.governing_state, "product": row.product,
                    "assessment_date": application.assessment_date.isoformat(),
                    "charter_profile": selected.charter_profile,

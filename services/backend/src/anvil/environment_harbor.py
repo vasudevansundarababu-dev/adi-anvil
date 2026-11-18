@@ -33,7 +33,7 @@ from anvil.owned_process_group import UnreapedProcessGroup
 from anvil.praxis_generic_contract import canonical
 
 PRESTART_GUARD_SHA256 = "32cff9841bb9999a1ea4bcc7b8db94674a73cd71b67e33693fcd7732d5c0a19d"
-OPERATOR_PROOF_SHA256 = "477361b506ac914daef4793638f09c11ad6d5232e907109e4e5a6fdc672c9b7d"
+OPERATOR_PROOF_SHA256 = "339781644f24b1621c0501de9b9603d35a0aca2e7654e294286f825504cec554"
 
 
 def prestart_guards():
@@ -355,7 +355,12 @@ def _fixed_group_owned(child):
 def _stop_fixed_process(child, *, abnormal=False):
     from anvil.golden_kyc_fixed_process import stop
 
-    stop(child)
+    lock = getattr(child, "_anvil_stop_lock", None)
+    if lock is None:
+        stop(child)
+    else:
+        with lock:
+            stop(child)
 
 
 def _collect_fixed_child(child, *, ends):
@@ -486,6 +491,7 @@ def dispatch_fixed_child(request, *, folder, assets, deadline):
     )
     capture_complete = False
     child._anvil_owned_group = UnreapedProcessGroup(child)
+    child._anvil_stop_lock = threading.RLock()
     try:
         child._anvil_start_identity = process_identity(child.pid)
         child._anvil_group_nonce = binding["operation_nonce"]
@@ -584,7 +590,7 @@ class DeadlineDocker(LocalDocker):
 
 def private_json(path, value):
     with open(path, "x", opener=lambda p, flags: os.open(p, flags, 0o600)) as stream:
-        json.dump(value, stream, allow_nan=False)
+        stream.write(canonical(value).decode())
         stream.flush()
         os.fsync(stream.fileno())
     descriptor = os.open(path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
@@ -836,16 +842,32 @@ def _execute_lifecycle(
     bindings,
     fixed_adapter=None,
     fixed_assets=None,
+    technical_probe_job=None,
 ):
     if fixed_adapter is not None:
         fixed_trial_gate()
+    if technical_probe_job is not None:
+        from anvil.golden_kyc_probe import validate_assets
+
+        module = operator_proof_module()
+        with module.TechnicalProbeStore(ROOT) as store:
+            permission = store.load_probe(technical_probe_job)
+            actual_assets = validate_assets(store, permission)
+            host_record = actual_assets["host_image_custody"]
+            if (canonical(actor) != canonical(permission["request_capsule"]["actor"])
+                    or canonical(actual_assets) != canonical(fixed_assets)
+                    or str(folder) != host_record["folder"] or host != host_record["docker_host"]
+                    or str(python) != host_record["python"]
+                    or any(bindings.get(key) != permission[key] for key in ("job_id", "plan_sha256", "request_sha256"))):
+                raise ValueError("Exact independently stored probe required")
+    managed = fixed_adapter is not None or technical_probe_job is not None
     callback_manifest_sha256 = bindings["callback_manifest_sha256"]
     request_sha256 = bindings["request_sha256"]
     reviewed_service_sha256s = bindings["service_projection_sha256s"]
     guards = prestart_guards()
     deadline = (
         FixedDeadline(fixed_assets["validated_limits"]["lifecycle_seconds"])
-        if fixed_adapter is not None
+        if managed
         else None
     )
     folder = Path(folder)
@@ -867,12 +889,14 @@ def _execute_lifecycle(
         },
     )
     docker = DeadlineDocker(folder, host, deadline) if deadline else LocalDocker(folder, host)
+    if technical_probe_job is not None and docker.command[0] != fixed_assets["host_image_custody"]["binaries"]["docker"]["path"]:
+        raise ValueError("Actual Docker executable differs from measured probe binary")
     image = json.loads(docker.run(["image", "inspect", FIXTURE_IMAGE]))[0]
     require_cached_image(image)
     task = layout(folder, actor, mediated_candidate=mediated_candidate, actor_seconds=actor_seconds)
     name = (
         fixed_assets["trial_config"]["trial_name"]
-        if fixed_adapter is not None
+        if managed
         else "anvil-bm-" + uuid4().hex[:20]
     )
     private_json(
@@ -885,6 +909,9 @@ def _execute_lifecycle(
         },
     )
     collected = {}
+    if technical_probe_job is not None:
+        collected["_callback_lock"] = threading.RLock()
+        collected["_callback_closing"] = threading.Event()
 
     def gateway_call(route, session, state):
         expected = name + ("__env" if route == "/actor" else "__verifier__trial")
@@ -909,13 +936,19 @@ def _execute_lifecycle(
             raise ValueError("Private verifier mount in actor")
         if route == "/actor":
             probe = json.loads(docker.execute(container, ["python", "-c", ACTOR_PROBE]))
-            if fixed_adapter is None:
+            if not managed:
                 output, receipt = callback()
             else:
                 verify_fixed_role_snapshots(folder, fixed_assets["trial_config"], bindings)
-                output, receipt = dispatch_fixed_child(
-                    fixed_adapter.request, folder=folder, assets=fixed_assets, deadline=deadline
-                )
+                if technical_probe_job is not None:
+                    from anvil.golden_kyc_probe import dispatch
+
+                    output, receipt = dispatch(technical_probe_job, folder=folder, assets=fixed_assets, deadline=deadline,
+                                               owner_holder=collected)
+                else:
+                    output, receipt = dispatch_fixed_child(
+                        fixed_adapter.request, folder=folder, assets=fixed_assets, deadline=deadline
+                    )
             raw = canonical(output)
             if not 0 < len(raw) <= 65536:
                 raise ValueError("Actor output exceeds collector bound")
@@ -975,7 +1008,7 @@ def _execute_lifecycle(
         "verifier": {"import_path": "anvil_harbor.sme:SMEVerifier"},
     }
     guards.validate_generated_config(config, attempt_root=str(folder), trial_name=name)
-    if fixed_adapter is not None and canonical(config) != canonical(fixed_assets["trial_config"]):
+    if managed and canonical(config) != canonical(fixed_assets["trial_config"]):
         raise ValueError("Generated native config differs from reviewed exact config")
     private_json(folder / "trial.json", config)
     env = docker.environment | {
@@ -1000,16 +1033,30 @@ def _execute_lifecycle(
                 "request_sha256": bindings["request_sha256"],
             }
         )
+    if technical_probe_job is not None:
+        env.pop("PYTHONPATH", None)
+        env.update({"ANVIL_HARBOR_TECHNICAL_PROBE_JOB": technical_probe_job,
+                    "ANVIL_ROOT": str(ROOT), "ANVIL_FIXED_OPERATION_NONCE": bindings["operation_nonce"]})
     child_process = None
     result = None
     try:
         child_process = subprocess.Popen(
-            [str(python), "-m", "anvil_harbor.environment", str(folder / "trial.json")],
+            [str(python), *(["-I", "-B"] if technical_probe_job is not None else []),
+             "-m", "anvil_harbor.environment", str(folder / "trial.json")],
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             start_new_session=True,
         )
+        if technical_probe_job is not None:
+            child_process._anvil_owned_group = UnreapedProcessGroup(child_process)
+            child_process._anvil_stop_lock = threading.RLock()
+            child_process._anvil_start_identity = process_identity(child_process.pid)
+            child_process._anvil_group_nonce = bindings["operation_nonce"]
+            private_json(folder / "framework-process.json", {"pid": child_process.pid,
+                         "identity": child_process._anvil_start_identity, "host_domain": bindings["host_domain"],
+                         "started_monotonic_ns": int(deadline.ends * 1000000000) - fixed_assets["validated_limits"]["lifecycle_seconds"] * 1000000000,
+                         "deadline_monotonic_ns": int(deadline.ends * 1000000000)})
         private_json(
             folder / "process.json",
             {
@@ -1018,10 +1065,19 @@ def _execute_lifecycle(
             },
         )
         try:
-            stdout, stderr = child_process.communicate(
-                timeout=deadline.remaining(actor_seconds + 90) if deadline else actor_seconds + 90
-            )
+            if technical_probe_job is not None:
+                try:
+                    stdout, stderr = _collect_fixed_child(child_process,
+                        ends=time.monotonic() + deadline.remaining(actor_seconds + 90))
+                finally:
+                    _stop_fixed_process(child_process)
+            else:
+                stdout, stderr = child_process.communicate(
+                    timeout=deadline.remaining(actor_seconds + 90) if deadline else actor_seconds + 90
+                )
         except subprocess.TimeoutExpired:
+            if technical_probe_job is not None:
+                raise RuntimeError("Technical framework termination unconfirmed; no replay") from None
             os.killpg(child_process.pid, signal.SIGTERM)
             try:
                 stdout, stderr = child_process.communicate(timeout=3)
@@ -1090,34 +1146,52 @@ def _execute_lifecycle(
         }
         return result
     finally:
-        if fixed_adapter is not None:
+        if managed:
             seconds = fixed_assets["validated_limits"]["cleanup_seconds"]
             docker.deadline = FixedDeadline(seconds)
             with fixed_alarm(seconds, cleanup=True):
                 _cleanup_lifecycle(
-                    folder, child_process, docker, name, gateway, gateway_home, result, fixed=True
+                    folder, child_process, docker, name, gateway, gateway_home, result, fixed=True,
+                    technical=technical_probe_job is not None, callback_holder=collected
                 )
         else:
             _cleanup_lifecycle(folder, child_process, docker, name, gateway, gateway_home, result)
 
 
 def _cleanup_lifecycle(
-    folder, child_process, docker, name, gateway, gateway_home, result, *, fixed=False
+    folder, child_process, docker, name, gateway, gateway_home, result, *, fixed=False,
+    technical=False, callback_holder=None
 ):
     def wait_cap():
         return docker.deadline.remaining(3) if fixed else 3
 
-    if child_process is not None and child_process.poll() is None:
+    failures = []
+    callback_child = None
+    if technical:
+        with callback_holder["_callback_lock"]:
+            callback_holder["_callback_closing"].set()
+            callback_child = callback_holder.get("_owned_callback")
+    if child_process is not None and hasattr(child_process, "_anvil_owned_group"):
+        try:
+            _stop_fixed_process(child_process)
+        except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+            failures.append({"owned_session": "framework_process", "error": type(error).__name__})
+    elif child_process is not None and child_process.poll() is None:
         os.killpg(child_process.pid, signal.SIGTERM)
         try:
             child_process.communicate(timeout=wait_cap())
         except subprocess.TimeoutExpired:
             os.killpg(child_process.pid, signal.SIGKILL)
             child_process.communicate(timeout=wait_cap())
-    failures = []
     if fixed:
         try:
-            stop_fixed_child(folder)
+            if technical:
+                if callback_child is not None:
+                    _stop_fixed_process(callback_child)
+                elif (folder / "callback-dispatch-intent.json").exists():
+                    raise RuntimeError("Probe child spawn custody unknown; reconciliation required")
+            else:
+                stop_fixed_child(folder)
         except (OSError, RuntimeError, subprocess.SubprocessError) as error:
             failures.append({"owned_session": "fixed_callback", "error": type(error).__name__})
     failures.extend(stop_owned(docker, name))

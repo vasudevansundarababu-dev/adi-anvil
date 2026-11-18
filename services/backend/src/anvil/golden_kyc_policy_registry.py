@@ -47,6 +47,7 @@ SELECT q.id,q.project_id,
  q.content_sha256,q.expires_at
 FROM anvil.kyc_application_policy_qualifications q
 WHERE q.project_id=%s AND q.scope_sha256=%s AND q.expires_at>statement_timestamp()
+ AND anvil.kyc_policy_reviews_current(q.project_id,q.body,q.expires_at)
  AND NOT EXISTS(SELECT 1 FROM anvil.kyc_application_policy_revocations r
                 WHERE r.project_id=q.project_id AND r.qualification_id=q.id)
 LIMIT %s
@@ -121,11 +122,19 @@ class ReceiptReference(Model):
     sha256: Sha
 
 
+class StateNotApplicablePolicySet(PolicySet):
+    """Explicit reviewed decision, never an empty-list fallback to legacy rules."""
+
+    state_applicability: Literal["not_applicable"]
+    not_applicable_rationale: str = Field(min_length=10, max_length=2000)
+    state_refs: list[PolicyRef] = Field(max_length=0)
+
+
 class RegistryRecord(Model):
     schema_version: Literal["anvil.private-kyc-policy-qualification.v1"]
     id: UUID
     scope: RegistryScope | ProductRegistryScope
-    policy_set: PolicySet
+    policy_set: PolicySet | StateNotApplicablePolicySet
     policy_set_sha256: Sha
     domain_review_receipt: ReceiptReference
     runtime_control_receipt: ReceiptReference
@@ -230,7 +239,8 @@ def _steps(scope, *, product, governing_state, charter_profile, assessment_date,
     policy = body.policy_set
     projection = PolicyQualification(policy.governing_state, policy.product, tuple(policy.federal_refs),
                                      tuple(policy.state_refs), policy.effective_from, policy.effective_until,
-                                     body.expires_at, receipt_hash, body.policy_set_sha256, policy.charter_profile)
+                                     body.expires_at, receipt_hash, body.policy_set_sha256, policy.charter_profile,
+                                     state_applicability=getattr(policy, "state_applicability", "applicable"))
     return RegistryResult("registry_candidate_not_admitted", None, checked, (projection,), (str(body.id),))
 
 

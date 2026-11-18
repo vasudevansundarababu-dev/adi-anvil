@@ -126,7 +126,7 @@ def operation_result(state, controls, kind, party, document_ids):
     }
 
 
-def execute(state, controls, action, args):
+def execute(state, controls, action, args, *, policy_document=None):
     """Mutates owned trial state; caller persists even denied-attempt audit.
 
     Clock and customer/specialist outcomes have no agent action. All values in
@@ -151,6 +151,11 @@ def execute(state, controls, action, args):
     if action == "documents.list":
         return [{k: d[k] for k in ("id", "revision", "party_id", "kind")} for d in app["documents"]]
     if action == "document.read":
+        if isinstance(args.get("id"), str) and args["id"].startswith("policy-doc-v2:"):
+            if not isinstance(policy_document, dict) or policy_document.get("document_id") != args["id"]:
+                raise Denied("Bound policy document not found")
+            state["reads"].append(args["id"])
+            return deepcopy(policy_document)
         doc = next((d for d in app["documents"] if d["id"] == args.get("id")), None)
         if doc is None:
             raise Denied("Resource not found")

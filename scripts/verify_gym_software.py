@@ -1,5 +1,6 @@
 """Fresh local-only PostgreSQL execution test; retained database, no paid calls."""
 
+import argparse
 import json
 import os
 import secrets
@@ -14,6 +15,9 @@ from langgraph.checkpoint.postgres import PostgresSaver
 from psycopg import sql
 
 root = Path.cwd()
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--policy-only", action="store_true")
+options = parser.parse_args()
 assert (root / "services/backend/src/anvil/golden_kyc_service.py").is_file()
 assert not (root / ".env").exists(), "Use a clean isolated checkout, never operational credentials"
 name = "forge-gym-sql-20261117-" + secrets.token_hex(3)
@@ -118,11 +122,14 @@ print(
     flush=True,
 )
 tests = [
+    "services/backend/tests/benchmark/test_kyc_policy_reviews_sql.py",
     "services/backend/tests/benchmark/test_golden_kyc_sql.py",
     "services/backend/tests/benchmark/test_golden_kyc_anvil_sql.py",
     "services/backend/tests/benchmark/test_golden_phase_checkpoint_sql.py",
     "services/backend/tests/benchmark/test_marketing_workflow_sql.py",
 ]
+if options.policy_only:
+    tests = ["services/backend/tests/benchmark/test_kyc_policy_reviews_sql.py"]
 log = private / "pytest.log"
 with log.open("w") as handle:
     result = subprocess.run(

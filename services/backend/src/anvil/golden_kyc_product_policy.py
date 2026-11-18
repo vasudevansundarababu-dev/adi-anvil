@@ -9,7 +9,7 @@ from anvil.praxis_generic_contract import canonical
 from anvil.project_input_contract import MAX_BYTES, Application, actor_json
 
 
-async def public_policy(c, project, trial, generation, governing_state, *, absolute_deadline):
+async def public_policy(c, project, trial, generation, governing_state, *, absolute_deadline, document_id=None):
     from anvil.golden_kyc_source import source_hash as runtime_source
     from anvil.praxis_template_source import source_hash as template_source
 
@@ -39,4 +39,8 @@ async def public_policy(c, project, trial, generation, governing_state, *, absol
     delivery = await load_text(c, scope, application.id, registry.qualification_record_ids[0], absolute_deadline=absolute_deadline)
     if delivery.requirement or not delivery.public:
         raise ValueError(delivery.requirement or "AV_KYC_EXACT_POLICY_TEXT_PROVISIONING_REQUIRED")
+    if document_id is not None:
+        from anvil.golden_kyc_policy_chunks import lookup
+
+        return lookup(delivery.documents, document_id)
     return delivery.public

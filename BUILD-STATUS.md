@@ -1,5 +1,36 @@
 # Build status
 
+## Combined native owner / scoped policy candidate — 18 November 2026
+
+User explicitly authorizes parallel engineering and QA deployment, no live calls.
+New fixed two-read technical native owner+root-only plan preparation use expiring
+physical QA custody, installed-wheel seals, measured Docker/Compose, bounded streams,
+unreaped process groups, callback spawn/cleanup fence and per-transaction framework
+liveness/deadline checks. Existing business/paid native gates stay closed. Actual
+call counts remain unknown where only authorization/source evidence is observed.
+
+Policy129 adds actual scoped PO decisions/revocations, SQL-enforced operator login
+enrollment, current receipt resolution and restricted atomic policy/materialization
+producer. V2 complete source documents use scoped bounded chunks, immutable complete
+SQL observations and explicit reversible prompt projection; v1 behavior preserved.
+Real isolated SQL includes full producer append/replay/rollback with synthetic
+source prerequisites labelled not-QA (no trigger disabling or real approvals).
+
+Frozen combined source0015335361e0a72dde6f3630b4674d3b0bd320982f8c6bb0561a5e65a613c7f7:
+1155 units PASS,10 subtests PASS,2 platform/root skips;40 SQL PASS, fresh/repeat129.
+Logs .local/kyc-combined-engineering-units.log and .local/kyc-combined-engineering-sql.log.
+Actual QA operator kernel control PASS (root, real host PID/user namespace/hostname,
+egress blocked); containerforge-kyc-kernel-control-20261118-v1 retained. This is not
+actual Trial/complete technical qualification. Combined image build/QA rollout pending.
+Serving QA backend780e447/web e0ec104 remains unchanged until verified rollout.
+
+V8 dossier received: all70 payload hashes/sizes PASS; TemplateSpec PASS, canonical
+fb9a4aa75baa4dc4490141063a3a2221d21531fb266d636694bf7389b500f92c.
+Explicit candidate/unpublished, Authoring TP_FORM_ID_TAKEN and actual import ZIP
+still outstanding. No Gym policy/rights approval inferred from package statements.
+Validation handoff ZIP delivered in chat, work-address action email sent; GCP auth
+checked valid. Continue all engineering; do not wait for final Authoring folder.
+
 ## QA backend780e447 serving — 18 November 2026
 
 Cloud Build92e9fff1-dc79-4df6-a318-a280805d9ac9 SUCCESS; API/worker/business-worker

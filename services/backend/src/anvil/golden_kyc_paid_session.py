@@ -184,6 +184,11 @@ def actor_prompt(c, plan, stage, *, absolute_deadline=None):
         digest(o["observation"]) != o["observation_sha256"] for o in observations
     ):
         raise RuntimeError("golden_tool_transcript_changed_or_incomplete")
+    from anvil.kyc_policy_observation_projection import project as project_policy_observations
+
+    visible_observations, policy_projection = project_policy_observations(
+        [o["observation"] for o in observations], application_id=binding["application_id"]
+    )
     value = {
         "assignment": ASSIGNMENT,
         "praxis_task": context,
@@ -191,11 +196,26 @@ def actor_prompt(c, plan, stage, *, absolute_deadline=None):
         "tools": list(TOOLS),
         "step": stage,
         "max_steps": plan["config"]["max_calls"],
-        "observations": [o["observation"] for o in observations],
+        "observations": visible_observations,
     }
+    if policy_projection is not None:
+        value["policy_observation_projection"] = policy_projection
     from anvil.golden_kyc_tool_contract import tools
 
     value["tool_contracts"] = tools()
+    if policy_projection is not None:
+        # Lossless factoring of repeated public contract fields, v2 only.
+        # Merge defaults then each exact tool override to reconstruct tools().
+        contracts = value["tool_contracts"]
+        defaults = {key: item for key, item in contracts[0].items()
+                    if all(key in other and other[key] == item for other in contracts)}
+        value["tool_contracts"] = {
+            "schema_version": "anvil.tool-contract-defaults.v1",
+            "reconstruction": "Merge defaults then each tool override; these are the exact original contracts.",
+            "contracts_sha256": digest(contracts), "defaults": defaults,
+            "tools": [{key: item for key, item in contract.items() if key not in defaults}
+                      for contract in contracts],
+        }
     prompt = (
         'Return only JSON {"actions":[{"operation":"declared tool","arguments":{}}]}. '
         "At most8 sequential actions per turn. Use application.read, policy.read and documents.list first. "
@@ -203,7 +223,7 @@ def actor_prompt(c, plan, stage, *, absolute_deadline=None):
         "Never invent IDs or outputs. Tool refusals/uncertainty are observations, not success. "
         "Submit supported recommendation through recommend; no real account is opened. "
         "No shell, clock, database, private evaluator or approval access.\n"
-        + json.dumps(value, ensure_ascii=False)
+        + json.dumps(value, ensure_ascii=False, **({"separators": (",", ":")} if policy_projection else {}))
     )
     if len(prompt.encode()) > 32768:
         raise RuntimeError("golden_actor_input_bound")

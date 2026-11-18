@@ -11,6 +11,7 @@ def source_hash():
     root = repository / "services/backend/src/anvil"
     paths = (
         sorted(root.glob("golden_kyc_*.py"))
+        + sorted(root.glob("kyc_policy_*.py"))
         + sorted(root.glob("marketing_task2_*.py"))
         + sorted(root.glob("marketing_paid_*.py"))
         + sorted(root.glob("marketing_native_*.py"))
@@ -23,6 +24,7 @@ def source_hash():
         + sorted(root.glob("campaign_semantic_*.py"))
         + [
             root / "policy_rules.py",
+            root.parents[1] / "migrations/129_kyc_scoped_policy_reviews.sql",
             root / "qualification_resources.py",
             root / "owned_process_group.py",
             root / "evaluator_runtimes.py",

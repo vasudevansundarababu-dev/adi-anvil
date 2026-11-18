@@ -17,6 +17,8 @@ from harbor.trial.trial import Trial
 from anvil_harbor.prestart import validate_operator_config
 from anvil_harbor.sme import SMEDocker
 
+_TECHNICAL_RUNTIME = None
+
 
 class LocalComponentsDocker(SMEDocker):
     @classmethod
@@ -43,6 +45,13 @@ class LocalComponentsDocker(SMEDocker):
         ):
             raise ValueError("Empty owner-only Docker configuration required")
         entries = list(folder.iterdir())
+        if _TECHNICAL_RUNTIME is not None:
+            if (entries or args[0] != _TECHNICAL_RUNTIME["docker"]
+                    or args[4] != _TECHNICAL_RUNTIME["host"]
+                    or os.environ.get("DOCKER_HOST") != args[4]
+                    or os.environ.get("DOCKER_CONFIG") != str(folder)):
+                raise ValueError("Exact measured technical Docker/Compose invocation required")
+            return ContainerRuntime(engine=tuple(args), compose=(_TECHNICAL_RUNTIME["compose"],))
         if entries:
             config = folder / "config.json"
             if (
@@ -132,10 +141,46 @@ async def preflight_fixed_roles(trial):
 
 
 async def main(path):
+    global _TECHNICAL_RUNTIME
     fixed = "ANVIL_HARBOR_FIXED_CONTEXT" in os.environ
+    technical = os.environ.get("ANVIL_HARBOR_TECHNICAL_PROBE_JOB")
+    permission = None
+    if fixed and technical:
+        raise ValueError("Business and technical control contexts cannot be combined")
     if fixed:
         fixed_component_gate()
     validated = validate_operator_config(path)
+    if technical:
+        from anvil_harbor.operator_proof import TechnicalProbeStore, canonical, parse
+
+        with TechnicalProbeStore(Path(os.environ["ANVIL_ROOT"])) as store:
+            permission = store.load_probe(technical)
+            if not permission["technical_probe_authorized"]:
+                raise ValueError("Actual QA probe custody required")
+            assets = store.operation_assets(permission)
+            root = Path(os.environ["ANVIL_HARBOR_ATTEMPT_ROOT"])
+            if (assets["runtime_seal"]["schema_version"] != "anvil.fixed-runtime-seal.v2"
+                    or root != store.root / "technical-probe-attempts" / permission["operation_nonce"]
+                    or Path(path) != root / "trial.json"
+                    or canonical(validated) != canonical(assets["trial_config"])):
+                raise ValueError("Exact installed technical Trial configuration required")
+            launch = parse(store._read("technical-probe-launches", technical + ".json"))
+            if any(launch.get(key) != permission[key] for key in ("job_id", "plan_sha256", "operation_nonce")):
+                raise ValueError("Actual one-shot probe launch required")
+            store.validate_runtime_seal(assets["runtime_seal"])
+            store.validate_loaded_origins(assets["runtime_seal"], component="harbor")
+            host = assets["host_image_custody"]
+            docker_args = json.loads(os.environ["ANVIL_ENVIRONMENT_DOCKER_COMMAND"])
+            if (len(docker_args) != 5 or docker_args[0] != host["binaries"]["docker"]["path"]
+                    or docker_args[2] != str(root / "empty-docker-config") or docker_args[4] != host["docker_host"]):
+                raise ValueError("Measured probe engine/config/host required")
+            for name in ("docker", "compose"):
+                record = host["binaries"][name]
+                store._sealed_file(record["path"], record["sha256"])
+            _TECHNICAL_RUNTIME = {"docker": docker_args[0], "compose": host["binaries"]["compose"]["path"],
+                                  "host": host["docker_host"]}
+            os.environ["DOCKER_HOST"] = host["docker_host"]
+            os.environ["DOCKER_CONFIG"] = docker_args[2]
     if version("harbor") != "0.25.0":
         raise ValueError("Exact installed Harbor 0.25.0 required")
     config = TrialConfig.model_validate(validated)
@@ -147,8 +192,9 @@ async def main(path):
     ):
         raise ValueError("Exact retained component trial required")
     trial = await Trial.create(config)
-    if fixed:
-        context = json.loads(os.environ["ANVIL_HARBOR_FIXED_CONTEXT"])
+    if fixed or technical:
+        context = (json.loads(os.environ["ANVIL_HARBOR_FIXED_CONTEXT"]) if fixed else
+                   {key: permission[key] for key in ("job_id", "operation_nonce", "request_sha256")})
         if set(context) != {"job_id", "operation_nonce", "request_sha256"}:
             raise ValueError("Exact fixed framework context required")
         root = Path(os.environ["ANVIL_HARBOR_ATTEMPT_ROOT"])

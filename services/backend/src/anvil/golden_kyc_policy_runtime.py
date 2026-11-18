@@ -38,7 +38,7 @@ def application(scope, user, application_id, *, absolute_deadline):
     return _run(application_async, scope, user, application_id, absolute_deadline=absolute_deadline)
 
 
-async def trial_async(project, user, trial_id, generation, governing_state, *, absolute_deadline):
+async def trial_async(project, user, trial_id, generation, governing_state, *, absolute_deadline, document_id=None):
     async with transaction(project, user, absolute_deadline=absolute_deadline,
                            setting_name="ANVIL_GOLDEN_SCHEDULER_DATABASE_URL") as connection:
         remaining(absolute_deadline)
@@ -46,10 +46,14 @@ async def trial_async(project, user, trial_id, generation, governing_state, *, a
         remaining(absolute_deadline)
         if not row or row["value"] != "reusable_application_workflow":
             return False, None
-        public = await public_policy(connection, project, trial_id, generation, governing_state, absolute_deadline=absolute_deadline)
+        public = await public_policy(connection, project, trial_id, generation, governing_state, absolute_deadline=absolute_deadline,
+                                     document_id=document_id)
         remaining(absolute_deadline)
         return True, public
 
 
-def trial(project, user, trial_id, generation, governing_state, *, absolute_deadline):
-    return _run(trial_async, project, user, trial_id, generation, governing_state, absolute_deadline=absolute_deadline)
+def trial(project, user, trial_id, generation, governing_state, *, absolute_deadline, document_id=None):
+    async def operation(*args, absolute_deadline):
+        return await trial_async(*args, absolute_deadline=absolute_deadline, document_id=document_id)
+
+    return _run(operation, project, user, trial_id, generation, governing_state, absolute_deadline=absolute_deadline)

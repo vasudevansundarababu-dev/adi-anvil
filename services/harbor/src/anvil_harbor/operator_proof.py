@@ -7,6 +7,7 @@ import os
 import re
 import stat
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import UUID
@@ -24,6 +25,10 @@ CHECKS = {
     "no_model_calls",
 }
 REQUIRED_DEPENDENCIES = {
+    "services/backend/src/anvil/golden_kyc_probe.py",
+    "services/backend/src/anvil/golden_kyc_probe_prepare.py",
+    "services/harbor/src/anvil_harbor/environment.py",
+    "services/harbor/src/anvil_harbor/sme.py",
     "services/backend/src/anvil/golden_kyc_harbor.py",
     "services/backend/src/anvil/golden_kyc_identity.py",
     "services/backend/src/anvil/golden_kyc_fixed_process.py",
@@ -612,7 +617,7 @@ class OperatorProofStore:
         """Inspect complete installed RECORD inventories without importing SDKs."""
         need(
             set(seal) == {"schema_version", "components"}
-            and seal["schema_version"] == "anvil.fixed-runtime-seal.v1"
+            and seal["schema_version"] in {"anvil.fixed-runtime-seal.v1", "anvil.fixed-runtime-seal.v2"}
             and set(seal["components"]) == {"backend", "harbor"},
             "full_runtime_seal_required",
         )
@@ -721,6 +726,8 @@ class OperatorProofStore:
                     if component == "backend"
                     else "services/harbor/src/anvil_harbor"
                 )
+                if seal["schema_version"] == "anvil.fixed-runtime-seal.v2":
+                    expected_folder = site / package
                 need(
                     folder.is_absolute()
                     and folder.resolve() == folder
@@ -740,6 +747,12 @@ class OperatorProofStore:
             )
             for path, expected in source_files.items():
                 self._sealed_file(path, expected)
+                if seal["schema_version"] == "anvil.fixed-runtime-seal.v2":
+                    for package, folder in record["source_packages"].items():
+                        if Path(path).is_relative_to(folder):
+                            source = self.repository / ("services/backend/src" if component == "backend"
+                                                      else "services/harbor/src") / package / Path(path).relative_to(folder)
+                            self._sealed_file(source, expected)
             stdlib = Path(record["stdlib_root"])
             need(
                 stdlib.is_absolute() and stdlib.resolve() == stdlib and stdlib.is_dir(),
@@ -1017,6 +1030,8 @@ class TechnicalProbeStore(OperatorProofStore):
         "technical-probe-intents",
         "technical-probe-outcomes",
         "technical-probe-attempts",
+        "technical-probe-launches",
+        "technical-probe-worker-intents",
     }
     LIMITS = {
         "actions": 2,
@@ -1184,6 +1199,8 @@ class TechnicalProbeStore(OperatorProofStore):
             "request_sha256": sha(canonical(capsule)),
             "request_capsule": capsule,
             "asset_sha256s": pins,
+            "service_projection_sha256s": profiles,
+            "limits": plan["limits"],
             "custody_scope": self.scope,
             "host_domain": plan["host_domain"],
             "expires_at": plan["expires_at"],
@@ -1233,13 +1250,20 @@ class TechnicalProbeStore(OperatorProofStore):
         finally:
             os.close(folder)
         process = observed["framework-process.json"][0]
+        timed = host.get("schema_version") == "anvil.kyc-probe-host.v1"
         need(
-            set(process) == {"pid", "identity", "host_domain"}
+            set(process) == ({"pid", "identity", "host_domain", "started_monotonic_ns", "deadline_monotonic_ns"}
+                             if timed else {"pid", "identity", "host_domain"})
             and type(process["pid"]) is int
             and process["pid"] > 1
             and process["host_domain"] == permission["host_domain"] == self._domain(),
             "probe_framework_process_domain_changed",
         )
+        if timed:
+            need(type(process["started_monotonic_ns"]) is int and type(process["deadline_monotonic_ns"]) is int
+                 and 0 < process["started_monotonic_ns"] <= time.monotonic_ns() < process["deadline_monotonic_ns"]
+                 <= process["started_monotonic_ns"] + host["limits"]["lifecycle_seconds"] * 1000000000,
+                 "original_probe_framework_deadline_required")
         proc = Path("/proc") / str(process["pid"])
 
         def identity():
@@ -1277,7 +1301,8 @@ class TechnicalProbeStore(OperatorProofStore):
             command
             == b"\0".join(
                 str(v).encode()
-                for v in (host["python"], "-m", "anvil_harbor.environment", expected / "trial.json")
+                for v in (host["python"], *(["-I", "-B"] if host.get("schema_version") == "anvil.kyc-probe-host.v1" else []),
+                          "-m", "anvil_harbor.environment", expected / "trial.json")
             )
             + b"\0",
             "fixed_probe_framework_command_required",
@@ -1338,6 +1363,30 @@ class TechnicalProbeStore(OperatorProofStore):
                 "qualification_granted": False,
             },
         )
+
+    def reserve_probe_launch(self, job_id):
+        permission = self.load_probe(job_id)
+        need(permission["technical_probe_authorized"], "actual_QA_operator_probe_custody_required")
+        return self._write_once("technical-probe-launches", job_id + ".json", {
+            "job_id": job_id, "plan_sha256": permission["plan_sha256"],
+            "operation_nonce": permission["operation_nonce"], "no_replay": True,
+            "qualification_granted": False,
+        })
+
+    def enter_probe_worker(self, job_id):
+        permission = self.load_probe(job_id)
+        need(permission["technical_probe_authorized"], "actual_QA_operator_probe_custody_required")
+        self._framework_entry(permission)
+        launch = parse(self._read("technical-probe-launches", job_id + ".json"))
+        intent_raw = self._read("technical-probe-intents", job_id + ".json")
+        intent = parse(intent_raw)
+        need(all(launch.get(key) == permission[key] == intent.get(key)
+                 for key in ("job_id", "plan_sha256", "operation_nonce")), "probe_worker_intent_changed")
+        return self._write_once("technical-probe-worker-intents", job_id + ".json", {
+            "job_id": job_id, "plan_sha256": permission["plan_sha256"],
+            "effect_intent_sha256": sha(intent_raw), "no_replay": True,
+            "qualification_granted": False,
+        })
 
     def finish_probe(self, job_id, intent_sha256, *, state, evidence_sha256):
         need(

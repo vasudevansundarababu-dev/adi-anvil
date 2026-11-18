@@ -11,14 +11,15 @@ from anvil.db import digest
 KEYS = ("state_applicability", "state_rule_selection", "state_dates", "state_instrument")
 
 
-def materialized(c, project, trial, generation, governing_state, *, user=None, absolute_deadline=None):
+def materialized(c, project, trial, generation, governing_state, *, user=None, absolute_deadline=None, document_id=None):
     """Only a current exact-source privileged materialization reaches the actor."""
     from anvil.golden_kyc_source import source_hash
 
     if absolute_deadline is not None:
         from anvil.golden_kyc_policy_runtime import trial as current_trial
 
-        product, public = current_trial(project,user,trial,generation,governing_state,absolute_deadline=absolute_deadline)
+        product, public = current_trial(project,user,trial,generation,governing_state,absolute_deadline=absolute_deadline,
+                                        **({"document_id": document_id} if document_id is not None else {}))
         if product:
             return public
     else:
@@ -27,6 +28,8 @@ def materialized(c, project, trial, generation, governing_state, *, user=None, a
         mode = c.execute("SELECT banking.product_policy_trial_mode(%s,%s) AS value", (trial,generation)).fetchone()
         if mode and mode["value"] == "reusable_application_workflow":
             raise ValueError("Original product episode policy deadline required")
+    if document_id is not None:
+        raise ValueError("Policy documents require the exact current product trial binding")
     row = c.execute(
         "SELECT banking.bound_state_policy_materialization(%s,%s) AS value", (trial, generation)
     ).fetchone()["value"]
@@ -121,6 +124,9 @@ def evaluate_state(snapshot, state, events, reference):
         payload = record.get("result", {})
         if isinstance(payload, dict):
             delivered.extend(payload.get("bound_state_rules", []))
+    from anvil.golden_kyc_policy_observations import delivered_state_rules
+
+    delivered.extend(delivered_state_rules(events, application_id=snapshot.get("id")))
     if not delivered:
         return unknown, "bound_state_policy_delivery_unavailable"
     exact = all(

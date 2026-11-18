@@ -204,7 +204,27 @@ def step(c, project, user, identifier, generation, token, action, arguments, *, 
                 if policy["outcome"] != "error"
                 else "Qualified OPA unavailable; fail closed"
             )
-        result = execute(state, controls, action, arguments)
+        policy_document = None
+        if (action == "document.read" and isinstance(arguments.get("id"), str)
+                and arguments["id"].startswith("policy-doc-v2:")):
+            from anvil.golden_kyc_state_checks import materialized
+
+            # Charge and enforce the unchanged episode deadline/call limit before
+            # the privileged read. The placeholder never leaves this transaction.
+            execute(state, controls, action, arguments,
+                    policy_document={"document_id": arguments["id"]})
+            try:
+                policy_document = materialized(
+                    c, project, identifier, generation, state["application"]["governing_state"],
+                    user=user, absolute_deadline=absolute_deadline, document_id=arguments["id"],
+                )
+            except ValueError:
+                raise Denied("Bound policy document unavailable") from None
+            if not isinstance(policy_document, dict) or policy_document.get("document_id") != arguments["id"]:
+                raise Denied("Bound policy document unavailable")
+            result = policy_document
+        else:
+            result = execute(state, controls, action, arguments)
         if action == "policy.read":
             from anvil.golden_kyc_state_checks import materialized
 
@@ -216,7 +236,7 @@ def step(c, project, user, identifier, generation, token, action, arguments, *, 
                 result = result | public_rules
                 state["reads"] += [
                     rule["id"] + "@" + rule["version"]
-                    for rule in public_rules.get("bound_common_rules", []) + public_rules["bound_state_rules"]
+                    for rule in public_rules.get("bound_common_rules", []) + public_rules.get("bound_state_rules", [])
                 ]
         from anvil.golden_kyc_source import source_hash
         from anvil.task_safety_runtime import inject
