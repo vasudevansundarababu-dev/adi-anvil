@@ -1,5 +1,44 @@
 # Build status
 
+## Current QA deployment and native continuation — 17 November 2026
+
+Existing QA now serves Open Weight successor dc9a144: backend200e67e6f193,
+web a3542b905e87, software scheduler/grader963cddc916ff, schema128. Build
+1412cea1-288a-4790-a4cc-539da655827c SUCCESS;1064 units+10 subtests,28 Gym SQL
+checks, HF bulk32/shared-token/RLS/rotation/revocation checks, synthetic browser
+journey and actual QA image/health/auth/polling/UI bundle checks PASS. Four serving
+inventory roles recorded only as observed_not_qualified. No live calls/Authoring.
+SQL/config rollback backups retained; production unchanged; user-approved QA
+boot disk50GB. No deleted old test artifacts/volumes. One status/blocker email
+sent only to user's work address: Gmail1a1ed239877309e4.
+
+Serving source/evidence: .local/open-weight-models-20261117, branch
+codex/open-weight-models-20261117; docs/generated/open-weight-qa-rollout-2026-11-17.md.
+Active native source: .local/marketing-native-next-20261117, branch
+codex/marketing-native-next-20261117, checkpoint5cbf104.1071 units+10 subtests,
+deadline transport and actual minimal-image packaging/privacy controls PASS.
+Native remains closed; shared-UID helper proc-root bypass reproduced. Scoped
+AppArmor/proc isolation work continues; no native stability/admission claimed.
+Never deploy this root branch's older application source. Preserve unrelated edits.
+
+## QA worker rollout completed — 17 November 2026
+
+Resume source work at `.local/open-weight-models-20261117`, branch
+`codex/open-weight-models-20261117` (Open Weight configuration changes under test).
+Frozen serving worker source is fc23fb8 in `.local/runtime-correction-20261117`;
+rollout evidence local commit98f4bf7, document
+`docs/generated/qa-worker-rollout-2026-11-17.md` in that worktree.
+
+Existing QA anvil-qa-v1/us-west1-b now serves backend8bb93ec29f6e and real bounded
+software scheduler/grader4f27972ad13f.1053 units+10 subtests,28 SQL tests,
+GCP build20d9b55d-a81f-48c4-9201-0dbd310a95e2 and actual-host installed checks PASS.
+Health/auth/exact image/polling/no restart/live-off smoke PASS; initial startup503
+retained. User-approved boot disk30→50GB expanded online;19GB free. No deletion,
+production changes, live model calls, Authoring integration or native admission.
+Marketing native and Open Weight integration work remain active; not yet stable
+or complete. One completion/blocker email authorized to the user's work address,
+not yet sent for this work session. Never deploy this root branch's older source.
+
 ## Current mandatory-runtime correction — 17 November 2026
 
 Continuation authorized by user: finish and test RL Gym while Authoring exports
