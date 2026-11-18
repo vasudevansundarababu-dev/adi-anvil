@@ -416,7 +416,7 @@ function ScopedImportedProjects({
           </>
         ) : (
           <>
-            <div className={s.actions}>
+            <div className={s.projectSearch}>
               <label>
                 Search Projects
                 <input

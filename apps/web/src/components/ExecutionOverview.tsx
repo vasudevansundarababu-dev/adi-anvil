@@ -49,7 +49,7 @@ function OperationalExecutionOverview({
   return (
     <section className={s.root}>
       <div className={s.card}>
-        <div className={s.actions}>
+        <div className={s.projectSearch}>
           <label>
             Search
             <input

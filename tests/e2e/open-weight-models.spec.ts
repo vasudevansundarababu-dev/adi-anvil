@@ -98,7 +98,8 @@ test('bulk model registration, delayed editor catalog preservation and explicit 
           },
         ],
       };
-    if (path.endsWith('/models/catalog')) {
+    if (path.endsWith('/workspace/benchmark')) data = { runs: [], groups: [] };
+    else if (path.endsWith('/models/catalog')) {
       await new Promise((resolve) => setTimeout(resolve, 300));
       data = catalog;
     } else if (path.endsWith('/credentials'))
@@ -118,6 +119,16 @@ test('bulk model registration, delayed editor catalog preservation and explicit 
     .getByRole('combobox', { name: 'Shared Hugging Face credential', exact: true })
     .selectOption(credential.id + ':' + credential.current_version_id);
   await group.getByText('Select repository variants and versions', { exact: false }).click();
+  const table = group.getByRole('table', { name: 'Open Weight model versions' });
+  await expect(table.getByRole('columnheader')).toHaveText([
+    'Select',
+    'Name',
+    'Version',
+    'Repository',
+    'Terms',
+  ]);
+  await expect(table.getByRole('checkbox')).toHaveCount(32);
+  await page.screenshot({ path: '.local/ui-open-weight-table.png' });
   await group.getByRole('button', { name: 'Select all listed versions', exact: true }).click();
   await group.getByRole('button', { name: 'Add selected model versions', exact: true }).click();
   await expect.poll(() => writes.length).toBe(1);
@@ -137,6 +148,20 @@ test('bulk model registration, delayed editor catalog preservation and explicit 
   await expect.poll(() => writes.length).toBe(2);
   expect(writes[1].body.open_weight_catalog_id).toBe('ow-r2-v1');
   expect(writes[1].body.hub_revision).toBe(repository.revision);
+  await list.getByRole('button', { name: 'Add model', exact: true }).click();
+  await editor
+    .getByRole('combobox', { name: 'Provider', exact: false })
+    .selectOption('huggingface');
+  await expect(editor.getByRole('table', { name: 'Open Weight model versions' })).toBeVisible();
+  await editor.getByRole('button', { name: 'Select all listed versions', exact: true }).click();
+  await editor
+    .getByRole('combobox', { name: 'Credential version', exact: false })
+    .selectOption(credential.id + ':' + credential.current_version_id);
+  await page.screenshot({ path: '.local/ui-open-weight-create.png' });
+  await editor.getByRole('button', { name: 'Save selected models with shared credential' }).click();
+  await expect.poll(() => writes.length).toBe(3);
+  expect(writes[2].body.models).toHaveLength(32);
+  expect(writes[2].body.credential_version_id).toBe(credential.current_version_id);
   await page.goto('/workspace/' + project + '/frameworks');
   const preset = page.getByRole('region', { name: 'Execution preset configuration', exact: true });
   await preset
@@ -156,6 +181,27 @@ test('bulk model registration, delayed editor catalog preservation and explicit 
   await expect(preset.locator('[aria-label="Selected model versions"]')).toContainText(
     repository.revision,
   );
-  expect(writes).toHaveLength(2);
+  expect(writes).toHaveLength(3);
+  for (const path of ['projects', 'execution-groups']) {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/workspace/' + project + '/' + path);
+    const search = page.getByRole('textbox', { name: /^Search/ });
+    const button = page.getByRole('button', { name: 'Search', exact: true });
+    await expect(search).toBeVisible();
+    const inputBox = await search.boundingBox();
+    const buttonBox = await button.boundingBox();
+    expect(inputBox!.width).toBeGreaterThan(400);
+    expect(
+      Math.abs(inputBox!.y + inputBox!.height - buttonBox!.y - buttonBox!.height),
+    ).toBeLessThan(2);
+    expect(buttonBox!.x - inputBox!.x - inputBox!.width).toBeLessThan(20);
+    await page.screenshot({ path: '.local/ui-' + path + '-desktop.png' });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(search).toBeVisible();
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+    await page.screenshot({ path: '.local/ui-' + path + '-mobile.png' });
+  }
   expect(errors).toEqual([]);
 });

@@ -4,6 +4,7 @@ import Form from './Form';
 import { CredentialMetadata } from './CredentialManager';
 import { workspaceApi as api } from '../lib/workspace';
 import styles from './ModernWorkspace.module.css';
+import OpenWeightModelTable from './OpenWeightModelTable';
 
 export type ModelConfiguration = {
   id: string;
@@ -50,7 +51,7 @@ export default function ModelProfileEditor({
   credentialsLoading: boolean;
   credentialError: string;
   refreshCredentials: () => void;
-  saved: (value: ModelConfiguration) => void;
+  saved: (value: ModelConfiguration, count?: number) => void;
   cancel: () => void;
   initialProvider?: string;
 }) {
@@ -66,6 +67,8 @@ export default function ModelProfileEditor({
   const [modelId, setModelId] = useState(source?.model_id || '');
   const [hubRevision, setHubRevision] = useState(source?.hub?.revision || '');
   const [catalogError, setCatalogError] = useState('');
+  const [selectedModels, setSelectedModels] = useState<string[]>([]);
+  const bulk = provider === 'huggingface' && !source;
   useEffect(() => {
     let active = true;
     api(base + '/workspace/models/catalog')
@@ -122,6 +125,25 @@ export default function ModelProfileEditor({
           setError('');
           try {
             const [credentialId, credentialVersion] = credential.split(':');
+            if (bulk) {
+              if (!selectedModels.length) throw new Error('Select at least one model version.');
+              const models = catalog.flatMap((item) =>
+                item.repositories
+                  .filter((repo) => selectedModels.includes(item.id + ':' + repo.repository))
+                  .map((repo) => ({
+                    catalog_id: item.id,
+                    repository: repo.repository,
+                    revision: repo.revision,
+                  })),
+              );
+              const result = await api(base + '/workspace/models/catalog/register', 'POST', {
+                models,
+                credential_id: credentialId || null,
+                credential_version_id: credentialVersion || null,
+              });
+              saved(result.items[0], result.items.length);
+              return;
+            }
             const body = {
               name: String(data.get('name')),
               provider,
@@ -178,111 +200,133 @@ export default function ModelProfileEditor({
               Hugging Face.
             </p>
             {catalogError && <p role="alert">{catalogError}</p>}
-            <label>
-              Open Weight Models catalog
-              <select
-                name="catalog_id"
-                required
-                value={catalogId}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setCatalogId(value);
-                  const choices = catalog.find((item) => item.id === value)?.repositories || [];
-                  setModelId(choices.length === 1 ? choices[0].repository : '');
-                  setHubRevision(choices.length === 1 ? choices[0].revision : '');
-                }}
-              >
-                <option value="" disabled>
-                  Select a catalog model
-                </option>
-                {catalog.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Repository variant
-              <select
-                value={
-                  catalog
-                    .find((item) => item.id === catalogId)
-                    ?.repositories.some((item) => item.repository === modelId)
-                    ? modelId
-                    : ''
-                }
-                onChange={(event) => {
-                  const repository = catalog
-                    .find((item) => item.id === catalogId)
-                    ?.repositories.find((item) => item.repository === event.target.value);
-                  setModelId(repository?.repository || '');
-                  setHubRevision(repository?.revision || '');
-                }}
-              >
-                <option value="">Choose a repository variant or enter one below</option>
-                {catalog
-                  .find((item) => item.id === catalogId)
-                  ?.repositories.map((item) => (
-                    <option key={item.repository} value={item.repository}>
-                      {item.repository} · observed commit {item.revision.slice(0, 12)}
+            {bulk ? (
+              <>
+                <p>
+                  Select models together and attach the same saved Hugging Face credential version
+                  to all of them. Each model keeps its exact repository and version for Run
+                  selection.
+                </p>
+                <OpenWeightModelTable
+                  catalog={catalog}
+                  selected={selectedModels}
+                  onChange={setSelectedModels}
+                  disabled={busy || !!catalogError}
+                />
+              </>
+            ) : (
+              <>
+                <label>
+                  Open Weight Models catalog
+                  <select
+                    name="catalog_id"
+                    required
+                    value={catalogId}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setCatalogId(value);
+                      const choices = catalog.find((item) => item.id === value)?.repositories || [];
+                      setModelId(choices.length === 1 ? choices[0].repository : '');
+                      setHubRevision(choices.length === 1 ? choices[0].revision : '');
+                    }}
+                  >
+                    <option value="" disabled>
+                      Select a catalog model
                     </option>
-                  ))}
-              </select>
-            </label>
-            <label>
-              Exact Hub commit revision
-              <input
-                name="hub_revision"
-                required
-                pattern="[0-9a-f]{40}"
-                minLength={40}
-                maxLength={40}
-                value={hubRevision}
-                onChange={(event) => setHubRevision(event.target.value)}
-                placeholder="40-character commit SHA"
-              />
-            </label>
-            <p className={styles.muted}>
-              Repository choices and commits come from public Hub metadata. Base, instruct and
-              quantized variants are explicit choices. This does not verify your account access or
-              provision inference. You can enter another exact commit below.
-            </p>
+                    {catalog.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Repository variant
+                  <select
+                    value={
+                      catalog
+                        .find((item) => item.id === catalogId)
+                        ?.repositories.some((item) => item.repository === modelId)
+                        ? modelId
+                        : ''
+                    }
+                    onChange={(event) => {
+                      const repository = catalog
+                        .find((item) => item.id === catalogId)
+                        ?.repositories.find((item) => item.repository === event.target.value);
+                      setModelId(repository?.repository || '');
+                      setHubRevision(repository?.revision || '');
+                    }}
+                  >
+                    <option value="">Choose a repository variant or enter one below</option>
+                    {catalog
+                      .find((item) => item.id === catalogId)
+                      ?.repositories.map((item) => (
+                        <option key={item.repository} value={item.repository}>
+                          {item.repository} · observed commit {item.revision.slice(0, 12)}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                <label>
+                  Exact Hub commit revision
+                  <input
+                    name="hub_revision"
+                    required
+                    pattern="[0-9a-f]{40}"
+                    minLength={40}
+                    maxLength={40}
+                    value={hubRevision}
+                    onChange={(event) => setHubRevision(event.target.value)}
+                    placeholder="40-character commit SHA"
+                  />
+                </label>
+                <p className={styles.muted}>
+                  Repository choices and commits come from public Hub metadata. Base, instruct and
+                  quantized variants are explicit choices. This does not verify your account access
+                  or provision inference. You can enter another exact commit below.
+                </p>
+              </>
+            )}
           </>
         )}
-        <label>
-          Profile name
-          <input
-            name="name"
-            required
-            maxLength={100}
-            defaultValue={source?.name || ''}
-            placeholder="Research baseline"
-          />
-        </label>
-        <label>
-          Exact model ID
-          <input
-            name="model_id"
-            required
-            maxLength={200}
-            pattern="[A-Za-z0-9][A-Za-z0-9._:/@\-]*"
-            value={modelId}
-            onChange={(event) => setModelId(event.target.value)}
-            placeholder="Enter an entitled provider model ID"
-          />
-        </label>
-        <label>
-          Maximum output tokens
-          <input
-            name="max_output_tokens"
-            type="number"
-            min={1}
-            max={8192}
-            required
-            defaultValue={source?.max_output_tokens || 4096}
-          />
-        </label>
+        {!bulk && (
+          <>
+            <label>
+              Profile name
+              <input
+                name="name"
+                required
+                maxLength={100}
+                defaultValue={source?.name || ''}
+                placeholder="Research baseline"
+              />
+            </label>
+            <label>
+              Exact model ID
+              <input
+                name="model_id"
+                required
+                maxLength={200}
+                pattern="[A-Za-z0-9][A-Za-z0-9._:/@\-]*"
+                value={modelId}
+                onChange={(event) => setModelId(event.target.value)}
+                placeholder="Enter an entitled provider model ID"
+              />
+            </label>
+            <label>
+              Maximum output tokens
+              <input
+                name="max_output_tokens"
+                type="number"
+                min={1}
+                max={8192}
+                required
+                defaultValue={source?.max_output_tokens || 4096}
+              />
+            </label>
+          </>
+        )}
         <div role="group" aria-label="Saved API key">
           <strong>API key storage</strong>
           <p role="status">
@@ -297,7 +341,7 @@ export default function ModelProfileEditor({
                     selectedCredential.current_version_id?.slice(0, 8)
                   : oldBinding
                     ? 'The saved key binding is no longer current.'
-                    : 'No key selected for this model. Choose a saved credential version below.'}
+                    : 'No key selected. Choose a saved credential version below.'}
           </p>
           {selectedCredential && (
             <p>
@@ -353,9 +397,21 @@ export default function ModelProfileEditor({
         </p>
         <button
           className={styles.primary}
-          disabled={busy || credentialsLoading || !!credentialError || oldBinding}
+          disabled={
+            busy ||
+            credentialsLoading ||
+            !!credentialError ||
+            oldBinding ||
+            (bulk && (!selectedModels.length || !!catalogError))
+          }
         >
-          {busy ? 'Saving…' : source ? 'Save new model version' : 'Save model profile'}
+          {busy
+            ? 'Saving…'
+            : source
+              ? 'Save new model version'
+              : bulk
+                ? 'Save selected models with shared credential'
+                : 'Save model profile'}
         </button>
         <button type="button" disabled={busy} onClick={cancel}>
           Cancel

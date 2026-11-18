@@ -1,5 +1,16 @@
 # Build status
 
+## UI correction candidate — 18 November 2026
+
+User-reported UI defects logged in docs/generated/ui-defects-2026-11-18.md.
+Shared selectable Open Weight tables in catalog and new model profile creation;
+batch attach one exact HF credential through existing atomic endpoint. Projects
+and Execution search bars now wide with adjacent aligned actions and mobile wrap.
+TypeScript and production build PASS; synthetic Chrome journey PASS with32-model
+bulk payload checks and desktop/mobile layout assertions. Local candidate only;
+QA remains818afca. No live calls or Authoring integration. KYC ZIP import is blocked
+by missing exact template6d8f9cae-7c06-4c36-a207-522978d5486b v7 registration.
+
 ## Verified QA hotfix818afca — 17 November 2026
 
 Build e5cec1ef-765e-49d6-80a3-905f2600e53f SUCCESS; all six QA services now

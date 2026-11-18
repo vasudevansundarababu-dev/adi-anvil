@@ -5,6 +5,7 @@ import ModelProfileEditor, { ModelConfiguration as Model } from './ModelProfileE
 import { workspaceApi as api, shortId } from '../lib/workspace';
 import styles from './ModernWorkspace.module.css';
 import ImportGenerationSettings from './ImportGenerationSettings';
+import OpenWeightModelTable from './OpenWeightModelTable';
 
 export default function ModelProfiles({ base }: { base: string }) {
   const [catalog, setCatalog] = useState<
@@ -229,50 +230,12 @@ export default function ModelProfiles({ base }: { base: string }) {
               <summary>
                 Select repository variants and versions ({catalogSelection.length} selected)
               </summary>
-              <button
-                type="button"
-                disabled={!catalog.length || !!catalogError}
-                onClick={() =>
-                  setCatalogSelection(
-                    catalog.flatMap((item) =>
-                      item.repositories.map((repo) => item.id + ':' + repo.repository),
-                    ),
-                  )
-                }
-              >
-                Select all listed versions
-              </button>
-              <button type="button" onClick={() => setCatalogSelection([])}>
-                Clear selection
-              </button>
-              {catalog.map((item) => (
-                <fieldset key={item.id}>
-                  <legend>{item.label}</legend>
-                  {item.repositories.map((repo) => {
-                    const key = item.id + ':' + repo.repository;
-                    return (
-                      <label key={key} style={{ display: 'block' }}>
-                        <input
-                          type="checkbox"
-                          checked={catalogSelection.includes(key)}
-                          onChange={(event) =>
-                            setCatalogSelection((current) =>
-                              event.target.checked
-                                ? [...current, key]
-                                : current.filter((value) => value !== key),
-                            )
-                          }
-                        />
-                        {repo.repository} · commit {repo.revision}
-                        <a href={repo.repository_url} target="_blank" rel="noreferrer">
-                          {' '}
-                          Repository and terms
-                        </a>
-                      </label>
-                    );
-                  })}
-                </fieldset>
-              ))}
+              <OpenWeightModelTable
+                catalog={catalog}
+                selected={catalogSelection}
+                onChange={setCatalogSelection}
+                disabled={busy || !!catalogError}
+              />
             </details>
             <button
               className={styles.primary}
@@ -481,16 +444,19 @@ export default function ModelProfiles({ base }: { base: string }) {
             setEditing(false);
             setSource(null);
           }}
-          saved={(value) => {
+          saved={(value, count) => {
             setEditing(false);
             setSource(null);
             setMessage(
-              source
-                ? 'New model version saved. Earlier preparation bindings stay unchanged.'
-                : 'Profile saved to this project. No inference, activation or paid authority created.',
+              count
+                ? count +
+                    ' model versions saved with the shared credential selection. Live execution remains disabled.'
+                : source
+                  ? 'New model version saved. Earlier preparation bindings stay unchanged.'
+                  : 'Profile saved to this project. No inference, activation or paid authority created.',
             );
             void load();
-            void openHistory(value.id);
+            if (!count) void openHistory(value.id);
           }}
         />
       )}

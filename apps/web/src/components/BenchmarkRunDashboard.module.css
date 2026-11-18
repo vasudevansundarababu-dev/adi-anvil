@@ -10,6 +10,35 @@
   font-size: 18px;
   margin: 8px 0 16px;
 }
+.projectSearch {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.root .projectSearch > label {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 320px;
+  min-width: 0;
+  margin: 0;
+}
+.projectSearch input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 44px;
+}
+.projectSearch > button,
+.projectSearch > a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 44px;
+  margin: 0;
+  white-space: nowrap;
+}
 .root p {
   line-height: 1.6;
 }
