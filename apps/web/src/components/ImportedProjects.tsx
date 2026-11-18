@@ -6,6 +6,7 @@ import ProjectBindings, { ImportedProject } from './ProjectBindings';
 import { projectPresentation } from '../lib/projectPresentation';
 import TaskFlowViewer from './TaskFlowViewer';
 import s from './BenchmarkRunDashboard.module.css';
+import TemplateSetup from './TemplateSetup';
 
 type Group = ImportedProject & {
   content_sha256?: string;
@@ -284,6 +285,9 @@ function ScopedImportedProjects({
     );
   return (
     <section className={s.root}>
+      {canAdmin && <details><summary>Template registration and qualification</summary>
+        <TemplateSetup key={base} base={base} />
+      </details>}
       <div className={s.card}>
         <h2>{importing ? 'Import Project' : 'Projects'}</h2>
         {error && <p role="alert">{error}</p>}

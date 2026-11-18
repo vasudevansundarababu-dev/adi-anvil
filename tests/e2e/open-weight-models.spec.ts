@@ -60,6 +60,13 @@ test('bulk model registration, delayed editor catalog preservation and explicit 
   page,
 }) => {
   const writes: { path: string; body: any }[] = [];
+  const templateWrites: string[] = [];
+  const template = {
+    id: 'test-template',
+    template_id: 'test-kyc',
+    version: 7,
+    spec_sha256: 'a'.repeat(64),
+  };
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.route('**/*', async (route) => {
@@ -67,6 +74,29 @@ test('bulk model registration, delayed editor catalog preservation and explicit 
     if (url.hostname !== '127.0.0.1') return route.abort();
     if (!url.pathname.startsWith('/api/v1/')) return route.continue();
     const path = url.pathname;
+    if (path.includes('/generic/templates')) {
+      if (route.request().method() === 'POST') templateWrites.push(path);
+      return route.fulfill({
+        json: {
+          data: path.endsWith('/qualify')
+            ? {
+                receipt: {
+                  status: 'blocked',
+                  requirements: ['REVIEW_PRAXIS_PUBLICATION'],
+                  publication_verified: false,
+                  conformance: {
+                    passed: false,
+                    origin: 'installed_golden_qualification_missing',
+                    requirements: ['independent_component_qualification_invalid_or_stale'],
+                  },
+                },
+              }
+            : route.request().method() === 'POST'
+              ? template
+              : [template],
+        },
+      });
+    }
     let data: any = {
       items: [],
       next_cursor: null,
@@ -203,5 +233,21 @@ test('bulk model registration, delayed editor catalog preservation and explicit 
     ).toBe(true);
     await page.screenshot({ path: '.local/ui-' + path + '-mobile.png' });
   }
+  expect(errors).toEqual([]);
+  await page.goto('/workspace/' + project + '/projects');
+  await page.getByText('Template registration and qualification', { exact: true }).click();
+  await page.getByLabel('Template specification JSON', { exact: true }).setInputFiles({
+    name: 'synthetic-template.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({ authoring: {}, execution: {}, skills: {} })),
+  });
+  await page.getByRole('button', { name: 'Register exact template' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Registered template' })).toBeVisible();
+  await page.getByRole('button', { name: 'Check qualification v7' }).click();
+  await expect(page.getByRole('heading', { name: 'Qualification result: blocked' })).toBeVisible();
+  await expect(
+    page.getByText('independent_component_qualification_invalid_or_stale', { exact: true }),
+  ).toBeVisible();
+  expect(templateWrites).toHaveLength(2);
   expect(errors).toEqual([]);
 });

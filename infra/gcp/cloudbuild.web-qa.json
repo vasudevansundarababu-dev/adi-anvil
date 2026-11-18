@@ -1,0 +1,9 @@
+{
+  "steps": [{
+    "name": "gcr.io/cloud-builders/docker",
+    "args": ["build", "--platform=linux/amd64", "--label", "org.opencontainers.image.revision=${_SOURCE_COMMIT}", "-f", "infra/docker/web.Dockerfile", "-t", "us-west1-docker.pkg.dev/adi-anvil-mvp-2026/anvil-qa-v1/web:template-${_RUNTIME_TAG}", "."]
+  }],
+  "images": ["us-west1-docker.pkg.dev/adi-anvil-mvp-2026/anvil-qa-v1/web:template-${_RUNTIME_TAG}"],
+  "options": {"machineType": "E2_HIGHCPU_8", "logging": "CLOUD_LOGGING_ONLY"},
+  "timeout": "1200s"
+}
