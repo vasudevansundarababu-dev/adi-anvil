@@ -20,6 +20,34 @@ def blocked(code):
     raise HTTPException(409, {"code": code, "owner": "anvil", "ready": False, "run_authority": "not_granted"})
 
 
+def authenticated_resolution(c, project, resolution):
+    """Verify server-stored upload provenance, never ZIP-authored approval.
+
+    Offline Admin uploads retain their user-session identity. This does not
+    authenticate Authoring publication or grant policy/runtime qualification.
+    """
+    receipt = resolution["receipt"]
+    actor = receipt.get("authenticated_actor", {})
+    if type(actor) is not dict:
+        blocked("AV_KYC_AUTHENTICATED_SOURCE_PROVENANCE_REQUIRED")
+    if (resolution["project_id"] != project
+            or digest(receipt) != resolution["receipt_sha256"]
+            or receipt.get("package_sha256") != resolution["package_sha256"]
+            or receipt.get("source_sha256") is None
+            or actor.get("sponsor_user_id") != str(resolution["created_by"])):
+        blocked("AV_KYC_AUTHENTICATED_SOURCE_PROVENANCE_REQUIRED")
+    if actor.get("kind") == "user_session" and actor.get("client_id") is None:
+        sponsor = one(c, "SELECT u.id FROM anvil.users u WHERE u.id=%s AND u.active "
+                      "AND EXISTS(SELECT 1 FROM anvil.memberships m WHERE m.user_id=u.id "
+                      "AND m.project_id=%s AND m.active AND m.role='admin')",
+                      (resolution["created_by"], project))
+        if sponsor:
+            return
+    elif actor.get("kind") == "workload_identity" and actor.get("client_id"):
+        return
+    blocked("AV_KYC_AUTHENTICATED_SOURCE_PROVENANCE_REQUIRED")
+
+
 def bind(c, project, user, *, resolution_id, case_import_id, preparation_binding_id):
     """Freeze exact original B0/data before packages and a separate Run B1.
 
@@ -34,11 +62,7 @@ def bind(c, project, user, *, resolution_id, case_import_id, preparation_binding
     if not resolution or not imported or not preparation:
         blocked("AV_KYC_EXACT_SOURCE_INPUT_PREPARATION_REQUIRED")
     receipt = resolution["receipt"]
-    if (digest(receipt) != resolution["receipt_sha256"] or receipt.get("package_sha256") != resolution["package_sha256"]
-            or receipt.get("authenticated_actor", {}).get("kind") != "workload_identity"
-            or not receipt.get("authenticated_actor", {}).get("client_id")
-            or receipt.get("source_sha256") is None):
-        blocked("AV_KYC_AUTHENTICATED_SOURCE_PROVENANCE_REQUIRED")
+    authenticated_resolution(c, project, resolution)
     from anvil.praxis_template_registry import source_hash as export_source_hash
 
     if receipt["source_sha256"] != export_source_hash():

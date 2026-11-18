@@ -1,5 +1,23 @@
 # Build status
 
+## Gym privacy boundary and offline successor preparation — 18 November 2026
+
+User explicitly assigns policy/rule/task bindings to Authoring, private datasets,
+case/rights reviews, hidden expectations and rule/evaluator/runtime bindings to Gym.
+Corrected handoff27 and living gap register; documented one-time unchanged-content
+migration exception without manufacturing policy approval. Candidate discovery
+now skips dataset inventory lookup entirely for both export-client authentication
+modes; authorized Gym browser discovery retained. Three focused route tests PASS.
+Full regression1100 PASS,1 Linux skip,10 subtests; subsequent offline-provenance
+addition and discovery focused14 PASS. Read-only review found no blocker in both
+fixes. No deployment yet. See .local/gym-privacy-units.log (ignored).
+Actual native Trial qualification/owner and scoped policy producer remain open;
+v7 unchanged, new Authoring successor not received, no live model/Authoring calls.
+
+Initial broader test attempts were invalid environments: backend venv lacked
+OpenEnv/MCP; OpenEnv rerun lacked explicit Marketing fixture root. Rerunning with
+the documented original fixture root (read-only) and candidate source paths.
+
 ## Handoff contract and probe-permission layer — 18 November 2026
 
 Added docs/product/27-AUTHORING-FORGE-EXECUTION-HANDOFF.md with existing API paths,

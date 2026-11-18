@@ -67,7 +67,12 @@ def routes(access, context, wrap, idempotent):
                     "template_spec_schema": TemplateSpec.model_json_schema(),
                     "revocation_event_schema": RevocationEvent.model_json_schema(),
                     "capability_catalogue": catalogue(),
-                    "case_datasets": case_datasets(c, project),
+                    # Export service identities represent Authoring, not the
+                    # benchmark operator. Do not even query private inventory:
+                    # counts and hashes can identify a protected population.
+                    "case_datasets": []
+                    if getattr(request.state, "export_client_id", None) is not None
+                    else case_datasets(c, project),
                     "supported_catalogue_versions": ["1.0.0", "1.1.0", "1.2.0", "1.3.0"],
                     "capability_catalogues": [
                         catalogue(v) for v in ("1.0.0", "1.1.0", "1.2.0", "1.3.0")

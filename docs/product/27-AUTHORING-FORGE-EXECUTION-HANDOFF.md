@@ -41,8 +41,8 @@ that state must be visible before the user clicks Export for benchmarking.
 
 | Owner | Must supply or verify |
 |---|---|
-| Authoring | Exact approved task/form/template revision; actor/private separation; original policy and input artifacts it owns; actual source/review references; export preflight and immutable package receipts. |
-| Forge | Published execution-capability contract; registration/publication verification; installed runtime/evaluator qualification; restricted binding/materialization writers; original-input conservation; import/readiness receipts and durable execution controls. |
+| Authoring | Exact approved task/form/template revision; applicable policy bindings; policy-to-rule-to-task relationships; business criteria and genuine approval provenance; export preflight and immutable package receipts. SMEs do not write interfaces. |
+| Forge / RL Gym | Published tool/input/output contracts; private datasets, cohorts, rights and case reviews, hidden expectations; rule-to-evaluator/scoring bindings; publication verification, runtime provisioning/qualification; original-input conservation and durable execution controls. |
 | Project Product Owner | Actual scoped domain/applicability, rights and other required approvals; model/budget choice and run approval. Optional additional reviews remain non-gating under D-SIMPLE. |
 
 An authored-task approval cannot stand in for a policy applicability review or
@@ -89,8 +89,9 @@ The execution contract must identify:
 - Runtime/environment ID and version, tool schemas, bounded workflow/agent mode,
   input/output contracts, evaluator criteria/versions, reset/checkpoint semantics,
   isolation/network limits and resource limits.
-- Input dataset requirements: schema/version, required source artifacts and
-  immutable membership/snapshot identities, product selector, scope and quotas.
+- Abstract input requirements: schema/version, required document types and product
+  selector semantics. Datasets, membership, snapshot hashes, case reviews and hidden
+  expectations are resolved privately inside Gym, never by Authoring.
 - Policy requirements: actual source artifacts versus reference-only descriptors,
   hash algorithm/canonicalization, public-text location, versions, publication
   provenance, effective intervals and applicability dimensions.
@@ -116,7 +117,6 @@ joint SHA `c8c4eddfed5d018f69a739bc0280538dd5011ce79d4e52ede77f6e101f248a8d`.
 | Federal policy artifact | Original public source bytes, version, provenance, effective dates and exact hash/public-text projection. | Received separately as XML capture `07069b75...7bf1f4`; v7 still references descriptor `0c05f57a...af3fe`. New binding requires a successor; applicability/legal review remains pending. |
 | State/applicability policies | Original applicable artifacts and exact product/state/charter/effective-interval mapping. | CA/NY/TX/FL/IL source/applicability reviews are explicitly pending. |
 | Domain review evidence | Authenticated reviewer decision on the exact artifact set and applicability subject, with ID/hash, time, expiry and revocation lineage. | No such scoped approvals supplied. Workflow approval is distinct. |
-| Input population | Original case/source artifact manifest, exact membership/snapshot hashes, assessment dates and source/rights review. | Separate 200-case/50-case bundle received; dataset, membership and case hashes verified. Population identity is explicitly the sorted case-ID array. Case/expectation and rights reviews remain pending. |
 | Task export | Exact approved revision, actor JSON, form JSON, hidden reference/rubric and their hashes. | Received one individual-product task; other workflows must not be invented. |
 
 The Golden Bank operating-choice file matches all seven v7 rule hashes and Forge's
@@ -147,12 +147,13 @@ them as if absent. Please provide or explicitly track as pending:
    mapping, with versions, provenance, dates and exact source hashes.
 2. Genuine scoped domain/applicability decisions and their authenticated receipt
    identities, expiry/revocation information; no replacement of pending with approved.
-3. Case-expectation review and an explicit dataset/source-rights decision on the
-   exact population and artifacts. Synthetic provenance is useful evidence, not
-   a silently fabricated approval record.
-4. Keep the now-verified sorted-ID population hash definition in the published
-   dependency schema, with separate dataset and per-record content identities.
-5. When those execution dependencies are approved, an explicit successor proposal
+3. Exact policy-to-rule-to-task relationships, distinguishing regulatory rules
+   from bank operating choices, plus abstract business output requirements.
+4. A migration report carrying unchanged SME content and original approval
+   provenance into successor task revisions. Record the user's one-time migration
+   exception and actual PO approval; flag material business changes and missing
+   policy decisions rather than inheriting unrelated approval.
+5. When those policy dependencies are approved, an explicit successor proposal
    such as v8 that references the new artifacts and binds their review subjects.
    Preserve v7 and its approved task; do not edit it in place or substitute the
    synthetic practice documents as public policy.
@@ -192,9 +193,10 @@ These requirements need a versioned contract agreed between both applications:
 1. **Dependency discovery/preflight:** a machine-readable response listing every
    required artifact, review subject and current capability/qualification receipt
    for the exact template and project. Include owner, blocking code and fix path.
-2. **Versioned dependency bundle:** public policy sources and input manifests,
+2. **Versioned dependency bundle:** public policy sources and abstract input contracts,
    exact hash/canonicalization metadata, review/provenance records and protected
-   private assets. Supported embedded assets or authenticated immutable references
+   authored assets. Gym benchmark data and hidden expectations are excluded.
+   Supported embedded assets or authenticated immutable references
    must be declared by the negotiated schema. Do not add arbitrary undeclared
    files/fields to the current strict v1 task ZIP.
    Every checksum must declare its target (raw file, canonical object, ordered
@@ -205,9 +207,11 @@ These requirements need a versioned contract agreed between both applications:
    runtime review records covering exact source, product/state/charter/interval,
    runtime image/source, template, frozen preparation and input. UUID/hash-shaped
    strings alone are insufficient. Expiry/revocation must propagate.
-4. **Binding preparation and readiness receipt:** after validation/import, derive
-   exact policy/data/environment/evaluator/safety bindings and return their IDs,
-   versions, subject hashes and unresolved requirements. No generic ready boolean
+4. **Binding preparation and readiness receipt:** verify Authoring's policy/rule/task
+   relations and derive private Gym data/environment/evaluator/safety bindings.
+   Dataset IDs, hashes, counts and membership stay Gym-side. Authoring receives
+   audience-scoped opaque compatibility status and actionable blockers without
+   case identities or hidden expectations. No generic ready boolean
    may conceal missing components or create paid authority.
 5. **Synchronized status:** Authoring displays Forge execution qualification and
    blockers before export; Forge displays import/binding status after export.
