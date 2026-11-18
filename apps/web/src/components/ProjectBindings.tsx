@@ -340,7 +340,9 @@ export default function ProjectBindings({
               content_sha256: input.basis.content_sha256,
               mode: sampling.mode,
               count:
-                sampling.count === null || sampling.count === undefined ? '' : String(sampling.count),
+                sampling.count === null || sampling.count === undefined
+                  ? ''
+                  : String(sampling.count),
               seed: sampling.seed || '',
               caseIds: (sampling.case_ids || []).join('\n'),
             }
@@ -639,7 +641,7 @@ export default function ProjectBindings({
           Project {options.descriptors.project.display_id ?? group.display_id ?? group.id} · source
           version {group.source_version ?? 'not declared'} · {group.tasks.length} tasks
         </p>
-        <nav className={s.actions} aria-label="Project binding tabs">
+        <nav className={s.projectTabs} aria-label="Project binding tabs">
           {tabs.map((name, i) => (
             <button
               key={name}

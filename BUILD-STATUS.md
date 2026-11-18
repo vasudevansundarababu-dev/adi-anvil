@@ -1,5 +1,17 @@
 # Build status
 
+## Top navigation and template files — 18 November 2026
+
+User-authorized top-menu/reference typography and binding-tab styling candidate
+implemented afterb8ebb5a. Build and synthetic Chrome journey PASS; final content
+width alignment adjustment pending rebuild. Not deployed; no model/Authoring calls.
+KYC v7 full spec schema PASS; canonical hash exactlyc8c4eddf...f248a8d, all3part
+hashes match supplied publication record. Both supplied records have empty
+qualification_receipts and explicitly state no RL Gym qualification. Marketing v2
+hash51debb43...f3f9ddd matches, but TemplateSpec rejects authoring profile
+veyra-hush-one-launch-v2 because frozen Marketing v3 contract requires v1.
+No registry writes/publication attestations/qualification fabricated.
+
 ## UI correction candidate — 18 November 2026
 
 User-reported UI defects logged in docs/generated/ui-defects-2026-11-18.md.

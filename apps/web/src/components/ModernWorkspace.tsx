@@ -262,9 +262,37 @@ function WorkspaceView() {
   return (
     <div className={`${styles.workspace} ${dark ? styles.night : ''}`}>
       <aside className={styles.sidebar}>
-        <a className={styles.brand} href={route + '/overview'}>
-          ADI Forge<small>Frontier evaluations</small>
-        </a>
+        <div className={styles.topBrandRow}>
+          <a className={styles.brand} href={route + '/overview'}>
+            ADI Forge<small>Frontier evaluations</small>
+          </a>
+          <div className={styles.actions}>
+            <span>
+              {user.name} · {project?.workspace_access.label || 'Project access'}
+            </span>
+            <button
+              onClick={() => {
+                localStorage.setItem('anvil-workspace-theme', dark ? 'light' : 'dark');
+                setDark(!dark);
+              }}
+              aria-pressed={dark}
+            >
+              {dark ? 'Light' : 'Dark'} theme
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  await api('/auth/logout', 'POST', {});
+                  setUser(null);
+                } catch (e) {
+                  setError((e as Error).message);
+                }
+              }}
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
         <nav aria-label="Workspace navigation">
           {navigation
             .filter(([key]) => admin || key !== 'admin')
@@ -314,32 +342,6 @@ function WorkspaceView() {
               <span>{project?.name || 'No assigned project'}</span>
             )}
             <span className={styles.muted}> / {title}</span>
-          </div>
-          <div className={styles.actions}>
-            <span>
-              {user.name} · {project?.workspace_access.label || 'Project access'}
-            </span>
-            <button
-              onClick={() => {
-                localStorage.setItem('anvil-workspace-theme', dark ? 'light' : 'dark');
-                setDark(!dark);
-              }}
-              aria-pressed={dark}
-            >
-              {dark ? 'Light' : 'Dark'} theme
-            </button>
-            <button
-              onClick={async () => {
-                try {
-                  await api('/auth/logout', 'POST', {});
-                  setUser(null);
-                } catch (e) {
-                  setError((e as Error).message);
-                }
-              }}
-            >
-              Sign out
-            </button>
           </div>
         </header>
         <main className={styles.content}>

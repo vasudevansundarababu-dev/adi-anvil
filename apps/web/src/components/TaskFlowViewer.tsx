@@ -89,7 +89,8 @@ export default function TaskFlowViewer({
         width: inline ? '100%' : 'min(1100px, 94vw)',
         maxHeight: inline ? undefined : '90vh',
         overflow: 'auto',
-        padding: 24,
+        padding: inline ? 0 : 24,
+        boxSizing: 'border-box',
         borderRadius: 12,
       }}
     >

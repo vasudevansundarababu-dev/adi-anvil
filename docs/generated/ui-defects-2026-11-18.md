@@ -30,3 +30,14 @@ button gap under20px;390px mobile has no document overflow. Actual screenshots
 visually inspected. Initial synthetic Execution response omitted runs/groups,
 corrected in test harness; initial incomplete attempt retained, not counted PASS.
 No external provider or Authoring calls. Not deployed yet.
+
+## UI-20261118-03: Workspace navigation and project detail consistency
+
+User supplied Authoring screenshots as visual references. Replaced desktop left
+rail with blue top brand/account row and horizontal navigation; retained actual
+Forge routes and permissions. Applied Arial/system fallback typography, consistent
+heading scale and centered content width. Project binding buttons now use compact
+underline tabs; inline task viewer no longer adds an extra24px inset. No feature
+or data changes. Production build and existing synthetic Chrome responsive journey
+PASS (1 test3.7s); top navigation screenshot inspected. Project binding tab-specific
+browser verification has not run. All changes remain local, not deployed.
