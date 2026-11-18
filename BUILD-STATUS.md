@@ -1,5 +1,17 @@
 # Build status
 
+## QA worker rollout — 17 November 2026
+
+Source fc23fb8 deployed to existing QA only. API/ordinary/business image8bb93ec29f6e;
+dedicated software scheduler/grader4f27972ad13f now execute real bounded polling
+instead of sleep.1053 units+10 subtests,28 real SQL checks, successful GCP build
+20d9b55d-a81f-48c4-9201-0dbd310a95e2 and actual-host installed controls PASS.
+Post-rollout health/auth/image/polling/no-restart/paid-off smoke PASS after initial
+startup health503. User-approved QA boot disk expanded30→50GB; no deletion.
+Production/web/credentials/data unchanged; no live calls or Authoring integration.
+Marketing native remains gated. Open Weight successor local work continues.
+Details: docs/generated/qa-worker-rollout-2026-11-17.md.
+
 ## Current RL Gym software correction — 17 November 2026
 
 Source checkpoint38c398bdfffad1607598128704719b665ccf3af7 on
