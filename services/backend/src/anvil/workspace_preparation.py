@@ -1,5 +1,6 @@
 """Immutable planning only; no dispatch, credentials resolution or spending side effects."""
 
+from copy import deepcopy
 from typing import Literal
 from uuid import UUID
 
@@ -100,6 +101,11 @@ def model_snapshot(row):
         "destination": row["destination"],
         "config_hash": row["config_hash"],
         "max_output_tokens": row["config"].get("max_output_tokens"),
+        **(
+            {"hub": deepcopy(row["config"]["workspace_hub"]), "group": "open-weight-models"}
+            if row["config"].get("workspace_hub")
+            else {}
+        ),
         "credential": {"id": binding["id"], "version_id": binding["version_id"]}
         if binding
         else None,
@@ -518,7 +524,10 @@ def routes(context, wrap, idempotent):
                 if body.execution_budget_id is not None:
                     snapshot["execution_budget_id"] = str(body.execution_budget_id)
                 native_binding = package["manifest"].get("native_binding") or {}
-                if native_binding.get("task_mode") in {"reusable_state_workflow", "reusable_application_workflow"}:
+                if native_binding.get("task_mode") in {
+                    "reusable_state_workflow",
+                    "reusable_application_workflow",
+                }:
                     from anvil.golden_kyc_paid_package import task_set_assignments
 
                     identifiers = body.task_package_ids or [body.package_id]

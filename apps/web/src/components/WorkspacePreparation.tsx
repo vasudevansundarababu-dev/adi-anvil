@@ -19,6 +19,8 @@ type Model = {
   max_output_tokens: number;
   credential_name?: string | null;
   credential_state?: string;
+  group?: string;
+  hub?: { repository: string; revision: string };
 };
 type Framework = { id: string; name: string; framework: string };
 type Preset = {
@@ -196,12 +198,14 @@ function VersionChoice({
 }
 
 function ToggleModels({
+  base,
   models,
   selected,
   change,
   showKeys = false,
   allowedIds,
 }: {
+  base: string;
   models: Model[];
   selected: string[];
   change: (ids: string[]) => void;
@@ -209,13 +213,31 @@ function ToggleModels({
   allowedIds?: string[];
 }) {
   const [search, setSearch] = useState('');
+  const [group, setGroup] = useState('all');
+  const [versionChoice, setVersionChoice] = useState('');
+  const [catalog, setCatalog] = useState<{ id: string; label: string }[]>([]);
+  const [catalogError, setCatalogError] = useState('');
+  useEffect(() => {
+    let active = true;
+    api(base + '/workspace/models/catalog')
+      .then((result) => {
+        if (active) setCatalog(result.items);
+      })
+      .catch((e) => {
+        if (active) setCatalogError((e as Error).message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [base]);
   const visible = models.filter(
     (m) =>
-      !showKeys ||
-      [m.name, m.provider, m.model_id, m.credential_name]
-        .join(' ')
-        .toLowerCase()
-        .includes(search.toLowerCase()),
+      (group === 'all' || (m.group || 'provider-models') === group) &&
+      (!showKeys ||
+        [m.name, m.provider, m.model_id, m.credential_name]
+          .join(' ')
+          .toLowerCase()
+          .includes(search.toLowerCase())),
   );
   return (
     <fieldset>
@@ -223,6 +245,106 @@ function ToggleModels({
       <p className={styles.muted}>
         Select exact saved versions. Execution requires current bindings and explicit authorization.
       </p>
+      <label>
+        Model group
+        <select
+          value={group}
+          onChange={(e) => {
+            setGroup(e.target.value);
+            setVersionChoice('');
+          }}
+        >
+          <option value="all">All models</option>
+          <option value="open-weight-models">Open Weight Models</option>
+          <option value="provider-models">Provider models</option>
+        </select>
+      </label>
+      {group === 'open-weight-models' && (
+        <>
+          <p>
+            Choose saved model revisions below. Hugging Face access and execution runtime setup are
+            still required; live calls are disabled.
+          </p>
+          {catalogError && <p role="alert">{catalogError}</p>}
+          <details>
+            <summary>Workbook catalog · {catalog.length} model variants</summary>
+            <ul>
+              {catalog.map((item) => (
+                <li key={item.id}>
+                  {item.label}
+                  {models.some(
+                    (m) => m.hub && (m.hub as { catalog_id?: string }).catalog_id === item.id,
+                  )
+                    ? ' · Saved configuration available'
+                    : ' · Configure repository and revision first'}
+                </li>
+              ))}
+            </ul>
+          <a href={base.replace('/projects/', '/workspace/') + '/admin'}>
+              Configure Open Weight Models in Models &amp; Keys
+            </a>
+          </details>
+        </>
+      )}
+      <label>
+        Model and version
+        <select value={versionChoice} onChange={(e) => setVersionChoice(e.target.value)}>
+          <option value="">Choose an exact saved model version</option>
+          {visible.map((m) => (
+            <option
+              key={m.id}
+              value={m.id}
+              disabled={
+                m.status === 'revoked' ||
+                m.status === 'disabled' ||
+                (!!allowedIds && !allowedIds.includes(m.id))
+              }
+            >
+              {m.name} · {m.model_id} ·{' '}
+              {m.hub ? 'Hub revision ' + m.hub.revision : 'Configuration ' + shortId(m.id)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button
+        type="button"
+        disabled={
+          !visible.some(
+            (m) =>
+              m.id === versionChoice &&
+              m.status !== 'revoked' &&
+              m.status !== 'disabled' &&
+              (!allowedIds || allowedIds.includes(m.id)),
+          ) ||
+          selected.includes(versionChoice) ||
+          selected.length >= 8
+        }
+        onClick={() => change([...selected, versionChoice])}
+      >
+        Add model version
+      </button>
+      {selected.length > 0 && (
+        <div aria-label="Selected model versions">
+          <strong>Selected models and versions ({selected.length}/8)</strong>
+          <ul>
+            {selected.map((id) => {
+              const m = models.find((item) => item.id === id);
+              return (
+                <li key={id}>
+                  {m ? m.name + ' · ' + (m.hub?.revision || shortId(id)) : shortId(id)}
+                  {!visible.some((item) => item.id === id) ? ' · Outside current filter' : ''}{' '}
+                  <button
+                    type="button"
+                    onClick={() => change(selected.filter((value) => value !== id))}
+                  >
+                    Remove
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
       {showKeys && (
         <>
           <label>
@@ -245,6 +367,7 @@ function ToggleModels({
             disabled={
               m.status === 'revoked' ||
               m.status === 'disabled' ||
+              (!selected.includes(m.id) && selected.length >= 8) ||
               (!!allowedIds && !allowedIds.includes(m.id))
             }
             onChange={(e) =>
@@ -256,6 +379,11 @@ function ToggleModels({
             }
           />
           {m.name} · {m.provider}/{m.model_id} · {shortId(m.id)}
+          {m.hub && (
+            <small style={{ display: 'block', marginLeft: 24 }}>
+              Hub revision: {m.hub.revision}
+            </small>
+          )}
           {showKeys && (
             <small style={{ display: 'block', marginLeft: 24 }}>
               Key: {m.credential_name || 'No saved key linked'}
@@ -393,6 +521,7 @@ export function ExecutionPresets({
           </option>
         </select>
         <ToggleModels
+          base={base}
           models={models.items.filter((m) => m.workspace_profile)}
           selected={selected}
           change={setSelected}
@@ -996,6 +1125,7 @@ export default function WorkspacePreparation({
               )}
               {preset && (
                 <ToggleModels
+                  base={base}
                   models={runOnSave ? availableModels : preset.snapshot.models}
                   selected={selected}
                   change={setSelected}
@@ -1065,14 +1195,18 @@ export default function WorkspacePreparation({
                     min={1}
                     max={reusableMarketing ? 1000 : 100}
                     placeholder={
-                      reusableMarketing ? 'Use the complete bound campaign plan' : 'Use task horizon'
+                      reusableMarketing
+                        ? 'Use the complete bound campaign plan'
+                        : 'Use task horizon'
                     }
                     disabled={!reusableMarketing && !!workflow}
                   />
                 </>
               )}
               <label htmlFor="preparation-timeout">
-                {reusableMarketing ? 'Campaign time limit (seconds)' : 'Episode time limit (seconds)'}
+                {reusableMarketing
+                  ? 'Campaign time limit (seconds)'
+                  : 'Episode time limit (seconds)'}
               </label>
               <input
                 id="preparation-timeout"
@@ -1083,12 +1217,14 @@ export default function WorkspacePreparation({
                 min={1}
                 max={600}
                 value={timeoutValue}
-                onChange={(e) => setTimeoutChoice({ packageId: exactPackage, value: e.target.value })}
+                onChange={(e) =>
+                  setTimeoutChoice({ packageId: exactPackage, value: e.target.value })
+                }
               />
               {reusableMarketing && (
                 <p>
-                  All five roles and all 12 reporting windows share this time limit. If time runs out,
-                  the execution remains incomplete and its recorded progress is retained.
+                  All five roles and all 12 reporting windows share this time limit. If time runs
+                  out, the execution remains incomplete and its recorded progress is retained.
                 </p>
               )}
               <p>
@@ -1111,8 +1247,8 @@ export default function WorkspacePreparation({
                 step={0.000001}
               />
               <p>
-                Each repetition creates a separate trial, in sequence. The cap covers every model and
-                trial. A blank cap grants no spending authority.
+                Each repetition creates a separate trial, in sequence. The cap covers every model
+                and trial. A blank cap grants no spending authority.
               </p>
               {runOnSave && canAuthorizeRun && (
                 <p>

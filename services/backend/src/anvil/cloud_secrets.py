@@ -87,7 +87,7 @@ def validate_binding(binding):
     for key in ("project_id", "credential_id", "version_id"):
         if str(UUID(binding[key])) != binding[key]:
             raise ValueError("Invalid evaluation credential binding")
-    if binding["provider"] not in {"openai", "anthropic", "gemini", "langsmith"}:
+    if binding["provider"] not in {"openai", "anthropic", "gemini", "langsmith", "huggingface"}:
         raise ValueError("Unsupported evaluation credential provider")
 
 

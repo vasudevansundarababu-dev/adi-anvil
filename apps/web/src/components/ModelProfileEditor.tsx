@@ -30,6 +30,8 @@ export type ModelConfiguration = {
     expires_at: string;
   } | null;
   processing_terms: { reviewed: boolean; reference: string | null } | null;
+  group?: string;
+  hub?: { catalog_id: string; repository: string; revision: string } | null;
 };
 export default function ModelProfileEditor({
   base,
@@ -40,6 +42,7 @@ export default function ModelProfileEditor({
   refreshCredentials,
   saved,
   cancel,
+  initialProvider = 'openai',
 }: {
   base: string;
   source: ModelConfiguration | null;
@@ -49,8 +52,33 @@ export default function ModelProfileEditor({
   refreshCredentials: () => void;
   saved: (value: ModelConfiguration) => void;
   cancel: () => void;
+  initialProvider?: string;
 }) {
-  const [provider, setProvider] = useState(source?.provider || 'openai');
+  const [provider, setProvider] = useState(source?.provider || initialProvider);
+  const [catalogId, setCatalogId] = useState(source?.hub?.catalog_id || '');
+  const [catalog, setCatalog] = useState<
+    {
+      id: string;
+      label: string;
+      repositories: { repository: string; revision: string; repository_url: string }[];
+    }[]
+  >([]);
+  const [modelId, setModelId] = useState(source?.model_id || '');
+  const [hubRevision, setHubRevision] = useState(source?.hub?.revision || '');
+  const [catalogError, setCatalogError] = useState('');
+  useEffect(() => {
+    let active = true;
+    api(base + '/workspace/models/catalog')
+      .then((value) => {
+        if (active) setCatalog(value.items);
+      })
+      .catch((e) => {
+        if (active) setCatalogError((e as Error).message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [base]);
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     heading.current?.focus();
@@ -105,6 +133,9 @@ export default function ModelProfileEditor({
               pricing: source?.pricing || null,
               processing_terms_reviewed: source?.processing_terms?.reviewed || false,
               processing_terms_reference: source?.processing_terms?.reference || null,
+              open_weight_catalog_id:
+                provider === 'huggingface' ? String(data.get('catalog_id')) : null,
+              hub_revision: provider === 'huggingface' ? String(data.get('hub_revision')) : null,
             };
             saved(
               await api(
@@ -135,9 +166,90 @@ export default function ModelProfileEditor({
             <option value="openai">OpenAI</option>
             <option value="anthropic">Anthropic Claude</option>
             <option value="gemini">Google Gemini</option>
+            <option value="huggingface">Hugging Face · Open Weight Models</option>
           </select>
         </label>
         {source && <p className={styles.muted}>Changing provider requires a new profile.</p>}
+        {provider === 'huggingface' && (
+          <>
+            <p>
+              One saved Hugging Face token can be linked to every model. Repository terms, access
+              and an inference runtime must be configured separately. Saving does not contact
+              Hugging Face.
+            </p>
+            {catalogError && <p role="alert">{catalogError}</p>}
+            <label>
+              Open Weight Models catalog
+              <select
+                name="catalog_id"
+                required
+                value={catalogId}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setCatalogId(value);
+                  const choices = catalog.find((item) => item.id === value)?.repositories || [];
+                  setModelId(choices.length === 1 ? choices[0].repository : '');
+                  setHubRevision(choices.length === 1 ? choices[0].revision : '');
+                }}
+              >
+                <option value="" disabled>
+                  Select a catalog model
+                </option>
+                {catalog.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Repository variant
+              <select
+                value={
+                  catalog
+                    .find((item) => item.id === catalogId)
+                    ?.repositories.some((item) => item.repository === modelId)
+                    ? modelId
+                    : ''
+                }
+                onChange={(event) => {
+                  const repository = catalog
+                    .find((item) => item.id === catalogId)
+                    ?.repositories.find((item) => item.repository === event.target.value);
+                  setModelId(repository?.repository || '');
+                  setHubRevision(repository?.revision || '');
+                }}
+              >
+                <option value="">Choose a repository variant or enter one below</option>
+                {catalog
+                  .find((item) => item.id === catalogId)
+                  ?.repositories.map((item) => (
+                    <option key={item.repository} value={item.repository}>
+                      {item.repository} · observed commit {item.revision.slice(0, 12)}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label>
+              Exact Hub commit revision
+              <input
+                name="hub_revision"
+                required
+                pattern="[0-9a-f]{40}"
+                minLength={40}
+                maxLength={40}
+                value={hubRevision}
+                onChange={(event) => setHubRevision(event.target.value)}
+                placeholder="40-character commit SHA"
+              />
+            </label>
+            <p className={styles.muted}>
+              Repository choices and commits come from public Hub metadata. Base, instruct and
+              quantized variants are explicit choices. This does not verify your account access or
+              provision inference. You can enter another exact commit below.
+            </p>
+          </>
+        )}
         <label>
           Profile name
           <input
@@ -155,7 +267,8 @@ export default function ModelProfileEditor({
             required
             maxLength={200}
             pattern="[A-Za-z0-9][A-Za-z0-9._:/@\-]*"
-            defaultValue={source?.model_id || ''}
+            value={modelId}
+            onChange={(event) => setModelId(event.target.value)}
             placeholder="Enter an entitled provider model ID"
           />
         </label>

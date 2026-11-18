@@ -289,6 +289,7 @@ export default function CredentialManager({
                   <option value="anthropic">Anthropic Claude</option>
                   <option value="gemini">Google Gemini</option>
                   <option value="langsmith">LangSmith</option>
+                  <option value="huggingface">Hugging Face · shared Open Weight token</option>
                 </select>
               </label>
             </>

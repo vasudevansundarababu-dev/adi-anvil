@@ -1,5 +1,25 @@
 # Build status
 
+## Open Weight configuration successor — 17 November 2026
+
+User-authorized QA worker sourcefc23fb8 is deployed (rollout evidence commit98f4bf7
+on codex/runtime-correction-20261117). This worktree adds the Open Weight Models
+catalog/group, shared encrypted HF credential, bulk exact32 repository/commit
+configuration and Run model/version selection.17 workbook rows/24 alternatives;
+all32 public metadata GETs verified, no weights/inference/terms accepted.
+Fresh/repeated128 and real shared-token/RLS/rotation/revocation/immutable binding
+checks PASS. Browser synthetic configuration/version-selection journey PASS;
+earlier full1063 units+10 subtests PASS; final frozen checks/build pending.
+No live calls or Authoring integration; HF execution adapter/runtime remains gated.
+
+Actual QA fake-socket Linux probe confirmed a proc-root isolation defect in the
+proposed same-UID/host-PID Marketing native recipe. Native activation remains
+blocked; do not weaken the gate or claim stable native benchmarking. Required
+role/process isolation and current independent admission remain unresolved.
+See docs/generated/open-weight-models-2026-11-17.md and
+docs/generated/marketing-native-isolation-2026-11-17.md. Completion/blocker email
+still pending for this session; preserve original QA/main data and unrelated edits.
+
 ## Current RL Gym software correction — 17 November 2026
 
 Source checkpoint38c398bdfffad1607598128704719b665ccf3af7 on

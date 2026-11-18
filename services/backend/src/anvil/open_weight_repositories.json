@@ -1,0 +1,375 @@
+{
+  "items": {
+    "ow-r10-v1": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": "manual",
+        "license_metadata": "other",
+        "metadata_url": "https://huggingface.co/api/models/meta-llama/Llama-4-Scout-17B-16E",
+        "repository": "meta-llama/Llama-4-Scout-17B-16E",
+        "repository_url": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E",
+        "revision": "14d516bdff6ac06cec40678529222f193386189c"
+      },
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": "manual",
+        "license_metadata": "other",
+        "metadata_url": "https://huggingface.co/api/models/meta-llama/Llama-4-Scout-17B-16E-Instruct",
+        "repository": "meta-llama/Llama-4-Scout-17B-16E-Instruct",
+        "repository_url": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
+        "revision": "92f3b1597a195b523d8d9e5700e57e4fbb8f20d3"
+      }
+    ],
+    "ow-r10-v2": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": "manual",
+        "license_metadata": "other",
+        "metadata_url": "https://huggingface.co/api/models/meta-llama/Llama-4-Maverick-17B-128E",
+        "repository": "meta-llama/Llama-4-Maverick-17B-128E",
+        "repository_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E",
+        "revision": "10751cb97a4d7c90f7ed89196b98eb8220cfa1c2"
+      },
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": "manual",
+        "license_metadata": "other",
+        "metadata_url": "https://huggingface.co/api/models/meta-llama/Llama-4-Maverick-17B-128E-Instruct",
+        "repository": "meta-llama/Llama-4-Maverick-17B-128E-Instruct",
+        "repository_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E-Instruct",
+        "revision": "73d14711bcc77c16df3470856949c3764056b617"
+      }
+    ],
+    "ow-r11-v1": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": "manual",
+        "license_metadata": "llama3.3",
+        "metadata_url": "https://huggingface.co/api/models/meta-llama/Llama-3.3-70B-Instruct",
+        "repository": "meta-llama/Llama-3.3-70B-Instruct",
+        "repository_url": "https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct",
+        "revision": "6f6073b423013f6a7d4d9f39144961bfbfbc386b"
+      }
+    ],
+    "ow-r12-v1": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": "manual",
+        "license_metadata": "other",
+        "metadata_url": "https://huggingface.co/api/models/meta-models/Muse-Spark-Open-816B-A42B",
+        "repository": "meta-models/Muse-Spark-Open-816B-A42B",
+        "repository_url": "https://huggingface.co/meta-models/Muse-Spark-Open-816B-A42B",
+        "revision": "4c0e167c8b7a18e1dd5ca76763ecb5d53c6a9601"
+      }
+    ],
+    "ow-r12-v2": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "apache-2.0",
+        "metadata_url": "https://huggingface.co/api/models/meta-models/Muse-Glimmer-30B",
+        "repository": "meta-models/Muse-Glimmer-30B",
+        "repository_url": "https://huggingface.co/meta-models/Muse-Glimmer-30B",
+        "revision": "cec94fcfd6512f2cfe708138c32533b346ea4f69"
+      }
+    ],
+    "ow-r13-v1": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "apache-2.0",
+        "metadata_url": "https://huggingface.co/api/models/mistralai/Mistral-Large-3-675B-Base-2512",
+        "repository": "mistralai/Mistral-Large-3-675B-Base-2512",
+        "repository_url": "https://huggingface.co/mistralai/Mistral-Large-3-675B-Base-2512",
+        "revision": "3123f82420d99a7fc9313b2d69f9a0ab6cb6ab4d"
+      },
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "apache-2.0",
+        "metadata_url": "https://huggingface.co/api/models/mistralai/Mistral-Large-3-675B-Instruct-2512",
+        "repository": "mistralai/Mistral-Large-3-675B-Instruct-2512",
+        "repository_url": "https://huggingface.co/mistralai/Mistral-Large-3-675B-Instruct-2512",
+        "revision": "383ffea2c7d60dfd44ca960e8e691709d4fdb9cd"
+      }
+    ],
+    "ow-r14-v1": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "apache-2.0",
+        "metadata_url": "https://huggingface.co/api/models/mistralai/Mistral-Small-4-119B-2603",
+        "repository": "mistralai/Mistral-Small-4-119B-2603",
+        "repository_url": "https://huggingface.co/mistralai/Mistral-Small-4-119B-2603",
+        "revision": "a11f36bebf709121056b1dbcc943d1c6afbe494d"
+      }
+    ],
+    "ow-r15-v1": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "apache-2.0",
+        "metadata_url": "https://huggingface.co/api/models/openai/gpt-oss-120b",
+        "repository": "openai/gpt-oss-120b",
+        "repository_url": "https://huggingface.co/openai/gpt-oss-120b",
+        "revision": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a"
+      }
+    ],
+    "ow-r15-v2": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "apache-2.0",
+        "metadata_url": "https://huggingface.co/api/models/openai/gpt-oss-20b",
+        "repository": "openai/gpt-oss-20b",
+        "repository_url": "https://huggingface.co/openai/gpt-oss-20b",
+        "revision": "6cee5e81ee83917806bbde320786a8fb61efebee"
+      }
+    ],
+    "ow-r16-v1": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "other",
+        "metadata_url": "https://huggingface.co/api/models/nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16",
+        "repository": "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16",
+        "repository_url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16",
+        "revision": "fb0ee0bc6b3f70342afd8d84cb80dbadbaa8a1fe"
+      },
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "other",
+        "metadata_url": "https://huggingface.co/api/models/nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-NVFP4",
+        "repository": "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-NVFP4",
+        "repository_url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-NVFP4",
+        "revision": "ae1368329b1fc76b71534c5d04b87b35d9cc6e15"
+      }
+    ],
+    "ow-r16-v2": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "other",
+        "metadata_url": "https://huggingface.co/api/models/nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-BF16",
+        "repository": "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-BF16",
+        "repository_url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-BF16",
+        "revision": "e09a4cedb1787db1760375ee5539f222cae0c672"
+      },
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "other",
+        "metadata_url": "https://huggingface.co/api/models/nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB",
+        "repository": "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB",
+        "repository_url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB",
+        "revision": "e0590ed2f3a564fd99725d9d891cb09deb7cc201"
+      }
+    ],
+    "ow-r17-v1": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "mit",
+        "metadata_url": "https://huggingface.co/api/models/zai-org/GLM-4.7-Flash",
+        "repository": "zai-org/GLM-4.7-Flash",
+        "repository_url": "https://huggingface.co/zai-org/GLM-4.7-Flash",
+        "revision": "7dd20894a642a0aa287e9827cb1a1f7f91386b67"
+      }
+    ],
+    "ow-r17-v2": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "mit",
+        "metadata_url": "https://huggingface.co/api/models/zai-org/GLM-4.5-Air",
+        "repository": "zai-org/GLM-4.5-Air",
+        "repository_url": "https://huggingface.co/zai-org/GLM-4.5-Air",
+        "revision": "a24ceef6ce4f3536971efe9b778bdaa1bab18daa"
+      }
+    ],
+    "ow-r18-v1": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "other",
+        "metadata_url": "https://huggingface.co/api/models/MiniMaxAI/MiniMax-M2.7",
+        "repository": "MiniMaxAI/MiniMax-M2.7",
+        "repository_url": "https://huggingface.co/MiniMaxAI/MiniMax-M2.7",
+        "revision": "0a6536713b0b03f3be97494e5cf8d22f668a3164"
+      }
+    ],
+    "ow-r2-v1": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "apache-2.0",
+        "metadata_url": "https://huggingface.co/api/models/Qwen/Qwen3.6-35B-A3B",
+        "repository": "Qwen/Qwen3.6-35B-A3B",
+        "repository_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+        "revision": "345d467b117d1fd5eda9b879a5988de9ae5f47a7"
+      }
+    ],
+    "ow-r3-v1": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "apache-2.0",
+        "metadata_url": "https://huggingface.co/api/models/Qwen/Qwen3.8-27B",
+        "repository": "Qwen/Qwen3.8-27B",
+        "repository_url": "https://huggingface.co/Qwen/Qwen3.8-27B",
+        "revision": "37561816e66b5b9153b1b64c10968c18c1e6f4a0"
+      }
+    ],
+    "ow-r3-v2": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "apache-2.0",
+        "metadata_url": "https://huggingface.co/api/models/Qwen/Qwen3.5-27B",
+        "repository": "Qwen/Qwen3.5-27B",
+        "repository_url": "https://huggingface.co/Qwen/Qwen3.5-27B",
+        "revision": "fc05daec18b0a78c049392ed2e771dde82bdf654"
+      }
+    ],
+    "ow-r4-v1": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "apache-2.0",
+        "metadata_url": "https://huggingface.co/api/models/Qwen/Qwen3.5-122B-A10B",
+        "repository": "Qwen/Qwen3.5-122B-A10B",
+        "repository_url": "https://huggingface.co/Qwen/Qwen3.5-122B-A10B",
+        "revision": "dc4d348443bc740c68e2d77492492c11606384d5"
+      }
+    ],
+    "ow-r5-v1": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "apache-2.0",
+        "metadata_url": "https://huggingface.co/api/models/Qwen/Qwen3-235B-A22B",
+        "repository": "Qwen/Qwen3-235B-A22B",
+        "repository_url": "https://huggingface.co/Qwen/Qwen3-235B-A22B",
+        "revision": "8efa61729e24bd65b1d152b5ab5409052aa80e65"
+      }
+    ],
+    "ow-r6-v1": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "mit",
+        "metadata_url": "https://huggingface.co/api/models/deepseek-ai/DeepSeek-V4-Flash",
+        "repository": "deepseek-ai/DeepSeek-V4-Flash",
+        "repository_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
+        "revision": "60d8d70770c6776ff598c94bb586a859a38244f1"
+      }
+    ],
+    "ow-r7-v1": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "mit",
+        "metadata_url": "https://huggingface.co/api/models/deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
+        "repository": "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
+        "repository_url": "https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
+        "revision": "711ad2ea6aa40cfca18895e8aca02ab92df1a746"
+      }
+    ],
+    "ow-r8-v1": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "apache-2.0",
+        "metadata_url": "https://huggingface.co/api/models/google/gemma-4-31B",
+        "repository": "google/gemma-4-31B",
+        "repository_url": "https://huggingface.co/google/gemma-4-31B",
+        "revision": "5bbc2fb1c1b2c611d06e3d9f23c170ba21659d89"
+      },
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "apache-2.0",
+        "metadata_url": "https://huggingface.co/api/models/google/gemma-4-31B-it",
+        "repository": "google/gemma-4-31B-it",
+        "repository_url": "https://huggingface.co/google/gemma-4-31B-it",
+        "revision": "842da3794eaa0b77d5f08bae87a17459d91ff475"
+      }
+    ],
+    "ow-r8-v2": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "apache-2.0",
+        "metadata_url": "https://huggingface.co/api/models/google/gemma-4-26B-A4B",
+        "repository": "google/gemma-4-26B-A4B",
+        "repository_url": "https://huggingface.co/google/gemma-4-26B-A4B",
+        "revision": "24548b62aa021d562695c04aaf7758a1ea47990b"
+      },
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "apache-2.0",
+        "metadata_url": "https://huggingface.co/api/models/google/gemma-4-26B-A4B-it",
+        "repository": "google/gemma-4-26B-A4B-it",
+        "repository_url": "https://huggingface.co/google/gemma-4-26B-A4B-it",
+        "revision": "4d7ae4984b7db7de8f8457170b3f1a419ee76d52"
+      }
+    ],
+    "ow-r9-v1": [
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "apache-2.0",
+        "metadata_url": "https://huggingface.co/api/models/google/gemma-4-12B",
+        "repository": "google/gemma-4-12B",
+        "repository_url": "https://huggingface.co/google/gemma-4-12B",
+        "revision": "1a2c7729392586f5ecddae8807ee2ef741eabb9a"
+      },
+      {
+        "access_state": "not_checked",
+        "execution_state": "not_configured",
+        "gated": false,
+        "license_metadata": "apache-2.0",
+        "metadata_url": "https://huggingface.co/api/models/google/gemma-4-12B-it",
+        "repository": "google/gemma-4-12B-it",
+        "repository_url": "https://huggingface.co/google/gemma-4-12B-it",
+        "revision": "43c9d014b231474fa7212dbb48a762566c2b255d"
+      }
+    ]
+  },
+  "model_calls": 0,
+  "observed_at": "2026-11-18T05:00:26.437117+00:00",
+  "scope": "public_repository_metadata_only"
+}

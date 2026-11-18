@@ -27,7 +27,7 @@ class SecretValue(Strict):
 
 class Credential(SecretValue):
     name: str = Field(min_length=1, max_length=100, pattern=r".*\S.*")
-    provider: Literal["openai", "anthropic", "gemini", "langsmith"]
+    provider: Literal["openai", "anthropic", "gemini", "langsmith", "huggingface"]
 
 
 def public(row):

@@ -7,6 +7,33 @@ import styles from './ModernWorkspace.module.css';
 import ImportGenerationSettings from './ImportGenerationSettings';
 
 export default function ModelProfiles({ base }: { base: string }) {
+  const [catalog, setCatalog] = useState<
+    {
+      id: string;
+      label: string;
+      publisher: string;
+      license_claim: string;
+      repositories: { repository: string; revision: string; repository_url: string }[];
+    }[]
+  >([]);
+  const [catalogSelection, setCatalogSelection] = useState<string[]>([]);
+  const [sharedCredential, setSharedCredential] = useState('');
+  const [catalogError, setCatalogError] = useState('');
+  const [group, setGroup] = useState('all');
+  const [newProvider, setNewProvider] = useState('openai');
+  useEffect(() => {
+    let active = true;
+    api(base + '/workspace/models/catalog')
+      .then((value) => {
+        if (active) setCatalog(value.items);
+      })
+      .catch((e) => {
+        if (active) setCatalogError((e as Error).message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [base]);
   const [credentials, setCredentials] = useState<CredentialMetadata[]>([]);
   const [credentialsLoading, setCredentialsLoading] = useState(true),
     [credentialError, setCredentialError] = useState('');
@@ -115,6 +142,167 @@ export default function ModelProfiles({ base }: { base: string }) {
     <>
       <ImportGenerationSettings base={base} />
       {!editing && (
+        <section className={styles.panel} aria-label="Open Weight Models">
+          <h2>Open Weight Models</h2>
+          <p>
+            All models from your workbook are listed below. Save one Hugging Face credential and
+            reuse it across model profiles. Accept repository terms in Hugging Face separately.
+          </p>
+          <p>
+            Repository choices and commit revisions were observed in public Hub metadata. License
+            claims and your account access require review. Inference runtime setup is pending; no
+            model calls are enabled.
+          </p>
+          {catalogError && <p role="alert">{catalogError}</p>}
+          <details>
+            <summary>View workbook model catalog ({catalog.length})</summary>
+            <ul>
+              {catalog.map((item) => (
+                <li key={item.id}>
+                  {item.publisher} · {item.label} · License claim: {item.license_claim} · Setup
+                  pending
+                </li>
+              ))}
+            </ul>
+          </details>
+          <form
+            onSubmit={async (event) => {
+              event.preventDefault();
+              setBusy(true);
+              setError('');
+              setMessage('');
+              try {
+                const [credentialId, credentialVersion] = sharedCredential.split(':');
+                const selected = catalog
+                  .flatMap((item) =>
+                    item.repositories.map((repo) => ({
+                      catalog_id: item.id,
+                      repository: repo.repository,
+                      revision: repo.revision,
+                    })),
+                  )
+                  .filter((item) =>
+                    catalogSelection.includes(item.catalog_id + ':' + item.repository),
+                  );
+                const result = await api(base + '/workspace/models/catalog/register', 'POST', {
+                  models: selected,
+                  credential_id: credentialId || null,
+                  credential_version_id: credentialVersion || null,
+                });
+                setMessage(
+                  result.items.length +
+                    ' exact model versions registered. Live execution remains disabled.',
+                );
+                setCatalogSelection([]);
+                setGroup('open-weight-models');
+                await load();
+              } catch (e) {
+                setError((e as Error).message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <label>
+              Shared Hugging Face credential
+              <select
+                value={sharedCredential}
+                onChange={(event) => setSharedCredential(event.target.value)}
+                disabled={credentialsLoading}
+              >
+                <option value="">Configure models now; link a token later</option>
+                {credentials
+                  .filter(
+                    (item) =>
+                      item.provider === 'huggingface' &&
+                      !item.revoked_at &&
+                      item.current_version_id,
+                  )
+                  .map((item) => (
+                    <option key={item.id} value={item.id + ':' + item.current_version_id}>
+                      {item.name} · version {item.current_version_id?.slice(0, 8)}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <details>
+              <summary>
+                Select repository variants and versions ({catalogSelection.length} selected)
+              </summary>
+              <button
+                type="button"
+                disabled={!catalog.length || !!catalogError}
+                onClick={() =>
+                  setCatalogSelection(
+                    catalog.flatMap((item) =>
+                      item.repositories.map((repo) => item.id + ':' + repo.repository),
+                    ),
+                  )
+                }
+              >
+                Select all listed versions
+              </button>
+              <button type="button" onClick={() => setCatalogSelection([])}>
+                Clear selection
+              </button>
+              {catalog.map((item) => (
+                <fieldset key={item.id}>
+                  <legend>{item.label}</legend>
+                  {item.repositories.map((repo) => {
+                    const key = item.id + ':' + repo.repository;
+                    return (
+                      <label key={key} style={{ display: 'block' }}>
+                        <input
+                          type="checkbox"
+                          checked={catalogSelection.includes(key)}
+                          onChange={(event) =>
+                            setCatalogSelection((current) =>
+                              event.target.checked
+                                ? [...current, key]
+                                : current.filter((value) => value !== key),
+                            )
+                          }
+                        />
+                        {repo.repository} · commit {repo.revision}
+                        <a href={repo.repository_url} target="_blank" rel="noreferrer">
+                          {' '}
+                          Repository and terms
+                        </a>
+                      </label>
+                    );
+                  })}
+                </fieldset>
+              ))}
+            </details>
+            <button
+              className={styles.primary}
+              disabled={
+                busy ||
+                credentialsLoading ||
+                !catalogSelection.length ||
+                (!!sharedCredential &&
+                  !credentials.some(
+                    (item) =>
+                      !item.revoked_at &&
+                      item.id + ':' + item.current_version_id === sharedCredential,
+                  ))
+              }
+            >
+              Add selected model versions
+            </button>
+          </form>
+          <button
+            onClick={() => {
+              setSource(null);
+              setNewProvider('huggingface');
+              setEditing(true);
+            }}
+          >
+            Configure a catalog model
+          </button>
+        </section>
+      )}
+      {!editing && (
         <section className={styles.panel} aria-label="Model profile list" aria-busy={busy}>
           <div className={styles.pageHead}>
             <div>
@@ -127,6 +315,7 @@ export default function ModelProfiles({ base }: { base: string }) {
             <button
               className={styles.primary}
               onClick={() => {
+                setNewProvider('openai');
                 setEditing(!editing);
                 setSource(null);
                 setMessage('');
@@ -138,6 +327,22 @@ export default function ModelProfiles({ base }: { base: string }) {
           {error && <p role="alert">{error}</p>}
           {message && <p role="status">{message}</p>}
           {busy && <p role="status">Loading model profiles…</p>}
+          <label>
+            Model group
+            <select value={group} onChange={(e) => setGroup(e.target.value)}>
+              <option value="all">All models</option>
+              <option value="open-weight-models">Open Weight Models</option>
+              <option value="provider-models">Provider models</option>
+            </select>
+          </label>
+          {!busy &&
+            models.length > 0 &&
+            !models.some((m) => group === 'all' || (m.group || 'provider-models') === group) && (
+              <p>
+                No saved profiles in this group. Configure a catalog model above to select an exact
+                repository and revision.
+              </p>
+            )}
           {models.length ? (
             <div className={styles.tableScroll}>
               <table>
@@ -151,78 +356,85 @@ export default function ModelProfiles({ base }: { base: string }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {models.map((m) => (
-                    <tr key={m.id}>
-                      <td>
-                        <strong>{m.name}</strong>
-                        <small>
-                          {m.version ? 'Version ' + m.version : 'Legacy configuration'} ·{' '}
-                          {shortId(m.config_hash)}
-                        </small>
-                      </td>
-                      <td>
-                        {m.provider}
-                        <small>{m.model_id || 'Exact model missing'}</small>
-                      </td>
-                      <td>
-                        {m.credential_present
-                          ? 'Saved key linked'
-                          : m.credential_state === 'rotated'
-                            ? 'Key rotated · select current version'
-                            : m.credential_state === 'revoked'
-                              ? 'Key revoked'
-                              : 'No key linked'}
-                      </td>
-                      <td>
-                        {m.status === 'disabled'
-                          ? 'Disabled'
-                          : m.status === 'revoked'
-                            ? 'Revoked'
-                            : 'Planning only'}
-                      </td>
-                      <td>
-                        {m.workspace_profile && (
-                          <div className={styles.actions}>
-                            <button
-                              disabled={!m.is_current || ['disabled', 'revoked'].includes(m.status)}
-                              onClick={() => {
-                                setSource(m);
-                                setEditing(true);
-                                setError('');
-                                setMessage('');
-                              }}
-                            >
-                              Edit as new version
-                            </button>
-                            <button onClick={() => void openHistory(m.id)}>Version history</button>
-                            <button
-                              disabled={!m.is_current || m.status === 'disabled'}
-                              onClick={async () => {
-                                try {
-                                  setError('');
-                                  await api(
-                                    base + '/workspace/models/' + m.id + '/disable',
-                                    'POST',
-                                    {},
-                                    m.profile_row_version,
-                                  );
-                                  setMessage(
-                                    'Profile disabled for new preparations. All historical bindings remain intact.',
-                                  );
-                                  await load();
-                                  if (historyId) await openHistory(m.id);
-                                } catch (e) {
-                                  setError((e as Error).message);
+                  {models
+                    .filter((m) => group === 'all' || (m.group || 'provider-models') === group)
+                    .map((m) => (
+                      <tr key={m.id}>
+                        <td>
+                          <strong>{m.name}</strong>
+                          <small>
+                            {m.version ? 'Version ' + m.version : 'Legacy configuration'} ·{' '}
+                            {shortId(m.config_hash)}
+                          </small>
+                        </td>
+                        <td>
+                          {m.provider}
+                          <small>{m.model_id || 'Exact model missing'}</small>
+                          {m.hub && <small>Hub revision {m.hub.revision} · Setup pending</small>}
+                        </td>
+                        <td>
+                          {m.credential_present
+                            ? 'Saved key linked'
+                            : m.credential_state === 'rotated'
+                              ? 'Key rotated · select current version'
+                              : m.credential_state === 'revoked'
+                                ? 'Key revoked'
+                                : 'No key linked'}
+                        </td>
+                        <td>
+                          {m.status === 'disabled'
+                            ? 'Disabled'
+                            : m.status === 'revoked'
+                              ? 'Revoked'
+                              : 'Planning only'}
+                        </td>
+                        <td>
+                          {m.workspace_profile && (
+                            <div className={styles.actions}>
+                              <button
+                                disabled={
+                                  !m.is_current || ['disabled', 'revoked'].includes(m.status)
                                 }
-                              }}
-                            >
-                              Disable profile
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                                onClick={() => {
+                                  setSource(m);
+                                  setEditing(true);
+                                  setError('');
+                                  setMessage('');
+                                }}
+                              >
+                                Edit as new version
+                              </button>
+                              <button onClick={() => void openHistory(m.id)}>
+                                Version history
+                              </button>
+                              <button
+                                disabled={!m.is_current || m.status === 'disabled'}
+                                onClick={async () => {
+                                  try {
+                                    setError('');
+                                    await api(
+                                      base + '/workspace/models/' + m.id + '/disable',
+                                      'POST',
+                                      {},
+                                      m.profile_row_version,
+                                    );
+                                    setMessage(
+                                      'Profile disabled for new preparations. All historical bindings remain intact.',
+                                    );
+                                    await load();
+                                    if (historyId) await openHistory(m.id);
+                                  } catch (e) {
+                                    setError((e as Error).message);
+                                  }
+                                }}
+                              >
+                                Disable profile
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>
@@ -260,6 +472,7 @@ export default function ModelProfiles({ base }: { base: string }) {
           key={source?.id || 'new'}
           base={base}
           source={source}
+          initialProvider={newProvider}
           credentials={credentials}
           credentialsLoading={credentialsLoading}
           credentialError={credentialError}

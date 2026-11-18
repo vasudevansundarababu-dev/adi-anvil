@@ -7,10 +7,16 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import AwareDatetime, Field, HttpUrl, field_validator, model_validator
 
-from anvil import auth, domain
+from anvil import auth, domain, open_weight_catalog
 from anvil.db import Jsonb, audit, digest, one, uid
 from anvil.providers import PROVIDERS, secret_presence
 from anvil.schemas import Strict
+
+# Configuration only: do not extend the dispatch adapter registry.
+WORKSPACE_PROVIDERS = {
+    **PROVIDERS,
+    "huggingface": ("Hugging Face", "HF_TOKEN", "https://router.huggingface.co/v1"),
+}
 
 
 class Pricing(Strict):
@@ -30,7 +36,7 @@ class Pricing(Strict):
 
 class ModelProfile(Strict):
     name: str = Field(min_length=1, max_length=100, pattern=r".*\S.*")
-    provider: Literal["openai", "anthropic", "gemini"]
+    provider: Literal["openai", "anthropic", "gemini", "huggingface"]
     model_id: str = Field(min_length=1, max_length=200, pattern=r"^[A-Za-z0-9][A-Za-z0-9._:/@-]*$")
     max_output_tokens: int = Field(default=4096, ge=1, le=8192, strict=True)
     credential_id: UUID | None = None
@@ -40,14 +46,124 @@ class ModelProfile(Strict):
     processing_terms_reference: str | None = Field(
         default=None, min_length=5, max_length=500, pattern=r".*\S.*"
     )
+    open_weight_catalog_id: str | None = Field(default=None, max_length=40)
+    hub_revision: str | None = Field(default=None, pattern=r"^[0-9a-f]{40}$")
 
     @model_validator(mode="after")
     def references(self):
+        if self.provider == "huggingface":
+            if (
+                not self.hub_revision
+                or not self.open_weight_catalog_id
+                or not open_weight_catalog.entry(self.open_weight_catalog_id)
+            ):
+                raise ValueError(
+                    "Choose a catalog model and an explicit 40-character Hub commit revision"
+                )
+            import re
+
+            if not re.fullmatch(
+                r"[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*", self.model_id
+            ):
+                raise ValueError(
+                    "Use the explicit Hub owner/repository; aliases are not repository identities"
+                )
+        elif self.hub_revision or self.open_weight_catalog_id:
+            raise ValueError("Hub metadata is only supported for Hugging Face profiles")
         if self.credential_version_id and not self.credential_id:
             raise ValueError("Credential version requires a credential")
         if self.processing_terms_reviewed and not self.processing_terms_reference:
             raise ValueError("Reviewed terms require an explicit reference")
         return self
+
+
+class CatalogSelection(Strict):
+    catalog_id: str = Field(max_length=40)
+    repository: str = Field(max_length=200)
+    revision: str = Field(pattern=r"^[0-9a-f]{40}$")
+
+
+class CatalogRegistration(Strict):
+    models: list[CatalogSelection] = Field(min_length=1, max_length=32)
+    credential_id: UUID | None = None
+    credential_version_id: UUID | None = None
+
+    @model_validator(mode="after")
+    def exact_selection(self):
+        if bool(self.credential_id) != bool(self.credential_version_id):
+            raise ValueError("Choose both the shared credential and its exact current version")
+        keys = [(m.catalog_id, m.repository, m.revision) for m in self.models]
+        if len(set(keys)) != len(keys):
+            raise ValueError("Duplicate catalog model/version")
+        for selected in self.models:
+            item = open_weight_catalog.entry(selected.catalog_id)
+            if not item or not any(
+                r["repository"] == selected.repository and r["revision"] == selected.revision
+                for r in item["repositories"]
+            ):
+                raise ValueError("Select an exact observed catalog repository/version")
+        return self
+
+
+def register_catalog(c, project, user, body):
+    c.execute("SELECT id FROM anvil.projects WHERE id=%s FOR UPDATE", (project,))
+    if body.credential_id:
+        credential = one(
+            c,
+            "SELECT * FROM anvil.workspace_credentials WHERE id=%s FOR SHARE",
+            (body.credential_id,),
+        )
+        if not credential or credential["provider"] != "huggingface":
+            raise HTTPException(404, "Matching shared Hugging Face credential not found")
+        if credential["revoked_at"] or str(credential["current_version_id"]) != str(
+            body.credential_version_id
+        ):
+            raise HTTPException(
+                409, "Shared credential revoked or rotated; reload its exact version"
+            )
+    existing = c.execute("""SELECT c.* FROM anvil.connections c JOIN anvil.workspace_model_profiles p
+        ON p.current_connection_id=c.id AND p.project_id=c.project_id
+        WHERE c.provider_key='huggingface' AND c.status<>'revoked' AND p.disabled_at IS NULL LIMIT 1001""").fetchall()
+    if len(existing) > 1000:
+        raise HTTPException(409, "Catalog registration limit reached; manage profiles individually")
+    binding = (
+        {"id": str(body.credential_id), "version_id": str(body.credential_version_id)}
+        if body.credential_id
+        else None
+    )
+    result = []
+    for selected in body.models:
+        found = next(
+            (
+                row
+                for row in existing
+                if row["model_id"] == selected.repository
+                and row["config"].get("workspace_hub", {}).get("revision") == selected.revision
+                and row["config"].get("workspace_hub", {}).get("catalog_id") == selected.catalog_id
+                and row["config"].get("workspace_credential") == binding
+            ),
+            None,
+        )
+        if found:
+            result.append(model_public(c, found))
+            continue
+        result.append(
+            save_model(
+                c,
+                project,
+                user,
+                ModelProfile(
+                    name=selected.repository[:100],
+                    provider="huggingface",
+                    model_id=selected.repository,
+                    open_weight_catalog_id=selected.catalog_id,
+                    hub_revision=selected.revision,
+                    credential_id=body.credential_id,
+                    credential_version_id=body.credential_version_id,
+                ),
+            )
+        )
+    return {"items": result, "live_available": False}
 
 
 def version_header(c, connection, lock=False):
@@ -138,6 +254,10 @@ def model_public(c, row):
         "pricing": row["config"].get("workspace_pricing"),
         "pricing_state": pricing_state(row["config"]),
         "processing_terms": row["config"].get("workspace_terms"),
+        "group": open_weight_catalog.GROUP
+        if row["provider_key"] == "huggingface"
+        else "provider-models",
+        "hub": row["config"].get("workspace_hub"),
     }
 
 
@@ -171,6 +291,15 @@ def save_model(c, project, user, body, header=None):
         "bound_micro_usd": None,
         "processing_terms_reviewed": False,
     }
+    if body.provider == "huggingface":
+        config["workspace_hub"] = {
+            "catalog_id": body.open_weight_catalog_id,
+            "repository": body.model_id,
+            "revision": body.hub_revision,
+            "repository_state": "user_declared_unverified",
+            "access_state": "not_checked",
+            "execution_state": "not_configured",
+        }
     if body.credential_id:
         credential = one(
             c,
@@ -193,7 +322,7 @@ def save_model(c, project, user, body, header=None):
         {
             "provider": body.provider,
             "model_id": body.model_id,
-            "destination": PROVIDERS[body.provider][2],
+            "destination": WORKSPACE_PROVIDERS[body.provider][2],
             "config": config,
             "adapter": "workspace-planning-v1",
         }
@@ -206,8 +335,8 @@ def save_model(c, project, user, body, header=None):
             project,
             body.provider,
             body.model_id,
-            PROVIDERS[body.provider][2],
-            PROVIDERS[body.provider][1],
+            WORKSPACE_PROVIDERS[body.provider][2],
+            WORKSPACE_PROVIDERS[body.provider][1],
             Jsonb(config),
             checksum,
             user,
@@ -240,6 +369,28 @@ def save_model(c, project, user, body, header=None):
 
 def routes(context, wrap, idempotent):
     router = APIRouter(prefix="/api/v1/projects/{project}/workspace/models")
+
+    @router.get("/catalog")
+    def group_catalog(project: UUID, request: Request):
+        with context(request, project) as (c, user, roles):
+            auth.require(roles, *domain.CONTENT_ROLES)
+            return wrap(open_weight_catalog.catalog(), request)
+
+    @router.post("/catalog/register")
+    def group_register(project: UUID, body: CatalogRegistration, request: Request):
+        with context(request, project) as (c, user, roles):
+            auth.require(roles, "admin")
+            return wrap(
+                idempotent(
+                    c,
+                    project,
+                    user,
+                    request,
+                    body,
+                    lambda: register_catalog(c, project, user, body),
+                ),
+                request,
+            )
 
     @router.get("/{cid}/configuration")
     def configuration(project: UUID, cid: UUID, request: Request):
