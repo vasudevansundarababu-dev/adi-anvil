@@ -1,5 +1,24 @@
 # Build status
 
+## Latest verified QA hotfix — 17 November 2026
+
+QA serves818afca90c61b77a3de955c35c30881ca6567069. Cloud Build
+e5cec1ef-765e-49d6-80a3-905f2600e53f SUCCESS. Shared HF token linking/rotation
+now versions the same catalog profile instead of duplicating current profiles.
+All six serving containers match this revision, zero restarts; scheduler/grader
+polling, catalog24 variants/32 repository versions, schema128, actual frontend
+bundle, workspace/health200 and anonymous catalog401 PASS. Live calls off;
+Authoring untouched. Backup open-weight-relink-818afca-20261117 retained on QA.
+See .local/open-weight-models-20261117/docs/generated/open-weight-relink-fix-2026-11-17.md.
+
+Separate unserved native candidate27cd2c6 plus unwired MAC prototype passed1080
+unit tests+10 subtests and28 fresh/repeated-schema SQL checks, model_calls0.
+Actual isolated Linux fake-socket probe passed combined private mount/AppArmor
+denials and preserved intended control access. This is NOT full native admission:
+per-attempt production confinement, owner/capture lifecycle and genuine independent
+qualification remain unfinished. Probe policy must never be used as production policy.
+One blocker email already sent; no duplicate sent. Historical entries below retained.
+
 ## Current QA deployment and native continuation — 17 November 2026
 
 Existing QA now serves Open Weight successor dc9a144: backend200e67e6f193,
