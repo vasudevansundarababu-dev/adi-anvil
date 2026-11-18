@@ -1,5 +1,40 @@
 # Build status
 
+## Latest actual KYC setup result — 18 November 2026
+
+KYCv7 registered through real user's signed-in Admin UI, exactc8c4eddf...f248a8d
+hash and persisted SQL confirmed. Actual qualification BLOCKED:
+AV_ENVIRONMENT_PROVISIONING_REQUIRED, REVIEW_PRAXIS_PUBLICATION; installed technical
+reader reports missing independent qualification. No bindings/import/Ready claim.
+Remaining runtime admission/lifecycle, policy owner/evidence and bounded single-product
+pilot work documented in .local/open-weight-models-20261117/docs/generated/kyc-v7-readiness-2026-11-18.md.
+QA web e0ec104 image6c95aa0a...d7700e6, build20506c05-d383-4da7-8a14-353886aadbb8
+SUCCESS; backend/runtime818afca unchanged. Corrected actual template endpoint401,
+health/workspace200, bundle/nonweb config PASS; local browser/build PASS. Prior
+wrong frontend route in8ac1169 failed smoke422, retained and corrected. Root source
+not deployed. No live/Authoring calls or approvals fabricated. Existing data preserved.
+
+## Active KYC v7 setup — 18 November 2026
+
+User explicitly authorizes registration, runtime qualification and bindings, leaving
+model selection to user and no live calls. Worktree .local/open-weight-models-20261117
+latest sourcee0ec104. Added genuine Admin template file registration/qualification UI.
+Local build and synthetic Chrome PASS. Initial frontend8ac1169 deployed; QA smoke
+caught missing dataset-exports route prefix (422). Corrected actual backend OpenAPI
+prefix; corrective Cloud Build20506c05-d383-4da7-8a14-353886aadbb8 in progress.
+Do not claim first registration UI passed. Backend/runtime/data/flags unchanged.
+GCP reauthentication completed. Forge browser tab4 signed in as actual user Admin.
+No template registered yet. Pending corrected web-only rollout, actual UI upload
+of supplied KYCv7 spec and truthful qualification result. Exact diagnostics in
+worktree docs/generated/kyc-v7-readiness-2026-11-18.md.
+
+Confirmed actual QA component ready=false (independent_paid_runtime_qualification_required
+legacy fallback), generic import enabled, live model and Authoring calls false.
+Independent review found missing production actual Trial admission/lifecycle and
+policy qualifier owner; offline publication record is informational, not authenticated.
+ZIP contains one product workflow; existing paid taskset requiresfour. No false
+qualification or approvals. No benchmark Ready claim.
+
 ## UI correction checkpoint — 18 November 2026
 
 Source .local/open-weight-models-20261117 checkpointb8ebb5a implements the
