@@ -59,8 +59,14 @@ def verify_packages(connection, project, current, packages):
     product = [binding for binding in bindings if binding.get("task_mode") == "reusable_application_workflow"]
     if not product:
         return None
-    if len(product) != 4 or len(product) != len(bindings):
-        raise ValueError("All four exact product-task packages required")
+    if not 1 <= len(product) <= 4 or len(product) != len(bindings):
+        raise ValueError("One to four exact product-task packages required")
+    selectors = [binding.get("case_selector") or {} for binding in product]
+    if (any(selector.get("field") != "product" or selector.get("value") not in
+            {"individual", "adult_joint", "teen_joint", "custodial"} for selector in selectors)
+            or len({selector["value"] for selector in selectors}) != len(selectors)
+            or len({str(package["id"]) for package in packages}) != len(packages)):
+        raise ValueError("Distinct product identities required")
     parents = {(binding.get("preparation_binding_id"), binding.get("preparation_binding_sha256")) for binding in product}
     inputs = {digest(binding.get("resolved_input")) for binding in product}
     if len(parents) != 1 or len(inputs) != 1:
@@ -74,6 +80,6 @@ def verify_packages(connection, project, current, packages):
     selected = {(str(package["id"]), package["package_sha256"]) for package in packages}
     refs = tuple(ref for ref in current["snapshot"]["workflow"] if ref["kind"] == "package"
                  and (str(ref["id"]), ref["sha256"]) in selected)
-    if len(refs) != 4:
+    if len(refs) != len(packages):
         raise ValueError("Current binding must explicitly select each product package")
     return verify_transition(original["snapshot"], current["snapshot"], refs)

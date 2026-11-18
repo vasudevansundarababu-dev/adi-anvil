@@ -348,17 +348,23 @@ def assignments(c, project, binding, case_ids=None):
 
 
 def task_set_assignments(c, project, packages, case_ids=None):
-    """Several state tasks share one execution group and one aggregate budget."""
+    """Selected workflows share one frozen input and one aggregate budget.
+
+    Full-input preparation separately checks conservation against every input
+    row. A subset of authored products never implies coverage of other products.
+    """
     modes = {(p["manifest"].get("native_binding") or {}).get("task_mode") for p in packages}
     if "reusable_application_workflow" in modes:
-        if modes != {"reusable_application_workflow"} or len(packages) != 4 or len({str(p["id"]) for p in packages}) != 4:
-            raise HTTPException(422, "Select the four distinct reusable product-task packages")
+        if modes != {"reusable_application_workflow"} or not 1 <= len(packages) <= 4 or len({str(p["id"]) for p in packages}) != len(packages):
+            raise HTTPException(422, "Select one to four distinct reusable product-task packages")
         shared, products, members = None, set(), {}
         for package in packages:
             binding = package["manifest"]["native_binding"]
             reference = {key: binding.get(key) for key in ("resolved_input", "preparation_binding_id", "preparation_binding_sha256",
                          "import_id", "import_sha256", "runtime_sha256", "evaluator_sha256", "template_sha256", "pack_id")}
             product = binding["case_selector"]["value"]
+            if product not in {"individual", "adult_joint", "teen_joint", "custodial"}:
+                raise HTTPException(422, "Unknown application product workflow")
             if (shared is not None and shared != reference) or product in products:
                 raise HTTPException(409, "Product tasks must share the exact input, template, environment and evaluators")
             shared = reference
@@ -367,8 +373,6 @@ def task_set_assignments(c, project, packages, case_ids=None):
                 if item["application_id"] in members:
                     raise HTTPException(409, "Application assigned to multiple product tasks")
                 members[item["application_id"]] = item | {"package_id": str(package["id"])}
-        if products != {"individual", "adult_joint", "teen_joint", "custodial"}:
-            raise HTTPException(422, "All four original application product workflows required")
         selected = sorted(members) if case_ids is None else case_ids
         if not selected or len(set(selected)) != len(selected) or set(selected) - members.keys():
             raise HTTPException(422, "Select unique applications from the shared product-task input")

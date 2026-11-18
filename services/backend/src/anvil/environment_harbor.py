@@ -29,10 +29,11 @@ from anvil.environment_collect import harbor_collection
 from anvil.harbor_worker import child_environment, process_identity, recover_child
 from anvil.native_image_profile import require_cached_image
 from anvil.native_process_identity import process_domain
+from anvil.owned_process_group import UnreapedProcessGroup
 from anvil.praxis_generic_contract import canonical
 
 PRESTART_GUARD_SHA256 = "32cff9841bb9999a1ea4bcc7b8db94674a73cd71b67e33693fcd7732d5c0a19d"
-OPERATOR_PROOF_SHA256 = "98e21e6e0cd978cd470609e6c941edd00405eb319e7e164469e1e1857b6ac593"
+OPERATOR_PROOF_SHA256 = "435bbfe0f738cd77d499b20b796751203a6717ac69b111e3bc849ef6b43cb854"
 
 
 def prestart_guards():
@@ -352,14 +353,9 @@ def _fixed_group_owned(child):
 
 
 def _stop_fixed_process(child, *, abnormal=False):
-    if abnormal or child.poll() is None:
-        owned = _fixed_group_owned(child)
-        try:
-            if owned:
-                os.killpg(child.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
-        child.wait(timeout=2)
+    from anvil.golden_kyc_fixed_process import stop
+
+    stop(child)
 
 
 def _collect_fixed_child(child, *, ends):
@@ -406,7 +402,14 @@ def _collect_fixed_child(child, *, ends):
         remaining = ends - time.monotonic()
         if remaining <= 0:
             raise stopped("callback_deadline")
-        child.wait(timeout=remaining)
+        # Never reap here: retain the group's numeric identity through cleanup,
+        # even when the leader exits and descendants close both capture pipes.
+        owner = child._anvil_owned_group
+        while not owner.exited():
+            remaining = ends - time.monotonic()
+            if remaining <= 0:
+                raise stopped("callback_deadline")
+            time.sleep(min(0.01, remaining))
         return bytes(values["stdout"]), bytes(values["stderr"])
     except FixedCaptureStopped:
         try:
@@ -482,6 +485,7 @@ def dispatch_fixed_child(request, *, folder, assets, deadline):
         start_new_session=True,
     )
     capture_complete = False
+    child._anvil_owned_group = UnreapedProcessGroup(child)
     try:
         child._anvil_start_identity = process_identity(child.pid)
         child._anvil_group_nonce = binding["operation_nonce"]

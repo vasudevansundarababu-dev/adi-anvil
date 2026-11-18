@@ -165,8 +165,8 @@ def routes(context, wrap, idempotent):
 
             def create():
                 if body.resolved_input is not None:
-                    if len(body.resolved_task_ids) != 4:
-                        raise HTTPException(422, "Select the four reusable application product tasks")
+                    if not 1 <= len(body.resolved_task_ids) <= 4:
+                        raise HTTPException(422, "Select one to four reusable application product tasks")
                     products, packages = set(), []
                     reference = body.resolved_input.model_dump(mode="json")
                     for identifier in body.resolved_task_ids:
@@ -174,13 +174,12 @@ def routes(context, wrap, idempotent):
                         selector = row["binding"].get("case_selector", {}) if row else {}
                         product = selector.get("value")
                         if (not row or row["binding"].get("task_mode") != "reusable_application_workflow"
-                                or selector.get("field") != "product" or product in products):
-                            raise HTTPException(409, "Four distinct current product tasks required")
+                                or selector.get("field") != "product" or product in products
+                                or product not in {"individual", "adult_joint", "teen_joint", "custodial"}):
+                            raise HTTPException(409, "Distinct current product tasks required")
                         products.add(product)
                         packages.append(prepare(c, project, user, identifier, body.max_model_calls, resolved_input=reference))
-                    if products != {"individual", "adult_joint", "teen_joint", "custodial"}:
-                        raise HTTPException(422, "All four application product workflows required")
-                    return {"packages": packages, "task_count": 4, "resolved_input": reference,
+                    return {"packages": packages, "task_count": len(packages), "resolved_input": reference,
                             "run_authority": "not_granted", "paid_calls": False}
                 packages, states, shared = [], set(), None
                 for identifier in body.resolved_task_ids:

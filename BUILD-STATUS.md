@@ -1,5 +1,29 @@
 # Build status
 
+## KYC worker/cohort correction candidate — 18 November 2026
+
+User-authorized continuation implemented four worker corrections: shared disjoint
+LOGIN→transaction-local capability entry; sealed OPA settings in fixed child;
+denied-read failure outside commit boundary (actual denial retained, no second
+action); unreaped-PGID cleanup including normal leader exit/closedstdio descendant.
+Bounded1–4 approved product workflow preparation now uses actualtaskcounts and
+immutable parent ancestry; original full-input conservation/unassigned-row blocks
+remain. No gate boolean flipped to claim native qualification.
+Independent read-only review passed latest fixes and cohort scope. Real SQL30PASS
+on denial durability/role fixes; actual isolated Linux process control PASS. Final
+combined source1082 units PASS,1 Linux-specific skip,10 subtests PASS;30 SQL PASS
+with fresh/repeated migrations and unchanged sourcebb430b85fc1955bbdf4f494b68d35fc7bdd27a517911dcb08eecbf407015ba48.
+Details docs/generated/kyc-runtime-corrections-2026-11-18.md.
+Candidate NOT deployed; QA web e0ec104, backend/runtime818afca unchanged.
+
+Policy source input required: supplied v7spec has CIP reference hash0c05f57a...af3fe
+but no matching public policy artifact bytes or scoped product/state/charter/domain
+review records. Async question asks user for actual reviewed bundle location.
+Current review receipt UUID/hash columns have no authenticated exact-scope resolver;
+production policy review resolver/producer and separate native technical-probe
+admission still require implementation. Do not fabricate approvals or report Ready.
+No live model or Authoring calls; supplied KYC template remains registered/blocked.
+
 ## KYC v7 registered; qualification blocked — 18 November 2026
 
 Actual user's Admin UI registered exact KYC v7 hashc8c4eddf...f248a8d; persisted SQL

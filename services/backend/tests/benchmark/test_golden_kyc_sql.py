@@ -73,6 +73,86 @@ def test_private_answers_and_scheduler_capabilities_are_disjoint(owned):
         ).fetchone()["p"]
 
 
+def test_dedicated_login_enters_only_transaction_local_scheduler_role(owned):
+    from psycopg import sql
+    from psycopg.conninfo import make_conninfo
+
+    from anvil.golden_kyc_identity import enter
+
+    login = "kyc_fixed_login_" + secrets.token_hex(6)
+    password = secrets.token_urlsafe(32)
+    with connection(owned) as owner:
+        owner.execute(
+            sql.SQL(
+                "CREATE ROLE {} LOGIN PASSWORD {} NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION"
+            ).format(sql.Identifier(login), sql.Literal(password))
+        )
+        owner.execute(sql.SQL("GRANT anvil_golden_scheduler TO {}").format(sql.Identifier(login)))
+    with psycopg.connect(
+        make_conninfo(owned[0], user=login, password=password), row_factory=dict_row
+    ) as runtime:
+        with runtime.transaction():
+            enter(runtime, "anvil_golden_scheduler", owned[1])
+            row = runtime.execute(
+                "SELECT current_user AS role,session_user AS login,current_setting('anvil.project') AS project"
+            ).fetchone()
+            assert row == {
+                "role": "anvil_golden_scheduler",
+                "login": login,
+                "project": str(owned[1]),
+            }
+            assert not runtime.execute(
+                "SELECT has_table_privilege(current_user,'banking_private.expectations','SELECT') AS allowed"
+            ).fetchone()["allowed"]
+        assert runtime.execute("SELECT current_user AS role").fetchone()["role"] == login
+        runtime.commit()
+    with connection(owned) as owner:
+        owner.execute(sql.SQL("GRANT anvil_golden_grader TO {}").format(sql.Identifier(login)))
+    with psycopg.connect(
+        make_conninfo(owned[0], user=login, password=password), row_factory=dict_row
+    ) as runtime:
+        with pytest.raises(RuntimeError, match="disjoint"):
+            enter(runtime, "anvil_golden_scheduler", owned[1])
+
+
+def test_denied_fixed_read_commits_event_and_never_attempts_second_action(owned, monkeypatch):
+    from anvil import golden_kyc_harbor as harbor
+    from anvil import golden_kyc_runtime as runtime
+
+    _, project, user, _, pack = owned
+    with connection(owned) as c:
+        trial = create_trial(c, project, user, pack, "GB-001", "denial-software-control", 1)
+    monkeypatch.setattr(runtime, "opa_guard", lambda facts: {"allow": False, "outcome": "deny"})
+    context = harbor.SoftwareScriptContext(
+        connections=lambda: connection(owned),
+        project=project,
+        user=user,
+        trial_id=trial["trial_id"],
+        trial_token=trial["trial_token"],
+        snapshot_sha256="0" * 64,
+        script=(
+            {"action": "application.read", "arguments": {}},
+            {"action": "documents.list", "arguments": {}},
+        ),
+    )
+    with pytest.raises(ValueError, match="did not complete"):
+        harbor.execute_software_script(context)
+    with connection(owned) as c:
+        events = c.execute(
+            "SELECT action,record FROM banking.events WHERE trial_id=%s ORDER BY sequence",
+            (trial["trial_id"],),
+        ).fetchall()
+        attempts = [
+            event for event in events if event["action"] in ("application.read", "documents.list")
+        ]
+        assert len(attempts) == 1 and attempts[0]["action"] == "application.read"
+        assert attempts[0]["record"]["status"] == "denied"
+        state = c.execute(
+            "SELECT state FROM banking.trials WHERE id=%s", (trial["trial_id"],)
+        ).fetchone()["state"]
+        assert state["counters"]["calls"] == 1 and state["final"] is None
+
+
 def test_reset_retains_failure_results_and_audit_rotates_credentials(owned):
     _, project, user, _, pack = owned
     with connection(owned) as c:

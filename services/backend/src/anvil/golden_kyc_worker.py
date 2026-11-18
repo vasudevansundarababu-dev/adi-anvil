@@ -9,6 +9,7 @@ from uuid import UUID
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
 
+from anvil.golden_kyc_identity import enter as enter_runtime_role
 from anvil.golden_kyc_runtime import process_one
 
 
@@ -94,33 +95,7 @@ def main(argv=None):
         @contextmanager
         def connections():
             with pool.connection() as c:
-                role = c.execute(
-                    "SELECT rolsuper,rolbypassrls,pg_has_role(current_user,%s,'MEMBER') AS assigned FROM pg_roles WHERE rolname=current_user",
-                    (role_name,),
-                ).fetchone()
-                forbidden = c.execute(
-                    "SELECT has_table_privilege(current_user,%s,'SELECT') AS access",
-                    ("banking_private.scenarios" if grading else "banking_private.expectations",),
-                ).fetchone()["access"]
-                mixed = c.execute(
-                    "SELECT pg_has_role(current_user,'anvil_app','MEMBER') OR pg_has_role(current_user,'anvil_worker','MEMBER') OR pg_has_role(current_user,%s,'MEMBER') AS mixed",
-                    ("anvil_golden_scheduler" if grading else "anvil_golden_grader",),
-                ).fetchone()["mixed"]
-                if (
-                    not role
-                    or role["rolsuper"]
-                    or role["rolbypassrls"]
-                    or not role["assigned"]
-                    or forbidden
-                    or mixed
-                ):
-                    raise RuntimeError("Dedicated non-owner disjoint Golden runtime login required")
-                c.execute(
-                    "SET LOCAL ROLE anvil_golden_grader"
-                    if grading
-                    else "SET LOCAL ROLE anvil_golden_scheduler"
-                )
-                c.execute("SELECT set_config('anvil.project',%s,true)", (str(args.project),))
+                enter_runtime_role(c, role_name, args.project)
                 yield c
 
         if args.mode == "governed-ai":

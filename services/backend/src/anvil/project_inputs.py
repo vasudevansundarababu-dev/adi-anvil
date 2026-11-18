@@ -351,7 +351,7 @@ def selection_gaps(c, project, imported, reference, workflow=()):
     product_mode = bool(packages) and all((p["manifest"].get("native_binding") or {}).get("task_mode") == "reusable_application_workflow"
                                          for p in packages)
     if (
-        len(packages) != (4 if product_mode else 5)
+        (not 1 <= len(packages) <= 4 if product_mode else len(packages) != 5)
         or {p["manifest"]["task_id"] for p in packages} != expected_tasks
         or (not product_mode and any(
             (p["manifest"].get("native_binding") or {}).get("execution_data")

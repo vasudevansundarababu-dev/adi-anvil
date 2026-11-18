@@ -427,9 +427,10 @@ def prepare_native(c, project, user, imported, max_model_calls, *, resolved_inpu
         expected_count = full_input["body"]["input_count"]
     else:
         expected_count = overlay["selected_count"] if overlay else imported["content"]["case_dataset"]["case_count"]
-    if len(packages) != (4 if product_mode else 5) or len(assignments) != expected_count:
+    expected_tasks = len(imported["content"]["tasks"]) if product_mode else 5
+    if (product_mode and not 1 <= expected_tasks <= 4) or len(packages) != expected_tasks or len(assignments) != expected_count:
         raise HTTPException(
-            409, "Native preparation must preserve five tasks and the complete shared dataset"
+            409, "Native preparation must preserve the approved task population and complete shared input"
         )
     native = packages[0]["native_binding"]
     imported_runtime = one(

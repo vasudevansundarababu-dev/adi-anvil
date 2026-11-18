@@ -25,6 +25,9 @@ CHECKS = {
 }
 REQUIRED_DEPENDENCIES = {
     "services/backend/src/anvil/golden_kyc_harbor.py",
+    "services/backend/src/anvil/golden_kyc_identity.py",
+    "services/backend/src/anvil/golden_kyc_fixed_process.py",
+    "services/backend/src/anvil/owned_process_group.py",
     "services/backend/src/anvil/golden_kyc_runtime.py",
     "services/backend/src/anvil/golden_kyc_data.py",
     "services/backend/src/anvil/golden_kyc_engine.py",

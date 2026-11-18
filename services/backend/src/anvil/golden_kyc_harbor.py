@@ -6,6 +6,7 @@ This controlled script path proves software custody, never model performance.
 
 import hashlib
 import json
+import os
 import sys
 from contextlib import contextmanager
 from copy import deepcopy
@@ -52,8 +53,14 @@ def execute_software_script(context):
                 item["action"],
                 item["arguments"],
             )
-            observations.append(result)
-            row = locked(c, context.project, context.user, context.trial_id)
+            completed = isinstance(result, dict) and result.get("status") == "completed"
+            if completed:
+                observations.append(result)
+                row = locked(c, context.project, context.user, context.trial_id)
+        # Leave the transaction normally first: preserve the denied action's
+        # actual event/counters, then stop without a next action or success receipt.
+        if not completed:
+            raise ValueError("Fixed KYC software action did not complete")
         if row["closed"]:
             break
     public_output = {"observations": observations, "recommendation": row["state"]["final"]}
@@ -292,6 +299,29 @@ def run_script(connections, project, user, pack, application, script, *, folder,
     )
 
 
+@contextmanager
+def fixed_policy_runtime(store, host_record):
+    """Bind only independently sealed OPA bytes; ambient settings are not authority."""
+    record = host_record["binaries"]["opa"]
+    path = Path(record["path"])
+    if set(record) != {"path", "sha256"} or not path.is_absolute() or path.resolve() != path:
+        raise ValueError("Exact fixed OPA identity required")
+    store._sealed_file(path, record["sha256"])
+    if not path.stat().st_mode & 0o111:
+        raise ValueError("Executable fixed OPA required")
+    values = {"ANVIL_OPA_BINARY": str(path), "ANVIL_OPA_SHA256": record["sha256"]}
+    previous = {key: os.environ.get(key) for key in values}
+    try:
+        os.environ.update(values)
+        yield
+    finally:
+        for key, value in previous.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
 def fixed_worker_main(arguments):
     """Fixed child entry, never an uploaded callback or serialized connection."""
     from anvil.environment_harbor import (
@@ -354,14 +384,18 @@ def fixed_worker_main(arguments):
                     or provider["server_version"] not in identity["version"]
                 ):
                     raise ValueError("Fixed database identity changed")
+                from anvil.golden_kyc_identity import enter
+
+                enter(c, "anvil_golden_scheduler", context["project_id"])
                 yield c
 
         request = FixedSoftwareRequest(module.canonical(actor), module.canonical(context))
         store.validate_loaded_origins(docs["runtime_seal"], component="backend")
         native_identity = owned_json(Path(host["folder"]), "framework-entry.json")
-        output, receipt = FixedSoftwareAdapter(request, connections)._dispatch_claimed(
-            store, native_identity=native_identity
-        )
+        with fixed_policy_runtime(store, host):
+            output, receipt = FixedSoftwareAdapter(request, connections)._dispatch_claimed(
+                store, native_identity=native_identity
+            )
         store.validate_runtime_seal(docs["runtime_seal"])
         raw = json.dumps(
             {"output": output, "receipt": receipt},
