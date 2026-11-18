@@ -74,7 +74,7 @@ test('bulk model registration, delayed editor catalog preservation and explicit 
     if (url.hostname !== '127.0.0.1') return route.abort();
     if (!url.pathname.startsWith('/api/v1/')) return route.continue();
     const path = url.pathname;
-    if (path.includes('/generic/templates')) {
+    if (path.includes('/dataset-exports/generic/templates')) {
       if (route.request().method() === 'POST') templateWrites.push(path);
       return route.fulfill({
         json: {

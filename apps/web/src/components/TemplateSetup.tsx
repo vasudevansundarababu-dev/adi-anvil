@@ -22,7 +22,7 @@ export default function TemplateSetup({ base }: { base: string }) {
   const load = useCallback(async () => {
     const current = ++generation.current;
     try {
-      const rows = await api(base + '/generic/templates');
+      const rows = await api(base + '/dataset-exports/generic/templates');
       if (current === generation.current) setTemplates(rows);
     } catch (e) {
       if (current === generation.current) setError((e as Error).message);
@@ -64,7 +64,7 @@ export default function TemplateSetup({ base }: { base: string }) {
               !body.skills
             )
               throw new Error('Choose the full template specification, not a publication record.');
-            const row = await api(base + '/generic/templates', 'POST', body);
+          const row = await api(base + '/dataset-exports/generic/templates', 'POST', body);
             setMessage(
               'Registered template ' +
                 row.template_id +
@@ -124,7 +124,7 @@ export default function TemplateSetup({ base }: { base: string }) {
                       setReceipt(null);
                       try {
                         const result = await api(
-                          base + '/generic/templates/' + item.id + '/qualify',
+                          base + '/dataset-exports/generic/templates/' + item.id + '/qualify',
                           'POST',
                           {},
                         );
