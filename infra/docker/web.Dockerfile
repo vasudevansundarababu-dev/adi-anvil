@@ -6,6 +6,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json apps/web/
 RUN pnpm install --frozen-lockfile --filter @anvil/web...
 COPY apps/web apps/web
+COPY contracts contracts
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm --filter @anvil/web build
 
