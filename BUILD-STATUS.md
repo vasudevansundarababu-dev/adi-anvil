@@ -1,5 +1,18 @@
 # Build status
 
+## Deployed QA successor dc9a144 — 17 November 2026
+
+Matching API/web/workers and schema128 now serving on existing QA. Build
+1412cea1-288a-4790-a4cc-539da655827c SUCCESS. Final1064 units+10 subtests,
+28 KYC/Marketing SQL checks, HF shared-token/bulk32/RLS/rotation/revocation SQL,
+synthetic Chrome configuration journey, web types/build, installed source/policy
+checks and actual QA image/health/auth/UI-bundle/polling smoke PASS. Role inventory
+now reports four actual serving observations as observed_not_qualified, never Ready.
+One blocker/status email sent to user's work address, Gmail1a1ed239877309e4.
+No live calls or Authoring integration; production unchanged. Backups retained.
+Full record: docs/generated/open-weight-qa-rollout-2026-11-17.md.
+Continue native work separately at .local/marketing-native-next-20261117 (5cbf104).
+
 ## Open Weight configuration successor — 17 November 2026
 
 User-authorized QA worker sourcefc23fb8 is deployed (rollout evidence commit98f4bf7
