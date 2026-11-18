@@ -33,7 +33,7 @@ from anvil.owned_process_group import UnreapedProcessGroup
 from anvil.praxis_generic_contract import canonical
 
 PRESTART_GUARD_SHA256 = "32cff9841bb9999a1ea4bcc7b8db94674a73cd71b67e33693fcd7732d5c0a19d"
-OPERATOR_PROOF_SHA256 = "435bbfe0f738cd77d499b20b796751203a6717ac69b111e3bc849ef6b43cb854"
+OPERATOR_PROOF_SHA256 = "477361b506ac914daef4793638f09c11ad6d5232e907109e4e5a6fdc672c9b7d"
 
 
 def prestart_guards():

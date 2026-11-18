@@ -7,7 +7,7 @@ import os
 import re
 import stat
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import UUID
 
@@ -1000,5 +1000,397 @@ class OperatorProofStore:
                 "native_identity": intent["native_identity"],
                 "output_sha256": output_sha256,
                 "no_replay": True,
+            },
+        )
+
+
+class TechnicalProbeStore(OperatorProofStore):
+    """Permit only a source-bound diagnostic attempt, never predeclare success.
+
+    These records are deliberately disjoint from role/business admissions and
+    qualification files. Only the existing QA root operator can use production
+    custody. No upload, API payload or environment flag creates a permit here.
+    """
+
+    DIRECTORIES = {
+        "technical-probe-plans",
+        "technical-probe-intents",
+        "technical-probe-outcomes",
+        "technical-probe-attempts",
+    }
+    LIMITS = {
+        "actions": 2,
+        "callback_invocations": 1,
+        "model_calls": 0,
+        "wall_seconds": 30,
+        "lifecycle_seconds": 120,
+        "cleanup_seconds": 6,
+    }
+    ASSETS = {
+        "runtime_seal",
+        "trial_config",
+        "task_package",
+        "host_image_custody",
+        "recovery_recipe",
+        "environment_service",
+        "tests_service",
+    }
+    SCRIPT = [
+        {"action": "application.read", "arguments": {}},
+        {"action": "documents.list", "arguments": {}},
+    ]
+
+    def _qa_custody(self):
+        if not (
+            os.geteuid() == 0
+            and self.owner == 0
+            and self.root == ROOT
+            and self.scope == "root_owned_prestart_binding_only"
+            and os.uname().nodename == "anvil-qa-v1"
+        ):
+            return False
+        physical, opened = self.root.stat(), os.fstat(self.fd)
+        self._private(physical, directory=True)
+        return (physical.st_dev, physical.st_ino) == (opened.st_dev, opened.st_ino)
+
+    def _directory(self, name):
+        if name not in self.DIRECTORIES:
+            return super()._directory(name)
+        fd = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=self.fd)
+        try:
+            self._private(os.fstat(fd), directory=True)
+        except BaseException:
+            os.close(fd)
+            raise
+        return fd
+
+    def _domain(self):
+        # No hostname-only or caller-provided namespace observation.
+        boot = Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+        need(str(UUID(boot)) == boot, "probe_boot_identity_required")
+        need(
+            int(Path("/proc/self/stat").read_text().split(" ", 1)[0]) == os.getpid(),
+            "probe_original_proc_visibility_required",
+        )
+        return {
+            "boot_id": boot,
+            "pid_namespace": os.readlink("/proc/self/ns/pid"),
+            "user_namespace": os.readlink("/proc/self/ns/user"),
+        }
+
+    def load_probe(self, job_id):
+        need(str(UUID(job_id)) == job_id, "canonical_probe_job_required")
+        raw = self._read("technical-probe-plans", job_id + ".json")
+        plan = parse(raw)
+        need(
+            isinstance(plan, dict)
+            and set(plan)
+            == {
+                "schema_version",
+                "job_id",
+                "operation_nonce",
+                "authorization_scope",
+                "request_reference",
+                "created_at",
+                "expires_at",
+                "host_domain",
+                "request_capsule",
+                "dependency_source_sha256s",
+                "asset_sha256s",
+                "service_projection_sha256s",
+                "limits",
+            },
+            "exact_technical_probe_plan_required",
+        )
+        need(
+            plan["schema_version"] == "anvil.kyc-technical-probe-plan.v1"
+            and plan["job_id"] == job_id
+            and hash_value(plan["operation_nonce"])
+            and plan["authorization_scope"] == "fixed_two_read_software_control_only"
+            and type(plan["request_reference"]) is str
+            and 1 <= len(plan["request_reference"]) <= 1000,
+            "non_spending_operator_probe_scope_required",
+        )
+        created, expires = (
+            datetime.fromisoformat(plan[key]) for key in ("created_at", "expires_at")
+        )
+        now = self._clock()
+        need(
+            created.tzinfo is not None
+            and expires.tzinfo is not None
+            and now.tzinfo is not None
+            and created <= now < expires <= min(created + timedelta(minutes=30), STOP),
+            "technical_probe_plan_expired_or_future",
+        )
+        need(plan["host_domain"] == self._domain(), "technical_probe_host_domain_changed")
+        need(
+            plan["limits"] == self.LIMITS and all(type(v) is int for v in plan["limits"].values()),
+            "fixed_technical_probe_caps_required",
+        )
+        capsule = plan["request_capsule"]
+        need(
+            type(capsule) is dict and set(capsule) == {"actor", "business_context"},
+            "exact_probe_capsule_required",
+        )
+        actor, context = capsule["actor"], capsule["business_context"]
+        validate_business_context(context)
+        need(
+            context["kind"] == "golden_kyc_software_v1"
+            and type(actor) is dict
+            and actor.get("paid_calls") is False
+            and len(canonical(capsule)) <= 16384
+            and context["script_sha256"] == sha(canonical(self.SCRIPT))
+            and all(
+                actor.get(key) == context[key]
+                for key in (
+                    "application_id",
+                    "environment_version",
+                    "snapshot_sha256",
+                    "script_sha256",
+                )
+            ),
+            "exact_two_read_probe_request_required",
+        )
+        self._dependencies(plan["dependency_source_sha256s"])
+        need(
+            "services/harbor/src/anvil_harbor/operator_proof.py"
+            in plan["dependency_source_sha256s"],
+            "probe_permission_reader_source_pin_required",
+        )
+        pins = plan["asset_sha256s"]
+        profiles = plan["service_projection_sha256s"]
+        need(
+            type(pins) is dict
+            and set(pins) == self.ASSETS
+            and all(hash_value(v) for v in pins.values())
+            and type(profiles) is dict
+            and set(profiles) == {"environment", "tests"}
+            and all(hash_value(v) for v in profiles.values()),
+            "complete_probe_asset_pins_required",
+        )
+        for name, pin in pins.items():
+            asset = self._read("operation-assets", pin + ".json")
+            need(sha(asset) == pin and type(parse(asset)) is dict, "probe_asset_changed")
+            if name in ("environment_service", "tests_service"):
+                role = "environment" if name == "environment_service" else "tests"
+                need(
+                    sha(canonical(parse(asset))) == profiles[role], "probe_role_projection_changed"
+                )
+        return {
+            "schema_version": "anvil.kyc-technical-probe-permission.v1",
+            "job_id": job_id,
+            "operation_nonce": plan["operation_nonce"],
+            "plan_sha256": sha(raw),
+            "request_sha256": sha(canonical(capsule)),
+            "request_capsule": capsule,
+            "asset_sha256s": pins,
+            "custody_scope": self.scope,
+            "host_domain": plan["host_domain"],
+            "expires_at": plan["expires_at"],
+            "technical_probe_authorized": self._qa_custody(),
+            "qualification_granted": False,
+            "business_operation_authorized": False,
+            "dispatch_authorized": False,
+            "native_trial_qualified": False,
+        }
+
+    def _framework_entry(self, permission):
+        """Read owner-produced entry and process receipt, never a caller UUID."""
+        nonce = permission["operation_nonce"]
+        pin = permission["asset_sha256s"]["host_image_custody"]
+        host_raw = self._read("operation-assets", pin + ".json")
+        need(sha(host_raw) == pin, "probe_host_asset_changed")
+        host = parse(host_raw)
+        expected = self.root / "technical-probe-attempts" / nonce
+        need(host.get("folder") == str(expected), "fixed_probe_attempt_path_required")
+        parent = self._directory("technical-probe-attempts")
+        try:
+            folder = os.open(nonce, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent)
+        finally:
+            os.close(parent)
+        try:
+            self._private(os.fstat(folder), directory=True)
+            observed = {}
+            for name in ("framework-entry.json", "framework-process.json"):
+                fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=folder)
+                with os.fdopen(fd, "rb") as stream:
+                    before = os.fstat(stream.fileno())
+                    self._private(before)
+                    raw = stream.read(8193)
+                    after = os.fstat(stream.fileno())
+                need(
+                    len(raw) <= 8192
+                    and (before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns)
+                    == (after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns),
+                    "probe_framework_receipt_changed",
+                )
+                value = parse(raw)
+                need(
+                    type(value) is dict and canonical(value) == raw,
+                    "canonical_probe_framework_receipt_required",
+                )
+                observed[name] = (value, sha(raw))
+        finally:
+            os.close(folder)
+        process = observed["framework-process.json"][0]
+        need(
+            set(process) == {"pid", "identity", "host_domain"}
+            and type(process["pid"]) is int
+            and process["pid"] > 1
+            and process["host_domain"] == permission["host_domain"] == self._domain(),
+            "probe_framework_process_domain_changed",
+        )
+        proc = Path("/proc") / str(process["pid"])
+
+        def identity():
+            need(
+                os.readlink(proc / "ns/pid") == permission["host_domain"]["pid_namespace"]
+                and os.readlink(proc / "ns/user") == permission["host_domain"]["user_namespace"],
+                "probe_framework_kernel_namespace_changed",
+            )
+            fields = (proc / "stat").read_text().rpartition(") ")[2].split()
+            need(
+                len(fields) >= 20 and fields[0] != "Z" and proc.stat().st_uid == self.owner,
+                "probe_framework_process_not_live",
+            )
+            return (
+                "linux:"
+                + permission["host_domain"]["boot_id"]
+                + ":"
+                + str(process["pid"])
+                + ":"
+                + fields[19]
+            )
+
+        need(identity() == process["identity"], "probe_framework_process_identity_changed")
+        python = host["binaries"]["python"]
+        need(
+            set(python) == {"path", "sha256"}
+            and python["path"] == host["python"]
+            and (proc / "exe").resolve() == Path(host["python"]).resolve(),
+            "probe_framework_interpreter_changed",
+        )
+        self._sealed_file((proc / "exe").resolve(), python["sha256"])
+        with (proc / "cmdline").open("rb") as stream:
+            command = stream.read(16385)
+        need(
+            command
+            == b"\0".join(
+                str(v).encode()
+                for v in (host["python"], "-m", "anvil_harbor.environment", expected / "trial.json")
+            )
+            + b"\0",
+            "fixed_probe_framework_command_required",
+        )
+        need(identity() == process["identity"], "probe_framework_process_identity_changed")
+        return observed["framework-entry.json"][0], {
+            "entry_sha256": observed["framework-entry.json"][1],
+            "process_receipt_sha256": observed["framework-process.json"][1],
+            "process_identity": process["identity"],
+            "host_domain": process["host_domain"],
+        }
+
+    def enter_probe(self, job_id):
+        """Reserve exactly once before effects; Trial identity must be owner-observed.
+
+        Read the actual persisted entry and physical process observation. This
+        ledger alone never starts a Trial or callback.
+        """
+        permission = self.load_probe(job_id)
+        need(
+            permission["technical_probe_authorized"] is True,
+            "actual_QA_operator_probe_custody_required",
+        )
+        framework_identity, observed = self._framework_entry(permission)
+        need(
+            type(framework_identity) is dict
+            and set(framework_identity)
+            == {"job_id", "operation_nonce", "request_sha256", "trial_name", "framework_trial_id"}
+            and all(
+                framework_identity[key] == permission[key]
+                for key in ("job_id", "operation_nonce", "request_sha256")
+            )
+            and framework_identity["trial_name"] == "anvil-bm-" + permission["operation_nonce"][:20]
+            and str(UUID(framework_identity["framework_trial_id"]))
+            == framework_identity["framework_trial_id"],
+            "actual_probe_framework_identity_required",
+        )
+        identity = {
+            key: permission[key]
+            for key in ("job_id", "operation_nonce", "plan_sha256", "request_sha256")
+        }
+        need(
+            self._clock() < datetime.fromisoformat(permission["expires_at"]),
+            "technical_probe_expired_before_entry",
+        )
+        return self._write_once(
+            "technical-probe-intents",
+            job_id + ".json",
+            identity
+            | {
+                "schema_version": "anvil.kyc-technical-probe-intent.v1",
+                "entered_at": self._clock().isoformat(),
+                "framework_identity": framework_identity,
+                "framework_observation": observed,
+                "custody_scope": self.scope,
+                "no_replay": True,
+                "model_calls_authorized": 0,
+                "qualification_granted": False,
+            },
+        )
+
+    def finish_probe(self, job_id, intent_sha256, *, state, evidence_sha256):
+        need(
+            str(UUID(job_id)) == job_id
+            and hash_value(intent_sha256)
+            and state in ("observed", "unknown")
+            and hash_value(evidence_sha256),
+            "bounded_probe_outcome_required",
+        )
+        intent_raw = self._read("technical-probe-intents", job_id + ".json")
+        need(sha(intent_raw) == intent_sha256, "probe_intent_changed")
+        intent = parse(intent_raw)
+        need(
+            set(intent)
+            == {
+                "schema_version",
+                "job_id",
+                "operation_nonce",
+                "plan_sha256",
+                "request_sha256",
+                "entered_at",
+                "framework_identity",
+                "framework_observation",
+                "custody_scope",
+                "no_replay",
+                "model_calls_authorized",
+                "qualification_granted",
+            }
+            and intent["schema_version"] == "anvil.kyc-technical-probe-intent.v1"
+            and intent["job_id"] == job_id
+            and intent["no_replay"] is True
+            and intent["qualification_granted"] is False
+            and type(intent["model_calls_authorized"]) is int
+            and intent["model_calls_authorized"] == 0,
+            "probe_intent_scope_changed",
+        )
+        # Recording an unknown result remains possible after permit expiry. It
+        # cannot grant replacement time, replay the attempt or declare success.
+        return self._write_once(
+            "technical-probe-outcomes",
+            job_id + ".json",
+            {
+                "schema_version": "anvil.kyc-technical-probe-outcome.v1",
+                "job_id": job_id,
+                "intent_sha256": intent_sha256,
+                "plan_sha256": intent["plan_sha256"],
+                "state": state,
+                "evidence_sha256": evidence_sha256,
+                "no_replay": True,
+                "qualification_granted": False,
+                "model_calls_authorized": 0,
+                "actual_model_calls": None,
+                "evidence_reference_verified": False,
+                "custody_scope": self.scope,
             },
         )

@@ -1,5 +1,24 @@
 # Build status
 
+## Handoff contract and probe-permission layer — 18 November 2026
+
+Added docs/product/27-AUTHORING-FORGE-EXECUTION-HANDOFF.md with existing API paths,
+proposed dependency/readiness/review extensions, exact template expectations,
+Authoring-vs-Forge responsibilities and acceptance checks. New23-file evidence
+bundle hashes verified; updated population hash c77748bc...e08aa is verified as
+RFC8785 sortedcase-ID-array hash. Dataset/percase hashes also verify. User expressly
+forbids state-policy bindings/policy-qualifiedv7; newfederalbindings require successor.
+
+New TechnicalProbeStore preparation layer separates nonspending plan permission
+from passed qualification, validates physical QA custody and kernel-bound framework
+records, keeps one-shot intents/outcomes and unknown actualcalls. Not wired to an
+actual Trial or existing native gates.1097 units PASS,1 Linux-specific skip,
+10 subtests;30 fresh/repeated-schema SQL PASS, sourced5e5303a9ba6514439031037e94effff6f8c0f82220c9141f0e39832e3f41c60.
+Source pin477361b506ac914daef4793638f09c11ad6d5232e907109e4e5a6fdc672c9b7d.
+Details docs/generated/kyc-probe-permission-2026-11-18.md. NOT deployed;
+QA web e0ec104/backend818afca unchanged. No live/Authoring calls. Actual native
+owner/semantic preflight/control collection and policy-review producer remain open.
+
 ## KYC worker/cohort correction candidate — 18 November 2026
 
 User-authorized continuation implemented four worker corrections: shared disjoint
