@@ -1,5 +1,19 @@
 # Build status
 
+## KYC v7 registered; qualification blocked — 18 November 2026
+
+Actual user's Admin UI registered exact KYC v7 hashc8c4eddf...f248a8d; persisted SQL
+confirmed. Actual qualification check blocked on environment provisioning and
+authenticated publication. No bindings/import/Ready claim. See
+docs/generated/kyc-v7-readiness-2026-11-18.md for concrete missing production runtime/
+policy-owner code, no-paid technical evidence and one-product pilot coverage gap.
+QA web now e0ec104 image6c95aa0a...d7700e6, Cloud Build20506c05-d383-4da7-8a14-353886aadbb8
+SUCCESS; backend/runtime818afca unchanged. Actual health/workspace200, proper template
+endpoint anonymous401 and frontend markers PASS; other service config unchanged.
+Previous8ac1169 wrong template route prefix failed QA smoke422, corrected and retested.
+GCP and actual Forge Admin reauthentication completed. No live calls/Authoring;
+existing model profiles/project bindings preserved. Local servers stopped.
+
 ## Top navigation and template files — 18 November 2026
 
 User-authorized top-menu/reference typography and binding-tab styling candidate
