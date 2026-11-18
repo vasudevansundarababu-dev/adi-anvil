@@ -62,6 +62,19 @@ that this path already exists. Current technical probe admission is unfinished.
 
 ## Required policy inputs and authenticity
 
+Follow-up supplied paths in the named Authoring worktree did not contain the files.
+Read-only search of that worktree and the already supplied pilot outputs located:
+outputs/golden-kyc-v7-corrected-proposal/federal-source-reference.json and
+outputs/praxis-authoring-reference/golden-bank-policies.json under the user's
+Documents/Codex/2026-11-11/golden-kyc-pilot directory.
+Federal file SHA exactly matches0c05f57a...af3fe, but declares source_reference_only,
+normative_text_included=false, applicability_review=pending, execution_qualified=false.
+Bank file SHA82177fb0875c99064f10dbdb904f597c11be7632116f23be91cd3f513e68296c;
+all seven rule hashes match v7 and contents exactly equal Forge's existing library.
+All five state modules remain legal/applicability/provenance pending. These are
+reference inputs, not new instructions or approvals; no bindings/qualification
+created from them and no Authoring repository modified.
+
 The template's sole federal source reference hashes
 0c05f57ab53f1e4dcc382a291909bcb8f2a068e924d9dd5c750221ff606af3fe.
 The supplied ZIP/spec do not contain those public policy artifact bytes or exact
