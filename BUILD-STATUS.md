@@ -1,5 +1,16 @@
 # Build status
 
+## QA backend780e447 serving — 18 November 2026
+
+Cloud Build92e9fff1-dc79-4df6-a318-a280805d9ac9 SUCCESS; API/worker/business-worker
+now image5f70ee4a...ecc21a1/revision780e447, running/zero restarts. Web e0ec104 and
+other services unchanged. Health/workspace200, anonymous contracts401, installed
+external discovery projection controls PASS, native gate remains closed. Exact
+checkpoint1111 units+10 subtests PASS,1 Linux skip. Backup retained. No migration,
+live model/Authoring calls or real mail. See docs/generated/gym-offline-qa-2026-11-18.md.
+Actual native qualification/policy producer still incomplete; unseen Authoring
+successor import/bindings/Run creation NOT RUN. Living register52 unique gaps.
+
 ## Gym privacy boundary and offline successor preparation — 18 November 2026
 
 User explicitly assigns policy/rule/task bindings to Authoring, private datasets,
