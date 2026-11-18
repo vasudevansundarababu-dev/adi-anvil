@@ -106,7 +106,11 @@ class CatalogRegistration(Strict):
 
 
 def register_catalog(c, project, user, body):
-    c.execute("SELECT id FROM anvil.projects WHERE id=%s FOR UPDATE", (project,))
+    # HTTP idempotency already locks the project. Also serialize direct catalog
+    # helper calls; this additional advisory lock grants no project access.
+    c.execute(
+        "SELECT pg_advisory_xact_lock(hashtextextended('anvil.catalog:' || %s,0))", (str(project),)
+    )
     if body.credential_id:
         credential = one(
             c,
@@ -133,34 +137,66 @@ def register_catalog(c, project, user, body):
     )
     result = []
     for selected in body.models:
+        matches = [
+            row
+            for row in existing
+            if row["model_id"] == selected.repository
+            and row["config"].get("workspace_hub", {}).get("revision") == selected.revision
+            and row["config"].get("workspace_hub", {}).get("catalog_id") == selected.catalog_id
+        ]
         found = next(
-            (
-                row
-                for row in existing
-                if row["model_id"] == selected.repository
-                and row["config"].get("workspace_hub", {}).get("revision") == selected.revision
-                and row["config"].get("workspace_hub", {}).get("catalog_id") == selected.catalog_id
-                and row["config"].get("workspace_credential") == binding
-            ),
-            None,
+            (row for row in matches if row["config"].get("workspace_credential") == binding), None
         )
         if found:
             result.append(model_public(c, found))
             continue
+        if len(matches) > 1:
+            raise HTTPException(
+                409,
+                "Multiple configurations exist for a selected repository/revision; link its credential on an explicit profile",
+            )
+        header = None
+        preserved = {}
+        if matches:
+            found = matches[0]
+            # Choosing 'link later' must not unlink an already configured token.
+            if binding is None:
+                result.append(model_public(c, found))
+                continue
+            header = version_header(c, found["id"], True)
+            if (
+                not header
+                or header["disabled_at"]
+                or str(header["current_connection_id"]) != str(found["id"])
+            ):
+                raise HTTPException(
+                    409, "Model configuration changed; reload catalog before linking"
+                )
+            previous = found["config"]
+            terms = previous.get("workspace_terms") or {}
+            preserved = {
+                "name": previous.get("profile_name") or selected.repository[:100],
+                "max_output_tokens": previous.get("max_output_tokens") or 4096,
+                "pricing": previous.get("workspace_pricing"),
+                "processing_terms_reviewed": terms.get("reviewed", False),
+                "processing_terms_reference": terms.get("reference"),
+            }
         result.append(
             save_model(
                 c,
                 project,
                 user,
                 ModelProfile(
-                    name=selected.repository[:100],
+                    name=preserved.get("name", selected.repository[:100]),
                     provider="huggingface",
                     model_id=selected.repository,
                     open_weight_catalog_id=selected.catalog_id,
                     hub_revision=selected.revision,
                     credential_id=body.credential_id,
                     credential_version_id=body.credential_version_id,
+                    **{k: v for k, v in preserved.items() if k != "name"},
                 ),
+                header=header,
             )
         )
     return {"items": result, "live_available": False}
