@@ -138,12 +138,51 @@ def test_shared_hf_credential_project_isolation_rotation_and_immutable_revisions
         for item in open_weight_catalog.catalog()["items"]
         for r in item["repositories"]
     ]
+    keyless = post(base + "/models/catalog/register", {"models": all_models})
+    assert keyless.status_code == 200, keyless.text
+    before_bindings = {v["model_id"]: v for v in keyless.json()["data"]["items"]}
+    assert len(before_bindings) == 32
     registered = post(base + "/models/catalog/register", registration | {"models": all_models})
     assert registered.status_code == 200, registered.text
     values = registered.json()["data"]["items"]
     assert len(values) == 32 and len({v["id"] for v in values}) == 32
     assert all(v["credential_binding"] == values[0]["credential_binding"] for v in values)
     assert all(not v["launch_available"] for v in values)
+    assert all(v["profile_id"] == before_bindings[v["model_id"]]["profile_id"] for v in values)
+    assert all(
+        v["version"]
+        == before_bindings[v["model_id"]]["version"]
+        + (1 if before_bindings[v["model_id"]]["credential_binding"] is None else 0)
+        for v in values
+    )
+    original_keyless = next(v for v in before_bindings.values() if v["credential_binding"] is None)
+    unchanged_keyless = client.get(
+        base + "/models/" + original_keyless["id"] + "/configuration"
+    ).json()["data"]
+    assert (
+        unchanged_keyless["credential_binding"] is None and unchanged_keyless["is_current"] is False
+    )
+    third = post(
+        base + "/credentials/" + credential["id"] + "/versions", {"secret": "test-only-third-token"}
+    )
+    assert third.status_code == 200, third.text
+    fresh_registration = registration | {
+        "models": all_models,
+        "credential_version_id": third.json()["data"]["current_version_id"],
+    }
+    relinked = post(base + "/models/catalog/register", fresh_registration)
+    assert relinked.status_code == 200, relinked.text
+    after_bindings = {v["model_id"]: v for v in relinked.json()["data"]["items"]}
+    assert all(
+        after_bindings[v["model_id"]]["profile_id"] == v["profile_id"]
+        and after_bindings[v["model_id"]]["version"] == v["version"] + 1
+        for v in values
+    )
+    with transaction(project, user) as c:
+        assert (
+            c.execute("SELECT count(*) AS n FROM anvil.workspace_model_profiles").fetchone()["n"]
+            == 34
+        )
     revoked = post(base + "/credentials/" + credential["id"] + "/revoke", {})
     assert revoked.status_code == 200, revoked.text
     denied = post(base + "/models/catalog/register", registration)

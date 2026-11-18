@@ -19,6 +19,9 @@ type Model = {
   max_output_tokens: number;
   credential_name?: string | null;
   credential_state?: string;
+  credential_binding?: { id: string; version_id: string } | null;
+  credential?: { id: string; version_id: string } | null;
+  version?: number | null;
   group?: string;
   hub?: { repository: string; revision: string };
 };
@@ -280,7 +283,7 @@ function ToggleModels({
                 </li>
               ))}
             </ul>
-          <a href={base.replace('/projects/', '/workspace/') + '/admin'}>
+            <a href={base.replace('/projects/', '/workspace/') + '/admin'}>
               Configure Open Weight Models in Models &amp; Keys
             </a>
           </details>
@@ -302,6 +305,15 @@ function ToggleModels({
             >
               {m.name} · {m.model_id} ·{' '}
               {m.hub ? 'Hub revision ' + m.hub.revision : 'Configuration ' + shortId(m.id)}
+              {' · Key: ' +
+                (m.credential_name ||
+                  (m.credential_binding || m.credential
+                    ? shortId((m.credential_binding || m.credential)!.id)
+                    : 'Not linked')) +
+                ' · Configuration ' +
+                (m.version || shortId(m.id)) +
+                ' · ' +
+                shortId(m.id)}
             </option>
           ))}
         </select>
