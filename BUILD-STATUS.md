@@ -1,5 +1,26 @@
 # Build status
 
+## Authoring contract and probe-permission checkpoint — 18 November 2026
+
+Resume worktree .local/open-weight-models-20261117 at545a7cd. User-requested handoff
+document: docs/product/27-AUTHORING-FORGE-EXECUTION-HANDOFF.md (current APIs vs proposed
+extensions, template/dependency requirements, owners, gaps and acceptance checks).
+Verified all23 updated policy-evidence payloads. Updated manifest0e39c750...695a;
+dataset e8d5cb8b...74653; all50 case hashes/membership verify. Authoring clarified
+populationc77748bc...e08aa hashes sortedcase-ID array (notfullrecords); independently
+recomputed andmatched. Userexplicitlyholds v7 unchanged/unqualified/no statebindings;
+capturedfederaltext must use reviewedsuccessor suchasv8. No approvals inferred.
+
+TechnicalProbeStore now separates root-owned bounded nonspending plan permission,
+physical frameworkprocess/file observations and one-shot intent/outcome ledger
+from business/paid/native qualification. CallerUUID and assertednamespaces do not
+substitute for actual kernel/source/owner checks. Unknowncalls remainnull; opaque
+evidenceunverified. ActualTrial/semanticasset integration is stillunfinished and all
+existingnativegatesclosed.15focusedcontrols; full1097unitsPASS,1Linux-specificskip,
+10subtests;30fresh/repeatedSQLPASS. Source d5e5303a9ba6514439031037e94effff6f8c0f82220c9141f0e39832e3f41c60.
+NOTdeployed; QAfrontend e0ec104/backend818afca unchanged. No live orAuthoringcalls.
+Details worktree docs/generated/kyc-probe-permission-2026-11-18.md.
+
 ## Tested KYC runtime/cohort checkpoint — 18 November 2026
 
 Resume source at .local/open-weight-models-20261117, checkpoint843bd45. Four real
