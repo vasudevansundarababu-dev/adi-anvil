@@ -1,5 +1,16 @@
 # Build status
 
+## Verified QA hotfix818afca — 17 November 2026
+
+Build e5cec1ef-765e-49d6-80a3-905f2600e53f SUCCESS; all six QA services now
+match818afca90c61b77a3de955c35c30881ca6567069, zero restarts. Actual QA
+health/workspace200, anonymous catalog401, frontend bundle, schema128, catalog
+24 variants/32 repositories and scheduler/grader polling PASS. Shared token
+link/rotation preserves profile identity and prior versions;1064 units+10 subtests,
+real HF SQL and synthetic Chrome checks PASS. Backup retained under
+/var/lib/anvil-qa-v1/backups/open-weight-relink-818afca-20261117.
+No live calls, no Authoring, no native qualification. Prior blocker email already sent.
+
 ## Deployed QA successor dc9a144 — 17 November 2026
 
 Matching API/web/workers and schema128 now serving on existing QA. Build
