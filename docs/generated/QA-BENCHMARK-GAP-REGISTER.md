@@ -10,13 +10,18 @@ cutoff. Ten layout/boundary regressions and an elapsed-time sharing control pass
 Studio must lint nested SDK/agent/verifier/socket/outer/cleanup budgets together;
 changing an outer limit alone does not update an SDK's nested default.
 
-OPS-22 (OWNER APPROVAL PENDING): corrected Evaluation buildf397ef22 expired in
-GCP's300second queue before executing any step; Core and Environments succeeded.
-No automatic resubmission beyond the existing one-submission cap. The exact
-evaluation-only retry is prepared, preserving successful artifacts and unchanged
-source/deadlines. Future release tooling must separate queue expiration, source
-failure, execution timeout and lost acknowledgement; retain an explicit approved
-retry counter instead of changing source or silently rebuilding all phases.
+OPS-22 (RETRY IN PROGRESS): corrected Evaluation buildf397ef22 expired in GCP's
+300second queue without executed-step evidence; Core and Environments succeeded.
+The one-call automatic retry budget was initially misread as a fresh-human-
+approval gate. The user's original retry authorization was independently recovered
+from the actual chat userMessage; no later owner restriction revoked it. After
+normal approval review and duplicate/outcome reconciliation, one unchanged
+Evaluation resubmission315db6a2 was accepted as ledger ordinal2. No loop, deadline
+increase or counter reset. The redundant email request was corrected. Future
+tooling must distinguish automatic invocation limits from existing owner-approved
+terminal retries; separate queue expiry/source failure/execution timeout/lost ACK;
+preserve counters, artifact reuse and original authority receipts without inventing
+extra approval requirements or silently rebuilding all phases.
 
 | ID | Status / owner | Observed gap | Prevention | Exit evidence |
 |---|---|---|---|---|

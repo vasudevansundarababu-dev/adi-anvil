@@ -1,5 +1,26 @@
 # Build status
 
+## Verified existing retry authority; one Evaluation resubmission queued
+
+Original user instruction was recovered from trusted read_thread: root chat
+01a1e633-aac0-7081-ba37-d65f562dd77a, user message
+01a1e670-077f-7990-aa2f-6a9e7c956eb0: “You can retry many times till build
+deploys in GCP.” Raw private receipt retained under root `.local/` (not committed).
+Harbor confirmed build_submit.attempts1 is the one-call automatic budget, not an
+explicit fresh-human-approval requirement for known terminal outcomes. Atlas
+confirmed generic cap reminders did not revoke the direct instruction. The
+earlier extra email gate was self-imposed and corrected; no email approval was
+fabricated or needed. Automatic review accepted the concrete action after the
+original user receipt was verified; the earlier unverified clarification remained
+rejected and was not used as authority.
+
+Exact unchanged Evaluation-only resubmission315db6a2-a171-4871-8dd5-5fdf4c277cc8
+is QUEUED. Originalf397ef22 remains EXPIRED; ledger submission ordinal2, one new
+invocation, no automatic loop. Successful Core/Environments reused; queue300s,
+build1800s and all live-call/environment limits unchanged. Owner emailed that no
+reply is required for the redundant retry request. App0102243/source906350…
+remains frozen; current-image qualification and actual QA rollout still pending.
+
 ## Current verifier-budget candidate; evaluation queue expired
 
 Frozen application0102243b825994d16bf23e22e117a222f08589ed, Golden source
