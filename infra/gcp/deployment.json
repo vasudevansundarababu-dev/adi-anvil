@@ -70,16 +70,31 @@
     "smoke": ["api_health", "postgres_neo4j_private_readiness", "oidc_discovery", "tls", "keycloak_admin_private", "forge_logo_title_and_login", "exact_running_images", "schema127", "unchanged_ledger_and_identities"],
     "edge": "global external Application Load Balancer, Google-managed certificate"
   },
+  "qa_storage_baseline": {
+    "vm": "anvil-qa-v1",
+    "zone": "us-west1-b",
+    "boot_disk": "anvil-qa-v1",
+    "boot_disk_gb": 120,
+    "data_disk": "anvil-qa-v1-data",
+    "data_disk_gb": 120,
+    "disk_type": "pd-balanced",
+    "persistent": true,
+    "auto_delete": false,
+    "authorization": "User approved existing QA boot disk expansion to 120 GB on 2026-11-19; existing data disk unchanged."
+  },
   "last_qa_deployment": {
     "vm": "anvil-qa-v1",
     "zone": "us-west1-b",
     "web_origin": "https://anvil-qa.adi-labs.ai",
-    "verified_at": "2026-11-16T22:36:24+00:00",
-    "source_manifest_sha256": "9398adfdfe9f92cd965090370649f19b3bac49eab4fe66a7c92892a50943b763",
-    "backend_digest": "sha256:a2819e51c44c933b61329067aee68c327ec1ebddba7e2658c0607aee6abe230a",
-    "web_digest": "sha256:bf35dddaf41ef576ba90400153db150b0459473f9df52314a24f56fd3a40f810",
-    "schema_revision": "127",
-    "smoke_status": "passed_with_retained_initial_readiness_503",
+    "verified_at": "2026-11-19T16:25:21+00:00",
+    "commit": "151d6fbdea701be0d1f1c02bd869456c8dbad318",
+    "runtime_source_sha256": "4c439e71e914ac52d016a91def303e85446a8dba1f86303ed2b7584cce7ff357",
+    "backend_digest": "sha256:da7793db67a9c2587f45728e2a302bbf2b1bda00ddf74afd8ed29bdb73d87e3a",
+    "web_digest": "sha256:75d4116c83a36f3583380342fac2807cca6fb5878b111891b6d3038c387f0334",
+    "kyc_runtime_digest": "sha256:e0a51d10e47019598127e8a9d3131ad7ca566bef93b014068753778979a515b2",
+    "schema_revision": "132",
+    "smoke_status": "health_and_workspace_200_six_services_zero_restarts",
+    "qualification_status": "not_granted",
     "authenticated_full_journeys": "not_run",
     "new_model_calls": "not_run"
   }

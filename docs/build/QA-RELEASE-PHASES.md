@@ -1,5 +1,14 @@
 # Independent QA release phases
 
+QA storage baseline (user authorized 19 November 2026): existing boot disk
+`anvil-qa-v1`, us-west1-b, 120 GB persistent pd-balanced; auto-delete disabled.
+The separately attached existing 120 GB data disk is unchanged. This capacity is
+persistent, not a per-build temporary allocation. Future QA provisioning must
+use `qa_storage_baseline` in deployment.json rather than the production deploy
+script's older boot-size default. No additional disk was created. Retention of
+rollback images and backups still needs an explicit bounded policy; do not delete
+retained evidence or volumes automatically to make a deployment fit.
+
 This additive workflow prepares builds; it does not deploy, migrate, run a Trial,
 approve anything, reconcile application bindings or authorize provider spending.
 The existing combined workflow remains available. No existing Dockerfile changes

@@ -1,5 +1,24 @@
 # Build status
 
+## Hash fix deployed and no-model controls verified — 19 November 2026
+
+QA serves151d6fbdea701be0d1f1c02bd869456c8dbad318/schema132, all6services
+running/zero restarts; health/workspace200. All3phase builds succeeded, no migration
+run; backup /var/lib/anvil-qa-v1/backups/hashproof-151d6fb. Installed50configuration
+byte proof:2fullscans/17.217s. Fresh isolated SQLv5 all4control groups passed in
+62.920s, compared with old code failing180s and300s. Actual private/project SQL
+isolation, OpenEnv/MCP reset, four-product registration/conservation/bindings and
+checkpoint no-replay passed; no qualification written.
+Nativeaca17fb8-aab5-4e7e-b9b6-9da31472e154 completed observed_not_qualified,
+exit0, allintent/outcome records, cleanupcomplete/0failures at189.851s.
+Evidence2ed7033c1efc6e7eff959ac7cfecf296bced4e2bd169829098d4ea97d597869b.
+Modelauthorization0/actualcountnull; live/Authoring remain disabled. Full benchmark
+qualification, policy/private-scoring controls, worker bridge and real project
+reviews remain separate unfinished gates. No benchmark-ready claim.
+Boot120GBpersistent verified;118Gusable/46Gfree afterdeployment. Separate120GBdata
+unchanged. Baseline recorded in deployment.json. Preserve unrelated edits and
+untracked policy-registry control drafts; do not deploy root's older checkout.
+
 ## Operation-local hash fix locally verified — 19 November 2026
 
 Source4c439e71e914ac52d016a91def303e85446a8dba1f86303ed2b7584cce7ff357.

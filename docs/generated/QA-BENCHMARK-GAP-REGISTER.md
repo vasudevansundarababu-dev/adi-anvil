@@ -1,5 +1,26 @@
 # QA benchmark exercise — living gap register
 
+## Source-verification performance and storage — 19 November 2026
+
+PERF-01: The installed SQL software control repeated about358 complete source,
+RECORD and loader scans, exceeding both180s and300s. Checkpoint151d6fb changes
+nonspending registration and explicit software validation to an owned SQL
+savepoint with one immutable operation-local byte proof. Full entry and exit
+checks precede release; current DB configuration/receipt/revocation queries and
+actual known cases remain fresh. No ambient/global cache or paid-path reuse.
+Installed build measured2full scans for50configuration byte checks in17.217s;
+1,247units+10subtests/90SQL+2actual rollback-revocation tests passed. QA151d6fb
+deployed: fresh SQLv5 all4groups passed in62.920s; nativeTrial observed_not_qualified
+with completecleanup at189.851s, no fullqualification granted. Studio/runtime qualification must budget
+and measure preparation work separately from candidate time and avoid unbounded
+repeated physical scans without weakening authority or source checks.
+
+OPS-02: User approved persistent QA boot disk120GB; actual root filesystem was
+expanded online and verified118Gtotal/50Gfree. Existing120GBdata disk unchanged.
+Baseline is recorded separately from production in deployment.json. Future
+provisioning must use it; image/backup retention still needs a reviewed bounded
+policy rather than repeated disk growth or unapproved evidence deletion.
+
 As of 18 November 2026. Purpose: learn from the complete Authoring → Forge → real
 QA benchmark exercise, then use evidence to write the Template and Environment
 Studio specification. **This is not that Studio specification.** The user explicitly
