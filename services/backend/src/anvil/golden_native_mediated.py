@@ -107,7 +107,7 @@ class MediatedPlan:
         request(body["request"])
         return body
 
-    def framework(self, child, *, verify_runtime=True):
+    def framework(self, child, *, verify_runtime=True, runtime_proof=None):
         from anvil import environment_harbor as native
         from anvil.harbor_worker import process_identity
 
@@ -127,9 +127,150 @@ class MediatedPlan:
         if raw != b"\0".join(item.encode() for item in expected) + b"\0":
             raise ValueError("Fixed installed SDK command required")
         if verify_runtime:
+            if runtime_proof is not None:
+                if type(runtime_proof) is not ImmutableRuntimeTrial:
+                    raise ValueError("Exact in-memory Trial integrity proof required")
+                if runtime_proof.admit(self, assets["runtime_seal"]):
+                    return
             module = native.operator_proof_module()
             with module.OperatorProofStore(native.ROOT) as store:
                 store.validate_runtime_seal(assets["runtime_seal"])
+
+
+class ImmutableRuntimeTrial:
+    """In-memory, one-Trial proof inside the existing trusted operator boundary.
+
+    Never a persistent cache or qualification authority. SDK startup validation
+    is independent. Writable closures retain full per-peer validation.
+    """
+
+    def __init__(self, plan):
+        if type(plan) is not MediatedPlan:
+            raise ValueError("Exact original mediated plan required")
+        self.plan = plan
+        self.state = "new"
+        self.boundaries = 0
+        self.optimized = False
+
+    @staticmethod
+    def _mounts():
+        raw = Path("/proc/self/mountinfo").read_bytes()
+        if not raw or len(raw) > 1048576:
+            raise ValueError("Bounded actual mount namespace required")
+        return hashlib.sha256(raw).hexdigest()
+
+    def _current(self):
+        from anvil.harbor_worker import process_identity
+
+        if (type(self) is not ImmutableRuntimeTrial or self.state != "active"
+                or os.getpid() != self.pid or process_identity(self.pid) != self.identity
+                or time.monotonic() >= self.deadline):
+            raise ValueError("Original active Trial proof and deadline required")
+        body = self.plan.body()
+        if (digest(body["assets"]["runtime_seal"]) != self.seal_sha
+                or digest(body["assets"]["host_image_custody"]["sdk_profile"]) != self.profile_sha
+                or body["request"]["original_deadline_monotonic"] != self.deadline):
+            raise ValueError("Original sealed Trial binding changed")
+        return body
+
+    def _full_scan(self):
+        from anvil import environment_harbor as native
+
+        body = self._current()
+        seconds = int(self.deadline - time.monotonic())
+        if seconds < 1:
+            raise TimeoutError("Original Trial deadline exhausted before integrity scan")
+        with native.fixed_alarm(seconds):
+            with native.operator_proof_module().OperatorProofStore(native.ROOT) as store:
+                store.validate_runtime_seal(body["assets"]["runtime_seal"])
+        self._current()
+
+    def _readonly(self, store, seal):
+        roots = set()
+        readonly = True
+        try:
+            for component, record in seal["components"].items():
+                readonly = store._runtime_install_readonly(record) and readonly
+                roots.update(Path(record[key]) for key in ("prefix", "site_packages", "stdlib_root"))
+                roots.add(Path(record["interpreter"]).resolve())
+                for package, folder in record["source_packages"].items():
+                    roots.add(Path(folder))
+                    roots.add(store.repository / ("services/backend/src" if component == "backend"
+                                                 else "services/harbor/src") / package)
+            for root in roots:
+                paths = [root, *root.rglob("*")] if root.is_dir() else [root]
+                readonly = all(os.statvfs(path).f_flag & os.ST_RDONLY for path in paths) and readonly
+        except OSError:
+            readonly = False
+        self.roots = tuple(roots)
+        return readonly
+
+    def __enter__(self):
+        from anvil import environment_harbor as native
+        from anvil.harbor_worker import process_identity
+
+        if type(self) is not ImmutableRuntimeTrial or self.state != "new":
+            raise ValueError("Trial proof cannot be reused or subclassed")
+        body = self.plan.body()
+        self.pid, self.identity = os.getpid(), process_identity(os.getpid())
+        self.deadline = body["request"]["original_deadline_monotonic"]
+        seal = body["assets"]["runtime_seal"]
+        self.seal_sha = digest(seal)
+        self.profile_sha = digest(body["assets"]["host_image_custody"]["sdk_profile"])
+        self.state = "active"
+        try:
+            self._full_scan()
+            # Initial full traversal excludes writable nested binds, resolved
+            # interpreters, and repository mirrors outside installed prefixes.
+            seconds = int(self.deadline - time.monotonic())
+            if seconds < 1:
+                raise TimeoutError("Original Trial deadline exhausted")
+            with native.fixed_alarm(seconds):
+                with native.operator_proof_module().OperatorProofStore(native.ROOT) as store:
+                    self.mount_sha = self._mounts()
+                    readonly = self._readonly(store, seal)
+                    self.optimized = bool(readonly and self._mounts() == self.mount_sha)
+            self._current()
+            return self
+        except BaseException:
+            self.state = "failed"
+            raise
+
+    def admit(self, plan, seal):
+        self._current()
+        if plan is not self.plan or digest(seal) != self.seal_sha:
+            raise ValueError("Cross-Trial integrity proof forbidden")
+        if not self.optimized:
+            return False
+        if (self._mounts() != self.mount_sha
+                or not all(os.statvfs(root).f_flag & os.ST_RDONLY for root in self.roots)):
+            raise ValueError("Immutable Trial mount closure changed")
+        self.boundaries += 1
+        return True
+
+    def __exit__(self, exception_type, exception, traceback):
+        try:
+            if exception_type is None:
+                self._full_scan()
+                self.admit(self.plan, self.plan.body()["assets"]["runtime_seal"])
+                # The final mount check is not a callback boundary.
+                if self.optimized:
+                    self.boundaries -= 1
+                self.state = "closed"
+            else:
+                self.state = "failed"
+        except BaseException:
+            self.state = "failed"
+            raise
+        return False
+
+    def receipt(self):
+        if self.state != "closed":
+            raise ValueError("Successful final integrity validation required")
+        return {"scope": "original_trial_only", "full_entry": True, "full_exit": True,
+                "readonly_reuse": self.optimized, "callback_boundaries": self.boundaries,
+                "seal_sha256": self.seal_sha, "plan_sha256": self.plan.sha256,
+                "owner_pid": self.pid, "original_deadline_monotonic": self.deadline}
 
 
 def load_plan(path):
@@ -241,8 +382,11 @@ def execute(attempt, work_root, value, *, host, python):
                 "request_sha256": digest(value), "callback_manifest_sha256": digest({"handler": value["handler"], "plan_sha256": plan.sha256}),
                 "service_projection_sha256s": {role: hashlib.sha256(canonical(assets[role + "_service"])).hexdigest() for role in ("environment", "tests")}}
     callback = MediatedCallback(plan, attempt)
-    result = native._execute_lifecycle(Path(body["folder"]), value["public_actor"], callback, host=host, python=Path(python),
-        mediated_candidate=True, actor_seconds=value["actor_seconds"], bindings=bindings, fixed_assets=assets, mediated_plan=plan)
+    with ImmutableRuntimeTrial(plan) as proof:
+        result = native._execute_lifecycle(Path(body["folder"]), value["public_actor"], callback, host=host, python=Path(python),
+            mediated_candidate=True, actor_seconds=value["actor_seconds"], bindings=bindings, fixed_assets=assets,
+            mediated_plan=plan, runtime_proof=proof)
+    result["runtime_seal_validation"] = proof.receipt()
     result["worker_bridge_purpose"] = purpose(value)
     return result, callback.result
 

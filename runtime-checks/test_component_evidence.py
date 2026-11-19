@@ -13,6 +13,21 @@ spec.loader.exec_module(module)
 
 
 class EvidenceControls(unittest.TestCase):
+    def test_curator_hashes_exact_canonical_unicode_seal_without_host_reformatting(self):
+        from anvil.praxis_generic_contract import canonical, digest
+
+        spec = importlib.util.spec_from_file_location("evidence_curator", Path(__file__).with_name("curate_component_evidence.py"))
+        curator = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(curator)
+        seal = {"components": {"backend": {"source": "/sealed/é/𝄞", "version": "3.12"}}}
+        body = {"assets": {"runtime_seal": seal}, "request": {"original_deadline_monotonic": 123.5}}
+        binding = curator.sealed_plan_binding(canonical(body))
+        self.assertEqual(binding["seal_sha256"], digest(seal))
+        self.assertEqual(binding["plan_sha256"], digest(body))
+        self.assertEqual(binding["original_deadline_monotonic"], 123.5)
+        with self.assertRaises(ValueError):
+            curator.sealed_plan_binding(canonical(body | {"runtime_seal": seal}))
+
     def test_actor_time_consumes_verifier_allowance_under_original_cutoff(self):
         from anvil.environment_harbor import FixedDeadline
 

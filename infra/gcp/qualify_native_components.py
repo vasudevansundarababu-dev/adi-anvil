@@ -419,6 +419,16 @@ def main(input_path, output_path, *, verify_only=False):
             "Actual retained original native SDK peer required")
     require(len(roles["native_peers"]) == 2, "Both actual SDK actor/verifier peer entries required")
     networks = transport["network_observations"]
+    integrity = transport["framework"]["runtime_seal_validation"]
+    bound_integrity = related[roles["mediated_integrity_binding"]]
+    require(integrity["scope"] == "original_trial_only" and integrity["full_entry"] is True
+        and integrity["full_exit"] is True and integrity["readonly_reuse"] is True
+        and integrity["callback_boundaries"] == 4
+        and all(integrity[key] == bound_integrity[key] for key in
+                ("plan_sha256", "seal_sha256", "original_deadline_monotonic"))
+        and re.fullmatch("[a-f0-9]{64}", integrity["plan_sha256"])
+        and re.fullmatch("[a-f0-9]{64}", integrity["seal_sha256"]),
+        "Actual complete original-Trial integrity entry/exit validation required")
     require(len(networks) == 2 and {item["role"] for item in networks} == {"worker", "sdk"}, "Both original process-tree observations required")
     for item in networks:
         filtered = item.get("observer_mode") == "pinned_launch_seccomp"

@@ -1,5 +1,32 @@
 # Build status
 
+## Trial-local immutable integrity proof under review (19 November)
+
+All three 0102243 build phases succeeded, including reconciled Evaluation retry
+315db6a2-a171-4871-8dd5-5fdf4c277cc8. That candidate was not deployed: its fresh
+transport control exhausted the original 300-second callback deadline. Owned
+cleanup completed with no failures. Evidence retained at QA
+`runtime-functional/transport-0102243b8259-705783893427755`.
+Framework entry occurred about72s after original admission; actor SDK entry145s,
+actor artifact166s, verifier SDK entry245s. Four complete parent runtime-seal
+scans across actor/verifier boundaries leave insufficient completion time.
+
+Current fix under independent source review scopes readonly reuse to one
+in-memory Trial. Full entry and final-exit integrity scans remain, SDK independent
+startup validation remains, and every callback retains fresh original kernel,
+image, profile, plan and deadline checks. Initial complete readonly traversal
+includes nested mounts, resolved interpreter and repository source mirrors.
+Writable installations retain full per-peer scans. Final failure/expiry prevents
+success receipt; cleanup allowance cannot extend completion authority.
+39 focused tests passed with actual local process identity/Unix sockets; Ruff
+passed. Full unit run:1304passed,10subtests,4skips;2fixture checks initially failed
+because invocation omitted ANVIL_FIXTURE_MODE. Corrected six-test science fixture
+rerun passed, covering both failures (1306distinct unit tests pass overall).
+Logs `.local/qa-trial-proof-{units-preliminary,fixture-rerun}.log`. New immutable
+image qualification remains pending. Independent source reviewers found no
+blocking issue; actual physical timing/qualification acceptance remains open.
+Serving QA remains151d6fb/schema132. No live calls or Authoring integration.
+
 ## Verified existing retry authority; one Evaluation resubmission queued
 
 Original user instruction was recovered from trusted read_thread: root chat

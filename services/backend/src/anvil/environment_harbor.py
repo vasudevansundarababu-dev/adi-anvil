@@ -909,6 +909,7 @@ def _execute_lifecycle(
     fixed_assets=None,
     technical_probe_job=None,
     mediated_plan=None,
+    runtime_proof=None,
 ):
     if fixed_adapter is not None:
         fixed_trial_gate()
@@ -1082,7 +1083,7 @@ def _execute_lifecycle(
         from anvil.golden_native_peer import OwnedSDKPeer
 
         peer_guard = OwnedSDKPeer(collected, docker, fixed_assets["host_image_custody"]["sdk_profile"], bindings["job_id"], folder,
-                                  mediated_plan=mediated_plan)
+                                  mediated_plan=mediated_plan, runtime_proof=runtime_proof)
     try:
         gateway = NativeGateway(folder, gateway_call, socket_root=Path(gateway_home.name).resolve(), peer_guard=peer_guard)
     except BaseException:

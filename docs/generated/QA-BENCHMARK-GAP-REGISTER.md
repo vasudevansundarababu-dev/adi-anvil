@@ -346,3 +346,22 @@ scoring/unknowns, actor/private separation, costs, retries/recovery and release
 claims. Review every manual action and every new gap. Then derive the Studio
 requirements with stable traceability back to these IDs. Do not freeze a purported
 bulletproof spec before those observations or close items just to meet a date.
+
+# Runtime 23 — repeated boundary integrity scans consume the original Trial
+
+Observed on19November: current0102243 transport reached actor SDK entry145s
+and verifier entry245s into the same300s allowance, then timed out. Cleanup was
+complete; no technical qualification was issued. Complete parent runtime-seal
+validation ran at both entry/exit for each of two peers, in addition to independent
+SDK startup validation. Per-call common-closure deduplication did not prevent this
+cross-boundary repetition.
+
+Engineering correction under review: one nonserializable, exact-plan/PID/deadline
+proof for the original Trial only. Reuse requires a fully readonly sealed closure,
+including source mirrors and nested mounts; retain fresh process/profile/mount/
+plan/deadline checks and full entry/final-exit hashes. Final hash failure or expiry
+must discard success. No cross-Trial cache, writable skip, deadline reset or
+qualification authority. Studio must estimate integrity/setup/actor/verifier/
+finalization cost against the complete original budget and expose stage timings.
+Acceptance requires fresh physical controls on the newly built exact image;
+source review/unit tests alone do not close this gap.

@@ -19,6 +19,27 @@ BASE = Path("/var/lib/anvil-qa-v1/runtime-functional")
 PROOF = BASE / "harbor-proof"
 
 
+def sealed_plan_binding(raw):
+    """Hash exact already-canonical seal bytes, without host reserialization.
+
+    The installed reader admitted the canonical root-owned plan. Hashing its
+    embedded token bytes preserves JCS Unicode/number ordering on this host,
+    whose operator intentionally needs no backend dependency installation.
+    """
+    text = raw.decode("utf-8")
+    marker = '"runtime_seal":'
+    if text.count(marker) != 1:
+        raise ValueError("One original embedded runtime seal required")
+    start = text.index(marker) + len(marker)
+    seal, length = json.JSONDecoder().raw_decode(text[start:])
+    plan = json.loads(raw)
+    if seal != plan["assets"]["runtime_seal"]:
+        raise ValueError("Original embedded runtime seal mismatch")
+    return {"plan_sha256": hashlib.sha256(raw).hexdigest(),
+            "seal_sha256": hashlib.sha256(text[start:start + length].encode("utf-8")).hexdigest(),
+            "original_deadline_monotonic": plan["request"]["original_deadline_monotonic"]}
+
+
 def read(path, *, claim=False):
     path = Path(path)
     info = path.lstat()
@@ -112,6 +133,7 @@ def main(args):
     mediated_path = PROOF / "native-control-work/.mediated-plans" / (Path(transport["attempt"]).name + ".json")
     mediated = json.loads(read(mediated_path))
     # Do not copy the plan: request.gateway_token is worker-private material.
+    integrity_binding = document("mediated-integrity-binding.json", sealed_plan_binding(read(mediated_path)))
     packets["sdk_profile"] = document("sdk-profile.json", mediated["assets"]["host_image_custody"]["sdk_profile"], relation=False)
     native_peer = json.loads(read(native_root / "sdk-peer-0.json"))
     container("native_sdk", native_peer["container_id"])
@@ -177,6 +199,7 @@ def main(args):
         "native_plan": "native-plan.json", "native_host_custody": assets["host_image_custody"], "native_assets": assets,
         "native_cleanup": "native-cleanup.json", "native_peers": peers, "runtime_image_inspect": "runtime-image.json",
         "native_framework_process": "native-framework-process.json",
+        "mediated_integrity_binding": integrity_binding["path"],
         "fixture_image_inspect": "fixture-image.json", "installed_controls": installed, "installed_control_bundles": installed_bundles,
         "installed_control_sources": installed_sources,
         "qualification_granted": False, "review_scope": "raw_artifacts_curated_not_independent_acceptance"}

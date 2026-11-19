@@ -124,10 +124,11 @@ def observed_profile(docker, *, init_only=False):
 
 
 class OwnedSDKPeer:
-    def __init__(self, holder, docker, expected_profile, job_id, folder, *, mediated_plan=None):
+    def __init__(self, holder, docker, expected_profile, job_id, folder, *, mediated_plan=None, runtime_proof=None):
         self.holder, self.docker, self.expected = holder, docker, expected_profile
         self.job_id, self.folder = job_id, folder
         self.mediated_plan = mediated_plan
+        self.runtime_proof = runtime_proof
         self.observations = []
 
     @contextmanager
@@ -176,11 +177,11 @@ class OwnedSDKPeer:
                         permission = store.load_probe(self.job_id)
                         store._framework_entry(permission)
                 else:
-                    self.mediated_plan.framework(child, verify_runtime=verify_runtime)
+                    self.mediated_plan.framework(child, verify_runtime=verify_runtime, runtime_proof=self.runtime_proof)
 
-            # Full immutable installed closure at both boundaries. Fresh
-            # kernel identity/profile/current plan remains mandatory for
-            # every status query inside the held original PIDFD interval.
+            # Full closure at both peer boundaries, or an admitted readonly
+            # Trial-local proof with full operation entry/final-exit scans.
+            # Fresh kernel/profile/plan guards remain mandatory throughout.
             check(verify_runtime=True)
             number = len(self.observations)
             if number >= 2:
