@@ -6,8 +6,10 @@ remain authoritative; an evaluator error is unscored, not an actor failure.
 """
 
 import hashlib
+import json
 import os
 import re
+import stat
 import time
 from pathlib import Path
 from uuid import UUID
@@ -385,8 +387,10 @@ def apply_overrides(baseline, expectation, receipts, *, _technical=None):
     )
 
 
-def grading_root(root):
-    root = private_root(Path(root))
+def grading_root(root, *, coordinator=False):
+    from anvil.golden_native_bridge import coordinator_root
+
+    root = coordinator_root(Path(root)) if coordinator else private_root(Path(root))
     for variable in (
         "ANVIL_CUSTOM_PYTHON_BRIDGE_ROOT",
         "ANVIL_NATIVE_BRIDGE_ROOT",
@@ -397,6 +401,29 @@ def grading_root(root):
             if root.is_relative_to(other) or other.is_relative_to(root):
                 raise RuntimeError("Private grading and ordinary actor/test roots must be disjoint")
     return root
+
+
+def coordinator_request(attempt):
+    """Read the exact two-link claim under the verified grader-owned root."""
+    owner = attempt.stat().st_uid
+    if owner == os.geteuid():
+        return owned_json(attempt, "request.json")
+    if os.geteuid() != 0 or owner != 10001:
+        raise ValueError("Exact private grader/coordinator identities required")
+    with os.fdopen(os.open(attempt / "request.json", os.O_RDONLY | os.O_NOFOLLOW), "rb") as stream:
+        info = os.fstat(stream.fileno())
+        claim = (attempt / "claimed.json").lstat()
+        if (not stat.S_ISREG(info.st_mode) or not stat.S_ISREG(claim.st_mode) or info.st_uid != owner
+                or claim.st_uid != owner or info.st_mode & 0o077 or claim.st_mode & 0o077 or info.st_size > 65536
+                or info.st_nlink != 2 or claim.st_nlink != 2 or (info.st_dev, info.st_ino) != (claim.st_dev, claim.st_ino)):
+            raise ValueError("Exact immutable private two-link claim required")
+        raw = stream.read(65537)
+    from anvil.praxis_generic_contract import canonical
+
+    value = json.loads(raw)
+    if canonical(value) != raw:
+        raise ValueError("Canonical bounded private claim required")
+    return value
 
 
 def job_eligible(c, job):
@@ -549,11 +576,13 @@ def coordinator_once(root, *, host):
         for k, v in os.environ.items()
     ):
         raise RuntimeError("Private coordinator must not receive SQL/provider secrets")
-    root = grading_root(root)
+    root = grading_root(root, coordinator=True)
     for path in sorted(root.iterdir()):
         if not re.fullmatch(r"[a-f0-9]{32}", path.name):
             continue
-        attempt = private_root(path)
+        from anvil.golden_native_bridge import coordinator_root, publish_ipc
+
+        attempt = coordinator_root(path)
         from anvil.private_scoring_control import SCHEMA as CONTROL_SCHEMA
         from anvil.private_scoring_control import from_request
 
@@ -569,7 +598,7 @@ def coordinator_once(root, *, host):
             continue
         if (attempt / "cancelled.json").exists():
             continue
-        envelope = owned_json(attempt, "request.json")
+        envelope = coordinator_request(attempt)
         request = envelope["request"]
         from_request(request)
         if (
@@ -612,13 +641,14 @@ def coordinator_once(root, *, host):
             result["execution_observation"] = execution
         except Exception as exc:
             result["execution_error"] = type(exc).__name__
-        publish(
+        publish_ipc(
             attempt / "result.json",
             {
                 "request_sha256": envelope["request_sha256"],
                 "result": result,
                 "result_sha256": digest(result),
             },
+            attempt.stat().st_uid,
         )
         return {"id": envelope["id"], "result_sha256": digest(result)}
     return None
@@ -740,3 +770,30 @@ def reconcile(
             "action": action,
             "physical_execution_replayed": False,
         }
+
+
+def coordinator_main():
+    """Dedicated private grader coordinator; no actor bridge or SQL mount."""
+    import argparse
+    import signal
+    import sys
+    import threading
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--coordinator", action="store_true", required=True)
+    parser.add_argument("--root", required=True)
+    args = parser.parse_args()
+    if os.geteuid() != 0 or not sys.flags.isolated or not sys.dont_write_bytecode:
+        raise ValueError("Dedicated installed root coordinator required")
+    grading_root(args.root, coordinator=True)
+    stopping = threading.Event()
+    signal.signal(signal.SIGTERM, lambda *_: stopping.set())
+    signal.signal(signal.SIGINT, lambda *_: stopping.set())
+    while not stopping.is_set():
+        # Any ambiguous failure exits. Claimed requests are never selected again.
+        if coordinator_once(args.root, host="unix:///run/docker.sock") is None:
+            stopping.wait(.5)
+
+
+if __name__ == "__main__":
+    coordinator_main()

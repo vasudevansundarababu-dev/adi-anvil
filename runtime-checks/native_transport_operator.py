@@ -31,6 +31,11 @@ def main(manifest_path):
     base = Path("/var/lib/anvil-qa-v1/runtime-functional")
     proof, bridge = base / "harbor-proof", base / "native-control-bridge"
     work = proof / "native-control-work"
+    qualification = proof / "component-qualification"
+    if not qualification.exists():
+        qualification.mkdir(mode=0o755)
+    if qualification.stat().st_uid != 0 or qualification.stat().st_mode & 0o022:
+        raise ValueError("Root-controlled read-only qualification projection required")
     if not bridge.exists():
         bridge.mkdir(mode=0o700)
         os.chown(bridge, 10001, 10001)
@@ -54,7 +59,9 @@ def main(manifest_path):
             "-e", "ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED=false", "-e", "ANVIL_REAL_EMAIL_ENABLED=false"]
         if root:
             args += ["--pid", "host", "--uts", "host", "--cgroupns", "host", "--cap-add", "SYS_PTRACE",
+                "--cap-add", "DAC_OVERRIDE", "--cap-add", "CHOWN",
                 "--security-opt", "apparmor=unconfined", "--mount", f"type=bind,src={proof},dst={proof}",
+                "--mount", f"type=bind,src={qualification},dst=/opt/anvil-runtime-source/.data/component-qualification,readonly",
                 "--mount", "type=bind,src=/run/docker.sock,dst=/run/docker.sock,readonly",
                 "--mount", "type=bind,src=/usr/bin/docker,dst=/usr/bin/docker,readonly",
                 "--mount", "type=bind,src=/usr/libexec/docker/cli-plugins/docker-compose,dst=/usr/libexec/docker/cli-plugins/docker-compose,readonly",

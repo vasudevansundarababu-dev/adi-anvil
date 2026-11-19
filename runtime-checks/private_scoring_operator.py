@@ -74,14 +74,14 @@ def main(manifest_path, bundle):
         "--mount", f"type=bind,src={folders['socket']},dst=/var/run/postgresql", PG])
 
     def command(phase, program, arguments, mounts, coordinator=False):
-        args = ["docker", "run", "--pull=never", "--name", prefix + "-" + phase, "--read-only", "--user", "0:0",
+        args = ["docker", "run", "--pull=never", "--name", prefix + "-" + phase, "--read-only", "--user", "10001:10001" if phase.startswith("grader-") else "0:0",
             "--network", "none", "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--memory", "1536m",
             "--pids-limit", "128", "--cpus", "2", "--tmpfs", "/tmp:rw,nosuid,nodev,noexec,size=128m",
             "--label", "io.adi.forge.scope=private-scoring-controls", "-e", "ANVIL_ENV=local", "-e", "WEB_ORIGIN=http://127.0.0.1:3202",
             "-e", "ANVIL_RUNTIME_IMAGE_DIGEST=" + config["runtime_image_sha256"], "-e", "ANVIL_LIVE_PROVIDERS_ENABLED=false",
             "-e", "ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED=false", "-e", "ANVIL_REAL_EMAIL_ENABLED=false"]
         if coordinator:
-            args += ["--pid", "host", "--uts", "host", "--userns", "host", "--cgroupns", "host"]
+            args += ["--cap-add", "DAC_OVERRIDE", "--cap-add", "CHOWN"]
         for source, target, writable in mounts:
             args += ["--mount", f"type=bind,src={source},dst={target}" + ("" if writable else ",readonly")]
         return args + ["--entrypoint", "/opt/anvil-runtime/bin/python", image, "-I", "-B", "/controls/" + program, *arguments]
@@ -130,6 +130,10 @@ def main(manifest_path, bundle):
             (folders["control"], folders["control"], False), (folders["grader"], folders["grader"], True),
             (bundle / "fixtures/private-scoring-control", "/fixtures", False)])
         driver = json.loads((folders["grader"] / "driver.json").read_bytes())
+        for path in (folders["grader"], folders["grader"] / "driver.json", folders["bridge"]):
+            os.chown(path, 10001, 10001)
+        run("preflight", "private_scoring_controls.py", ["preflight", "--root", str(folders["bridge"])],
+            scripts + bridge + [("/run/docker.sock", "/run/docker.sock", False), ("/usr/bin/docker", "/usr/bin/docker", False)], True)
         packets = []
         for index, case in enumerate(driver["cases"]):
             phase = "grader-" + str(index)

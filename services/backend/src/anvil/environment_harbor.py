@@ -1104,7 +1104,11 @@ def _execute_lifecycle(
                     "ANVIL_ROOT": str(ROOT), "ANVIL_FIXED_OPERATION_NONCE": bindings["operation_nonce"]})
     elif mediated_plan is not None:
         env.pop("PYTHONPATH", None)
-        env.update(ANVIL_HARBOR_MEDIATED_PLAN=str(mediated_plan.path), ANVIL_ROOT=str(ROOT))
+        env.update(ANVIL_HARBOR_MEDIATED_PLAN=str(mediated_plan.path), ANVIL_ROOT=str(ROOT),
+                   ANVIL_FIXED_OPERATION_NONCE=bindings["operation_nonce"],
+                   ANVIL_RUNTIME_IMAGE_DIGEST=os.environ["ANVIL_RUNTIME_IMAGE_DIGEST"])
+        if os.environ.get("ANVIL_GOLDEN_COMPONENT_QUALIFICATION_FILE"):
+            env["ANVIL_GOLDEN_COMPONENT_QUALIFICATION_FILE"] = os.environ["ANVIL_GOLDEN_COMPONENT_QUALIFICATION_FILE"]
     child_process = None
     result = None
     try:

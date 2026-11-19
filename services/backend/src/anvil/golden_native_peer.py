@@ -51,7 +51,7 @@ def profile(info):
     if (not re.fullmatch(r"us-west1-docker\.pkg\.dev/adi-anvil-mvp-2026/anvil-qa-v1/kyc-runtime@sha256:[a-f0-9]{64}", config["Image"])
             or not info["State"]["Running"] or info["State"]["Pid"] <= 1
             or config["User"] != "0:0" or host["NetworkMode"] != "none" or not host["ReadonlyRootfs"]
-            or set(host.get("CapDrop") or []) != {"ALL"} or set(host.get("CapAdd") or []) != {"SYS_PTRACE"}
+            or set(host.get("CapDrop") or []) != {"ALL"} or set(host.get("CapAdd") or []) not in ({"SYS_PTRACE"}, {"SYS_PTRACE", "DAC_OVERRIDE", "CHOWN"})
             or any(host[key] != "host" for key in ("PidMode", "UTSMode", "UsernsMode", "CgroupnsMode"))
             or set(host.get("SecurityOpt") or []) != {"no-new-privileges", "apparmor=unconfined"}
             or host.get("Privileged") or any(value for key, value in (item.split("=", 1) for item in config["Env"])
@@ -62,6 +62,7 @@ def profile(info):
         raise ValueError("Fixed SDK bind profile required")
     return {"schema_version": "anvil.owned-sdk-profile.v1", "image": config["Image"],
             "image_id": info["Image"], "mounts": mounts,
+            "capabilities": sorted(host.get("CapAdd") or []),
             "tmpfs": host.get("Tmpfs"), "memory": host["Memory"], "pids": host["PidsLimit"], "cpu": host["NanoCpus"]}
 
 
@@ -82,7 +83,7 @@ def validate_control_mounts(observed, *, proof_root, provider_path, docker, comp
                 "/var/run/forge-probe-postgresql": (str(proxy), False), "/run/docker.sock": ("/run/docker.sock", False),
                 docker: (docker, False), compose: (compose, False)}
     actual = {mount["Destination"]: (mount["Source"], mount["RW"]) for mount in observed["mounts"]}
-    if len(observed["mounts"]) != 6 or actual != expected:
+    if len(observed["mounts"]) != 6 or actual != expected or observed["capabilities"] != ["SYS_PTRACE"]:
         raise ValueError("Actual SDK mounts differ from the reviewed fixed control layout")
 
 

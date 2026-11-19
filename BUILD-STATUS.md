@@ -1,5 +1,26 @@
 # Build status
 
+## Actual-role wiring correction — 19 November 2026
+
+206d4e4's three GCP phases succeeded (core b066e4a1-dbc1-490b-bd89-5921b868355a,
+environments9a13650d-6d0d-4242-a5fc-f4e753faaa1d,
+evaluation5d053db4-5a96-4bb8-b8e9-8d65a47b4042). NOT deployed. Its frozen SQL
+regression90passed at sourceac344eaa...; earlier invalidated run retained.
+
+Actual QA inspection found scheduler/grader lacked bridge mounts. The corrected
+candidate adds a pure QA wiring generator, separate native/private coordinators,
+explicit SDK image/nonce/qualification metadata, root-controlled qualification
+projection and real UID10001 grader↔root result handoff. Trusted coordinators
+need DAC_OVERRIDE+CHOWN to traverse0700 worker dirs/publish0600 worker-owned
+results; only native SDK also needs SYS_PTRACE. Actor/grader/executor keep caps
+dropped and receive no Docker. Private coordinator gets neither actor bridge,
+proof mount nor SQL. Added physical permission preflight before queue controls.
+The receipt's RO projection is not universal immutability: trusted SDK root also
+owns the RW proof mount. Workers cannot write it or mount that proof tree.
+
+These corrections require a new immutable candidate and fresh verification;
+206d4e4 is not evidence that this actual-role wiring passed physical tests.
+
 ## Qualification candidate checkpoint — 19 November 2026
 
 This is an engineering/test-build checkpoint, NOT a completed release or runtime

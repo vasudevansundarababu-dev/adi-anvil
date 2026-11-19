@@ -42,6 +42,18 @@ def test_profile_binds_image_id_mount_permissions_and_rejects_ambient_secret():
     changed["Config"]["Env"].append("DATABASE_URL=synthetic-not-a-secret")
     with pytest.raises(ValueError):
         profile(changed)
+
+
+def test_cross_uid_coordinator_capabilities_are_exact_and_bound():
+    info = sdk()
+    original = profile(info)
+    info["HostConfig"]["CapAdd"] = ["SYS_PTRACE", "DAC_OVERRIDE", "CHOWN"]
+    changed = profile(info)
+    assert changed != original
+    assert changed["capabilities"] == ["CHOWN", "DAC_OVERRIDE", "SYS_PTRACE"]
+    info["HostConfig"]["CapAdd"].append("SYS_ADMIN")
+    with pytest.raises(ValueError):
+        profile(info)
     changed = copy.deepcopy(sdk())
     changed["Config"]["User"] = "10001:10001"
     with pytest.raises(ValueError):

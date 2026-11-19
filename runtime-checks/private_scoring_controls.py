@@ -28,7 +28,7 @@ def private_json(path):
         raise ValueError("Canonical private control config required")
     with os.fdopen(os.open(path, os.O_RDONLY | os.O_NOFOLLOW), "rb") as stream:
         info = os.fstat(stream.fileno())
-        if info.st_uid != 0 or info.st_mode & 0o077 or not stat.S_ISREG(info.st_mode) or info.st_size > 131072:
+        if info.st_uid != os.geteuid() or os.geteuid() not in {0, 10001} or info.st_mode & 0o077 or not stat.S_ISREG(info.st_mode) or info.st_size > 131072:
             raise ValueError("Bounded root-owned control config required")
         return json.load(stream)
 
@@ -147,6 +147,8 @@ def main():
     grader.add_argument("--case", type=int, required=True)
     coordinator = sub.add_parser("coordinator")
     coordinator.add_argument("--root", required=True)
+    preflight = sub.add_parser("preflight")
+    preflight.add_argument("--root", required=True)
     args = parser.parse_args()
     if not sys.flags.isolated or not sys.dont_write_bytecode:
         raise ValueError("Installed isolated interpreter required")
@@ -154,6 +156,29 @@ def main():
     signal.alarm(180)
     if args.mode == "grader":
         grade(args.config, args.case)
+    elif args.mode == "preflight":
+        from anvil.custom_python_grading import coordinator_request, grading_root
+        from anvil.environment_harbor import private_json as write_private
+        from anvil.golden_native_bridge import publish_ipc
+
+        root = grading_root(args.root, coordinator=True)
+        if os.geteuid() != 0 or root.stat().st_uid != 10001:
+            raise ValueError("Actual root/grader ownership boundary required")
+        list(root.iterdir())
+        folder = root / "permission-preflight"
+        folder.mkdir(mode=0o700)
+        os.chown(folder, 10001, 10001)
+        value = {"schema_version": "anvil.private-coordinator-permission-control.v1", "purpose": "technical_only"}
+        write_private(folder / "request.json", value)
+        os.chown(folder / "request.json", 10001, 10001)
+        os.link(folder / "request.json", folder / "claimed.json", follow_symlinks=False)
+        if coordinator_request(folder) != value:
+            raise ValueError("Actual claimed bytes changed")
+        publish_ipc(folder / "result.json", value, 10001)
+        info = (folder / "result.json").stat()
+        if info.st_uid != 10001 or stat.S_IMODE(info.st_mode) != 0o600:
+            raise ValueError("Actual grader-owned private result required")
+        print(json.dumps({"status": "permissions_observed_not_qualified", "qualification_granted": False}))
     else:
         from anvil.custom_python_grading import coordinator_once
 

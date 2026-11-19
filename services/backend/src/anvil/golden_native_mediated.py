@@ -248,7 +248,7 @@ def execute(attempt, work_root, value, *, host, python):
 
 
 def validate_transport_profile(profile, work_root, value):
-    """Independently fixed five mounts: no database/provider/config mount."""
+    """Fixed six mounts; the only receipt mount is root-owned/read-only."""
     from anvil import environment_harbor as native
 
     bridge = Path(value["gateway_socket"]).parent.parent
@@ -257,8 +257,9 @@ def validate_transport_profile(profile, work_root, value):
     if work_root != proof / "native-control-work" or bridge != proof.parent / "native-control-bridge":
         raise ValueError("Fixed disjoint QA transport control roots required")
     expected = {str(proof): (str(proof), True), str(bridge): (str(bridge), True),
+                str(native.ROOT / ".data/component-qualification"): (str(proof / "component-qualification"), False),
                 "/run/docker.sock": ("/run/docker.sock", False), "/usr/bin/docker": ("/usr/bin/docker", False),
                 "/usr/libexec/docker/cli-plugins/docker-compose": ("/usr/libexec/docker/cli-plugins/docker-compose", False)}
     actual = {mount["Destination"]: (mount["Source"], mount["RW"]) for mount in profile["mounts"]}
-    if len(profile["mounts"]) != 5 or actual != expected:
+    if len(profile["mounts"]) != 6 or actual != expected or profile["capabilities"] != ["CHOWN", "DAC_OVERRIDE", "SYS_PTRACE"]:
         raise ValueError("Secret-free exact transport control mount layout required")
