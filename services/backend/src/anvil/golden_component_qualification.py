@@ -42,6 +42,9 @@ def installed():
         from anvil.golden_kyc_paid_qualification import installed as full
 
         result = full()
+        if not result["ready"]:
+            return {"ready": False, "missing": ["independent_component_qualification_required"],
+                    "scope": "technical_components_only", "spending_authority": False}
         return result | {"scope": "technical_components_only", "spending_authority": False}
     try:
         path = Path(configured)

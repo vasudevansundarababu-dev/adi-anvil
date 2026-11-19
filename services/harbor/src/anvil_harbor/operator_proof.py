@@ -621,6 +621,7 @@ class OperatorProofStore:
             and set(seal["components"]) == {"backend", "harbor"},
             "full_runtime_seal_required",
         )
+        checked_common = set()
         for component, record in seal["components"].items():
             need(
                 set(record)
@@ -639,81 +640,18 @@ class OperatorProofStore:
                 },
                 "exact_runtime_component_required",
             )
-            prefix, site = Path(record["prefix"]), Path(record["site_packages"])
-            need(
-                prefix.is_absolute()
-                and prefix.resolve() == prefix
-                and site.resolve() == site
-                and site.is_relative_to(prefix),
-                "runtime_distribution_origin_changed",
-            )
-            launch = Path(record["interpreter"])
-            need(
-                launch.parent == prefix / "bin"
-                and launch.name in ("python", "python3", "python3.12"),
-                "exact_venv_interpreter_origin_required",
-            )
-            self._sealed_file(launch.resolve(), record["interpreter_sha256"])
-            need(launch.stat().st_mode & 0o111, "executable_interpreter_required")
-            self._sealed_file(prefix / "pyvenv.cfg", record["venv_config_sha256"])
-            configuration = dict(
-                line.split("=", 1)
-                for line in (prefix / "pyvenv.cfg").read_text().splitlines()
-                if "=" in line
-            )
-            configuration = {k.strip(): v.strip() for k, v in configuration.items()}
-            need(
-                configuration.get("version") == record["python_version"]
-                and record["python_version"].startswith("3.12.")
-                and configuration.get("include-system-site-packages") == "false",
-                "interpreter_version_or_system_site_changed",
-            )
-            observed = {}
-            for dist in importlib.metadata.distributions(path=[str(site)]):
-                name = re.sub(r"[-_.]+", "-", dist.metadata["Name"]).lower()
-                need(name not in observed, "duplicate_runtime_distribution")
-                observed[name] = dist
-            declared = record["distributions"]
-            need(
-                set(observed) == set(declared) and 1 <= len(declared) <= 256,
-                "full_distribution_inventory_changed",
-            )
-            expected_harbor = declared.get("harbor")
+            common = {key: value for key, value in record.items()
+                      if key not in {"source_packages", "source_files_sha256"}}
+            fingerprint = sha(canonical(common))
+            readonly = self._runtime_install_readonly(record)
+            if not (readonly and fingerprint in checked_common):
+                self._validate_runtime_common(record)
+                if readonly:
+                    checked_common.add(fingerprint)
             if component == "harbor":
-                need(
-                    expected_harbor and expected_harbor["version"] == "0.25.0",
-                    "exact_Harbor_distribution_required",
-                )
-            installed_paths = set()
-            for name, dist in observed.items():
-                entry = declared[name]
-                need(
-                    set(entry) == {"version", "files_sha256"}
-                    and dist.version == entry["version"]
-                    and dist.files is not None,
-                    "runtime_distribution_version_or_RECORD_changed",
-                )
-                entry_files = self._runtime_manifest(entry["files_sha256"])
-                files = {str(p) for p in dist.files}
-                need(
-                    files == set(entry_files)
-                    and any(p.endswith(".dist-info/RECORD") for p in files),
-                    "complete_distribution_RECORD_required",
-                )
-                for relative, expected in entry_files.items():
-                    path = Path(dist.locate_file(relative)).absolute()
-                    resolved = path.resolve()
-                    need(resolved.is_relative_to(prefix), "distribution_file_escaped_prefix")
-                    # RECORD paths may use ../bin, but their resolved origin is sealed.
-                    need(
-                        Path(os.path.normpath(str(path))) == resolved,
-                        "distribution_file_alias_forbidden",
-                    )
-                    self._sealed_file(resolved, expected)
-                    if resolved.is_relative_to(site):
-                        installed_paths.add(str(resolved))
-            actual_site = {str(p) for p in site.rglob("*") if p.is_file()}
-            need(actual_site == installed_paths, "unrecorded_site_package_or_startup_hook")
+                harbor = record["distributions"].get("harbor")
+                need(harbor and harbor["version"] == "0.25.0", "exact_Harbor_distribution_required")
+            site = Path(record["site_packages"])
             expected_packages = {"anvil"} if component == "backend" else {"anvil_harbor"}
             need(
                 set(record["source_packages"]) == expected_packages, "exact_source_package_required"
@@ -753,24 +691,114 @@ class OperatorProofStore:
                             source = self.repository / ("services/backend/src" if component == "backend"
                                                       else "services/harbor/src") / package / Path(path).relative_to(folder)
                             self._sealed_file(source, expected)
-            stdlib = Path(record["stdlib_root"])
-            need(
-                stdlib.is_absolute() and stdlib.resolve() == stdlib and stdlib.is_dir(),
-                "canonical_stdlib_origin_required",
-            )
-            actual_stdlib = {
-                str(p)
-                for p in stdlib.rglob("*")
-                if p.is_file() and "site-packages" not in p.relative_to(stdlib).parts
-            }
-            stdlib_files = self._runtime_manifest(record["stdlib_files_sha256"])
-            need(
-                actual_stdlib == set(stdlib_files) and actual_stdlib,
-                "complete_stdlib_closure_required",
-            )
-            for path, expected in stdlib_files.items():
-                self._sealed_file(path, expected)
         return {"runtime_bytes_validated": True, "dispatch_authorized": False}
+
+    @staticmethod
+    def _runtime_install_readonly(record):
+        """Inspect every mount traversed by the common closure, not just roots.
+
+        A writable nested directory/file bind mount can live below a readonly
+        prefix. The venv interpreter may also resolve outside that prefix.
+        Only a per-call optimization depends on this conservative observation.
+        """
+        try:
+            roots = {Path(record[key]) for key in ("prefix", "site_packages", "stdlib_root")}
+            paths = {Path(record["interpreter"]).resolve(), Path(record["prefix"]) / "pyvenv.cfg"}
+            for root in roots:
+                paths.add(root)
+                paths.update(root.rglob("*"))
+            return all(os.statvfs(path).f_flag & os.ST_RDONLY for path in paths)
+        except OSError:
+            return False
+
+    def _validate_runtime_common(self, record):
+        """Complete interpreter, distribution, site and stdlib validation."""
+        prefix, site = Path(record["prefix"]), Path(record["site_packages"])
+        need(
+            prefix.is_absolute()
+            and prefix.resolve() == prefix
+            and site.resolve() == site
+            and site.is_relative_to(prefix),
+            "runtime_distribution_origin_changed",
+        )
+        launch = Path(record["interpreter"])
+        need(
+            launch.parent == prefix / "bin"
+            and launch.name in ("python", "python3", "python3.12"),
+            "exact_venv_interpreter_origin_required",
+        )
+        self._sealed_file(launch.resolve(), record["interpreter_sha256"])
+        need(launch.stat().st_mode & 0o111, "executable_interpreter_required")
+        self._sealed_file(prefix / "pyvenv.cfg", record["venv_config_sha256"])
+        configuration = dict(
+            line.split("=", 1)
+            for line in (prefix / "pyvenv.cfg").read_text().splitlines()
+            if "=" in line
+        )
+        configuration = {k.strip(): v.strip() for k, v in configuration.items()}
+        need(
+            configuration.get("version") == record["python_version"]
+            and record["python_version"].startswith("3.12.")
+            and configuration.get("include-system-site-packages") == "false",
+            "interpreter_version_or_system_site_changed",
+        )
+        observed = {}
+        for dist in importlib.metadata.distributions(path=[str(site)]):
+            name = re.sub(r"[-_.]+", "-", dist.metadata["Name"]).lower()
+            need(name not in observed, "duplicate_runtime_distribution")
+            observed[name] = dist
+        declared = record["distributions"]
+        need(
+            set(observed) == set(declared) and 1 <= len(declared) <= 256,
+            "full_distribution_inventory_changed",
+        )
+        installed_paths = set()
+        for name, dist in observed.items():
+            entry = declared[name]
+            need(
+                set(entry) == {"version", "files_sha256"}
+                and dist.version == entry["version"]
+                and dist.files is not None,
+                "runtime_distribution_version_or_RECORD_changed",
+            )
+            entry_files = self._runtime_manifest(entry["files_sha256"])
+            files = {str(p) for p in dist.files}
+            need(
+                files == set(entry_files)
+                and any(p.endswith(".dist-info/RECORD") for p in files),
+                "complete_distribution_RECORD_required",
+            )
+            for relative, expected in entry_files.items():
+                path = Path(dist.locate_file(relative)).absolute()
+                resolved = path.resolve()
+                need(resolved.is_relative_to(prefix), "distribution_file_escaped_prefix")
+                # RECORD paths may use ../bin, but their resolved origin is sealed.
+                need(
+                    Path(os.path.normpath(str(path))) == resolved,
+                    "distribution_file_alias_forbidden",
+                )
+                self._sealed_file(resolved, expected)
+                if resolved.is_relative_to(site):
+                    installed_paths.add(str(resolved))
+        actual_site = {str(p) for p in site.rglob("*") if p.is_file()}
+        need(actual_site == installed_paths, "unrecorded_site_package_or_startup_hook")
+        stdlib = Path(record["stdlib_root"])
+        need(
+            stdlib.is_absolute() and stdlib.resolve() == stdlib and stdlib.is_dir(),
+            "canonical_stdlib_origin_required",
+        )
+        actual_stdlib = {
+            str(p)
+            for p in stdlib.rglob("*")
+            if p.is_file() and "site-packages" not in p.relative_to(stdlib).parts
+        }
+        stdlib_files = self._runtime_manifest(record["stdlib_files_sha256"])
+        need(
+            actual_stdlib == set(stdlib_files) and actual_stdlib,
+            "complete_stdlib_closure_required",
+        )
+        for path, expected in stdlib_files.items():
+            self._sealed_file(path, expected)
 
     def _runtime_manifest(self, pin):
         need(hash_value(pin), "runtime_file_manifest_pin_required")
@@ -791,7 +819,8 @@ class OperatorProofStore:
             Path(sys.prefix).resolve() == Path(record["prefix"]),
             "active_interpreter_prefix_changed",
         )
-        allowed = set(self._runtime_manifest(record["source_files_sha256"]))
+        source_files = self._runtime_manifest(record["source_files_sha256"])
+        allowed = set(source_files)
         allowed.update(self._runtime_manifest(record["stdlib_files_sha256"]))
         for entry in record["distributions"].values():
             for relative in self._runtime_manifest(entry["files_sha256"]):
@@ -807,7 +836,7 @@ class OperatorProofStore:
             if name == "anvil" or name.startswith("anvil."):
                 need(
                     str(Path(origin).resolve())
-                    in self._runtime_manifest(record["source_files_sha256"]),
+                    in source_files,
                     "backend_editable_fallback_forbidden",
                 )
 

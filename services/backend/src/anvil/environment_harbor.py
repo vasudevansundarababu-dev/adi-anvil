@@ -33,7 +33,7 @@ from anvil.owned_process_group import UnreapedProcessGroup
 from anvil.praxis_generic_contract import canonical
 
 PRESTART_GUARD_SHA256 = "32cff9841bb9999a1ea4bcc7b8db94674a73cd71b67e33693fcd7732d5c0a19d"
-OPERATOR_PROOF_SHA256 = "339781644f24b1621c0501de9b9603d35a0aca2e7654e294286f825504cec554"
+OPERATOR_PROOF_SHA256 = "ea5f383a678af1db73d8d9458d68fe9cef67b152202ad02c1f550b19d601741d"
 
 
 def prestart_guards():
@@ -301,9 +301,29 @@ def verify_fixed_role_snapshots(folder, config, bindings):
 
 
 class FixedCaptureStopped(RuntimeError):
-    def __init__(self, reason, evidence):
+    def __init__(self, reason, evidence, *, private_prefixes=None):
         super().__init__(reason)
         self.evidence = evidence
+        self._private_prefixes = private_prefixes or {}
+
+
+def retain_fixed_capture_failure(folder, name, error):
+    """Keep bounded raw diagnostics private; public evidence contains hashes only."""
+    folder = Path(folder)
+    info = folder.lstat()
+    if (name not in {"harbor-private.log", "probe-callback.private.log"}
+            or folder.resolve() != folder or not stat.S_ISDIR(info.st_mode)
+            or info.st_uid != os.getuid() or info.st_mode & 0o077):
+        raise ValueError("Private fixed diagnostic custody required")
+    parts = error._private_prefixes
+    if (set(parts) - {"stdout", "stderr"} or any(type(value) is not bytes for value in parts.values())
+            or len(parts.get("stdout", b"")) > 1048576 or len(parts.get("stderr", b"")) > 65536):
+        raise ValueError("Bounded fixed diagnostic prefixes required")
+    with open(folder / name, "xb", opener=lambda p, flags: os.open(p, flags, 0o600)) as stream:
+        stream.write(parts.get("stdout", b"") + parts.get("stderr", b""))
+        stream.flush()
+        os.fsync(stream.fileno())
+    private_json(folder / (name + ".capture.json"), error.evidence)
 
 
 def _fixed_group_owned(child):
@@ -379,6 +399,7 @@ def _collect_fixed_child(child, *, ends):
                 "retained_prefix_bytes": {k: len(v) for k, v in values.items()},
                 "prefix_sha256": {k: hashlib.sha256(v).hexdigest() for k, v in values.items()},
             },
+            private_prefixes={key: bytes(value) for key, value in values.items()},
         )
 
     try:
@@ -422,6 +443,14 @@ def _collect_fixed_child(child, *, ends):
         except (OSError, RuntimeError, subprocess.TimeoutExpired):
             raise stopped("callback_termination_unconfirmed") from None
         raise
+    except TimeoutError:
+        # SIGALRM's hard phase timeout is also an OSError subclass. Preserve its
+        # deadline meaning instead of misreporting it as a broken pipe.
+        try:
+            _stop_fixed_process(child, abnormal=True)
+        except (OSError, RuntimeError, subprocess.TimeoutExpired):
+            raise stopped("callback_termination_unconfirmed") from None
+        raise stopped("callback_deadline") from None
     except (OSError, subprocess.TimeoutExpired):
         try:
             _stop_fixed_process(child, abnormal=True)
@@ -846,6 +875,13 @@ def _execute_lifecycle(
 ):
     if fixed_adapter is not None:
         fixed_trial_gate()
+    managed = fixed_adapter is not None or technical_probe_job is not None
+    # Admission validation consumes the original lifecycle allowance too. Do not
+    # start a second, later deadline after revalidating the installed runtime.
+    deadline = (
+        FixedDeadline(fixed_assets["validated_limits"]["lifecycle_seconds"])
+        if managed else None
+    )
     if technical_probe_job is not None:
         from anvil.golden_kyc_probe import validate_assets
 
@@ -860,16 +896,10 @@ def _execute_lifecycle(
                     or str(python) != host_record["python"]
                     or any(bindings.get(key) != permission[key] for key in ("job_id", "plan_sha256", "request_sha256"))):
                 raise ValueError("Exact independently stored probe required")
-    managed = fixed_adapter is not None or technical_probe_job is not None
     callback_manifest_sha256 = bindings["callback_manifest_sha256"]
     request_sha256 = bindings["request_sha256"]
     reviewed_service_sha256s = bindings["service_projection_sha256s"]
     guards = prestart_guards()
-    deadline = (
-        FixedDeadline(fixed_assets["validated_limits"]["lifecycle_seconds"])
-        if managed
-        else None
-    )
     folder = Path(folder)
     if not folder.is_absolute() or folder.exists():
         raise ValueError("Fresh canonical native attempt root required")
@@ -1084,6 +1114,9 @@ def _execute_lifecycle(
                 stdout, stderr = child_process.communicate(
                     timeout=deadline.remaining(actor_seconds + 90) if deadline else actor_seconds + 90
                 )
+        except FixedCaptureStopped as error:
+            retain_fixed_capture_failure(folder, "harbor-private.log", error)
+            raise
         except subprocess.TimeoutExpired:
             if technical_probe_job is not None:
                 raise RuntimeError("Technical framework termination unconfirmed; no replay") from None

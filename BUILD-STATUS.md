@@ -1,5 +1,20 @@
 # Build status
 
+## Runtime validation correction — 19 November 2026
+
+QA is serving backend/runtime 5b19a72 and web bf839a4, schema131. Installed
+Harbor log-mount parity passed. Latest native attempt 063a350f-4e99-406d-81a3-a30ceb8b1422
+started both containers and callback, but reached its original120-second deadline
+before a worker intent/SQL effect. Cleanup complete; unknown retained, no replay.
+The correction deduplicates identical common runtime hashing within one validation
+call only after every traversed file/directory and resolved interpreter is kernel
+read-only. Component source/mirror validation remains unconditional. Independent
+review clear after nested writable-mount correction;13 targeted seal controls pass.
+Original deadlines remain unchanged; bounded private failure prefixes and safe
+worker stack metadata are retained. No model/live Authoring calls authorized.
+Full frozen regression and fresh/repeated PostgreSQL checks running. No claim of
+native qualification, policy provisioning or benchmark readiness yet.
+
 ## Owned log-mount correction candidate — 18 November 2026
 
 Config-only diagnostic on actual installedHarbor/Compose identified the complete

@@ -5,6 +5,7 @@ import hashlib
 import subprocess
 import sys
 import time
+import traceback
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -168,7 +169,11 @@ def dispatch(job_id, *, folder, assets, deadline, owner_holder):
                                       environment, owner_holder, deadline, permission["operation_nonce"])
         try:
             native.private_json(folder / "callback-process.json", {"pid": child.pid, "identity": child._anvil_start_identity})
-            stdout, stderr = native._collect_fixed_child(child, ends=time.monotonic() + deadline.remaining(30))
+            try:
+                stdout, stderr = native._collect_fixed_child(child, ends=time.monotonic() + deadline.remaining(30))
+            except native.FixedCaptureStopped as error:
+                native.retain_fixed_capture_failure(folder, "probe-callback.private.log", error)
+                raise
         finally:
             native._stop_fixed_process(child)
         (folder / "probe-callback.private.log").write_bytes(stdout + stderr)
@@ -279,9 +284,17 @@ def main():
         print(canonical(run(args.job)).decode())
 
 
+def write_safe_failure(error):
+    """Private operator stderr only; never emit exception text or source lines."""
+    value = {"status": "blocked_or_unknown_no_replay", "error_type": type(error).__name__,
+             "frames": [{"file": frame.filename, "line": frame.lineno, "function": frame.name}
+                        for frame in traceback.extract_tb(error.__traceback__)[-12:]]}
+    sys.stderr.write(canonical(value).decode() + "\n")
+
+
 if __name__ == "__main__":
     try:
         main()
-    except Exception:
-        sys.stderr.write("blocked_or_unknown_no_replay\n")
+    except Exception as error:
+        write_safe_failure(error)
         raise SystemExit(1) from None
