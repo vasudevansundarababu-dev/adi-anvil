@@ -18,8 +18,14 @@ Evidence `transport-08d45ff8eeb5-707597113660788/evidence.json`, SHA
 Fresh actual fixed native SQL Trial240e1b42-c53c-4c2d-b0c5-8b37dcdae835
 passed; evidence875edf1fdbf6cf7c54bc61ecfcb0c0caff2df0d3c5a1b1030fbedd1a1d7b52db,
 retained `probe-config-08d45ff-v1`. Owned actor/verifier cleanup completed.
-Private scorer admission/preflight passed;6cases/audit and current-image
-SQL/registry/components/independent raw review remain in progress. No installed
+Private scorer admission/preflight/6cases/audit and current-image SQL/registry/
+components all passed. Independent raw review found two evidence-contract
+blockers: component packet omitted the child-process MCP server source hash;
+general role receipt check did not accept Docker Compose's affirmative
+no-new-privileges:true spelling. Both corrected without weakening required
+hashes/flags. Six parser controls and Ruff pass; frozen-source review accepts
+the OPS fixes. Fresh component packet/recuration/review remain pending; original
+five unchanged physical packets retained. No installed
 qualification receipt yet. QA still151d6fb/schema132; rollout not yet executed.
 
 Real-project gap: authentic final-v8 publication/4accepted tasks/APRs exist

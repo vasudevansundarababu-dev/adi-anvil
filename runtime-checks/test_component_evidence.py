@@ -13,6 +13,15 @@ spec.loader.exec_module(module)
 
 
 class EvidenceControls(unittest.TestCase):
+    def test_only_one_affirmative_no_new_privileges_spelling_is_accepted(self):
+        for value in (["no-new-privileges"], ["no-new-privileges:true"]):
+            self.assertTrue(module.no_new_privileges(value))
+        for value in ([], ["no-new-privileges:false"], ["no-new-privileges=false"],
+                      ["no-new-privileges", "no-new-privileges:false"],
+                      ["no-new-privileges", "no-new-privileges:true"],
+                      ["no-new-privileges", "no-new-privileges"], "no-new-privileges", [True]):
+            self.assertFalse(module.no_new_privileges(value))
+
     def test_curator_hashes_exact_canonical_unicode_seal_without_host_reformatting(self):
         from anvil.praxis_generic_contract import canonical, digest
 

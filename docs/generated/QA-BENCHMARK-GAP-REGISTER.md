@@ -403,3 +403,19 @@ Documents unchanged does not prove document freshness or private expectation
 no-impact; later-round clocks/responses/statutory scope still require impact
 review. Actual selected serverpackID is deliberately null. Proposal is not a
 dataset registration, ready flag, context approval or runtime binding receipt.
+
+## Evidence 25 — producer/consumer contracts must cover real process layouts
+
+Independent raw08 review verified8packet/56related hashes,23role inspections,
+969terminal trace files and6private scoring/audit joins, then found two receipt
+generation blockers. The parent component recorder omitted MCP server source
+because that server actually ran in a child process. The role checker recognized
+only Docker CLI's no-new-privileges spelling, not Compose's affirmative :true
+encoding. Required source hashes and affirmative security enforcement remain
+mandatory: recorder now hashes the fixed installed3module allowlist; parser
+accepts exactly one of the two affirmative encodings and refuses false,
+duplicates or contradictory forms. Fresh affected component control and new
+curation/review are required; old evidence is never patched to appear complete.
+Studio/release tooling must schema-check producer/consumer evidence on actual
+installed process/engine output before a long qualification campaign. Missing
+data is a reporting failure, not an excuse to synthesize a successful receipt.

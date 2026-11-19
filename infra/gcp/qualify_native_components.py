@@ -69,6 +69,14 @@ def environment(values):
     return result
 
 
+def no_new_privileges(options):
+    """Docker CLI and Compose have two affirmative inspect spellings."""
+    if not isinstance(options, list) or any(type(item) is not str for item in options) or len(set(options)) != len(options):
+        return False
+    selected = [item for item in options if item.startswith("no-new-privileges")]
+    return selected in (["no-new-privileges"], ["no-new-privileges:true"])
+
+
 def static_sdk_profile(info, expected_caps):
     from anvil.golden_native_peer import capabilities
 
@@ -231,7 +239,7 @@ def main(input_path, output_path, *, verify_only=False):
         require(config["User"] == ("10001:10001" if name == "components" else "0:0")
             and capabilities(host.get("CapDrop") or []) == {"ALL"} and not host.get("CapAdd") and not host["Privileged"]
             and host.get("PidMode", "") == "" and host.get("UTSMode", "") == ""
-            and "no-new-privileges" in host["SecurityOpt"] and host["Memory"] == 1610612736
+            and no_new_privileges(host["SecurityOpt"]) and host["Memory"] == 1610612736
             and host["PidsLimit"] == 128 and host["NanoCpus"] == 2000000000
             and set(host.get("Tmpfs") or {}) == {"/tmp"}
             and not info["State"].get("OOMKilled") and not info["State"].get("Error") and info["State"]["Pid"] == 0
@@ -300,7 +308,7 @@ def main(input_path, output_path, *, verify_only=False):
             and not info["State"].get("OOMKilled") and not info["State"].get("Dead") and not info["State"].get("Error")
             and info["State"]["Pid"] == 0 and info["RestartCount"] == 0
             and host["NetworkMode"] == "none" and host["ReadonlyRootfs"] and not host["Privileged"]
-            and "no-new-privileges" in host["SecurityOpt"], "Actual terminal isolated role required")
+            and no_new_privileges(host["SecurityOpt"]), "Actual terminal isolated role required")
         if role in {"sdk", "native_sdk"} or role.startswith("private_coordinator-"):
             require(config["User"] == "0:0", "Trusted coordinator root identity required")
         else:

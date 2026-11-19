@@ -121,9 +121,11 @@ def main():
     control("zen_pass_fail_missing", zen_controls)
     hashes = {"script_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
     for name in ("anvil.golden_mcp_client", "anvil.golden_mcp_server", "anvil.policy_rules"):
-        module = sys.modules.get(name)
-        if module is not None and getattr(module, "__file__", None):
-            hashes[name] = hashlib.sha256(Path(module.__file__).read_bytes()).hexdigest()
+        # The real MCP server ran in a separate process. Parent sys.modules
+        # membership is not evidence that its installed source is absent.
+        module = importlib.import_module(name)
+        require(module.__file__ is not None)
+        hashes[name] = hashlib.sha256(Path(module.__file__).read_bytes()).hexdigest()
     from anvil.golden_kyc_source import source_hash
 
     output = {"schema_version": "anvil.synthetic-component-controls.v1", "fixture": "labelled synthetic in-memory",
