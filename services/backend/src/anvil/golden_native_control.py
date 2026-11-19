@@ -68,7 +68,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if not sys.flags.isolated or not sys.dont_write_bytecode:
         raise ValueError("Installed isolated runtime required")
-    observed = run(args.root)
+    # -m executes this file as __main__. Typed admission must use the one
+    # installed canonical module/class identity, never its duplicate.
+    from anvil.golden_native_control import run as installed_run
+
+    observed = installed_run(args.root)
     print(__import__("json").dumps({"status": "observed_not_qualified", "purpose": PURPOSE,
         "framework_trial_id": observed["framework_trial_id"], "evidence_sha256": digest(observed),
         "qualification_granted": False, "task_score": None, "model_performance": False,

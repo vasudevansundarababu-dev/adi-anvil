@@ -81,6 +81,33 @@ def test_control_result_cannot_finalize_production_before_receipt_checks():
         validate_framework(value, purpose="kyc_worker_collection_only")
 
 
+def test_control_module_entry_delegates_to_canonical_typed_session(monkeypatch, capsys):
+    import runpy
+    import sys
+    import warnings
+
+    from anvil import golden_native_control
+
+    calls = []
+    monkeypatch.setattr(sys, "argv", ["anvil.golden_native_control", "--root", "/synthetic-private-bridge"])
+    original_flags = sys.flags
+
+    class Flags:
+        isolated = 1
+
+        def __getattr__(self, name):
+            return getattr(original_flags, name)
+
+    monkeypatch.setattr(sys, "flags", Flags())
+    monkeypatch.setattr(sys, "dont_write_bytecode", True)
+    monkeypatch.setattr(golden_native_control, "run", lambda root: calls.append(root) or {"framework_trial_id": str(uuid4())})
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        runpy.run_module("anvil.golden_native_control", run_name="__main__")
+    assert calls == ["/synthetic-private-bridge"]
+    assert '"qualification_granted": false' in capsys.readouterr().out
+
+
 def test_owned_records_reject_reformat_alias_extra_hardlink_and_permissions(tmp_path):
     path = tmp_path / "record.json"
     value = body()

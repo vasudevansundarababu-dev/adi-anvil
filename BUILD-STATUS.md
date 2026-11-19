@@ -1,5 +1,28 @@
 # Build status
 
+## Physical QA findings and fixes — 19 November 2026
+
+QA still serves151d6fb/schema132. All three1773372 build phases passed; local
+verification1276units+10subtests (5skipped),90SQL regressions,5private SQL controls.
+Actual QA private scoring completed the real UID10001↔root permission preflight
+and all6 queued/claimed/executed/consumed cases. Evidence:
+`/var/lib/anvil-qa-v1/runtime-functional/private-score-3d82e820/evidence.json`,
+SHA25624df4871cc92692eb34a8a1809e3bc8edcb3d93dad08e1431f9f5282f782436e.
+That packet is source/image-bound to1773372, not a later global runtime source.
+
+Physical transport exposed __main__/canonical class identity duplication; the
+fixed control CLI now delegates to the installed canonical module. Native probe
+also rejected real daemon metadata: CAP_SYS_PTRACE alias and automatic
+label=disable. The corrected profile normalizes only exact capability aliases,
+rejects duplicates/unknown capabilities, binds security options and refuses
+label=disable if kernel SELinux reports enforcing. Independent read-only review
+found no blocker; focused29tests passed,1Linuxskip. These findings do not pass
+qualification. Failed consumed intents/evidence are retained without replay.
+
+The corrected source requires a new immutable build/current-image physical
+reruns. Qualification aggregation, independent scoped no-model observation,
+full deployment/wiring, installed smoke and completion email remain pending.
+
 ## Actual-role wiring correction — 19 November 2026
 
 206d4e4's three GCP phases succeeded (core b066e4a1-dbc1-490b-bd89-5921b868355a,

@@ -30,7 +30,7 @@ def append_mount(service, value):
 def apply(config, image, image_digest):
     config = copy.deepcopy(config)
     services = config["services"]
-    for name in ("api", "business-worker", "golden-scheduler", "golden-grader"):
+    for name in ("api", "worker", "business-worker", "golden-scheduler", "golden-grader"):
         service = services[name]
         environment = service.setdefault("environment", {})
         if any(environment.get(key, "false") != "false" for key in (
@@ -38,6 +38,7 @@ def apply(config, image, image_digest):
             raise ValueError("Wiring does not authorize live activation")
         destination = NATIVE_QUALIFICATION if name.startswith("golden-") else "/app/.data/component-qualification"
         environment["ANVIL_GOLDEN_COMPONENT_QUALIFICATION_FILE"] = destination + "/current.json"
+        environment["ANVIL_RUNTIME_IMAGE_DIGEST"] = image_digest
         append_mount(service, mount(QUALIFICATION, destination, True))
     scheduler = services["golden-scheduler"]
     scheduler["environment"]["ANVIL_NATIVE_BRIDGE_ROOT"] = BRIDGE

@@ -46,14 +46,42 @@ def container_id(pid):
     return matches.pop().decode()
 
 
+def capabilities(values):
+    if not isinstance(values, list) or any(type(item) is not str for item in values):
+        raise ValueError("Actual daemon capability names required")
+    normalized = [item.removeprefix("CAP_") for item in values]
+    if len(set(normalized)) != len(normalized):
+        raise ValueError("Duplicate capability aliases are ambiguous")
+    return set(normalized)
+
+
+def selinux_enforcing():
+    path = Path("/sys/fs/selinux/enforce")
+    if not path.exists():
+        return False
+    value = path.read_text().strip()
+    if value not in {"0", "1"}:
+        raise ValueError("Actual kernel SELinux mode required")
+    return value == "1"
+
+
 def profile(info):
     config, host = info["Config"], info["HostConfig"]
+    added = capabilities(host.get("CapAdd") or [])
+    security = host.get("SecurityOpt") or []
+    allowed_security = {"no-new-privileges", "apparmor=unconfined"}
+    if "label=disable" in security:
+        if selinux_enforcing():
+            raise ValueError("Disabling an enforcing SELinux boundary is forbidden")
+        # Docker adds this for the explicitly host-PID trusted operator on
+        # this non-SELinux QA host. Bind it, never silently discard it.
+        allowed_security.add("label=disable")
     if (not re.fullmatch(r"us-west1-docker\.pkg\.dev/adi-anvil-mvp-2026/anvil-qa-v1/kyc-runtime@sha256:[a-f0-9]{64}", config["Image"])
             or not info["State"]["Running"] or info["State"]["Pid"] <= 1
             or config["User"] != "0:0" or host["NetworkMode"] != "none" or not host["ReadonlyRootfs"]
-            or set(host.get("CapDrop") or []) != {"ALL"} or set(host.get("CapAdd") or []) not in ({"SYS_PTRACE"}, {"SYS_PTRACE", "DAC_OVERRIDE", "CHOWN"})
+            or capabilities(host.get("CapDrop") or []) != {"ALL"} or added not in ({"SYS_PTRACE"}, {"SYS_PTRACE", "DAC_OVERRIDE", "CHOWN"})
             or any(host[key] != "host" for key in ("PidMode", "UTSMode", "UsernsMode", "CgroupnsMode"))
-            or set(host.get("SecurityOpt") or []) != {"no-new-privileges", "apparmor=unconfined"}
+            or set(security) != allowed_security or len(security) != len(allowed_security)
             or host.get("Privileged") or any(value for key, value in (item.split("=", 1) for item in config["Env"])
                                              if any(marker in key for marker in ("DATABASE", "TOKEN", "PASSWORD", "SECRET", "CREDENTIAL", "API_KEY", "PRIVATE_KEY")))):
         raise ValueError("Exact trusted SDK profile without ambient credential variables required")
@@ -62,7 +90,7 @@ def profile(info):
         raise ValueError("Fixed SDK bind profile required")
     return {"schema_version": "anvil.owned-sdk-profile.v1", "image": config["Image"],
             "image_id": info["Image"], "mounts": mounts,
-            "capabilities": sorted(host.get("CapAdd") or []),
+            "capabilities": sorted(added), "security_options": sorted(security),
             "tmpfs": host.get("Tmpfs"), "memory": host["Memory"], "pids": host["PidsLimit"], "cpu": host["NanoCpus"]}
 
 

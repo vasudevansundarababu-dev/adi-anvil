@@ -12,13 +12,14 @@ spec.loader.exec_module(wiring)
 
 def config():
     return {"services": {name: {"environment": {"DATABASE_URL": "synthetic-role-only"}, "volumes": []}
-        for name in ("api", "business-worker", "golden-scheduler", "golden-grader")}}
+        for name in ("api", "worker", "business-worker", "golden-scheduler", "golden-grader")}}
 
 
 def test_coordinators_do_not_inherit_sql_or_each_others_private_mounts():
     original = config()
     result = wiring.apply(original, "synthetic-exact-image", "a" * 64)
-    assert set(original["services"]) == {"api", "business-worker", "golden-scheduler", "golden-grader"}
+    assert set(original["services"]) == {"api", "worker", "business-worker", "golden-scheduler", "golden-grader"}
+    assert all(result["services"][name]["environment"]["ANVIL_RUNTIME_IMAGE_DIGEST"] == "a" * 64 for name in original["services"])
     actor, private = (result["services"][name] for name in ("native-coordinator", "private-scoring-coordinator"))
     assert "DATABASE_URL" not in actor["environment"] and "DATABASE_URL" not in private["environment"]
     actor_sources = {item["source"] for item in actor["volumes"]}

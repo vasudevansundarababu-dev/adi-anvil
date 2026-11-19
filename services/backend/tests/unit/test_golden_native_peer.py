@@ -54,6 +54,25 @@ def test_cross_uid_coordinator_capabilities_are_exact_and_bound():
     info["HostConfig"]["CapAdd"].append("SYS_ADMIN")
     with pytest.raises(ValueError):
         profile(info)
+
+
+def test_actual_daemon_capability_aliases_and_non_enforcing_label_are_bound(monkeypatch):
+    from anvil import golden_native_peer
+
+    info = sdk()
+    info["HostConfig"]["CapAdd"] = ["CAP_SYS_PTRACE"]
+    info["HostConfig"]["SecurityOpt"].append("label=disable")
+    monkeypatch.setattr(golden_native_peer, "selinux_enforcing", lambda: False)
+    actual = profile(info)
+    assert actual["capabilities"] == ["SYS_PTRACE"]
+    assert "label=disable" in actual["security_options"]
+    monkeypatch.setattr(golden_native_peer, "selinux_enforcing", lambda: True)
+    with pytest.raises(ValueError, match="SELinux"):
+        profile(info)
+    info = sdk()
+    info["HostConfig"]["CapAdd"] = ["SYS_PTRACE", "CAP_SYS_PTRACE"]
+    with pytest.raises(ValueError, match="ambiguous"):
+        profile(info)
     changed = copy.deepcopy(sdk())
     changed["Config"]["User"] = "10001:10001"
     with pytest.raises(ValueError):
