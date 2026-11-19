@@ -1,5 +1,36 @@
 # QA benchmark exercise — living gap register
 
+## Physical integration findings — 19 November 2026
+
+RUNTIME-21 (BUILT, actual verification pending): an untraced real4eb0c6c Trial
+failed its separate verifier's hardcoded30second timeout.0102243 derives the
+verifier allowance from the bounded task budget (maximum300), reduces the
+gateway cap to that allowance, and keeps the original aggregate monotonic
+cutoff. Ten layout/boundary regressions and an elapsed-time sharing control pass.
+Studio must lint nested SDK/agent/verifier/socket/outer/cleanup budgets together;
+changing an outer limit alone does not update an SDK's nested default.
+
+OPS-22 (OWNER APPROVAL PENDING): corrected Evaluation buildf397ef22 expired in
+GCP's300second queue before executing any step; Core and Environments succeeded.
+No automatic resubmission beyond the existing one-submission cap. The exact
+evaluation-only retry is prepared, preserving successful artifacts and unchanged
+source/deadlines. Future release tooling must separate queue expiration, source
+failure, execution timeout and lost acknowledgement; retain an explicit approved
+retry counter instead of changing source or silently rebuilding all phases.
+
+| ID | Status / owner | Observed gap | Prevention | Exit evidence |
+|---|---|---|---|---|
+| RUNTIME-17 | BUILT / Gym | Mediated Harbor imports a sealed backend module but the origin guard checks it against the Harbor-only source manifest. | Map every first-party namespace to its own exact sealed wheel inventory; retain full dependency/stdlib/RECORD validation and reject missing/frozen/foreign origins. Exercise real shared-interpreter imports before release. | Candidate4eb0c6c source02e005b4…,16focused source controls passed,1283units+93SQL+5privateSQL passed; fresh physical Trial pending. |
+| QA-18 | CONTROL_FIXED / Gym | A 15-second cold-import intent wait obscured the original transport state; failure cleanup lost partial streams. | Separate startup from the original bounded candidate deadline, retain original-handle stdout/stderr and mark unknown without replay. Independently trace every original process from pre-entry through terminal markers; count IPv6 capability probes separately from outbound connections and reject every internet connect. | OPS21308cf,7classifier controls passed; actual current-image observation pending. No global zero-call claim. |
+| FIXTURE-19 | CONTROL_FIXED / Gym | Registry tests manufactured four product references over a five-state import, proving reader selection but not real import assembly. | Use application_types=True, verify original four tasks,200immutable assignments,50shared evaluator configurations/four environment bindings, and20actual product/state application snapshots. | Keystone read-only review; fresh4eb0c6c/21308cf physical registry result pending. Publication/legal/domain/runtime prerequisites remain explicitly synthetic; full native materialization/report flow is separate. |
+| OPS-20 | PREPARED / Gym | Restoring old Compose leaves newly introduced coordinators running as orphans; migration max-version alone is insufficient custody. | Require exact schema+Alembic132, explicitly target133 once, prove both133 afterward; preserve private backup/diagnostics, stop only new owned container IDs and independently restore all old services on failure. | Harbor reviewed rollout936a93…; final manifest retarget and actual rollout pending. |
+
+Template/Environment Studio must generate a deployment-contract preflight that
+covers shared interpreter imports, actual UID/GID, exact mounts/capabilities,
+namespace peers, restricted SQL rights, original deadlines and retained cleanup.
+Successful package installation or a manufactured registry fixture is not runtime,
+publication, policy, rights or benchmark qualification. No live calls authorized.
+
 ## Source-verification performance and storage — 19 November 2026
 
 PERF-01: The installed SQL software control repeated about358 complete source,

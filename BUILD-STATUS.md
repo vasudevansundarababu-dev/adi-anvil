@@ -1,5 +1,66 @@
 # Build status
 
+## Current verifier-budget candidate; evaluation queue expired
+
+Frozen application0102243b825994d16bf23e22e117a222f08589ed, Golden source
+9063503d27c0da956247003aec109982e7795ea1b59d3df31ed98c9e26d39c09.
+1293unit tests+10subtests passed(4skips),93SQL regressions passed,5private SQL
+controls passed. Evidence `.local/qa-0102243-{units,full-sql,private-sql}.log`.
+Initial focused gateway test lacked sandbox socket permission; the final full
+configured/escalated suite passed that actual socket check.
+
+Corec79ea3f4-55fd-428b-b118-f73361254ae5 and Environmentsa50139fe-e69d-4dda-
+93d3-1e5463e81140 succeeded. Evaluationf397ef22-476a-4554-a21a-eaa7b88e5d7e
+EXPIRED in its300second queue with every step PENDING, not a source/test failure.
+Queue then observed empty. Existing single-submission cap preserved: one exact,
+unchanged evaluation-only retry is PREPARED, NOT executed. Owner approval was
+requested at the authorized work email; no reply/approval recorded yet. Preserve
+original/retry receipts separately; never replay the expired submission blindly.
+
+Actual4eb0c6c untraced transport revealed the remaining hardcoded30second Harbor
+verifier timeout.0102243 uses the bounded task budget for verifier and gateway,
+preserving the original worker monotonic cutoff, parent remaining-time clamp and
+cleanup. Legacy actor ceiling stays unchanged; verifier never exceeds300seconds.
+Aegis/Forge read-only source review found no blocking runtime diff issue.
+
+OPSb11271f removes full-syscall ptrace hash overhead with checksum-pinned
+launch-time seccomp filtering on the trusted SDK (no extra mounts/caps/env).
+Actual observer lifecycle probe216544f0 passed: original SDK initPID preserved,
+kernel2filters, positive control-only Unix connection, both original PIDFDs and
+all tracees terminal. Non-child tracer exit code remains explicitly UNKNOWN,
+not fabricated zero.9classifier/abort controls passed; current-image full
+transport qualification remains pending.4evidence/deadline parser controls passed.
+QA serving release remains151d6fb/schema132; no deployment yet. Paid calls OFF,
+Authoring integration PAUSED, Staging/Production untouched. Human publication,
+domain/rights/case approvals remain separate from technical qualification.
+
+## Frozen native source ownership correction — 19 November 2026
+
+Application4eb0c6c1bad986950b20c5de3d5886141dc4b0c1, Golden source
+02e005b4338bcc1005446545c8ccb144b823a0d6e35bbd97839cf624e4162e95.
+All three v10 builds succeeded: Core56a21054-0252-46cf-bd57-7e467ad7cf69,
+Environmentsb115f8fa-f884-4ce0-b4a2-6d8f85e1ac72,
+Evaluation46b9140f-1f73-441c-b5da-abf1e8c10f65. Frozen verification:
+1283units+10subtests passed(4skipped),93SQL regressions passed,5private SQL
+admission controls passed. Initial unit invocations omitted required bootstrap/
+Marketing fixture configuration and failed; configured final run is recorded in
+`.local/qa-4eb0c6c-units-final.log`, with SQL logs alongside it.
+
+The previousbdf1951 image passed the actual native two-read Trial,6private scoring
+cases+read-only audit, SQL/MCP/checkpoint controls, OPA/ZEN controls and20registry
+cells. Its mediated SDK failed `backend_editable_fallback_forbidden`: loaded
+backend files were checked against the Harbor-only source manifest. Cleanup
+completed/0failures. The correction checks each first-party package against its
+own sealed wheel and rejects missing/frozen/wrong-package origins. Prior-image
+results remain diagnostic and cannot qualify4eb0c6c.
+
+Operational controls21308cf use actual four-product imports, original immutable
+application assignments/environment/evaluator bindings and20actual product/state
+application examples. Publication/domain/runtime prerequisite rows remain clearly
+MANUFACTURED software fixtures; no real legal/publication/rights approval.
+Fresh physical current-image controls and rollout are pending. QA still serves
+151d6fb/schema132. All live provider and Authoring calls remain disabled.
+
 ## SDK cold bootstrap passed; rejection cleanup hardened
 
 3e04d65 frozen verification:1279units+10subtests (5skips),90SQL regressions,
