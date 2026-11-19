@@ -430,6 +430,8 @@ def main(input_path, output_path, *, verify_only=False):
         and re.fullmatch("[a-f0-9]{64}", integrity["seal_sha256"]),
         "Actual complete original-Trial integrity entry/exit validation required")
     require(len(networks) == 2 and {item["role"] for item in networks} == {"worker", "sdk"}, "Both original process-tree observations required")
+    require(integrity["owner_pid"] == next(item["host_pid"] for item in networks if item["role"] == "sdk"),
+        "Integrity proof belongs to another original SDK process")
     for item in networks:
         filtered = item.get("observer_mode") == "pinned_launch_seccomp"
         if filtered:

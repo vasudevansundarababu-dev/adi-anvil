@@ -2,6 +2,16 @@
 
 ## Trial-local immutable integrity proof under review (19 November)
 
+Frozen app08d45ff8eeb515561fbcd50916d6a7adb8fca42c, Golden source
+e8fade572ca204830402fd40fb75b6aaeda595bfecb57a6e40e4c09a13c05086.
+Fresh local SQL regressions93passed; private SQL5passed. Fresh/repeated133
+migrations passed; retained stopped fixturesd3eecc/aa7d9d. Logs
+`.local/qa-08d45ff-{full-sql,private-sql}.log`. Five evidence parser controls pass.
+Independent frozen-source review found no blocker; actual current-image
+qualification remains pending. Core03cb6863-cdbe-4154-90cd-0f71f8fe8201
+is building; Environments18d35ed1-fbeb-4212-88cb-1d4b07970a75 succeeded.
+Evaluation submitted only after binding that actual Environment image digest.
+
 All three 0102243 build phases succeeded, including reconciled Evaluation retry
 315db6a2-a171-4871-8dd5-5fdf4c277cc8. That candidate was not deployed: its fresh
 transport control exhausted the original 300-second callback deadline. Owned
