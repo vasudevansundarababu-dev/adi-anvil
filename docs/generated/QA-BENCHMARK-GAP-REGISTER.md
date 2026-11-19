@@ -365,3 +365,41 @@ qualification authority. Studio must estimate integrity/setup/actor/verifier/
 finalization cost against the complete original budget and expose stage timings.
 Acceptance requires fresh physical controls on the newly built exact image;
 source review/unit tests alone do not close this gap.
+
+Closure progress: frozen08d45ff, imagefeedc1a81…, actual filtered transport
+completed139.075s within original300s. Full entry+final scan and4callback guards
+confirmed; worker/SDK0exit, ownedcleanup complete, positiveUnix/0INETconnect
+in observed trees. Evidence8359c921a497259d7fb40e8dec87dfc2e70de1fbd3bb0eceda7e8dc8b32e097c.
+Separate fresh native SQL Trial passed. Full aggregation/rollout still pending;
+this closes neither human/project binding gates nor model performance.
+
+## Binding 24 — actual dataset context must match applicability evidence
+
+Read-only final-v8 review verified all68 artifact hashes and authentic publication,
+four accepted successor tasks and APR records. Those approvals exist; they are
+not replaced by the manufactured isolated-registry software fixture.
+Default Gym snapshots in golden_kyc_data.py retain assessment_date2026-11-11,
+charter profile golden-pilot-pending-legal-review/reviewed=false; environment clock
+also11November. Final applicability evidence covers national bank/OCC/homeNY as
+of12November. Exact application-policy scope correctly refuses substituting that
+different date/profile. Never relabel original snapshots or silently change their
+hashes/ages/expectations to fit a receipt.
+
+Before a real run, inspect the actual selected immutable dataset. Remedy requires
+either reviewed applicability for its exact original context or an explicitly
+versioned compatible Gym dataset/context with preserved source lineage and
+revalidated private expectations/clock. Authoring does not own private case data.
+Studio must compare task/policy/application charter and time scopes during
+binding preview, explain the mismatch before provisioning, and retain exact
+owner decisions. A passing synthetic20-cell registry test is not evidence that
+the real imported project's dataset context or runtime bindings are qualified.
+
+Local proposal `.local/kyc-v8-context-proposal/` retains exact200parent hashes
+(populatione8d5cb8b…); proposed populationfe9571ec…, lineagef4462ae9….
+Independent read-only review confirmed350party ages unchanged and all200initial
+10-weekday deadlines25→26Nov; illustrative initial5-weekday dates18→19Nov.
+The named golden-weekdays calendar excludes weekends, not bank holidays.
+Documents unchanged does not prove document freshness or private expectation
+no-impact; later-round clocks/responses/statutory scope still require impact
+review. Actual selected serverpackID is deliberately null. Proposal is not a
+dataset registration, ready flag, context approval or runtime binding receipt.

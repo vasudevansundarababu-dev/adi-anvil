@@ -1,5 +1,35 @@
 # Build status
 
+## Current08 physical worker bridge and native SQL Trial passed
+
+All v12 phases succeeded: Core03cb6863-cdbe-4154-90cd-0f71f8fe8201,
+Environments18d35ed1-fbeb-4212-88cb-1d4b07970a75,
+Evaluationafb29d68-b43e-4c04-88b4-9752d6a06ced. App08d45ff/sourcee8fade…,
+controls302f6ee, exact manifestSHA
+02df14205f12832ec0b250579a781dae5a7636f543a7782e39441207908a2699;
+runtime imagefeedc1a81bcf92a9f0b44b8c8e25995100f97f2089a856b3a2c6d2d0fce197b6.
+
+Fresh actual filtered transport completed139.075s within original300s, SDK0 and
+worker0, full entry+final seal validation, readonly reuse and all4callback guards.
+Observed worker4/SDK120positive Unix connects;0internet connects/unknown peers
+in those scoped process trees. Global model-call count remains null, not inferred.
+Evidence `transport-08d45ff8eeb5-707597113660788/evidence.json`, SHA
+8359c921a497259d7fb40e8dec87dfc2e70de1fbd3bb0eceda7e8dc8b32e097c.
+Fresh actual fixed native SQL Trial240e1b42-c53c-4c2d-b0c5-8b37dcdae835
+passed; evidence875edf1fdbf6cf7c54bc61ecfcb0c0caff2df0d3c5a1b1030fbedd1a1d7b52db,
+retained `probe-config-08d45ff-v1`. Owned actor/verifier cleanup completed.
+Private scorer admission/preflight passed;6cases/audit and current-image
+SQL/registry/components/independent raw review remain in progress. No installed
+qualification receipt yet. QA still151d6fb/schema132; rollout not yet executed.
+
+Real-project gap: authentic final-v8 publication/4accepted tasks/APRs exist
+(68file hashes verified), but default200cases retain11Nov/pending-charter scope
+versus approved12Nov/national-OCC-NY scope. Local nonrunnable context proposal
+preserves parents;200new child hashes,0age changes,200initial weekday-deadline
+changes. Independent read-only arithmetic/lineage review passed; actual selected
+parent pack and private expectation impact remain unreviewed. Not a qualified
+dataset, legal decision or approval. See gapBinding24; no original data changed.
+
 ## Trial-local immutable integrity proof under review (19 November)
 
 Frozen app08d45ff8eeb515561fbcd50916d6a7adb8fca42c, Golden source
