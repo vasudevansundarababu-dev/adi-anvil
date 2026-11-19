@@ -171,8 +171,16 @@ class NetworkObserver:
     def abort(self):
         try:
             if self.process.poll() is None:
-                subprocess.run(["docker", "stop", "--time", "1", self.name], capture_output=True, timeout=6, check=True)
-                self.process.communicate(timeout=3)
+                stop = subprocess.run(["docker", "stop", "--time", "1", self.name], capture_output=True, timeout=6)
+                try:
+                    stdout, stderr = self.process.communicate(timeout=3)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                    stdout, stderr = self.process.communicate(timeout=3)
+                private(self.evidence / (self.role + ".partial.stdout"), stdout)
+                private(self.evidence / (self.role + ".partial.stderr"), stderr)
+                private(self.evidence / (self.role + ".abort.json"), json.dumps({"top_level_stop_exit": stop.returncode,
+                    "framework_cleanup": "unknown_requires_owned_reconciliation", "qualification_granted": False}).encode())
         finally:
             try:
                 if self.tracer is not None and self.tracer.poll() is None:

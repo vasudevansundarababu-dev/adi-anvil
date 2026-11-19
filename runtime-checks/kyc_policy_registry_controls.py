@@ -241,9 +241,24 @@ def run(path):
         for product in ("individual", "adult_joint", "teen_joint", "custodial"):
             with connect("owner") as connection:
                 current_scope = policy_scope(connection, UUID(project), scope.resolved_input_id,
-                    "synthetic-policy-" + product, "synthetic-r8")
+                    "KYC-" + product, scope.revision_id)
             for state in ("CA", "NY", "TX", "FL", "IL"):
-                selected = policy | {"id": "synthetic-" + product + "-" + state, "product": product, "governing_state": state}
+                with connect() as connection:
+                    actual = connection.execute("SELECT id,snapshot,snapshot_sha256 FROM banking.applications WHERE project_id=%s AND pack_id=%s "
+                        "AND snapshot->>'product'=%s AND snapshot->>'governing_state'=%s ORDER BY id LIMIT 1", (project, fixture["pack_id"], product, state)).fetchone()
+                    require(actual is not None and digest(actual["snapshot"]) == actual["snapshot_sha256"])
+                    original = json.loads(connection.execute("SELECT body_canonical FROM anvil.kyc_resolved_input_versions WHERE project_id=%s AND id=%s",
+                        (project, scope.resolved_input_id)).fetchone()["body_canonical"])
+                member = [row for row in original["rows"] if row["application_id"] == actual["id"]]
+                require(len(member) == 1 and member[0]["application_sha256"] == actual["snapshot_sha256"]
+                    and member[0]["task_id"] == current_scope.task_id and member[0]["revision_id"] == current_scope.revision_id
+                    and member[0]["product"] == actual["snapshot"]["product"] == product
+                    and member[0]["governing_state"] == actual["snapshot"]["governing_state"] == state)
+                assessment = date.fromisoformat(actual["snapshot"]["assessment_date"])
+                charter = actual["snapshot"]["charter_applicability"]["profile"]
+                selected = policy | {"id": "synthetic-" + product + "-" + state, "product": actual["snapshot"]["product"],
+                    "governing_state": actual["snapshot"]["governing_state"], "charter_profile": charter}
+                require(date.fromisoformat(selected["effective_from"]) <= assessment < date.fromisoformat(selected["effective_until"]))
                 current_subject = domain_subject(current_scope, contract(PolicySet, selected))
                 runtime_id = str(uuid4())
                 runtime_body = runtime | {"id": runtime_id, "subject": runtime_subject(current_scope).model_dump(mode="json"),
@@ -263,11 +278,17 @@ def run(path):
                     "domain_review_receipt": {"id": str(reviewed["id"]), "sha256": reviewed["sha256"]},
                     "runtime_control_receipt": {"id": runtime_id, "sha256": digest(runtime_body)}, "expires_at": expiry-timedelta(seconds=1)})
                 append(record)
-                observed = read(expected="candidate", which=current_scope, changes={"product": product, "governing_state": state},
+                observed = read(expected="candidate", which=current_scope, changes={"product": actual["snapshot"]["product"],
+                    "governing_state": actual["snapshot"]["governing_state"], "charter_profile": charter, "assessment_date": assessment},
                     expected_id=record.id, expected_policy=digest(selected))
-                cells.append({"product": product, "state": state, "status": observed["status"], "run_authority": observed["run_authority"],
+                cells.append({"product": product, "state": state, "application_id": actual["id"], "application_sha256": actual["snapshot_sha256"],
+                    "task_id": current_scope.task_id, "revision_id": current_scope.revision_id,
+                    "environment_binding_sha256": current_scope.environment_binding_sha256, "evaluator_bindings_sha256": current_scope.evaluator_bindings_sha256,
+                    "status": observed["status"], "run_authority": observed["run_authority"],
                     "qualification_record_ids": observed["qualification_record_ids"], "policy_set_sha256s": observed["policy_set_sha256s"]})
-        require(len(cells) == 20)
+        require(len(cells) == len({(cell["product"], cell["state"]) for cell in cells}) == len({cell["application_id"] for cell in cells}) == 20
+            and len({cell["task_id"] for cell in cells}) == 4 and len({cell["environment_binding_sha256"] for cell in cells}) == 1
+            and len({cell["evaluator_bindings_sha256"] for cell in cells}) == 1)
         return {"cells": cells, "manufactured_prerequisites": True, "actual_legal_review": False, "production_qualification_granted": False}
 
     observe("twenty_product_state_software_candidates", product_state_matrix)

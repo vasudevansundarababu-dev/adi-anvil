@@ -103,9 +103,13 @@ def main(manifest_path, *, observe_network=False):
                 break
             time.sleep(.1)
         if len(pending) != 1:
-            stdout, stderr = worker.communicate(timeout=5)
-            private(evidence / "worker.stdout", stdout)
-            private(evidence / "worker.stderr", stderr)
+            private(evidence / "startup-failure.json", json.dumps({"observed_intents": len(pending),
+                "worker_terminal": worker.poll() is not None, "qualification_granted": False,
+                "status": "unknown_no_replay"}).encode())
+            if worker.poll() is not None:
+                stdout, stderr = worker.communicate(timeout=3)
+                private(evidence / "worker.stdout", stdout)
+                private(evidence / "worker.stderr", stderr)
             raise RuntimeError("Exactly one fresh worker intent required; no replay")
         attempt = pending[0]
         sdk = launch("sdk", command("sdk") + ["anvil.golden_native_bridge", "--once", attempt.name])
