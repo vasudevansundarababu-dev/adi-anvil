@@ -13,6 +13,7 @@ import signal
 import stat
 import sys
 import time
+import traceback
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -26,6 +27,13 @@ class Deadline(BaseException):
 def require(condition):
     if not condition:
         raise ValueError("Synthetic registry control refused")
+
+
+def contract(model, value):
+    # These are JSON contracts. Python strict mode correctly refuses ISO
+    # date/UUID strings; validate their actual wire encoding instead.
+    return model.model_validate_json(json.dumps(value, default=lambda item: item.isoformat()
+        if isinstance(item, (date, datetime)) else str(item), allow_nan=False))
 
 
 def private_json(path):
@@ -105,7 +113,7 @@ def run(path):
               "effective_from": "2020-01-01", "effective_until": "2099-01-01"}
     expiry = datetime.now(timezone.utc) + timedelta(minutes=10)
     from anvil.golden_kyc_policy_registry import PolicySet
-    subject = domain_subject(scope, PolicySet.model_validate(policy))
+    subject = domain_subject(scope, contract(PolicySet, policy))
     with connect("owner") as connection:
         staged = stage(connection, UUID(project), UUID(user), subject)
         domain = decide(connection, project, user, staged["id"], Decision(subject_sha256=staged["sha256"], decision="approved",
@@ -121,7 +129,7 @@ def run(path):
             "expires_at": expiry.isoformat()}
         connection.execute("INSERT INTO anvil.kyc_policy_review_receipts(id,project_id,subject_id,kind,created_by,body_canonical,content_sha256,expires_at) "
             "VALUES(%s,%s,NULL,'runtime',%s,%s,%s,%s)", (identifier, project, user, canonical(runtime).decode(), digest(runtime), expiry))
-    body = RegistryRecord.model_validate({"schema_version": "anvil.private-kyc-policy-qualification.v1", "id": str(uuid4()),
+    body = contract(RegistryRecord, {"schema_version": "anvil.private-kyc-policy-qualification.v1", "id": str(uuid4()),
         "scope": scope.model_dump(mode="json"), "policy_set": policy, "policy_set_sha256": digest(policy),
         "domain_review_receipt": {"id": str(domain["id"]), "sha256": domain["sha256"]},
         "runtime_control_receipt": {"id": identifier, "sha256": digest(runtime)}, "expires_at": expiry - timedelta(seconds=1)})
@@ -236,7 +244,7 @@ def run(path):
                     "synthetic-policy-" + product, "synthetic-r8")
             for state in ("CA", "NY", "TX", "FL", "IL"):
                 selected = policy | {"id": "synthetic-" + product + "-" + state, "product": product, "governing_state": state}
-                current_subject = domain_subject(current_scope, PolicySet.model_validate(selected))
+                current_subject = domain_subject(current_scope, contract(PolicySet, selected))
                 runtime_id = str(uuid4())
                 runtime_body = runtime | {"id": runtime_id, "subject": runtime_subject(current_scope).model_dump(mode="json"),
                     "subject_sha256": digest(runtime_subject(current_scope).model_dump(mode="json")),
@@ -250,7 +258,7 @@ def run(path):
                     connection.execute("INSERT INTO anvil.kyc_policy_review_receipts(id,project_id,subject_id,kind,created_by,body_canonical,content_sha256,expires_at) "
                         "VALUES(%s,%s,NULL,'runtime',%s,%s,%s,%s)",
                         (runtime_id, project, user, canonical(runtime_body).decode(), digest(runtime_body), expiry))
-                record = RegistryRecord.model_validate({"schema_version": "anvil.private-kyc-policy-qualification.v1", "id": str(uuid4()),
+                record = contract(RegistryRecord, {"schema_version": "anvil.private-kyc-policy-qualification.v1", "id": str(uuid4()),
                     "scope": current_scope.model_dump(mode="json"), "policy_set": selected, "policy_set_sha256": digest(selected),
                     "domain_review_receipt": {"id": str(reviewed["id"]), "sha256": reviewed["sha256"]},
                     "runtime_control_receipt": {"id": runtime_id, "sha256": digest(runtime_body)}, "expires_at": expiry-timedelta(seconds=1)})
@@ -283,5 +291,7 @@ if __name__ == "__main__":
     try:
         raise SystemExit(run(args.config))
     except (Exception, Deadline) as error:
-        print(json.dumps({"status": "blocked_or_unknown_no_replay", "exception_type": type(error).__name__, "run_authority": "not_granted", "native_qualified": False}))
+        details = [{"location": list(item["loc"]), "type": item["type"]} for item in error.errors(include_input=False, include_url=False)] if type(error).__name__ == "ValidationError" else []
+        print(json.dumps({"status": "blocked_or_unknown_no_replay", "exception_type": type(error).__name__, "run_authority": "not_granted", "native_qualified": False,
+            "validation_locations": details, "frames": [{"file": Path(frame.filename).name, "line": frame.lineno, "function": frame.name} for frame in traceback.extract_tb(error.__traceback__)[-8:]]}))
         raise SystemExit(1) from None
