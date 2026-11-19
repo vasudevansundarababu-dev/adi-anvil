@@ -76,9 +76,9 @@ def main(manifest_path, *, observe_network=False):
 
         def launch(role, arguments):
             if observe_network:
-                from network_observer import NetworkObserver
+                from network_observer import FilteredSDKObserver, NetworkObserver
 
-                observed = NetworkObserver(arguments, evidence, role, bridge)
+                observed = (FilteredSDKObserver if role == "sdk" else NetworkObserver)(arguments, evidence, role, bridge)
                 observers.append(observed)
                 cleanup.callback(observed.abort)
                 return observed.process

@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 import re
+import select
 import signal
 import stat
 import subprocess
@@ -169,9 +170,16 @@ class NetworkObserver:
         return packet
 
     def abort(self):
+        failures, stopped = [], None
         try:
             if self.process.poll() is None:
-                stop = subprocess.run(["docker", "stop", "--time", "1", self.name], capture_output=True, timeout=6)
+                try:
+                    stopped = subprocess.run(["docker", "stop", "--time", "1", self.name], capture_output=True, timeout=6).returncode
+                except (OSError, subprocess.SubprocessError) as error:
+                    failures.append(type(error).__name__)
+            # A timeout may race the CLI's exit. Retain the original handles
+            # even then, rather than losing communicate()'s partial buffers.
+            if not (self.evidence / (self.role + ".stdout")).exists():
                 try:
                     stdout, stderr = self.process.communicate(timeout=3)
                 except subprocess.TimeoutExpired:
@@ -179,7 +187,7 @@ class NetworkObserver:
                     stdout, stderr = self.process.communicate(timeout=3)
                 private(self.evidence / (self.role + ".partial.stdout"), stdout)
                 private(self.evidence / (self.role + ".partial.stderr"), stderr)
-                private(self.evidence / (self.role + ".abort.json"), json.dumps({"top_level_stop_exit": stop.returncode,
+                private(self.evidence / (self.role + ".abort.json"), json.dumps({"top_level_stop_exit": stopped, "failures": failures,
                     "framework_cleanup": "unknown_requires_owned_reconciliation", "qualification_granted": False}).encode())
         finally:
             try:
@@ -196,3 +204,172 @@ class NetworkObserver:
                 if self.descriptor is not None:
                     os.close(self.descriptor)
                     self.descriptor = None
+
+
+class FilteredSDKObserver(NetworkObserver):
+    """Pinned launch-time seccomp tracing for the trusted host-PID SDK only.
+
+    Unlike attaching with -p, this installs the socket/connect filter before
+    Python exec, avoiding ptrace stops for every dependency-file hash syscall.
+    -D preserves the original SDK init PID. No image/mount/cap/env additions.
+    Host PIDFDs and every tracee's terminal record establish capture closure;
+    a non-child tracer exit code is explicitly unknown, never fabricated zero.
+    """
+
+    def __init__(self, command, evidence, role, bridge):
+        if os.geteuid() != 0 or os.uname().nodename != "anvil-qa-v1" or role != "sdk":
+            raise ValueError("Existing host-root SDK observer only")
+        if BINARY.stat().st_uid != 0 or BINARY.stat().st_mode & 0o022 or hashlib.sha256(BINARY.read_bytes()).hexdigest() != BINARY_SHA256:
+            raise ValueError("Exact checksum-pinned private observer required")
+        index = command.index("--entrypoint")
+        if command[index+1] != "/opt/anvil-runtime/bin/python" or command[command.index("--pid")+1] != "host":
+            raise ValueError("Fixed host-PID installed SDK required")
+        self.evidence, self.role, self.bridge = evidence, role, bridge
+        self.name = command[command.index("--name")+1]
+        self.started = time.time()
+        self.tracer, self.descriptor, self.error_stream, self.tracer_descriptor = None, None, None, None
+        self.tracer_owned = False
+        self.prefix = evidence / "sdk.syscalls"
+        host_prefix = "/proc/1/root" + str(ROOT / "extracted")
+        trace_command = ["--library-path", host_prefix + "/usr/lib/x86_64-linux-gnu:" + host_prefix + "/lib/x86_64-linux-gnu",
+            host_prefix + "/usr/bin/strace", "-D", "--seccomp-bpf", "-ff", "-ttt", "-q", "-e", "trace=socket,connect",
+            "-o", "/proc/1/root" + str(self.prefix), "/opt/anvil-runtime/bin/python", *command[index+3:]]
+        launched = command[:index+1] + ["/lib64/ld-linux-x86-64.so.2", command[index+2], *trace_command]
+        self.process = subprocess.Popen(launched, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            cutoff = time.monotonic() + 20
+            expected = ["/opt/anvil-runtime/bin/python", *command[index+3:]]
+            while time.monotonic() < cutoff:
+                result = subprocess.run(["docker", "inspect", self.name], capture_output=True, timeout=2)
+                if result.returncode == 0:
+                    info = json.loads(result.stdout)[0]
+                    pid = info["State"]["Pid"]
+                    if pid > 1:
+                        proc = Path("/proc") / str(pid)
+                        actual = proc.joinpath("cmdline").read_bytes().split(b"\0")[:-1]
+                        status = proc.joinpath("status").read_text()
+                        tracer = re.search(r"^TracerPid:\s*([0-9]+)$", status, re.M)
+                        filters = re.search(r"^Seccomp_filters:\s*([0-9]+)$", status, re.M)
+                        if actual == [item.encode() for item in expected] and tracer and int(tracer[1]) > 1 and filters and int(filters[1]) >= 2:
+                            break
+                if self.process.poll() is not None:
+                    raise RuntimeError("Filtered SDK exited before original custody was observed")
+                time.sleep(.02)
+            else:
+                raise TimeoutError("Original SDK filtered trace custody unavailable")
+            if info["Config"]["Image"] != command[index+2] or not info["State"]["Running"]:
+                raise ValueError("Exact original SDK image required")
+            self.pid, self.image = pid, info["Config"]["Image"]
+            self.identity = proc.joinpath("stat").read_text().rpartition(") ")[2].split()[19]
+            self.descriptor = os.pidfd_open(pid, 0)
+            self.tracer_pid = int(tracer[1])
+            tracer_proc = Path("/proc") / str(self.tracer_pid)
+            tracer_identity = tracer_proc.joinpath("stat").read_text().rpartition(") ")[2].split()[19]
+            self.tracer_descriptor = os.pidfd_open(self.tracer_pid, 0)
+            tracer_argv = tracer_proc.joinpath("cmdline").read_bytes().split(b"\0")[:-1]
+            if not any(value == (host_prefix + "/usr/bin/strace").encode() for value in tracer_argv):
+                raise ValueError("Actual pinned launch tracer required")
+            current_status = proc.joinpath("status").read_text()
+            if (proc.joinpath("stat").read_text().rpartition(") ")[2].split()[19] != self.identity
+                    or tracer_proc.joinpath("stat").read_text().rpartition(") ")[2].split()[19] != tracer_identity
+                    or re.search(r"^TracerPid:\s*([0-9]+)$", current_status, re.M)[1] != str(self.tracer_pid)
+                    or proc.joinpath("cmdline").read_bytes().split(b"\0")[:-1] != actual):
+                raise ValueError("Original SDK/tracer identity changed during PIDFD acquisition")
+            self.tracer_owned = True
+            self.filter_count = int(filters[1])
+        except BaseException:
+            self.abort()
+            raise
+
+    def finish(self):
+        if self.process.poll() != 0:
+            raise ValueError("Original filtered SDK must complete successfully")
+        poller = select.poll()
+        poller.register(self.tracer_descriptor, select.POLLIN)
+        if not poller.poll(5000):
+            raise ValueError("Original filtered tracer has not terminated")
+        poller = select.poll()
+        poller.register(self.descriptor, select.POLLIN)
+        if not poller.poll(0):
+            raise ValueError("Original SDK PIDFD has not terminated")
+        stderr = (self.evidence / "sdk.stderr").read_bytes()
+        if re.search(rb"(?:^|\n)strace:", stderr):
+            raise ValueError("Filtered observer reported a capture error")
+        files = sorted(self.evidence.glob("sdk.syscalls.*"))
+        if not 1 <= len(files) <= 2048 or self.prefix.with_name(self.prefix.name + "." + str(self.pid)) not in files:
+            raise ValueError("Original filtered process-tree trace required")
+        raw, hashes = b"", {}
+        for path in files:
+            data = path.read_bytes()
+            complete_trace(data)
+            raw += data
+            if len(raw) > 16 * 1024**2:
+                raise ValueError("Bounded filtered trace required")
+            hashes[path.name] = hashlib.sha256(data).hexdigest()
+            path.chmod(0o600)
+        counters = classify(raw, self.bridge)
+        packet = {"schema_version": "anvil.owned-control-network-observation.v1", "scope": "transport_worker_and_sdk_descendants",
+            "role": self.role, "container": self.name, "image": self.image, "host_pid": self.pid, "start_ticks": self.identity,
+            "observed_from_pre_entry_pause": False, "observed_before_application_exec": True,
+            "observer_mode": "pinned_launch_seccomp", "observer_exit_code": None,
+            "observer_completion": "original_sdk_and_tracer_pidfds_exited_all_tracees_terminal", "seccomp_filters": self.filter_count,
+            "tracer_pid": self.tracer_pid, "observer_stderr_clean": True,
+            "observer_binary_sha256": BINARY_SHA256, "observer_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            "traces": hashes, "started_at_unix": self.started, "ended_at_unix": time.time(), **counters,
+            "global_actual_model_calls": None, "qualification_granted": False}
+        private(self.evidence / "sdk.network-observation.json", json.dumps(packet, sort_keys=True).encode())
+        os.close(self.tracer_descriptor)
+        self.tracer_descriptor = None
+        os.close(self.descriptor)
+        self.descriptor = None
+        return packet
+
+    def abort(self):
+        failures = []
+        partial = (b"", b"")
+        try:
+            try:
+                super().abort()
+            except (OSError, subprocess.SubprocessError) as error:
+                failures.append(type(error).__name__)
+                if isinstance(error, subprocess.TimeoutExpired):
+                    partial = (error.output or b"", error.stderr or b"")
+        finally:
+            if self.tracer_descriptor is not None:
+                try:
+                    poller = select.poll()
+                    poller.register(self.tracer_descriptor, select.POLLIN)
+                    if not poller.poll(0):
+                        if not self.tracer_owned:
+                            failures.append("tracer_custody_unknown")
+                        else:
+                            try:
+                                signal.pidfd_send_signal(self.tracer_descriptor, signal.SIGTERM)
+                                if not poller.poll(3000):
+                                    signal.pidfd_send_signal(self.tracer_descriptor, signal.SIGKILL)
+                                    if not poller.poll(3000):
+                                        failures.append("original_tracer_not_terminal")
+                            except ProcessLookupError:
+                                if not poller.poll(0):
+                                    failures.append("tracer_disappeared_without_terminal_pidfd")
+                            except OSError as error:
+                                failures.append(type(error).__name__)
+                    # A detached tracer can keep pipe FDs open after the CLI
+                    # exits. Drain original handles AFTER its bounded cleanup.
+                    if not (self.evidence / "sdk.stdout").exists():
+                        try:
+                            partial = self.process.communicate(timeout=3)
+                        except subprocess.TimeoutExpired as error:
+                            partial = (error.output or partial[0], error.stderr or partial[1])
+                            failures.append("partial_pipe_drain_unknown")
+                        for suffix, raw in zip(("stdout", "stderr"), partial):
+                            path = self.evidence / ("sdk.partial." + suffix)
+                            if not path.exists():
+                                private(path, raw)
+                    path = self.evidence / "sdk.filtered-abort.json"
+                    if not path.exists():
+                        private(path, json.dumps({"failures": failures, "framework_cleanup": "unknown_requires_owned_reconciliation",
+                            "qualification_granted": False}).encode())
+                finally:
+                    os.close(self.tracer_descriptor)
+                    self.tracer_descriptor = None

@@ -1,9 +1,14 @@
 """Classifier security controls only; not physical network qualification."""
 
+import json
+import os
+import subprocess
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from network_observer import classify, complete_trace
+from network_observer import FilteredSDKObserver, classify, complete_trace
 
 
 class TraceControls(unittest.TestCase):
@@ -49,6 +54,43 @@ class TraceControls(unittest.TestCase):
         for raw in (b'', b'connect(3, {sa_family=AF_UNIX, sun_path="/run/docker.sock"}, 30) = 0\n'):
             with self.assertRaises(ValueError):
                 complete_trace(raw)
+
+    def test_tracer_exit_race_preserves_partial_evidence(self):
+        with tempfile.TemporaryDirectory() as folder:
+            observer = object.__new__(FilteredSDKObserver)
+            observer.evidence = Path(folder)
+            observer.tracer_descriptor, write_fd = os.pipe()
+            observer.tracer_owned = True
+            observer.process = unittest.mock.Mock()
+            observer.process.communicate.return_value = (b"original stdout", b"original stderr")
+            poller = unittest.mock.Mock()
+            poller.poll.side_effect = [[], [(observer.tracer_descriptor, 1)]]
+            try:
+                with patch("network_observer.NetworkObserver.abort"), patch("network_observer.select.poll", return_value=poller), patch("network_observer.signal.pidfd_send_signal", side_effect=ProcessLookupError, create=True):
+                    observer.abort()
+                self.assertEqual((Path(folder) / "sdk.partial.stdout").read_bytes(), b"original stdout")
+                self.assertEqual(json.loads((Path(folder) / "sdk.filtered-abort.json").read_bytes())["failures"], [])
+            finally:
+                os.close(write_fd)
+
+    def test_detached_tracer_pipe_timeout_retains_original_partial_bytes(self):
+        with tempfile.TemporaryDirectory() as folder:
+            observer = object.__new__(FilteredSDKObserver)
+            observer.evidence = Path(folder)
+            observer.tracer_descriptor, write_fd = os.pipe()
+            observer.tracer_owned = True
+            observer.process = unittest.mock.Mock()
+            deadline = subprocess.TimeoutExpired("fixed synthetic process", 3, output=b"partial original", stderr=b"partial error")
+            observer.process.communicate.side_effect = deadline
+            poller = unittest.mock.Mock()
+            poller.poll.return_value = [(observer.tracer_descriptor, 1)]
+            try:
+                with patch("network_observer.NetworkObserver.abort", side_effect=deadline), patch("network_observer.select.poll", return_value=poller):
+                    observer.abort()
+                self.assertEqual((Path(folder) / "sdk.partial.stdout").read_bytes(), b"partial original")
+                self.assertIn("partial_pipe_drain_unknown", json.loads((Path(folder) / "sdk.filtered-abort.json").read_bytes())["failures"])
+            finally:
+                os.close(write_fd)
 
 
 if __name__ == "__main__":
