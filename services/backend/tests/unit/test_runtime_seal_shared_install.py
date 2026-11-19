@@ -133,6 +133,25 @@ def test_loaded_source_manifest_is_hash_verified_once_not_once_per_module(sealed
         store.validate_loaded_origins(seal, component="backend")
 
 
+@pytest.mark.parametrize("component", ["backend", "harbor"])
+def test_shared_interpreter_checks_each_first_party_package_against_own_seal(sealed, monkeypatch, component):
+    module, store, seal = sealed
+    record = seal["components"][component]
+    site = Path(record["site_packages"])
+    backend_origin, harbor_origin = str(site / "anvil/__init__.py"), str(site / "anvil_harbor/__init__.py")
+    backend = SimpleNamespace(__file__=backend_origin, __spec__=SimpleNamespace(origin=backend_origin))
+    harbor = SimpleNamespace(__file__=harbor_origin, __spec__=SimpleNamespace(origin=harbor_origin))
+    monkeypatch.setattr(module, "sys", SimpleNamespace(prefix=record["prefix"], modules={"anvil": backend, "anvil_harbor": harbor}))
+    store.validate_loaded_origins(seal, component=component)
+    # Being inside the OTHER sealed wheel is not authority for this package.
+    backend.__file__ = harbor_origin
+    with pytest.raises(module.ProofBlocked, match="backend_editable_fallback_forbidden"):
+        store.validate_loaded_origins(seal, component=component)
+    backend.__file__, harbor.__file__ = backend_origin, backend_origin
+    with pytest.raises(module.ProofBlocked, match="harbor_editable_fallback_forbidden"):
+        store.validate_loaded_origins(seal, component=component)
+
+
 @pytest.mark.parametrize("kind", ["nested_directory", "file_bind", "external_interpreter"])
 def test_writable_nested_mount_or_external_interpreter_forbids_dedup(sealed, monkeypatch, tmp_path, kind):
     module, store, seal = sealed

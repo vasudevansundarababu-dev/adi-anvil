@@ -821,6 +821,14 @@ class OperatorProofStore:
             "active_interpreter_prefix_changed",
         )
         source_files = self._runtime_manifest(record["source_files_sha256"])
+        # Both independently sealed first-party wheels share this interpreter.
+        # A mediated Harbor entry imports the backend plan validator; each
+        # package must belong to its OWN exact source inventory, not whichever
+        # component initiated this check. Never admit an editable fallback.
+        sources = {component: source_files}
+        for other in ("backend", "harbor"):
+            if other != component:
+                sources[other] = self._runtime_manifest(seal["components"][other]["source_files_sha256"])
         allowed = set(source_files)
         allowed.update(self._runtime_manifest(record["stdlib_files_sha256"]))
         for entry in record["distributions"].values():
@@ -834,12 +842,9 @@ class OperatorProofStore:
             ):
                 continue
             need(str(Path(origin).resolve()) in allowed, "loaded_module_origin_outside_seal")
-            if name == "anvil" or name.startswith("anvil."):
-                need(
-                    str(Path(origin).resolve())
-                    in source_files,
-                    "backend_editable_fallback_forbidden",
-                )
+            for package, owner in (("anvil", "backend"), ("anvil_harbor", "harbor")):
+                if name == package or name.startswith(package + "."):
+                    need(str(Path(origin).resolve()) in sources[owner], owner + "_editable_fallback_forbidden")
 
     def validate_host_recovery(self, binding, host_record, recovery, *, folder, host, python):
         """Bind independently supplied role/image evidence and enforced budgets."""
