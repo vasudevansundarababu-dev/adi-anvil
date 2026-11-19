@@ -33,13 +33,30 @@ def classify(raw, bridge):
         raise ValueError("Bounded syscall trace required")
     text = raw.decode("utf-8", "strict")
     inet = sum(bool(re.search(r"\b(?:AF_INET6?|sa_family=AF_INET6?)\b", line)) for line in text.splitlines())
-    unix = re.findall(r'sun_path="([^"\n]+)"', text)
+    unix = []
+    for line in text.splitlines():
+        if "socket(" in line and re.search(r'\bsocket\(AF_UNIX,', line) is None:
+            raise ValueError("Unexpected socket family")
+        if "<... connect resumed>" in line or "sun_path=" in line and "connect(" not in line:
+            raise ValueError("Incomplete connection trace")
+        if "connect(" not in line:
+            continue
+        match = re.fullmatch(r'\s*(?:[0-9]+\.[0-9]+\s+)?connect\([0-9]+, \{sa_family=AF_UNIX, sun_path="([^"\\\n]+)"\}, [0-9]+\)\s+=\s+.*', line)
+        if match is None:
+            raise ValueError("Unrecognized, abstract or incomplete connection trace")
+        unix.append(match[1])
     allowed = [r"/run/docker\.sock", re.escape(str(bridge)) + r"/(?:\.bm-gw-[a-z0-9_]+|\.sg-[a-z0-9_]+/\.bm-gw-[a-z0-9_]+)/gateway\.sock",
                r"/tmp/\.anvil-ng-[a-z0-9_]+/\.bm-gw-[a-z0-9_]+/gateway\.sock"]
     unknown = [path for path in unix if not any(re.fullmatch(pattern, path) for pattern in allowed)]
     if inet or unknown or not unix:
         raise ValueError("Unexpected network family or non-control Unix peer observed")
     return {"internet_socket_or_connect_events": inet, "unix_connect_events": len(unix), "unknown_unix_peers": 0}
+
+
+def complete_trace(raw):
+    lines = raw.decode("utf-8", "strict").splitlines()
+    if not lines or re.fullmatch(r'(?:[0-9]+\.[0-9]+\s+)?\+\+\+ (?:exited with [0-9]+|killed by SIG[A-Z0-9]+(?: \(core dumped\))?) \+\+\+', lines[-1]) is None:
+        raise ValueError("Each traced process must have a terminal record")
 
 
 class NetworkObserver:
@@ -90,7 +107,7 @@ class NetworkObserver:
             error_path = evidence / (role + ".observer.stderr")
             self.error_stream = os.fdopen(os.open(error_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb")
             env = {"PATH": "/usr/bin:/bin", "LANG": "C", "LD_LIBRARY_PATH": str(ROOT / "extracted/usr/lib/x86_64-linux-gnu") + ":" + str(ROOT / "extracted/lib/x86_64-linux-gnu")}
-            self.tracer = subprocess.Popen([str(BINARY), "-ff", "-ttt", "-qq", "-e", "trace=socket,connect", "-o", str(self.prefix), "-p", str(pid)],
+            self.tracer = subprocess.Popen([str(BINARY), "-ff", "-ttt", "-q", "-e", "trace=socket,connect", "-o", str(self.prefix), "-p", str(pid)],
                 env=env, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=self.error_stream)
             while time.monotonic() < cutoff:
                 status = (Path("/proc") / str(pid) / "status").read_text()
@@ -121,10 +138,13 @@ class NetworkObserver:
         files = sorted(self.evidence.glob(self.role + ".syscalls.*"))
         if not 1 <= len(files) <= 2048:
             raise ValueError("Bounded original process-tree traces required")
+        if self.prefix.with_name(self.prefix.name + "." + str(self.pid)) not in files:
+            raise ValueError("Original observed process trace required")
         raw = b""
         hashes = {}
         for path in files:
             data = path.read_bytes()
+            complete_trace(data)
             raw += data
             if len(raw) > 16 * 1024**2:
                 raise ValueError("Bounded process-tree trace bytes required")

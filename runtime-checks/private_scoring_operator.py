@@ -39,6 +39,10 @@ def main(manifest_path, bundle):
         info = path.lstat()
         if path.resolve() != path or info.st_uid != 0 or info.st_mode & 0o022 or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
             raise ValueError("Root-owned release control bytes changed")
+    audit_path = bundle / "runtime-checks/private_scoring_audit.py"
+    if (audit_path.resolve() != audit_path or audit_path.stat().st_uid != 0 or audit_path.stat().st_mode & 0o022
+            or hashlib.sha256(audit_path.read_bytes()).hexdigest() != manifest["operational_files"].get("runtime-checks/private_scoring_audit.py")):
+        raise ValueError("Exact root-owned read-only audit source required")
     image = manifest["images"]["kyc-runtime"]
     if manifest["schema"] != 133 or not re.fullmatch(r"us-west1-docker\.pkg\.dev/adi-anvil-mvp-2026/anvil-qa-v1/kyc-runtime@sha256:[a-f0-9]{64}", image):
         raise ValueError("Exact immutable schema133 release required")
@@ -168,8 +172,12 @@ def main(manifest_path, bundle):
                 raise ValueError("Actual retained private executor isolation changed")
             private(base / ("executor-" + str(index) + ".inspect.json"), json.dumps(info, sort_keys=True).encode())
             packets.append(packet)
+        private(folders["owner"] / "audit-jobs.json", json.dumps({"project_id": driver["project_id"],
+            "job_ids": [packet["job_id"] for packet in packets]}).encode())
+        audit = run("audit", "private_scoring_audit.py", ["--owner", str(folders["owner"] / "setup.json"),
+            "--jobs", str(folders["owner"] / "audit-jobs.json")], scripts + sqlsocket + [(folders["owner"], folders["owner"], False)])
         evidence = {"schema_version": "anvil.physical-private-scoring-controls.v1", "release": manifest,
-            "cases": packets, "qualification_granted": False, "task_score": None, "model_calls_authorized": 0,
+            "cases": packets, "sql_audit": audit, "qualification_granted": False, "task_score": None, "model_calls_authorized": 0,
             "actual_model_calls": None, "operator_script_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
         raw = json.dumps(evidence, sort_keys=True).encode()
         private(base / "evidence.json", raw)

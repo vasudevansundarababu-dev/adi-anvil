@@ -3,14 +3,14 @@
 import unittest
 from pathlib import Path
 
-from network_observer import classify
+from network_observer import classify, complete_trace
 
 
 class TraceControls(unittest.TestCase):
     bridge = Path("/var/lib/anvil-qa-v1/runtime-functional/native-control-bridge")
 
     def test_actual_control_unix_peer_is_positive_evidence(self):
-        raw = ('1 connect(3, {sa_family=AF_UNIX, sun_path="' + str(self.bridge)
+        raw = ('1.0 connect(3, {sa_family=AF_UNIX, sun_path="' + str(self.bridge)
                + '/.sg-abc12345/.bm-gw-def12345/gateway.sock"}, 100) = 0\n').encode()
         self.assertEqual(classify(raw, self.bridge)["unix_connect_events"], 1)
 
@@ -27,6 +27,18 @@ class TraceControls(unittest.TestCase):
     def test_no_positive_syscall_observations_is_not_a_pass(self):
         with self.assertRaises(ValueError):
             classify(b"", self.bridge)
+
+    def test_abstract_malformed_and_truncated_connections_are_denied(self):
+        for address in ('@"hidden"', '"/run/docker.sock"...', '""', 'NULL'):
+            with self.subTest(address=address), self.assertRaises(ValueError):
+                classify(('connect(3, {sa_family=AF_UNIX, sun_path=' + address + '}, 100) = 0\n').encode(), self.bridge)
+
+    def test_process_terminal_coverage_is_required(self):
+        complete_trace(b'123.123 +++ exited with 0 +++\n')
+        complete_trace(b'123.123 +++ killed by SIGTERM +++\n')
+        for raw in (b'', b'connect(3, {sa_family=AF_UNIX, sun_path="/run/docker.sock"}, 30) = 0\n'):
+            with self.assertRaises(ValueError):
+                complete_trace(raw)
 
 
 if __name__ == "__main__":

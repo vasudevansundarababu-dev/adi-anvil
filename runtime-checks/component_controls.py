@@ -124,8 +124,11 @@ def main():
         module = sys.modules.get(name)
         if module is not None and getattr(module, "__file__", None):
             hashes[name] = hashlib.sha256(Path(module.__file__).read_bytes()).hexdigest()
+    from anvil.golden_kyc_source import source_hash
+
     output = {"schema_version": "anvil.synthetic-component-controls.v1", "fixture": "labelled synthetic in-memory",
               "controls": results, "versions": versions, "source_hashes": hashes,
+              "golden_source_sha256": source_hash(),
               "native_qualified": False, "qualification_written": False,
               "model_calls_authorized": 0, "actual_model_calls": None,
               "limitations": ["No SQL, OpenEnv reset, Harbor Trial, physical role mounts, checkpoint recovery or private grading exercised.",
