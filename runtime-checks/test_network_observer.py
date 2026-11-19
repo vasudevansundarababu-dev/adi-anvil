@@ -14,11 +14,21 @@ class TraceControls(unittest.TestCase):
                + '/.sg-abc12345/.bm-gw-def12345/gateway.sock"}, 100) = 0\n').encode()
         self.assertEqual(classify(raw, self.bridge)["unix_connect_events"], 1)
 
-    def test_both_internet_families_and_connect_are_denied(self):
-        for raw in (b"socket(AF_INET, SOCK_STREAM, IPPROTO_TCP) = 3\n", b"socket(AF_INET6, SOCK_DGRAM, 0) = -1\n",
-                    b"connect(3, {sa_family=AF_INET, sin_port=htons(443)}, 16) = 0\n"):
+    def test_internet_connect_and_unknown_socket_families_are_denied(self):
+        for raw in (b"socket(AF_PACKET, SOCK_RAW, 0) = 3\n",
+                    b"connect(3, {sa_family=AF_INET, sin_port=htons(443)}, 16) = 0\n",
+                    b"connect(3, {sa_family=AF_INET6, sin6_port=htons(443)}, 28) = -1 ENETUNREACH\n"):
             with self.subTest(raw=raw), self.assertRaises(ValueError):
                 classify(raw, self.bridge)
+
+    def test_capability_probe_is_counted_and_failed_nscd_is_not_control_evidence(self):
+        prefix = b'socket(AF_INET6, SOCK_STREAM|SOCK_CLOEXEC, IPPROTO_IP) = 3\nconnect(3, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110) = -1 ENOENT (No such file or directory)\n'
+        with self.assertRaises(ValueError):
+            classify(prefix, self.bridge)
+        result = classify(prefix + b'connect(4, {sa_family=AF_UNIX, sun_path="/run/docker.sock"}, 30) = 0\n', self.bridge)
+        self.assertEqual(result["internet_socket_events"], 1)
+        self.assertEqual(result["internet_connect_events"], 0)
+        self.assertEqual(result["unix_connect_events"], 1)
 
     def test_arbitrary_unix_broker_is_denied(self):
         with self.assertRaises(ValueError):

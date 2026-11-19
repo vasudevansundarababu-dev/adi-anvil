@@ -95,7 +95,9 @@ def main(manifest_path, *, observe_network=False):
             return process
 
         worker = launch("worker", command("worker") + ["anvil.golden_native_control", "--root", str(bridge)])
-        for _ in range(150):
+        # Cold isolated imports precede the worker's own 300-second cutoff.
+        # Tracing makes imports slower; do not confuse startup with no intent.
+        for _ in range(600):
             pending = [p for p in bridge.iterdir() if p.name not in before and re.fullmatch("[a-f0-9]{32}", p.name) and (p / "request.json").is_file()]
             if pending or worker.poll() is not None:
                 break

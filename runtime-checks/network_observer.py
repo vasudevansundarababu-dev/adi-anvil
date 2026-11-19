@@ -32,11 +32,16 @@ def classify(raw, bridge):
     if len(raw) > 16 * 1024**2:
         raise ValueError("Bounded syscall trace required")
     text = raw.decode("utf-8", "strict")
-    inet = sum(bool(re.search(r"\b(?:AF_INET6?|sa_family=AF_INET6?)\b", line)) for line in text.splitlines())
+    inet_sockets = 0
     unix = []
     for line in text.splitlines():
         if "socket(" in line and re.search(r'\bsocket\(AF_UNIX,', line) is None:
-            raise ValueError("Unexpected socket family")
+            # urllib3 probes IPv6 availability at import. Socket creation is
+            # observable, but is not an outbound request. No INET connect is
+            # accepted below; the container also has network=none throughout.
+            if re.search(r'\bsocket\(AF_INET6?,', line) is None:
+                raise ValueError("Unexpected socket family")
+            inet_sockets += 1
         if "<... connect resumed>" in line or "sun_path=" in line and "connect(" not in line:
             raise ValueError("Incomplete connection trace")
         if "connect(" not in line:
@@ -44,13 +49,16 @@ def classify(raw, bridge):
         match = re.fullmatch(r'\s*(?:[0-9]+\.[0-9]+\s+)?connect\([0-9]+, \{sa_family=AF_UNIX, sun_path="([^"\\\n]+)"\}, [0-9]+\)\s+=\s+.*', line)
         if match is None:
             raise ValueError("Unrecognized, abstract or incomplete connection trace")
+        if match[1] == "/var/run/nscd/socket" and re.search(r'= -1 ENOENT \(No such file or directory\)$', line):
+            continue
         unix.append(match[1])
     allowed = [r"/run/docker\.sock", re.escape(str(bridge)) + r"/(?:\.bm-gw-[a-z0-9_]+|\.sg-[a-z0-9_]+/\.bm-gw-[a-z0-9_]+)/gateway\.sock",
                r"/tmp/\.anvil-ng-[a-z0-9_]+/\.bm-gw-[a-z0-9_]+/gateway\.sock"]
     unknown = [path for path in unix if not any(re.fullmatch(pattern, path) for pattern in allowed)]
-    if inet or unknown or not unix:
+    if unknown or not unix:
         raise ValueError("Unexpected network family or non-control Unix peer observed")
-    return {"internet_socket_or_connect_events": inet, "unix_connect_events": len(unix), "unknown_unix_peers": 0}
+    return {"internet_socket_events": inet_sockets, "internet_connect_events": 0,
+            "unix_connect_events": len(unix), "unknown_unix_peers": 0}
 
 
 def complete_trace(raw):
