@@ -151,8 +151,9 @@ export default function OfflineTemplatePublication({
                   typeof record !== 'object' ||
                   Array.isArray(record) ||
                   (!('status' in record) && !('publication_status' in record)) ||
-                  ('status' in record && record.status !== 'published') ||
-                  ('publication_status' in record && record.publication_status !== 'published') ||
+                  ('status' in record && !['published', 'PUBLISHED'].includes(record.status)) ||
+                  ('publication_status' in record &&
+                    !['published', 'PUBLISHED'].includes(record.publication_status)) ||
                   typeof record.published_at !== 'string' ||
                   !/(Z|[+-]\d{2}:\d{2})$/.test(record.published_at) ||
                   !Number.isFinite(Date.parse(record.published_at)) ||

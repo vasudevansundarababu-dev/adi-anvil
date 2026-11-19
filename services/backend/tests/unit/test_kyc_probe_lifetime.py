@@ -61,6 +61,27 @@ def test_unowned_local_process_cannot_bootstrap_probe_execution():
         probe.run("00000000-0000-0000-0000-000000000001")
 
 
+def test_config_failure_closes_gateway_before_framework_spawn(tmp_path, monkeypatch):
+    events = []
+
+    def reject(*args, **kwargs):
+        raise ValueError("synthetic config failure")
+
+    monkeypatch.setattr(native, "prestart_guards", lambda: SimpleNamespace(validate_generated_config=reject))
+    monkeypatch.setattr(native, "process_domain", lambda: {"synthetic": True})
+    monkeypatch.setattr(native, "LocalDocker", lambda *args: SimpleNamespace(run=lambda *args: b'[{}]'))
+    monkeypatch.setattr(native, "require_cached_image", lambda image: None)
+    monkeypatch.setattr(native, "layout", lambda folder, *args, **kwargs: folder / "task")
+    monkeypatch.setattr(native, "NativeGateway", lambda *args, **kwargs: SimpleNamespace(close=lambda: events.append("closed")))
+    monkeypatch.setattr(native.subprocess, "Popen", lambda *args, **kwargs: pytest.fail("framework must not launch"))
+    with pytest.raises(ValueError, match="synthetic config failure"):
+        native._execute_lifecycle(tmp_path / "attempt", {}, None, host="synthetic", python="synthetic",
+                                  mediated_candidate=False, actor_seconds=30,
+                                  bindings={"callback_manifest_sha256": "a" * 64, "request_sha256": "b" * 64,
+                                            "service_projection_sha256s": {}})
+    assert events == ["closed"]
+
+
 @pytest.mark.parametrize("failure", ["framework_died", "permission_changed"])
 def test_framework_loss_during_transaction_prevents_commit(failure):
     live = {"running": True, "pin": "original"}

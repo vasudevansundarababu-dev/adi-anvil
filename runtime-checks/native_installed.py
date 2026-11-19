@@ -5,11 +5,15 @@ import importlib
 import importlib.metadata as metadata
 import json
 import os
+import runpy
+import sys
+import warnings
 from pathlib import Path
 from threading import Event
 from time import monotonic
 
 import anvil_harbor
+from anvil_harbor import environment as harbor_environment
 
 import anvil
 from anvil.golden_kyc_evaluators import OPA_POLICIES, opa_guard
@@ -44,6 +48,28 @@ for name in (
     "anvil_harbor.marketing",
 ):
     importlib.import_module(name)
+
+# Exercise the actual installed -m entry without starting Docker or a Trial.
+# The factory imports the canonical module; a duplicate __main__ adapter cannot
+# pass its exact type checks. Keep this installed-Harbor control distinct from
+# the later physical native Trial qualification.
+entry_observed = []
+original_main, original_argv = harbor_environment.main, sys.argv
+
+
+async def entry_control(path):
+    entry_observed.append((path, harbor_environment.LocalComponentsDocker.__module__))
+
+
+try:
+    harbor_environment.main = entry_control
+    sys.argv = ["anvil_harbor.environment", "synthetic-entry-control.json"]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        runpy.run_module("anvil_harbor.environment", run_name="__main__")
+finally:
+    harbor_environment.main, sys.argv = original_main, original_argv
+assert entry_observed == [("synthetic-entry-control.json", "anvil_harbor.environment")]
 
 matched = 0
 for folder, package in (("backend", anvil), ("harbor", anvil_harbor)):
@@ -80,6 +106,7 @@ print(
             "policy_controls": 3,
             "model_calls": 0,
             "native_qualified": False,
+            "canonical_module_entry_control": True,
         }
     )
 )

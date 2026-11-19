@@ -1007,10 +1007,19 @@ def _execute_lifecycle(
         },
         "verifier": {"import_path": "anvil_harbor.sme:SMEVerifier"},
     }
-    guards.validate_generated_config(config, attempt_root=str(folder), trial_name=name)
-    if managed and canonical(config) != canonical(fixed_assets["trial_config"]):
-        raise ValueError("Generated native config differs from reviewed exact config")
-    private_json(folder / "trial.json", config)
+    try:
+        guards.validate_generated_config(config, attempt_root=str(folder), trial_name=name)
+        if managed and canonical(config) != canonical(fixed_assets["trial_config"]):
+            raise ValueError("Generated native config differs from reviewed exact config")
+        private_json(folder / "trial.json", config)
+    except BaseException:
+        # No framework/actor has started, but the gateway already owns a thread
+        # and socket. Configuration failure must release them before returning.
+        try:
+            gateway.close()
+        finally:
+            gateway_home.cleanup()
+        raise
     env = docker.environment | {
         "PYTHONPATH": str(ROOT / "services/harbor/src"),
         "ANVIL_ENVIRONMENT_DOCKER_COMMAND": json.dumps(docker.command),

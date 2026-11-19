@@ -1,5 +1,49 @@
 # Build status
 
+## Native/131 follow-up candidate — 18 November 2026
+
+Final Authoring folder received and validated read-only:68/68 hashes/sizes,
+10-member safe root-manifest ZIP and4successor task/asset references passed.
+Template8449adb008b6ecea7858b594dd5765f60b9b9596b57568d25f5e0598a334f7d5;
+ZIPced49fece4cc9d0ad46b7c3a3b1d3ab4f15ffbf2a33e03646e0bb74595674f60.
+Browser permission gate declined file upload; exactv8 registration is not complete.
+User asked to register the exact file through UI; blocker/status email sent.
+V7 unchanged; no publication attestation or policy approval created.
+
+Actual native preparation passed on4be884c. Two launches failed before actor/SQL
+effects because Docker-default denied hostPID1 namespace inspection. Root-only
+operator diagnostic with explicit inspection profile passed; actor/verifier
+profiles unchanged. Fresh third job reached actual Harbor framework entry,
+then strict adapter type check rejected duplicated __main__/canonical classes;
+cleanup complete, no callback/effect intents. Unknown/no-replay evidence retained.
+Fix canonical module entry delegation without loosening identity checks.
+Also close gateway on prelaunch config failure and isolate installed MCP child.
+UppercasePUBLISHED interoperability uses additive131, immutable130 unchanged.
+Marketing source nominationv3 preservesv1/v2; legacy contexts retainv2 identity,
+new context qualification remains closed pending original scoped evidence.
+
+Combined source4f4c82e2422eef75f8810a0c62d2dd8464cbff74689618b8e3c5389c68249a38:
+1178units+10subtests PASS,3platform/root/Harbor skips;71SQL fresh/repeat131 PASS.
+UI types/production/browser PASS. Added installed-Harbor entry regression to
+CloudBuild checks because local unit environment lacks Harbor; build pending.
+ServingQA still4be884c/schema130. No native qualification/benchmark-ready claim.
+
+## QA publication130 serving — 18 November 2026
+
+Release4be884cf3ffa5085dc8c0e0dd67d769325c9f595 deployed successfully.
+CloudBuildb333f431-4acd-4b28-a670-d4b5424a9738 SUCCESS. Exact backend7e13d4a1,
+KYCdfd2d455 and web8c21e256 digests verified on6updated running services,
+zero restarts at rollout verification; other services unchanged. Schema130.
+Health/workspace200. All live-provider/Harbor/Authoring/real-email flags false.
+User approved QA boot disk50→80GB; GPT backup retained, partition/filesystem
+expanded online,28GB free after image pulls. No images/volumes deleted.
+Database/config rollback retained /var/lib/anvil-qa-v1/backups/publication130-4be884c.
+Final combined1173units+10subtests PASS,2platform/root skips;64SQL fresh/repeat130
+PASS, sourcef616bfde87ffd8a7d4385076a045a5106d710e445ff8f4c66527f17031b8751a.
+Authenticated Admin browser smoke in progress. Actual installed no-model native
+control running independently; no component qualification or benchmark readiness
+claimed. Further MCP installed-child isolation fix is local only, not this release.
+
 ## Offline publication130 and native control repair — 18 November 2026
 
 User renewed QA deployment/no-model verification authority and completion/blocker

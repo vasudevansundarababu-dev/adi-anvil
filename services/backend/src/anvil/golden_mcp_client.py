@@ -22,7 +22,6 @@ from mcp.client.stdio import stdio_client
 
 from anvil.golden_kyc_tool_contract import tools
 from anvil.marketing_native_mcp_support import (
-    ROOT,
     NativeGateway,
     owned_json,
     private_json,
@@ -166,14 +165,12 @@ class McpEpisode:
         env = {
             "PATH": "/usr/local/bin:/usr/bin:/bin",
             "HOME": str(self.home),
-            "PYTHONPATH": str(ROOT / "services/backend/src"),
-            "PYTHONDONTWRITEBYTECODE": "1",
             "ANVIL_MCP_CONFIG_FILE": str(self.home / "configuration.json"),
         }
         streams = await stack.enter_async_context(
             stdio_client(
                 StdioServerParameters(
-                    command=sys.executable, args=["-m", "anvil.golden_mcp_server"], env=env
+                    command=sys.executable, args=["-I", "-B", "-m", "anvil.golden_mcp_server"], env=env
                 ),
                 errlog=self.stderr,
             )

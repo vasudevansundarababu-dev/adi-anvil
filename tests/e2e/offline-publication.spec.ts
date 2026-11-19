@@ -12,7 +12,7 @@ test('offline publication staging requires a separate exact-record PO action and
     spec_sha256: 'a'.repeat(64),
   };
   const record = {
-    publication_status: 'published',
+    status: 'PUBLISHED',
     template_id: template.template_id,
     version: template.version,
     published_at: '2026-01-01T00:00:00Z',
@@ -121,7 +121,7 @@ test('offline publication staging requires a separate exact-record PO action and
   await upload.setInputFiles({
     name: 'candidate.json',
     mimeType: 'application/json',
-    buffer: Buffer.from(JSON.stringify({ ...record, status: 'candidate' })),
+    buffer: Buffer.from(JSON.stringify({ ...record, publication_status: 'candidate' })),
   });
   await panel
     .getByRole('button', { name: 'Stage publication record for review', exact: true })

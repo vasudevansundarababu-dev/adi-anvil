@@ -150,21 +150,49 @@ def test_operator_source_root_is_build_bound_not_environment(monkeypatch):
 
 def test_successor_source_map_matches_actual_files_without_rewriting_predecessor():
     from anvil import marketing_native_private_sources as old
-    from anvil import marketing_native_private_sources_v2 as current
+    from anvil import marketing_native_private_sources_v2 as predecessor
+    from anvil import marketing_native_private_sources_v3 as current
 
     assert (
         old.PRIVATE_SOURCE_MANIFEST_SHA256
         == "3e74f8a196c5f34ae905dd245ddcda2736239065868c2290df71f512e56b6767"
     )
     assert current.PRIVATE_GRAPH_SOURCES["db.py"] != old.PRIVATE_GRAPH_SOURCES["db.py"]
+    assert predecessor.PRIVATE_SOURCE_MANIFEST_SHA256 == "d4785383278e20e3a4cf88326cbe493d13de30b24bd00c6a30fb3fcc6740fc7f"
+    assert predecessor.PRIVATE_GRAPH_SOURCES["golden_mcp_client.py"] == "efabb3715e5af325e434203ff3246efaa37a36afd19ae90613fd080c3bdfc837"
+    assert {name for name in current.PRIVATE_GRAPH_SOURCES if current.PRIVATE_GRAPH_SOURCES[name] != predecessor.PRIVATE_GRAPH_SOURCES[name]} == {"golden_mcp_client.py"}
     assert set(verify_opening_graph_sources(private=True)) == set(current.PRIVATE_GRAPH_SOURCES)
     raw = (
-        (Path(__file__).parents[4] / "docs/generated/marketing-private-source-nomination-v2.json")
+        (Path(__file__).parents[4] / "docs/generated/marketing-private-source-nomination-v3.json")
         .read_bytes()
         .rstrip(b"\n")
     )
     assert hashlib.sha256(raw).hexdigest() == current.PRIVATE_SOURCE_MANIFEST_SHA256
     assert json.loads(raw)["native_qualified"] is False
+    assert json.loads(raw)["predecessor_manifest_sha256"] == predecessor.PRIVATE_SOURCE_MANIFEST_SHA256
+    old_raw = (Path(__file__).parents[4] / "docs/generated/marketing-private-source-nomination-v2.json").read_bytes().rstrip(b"\n")
+    assert hashlib.sha256(old_raw).hexdigest() == predecessor.PRIVATE_SOURCE_MANIFEST_SHA256
+
+
+def test_retained_legacy_private_context_does_not_migrate_to_current_candidate():
+    from anvil.marketing_native_world_binding import retained_source_nomination, opening_source_nomination
+    from anvil.marketing_native_private_sources_v2 import PRIVATE_SOURCE_MANIFEST_SHA256 as predecessor
+    from anvil.marketing_native_private_sources_v3 import PRIVATE_SOURCE_MANIFEST_SHA256 as current
+
+    program = b'{"synthetic_only":"not-a-native-context"}'
+    intent = {"schema_version": "anvil.marketing-component-context-intent.v3",
+              "private_program_sha256": hashlib.sha256(program).hexdigest()}
+
+    class Store:
+        def _read(self, root, name):
+            return (json.dumps(intent, sort_keys=True, separators=(",", ":")).encode()
+                    if name == "component-context-intent.json" else program)
+
+    assert retained_source_nomination(Store(), object()) == predecessor != current
+    assert opening_source_nomination(private=True) == current
+    intent["private_program_sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="original_private_program"):
+        retained_source_nomination(Store(), object())
 
 
 def test_inspect_signal_error_still_closes_stream_and_attempts_original_reap(monkeypatch):

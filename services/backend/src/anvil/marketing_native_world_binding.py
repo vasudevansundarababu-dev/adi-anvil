@@ -93,7 +93,7 @@ def opening_source_nomination(*, private=False):
     if type(private) is not bool:
         raise ValueError('marketing_explicit_source_nomination_required')
     if private:
-        from anvil.marketing_native_private_sources_v2 import PRIVATE_SOURCE_MANIFEST_SHA256
+        from anvil.marketing_native_private_sources_v3 import PRIVATE_SOURCE_MANIFEST_SHA256
 
         return PRIVATE_SOURCE_MANIFEST_SHA256
     return OPENING_SOURCE_MANIFEST_SHA256
@@ -106,7 +106,11 @@ def retained_source_nomination(store, root):
     if version == 'anvil.marketing-component-context-intent.v3':
         if intent.get('private_program_sha256') != hashlib.sha256(store._read(root, 'private-verifier-program.json')).hexdigest():
             raise ValueError('marketing_original_private_program_source_nomination_required')
-        return opening_source_nomination(private=True)
+        # Existing intent.v3 contexts predate the isolated-MCP nomination. Never
+        # reinterpret their retained identity as the current source candidate.
+        from anvil.marketing_native_private_sources_v2 import PRIVATE_SOURCE_MANIFEST_SHA256
+
+        return PRIVATE_SOURCE_MANIFEST_SHA256
     if version != 'anvil.marketing-component-context-intent.v2':
         raise ValueError('marketing_original_opening_source_context_required')
     return opening_source_nomination()
@@ -117,7 +121,7 @@ def _validate_world_binding(request, projection_raw, world_record_raw, *, candid
         raise ValueError('marketing_explicit_private_world_binding_required')
     sources = OPENING_GRAPH_SOURCES
     if private:
-        from anvil.marketing_native_private_sources_v2 import PRIVATE_GRAPH_SOURCES
+        from anvil.marketing_native_private_sources_v3 import PRIVATE_GRAPH_SOURCES
 
         sources = PRIVATE_GRAPH_SOURCES
     if type(request) is not MarketingCampaignRequestV1:
@@ -296,7 +300,7 @@ def verify_opening_graph_sources(*, private=False):
     if type(private) is not bool:
         raise ValueError('marketing_explicit_private_source_nomination_required')
     if private:
-        from anvil.marketing_native_private_sources_v2 import PRIVATE_GRAPH_SOURCES
+        from anvil.marketing_native_private_sources_v3 import PRIVATE_GRAPH_SOURCES
 
         return {name: _read_source_file(name, pin) for name, pin in PRIVATE_GRAPH_SOURCES.items()}
     return {name: _read_source_file(name, pin) for name, pin in OPENING_GRAPH_SOURCES.items()}

@@ -129,7 +129,7 @@ def test_single_po_self_attestation_audits_identity_and_expiry_invalidates_runti
         assert current(c, owned, template, receipt) is False
 
 
-@pytest.mark.parametrize("fault", ["candidate", "alias_conflict", "missing_status", "null_status", "missing_date", "null_date", "naive_date", "future_date",
+@pytest.mark.parametrize("fault", ["candidate", "alias_conflict", "missing_status", "null_status", "mixed_case_status", "typed_status", "missing_date", "null_date", "naive_date", "future_date",
                                    "wrong_parts", "wrong_template", "wrong_identity", "internal_row_identity", "wrong_version", "string_version", "missing_identity"])
 def test_unpublished_or_unbound_record_is_not_stageable(owned, fault):
     template, record, _ = staged(owned)
@@ -141,6 +141,10 @@ def test_unpublished_or_unbound_record_is_not_stageable(owned, fault):
         record.pop("publication_status")
     elif fault == "null_status":
         record["status"] = None
+    elif fault == "mixed_case_status":
+        record["publication_status"] = "Published"
+    elif fault == "typed_status":
+        record["publication_status"] = ["PUBLISHED"]
     elif fault == "missing_date":
         record.pop("published_at")
     elif fault == "null_date":
@@ -170,7 +174,9 @@ def test_unpublished_or_unbound_record_is_not_stageable(owned, fault):
 
 
 @pytest.mark.parametrize("status_fields", [{"status": "published"}, {"publication_status": "published"},
-                                           {"status": "published", "publication_status": "published"}])
+                                           {"status": "published", "publication_status": "published"},
+                                           {"status": "PUBLISHED"}, {"publication_status": "PUBLISHED"},
+                                           {"status": "PUBLISHED", "publication_status": "published"}])
 def test_known_published_aliases_preserve_original_record_and_external_identity(owned, status_fields):
     template, record, subject = staged(owned, status_fields)
     with connection(owned) as c:
@@ -182,7 +188,7 @@ def test_known_published_aliases_preserve_original_record_and_external_identity(
         assert subject["publication_accepted"] is False
 
 
-@pytest.mark.parametrize("fault", ["alias_conflict", "wrong_identity", "string_version"])
+@pytest.mark.parametrize("fault", ["alias_conflict", "wrong_identity", "string_version", "mixed_case_status", "typed_status"])
 def test_direct_sql_cannot_bypass_original_record_identity_and_alias_guard(owned, fault):
     import hashlib
 
@@ -194,6 +200,10 @@ def test_direct_sql_cannot_bypass_original_record_identity_and_alias_guard(owned
         body = load(stored["body_canonical"].encode())
         if fault == "alias_conflict":
             record["status"] = "candidate"
+        elif fault == "mixed_case_status":
+            record["publication_status"] = "Published"
+        elif fault == "typed_status":
+            record["publication_status"] = ["PUBLISHED"]
         elif fault == "wrong_identity":
             record["template_id"] = template["id"]
         else:
@@ -211,7 +221,7 @@ def test_actual_http_identity_csrf_idempotency_and_current_role_controls(owned, 
     from anvil.auth import hashed
 
     monkeypatch.setenv("ANVIL_PRAXIS_GENERIC_EXPORT_ENABLED", "true")
-    template, record, subject = staged(owned)
+    template, record, subject = staged(owned, {"publication_status": "PUBLISHED"})
     clients = []
     for person in owned[2:4]:
         token, csrf = secrets.token_urlsafe(40), secrets.token_urlsafe(32)

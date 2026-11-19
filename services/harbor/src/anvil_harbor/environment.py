@@ -238,4 +238,8 @@ async def main(path):
 if __name__ == "__main__":
     import sys
 
-    asyncio.run(main(sys.argv[1]))
+    # Resolve the same class identity used by EnvironmentFactory imports.
+    # A -m launch otherwise defines a second LocalComponentsDocker in __main__.
+    from anvil_harbor.environment import main as installed_main
+
+    asyncio.run(installed_main(sys.argv[1]))

@@ -16,8 +16,11 @@ enqueued as authenticated Authoring events.
 1. Register the complete exact template specification.
 2. Stage the original publication record bytes using `record_utf8`. The JSON
    record must contain `status: published` or `publication_status: published`.
-   When both are present both must be exactly `published`; conflicts, nulls and
-   candidate status are rejected. It must contain the external `template_id`
+   Each supplied alias must be exactly `published` or `PUBLISHED`; the two
+   spellings mean the same published state. Other casing, conflicting candidate
+   status, nulls and non-string values are rejected. Original bytes are never
+   normalized or rewritten. Migration131 adds the uppercase spelling without
+   changing already deployed migration130. It must contain the external `template_id`
    (registered template key, not the database row UUID), exact integer `version`,
    an aware non-null `published_at` no
    later than database time, the registered `template_sha256` and the exact three

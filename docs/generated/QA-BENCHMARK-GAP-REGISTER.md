@@ -7,6 +7,12 @@ deferred Studio design until more lessons are known. No claim of a gap-free syst
 
 ## Corrected ownership and privacy boundary — user decision, 18 November
 
+Latest engineering checkpoint: `4be884c`, final combined source
+`f616bfde87ffd8a7d4385076a045a5106d710e445ff8f4c66527f17031b8751a`:
+1173 unit tests and10subtests passed,2platform/root skips;64 actual isolated SQL
+tests passed including fresh/repeated130. UI types/build/browser passed. Cloud
+build and actual installed Trial verification are separate pending evidence.
+
 Authoring binds applicable policies and business rules to tasks. Gym binds those
 rules to evaluators and owns private datasets, cohorts, hidden expectations, data
 rights/case reviews and environment qualification. SMEs never write interfaces;
@@ -93,6 +99,9 @@ qualification of newer source. Tests with manufactured evidence remain labelled.
 | RUN-08 | NOT_RUN / Forge QA | Full current-source/image component qualification not earned. SQL/unit counts are insufficient. E01–E03. | Explicit test matrix for actual Harbor, MCP, reset, checkpoint, actor/grader, role/mount, OPA/ZEN, private scoring and zero-provider controls. | Actual positive/negative/crash results with exact source/image/locks, reviewed evidence and expiry. |
 | RUN-09 | OPEN / Forge QA/operations | Installed versions and observed polling could be mistaken for Ready. E01/E05. | Distinguish installed, observed, tested, reviewed, qualified and run-authorized states. | Every readiness claim links to current evidence; stale source/image invalidates it. |
 | RUN-10 | OPEN / Forge runtime | An unknown result must not assert zero actual calls merely because zero were authorized. E03. | Separate authorized limits from measured usage; unresolved evidence stays unknown. | Ledger tests preserve null actual calls/unverified evidence; future collector verifies actual no-call evidence. |
+| RUN-11 | LOCAL_VERIFIED / Forge runtime | Installed QA preparation failed actor-file hash comparison after canonical plan storage reordered JSON keys. No Trial launched. | Use one canonical actor-byte representation across preparation, persisted plan and validation. | Canonical-roundtrip regression passed; actual installed retry remains required. |
+| RUN-12 | LOCAL_VERIFIED / Forge runtime | SQL checked physical framework liveness before work but lacked a check before commit. | Revalidate original plan and framework lease inside transaction after work; fail and roll back on detected loss. | Framework-death and permission-change rollback regressions passed; actual crash controls remain required. |
+| RUN-13 | OPEN / Forge runtime | Gateway startup precedes configuration write and lifecycle cleanup protection. An intervening exception can retain its thread/socket until CLI exit. | Enclose startup and intervening operations in bounded cleanup ownership. | Injected configuration/write failure leaves no gateway thread/socket. |
 
 ## Templates, policies, inputs and bindings
 

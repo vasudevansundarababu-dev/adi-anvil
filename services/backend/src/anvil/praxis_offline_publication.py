@@ -61,7 +61,7 @@ def stage(c, project, user, identifier, upload):
             raise ValueError("Aware publication date required")
         published = datetime.fromisoformat(record["published_at"].replace("Z", "+00:00"))
         statuses = [record[key] for key in ("status", "publication_status") if key in record]
-        if (not statuses or any(value != "published" for value in statuses) or published.tzinfo is None
+        if (not statuses or any(value not in ("published", "PUBLISHED") for value in statuses) or published.tzinfo is None
                 or published > one(c, "SELECT statement_timestamp() AS now")["now"]
                 or record.get("template_id") != row["template_key"]
                 or type(record.get("version")) is not int or record["version"] != row["version"]
