@@ -160,6 +160,10 @@ def source_hash():
         "migrations/125_marketing_private_ordinal_context.sql",
         "migrations/126_marketing_private_capture_guards.sql",
         "migrations/127_kyc_application_policy_materializations.sql",
+        "migrations/129_kyc_scoped_policy_reviews.sql",
+        "migrations/130_po_attested_offline_publication.sql",
+        "migrations/131_offline_published_status_spelling.sql",
+        "migrations/132_golden_scheduler_project_fence.sql",
     ):
         hashes[relative] = hashlib.sha256(source_bytes(backend / relative)).hexdigest()
     hashes["safety-source-migration"] = hashlib.sha256(

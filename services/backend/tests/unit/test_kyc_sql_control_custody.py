@@ -49,6 +49,20 @@ def test_global_deadline_cannot_be_swallowed_as_an_individual_failure(script):
     assert not issubclass(script.ControlDeadline, Exception)
 
 
+def test_failure_frames_do_not_disclose_exception_text_locals_or_directory(script):
+    namespace = {"planted_secret": "never-print-this-password"}
+    try:
+        exec(compile("raise RuntimeError(planted_secret)", "/private/sensitive/location/control.py", "exec"), namespace)
+    except RuntimeError as error:
+        frames = script.safe_exception_frames(error)
+    raw = json.dumps(frames)
+    assert frames[-1]["file"] == "control.py"
+    assert "never-print-this-password" not in raw
+    assert "sensitive" not in raw
+    assert "private/" not in raw
+    assert all(set(frame) == {"file", "line", "function"} for frame in frames)
+
+
 def test_old_schema_and_missing_app_identity_cannot_reuse_v1_fixture(script, tmp_path):
     path = tmp_path / "old.json"
     body = config()

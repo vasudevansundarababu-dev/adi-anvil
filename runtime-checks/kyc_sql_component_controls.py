@@ -11,6 +11,7 @@ import os
 import signal
 import stat
 import sys
+from collections import deque
 from contextlib import contextmanager
 from copy import deepcopy
 from pathlib import Path
@@ -24,6 +25,25 @@ class ControlDeadline(BaseException):
 def require(condition):
     if not condition:
         raise ValueError("Synthetic SQL control refused")
+
+
+def safe_exception_frames(error):
+    """Bounded location metadata only; never format exceptions or read source."""
+    frames = deque(maxlen=8)
+    current = error.__traceback__
+    inspected = 0
+    while current is not None and inspected < 256:
+        code = current.tb_frame.f_code
+
+        def label(value):
+            return "".join(char if char.isascii() and (char.isalnum() or char in "_.-<>")
+                           else "_" for char in value[:96])
+
+        frames.append({"file": label(Path(code.co_filename).name),
+                       "line": current.tb_lineno, "function": label(code.co_name)})
+        current = current.tb_next
+        inspected += 1
+    return list(frames)
 
 
 def validate_unix_params(value, database):
@@ -109,6 +129,9 @@ def run(config):
             else:
                 enter(connection, "anvil_golden_" + role, foreign_project or config["project_id"])
             connection.execute("SELECT set_config('anvil.user',%s,true)", (config["user_id"],))
+            if role == "scheduler" and foreign_project is None:
+                require(connection.execute("SELECT anvil.golden_scheduler_project_fence(%s) AS allowed",
+                    (config["project_id"],)).fetchone()["allowed"] is True)
             yield connection
         if claim:
             claimed = True
@@ -124,7 +147,8 @@ def run(config):
             result = operation()
             results[name] = {"status": "passed", "observation_sha256": digest(result)}
         except Exception as error:
-            results[name] = {"status": "failed", "exception_type": type(error).__name__}
+            results[name] = {"status": "failed", "exception_type": type(error).__name__,
+                             "exception_frames": safe_exception_frames(error)}
 
     def isolation():
         for role, private in (("scheduler", "expectations"), ("grader", "scenarios"), ("app", "expectations"), ("app", "scenarios")):
@@ -315,5 +339,6 @@ if __name__ == "__main__":
         raise SystemExit(run(read_config(args.config)))
     except (Exception, ControlDeadline) as error:
         print(json.dumps({"status": "blocked_or_unknown_no_replay", "exception_type": type(error).__name__,
+                          "exception_frames": safe_exception_frames(error),
                           "native_qualified": False, "model_calls_authorized": 0, "actual_model_calls": None}))
         raise SystemExit(1) from None

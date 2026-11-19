@@ -1,5 +1,54 @@
 # Build status
 
+## Corrective 132 revision ready for phased build — 19 November 2026
+
+Frozen source f9e5d504c08fa3421632b0e0672bd586f7d158a6ffe39db1ef804ee975d1e551
+passed 1,238 unit tests and 10 subtests (4 skips), plus 90 actual PostgreSQL tests
+with fresh and repeated migration132. Both loader and narrow-fence patches passed
+independent review. The fence grants no project UPDATE privilege, rejects mixed
+or privileged logins and stale isolation, checks membership before locking and
+again after waiting, and serializes the existing project revocation protocol.
+The SDK compatibility check accepts only the pinned Beartype0.23.1 implementation
+after RECORD/custody/class/code checks; altered loaders/transformed code refuse.
+An installed post-OpenEnv/MCP import regression is now mandatory in image checks.
+This revision is not deployed yet. Serving QA remains healthy b508a0a/schema131
+with the approved 300/420-second technical limits. Next: build three phases,
+backup/migrate132/roll out, then a new one-shot native attempt and fresh isolated
+SQL fixture. Never rerun consumed jobs or turn these local checks into qualification.
+
+## QA five-minute release verified; two qualification fixes — 19 November 2026
+
+Revision b508a0a is deployed to QA, schema 131. Core build
+5f1d260e-ea64-4ac6-b8ef-fc03c3bb2faf, Environments build
+2495a52f-0191-4635-9006-853999576238 and Evaluation build
+08cb7d08-e7c1-45c8-b2dd-605cb1908273 all succeeded independently. Evaluation
+reused the exact completed environment digest; no combined build was rerun.
+All six services are running with zero restarts; health/workspace returned 200.
+Backup: /var/lib/anvil-qa-v1/backups/five-minute-b508a0a. Live provider and
+Authoring flags remain false. Serving software observations were refreshed only
+as observed, not qualified. Prior regional queued builds were canceled before
+execution; phase scripts now use the existing global builder and a 300s queue cap.
+
+Fresh native job 288ded65-8c95-43d9-a62c-b72022c641e5 advanced past the former
+timeout and recorded a worker intent. It then failed with InsufficientPrivilege
+at db.project_fence: SELECT FOR KEY SHARE requires privilege the restricted
+scheduler does not hold. Cleanup completed; unknown evidence retained, no replay.
+An additive migration 132 narrow scheduler fence is being implemented; do not
+grant project UPDATE rights or remove membership/revocation fences.
+
+Installed four-product SQL registration also exposed a separate SDK import-hook
+compatibility defect: Beartype's loader for untransformed modules was rejected
+by the strict source guard. A narrow pinned-0.23.1 loader patch passed independent
+review, 1,238 unit tests/10 subtests (4 skips), and 85 fresh/repeated SQL checks on
+source69a83a9e...ad191c1. Its actual post-SDK-import image regression is added but
+not yet built/deployed. Keep this result separate from the pending 132 revision.
+
+Publication remains a real user-action blocker: v8 is registered, but no offline
+publication subject/attestation or policy qualification exists. An action email
+was sent to the user's work address only; no upload-permission workaround or
+approval fabrication. Runtime engineering continues independently. Not benchmark
+ready; no live calls.
+
 ## Five-minute technical callback and phased release — 19 November 2026
 
 User approved raising the technical callback from30seconds to5minutes. Candidate

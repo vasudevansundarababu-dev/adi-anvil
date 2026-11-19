@@ -140,6 +140,17 @@ for folder, package in (("backend", anvil), ("harbor", anvil_harbor)):
         assert path.read_bytes() == (installed / path.relative_to(source)).read_bytes()
         matched += 1
 source_sha256 = source_hash()
+# The actual SDK import path installs Beartype's global path hook. First-party
+# modules loaded afterward must still pass exact raw-source/code verification.
+from anvil.golden_kyc_openenv import GoldenEnvironment  # noqa: E402,F401
+from anvil.golden_mcp_client import McpEpisode  # noqa: E402,F401
+from anvil.golden_phase_checkpoints import execute as phase_execute  # noqa: E402,F401
+
+wrapped_first_party = [name for name, module in tuple(sys.modules.items())
+    if name.startswith(("anvil.", "anvil_harbor."))
+    and type(getattr(getattr(module, "__spec__", None), "loader", None)).__name__ == "BeartypeSourceFileLoader"]
+assert wrapped_first_party, "Installed control must exercise the real SDK import hook"
+assert source_hash() == source_sha256
 if os.environ.get("EXPECTED_SOURCE_SHA256"):
     assert source_sha256 == os.environ["EXPECTED_SOURCE_SHA256"]
 repository = original_operator_repository()
@@ -169,6 +180,7 @@ print(
             "native_qualified": False,
             "canonical_module_entry_control": True,
             "actual_sdk_explicit_log_mount_control": True,
+            "post_sdk_import_source_validation": True,
         }
     )
 )

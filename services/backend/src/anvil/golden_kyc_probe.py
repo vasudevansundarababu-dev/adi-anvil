@@ -240,9 +240,10 @@ def _worker(job_id):
                     raise ValueError("Probe server identity changed")
                 enter(c, "anvil_golden_scheduler", context["project_id"])
                 c.execute("SELECT set_config('anvil.user',%s,true)", (context["user_id"],))
-                from anvil.db import project_fence
-
-                project_fence(c, context["project_id"])
+                fence = c.execute("SELECT anvil.golden_scheduler_project_fence(%s) AS allowed",
+                                  (context["project_id"],)).fetchone()
+                if not fence or fence["allowed"] is not True:
+                    raise ValueError("Current scheduler project fence required")
                 active = c.execute("SELECT 1 FROM anvil.memberships m JOIN anvil.users u ON u.id=m.user_id "
                                    "WHERE m.project_id=%s AND m.user_id=%s AND m.active AND u.active "
                                    "AND m.role IN('admin','rl-engineer')", (context["project_id"], context["user_id"])).fetchone()

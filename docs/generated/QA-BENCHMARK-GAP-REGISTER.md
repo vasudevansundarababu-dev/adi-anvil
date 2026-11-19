@@ -87,6 +87,24 @@ qualification of newer source. Tests with manufactured evidence remain labelled.
 
 ## Runtime and technical qualification
 
+19 November measured follow-up: the old30s callback spent8.90s importing and
+20.70s validating before SQL. The user approved wall300/lifecycle420 (cleanup6);
+b508a0a deployed through three successful independent phase builds. The next
+native attempt reached worker intent and exposed a missing project row-lock
+capability. Additive132 supplies only a scoped scheduler lock function; no project
+UPDATE grant. Actual SQL covers denied scopes, restricted identities, revocation
+blocking and stale-isolation refusal. A separate installed SDK test found that
+Beartype's path hook changes the loader class even for untransformed modules.
+The narrow pinned-loader compatibility patch preserves actual/raw code equality;
+post-SDK source validation is now an installed-image regression. Both corrections
+passed independent review,1238units/10subtests(4skips),90fresh/repeatedSQL on
+f9e5d504...d1e551; actual image/QA qualification remains pending.
+
+Studio lesson: version inventory and source validation before framework imports
+are insufficient. Qualification must exercise the installed SDK import lifecycle,
+actual restricted database logins and lock/revocation behavior, and distinguish
+build success, deployment health, observed software and qualified execution.
+
 19 November continuation: QA 5b19a72 passed actual installed Harbor log-profile
 parity but native attempt063a350f reached its original120-second limit during
 repeated runtime admission checks. No worker intent/SQL effect was observed;
