@@ -836,15 +836,17 @@ class OperatorProofStore:
                 allowed.add(str((Path(record["site_packages"]) / relative).resolve()))
         for name, loaded in tuple(sys.modules.items()):
             origin = getattr(loaded, "__file__", None)
+            for package, owner in (("anvil", "backend"), ("anvil_harbor", "harbor")):
+                if name == package or name.startswith(package + "."):
+                    need(isinstance(origin, str) and str(Path(origin).resolve()) in sources[owner]
+                        and getattr(getattr(loaded, "__spec__", None), "origin", None) != "frozen",
+                        owner + "_editable_fallback_forbidden")
             if (
                 origin is None
                 or getattr(getattr(loaded, "__spec__", None), "origin", None) == "frozen"
             ):
                 continue
             need(str(Path(origin).resolve()) in allowed, "loaded_module_origin_outside_seal")
-            for package, owner in (("anvil", "backend"), ("anvil_harbor", "harbor")):
-                if name == package or name.startswith(package + "."):
-                    need(str(Path(origin).resolve()) in sources[owner], owner + "_editable_fallback_forbidden")
 
     def validate_host_recovery(self, binding, host_record, recovery, *, folder, host, python):
         """Bind independently supplied role/image evidence and enforced budgets."""

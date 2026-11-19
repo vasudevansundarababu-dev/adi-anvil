@@ -150,6 +150,12 @@ def test_shared_interpreter_checks_each_first_party_package_against_own_seal(sea
     backend.__file__, harbor.__file__ = backend_origin, backend_origin
     with pytest.raises(module.ProofBlocked, match="harbor_editable_fallback_forbidden"):
         store.validate_loaded_origins(seal, component=component)
+    harbor.__file__ = harbor_origin
+    for missing, frozen in ((None, False), (backend_origin, True)):
+        backend.__file__ = missing
+        backend.__spec__.origin = "frozen" if frozen else None
+        with pytest.raises(module.ProofBlocked, match="backend_editable_fallback_forbidden"):
+            store.validate_loaded_origins(seal, component=component)
 
 
 @pytest.mark.parametrize("kind", ["nested_directory", "file_bind", "external_interpreter"])
