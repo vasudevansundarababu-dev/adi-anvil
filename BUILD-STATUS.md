@@ -1,5 +1,45 @@
 # Build status
 
+## Owned log-mount correction candidate — 18 November 2026
+
+Config-only diagnostic on actual installedHarbor/Compose identified the complete
+profile delta: missing SDK log mounts (automatic mounting defaultsfalse), no
+other service-field differences after diagnostic path rebasing. No Docker socket
+or DB credentials were supplied; diagnostic stopped at validation, no Trial.run.
+Do not enable SDKauto_mounting: it chmods the whole trialroot777. Instead the
+fixedadapter validates exact SDK source/target/bind/order and uses only explicit
+actor agent/artifact or verifier log mounts, keeping auto_mountingFalse and all
+proof/private/sealedparents protected. Only owned outputleaves writable.
+Read-only securityreview found no concrete expansionblocker; physicalcheckpending.
+Rejected resolvedCompose now retained under separate non-admission filenames.
+Full1186units+10subtests PASS,3platform/root/Harbor skips;71SQL fresh/repeat131 PASS.
+Additional6 isolated customPython queue/scoringSQL controls passed separately on
+same source611ba96d..., including dedicatedgraderlogin/RLS, immutable private
+inputs, revocation/target guards, unknown-no-replay, unscored errors and veto.
+Admission prerequisites explicitly synthetic; physical runner not qualified.
+New regression module added to shared verifier for future combined runs.
+Source611ba96d2b7b4ab605634431e387fa667bd6fca61bf904a2e8f5b3607595daa5.
+New actualinstalledSDKconstructor/mountwriter/parent-mode check added to image
+build. Candidate not yet built/deployed; servingQA bf839a4/schema131 remains healthy.
+Usergoingtosleep; continueengineering, no furtherinputneededforcurrentfixes.
+
+## QA bf839a4/schema131 serving — 18 November 2026
+
+CloudBuildebce1615-3463-4e33-afbd-1f329ef31ba6 SUCCESS incl installedHarbor canonical
+entry control. ExactAPI/workers954f1bcd..., GoldenKYC64c94bd7..., webc09e9587...
+verified6running/zero restarts, health/workspace200. Other services unchanged;
+alllive/Authoringflagsfalse. Backup /var/lib/anvil-qa-v1/backups/native131-bf839a4.
+4serving-role installed observations refreshed asobserved_not_qualified only.
+InstalledQA componentcontrols all6groups passed: MCPauth/schema/stalegeneration,
+OPA/ZENpass/fail/missing, version/custody. Evidence runtime-functional/component-
+controls-bf839a4-v1, stdoutSHA2b5c33b1572199390131eaa37e4ac8b631c472fc7f267c6ed5516256de622e94.
+Readonly/nonroot/networknone/noDB/Docker/providercredential profile observed;
+actualmodelcallsnull, authorized0, noqualificationwritten.
+User manuallyregistered v8 exact8449adb0...334f7d5, UIconfirmedv7/v8coexist.
+Offlinepublicationstaging/attestation remain pending; no actualapprovalscreated.
+Latestnativejobdc982159-7a52-4b17-b0b8-edfc023ee00d failed; preserved no-replay.
+Redactednativeframework/cleanupdiagnosis pending; no benchmark-readyclaim.
+
 ## Native/131 follow-up candidate — 18 November 2026
 
 Final Authoring folder received and validated read-only:68/68 hashes/sizes,

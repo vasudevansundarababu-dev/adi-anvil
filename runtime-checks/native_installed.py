@@ -7,6 +7,7 @@ import json
 import os
 import runpy
 import sys
+import tempfile
 import warnings
 from pathlib import Path
 from threading import Event
@@ -23,6 +24,66 @@ from anvil.marketing_native_private_records import (
     OPERATOR_PROOF_SHA256,
     original_operator_repository,
 )
+
+
+def installed_owned_log_control():
+    """Actual Harbor constructor/mount writer, no Docker or native admission."""
+    from anvil_harbor.prestart import canonical
+    from anvil_harbor.sme import IMAGE, SMEDocker
+    from harbor.environments.factory import EnvironmentFactory
+    from harbor.models.task.config import EnvironmentConfig, NetworkMode, NetworkPolicy, TaskOS
+    from harbor.models.trial.config import EnvironmentConfig as TrialEnvironmentConfig
+    from harbor.models.trial.paths import TrialPaths
+    from harbor.trial.trial import _harbor_log_bind_mount
+
+    from anvil.environment_harbor import layout
+
+    saved = os.environ.copy()
+    try:
+        with tempfile.TemporaryDirectory(prefix="anvil-installed-log-control-") as temporary:
+            root = Path(temporary).resolve()
+            layout(root, {"label": "synthetic-installed-log-control"}, actor_seconds=30)
+            name = "anvil-bm-" + "a" * 20
+            config = {"task": {"path": str(root / "task")}, "trial_name": name,
+                      "trials_dir": str(root / "trials"), "agent": {"import_path": "anvil_harbor.sme:SMEAgent"},
+                      "environment": {"import_path": "anvil_harbor.environment:LocalComponentsDocker", "delete": False},
+                      "verifier": {"import_path": "anvil_harbor.sme:SMEVerifier"}}
+            raw = canonical(config)
+            (root / "trial.json").write_bytes(raw)
+            (root / "trial.json").chmod(0o600)
+            os.environ.update(ANVIL_HARBOR_ATTEMPT_ROOT=str(root),
+                              ANVIL_HARBOR_TRIAL_CONFIG_SHA256=hashlib.sha256(raw).hexdigest(),
+                              ANVIL_HARBOR_SERVICE_SHA256S=json.dumps({"environment": "a" * 64, "tests": "b" * 64}))
+            paths = TrialPaths(trial_dir=root / "trials" / name)
+            protected = {p: p.stat().st_mode for p in (root, root / "private", root / "sealed")}
+            mounts = [_harbor_log_bind_mount(source=str(source), target=target, os=TaskOS.LINUX)
+                      for source, target in ((paths.verifier_dir, "/logs/verifier"), (paths.agent_dir, "/logs/agent"),
+                                             (paths.host_artifact_path("main", "/logs/artifacts"), "/logs/artifacts"))]
+            for role, expected in (("environment", mounts[1:]), ("tests", mounts[:1])):
+                instance = EnvironmentFactory.create_environment_from_config(
+                                     config=TrialEnvironmentConfig(**config["environment"]),
+                                     environment_dir=root / "task" / role, environment_name="synthetic",
+                                     session_id=name + ("__env" if role == "environment" else "__verifier__trial"),
+                                     trial_paths=paths, task_env_config=EnvironmentConfig(docker_image=IMAGE,
+                                         network_mode=NetworkMode.NO_NETWORK, cpus=1, memory_mb=512),
+                                     network_policy=NetworkPolicy(network_mode=NetworkMode.NO_NETWORK),
+                                     auto_mounts=mounts if role == "environment" else mounts[:1])
+                assert instance.auto_mounting is False
+                assert isinstance(instance, SMEDocker)
+                assert instance._host_mounts == expected and instance._mounts == expected
+                rendered = json.loads(instance._write_mounts_compose_file().read_bytes())
+                assert rendered == {"services": {"main": {"volumes": expected}}}
+                instance._cleanup_mounts_compose_file()
+                assert root.stat().st_mode & 0o777 == 0o700
+                assert paths.trial_dir.stat().st_mode & 0o022 == 0
+                assert (root / "sealed").stat().st_mode & 0o022 == 0
+                assert all(path.stat().st_mode == mode for path, mode in protected.items())
+    finally:
+        os.environ.clear()
+        os.environ.update(saved)
+
+
+installed_owned_log_control()
 
 VERSIONS = {
     "harbor": "0.25.0",
@@ -107,6 +168,7 @@ print(
             "model_calls": 0,
             "native_qualified": False,
             "canonical_module_entry_control": True,
+            "actual_sdk_explicit_log_mount_control": True,
         }
     )
 )

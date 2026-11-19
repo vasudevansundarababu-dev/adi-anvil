@@ -86,12 +86,13 @@ def guard_compose(command):
         raise ValueError("Privileged or destructive Docker flags prohibited")
 
 
-def write_compose_snapshot(trial_dir, role, stdout, *, stderr=False, phase="start"):
+def write_compose_snapshot(trial_dir, role, stdout, *, stderr=False, phase="start", rejected=False):
     """The operator owns the snapshot; sudo Docker must never create this file."""
     folder = Path(trial_dir)
     if (
         role not in {"environment", "tests"}
         or phase not in {"start", "preflight"}
+        or type(rejected) is not bool
         or not folder.is_absolute()
         or folder.resolve() != folder
     ):
@@ -106,7 +107,8 @@ def write_compose_snapshot(trial_dir, role, stdout, *, stderr=False, phase="star
     data = stdout.encode("utf-8") if isinstance(stdout, str) else stdout
     if not isinstance(data, bytes) or len(data) > 1048576 or (not stderr and not data):
         raise ValueError("Bounded resolved Compose snapshot required")
-    prefix = "sme-compose-" if phase == "start" else "sme-preflight-compose-"
+    prefix = ("sme-rejected-" + phase + "-compose-" if rejected else
+              "sme-compose-" if phase == "start" else "sme-preflight-compose-")
     path = folder / (prefix + role + (".stderr" if stderr else ".json"))
     descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
     with os.fdopen(descriptor, "wb") as stream:
@@ -114,6 +116,46 @@ def write_compose_snapshot(trial_dir, role, stdout, *, stderr=False, phase="star
         stream.flush()
         os.fsync(stream.fileno())
     return path
+
+
+def owned_log_mounts(root, config, environment_dir, role, trial_paths, supplied):
+    """Explicit role log binds without Harbor's broad trial-root chmod path."""
+    trial = root / "trials" / config["trial_name"]
+    if (role not in {"environment", "tests"} or not root.is_absolute() or root.resolve() != root
+            or Path(environment_dir) != root / "task" / role or trial_paths is None
+            or trial_paths.trial_dir != trial or type(supplied) is not list):
+        raise ValueError("Exact owned role and trial paths required")
+    sources = {"/logs/agent": trial / "agent", "/logs/verifier": trial / "verifier",
+               "/logs/artifacts": trial / "artifacts/logs/artifacts"}
+    # Bind representation is exactly Harbor0.25's Linux-owned log mount.
+    expected = {target: {"type": "bind", "source": str(path), "target": target,
+                         "bind": {"selinux": "z"}} for target, path in sources.items()}
+    wanted = ["/logs/agent", "/logs/artifacts"] if role == "environment" else ["/logs/verifier"]
+    allowed = ["/logs/verifier", *wanted] if role == "environment" else wanted
+    if (len(supplied) != len(allowed) or any(type(mount) is not dict for mount in supplied)
+            or [mount.get("target") for mount in supplied] != allowed
+            or any(mount != expected[mount["target"]] for mount in supplied)):
+        raise ValueError("Exact Harbor-owned role log mounts required")
+    for target in wanted:
+        leaf = sources[target]
+        current = root
+        for part in leaf.relative_to(root).parts:
+            info = current.lstat()
+            if (not stat.S_ISDIR(info.st_mode) or stat.S_ISLNK(info.st_mode)
+                    or info.st_uid != os.getuid() or info.st_mode & 0o022):
+                raise ValueError("Protected owned log parent required")
+            current = current / part
+            try:
+                current.mkdir(mode=0o700)
+            except FileExistsError:
+                pass
+        info = leaf.lstat()
+        if not stat.S_ISDIR(info.st_mode) or stat.S_ISLNK(info.st_mode) or info.st_uid != os.getuid():
+            raise ValueError("Owned output log directory required")
+        # Only these candidate/verifier output leaves need container write access.
+        # Trial directories, proofs, task inputs and sealed evidence stay private.
+        leaf.chmod(0o777)
+    return [expected[target] for target in wanted]
 
 
 class SMEDocker(DockerEnvironment):
@@ -147,7 +189,7 @@ class SMEDocker(DockerEnvironment):
 
     def __init__(self, *args, environment_dir, auto_mounts, task_env_config, **kwargs):
         root = Path(os.environ.get("ANVIL_HARBOR_ATTEMPT_ROOT", ""))
-        validate_operator_config(root / "trial.json")
+        config = validate_operator_config(root / "trial.json")
         self._reviewed_services = validate_service_proof_map(
             json.loads(os.environ.get("ANVIL_HARBOR_SERVICE_SHA256S", "null"))
         )
@@ -164,15 +206,19 @@ class SMEDocker(DockerEnvironment):
             or kwargs.get("mounts")
             or kwargs.get("extra_docker_compose")
             or kwargs.get("persistent_env")
+            or "auto_mounting" in kwargs
+            or args
         ):
             raise ValueError("Unsupported SME role or runtime extension")
-        # Stock Harbor otherwise shares verifier logs with actors, even in separate mode.
-        if self.role == "environment":
-            auto_mounts = [mount for mount in auto_mounts if mount["target"] != "/logs/verifier"]
+        logs = owned_log_mounts(root, config, environment_dir, self.role,
+                                kwargs.get("trial_paths"), auto_mounts)
+        kwargs.pop("mounts", None)
         super().__init__(
             *args,
             environment_dir=environment_dir,
-            auto_mounts=auto_mounts,
+            auto_mounts=[],
+            auto_mounting=False,
+            mounts=logs,
             task_env_config=task_env_config,
             keep_containers=True,
             **kwargs,
@@ -248,11 +294,17 @@ class SMEDocker(DockerEnvironment):
         if set(document["services"]) != {"main"}:
             raise ValueError("Only one isolated service supported")
         main = document["services"]["main"]
-        validate_effective_service(
-            main,
-            role=self.role,
-            reviewed_service_sha256=self._reviewed_services[self.role],
-        )
+        try:
+            validate_effective_service(
+                main,
+                role=self.role,
+                reviewed_service_sha256=self._reviewed_services[self.role],
+            )
+        except Exception:
+            # Diagnostic only: this filename is never a preflight/start proof.
+            write_compose_snapshot(self.trial_paths.trial_dir, self.role, config,
+                                   phase=phase, rejected=True)
+            raise
         if (
             main.get("image") != IMAGE
             or main.get("build")
