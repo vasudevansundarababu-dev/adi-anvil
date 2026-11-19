@@ -33,7 +33,7 @@ from anvil.owned_process_group import UnreapedProcessGroup
 from anvil.praxis_generic_contract import canonical
 
 PRESTART_GUARD_SHA256 = "32cff9841bb9999a1ea4bcc7b8db94674a73cd71b67e33693fcd7732d5c0a19d"
-OPERATOR_PROOF_SHA256 = "ea5f383a678af1db73d8d9458d68fe9cef67b152202ad02c1f550b19d601741d"
+OPERATOR_PROOF_SHA256 = "1394f7a7b5d4d934e3259da282088d70ac44064a9b151c76c5ddd49eaa8f5d38"
 
 
 def prestart_guards():
@@ -145,7 +145,7 @@ def fixed_trial_gate():
 @contextmanager
 def fixed_alarm(seconds, *, cleanup=False):
     """Unix main-thread hard phase bound; no thread-only timeout substitution."""
-    if type(seconds) is not int or not 1 <= seconds <= (6 if cleanup else 120):
+    if type(seconds) is not int or not 1 <= seconds <= (6 if cleanup else 420):
         raise ValueError("Fixed phase cap required")
     if threading.current_thread() is not threading.main_thread():
         raise ValueError("Fixed native lifecycle requires owned main thread")
@@ -199,7 +199,7 @@ def _fixed_native_bridge(folder, adapter, binding, assets, *, host, python):
 
 class FixedDeadline:
     def __init__(self, seconds):
-        if type(seconds) is not int or not 1 <= seconds <= 120:
+        if type(seconds) is not int or not 1 <= seconds <= 420:
             raise ValueError("Reviewed bounded native deadline required")
         self.ends = time.monotonic() + seconds
 

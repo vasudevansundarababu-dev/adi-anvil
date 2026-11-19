@@ -1,5 +1,24 @@
 # Build status
 
+## Five-minute technical callback and phased release — 19 November 2026
+
+User approved raising the technical callback from30seconds to5minutes. Candidate
+wall300/lifecycle420/cleanup6 is wired through permission, task projection, owned
+worker/capture, framework and gateway. Legacy business30/120 caps and paid gates
+remain unchanged. Independent review clear. Source3a81c706...710097 passed1218
+units/10subtests (4skips) and77 fresh/repeatedSQL checks. Eight additional actual
+four-product PostgreSQL controls passed separately on prior source0dac7d11.
+Source5b0ccfe remains deployed healthy; freshnativejob e15d20ef failedcallback30
+with cleanupcomplete/unknownretained/no replay. Exactread-only timing established
+imports8.90s+assetvalidation17.98s+loadedorigins2.71s beforeworkerintent, explaining
+the30second failure. Removed an unnecessary neworigin-proof optimization; only
+the prior reviewed per-call readonly hash dedup remains. No allowance inferred.
+Installed5b0ccfe standaloneMCP/OPA/ZEN and secret-free actualSQL/OpenEnv/MCPreset,
+restricted-login isolation, durablecheckpoint no-replay controls passed. SQL
+ran on new isolated syntheticPGcluster, stopped/retained afterward; notservingDB.
+No fullqualificationreceipt or policyapproval created. Three independent phase
+buildconfigs/planner are under finalreview; nextdeployment will use them.
+
 ## Runtime validation correction — 19 November 2026
 
 QA is serving backend/runtime 5b19a72 and web bf839a4, schema131. Installed

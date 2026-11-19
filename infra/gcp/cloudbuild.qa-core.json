@@ -1,0 +1,89 @@
+{
+  "steps": [
+    {
+      "id": "backend-api",
+      "name": "gcr.io/cloud-builders/docker",
+      "waitFor": [
+        "-"
+      ],
+      "args": [
+        "build",
+        "--platform=linux/amd64",
+        "--label",
+        "org.opencontainers.image.revision=${_SOURCE_COMMIT}",
+        "-f",
+        "infra/docker/backend.Dockerfile",
+        "-t",
+        "${_ARTIFACT_PREFIX}backend:gym-${_RUNTIME_TAG}",
+        "."
+      ]
+    },
+    {
+      "id": "api-source-policy-check",
+      "name": "gcr.io/cloud-builders/docker",
+      "waitFor": [
+        "backend-api"
+      ],
+      "args": [
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "--read-only",
+        "--user",
+        "10001:10001",
+        "--cap-drop",
+        "ALL",
+        "--security-opt",
+        "no-new-privileges",
+        "--memory",
+        "512m",
+        "--pids-limit",
+        "128",
+        "--tmpfs",
+        "/tmp:rw,noexec,nosuid,size=64m",
+        "-e",
+        "ANVIL_ENV=local",
+        "-e",
+        "WEB_ORIGIN=http://127.0.0.1:3202",
+        "-e",
+        "EXPECTED_SOURCE_SHA256=${_SOURCE_SHA256}",
+        "--entrypoint",
+        "python",
+        "${_ARTIFACT_PREFIX}backend:gym-${_RUNTIME_TAG}",
+        "-B",
+        "/opt/forge-runtime-checks/api_installed.py"
+      ]
+    },
+    {
+      "name": "gcr.io/cloud-builders/docker",
+      "args": [
+        "build",
+        "--platform=linux/amd64",
+        "--label",
+        "org.opencontainers.image.revision=${_SOURCE_COMMIT}",
+        "-f",
+        "infra/docker/web.Dockerfile",
+        "-t",
+        "${_ARTIFACT_PREFIX}web:template-${_RUNTIME_TAG}",
+        "."
+      ],
+      "id": "web",
+      "waitFor": [
+        "-"
+      ]
+    }
+  ],
+  "images": [
+    "${_ARTIFACT_PREFIX}backend:gym-${_RUNTIME_TAG}",
+    "${_ARTIFACT_PREFIX}web:template-${_RUNTIME_TAG}"
+  ],
+  "options": {
+    "machineType": "E2_HIGHCPU_8",
+    "logging": "CLOUD_LOGGING_ONLY"
+  },
+  "timeout": "1800s",
+  "tags": [
+    "${_RUNTIME_TAG}"
+  ]
+}

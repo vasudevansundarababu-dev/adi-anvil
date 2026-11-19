@@ -1,0 +1,114 @@
+{
+  "steps": [
+    {
+      "id": "native-core",
+      "name": "gcr.io/cloud-builders/docker",
+      "args": [
+        "build",
+        "--platform=linux/amd64",
+        "--build-arg",
+        "PYTHON_IMAGE=python@sha256:0f086103b026048cc50cb5da25ec435c023c5241a83fc44daea593377abc61c4",
+        "--build-arg",
+        "UV_IMAGE=ghcr.io/astral-sh/uv@sha256:d46db4c7b7f2e75ff80aeef95da4c2c6ff1ad399c13ab85067db4430b7c3b9c3",
+        "--build-arg",
+        "UV_VERSION=0.12.19",
+        "--label",
+        "org.opencontainers.image.revision=${_SOURCE_COMMIT}",
+        "-f",
+        "infra/docker/marketing-runtime.Dockerfile",
+        "-t",
+        "${_ARTIFACT_PREFIX}task-runtime:${_RUNTIME_TAG}",
+        "."
+      ],
+      "waitFor": [
+        "-"
+      ]
+    },
+    {
+      "id": "installed-policy-source-check",
+      "name": "gcr.io/cloud-builders/docker",
+      "args": [
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "--read-only",
+        "--user",
+        "10001:10001",
+        "--cap-drop",
+        "ALL",
+        "--security-opt",
+        "no-new-privileges",
+        "--pids-limit",
+        "128",
+        "--memory",
+        "512m",
+        "--cpus",
+        "1",
+        "--tmpfs",
+        "/tmp:rw,noexec,nosuid,size=64m",
+        "-e",
+        "ANVIL_ENV=local",
+        "-e",
+        "WEB_ORIGIN=http://127.0.0.1:3202",
+        "-e",
+        "EXPECTED_SOURCE_SHA256=${_SOURCE_SHA256}",
+        "--entrypoint",
+        "/opt/anvil-runtime/bin/python",
+        "${_ARTIFACT_PREFIX}task-runtime:${_RUNTIME_TAG}",
+        "-I",
+        "-B",
+        "/opt/forge-runtime-checks/native_installed.py"
+      ],
+      "waitFor": [
+        "native-core"
+      ]
+    },
+    {
+      "id": "private-source-custody-check",
+      "name": "gcr.io/cloud-builders/docker",
+      "waitFor": [
+        "native-core"
+      ],
+      "args": [
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "--read-only",
+        "--user",
+        "0:0",
+        "--cap-drop",
+        "ALL",
+        "--security-opt",
+        "no-new-privileges",
+        "--pids-limit",
+        "64",
+        "--memory",
+        "256m",
+        "-e",
+        "ANVIL_ENV=local",
+        "-e",
+        "WEB_ORIGIN=http://127.0.0.1:3202",
+        "--entrypoint",
+        "/opt/anvil-runtime/bin/python",
+        "${_ARTIFACT_PREFIX}task-runtime:${_RUNTIME_TAG}",
+        "-I",
+        "-B",
+        "-c",
+        "from anvil.marketing_native_world_binding import verify_opening_graph_sources; import json; paths=verify_opening_graph_sources(private=True); print(json.dumps({'private_source_files':len(paths),'native_qualified':False,'scope':'installed_root_owned_source_consistency_only'}))"
+      ]
+    }
+  ],
+  "images": [
+    "${_ARTIFACT_PREFIX}task-runtime:${_RUNTIME_TAG}"
+  ],
+  "options": {
+    "machineType": "E2_HIGHCPU_8",
+    "logging": "CLOUD_LOGGING_ONLY"
+  },
+  "timeout": "1800s",
+  "tags": [
+    "${_RUNTIME_TAG}"
+  ]
+}

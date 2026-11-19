@@ -1,0 +1,151 @@
+{
+  "steps": [
+    {
+      "id": "exact-environment-pull",
+      "name": "gcr.io/cloud-builders/docker",
+      "entrypoint": "bash",
+      "env": [
+        "ENVIRONMENT_IMAGE=${_ENVIRONMENT_IMAGE}",
+        "ARTIFACT_PREFIX=${_ARTIFACT_PREFIX}"
+      ],
+      "args": [
+        "-ceu",
+        "set -o pipefail\n[[ \"$$ENVIRONMENT_IMAGE\" == \"$$ARTIFACT_PREFIX\"task-runtime@sha256:* && \"$$ENVIRONMENT_IMAGE\" =~ ^[a-z0-9.-]+/[a-z0-9-]+/[a-z0-9-]+/task-runtime@sha256:[a-f0-9]{64}$$ ]] || exit 2\ncommand -v timeout >/dev/null || exit 127\ndeadline=$$((SECONDS + 120))\nfor attempt in 1 2 3; do\n  remaining=$$((deadline - SECONDS - 2))\n  ((remaining > 0)) || exit 124\n  if ((remaining > 35)); then remaining=35; fi\n  if timeout --kill-after=2s \"$${remaining}s\" docker pull \"$$ENVIRONMENT_IMAGE\"; then exit 0; fi\n  if ((attempt == 3)); then exit 1; fi\n  delay=2\n  if ((attempt == 2)); then delay=5; fi\n  ((SECONDS + delay < deadline)) || exit 124\n  sleep \"$$delay\"\ndone\nexit 1"
+      ]
+    },
+    {
+      "id": "kyc-identity",
+      "name": "gcr.io/cloud-builders/docker",
+      "args": [
+        "build",
+        "--build-arg",
+        "TASK_RUNTIME_IMAGE=${_ENVIRONMENT_IMAGE}",
+        "--build-arg",
+        "TASK_KIND=kyc",
+        "--label",
+        "org.opencontainers.image.revision=${_SOURCE_COMMIT}",
+        "-f",
+        "infra/docker/task-runtime-identity.Dockerfile",
+        "-t",
+        "${_ARTIFACT_PREFIX}kyc-runtime:${_RUNTIME_TAG}",
+        "."
+      ],
+      "waitFor": [
+        "exact-environment-pull"
+      ]
+    },
+    {
+      "id": "marketing-identity",
+      "name": "gcr.io/cloud-builders/docker",
+      "args": [
+        "build",
+        "--build-arg",
+        "TASK_RUNTIME_IMAGE=${_ENVIRONMENT_IMAGE}",
+        "--build-arg",
+        "TASK_KIND=marketing",
+        "--label",
+        "org.opencontainers.image.revision=${_SOURCE_COMMIT}",
+        "-f",
+        "infra/docker/task-runtime-identity.Dockerfile",
+        "-t",
+        "${_ARTIFACT_PREFIX}marketing-runtime:${_RUNTIME_TAG}",
+        "."
+      ],
+      "waitFor": [
+        "exact-environment-pull"
+      ]
+    },
+    {
+      "id": "evaluation-software-controls",
+      "name": "gcr.io/cloud-builders/docker",
+      "waitFor": [
+        "exact-environment-pull"
+      ],
+      "args": [
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "--read-only",
+        "--user",
+        "10001:10001",
+        "--cap-drop",
+        "ALL",
+        "--security-opt",
+        "no-new-privileges",
+        "--pids-limit",
+        "128",
+        "--memory",
+        "512m",
+        "--cpus",
+        "1",
+        "--tmpfs",
+        "/tmp:rw,noexec,nosuid,size=64m,mode=1777",
+        "--mount",
+        "type=bind,source=/workspace/runtime-checks,target=/phase-controls,readonly",
+        "-e",
+        "ANVIL_ENV=local",
+        "-e",
+        "WEB_ORIGIN=http://127.0.0.1:3202",
+        "--entrypoint",
+        "/opt/anvil-runtime/bin/python",
+        "${_ENVIRONMENT_IMAGE}",
+        "-I",
+        "-B",
+        "/phase-controls/component_controls.py"
+      ]
+    },
+    {
+      "id": "evaluation-installed-source-check",
+      "name": "gcr.io/cloud-builders/docker",
+      "args": [
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "--read-only",
+        "--user",
+        "10001:10001",
+        "--cap-drop",
+        "ALL",
+        "--security-opt",
+        "no-new-privileges",
+        "--pids-limit",
+        "128",
+        "--memory",
+        "512m",
+        "--cpus",
+        "1",
+        "--tmpfs",
+        "/tmp:rw,noexec,nosuid,size=64m",
+        "-e",
+        "ANVIL_ENV=local",
+        "-e",
+        "WEB_ORIGIN=http://127.0.0.1:3202",
+        "-e",
+        "EXPECTED_SOURCE_SHA256=${_SOURCE_SHA256}",
+        "--entrypoint",
+        "/opt/anvil-runtime/bin/python",
+        "${_ENVIRONMENT_IMAGE}",
+        "-I",
+        "-B",
+        "/opt/forge-runtime-checks/native_installed.py"
+      ],
+      "waitFor": [
+        "exact-environment-pull"
+      ]
+    }
+  ],
+  "images": [
+    "${_ARTIFACT_PREFIX}kyc-runtime:${_RUNTIME_TAG}",
+    "${_ARTIFACT_PREFIX}marketing-runtime:${_RUNTIME_TAG}"
+  ],
+  "options": {
+    "machineType": "E2_HIGHCPU_8",
+    "logging": "CLOUD_LOGGING_ONLY"
+  },
+  "timeout": "1800s",
+  "tags": [
+    "${_RUNTIME_TAG}"
+  ]
+}

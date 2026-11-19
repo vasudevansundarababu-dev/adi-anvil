@@ -97,7 +97,7 @@ def validate_assets(store, permission):
             targets.add(target)
         if not ({"/workspace/inputs"} if role == "environment" else {"/sealed"}) <= targets:
             raise ValueError("Probe role inputs missing")
-    projection = native.layout_projection(folder, actor, actor_seconds=30)
+    projection = native.layout_projection(folder, actor, actor_seconds=permission["limits"]["wall_seconds"])
     if assets["task_package"] != {"schema_version": "anvil.fixed-native-task.v1",
             "files": {name: hashlib.sha256(content.encode()).hexdigest() for name, content in projection.items()}}:
         raise ValueError("Exact probe task projection required")
@@ -120,7 +120,7 @@ def run(job_id):
             with native.fixed_alarm(permission["limits"]["lifecycle_seconds"]):
                 result = native._execute_lifecycle(folder, permission["request_capsule"]["actor"], None,
                     host=assets["host_image_custody"]["docker_host"], python=Path(assets["host_image_custody"]["python"]),
-                    mediated_candidate=False, actor_seconds=30, bindings=bindings,
+                    mediated_candidate=False, actor_seconds=permission["limits"]["wall_seconds"], bindings=bindings,
                     fixed_assets=assets, technical_probe_job=job_id)
             result["framework_claimed_provider_calls"] = result.pop("provider_calls", None)
             result["actual_model_calls"] = None
@@ -170,7 +170,7 @@ def dispatch(job_id, *, folder, assets, deadline, owner_holder):
         try:
             native.private_json(folder / "callback-process.json", {"pid": child.pid, "identity": child._anvil_start_identity})
             try:
-                stdout, stderr = native._collect_fixed_child(child, ends=time.monotonic() + deadline.remaining(30))
+                stdout, stderr = native._collect_fixed_child(child, ends=time.monotonic() + deadline.remaining(permission["limits"]["wall_seconds"]))
             except native.FixedCaptureStopped as error:
                 native.retain_fixed_capture_failure(folder, "probe-callback.private.log", error)
                 raise
@@ -202,7 +202,7 @@ def _spawn_owned_child(arguments, environment, holder, deadline, nonce):
 
 
 def worker(job_id):
-    with native.fixed_alarm(30):
+    with native.fixed_alarm(300):
         return _worker(job_id)
 
 

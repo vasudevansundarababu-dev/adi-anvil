@@ -1066,8 +1066,8 @@ class TechnicalProbeStore(OperatorProofStore):
         "actions": 2,
         "callback_invocations": 1,
         "model_calls": 0,
-        "wall_seconds": 30,
-        "lifecycle_seconds": 120,
+        "wall_seconds": 300,
+        "lifecycle_seconds": 420,
         "cleanup_seconds": 6,
     }
     ASSETS = {

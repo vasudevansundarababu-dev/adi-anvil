@@ -15,7 +15,7 @@ from pathlib import Path
 from anvil.marketing_native_boundary import marketing_native_gate
 from anvil.marketing_native_records import _checked_opening_record_set
 
-OPERATOR_PROOF_SHA256 = "ea5f383a678af1db73d8d9458d68fe9cef67b152202ad02c1f550b19d601741d"
+OPERATOR_PROOF_SHA256 = "1394f7a7b5d4d934e3259da282088d70ac44064a9b151c76c5ddd49eaa8f5d38"
 
 
 def original_operator_repository():

@@ -256,7 +256,7 @@ def prepare(request_path):
                 "binaries": binaries, "database_provider": provider, "host_domain": domain,
                 "operation_nonce": nonce, "request_sha256": hashlib.sha256(native.canonical(capsule)).hexdigest(),
                 "limits": store.LIMITS}
-        projection = native.layout_projection(folder, capsule["actor"], actor_seconds=30)
+        projection = native.layout_projection(folder, capsule["actor"], actor_seconds=store.LIMITS["wall_seconds"])
         services = compose_services(store, request, projection, folder=folder, name="anvil-bm-" + nonce[:20])
         config = {"task": {"path": str(folder / "task")}, "trial_name": "anvil-bm-" + nonce[:20],
                   "trials_dir": str(folder / "trials"), "agent": {"import_path": "anvil_harbor.sme:SMEAgent"},

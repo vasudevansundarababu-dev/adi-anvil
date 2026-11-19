@@ -103,6 +103,36 @@ def test_local_plan_never_creates_qualification_or_business_authority(probe):
         store.enter_probe(plan["job_id"])
 
 
+def test_only_fixed_user_approved_technical_caps_are_retained(probe):
+    module, store, plan, _ = probe
+    expected = {"actions": 2, "callback_invocations": 1, "model_calls": 0,
+                "wall_seconds": 300, "lifecycle_seconds": 420, "cleanup_seconds": 6}
+    assert module.TechnicalProbeStore.LIMITS == expected
+    result = store.load_probe(plan["job_id"])
+    assert result["limits"] == expected
+    assert result["technical_probe_authorized"] is False  # Synthetic custody never becomes QA permission.
+
+
+@pytest.mark.parametrize("changes", [{"wall_seconds": 301}, {"lifecycle_seconds": 421},
+                                     {"wall_seconds": 180}, {"wall_seconds": 30, "lifecycle_seconds": 120},
+                                     {"wall_seconds": 300.0}])
+def test_altered_or_old_technical_caps_do_not_migrate_existing_plans(probe, changes):
+    _, store, plan, save = probe
+    plan["limits"].update(changes)
+    save()
+    with pytest.raises(RuntimeError, match="fixed_technical_probe_caps_required"):
+        store.load_probe(plan["job_id"])
+
+
+def test_same_plan_cannot_authorize_after_permission_reader_source_changes(probe):
+    _, store, plan, _ = probe
+    assert store.load_probe(plan["job_id"])["limits"]["wall_seconds"] == 300
+    reader = store.repository / "services/harbor/src/anvil_harbor/operator_proof.py"
+    reader.write_bytes(b"changed synthetic reader source; never independently authorized")
+    with pytest.raises(RuntimeError, match="source"):
+        store.load_probe(plan["job_id"])
+
+
 @pytest.mark.parametrize(
     "change",
     ["future", "expired", "paid", "extra_action", "host", "source", "asset", "expanded_scope"],
