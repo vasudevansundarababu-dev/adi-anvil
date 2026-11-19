@@ -1,5 +1,21 @@
 # Build status
 
+## SDK cold bootstrap passed; rejection cleanup hardened
+
+3e04d65 frozen verification:1279units+10subtests (5skips),90SQL regressions,
+5private SQL controls passed. Its GCP environment build8506778e-71bf-40cd-b9d3-
+7bfe07b818c5 passed the actual isolated SDK→backend cold-import control.
+Core/evaluation publication is still being observed; no serving rollout yet.
+
+Read-only review found setup validation could throw after gateway creation but
+before lifecycle cleanup. New gateway_configuration scope closes real socket,
+server thread and temp home on every pre-spawn config/environment exception.
+16focusedtests passed with actual Unix socket permission; initial sandboxed
+socket bind was denied and not counted as a pass. The fix changes runtime source
+and therefore needs a new frozen build/current-source qualification run.
+Host observer pre-entry gate now uses a FIFO (no periodic sleep children), with
+actual PIDFD stop/resume and host tracing before installed control entry.
+
 ## Native SQL Trial passed; mediated SDK bootstrap correction
 
 7076b64 actual fixed two-read Harbor Trial passed: job

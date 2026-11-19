@@ -3,6 +3,7 @@
 import copy
 import os
 import time
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
@@ -120,6 +121,22 @@ def test_sdk_bootstrap_is_explicit_and_refuses_ambient_credentials(tmp_path):
     for key in ("DATABASE_URL", "ANVIL_SESSION_KEY", "GOOGLE_APPLICATION_CREDENTIALS", "PROVIDER_API_KEY"):
         with pytest.raises(ValueError, match="bootstrap metadata"):
             mediated_sdk_environment({key: "synthetic-not-a-secret"}, **arguments)
+
+
+def test_rejected_bootstrap_closes_actual_owned_gateway(tmp_path):
+    import tempfile
+
+    from anvil.benchmark_qualification import NativeGateway
+    from anvil.environment_harbor import gateway_configuration, mediated_sdk_environment
+
+    home = tempfile.TemporaryDirectory(prefix=".sgt-", dir="/tmp")
+    gateway = NativeGateway(tmp_path, lambda *unused: None, socket_root=Path(home.name))
+    socket_path = Path(gateway.path)
+    with pytest.raises(ValueError):
+        with gateway_configuration(gateway, home):
+            mediated_sdk_environment({"DATABASE_URL": "synthetic"}, plan_path=tmp_path / "none", nonce="a" * 64,
+                image_sha256="b" * 64, opa={"path": "/opt/anvil/opa", "sha256": "c" * 64})
+    assert not socket_path.exists() and not gateway.thread.is_alive()
 
 
 def test_owned_records_reject_reformat_alias_extra_hardlink_and_permissions(tmp_path):

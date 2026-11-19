@@ -59,7 +59,7 @@ class NetworkObserver:
         index = command.index("--entrypoint")
         if command[index+1] != "/opt/anvil-runtime/bin/python":
             raise ValueError("Fixed installed control interpreter required")
-        gate = 'while [ ! -f /tmp/forge-observer-start ]; do sleep 0.05; done; exec "$@"'
+        gate = 'set -eu; mkfifo -m600 /tmp/forge-observer-start; read -r forge_go < /tmp/forge-observer-start; [ "$forge_go" = go ]; exec "$@"'
         paused = command[:index+1] + ["/bin/sh", command[index+2], "-c", gate,
             "forge-observer-gate", "/opt/anvil-runtime/bin/python", *command[index+3:]]
         self.process = subprocess.Popen(paused, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -103,8 +103,8 @@ class NetworkObserver:
             else:
                 raise TimeoutError("Original control tracer custody unavailable")
             signal.pidfd_send_signal(self.descriptor, signal.SIGCONT)
-            subprocess.run(["docker", "exec", "--user", "10001:10001", self.name,
-                "/usr/bin/touch", "/tmp/forge-observer-start"], check=True, capture_output=True, timeout=3)
+            subprocess.run(["docker", "exec", "--user", observed["Config"]["User"], self.name,
+                "/bin/sh", "-c", 'printf "go\\n" > /tmp/forge-observer-start'], check=True, capture_output=True, timeout=3)
         except BaseException:
             self.abort()
             raise

@@ -859,6 +859,19 @@ def execute(
     )
 
 
+@contextmanager
+def gateway_configuration(gateway, home):
+    """Close the already-owned gateway on every pre-spawn setup failure."""
+    try:
+        yield
+    except BaseException:
+        try:
+            gateway.close()
+        finally:
+            home.cleanup()
+        raise
+
+
 def mediated_sdk_environment(environment, *, plan_path, nonce, image_sha256, opa, qualification_file=None):
     """Explicit SDK bootstrap metadata, never API/SQL/provider configuration."""
     allowed = {"PATH", "HOME", "HARBOR_TELEMETRY", "LITELLM_LOCAL_MODEL_COST_MAP", "PYTHONUNBUFFERED", "DOCKER_CONFIG", "DOCKER_HOST",
@@ -1084,49 +1097,34 @@ def _execute_lifecycle(
         },
         "verifier": {"import_path": "anvil_harbor.sme:SMEVerifier"},
     }
-    try:
+    with gateway_configuration(gateway, gateway_home):
         guards.validate_generated_config(config, attempt_root=str(folder), trial_name=name)
         if managed and canonical(config) != canonical(fixed_assets["trial_config"]):
             raise ValueError("Generated native config differs from reviewed exact config")
         private_json(folder / "trial.json", config)
-    except BaseException:
-        # No framework/actor has started, but the gateway already owns a thread
-        # and socket. Configuration failure must release them before returning.
-        try:
-            gateway.close()
-        finally:
-            gateway_home.cleanup()
-        raise
-    env = docker.environment | {
-        "PYTHONPATH": str(ROOT / "services/harbor/src"),
-        "ANVIL_ENVIRONMENT_DOCKER_COMMAND": json.dumps(docker.command),
-        "ANVIL_HARBOR_GATEWAY_SOCKET": gateway.path,
-        "ANVIL_HARBOR_GATEWAY_TOKEN": gateway.token,
-        "DO_NOT_TRACK": "1",
-        "OTEL_SDK_DISABLED": "true",
-        "ANVIL_HARBOR_GATEWAY_TIMEOUT_SECONDS": str(actor_seconds + 30),
-        "ANVIL_HARBOR_ATTEMPT_ROOT": str(folder),
-        "ANVIL_HARBOR_TRIAL_CONFIG_SHA256": hashlib.sha256(
-            (folder / "trial.json").read_bytes()
-        ).hexdigest(),
-        "ANVIL_HARBOR_SERVICE_SHA256S": json.dumps(reviewed_service_sha256s),
-    }
-    if fixed_adapter is not None:
-        env["ANVIL_HARBOR_FIXED_CONTEXT"] = json.dumps(
-            {
-                "job_id": bindings["job_id"],
-                "operation_nonce": bindings["operation_nonce"],
-                "request_sha256": bindings["request_sha256"],
-            }
-        )
-    if technical_probe_job is not None:
-        env.pop("PYTHONPATH", None)
-        env.update({"ANVIL_HARBOR_TECHNICAL_PROBE_JOB": technical_probe_job,
-                    "ANVIL_ROOT": str(ROOT), "ANVIL_FIXED_OPERATION_NONCE": bindings["operation_nonce"]})
-    elif mediated_plan is not None:
-        env = mediated_sdk_environment(env, plan_path=mediated_plan.path, nonce=bindings["operation_nonce"],
-            image_sha256=os.environ["ANVIL_RUNTIME_IMAGE_DIGEST"], opa=fixed_assets["host_image_custody"]["binaries"]["opa"],
-            qualification_file=os.environ.get("ANVIL_GOLDEN_COMPONENT_QUALIFICATION_FILE"))
+        env = docker.environment | {
+            "PYTHONPATH": str(ROOT / "services/harbor/src"),
+            "ANVIL_ENVIRONMENT_DOCKER_COMMAND": json.dumps(docker.command),
+            "ANVIL_HARBOR_GATEWAY_SOCKET": gateway.path,
+            "ANVIL_HARBOR_GATEWAY_TOKEN": gateway.token,
+            "DO_NOT_TRACK": "1",
+            "OTEL_SDK_DISABLED": "true",
+            "ANVIL_HARBOR_GATEWAY_TIMEOUT_SECONDS": str(actor_seconds + 30),
+            "ANVIL_HARBOR_ATTEMPT_ROOT": str(folder),
+            "ANVIL_HARBOR_TRIAL_CONFIG_SHA256": hashlib.sha256((folder / "trial.json").read_bytes()).hexdigest(),
+            "ANVIL_HARBOR_SERVICE_SHA256S": json.dumps(reviewed_service_sha256s),
+        }
+        if fixed_adapter is not None:
+            env["ANVIL_HARBOR_FIXED_CONTEXT"] = json.dumps({"job_id": bindings["job_id"],
+                "operation_nonce": bindings["operation_nonce"], "request_sha256": bindings["request_sha256"]})
+        if technical_probe_job is not None:
+            env.pop("PYTHONPATH", None)
+            env.update({"ANVIL_HARBOR_TECHNICAL_PROBE_JOB": technical_probe_job,
+                        "ANVIL_ROOT": str(ROOT), "ANVIL_FIXED_OPERATION_NONCE": bindings["operation_nonce"]})
+        elif mediated_plan is not None:
+            env = mediated_sdk_environment(env, plan_path=mediated_plan.path, nonce=bindings["operation_nonce"],
+                image_sha256=os.environ["ANVIL_RUNTIME_IMAGE_DIGEST"], opa=fixed_assets["host_image_custody"]["binaries"]["opa"],
+                qualification_file=os.environ.get("ANVIL_GOLDEN_COMPONENT_QUALIFICATION_FILE"))
     child_process = None
     result = None
     try:
