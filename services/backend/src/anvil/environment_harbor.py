@@ -716,6 +716,8 @@ def recover(folder, *, host):
 
 def layout_projection(folder, actor, *, mediated_candidate=False, actor_seconds=90):
     """No task rubric/reference/private source enters the actor projection."""
+    if type(actor_seconds) is not int or not 1 <= actor_seconds <= (300 if mediated_candidate else 900):
+        raise ValueError("Original bounded native stage budget required")
     task = folder / "task"
     files = {"environment/actor/context.json": canonical(actor).decode()}
 
@@ -781,7 +783,7 @@ cpus = 1
 memory_mb = 512
 storage_mb = 1024
 [verifier]
-timeout_sec = 30.0
+timeout_sec = {float(min(actor_seconds, 300))}
 environment_mode = "separate"
 [verifier.environment]
 docker_image = "{FIXTURE_IMAGE}"
@@ -1109,7 +1111,7 @@ def _execute_lifecycle(
             "ANVIL_HARBOR_GATEWAY_TOKEN": gateway.token,
             "DO_NOT_TRACK": "1",
             "OTEL_SDK_DISABLED": "true",
-            "ANVIL_HARBOR_GATEWAY_TIMEOUT_SECONDS": str(actor_seconds + 30),
+            "ANVIL_HARBOR_GATEWAY_TIMEOUT_SECONDS": str(actor_seconds),
             "ANVIL_HARBOR_ATTEMPT_ROOT": str(folder),
             "ANVIL_HARBOR_TRIAL_CONFIG_SHA256": hashlib.sha256((folder / "trial.json").read_bytes()).hexdigest(),
             "ANVIL_HARBOR_SERVICE_SHA256S": json.dumps(reviewed_service_sha256s),
