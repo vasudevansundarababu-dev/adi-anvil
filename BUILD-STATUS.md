@@ -1,5 +1,25 @@
 # Build status
 
+## Native SQL Trial passed; mediated SDK bootstrap correction
+
+7076b64 actual fixed two-read Harbor Trial passed: job
+daadb49c-9426-41b6-bd8b-d524bf867d97, packetSHA
+e75f2fca83c9f99911dfabe1092d111202c3d58d694414f3ab28f0f6543c09d0.
+Current-image private scoring also passed6cases+permissionpreflight:
+`/var/lib/anvil-qa-v1/runtime-functional/private-score-c944120a/evidence.json`,
+SHAa077ea9af5d14005bc6780a631608a8738a2eec751ff6333bcbf34f82ac504e4.
+Both remain observed_not_qualified and source-bound to7076b64.
+
+The mediated transport advanced to actual SDK startup, failed importing backend
+configuration because its secret-free child environment omitted ANVIL_ENV.
+Owned cleanup passed complete/0failures. New explicit metadata helper supplies
+local CLI bootstrap/origin, measured OPA metadata, image/nonce/qualification path
+and disabled model/email/telemetry flags. It rejects all unexpected ambient keys,
+including SQL/session/cloud/provider credentials. Actual isolated SDK→backend
+cold imports now run in installed-source build checks, using this same helper.
+Focused15tests passed. New runtime source still requires frozen regression,
+immutable build, fresh physical controls and deployment. QA still151d6fb/schema132.
+
 ## Frozen runtime7076b64 verified; QA controls continue
 
 All three corrected build phases succeeded: coreace279b0-25f2-4f8f-907c-b8a1cca4f37c,

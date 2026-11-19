@@ -108,6 +108,20 @@ def test_control_module_entry_delegates_to_canonical_typed_session(monkeypatch, 
     assert '"qualification_granted": false' in capsys.readouterr().out
 
 
+def test_sdk_bootstrap_is_explicit_and_refuses_ambient_credentials(tmp_path):
+    from anvil.environment_harbor import mediated_sdk_environment
+
+    arguments = {"plan_path": tmp_path / "not-an-admission.json", "nonce": "a" * 64,
+                 "image_sha256": "b" * 64, "opa": {"path": "/opt/anvil/opa", "sha256": "c" * 64}}
+    env = mediated_sdk_environment({"PATH": "/usr/bin:/bin", "HOME": str(tmp_path), "PYTHONPATH": "/untrusted"}, **arguments)
+    assert env["ANVIL_ENV"] == "local" and env["WEB_ORIGIN"] == "http://127.0.0.1:3202"
+    assert "PYTHONPATH" not in env
+    assert env["ANVIL_LIVE_PROVIDERS_ENABLED"] == env["ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED"] == "false"
+    for key in ("DATABASE_URL", "ANVIL_SESSION_KEY", "GOOGLE_APPLICATION_CREDENTIALS", "PROVIDER_API_KEY"):
+        with pytest.raises(ValueError, match="bootstrap metadata"):
+            mediated_sdk_environment({key: "synthetic-not-a-secret"}, **arguments)
+
+
 def test_owned_records_reject_reformat_alias_extra_hardlink_and_permissions(tmp_path):
     path = tmp_path / "record.json"
     value = body()

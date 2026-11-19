@@ -859,6 +859,27 @@ def execute(
     )
 
 
+def mediated_sdk_environment(environment, *, plan_path, nonce, image_sha256, opa, qualification_file=None):
+    """Explicit SDK bootstrap metadata, never API/SQL/provider configuration."""
+    allowed = {"PATH", "HOME", "HARBOR_TELEMETRY", "LITELLM_LOCAL_MODEL_COST_MAP", "PYTHONUNBUFFERED", "DOCKER_CONFIG", "DOCKER_HOST",
+        "PYTHONPATH", "ANVIL_ENVIRONMENT_DOCKER_COMMAND", "ANVIL_HARBOR_GATEWAY_SOCKET", "ANVIL_HARBOR_GATEWAY_TOKEN",
+        "DO_NOT_TRACK", "OTEL_SDK_DISABLED", "ANVIL_HARBOR_GATEWAY_TIMEOUT_SECONDS", "ANVIL_HARBOR_ATTEMPT_ROOT",
+        "ANVIL_HARBOR_TRIAL_CONFIG_SHA256", "ANVIL_HARBOR_SERVICE_SHA256S"}
+    if set(environment) - allowed or not re.fullmatch("[a-f0-9]{64}", nonce) or not re.fullmatch("[a-f0-9]{64}", image_sha256):
+        raise ValueError("Only fixed SDK bootstrap metadata may cross the boundary")
+    result = dict(environment)
+    result.pop("PYTHONPATH", None)
+    result.update(ANVIL_HARBOR_MEDIATED_PLAN=str(plan_path), ANVIL_ROOT=str(ROOT),
+        ANVIL_FIXED_OPERATION_NONCE=nonce, ANVIL_RUNTIME_IMAGE_DIGEST=image_sha256,
+        ANVIL_ENV="local", WEB_ORIGIN="http://127.0.0.1:3202", LANGSMITH_TRACING="false",
+        DO_NOT_TRACK="1", OTEL_SDK_DISABLED="true",
+        ANVIL_LIVE_PROVIDERS_ENABLED="false", ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED="false", ANVIL_REAL_EMAIL_ENABLED="false",
+        ANVIL_OPA_BINARY=opa["path"], ANVIL_OPA_SHA256=opa["sha256"])
+    if qualification_file is not None:
+        result["ANVIL_GOLDEN_COMPONENT_QUALIFICATION_FILE"] = qualification_file
+    return result
+
+
 def _execute_lifecycle(
     folder,
     actor,
@@ -1103,12 +1124,9 @@ def _execute_lifecycle(
         env.update({"ANVIL_HARBOR_TECHNICAL_PROBE_JOB": technical_probe_job,
                     "ANVIL_ROOT": str(ROOT), "ANVIL_FIXED_OPERATION_NONCE": bindings["operation_nonce"]})
     elif mediated_plan is not None:
-        env.pop("PYTHONPATH", None)
-        env.update(ANVIL_HARBOR_MEDIATED_PLAN=str(mediated_plan.path), ANVIL_ROOT=str(ROOT),
-                   ANVIL_FIXED_OPERATION_NONCE=bindings["operation_nonce"],
-                   ANVIL_RUNTIME_IMAGE_DIGEST=os.environ["ANVIL_RUNTIME_IMAGE_DIGEST"])
-        if os.environ.get("ANVIL_GOLDEN_COMPONENT_QUALIFICATION_FILE"):
-            env["ANVIL_GOLDEN_COMPONENT_QUALIFICATION_FILE"] = os.environ["ANVIL_GOLDEN_COMPONENT_QUALIFICATION_FILE"]
+        env = mediated_sdk_environment(env, plan_path=mediated_plan.path, nonce=bindings["operation_nonce"],
+            image_sha256=os.environ["ANVIL_RUNTIME_IMAGE_DIGEST"], opa=fixed_assets["host_image_custody"]["binaries"]["opa"],
+            qualification_file=os.environ.get("ANVIL_GOLDEN_COMPONENT_QUALIFICATION_FILE"))
     child_process = None
     result = None
     try:

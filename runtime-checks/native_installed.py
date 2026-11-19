@@ -6,6 +6,7 @@ import importlib.metadata as metadata
 import json
 import os
 import runpy
+import subprocess
 import sys
 import tempfile
 import warnings
@@ -24,6 +25,28 @@ from anvil.marketing_native_private_records import (
     OPERATOR_PROOF_SHA256,
     original_operator_repository,
 )
+
+
+def installed_mediated_bootstrap_control():
+    """Real isolated SDK→backend cold imports with the actual child allowlist."""
+    from anvil.environment_harbor import mediated_sdk_environment
+    from anvil.harbor_worker import child_environment
+
+    with tempfile.TemporaryDirectory(prefix="anvil-sdk-bootstrap-") as folder:
+        root = Path(folder)
+        environment = mediated_sdk_environment(child_environment(root), plan_path=root / "not-an-admission.json",
+            nonce="a" * 64, image_sha256="0" * 64,
+            opa={"path": "/opt/anvil/opa", "sha256": hashlib.sha256(Path("/opt/anvil/opa").read_bytes()).hexdigest()})
+        script = ("import sys; import anvil_harbor.environment; import anvil.golden_native_mediated; "
+                  "import anvil.environment_harbor; import anvil.golden_component_qualification; "
+                  "import anvil.golden_kyc_anvil; assert sys.flags.isolated; print('isolated_sdk_backend_bootstrap_only')")
+        result = subprocess.run([sys.executable, "-I", "-B", "-c", script], env=environment,
+            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
+        assert result.returncode == 0, "Isolated SDK/backend bootstrap failed: " + result.stderr.decode()[-2000:]
+        assert result.stdout == b"isolated_sdk_backend_bootstrap_only\n"
+
+
+installed_mediated_bootstrap_control()
 
 
 def installed_owned_log_control():
@@ -207,6 +230,7 @@ print(
             "canonical_module_entry_control": True,
             "actual_sdk_explicit_log_mount_control": True,
             "post_sdk_import_source_validation": True,
+            "isolated_sdk_backend_bootstrap_control": True,
             "fifty_configuration_byte_proof_full_scans": scan_count[0],
             "operation_local_byte_proof_seconds": round(proof_seconds, 3),
         }
