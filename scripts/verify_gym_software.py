@@ -17,6 +17,7 @@ from psycopg import sql
 root = Path.cwd()
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--policy-only", action="store_true")
+parser.add_argument("--hash-proof-only", action="store_true")
 options = parser.parse_args()
 assert (root / "services/backend/src/anvil/golden_kyc_service.py").is_file()
 assert not (root / ".env").exists(), "Use a clean isolated checkout, never operational credentials"
@@ -134,6 +135,8 @@ tests = [
 ]
 if options.policy_only:
     tests = ["services/backend/tests/benchmark/test_kyc_policy_reviews_sql.py"]
+if options.hash_proof_only:
+    tests = ["services/backend/tests/benchmark/test_software_resource_proof_sql.py"]
 log = private / "pytest.log"
 with log.open("w") as handle:
     result = subprocess.run(

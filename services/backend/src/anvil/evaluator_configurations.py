@@ -21,11 +21,10 @@ ADAPTER_VERSION = "anvil-evaluator-v1"
 LOCAL_ADAPTERS = {"builtin", "zen", "opa-local", "nemo", "promptfoo"}
 
 
-def adapter_source_sha256(adapter):
-    import hashlib
-
+def _source_paths(adapter):
     paths = [
         "services/backend/src/anvil/qualification_resources.py",
+        "services/backend/src/anvil/software_resource_proof.py",
         "services/backend/src/anvil/policy_rules.py",
         "services/backend/src/anvil/evaluator_configurations.py",
         "services/backend/uv.lock",
@@ -47,10 +46,20 @@ def adapter_source_sha256(adapter):
                 "integrations/evaluators/promptfoo/package-lock.json",
             ]
         )
-    root = qualification_root()
+    return paths
+
+
+def adapter_source_sha256(adapter, *, _resource_proof=None):
+    import hashlib
+
+    from anvil.software_resource_proof import checked_root, checked_sha256
+
+    paths = _source_paths(adapter)
+    root = qualification_root() if _resource_proof is None else checked_root(_resource_proof)
     return digest(
         {
             path: hashlib.sha256(qualification_path(root, path).read_bytes()).hexdigest()
+            if _resource_proof is None else checked_sha256(_resource_proof, path)
             for path in paths
         }
     )
@@ -226,7 +235,11 @@ def test_semantic_runtime(c, project, user, identifier, body):
     return get(c, identifier)
 
 
-def create(c, project, user, body):
+def create(c, project, user, body, *, _resource_proof=None):
+    if _resource_proof is not None:
+        from anvil.software_resource_proof import check_connection
+
+        check_connection(_resource_proof, c)
     identifier = uid()
     configuration = body.model_dump(exclude={"secret", "name", "adapter"}, exclude_none=True)
     if body.native_ordinal is not None:
@@ -284,10 +297,14 @@ def create(c, project, user, body):
         ),
     )
     audit(c, project, user, "evaluator.configured", identifier, {"adapter": body.adapter})
-    return get(c, identifier)
+    return get(c, identifier, _resource_proof=_resource_proof)
 
 
-def get(c, identifier):
+def get(c, identifier, *, _resource_proof=None):
+    if _resource_proof is not None:
+        from anvil.software_resource_proof import check_connection
+
+        check_connection(_resource_proof, c)
     row = one(
         c,
         "SELECT id,project_id,name,adapter,adapter_version,configuration,configuration_sha256,created_at FROM anvil.evaluator_configurations WHERE id=%s",
@@ -315,7 +332,7 @@ def get(c, identifier):
     except Exception:
         runtime = None
     try:
-        source_hash = adapter_source_sha256(row["adapter"]) if local else None
+        source_hash = adapter_source_sha256(row["adapter"], _resource_proof=_resource_proof) if local else None
     except (OSError, ValueError, RuntimeError):
         source_hash = None
         runtime = None
@@ -398,8 +415,10 @@ def get(c, identifier):
     return row
 
 
-def test(c, project, user, identifier, body):
-    row = get(c, identifier)
+def test(c, project, user, identifier, body, *, _resource_proof=None):
+    row = get(c, identifier, _resource_proof=_resource_proof)
+    if _resource_proof is not None and row["configuration"].get("native_ordinal") is not None:
+        raise RuntimeError("Software resource proof supports deterministic Golden controls only")
     if row["status"] == "revoked":
         raise HTTPException(409, "Revoked evaluator cannot be tested")
     if row["configuration"].get("native_semantic") is not None:
@@ -469,7 +488,7 @@ def test(c, project, user, identifier, body):
         "runtime_version": runtime,
         "kind": "local_known_cases",
         "provider_calls": 0,
-        "adapter_source_sha256": adapter_source_sha256(row["adapter"]),
+        "adapter_source_sha256": adapter_source_sha256(row["adapter"], _resource_proof=_resource_proof),
     }
     receipt = uid()
     c.execute(
@@ -492,7 +511,7 @@ def test(c, project, user, identifier, body):
         identifier,
         {"receipt_id": receipt, "passed": evidence["passed"]},
     )
-    return get(c, identifier)
+    return get(c, identifier, _resource_proof=_resource_proof)
 
 
 def test_ordinal(c, project, user, row, body):

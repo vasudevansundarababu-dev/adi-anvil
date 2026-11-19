@@ -1,5 +1,34 @@
 # Build status
 
+## Operation-local hash fix locally verified — 19 November 2026
+
+Source4c439e71e914ac52d016a91def303e85446a8dba1f86303ed2b7584cce7ff357.
+1,247 unit tests +10subtests passed,4skipped; 90SQL regressions and2additional
+realSQL rollback/revocation tests passed. Independent source review clear.
+See docs/generated/operation-local-source-proof-2026-11-19.md. No paid/ambient
+cache; fullentry/exit verification before owned savepoint release. Actual
+installed phase builds and fresh QA SQL control are next; no qualification claim.
+
+## QA corrective release deployed — 19 November 2026
+
+Revision c80e9dd6c98b0118401b80db212414f36cdba47d is serving on QA with
+schema132. All six application services are running with zero restarts;
+health and workspace returned HTTP200. Backup: /var/lib/anvil-qa-v1/backups/fence132-c80e9dd.
+All three phased builds succeeded. Callback limit is 300 seconds; total
+technical lifecycle is 420 seconds. Live provider and Authoring calls remain disabled.
+Fresh no-model native control and isolated SQL controls are running; qualification
+and benchmark readiness are NOT yet established. Do not replay their attempts.
+SQL fixture setup passed against exact f9e5d50 source and restricted fresh v3 database.
+Native job51226ac4-8930-498f-bf24-721dd65c6f66 completed with observed_not_qualified,
+exit0, evidence1d1708d496b11445a839f19c87283976b6726770489795bcb0e4eaf5db42e64a.
+Cleanup complete with no failures at135.018seconds; model authorization0,
+actual model-call countnull. This is measured technical evidence, not qualification.
+Isolated SQLv3 stopped at its180second ControlDeadline in repeated Beartype
+RECORD verification via evaluator_configurations.get. No replay. Performance
+review assigned to open_weight_review; no global mutable trust cache permitted.
+Blocked-status email sent only to authorized user address, Gmail id1a1f48950c70e38b.
+
+
 ## Corrective 132 revision ready for phased build — 19 November 2026
 
 Frozen source f9e5d504c08fa3421632b0e0672bd586f7d158a6ffe39db1ef804ee975d1e551

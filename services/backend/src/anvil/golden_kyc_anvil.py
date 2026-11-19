@@ -47,14 +47,15 @@ def application_assignments(dataset, apps):
     return rows
 
 
-def source_hash():
+def source_hash(*, _resource_proof=None):
     from anvil.golden_kyc_source import source_hash as pure_source_hash
 
-    return pure_source_hash()
+    return pure_source_hash() if _resource_proof is None else pure_source_hash(_resource_proof=_resource_proof)
 
 
-def _evaluators(c, project, user):
+def _evaluators(c, project, user, *, _resource_proof=None):
     entries = []
+    current = source_hash() if _resource_proof is None else source_hash(_resource_proof=_resource_proof)
     groups = [
         ("rubric", CRITERIA, "zen"),
         ("business", ZEN_TABLES, "zen"),
@@ -72,6 +73,7 @@ def _evaluators(c, project, user):
                     adapter=adapter,
                     rule=Rule(kind="equals", field="supported", value=True),
                 ),
+                _resource_proof=_resource_proof,
             )
             config = configurations.test(
                 c,
@@ -85,6 +87,7 @@ def _evaluators(c, project, user):
                         configurations.Case(facts={}, expected="unknown"),
                     ]
                 ),
+                _resource_proof=_resource_proof,
             )
             if config["status"] != "ready":
                 raise HTTPException(409, "Pinned evaluator runtime/known cases did not qualify")
@@ -98,26 +101,36 @@ def _evaluators(c, project, user):
                     "runtime_version": config["validation"]["evidence"]["runtime_version"],
                     "validation_id": str(config["validation"]["id"]),
                     "validation_sha256": config["validation"]["evidence_sha256"],
-                    "normalizer_source_sha256": source_hash(),
+                    "normalizer_source_sha256": current,
                 }
             )
     return entries
 
 
 def register(c, project, user, pack, *, reusable=False, application_types=False):
+    from anvil.software_resource_proof import software_resources
+
+    # Savepoint owns all writes; the final full scan runs before its commit.
+    with c.transaction():
+        with software_resources(c) as proof:
+            return _register(c, project, user, pack, reusable=reusable,
+                             application_types=application_types, _resource_proof=proof)
+
+
+def _register(c, project, user, pack, *, reusable=False, application_types=False, _resource_proof):
     if type(reusable) is not bool or type(application_types) is not bool or reusable and application_types:
         raise HTTPException(422, "Select one explicit Golden reference import mode")
     reusable = reusable or application_types
     mode = "reusable_application_workflow" if application_types else "reusable_state_workflow" if reusable else "per_application"
     manifest = binding(c, project, pack)
-    current = source_hash()
+    current = source_hash(_resource_proof=_resource_proof)
     old = c.execute(
         "SELECT * FROM banking.anvil_imports WHERE project_id=%s AND pack_id=%s AND manifest->>'source_sha256'=%s AND COALESCE(manifest->>'task_mode','per_application')=%s",
         (project, pack, current, mode),
     ).fetchone()
     if old:
-        validate(c, old)
-        return public(old)
+        _validate(c, old, _resource_proof=_resource_proof)
+        return public(old, _resource_proof=_resource_proof)
     apps = c.execute(
         "SELECT id,snapshot,snapshot_sha256 FROM banking.applications WHERE project_id=%s AND pack_id=%s ORDER BY id",
         (project, pack),
@@ -222,8 +235,8 @@ def register(c, project, user, pack, *, reusable=False, application_types=False)
         else None
     )
     if prior:
-        validate(c, prior)
-    evaluators = prior["manifest"]["evaluators"] if prior else _evaluators(c, project, user)
+        _validate(c, prior, _resource_proof=_resource_proof)
+    evaluators = prior["manifest"]["evaluators"] if prior else _evaluators(c, project, user, _resource_proof=_resource_proof)
     epack_id, environment_id = uid(), uid()
     public_pack = {
         "schema_version": "anvil.golden-kyc-environment-pack.v1",
@@ -381,10 +394,10 @@ def register(c, project, user, pack, *, reusable=False, application_types=False)
             user,
         ),
     ).fetchone()
-    return public(row)
+    return public(row, _resource_proof=_resource_proof)
 
 
-def public(row):
+def public(row, *, _resource_proof=None):
     return {
         "id": str(row["id"]),
         "pack_id": str(row["pack_id"]),
@@ -393,15 +406,15 @@ def public(row):
         "manifest_sha256": row["manifest_sha256"],
         "binding_count": len(row["manifest"]["bindings"]),
         "evaluator_count": len(row["manifest"]["evaluators"]),
-        "readiness": readiness(row),
+        "readiness": readiness(row, _resource_proof=_resource_proof),
         "manifest": row["manifest"],
     }
 
 
-def readiness(row):
+def readiness(row, *, _resource_proof=None):
     return {
         "software_run": "ready"
-        if row["manifest"]["source_sha256"] == source_hash()
+        if row["manifest"]["source_sha256"] == (source_hash() if _resource_proof is None else source_hash(_resource_proof=_resource_proof))
         else "source_changed",
         "model_benchmark": "blocked",
         "paid_calls": False,
@@ -414,9 +427,23 @@ def readiness(row):
 
 
 def validate(c, row):
+    # Run/paid callers keep the original fresh scan on each source lookup.
+    return _validate(c, row)
+
+
+def validate_software(c, row):
+    """Explicit nonspending software control; never used by run admission."""
+    from anvil.software_resource_proof import software_resources
+
+    with c.transaction():
+        with software_resources(c) as proof:
+            return _validate(c, row, _resource_proof=proof)
+
+
+def _validate(c, row, *, _resource_proof=None):
     if (
         digest(row["manifest"]) != row["manifest_sha256"]
-        or row["manifest"]["source_sha256"] != source_hash()
+        or row["manifest"]["source_sha256"] != (source_hash() if _resource_proof is None else source_hash(_resource_proof=_resource_proof))
     ):
         raise HTTPException(
             409, "Golden import implementation changed; reimport and qualify new binding"
@@ -458,7 +485,7 @@ def validate(c, row):
     ):
         raise HTTPException(409, "Environment binding changed")
     for e in row["manifest"]["evaluators"]:
-        config = configurations.get(c, e["configuration_id"])
+        config = configurations.get(c, e["configuration_id"], _resource_proof=_resource_proof)
         receipt = c.execute(
             "SELECT evidence_sha256 FROM anvil.evaluator_validation_receipts WHERE id=%s AND configuration_id=%s",
             (e["validation_id"], e["configuration_id"]),

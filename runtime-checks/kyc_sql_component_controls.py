@@ -219,7 +219,8 @@ def run(config):
     def products():
         from fastapi import HTTPException
 
-        from anvil.golden_kyc_anvil import PRODUCT_NAMES, register, validate
+        from anvil.golden_kyc_anvil import PRODUCT_NAMES, register
+        from anvil.golden_kyc_anvil import validate_software as validate
         from anvil.golden_kyc_engine import Denied
         from anvil.golden_kyc_evaluators import CRITERIA
 
@@ -324,7 +325,7 @@ def run(config):
               "runtime_image_sha256": config["runtime_image_sha256"], "native_qualified": False,
               "qualification_written": False, "model_calls_authorized": 0, "actual_model_calls": None,
               "missing_controls": ["per_application_policy_registry", "private_python_scoring", "physical_harbor_trial", "independent_model_request_absence"],
-              "overall_budget_seconds": 180}
+              "overall_budget_seconds": 300}
     print(json.dumps(output, sort_keys=True))
     return 0 if all(value["status"] == "passed" for value in results.values()) else 1
 
@@ -334,7 +335,7 @@ if __name__ == "__main__":
     parser.add_argument("--config", required=True)
     args = parser.parse_args()
     signal.signal(signal.SIGALRM, lambda *args: (_ for _ in ()).throw(ControlDeadline()))
-    signal.alarm(180)
+    signal.alarm(300)
     try:
         raise SystemExit(run(read_config(args.config)))
     except (Exception, ControlDeadline) as error:

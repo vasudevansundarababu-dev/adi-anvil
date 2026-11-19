@@ -151,6 +151,32 @@ wrapped_first_party = [name for name, module in tuple(sys.modules.items())
     and type(getattr(getattr(module, "__spec__", None), "loader", None)).__name__ == "BeartypeSourceFileLoader"]
 assert wrapped_first_party, "Installed control must exercise the real SDK import hook"
 assert source_hash() == source_sha256
+# Count actual full scans without replacing any verifier or source function.
+from anvil import qualification_resources as resource_checks  # noqa: E402
+from anvil.evaluator_configurations import adapter_source_sha256  # noqa: E402
+from anvil.software_resource_proof import software_resources  # noqa: E402
+
+assert sys.getprofile() is None
+scan_count = [0]
+
+
+def count_resource_scan(frame, event, arg):
+    if event == "call" and frame.f_code is resource_checks.qualification_root.__code__:
+        scan_count[0] += 1
+
+
+proof_started = monotonic()
+sys.setprofile(count_resource_scan)
+try:
+    with software_resources(object()) as byte_proof:
+        for _ in range(50):
+            assert source_hash(_resource_proof=byte_proof) == source_sha256
+            for adapter in ("builtin", "zen", "opa-local"):
+                assert len(adapter_source_sha256(adapter, _resource_proof=byte_proof)) == 64
+finally:
+    sys.setprofile(None)
+assert scan_count == [2], "Exactly entry and exit full scans required per operation"
+proof_seconds = monotonic() - proof_started
 if os.environ.get("EXPECTED_SOURCE_SHA256"):
     assert source_sha256 == os.environ["EXPECTED_SOURCE_SHA256"]
 repository = original_operator_repository()
@@ -181,6 +207,8 @@ print(
             "canonical_module_entry_control": True,
             "actual_sdk_explicit_log_mount_control": True,
             "post_sdk_import_source_validation": True,
+            "fifty_configuration_byte_proof_full_scans": scan_count[0],
+            "operation_local_byte_proof_seconds": round(proof_seconds, 3),
         }
     )
 )

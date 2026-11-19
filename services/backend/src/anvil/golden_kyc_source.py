@@ -6,8 +6,7 @@ from anvil.db import digest
 from anvil.qualification_resources import PACKAGING_INPUTS, qualification_path, qualification_root
 
 
-def source_hash():
-    repository = qualification_root()
+def _source_paths(repository):
     root = repository / "services/backend/src/anvil"
     paths = (
         sorted(root.glob("golden_kyc_*.py"))
@@ -31,6 +30,7 @@ def source_hash():
             root / "praxis_offline_publication.py",
             root / "praxis_offline_publication_api.py",
             root / "qualification_resources.py",
+            root / "software_resource_proof.py",
             root / "owned_process_group.py",
             root / "evaluator_runtimes.py",
             root / "evaluator_configurations.py",
@@ -184,11 +184,19 @@ def source_hash():
             "integrations/evaluators/promptfoo/package-lock.json",
         )
     )
+    return paths
+
+
+def source_hash(*, _resource_proof=None):
+    from anvil.software_resource_proof import checked_root, checked_sha256
+
+    repository = qualification_root() if _resource_proof is None else checked_root(_resource_proof)
+    paths = _source_paths(repository)
     return digest(
         {
             str(p.relative_to(repository)): hashlib.sha256(
                 qualification_path(repository, str(p.relative_to(repository))).read_bytes()
-            ).hexdigest()
+            ).hexdigest() if _resource_proof is None else checked_sha256(_resource_proof, str(p.relative_to(repository)))
             for p in paths
         }
     )
