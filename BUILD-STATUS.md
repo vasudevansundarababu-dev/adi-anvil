@@ -1,5 +1,25 @@
 # Build status
 
+## Frozen runtime7076b64 verified; QA controls continue
+
+All three corrected build phases succeeded: coreace279b0-25f2-4f8f-907c-b8a1cca4f37c,
+environmentf6db05d4-584a-4972-8432-fac5a160b067,
+evaluation2fa9c338-3ef5-4519-a8f9-5a85a8d94e78. Golden source:
+61094c0da1200516cd27ea54a0eb6759ae945a22a0eec2bcab7eb38eb1b59e2d.
+Local1278units+10subtests passed (5skipped),90SQL regressions passed,5private
+SQL controls passed. QA serving release remains151d6fb/schema132 pending
+physical tests and rollout. No live calls or live Authoring integration.
+
+Operational-control updates after the runtime build do not change that Golden
+runtime source: retain raw SQL observations; add independently attached host
+socket/connect tracing with positive observation and explicit process-tree scope;
+expand isolated synthetic registry selection to20 exact product/state record/hash
+matches. Registry prerequisites are MANUFACTURED software fixtures, never real
+publication, legal review, rights, installed qualification or run authority.
+Observer binary+dependency were checksum-verified and extracted only beneath
+private QA evidence storage; no host system package installed. Four trace
+classifier controls passed locally; physical observer outcome remains pending.
+
 ## Physical QA findings and fixes — 19 November 2026
 
 QA still serves151d6fb/schema132. All three1773372 build phases passed; local

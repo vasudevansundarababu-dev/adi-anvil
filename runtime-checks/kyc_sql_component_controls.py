@@ -145,7 +145,7 @@ def run(config):
     def control(name, operation):
         try:
             result = operation()
-            results[name] = {"status": "passed", "observation_sha256": digest(result)}
+            results[name] = {"status": "passed", "observation_sha256": digest(result), "observation": result}
         except Exception as error:
             results[name] = {"status": "failed", "exception_type": type(error).__name__,
                              "exception_frames": safe_exception_frames(error)}

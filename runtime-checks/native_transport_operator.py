@@ -11,6 +11,7 @@ import os
 import re
 import subprocess
 import time
+from contextlib import ExitStack
 from pathlib import Path
 
 
@@ -21,7 +22,7 @@ def private(path, raw):
         os.fsync(stream.fileno())
 
 
-def main(manifest_path):
+def main(manifest_path, *, observe_network=False):
     if os.geteuid() != 0 or os.uname().nodename != "anvil-qa-v1":
         raise ValueError("Existing QA root only")
     release = json.loads(Path(manifest_path).read_bytes())
@@ -70,40 +71,65 @@ def main(manifest_path):
                 "-e", "ANVIL_HARBOR_PYTHON=/opt/anvil-runtime/bin/python"]
         return args + ["--entrypoint", "/opt/anvil-runtime/bin/python", image, "-I", "-B", "-m"]
 
-    worker = subprocess.Popen(command("worker") + ["anvil.golden_native_control", "--root", str(bridge)],
-        stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    for _ in range(150):
-        pending = [p for p in bridge.iterdir() if p.name not in before and re.fullmatch("[a-f0-9]{32}", p.name) and (p / "request.json").is_file()]
-        if pending or worker.poll() is not None:
-            break
-        time.sleep(.1)
-    if len(pending) != 1:
-        stdout, stderr = worker.communicate(timeout=5)
-        private(evidence / "worker.stdout", stdout)
-        private(evidence / "worker.stderr", stderr)
-        raise RuntimeError("Exactly one fresh worker intent required; no replay")
-    attempt = pending[0]
-    sdk = subprocess.Popen(command("sdk") + ["anvil.golden_native_bridge", "--once", attempt.name],
-        stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    for role, process in (("sdk", sdk), ("worker", worker)):
-        stdout, stderr = process.communicate(timeout=430)
-        private(evidence / (role + ".stdout"), stdout)
-        private(evidence / (role + ".stderr"), stderr)
-        print(json.dumps({"phase": role, "exit_code": process.returncode, "evidence": str(evidence)}), flush=True)
-        if process.returncode:
-            raise RuntimeError("Physical transport failed; retained without replay")
-    completion = json.loads((attempt / "completion.json").read_bytes())
-    result = completion["framework"]
-    if result["worker_bridge_purpose"] != "native_transport_control_only" or result["cleanup"] != {"complete": True, "retained": True}:
-        raise ValueError("Actual purpose-fenced collection and cleanup required")
-    raw = json.dumps({"schema_version": "anvil.physical-native-transport-observation.v1", "release": release,
-        "framework": result, "attempt": str(attempt), "qualification_granted": False, "task_score": None,
-        "model_calls_authorized": 0, "actual_model_calls": None}, sort_keys=True).encode()
-    private(evidence / "evidence.json", raw)
-    print(json.dumps({"status": "observed_not_qualified", "evidence_sha256": hashlib.sha256(raw).hexdigest(), "evidence": str(evidence)}))
+    with ExitStack() as cleanup:
+        observers = []
+
+        def launch(role, arguments):
+            if observe_network:
+                from network_observer import NetworkObserver
+
+                observed = NetworkObserver(arguments, evidence, role, bridge)
+                observers.append(observed)
+                cleanup.callback(observed.abort)
+                return observed.process
+            process = subprocess.Popen(arguments, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+            def stop():
+                if process.poll() is None:
+                    subprocess.run(["docker", "stop", "--time", "1", arguments[arguments.index("--name")+1]], capture_output=True, timeout=6)
+                    stdout, stderr = process.communicate(timeout=3)
+                    private(evidence / (role + ".partial.stdout"), stdout)
+                    private(evidence / (role + ".partial.stderr"), stderr)
+
+            cleanup.callback(stop)
+            return process
+
+        worker = launch("worker", command("worker") + ["anvil.golden_native_control", "--root", str(bridge)])
+        for _ in range(150):
+            pending = [p for p in bridge.iterdir() if p.name not in before and re.fullmatch("[a-f0-9]{32}", p.name) and (p / "request.json").is_file()]
+            if pending or worker.poll() is not None:
+                break
+            time.sleep(.1)
+        if len(pending) != 1:
+            stdout, stderr = worker.communicate(timeout=5)
+            private(evidence / "worker.stdout", stdout)
+            private(evidence / "worker.stderr", stderr)
+            raise RuntimeError("Exactly one fresh worker intent required; no replay")
+        attempt = pending[0]
+        sdk = launch("sdk", command("sdk") + ["anvil.golden_native_bridge", "--once", attempt.name])
+        for role, process in (("sdk", sdk), ("worker", worker)):
+            stdout, stderr = process.communicate(timeout=430)
+            private(evidence / (role + ".stdout"), stdout)
+            private(evidence / (role + ".stderr"), stderr)
+            print(json.dumps({"phase": role, "exit_code": process.returncode, "evidence": str(evidence)}), flush=True)
+            if process.returncode:
+                raise RuntimeError("Physical transport failed; retained without replay")
+        networks = [observer.finish() for observer in observers]
+        completion = json.loads((attempt / "completion.json").read_bytes())
+        result = completion["framework"]
+        if result["worker_bridge_purpose"] != "native_transport_control_only" or result["cleanup"] != {"complete": True, "retained": True}:
+            raise ValueError("Actual purpose-fenced collection and cleanup required")
+        raw = json.dumps({"schema_version": "anvil.physical-native-transport-observation.v1", "release": release,
+            "framework": result, "attempt": str(attempt), "qualification_granted": False, "task_score": None,
+            "operator_script_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), "network_observations": networks,
+            "model_calls_authorized": 0, "actual_model_calls": None}, sort_keys=True).encode()
+        private(evidence / "evidence.json", raw)
+        print(json.dumps({"status": "observed_not_qualified", "evidence_sha256": hashlib.sha256(raw).hexdigest(), "evidence": str(evidence)}))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", required=True)
-    main(parser.parse_args().manifest)
+    parser.add_argument("--observe-network", action="store_true")
+    args = parser.parse_args()
+    main(args.manifest, observe_network=args.observe_network)
