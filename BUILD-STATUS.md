@@ -20,10 +20,13 @@ backup/migration intent retained in `backups/qualification-08d45ff`.
 **Serving QA is old151d6fb with additive schema133; new release NOT accepted.**
 Technical receipt19ece remains; real project bindings/approvals remain separate.
 
-Service-ONLY retry prepared locally: `/private/tmp/forge-services-retry-08d45ff.py`,
+Service-ONLY retry prepared locally and persisted byte-identically in
+`infra/gcp/qa_services_retry_20261119.py` (also `/private/tmp/forge-services-retry-08d45ff.py`),
 SHAb062604a6e9198716a98633f6c2db9891260870644723278a6781ff0442affb3.
-Independent full source review PASS. Ruff/compile,3legacy groups/RO preservation/
-13negative parser and4explicit path/NUL controls PASS. Only exact observed short
+Independent final exact-source review PASS. Ruff/compile,3legacy groups/RO preservation/
+13initial negative parser and4explicit path/NUL controls PASS. Durable local runner
+`python3 infra/gcp/test_qa_services_retry_20261119.py`:3tests pass, including14
+invalid/unreviewed mount cases. Only exact observed short
 binds accepted; strict long binds/RO/security/duplicates/OFF checks retained.
 Retry requires actual133+Alembic133, restored config/old151, current19ece and exact
 owned stopped coordinator profiles; fresh v2backup/one intent, NO migration run.
