@@ -490,4 +490,7 @@ def routes(access, context, wrap, idempotent):
                 request,
             )
 
+    from anvil.praxis_offline_publication_api import routes as offline_publication_routes
+
+    router.include_router(offline_publication_routes(context, wrap, idempotent, enabled))
     return router

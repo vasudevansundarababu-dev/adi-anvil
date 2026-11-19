@@ -18,6 +18,20 @@ from anvil.golden_kyc_harbor import (
 from anvil.praxis_generic_contract import canonical
 
 
+@contextmanager
+def framework_lease(store, job_id, plan_sha256):
+    """Recheck the original physical permission before work and before commit."""
+    def check():
+        current = store.load_probe(job_id)
+        if current["plan_sha256"] != plan_sha256:
+            raise ValueError("Original probe permission changed")
+        store._framework_entry(current)
+
+    check()
+    yield
+    check()
+
+
 def validate_assets(store, permission):
     """Substantive validation without old business/qualification admissions."""
     if not permission["technical_probe_authorized"]:
@@ -229,8 +243,10 @@ def _worker(job_id):
                                    "AND m.role IN('admin','rl-engineer')", (context["project_id"], context["user_id"])).fetchone()
                 if not active:
                     raise ValueError("Current probe project membership required")
-                store._framework_entry(store.load_probe(job_id))
-                yield c
+                # Remain inside the connection transaction while checking the
+                # lease again: detectable framework death/expiry rolls back.
+                with framework_lease(store, job_id, permission["plan_sha256"]):
+                    yield c
 
         from anvil.golden_kyc_runtime import create_trial
 

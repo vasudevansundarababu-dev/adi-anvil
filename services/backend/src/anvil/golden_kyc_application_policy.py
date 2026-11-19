@@ -36,6 +36,7 @@ JOIN anvil.praxis_template_versions template ON template.project_id=t.project_id
 JOIN anvil.praxis_template_qualifications q ON q.project_id=t.project_id AND q.template_id=template.id
  AND q.id::text=t.binding->>'qualification_id'
 WHERE v.project_id=%s AND v.id=%s AND v.content_sha256=%s AND q.status='qualified'
+ AND anvil.template_publication_current(q.project_id,q.template_id,q.receipt)
  AND q.receipt_sha256=%s AND NOT EXISTS(SELECT 1 FROM anvil.praxis_template_revocations revoked
  WHERE revoked.project_id=q.project_id AND revoked.qualification_id=q.id)
 """
@@ -124,7 +125,9 @@ async def load_application(connection, scope, application_id, *, absolute_deadli
                     or spec["template_id"] != scope.template.id or spec["version"] != scope.template.version
                     or digest(receipt) != row["receipt_sha256"]
                     or receipt["template_sha256"] != scope.template.sha256
-                    or receipt.get("publication_verified") is not True
+                    or not (receipt.get("publication_verified") is True
+                            or receipt.get("publication_accepted") is True
+                            and receipt.get("publication_basis", {}).get("kind") == "po_attested_offline")
                     or receipt.get("conformance", {}).get("passed") is not True
                     or receipt.get("conformance", {}).get("export_selector_field") != "product"
                     or row["private_reference_sha256"] != scope.payload_sha256

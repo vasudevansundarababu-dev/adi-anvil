@@ -99,6 +99,7 @@ def publication(c, project, user, template_id, body, *, origin):
 
 
 def qualify(c, project, user, template_id):
+    c.execute("SELECT id FROM anvil.projects WHERE id=%s FOR UPDATE", (project,))
     row = c.execute(
         "SELECT * FROM anvil.praxis_template_versions WHERE project_id=%s AND id=%s",
         (project, template_id),
@@ -116,6 +117,10 @@ def qualify(c, project, user, template_id):
         and publication_row["origin"] == "praxis_authenticated_api"
         and digest(publication_row["publication"]) == publication_row["publication_sha256"]
     )
+    from anvil.praxis_offline_publication import basis as offline_basis
+
+    accepted_basis = None if publication_verified else offline_basis(c, project, template_id)
+    publication_accepted = publication_verified or accepted_basis is not None
     from anvil.praxis_generic_environment import conformance
 
     try:
@@ -138,7 +143,7 @@ def qualify(c, project, user, template_id):
         probe = {"passed": False, "origin": "adapter_not_supported"}
     if not probe["passed"]:
         missing.append("AV_ENVIRONMENT_PROVISIONING_REQUIRED")
-    if not publication_verified:
+    if not publication_accepted:
         missing.append("REVIEW_PRAXIS_PUBLICATION")
     receipt = {
         "schema_version": "anvil.template-qualification.v1",
@@ -161,6 +166,9 @@ def qualify(c, project, user, template_id):
         "paid_calls": False,
         "run_authority": "not_granted",
     }
+    if accepted_basis is not None:
+        receipt["publication_accepted"] = True
+        receipt["publication_basis"] = accepted_basis
     identifier = uid()
     receipt["receipt_id"] = identifier
     c.execute(
@@ -177,7 +185,9 @@ def qualify(c, project, user, template_id):
     )
     from anvil.praxis_template_delivery import enqueue
 
-    enqueue(c, project, user, "qualification", receipt, str(identifier))
+    if accepted_basis is None:
+        enqueue(c, project, user, "qualification", receipt, str(identifier))
+    # Offline attestation is local provenance, never an API-authenticated event.
     return {"id": identifier, "receipt": receipt, "receipt_sha256": digest(receipt)}
 
 
@@ -220,7 +230,8 @@ def lookup(c, project, reference):
         and qualification["receipt"].get("part_hashes") == row["part_hashes"]
         and qualification["receipt"].get("catalogue_sha256")
         == catalogue(row["spec"]["execution"]["catalogue_version"])["sha256"]
-        and qualification["receipt"].get("publication_verified") is True
+        and c.execute("SELECT anvil.template_publication_current(%s,%s,%s) AS current",
+                      (project, row["id"], Jsonb(qualification["receipt"]))).fetchone()["current"]
         and qualification["receipt"].get("conformance", {}).get("passed") is True
         and not revoked
     )
@@ -285,6 +296,8 @@ def revoke(c, project, user, qualification_id, reason):
     )
     from anvil.praxis_template_delivery import enqueue
 
+    if qualification["receipt"].get("publication_basis", {}).get("kind") == "po_attested_offline":
+        return row
     enqueue(
         c,
         project,

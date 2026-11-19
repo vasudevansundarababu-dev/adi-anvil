@@ -2,12 +2,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { workspaceApi as api } from '../lib/workspace';
 import styles from './ModernWorkspace.module.css';
+import OfflineTemplatePublication from './OfflineTemplatePublication';
 
 type Template = { id: string; template_id: string; version: number; spec_sha256: string };
 type Receipt = {
   status: string;
   requirements: string[];
   publication_verified: boolean;
+  publication_accepted?: boolean;
+  publication_basis?: { kind: string; expires_at?: string; attestation_sha256?: string };
   conformance: { passed: boolean; origin: string; requirements?: string[] };
 };
 
@@ -64,7 +67,7 @@ export default function TemplateSetup({ base }: { base: string }) {
               !body.skills
             )
               throw new Error('Choose the full template specification, not a publication record.');
-          const row = await api(base + '/dataset-exports/generic/templates', 'POST', body);
+            const row = await api(base + '/dataset-exports/generic/templates', 'POST', body);
             setMessage(
               'Registered template ' +
                 row.template_id +
@@ -151,6 +154,7 @@ export default function TemplateSetup({ base }: { base: string }) {
           </tbody>
         </table>
       </div>
+      <OfflineTemplatePublication base={base} templates={templates} />
       {receipt && (
         <div role="status">
           <h3>Qualification result: {receipt.status}</h3>
@@ -158,6 +162,15 @@ export default function TemplateSetup({ base }: { base: string }) {
             Publication verified: {receipt.publication_verified ? 'yes' : 'no'}. Runtime check:{' '}
             {receipt.conformance.origin}.
           </p>
+          {receipt.publication_accepted &&
+            receipt.publication_basis?.kind === 'po_attested_offline' && (
+              <p>
+                Offline PO attestation accepted (not API verified).
+                {receipt.publication_basis.expires_at && (
+                  <> Expires {receipt.publication_basis.expires_at}.</>
+                )}
+              </p>
+            )}
           <ul>
             {[
               ...new Set([...receipt.requirements, ...(receipt.conformance.requirements || [])]),

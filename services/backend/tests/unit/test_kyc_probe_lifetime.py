@@ -59,3 +59,35 @@ def test_observation_records_are_canonical_and_owner_private(tmp_path):
 def test_unowned_local_process_cannot_bootstrap_probe_execution():
     with pytest.raises(RuntimeError, match="existing_QA_root_operator_required"):
         probe.run("00000000-0000-0000-0000-000000000001")
+
+
+@pytest.mark.parametrize("failure", ["framework_died", "permission_changed"])
+def test_framework_loss_during_transaction_prevents_commit(failure):
+    live = {"running": True, "pin": "original"}
+    events = []
+
+    class Store:
+        def load_probe(self, job):
+            return {"plan_sha256": live["pin"]}
+
+        def _framework_entry(self, permission):
+            if not live["running"]:
+                raise RuntimeError("framework_died")
+
+    # A connection's __exit__ commits only after the inner lease exits cleanly.
+    class Transaction:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, error_type, error, trace):
+            events.append("rollback" if error_type else "commit")
+
+    with pytest.raises((RuntimeError, ValueError)):
+        with Transaction():
+            with probe.framework_lease(Store(), "synthetic", "original"):
+                events.append("work")
+                if failure == "framework_died":
+                    live["running"] = False
+                else:
+                    live["pin"] = "changed"
+    assert events == ["work", "rollback"]

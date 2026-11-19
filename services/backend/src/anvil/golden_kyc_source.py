@@ -25,6 +25,9 @@ def source_hash():
         + [
             root / "policy_rules.py",
             root.parents[1] / "migrations/129_kyc_scoped_policy_reviews.sql",
+            root.parents[1] / "migrations/130_po_attested_offline_publication.sql",
+            root / "praxis_offline_publication.py",
+            root / "praxis_offline_publication_api.py",
             root / "qualification_resources.py",
             root / "owned_process_group.py",
             root / "evaluator_runtimes.py",

@@ -688,7 +688,7 @@ def recover(folder, *, host):
 def layout_projection(folder, actor, *, mediated_candidate=False, actor_seconds=90):
     """No task rubric/reference/private source enters the actor projection."""
     task = folder / "task"
-    files = {"environment/actor/context.json": json.dumps(actor)}
+    files = {"environment/actor/context.json": canonical(actor).decode()}
 
     def service(role):
         return {

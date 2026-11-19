@@ -6,6 +6,8 @@ from anvil.praxis_template_client import PraxisCallError, qualification_envelope
 
 
 def enqueue(c, project, user, kind, body, event_key):
+    if kind == "qualification" and body.get("publication_basis", {}).get("kind") == "po_attested_offline":
+        raise ValueError("Local offline PO provenance has no authenticated Authoring delivery contract")
     if kind == "revocation":
         RevocationEvent.model_validate(body)
     envelope = (

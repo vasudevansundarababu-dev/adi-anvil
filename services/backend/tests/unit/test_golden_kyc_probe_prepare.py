@@ -73,6 +73,17 @@ def test_immutable_content_addressed_assets_reuse_exact_bytes_only(tmp_path):
     assert target.read_bytes() == prep.native.canonical({"synthetic": True})
 
 
+def test_task_projection_survives_canonical_plan_round_trip(tmp_path):
+    # Plan storage canonicalizes object keys. Revalidation must reproduce the
+    # same actor-file bytes after reading that immutable stored plan.
+    actor = {"snapshot_sha256": "a" * 64, "application_id": "synthetic", "paid_calls": False}
+    restored = json.loads(prep.native.canonical(actor))
+    before = prep.native.layout_projection(tmp_path, actor, actor_seconds=30)
+    after = prep.native.layout_projection(tmp_path, restored, actor_seconds=30)
+    assert before == after
+    assert before["environment/actor/context.json"].encode() == prep.native.canonical(actor)
+
+
 def test_compose_is_config_only_and_keeps_final_attempt_mount_paths(tmp_path, monkeypatch):
     attempts = tmp_path / "technical-probe-attempts"
     attempts.mkdir(mode=0o700)

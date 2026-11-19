@@ -1,5 +1,38 @@
 # Build status
 
+## Offline publication130 and native control repair — 18 November 2026
+
+User renewed QA deployment/no-model verification authority and completion/blocker
+email request. GCP authentication renewed successfully. Offline publication UI
+typecheck, production build and synthetic browser journey passed. Backend normal
+Authoring publication_status alias plus external template identity/version checks
+passed 34 targeted SQL and14 HTTP controls. Combined1171 units/10subtests passed,
+2platform/root skips;64SQL fresh/repeated130 passed, sourceb17a93a2...e38427.
+Actual installed QA preparation rejected actor-file hash drift after canonical
+plan roundtrip, before any native Trial. Fixed actor-file canonical serialization.
+Review then found missing post-work framework check before SQL commit; added
+fresh original-plan/framework checks with rollback regression.12focused controls
+passed,1root skip. Final combined rerun in progress; no new deployment claimed.
+Native qualification remains incomplete; no live model/Authoring calls authorized.
+
+## QA combinedd9f3d6a serving — 18 November 2026
+
+Cloud Builddcb643b3-e7be-4d9d-acce-ccf031da6eac SUCCESS, installed source/policy
+checks PASS. QA API/worker/business-worker now backend8d5ba746...e42bf4; Golden
+scheduler/grader KYC runtimebb130892...70e49c. Schema129; all5running/zero restarts
+at rollout verification. Web e0ec104/other core services unchanged. Backups incl
+database retained /var/lib/anvil-qa-v1/backups/gym-d9f3d6a-20261118.
+Health/workspace200; anonymous newpolicy-subjects401. No live/Authoring calls.
+
+Final source0c372bc8d4a777b3055ef939cb150a02f9b49e4ee2ea6af6fcb9e3685367ec68:
+1156units+10subtests PASS,2platform/root skips;40SQL fresh/repeated129 PASS.
+Shared Marketing operator-source pin aligned after initial combinedchecks; new
+consistency test prevents packaging drift. Candidatecommitd9f3d6a.
+Native physical Trial still pending: kernelcontrol passed; first setup failed on
+PostgreSQL var/run symlink path before anyfixture/Trial. Corrected canonical
+socketpath plus separate setup-only owner credential custody; retryinprogress.
+No installed native qualification or Ready-to-benchmark claim.
+
 ## Combined native owner / scoped policy candidate — 18 November 2026
 
 User explicitly authorizes parallel engineering and QA deployment, no live calls.
