@@ -1,0 +1,13 @@
+{
+  "schema_version": "anvil.synthetic-arithmetic-cases.v1",
+  "scope": "synthetic_technical_controls_not_kyc_or_model_performance",
+  "reference": {"schema_version": "anvil.synthetic-arithmetic-reference.v1", "addends": [3, 4]},
+  "cases": [
+    {"id": "exact", "final": {"sum": 7}, "expected_status": "pass"},
+    {"id": "near", "final": {"sum": 6}, "expected_status": "partial"},
+    {"id": "wrong", "final": {"sum": 2}, "expected_status": "fail"},
+    {"id": "missing", "final": {}, "expected_status": "unscored"},
+    {"id": "boolean", "final": {"sum": true}, "expected_status": "unscored"},
+    {"id": "exception", "final": {"raise": true}, "expected_status": "error"}
+  ]
+}

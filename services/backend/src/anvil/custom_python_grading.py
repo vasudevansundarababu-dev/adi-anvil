@@ -29,6 +29,7 @@ def source_hash():
             "grader": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
             "executor": executor_hash(),
             "schema": SCHEMA,
+            "technical_control": hashlib.sha256(Path(__file__).with_name("private_scoring_control.py").read_bytes()).hexdigest(),
         }
     )
 
@@ -70,7 +71,7 @@ def qualification_gaps(snapshot, evidence):
     ]
 
 
-def programs(c, project, paid):
+def programs(c, project, paid, *, _technical=None):
     """Read the frozen execution selection, not a mutable UI recommendation."""
     execution = one(
         c,
@@ -79,6 +80,8 @@ def programs(c, project, paid):
     )
     frozen = (execution or {}).get("snapshot", {}).get("preparation", {}).get("project_binding")
     if not frozen:
+        if _technical is not None:
+            raise RuntimeError("Technical control requires actual frozen execution selection")
         # Historical captures with no custom selection retain their original
         # builtin assessment. Current Run admission requires a frozen binding.
         return None, []
@@ -102,6 +105,8 @@ def programs(c, project, paid):
         if r["kind"] == "custom_python"
     ]
     if not refs:
+        if _technical is not None:
+            raise RuntimeError("Technical control requires actual selected evaluator")
         return binding, []
     from anvil.project_bindings import evidence_gaps
 
@@ -110,7 +115,7 @@ def programs(c, project, paid):
         "SELECT q.* FROM anvil.project_binding_qualifications q WHERE q.project_id=%s AND q.binding_id=%s AND q.release_sha256=%s AND q.expires_at>clock_timestamp() AND NOT EXISTS(SELECT 1 FROM anvil.project_binding_qualification_revocations r WHERE r.qualification_id=q.id) ORDER BY q.created_at DESC,q.id DESC LIMIT 1",
         (project, binding["id"], os.environ.get("ANVIL_DEPLOYMENT_QUALIFICATION_SHA256", "")),
     )
-    if (
+    if _technical is None and (
         not receipt
         or digest(receipt["evidence"]) != receipt["evidence_sha256"]
         or evidence_gaps(snapshot, receipt["evidence"])
@@ -160,13 +165,28 @@ def programs(c, project, paid):
         ):
             raise RuntimeError("custom_grading_program_changed_or_revoked")
         selected.append(ref | {"code": row["code"], "criterion": criterion, "policy": policy})
+    if _technical is not None:
+        from anvil.private_scoring_control import selection
+
+        selection(c, project, _technical, paid, binding, resolved, selected)
     return binding, selected
 
 
-def collect_or_queue(c, project, paid, trial, generation, sealed, expectation, checks):
+def collect_or_queue(c, project, paid, trial, generation, sealed, expectation, checks, *, _technical=None):
     """Called inside the grader transaction; returns pending without a score."""
-    binding, selected = programs(c, project, paid)
-    if selected and os.environ.get("ANVIL_CUSTOM_PYTHON_SCORING_ENABLED") != "true":
+    binding, selected = programs(c, project, paid) if _technical is None else programs(c, project, paid, _technical=_technical)
+    control = None
+    if _technical is not None:
+        from anvil.private_scoring_control import load
+
+        control = load(c, project, _technical)
+        if (str(trial) != control["trial_id"] or generation != control["generation"]
+                or digest(sealed) != control["state_sha256"] or digest(expectation) != control["expectation_sha256"]
+                or digest(checks) != control["checks_sha256"]
+                or expectation.get("independent_expectation_review") != "synthetic_technical_control_only"
+                or expectation.get("technical_review_sha256") != control["review_receipt_sha256"]):
+            raise RuntimeError("Exact reviewed synthetic control inputs required")
+    if selected and _technical is None and os.environ.get("ANVIL_CUSTOM_PYTHON_SCORING_ENABLED") != "true":
         return {"pending": True, "receipts": [], "reason": "private_python_scoring_not_enabled"}
     receipts, pending = [], False
     for program in selected:
@@ -177,7 +197,7 @@ def collect_or_queue(c, project, paid, trial, generation, sealed, expectation, c
         )
         # Pending normative decisions never go to submitted code as a substitute
         # for review. Preserve the denominator without starting an executor job.
-        if (
+        if _technical is None and (
             expectation.get("independent_expectation_review") != "approved"
             or (
                 criterion.startswith("state_")
@@ -228,7 +248,11 @@ def collect_or_queue(c, project, paid, trial, generation, sealed, expectation, c
                 else expectation.get("criterion_references", {}).get(criterion),
             },
         }
-        identifier = uid()
+        if _technical is not None:
+            from anvil.private_scoring_control import SCHEMA as CONTROL_SCHEMA
+
+            request.update(schema_version=CONTROL_SCHEMA, technical_control=_technical.wire())
+        identifier = uid() if control is None else control["job_id"]
         c.execute(
             "INSERT INTO banking_private.python_grading_jobs(id,project_id,trial_id,generation,criterion,binding_id,evaluator_id,request,request_sha256) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(trial_id,generation,criterion) DO NOTHING",
             (
@@ -256,11 +280,11 @@ def collect_or_queue(c, project, paid, trial, generation, sealed, expectation, c
         # Hold the authority fence through the final award INSERT, not just
         # while the isolated worker was running. Historical awards above remain
         # immutable, but this first award must consume current authority.
-        receipts.append(consume_result(c, job, program))
+        receipts.append(consume_result(c, job, program) if _technical is None else consume_result(c, job, program, _technical=_technical))
     return {"pending": pending, "receipts": receipts}
 
 
-def consume_result(c, job, program):
+def consume_result(c, job, program, *, _technical=None):
     """Keep authority locks until the caller commits its first final award."""
     receipt = {
         "criterion": job["criterion"],
@@ -268,6 +292,13 @@ def consume_result(c, job, program):
         "job_id": str(job["id"]),
         "target_kind": "policy" if program.get("policy") else "criterion",
     }
+    from anvil.private_scoring_control import from_request
+
+    control = from_request(job["request"])
+    if control != _technical:
+        raise RuntimeError("Production and technical scoring results cannot cross purposes")
+    if control is not None:
+        receipt["technical_control"] = control.wire()
     locked = one(
         c,
         "SELECT anvil.lock_private_python_award(%s,%s) AS allowed",
@@ -282,6 +313,7 @@ def consume_result(c, job, program):
         or result.get("request_sha256") != job["request_sha256"]
         or result.get("source_sha256") != source_hash()
         or result.get("image_id") != IMAGE_ID
+        or result.get("technical_control") != job["request"].get("technical_control")
     ):
         raise RuntimeError("custom_grading_result_custody_changed")
     return receipt | {
@@ -292,11 +324,19 @@ def consume_result(c, job, program):
     }
 
 
-def apply_overrides(baseline, expectation, receipts):
+def apply_overrides(baseline, expectation, receipts, *, _technical=None):
     """KYC's original 5/2/0 rubric and all mandatory/critical vetoes survive."""
     checks, issues = dict(baseline["checks"]), list(baseline.get("issues", []))
     policy_receipts = []
     seen = set()
+    if _technical is not None:
+        from anvil.private_scoring_control import ControlReference
+
+        if type(_technical) is not ControlReference:
+            raise RuntimeError("Exact technical scoring reference required")
+    for receipt in receipts:
+        if receipt.get("technical_control") != (None if _technical is None else _technical.wire()):
+            raise RuntimeError("Production cannot award technical control results")
     for receipt in receipts:
         criterion, status = receipt["criterion"], receipt["status"]
         if receipt.get("target_kind") == "policy":
@@ -319,6 +359,12 @@ def apply_overrides(baseline, expectation, receipts):
             not criterion.startswith("state_")
             or expectation.get("legal_qualification") == "approved"
         )
+        if _technical is not None:
+            from anvil.private_scoring_control import ControlReference
+
+            if type(_technical) is not ControlReference or criterion.startswith("state_"):
+                raise RuntimeError("Exact nonlegal technical scoring purpose required")
+            reviewed = expectation.get("independent_expectation_review") == "synthetic_technical_control_only"
         checks[criterion] = ANCHORS[status] if reviewed else None
         if status == "error":
             issues.append("custom_evaluator_error:" + criterion)
@@ -388,6 +434,11 @@ def job_eligible(c, job):
         "SELECT code_sha256 FROM anvil.custom_python_evaluators e WHERE e.project_id=%s AND e.id=%s AND NOT EXISTS(SELECT 1 FROM anvil.custom_python_revocations r WHERE r.evaluator_id=e.id)",
         (job["project_id"], job["evaluator_id"]),
     )
+    from anvil.private_scoring_control import eligible, from_request
+
+    if from_request(request) is not None:
+        return bool(active and active["allowed"] and program
+                    and program["code_sha256"] == request.get("code_sha256") and eligible(c, job))
     receipt = one(
         c,
         "SELECT q.* FROM anvil.project_binding_qualifications q WHERE q.project_id=%s AND q.binding_id=%s AND q.release_sha256=%s AND q.expires_at>clock_timestamp() AND NOT EXISTS(SELECT 1 FROM anvil.project_binding_qualification_revocations r WHERE r.qualification_id=q.id) ORDER BY q.created_at DESC,q.id DESC LIMIT 1",
@@ -410,6 +461,19 @@ def job_eligible(c, job):
     )
 
 
+def result_envelope(request, request_sha256):
+    from anvil.private_scoring_control import SCHEMA as CONTROL_SCHEMA
+    from anvil.private_scoring_control import from_request
+
+    control = from_request(request)
+    result = {"schema_version": SCHEMA if control is None else CONTROL_SCHEMA,
+              "request_sha256": request_sha256, "source_sha256": source_hash(),
+              "image_id": IMAGE_ID, "status": "error", "model_calls": 0}
+    if control is not None:
+        result["technical_control"] = control.wire()
+    return result
+
+
 def grader_once(connections, root, *, seconds=60):
     """Grader identity only; intent commits BEFORE private publication/effect."""
     if not 1 <= seconds <= 120:
@@ -428,15 +492,7 @@ def grader_once(connections, root, *, seconds=60):
             (token, job["id"]),
         )
         if not job_eligible(c, job):
-            result = {
-                "schema_version": SCHEMA,
-                "request_sha256": job["request_sha256"],
-                "source_sha256": source_hash(),
-                "image_id": IMAGE_ID,
-                "status": "error",
-                "reason": "current_scoring_authority_unavailable",
-                "model_calls": 0,
-            }
+            result = result_envelope(job["request"], job["request_sha256"]) | {"reason": "current_scoring_authority_unavailable"}
             c.execute(
                 "UPDATE banking_private.python_grading_jobs SET state='error',result=%s,result_sha256=%s,finished_at=now() WHERE id=%s AND claim_token=%s",
                 (Jsonb(result), digest(result), job["id"], token),
@@ -467,15 +523,7 @@ def grader_once(connections, root, *, seconds=60):
         raise RuntimeError("private_grading_result_integrity")
     with connections() as c:
         if not job_eligible(c, job):
-            result = {
-                "schema_version": SCHEMA,
-                "request_sha256": job["request_sha256"],
-                "source_sha256": source_hash(),
-                "image_id": IMAGE_ID,
-                "status": "error",
-                "reason": "authority_changed_during_execution",
-                "model_calls": 0,
-            }
+            result = result_envelope(job["request"], job["request_sha256"]) | {"reason": "authority_changed_during_execution"}
             record = {"result": result, "result_sha256": digest(result)}
         changed = c.execute(
             "UPDATE banking_private.python_grading_jobs SET state=%s,result=%s,result_sha256=%s,finished_at=now() WHERE id=%s AND state='claimed' AND claim_token=%s RETURNING id",
@@ -506,6 +554,9 @@ def coordinator_once(root, *, host):
         if not re.fullmatch(r"[a-f0-9]{32}", path.name):
             continue
         attempt = private_root(path)
+        from anvil.private_scoring_control import SCHEMA as CONTROL_SCHEMA
+        from anvil.private_scoring_control import from_request
+
         if (
             not (attempt / "request.json").exists()
             or (attempt / "claimed.json").exists()
@@ -520,11 +571,12 @@ def coordinator_once(root, *, host):
             continue
         envelope = owned_json(attempt, "request.json")
         request = envelope["request"]
+        from_request(request)
         if (
             set(envelope) != {"id", "project_id", "request", "request_sha256"}
             or UUID(envelope["id"]).hex != path.name
             or digest(request) != envelope["request_sha256"]
-            or request.get("schema_version") != SCHEMA
+            or request.get("schema_version") not in {SCHEMA, CONTROL_SCHEMA}
             or request.get("source_sha256") != source_hash()
             or request.get("image_id") != IMAGE_ID
             or hashlib.sha256(request["code"].encode()).hexdigest() != request.get("code_sha256")
@@ -532,14 +584,7 @@ def coordinator_once(root, *, host):
             raise RuntimeError("private_grading_claimed_request_invalid_no_replay")
         home = attempt / "executor"
         home.mkdir(mode=0o700)
-        result = {
-            "schema_version": SCHEMA,
-            "request_sha256": envelope["request_sha256"],
-            "source_sha256": source_hash(),
-            "image_id": IMAGE_ID,
-            "status": "error",
-            "model_calls": 0,
-        }
+        result = result_envelope(request, envelope["request_sha256"])
         try:
             execution = execute(
                 home,
@@ -561,6 +606,10 @@ def coordinator_once(root, *, host):
             if status in ANCHORS:
                 result["status"] = status
             result["execution_sha256"] = digest(execution)
+            # Retain the actual bounded report, not only an opaque digest. A
+            # deliberate program error must remain distinguishable from an
+            # infrastructure failure during independent technical review.
+            result["execution_observation"] = execution
         except Exception as exc:
             result["execution_error"] = type(exc).__name__
         publish(
@@ -635,15 +684,7 @@ def reconcile(
                 raise RuntimeError("private_grading_late_result_custody_changed")
             action = "late_result_consumed"
             if not job_eligible(c, job):
-                result = {
-                    "schema_version": SCHEMA,
-                    "source_sha256": source_hash(),
-                    "image_id": IMAGE_ID,
-                    "request_sha256": job["request_sha256"],
-                    "status": "error",
-                    "reason": "authority_changed_before_reconciliation",
-                    "model_calls": 0,
-                }
+                result = result_envelope(job["request"], job["request_sha256"]) | {"reason": "authority_changed_before_reconciliation"}
         elif not abandon:
             return {
                 "id": str(job["id"]),
@@ -663,16 +704,10 @@ def reconcile(
                 publish(attempt / "cancelled.json", cancellation)
             elif owned_json(attempt, "cancelled.json") != cancellation:
                 raise RuntimeError("private_grading_cancellation_custody_changed")
-            result = {
-                "schema_version": SCHEMA,
-                "source_sha256": source_hash(),
-                "image_id": IMAGE_ID,
-                "request_sha256": job["request_sha256"],
-                "status": "error",
+            result = result_envelope(job["request"], job["request_sha256"]) | {
                 "reason": "operator_reconciled_execution_unknown",
                 "execution_may_have_occurred": True,
                 "cleanup_status": "not_verified",
-                "model_calls": 0,
             }
             action = "unconfirmed_disposed"
         fingerprint = digest(result)

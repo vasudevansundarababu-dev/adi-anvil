@@ -401,7 +401,7 @@ class _GatewayServer(UnixHTTPServer):
 
 
 class NativeGateway:
-    def __init__(self, folder, callback, *, socket_root=None):
+    def __init__(self, folder, callback, *, socket_root=None, peer_guard=None):
         # Unix socket limits apply to the full path, not only the basename.
         parent = Path(socket_root) if socket_root is not None else ROOT / ".local"
         if socket_root is not None:
@@ -464,9 +464,12 @@ class NativeGateway:
                     if set(body) != {"session_id"}:
                         raise ValueError("Invalid native request fields")
                     self.connection.settimeout(1.0)
-                    data = json.dumps(
-                        callback(self.path, body["session_id"], gateway.result), allow_nan=False
-                    ).encode()
+                    from contextlib import nullcontext
+
+                    with nullcontext() if peer_guard is None else peer_guard(self.connection):
+                        data = json.dumps(
+                            callback(self.path, body["session_id"], gateway.result), allow_nan=False
+                        ).encode()
                     status = 200
                 except Exception as exc:
                     gateway.error = exc

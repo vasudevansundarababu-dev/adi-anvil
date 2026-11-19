@@ -123,7 +123,7 @@ def finish(claim):
 
         if claim.native.get("schema_version") != "anvil.golden-paid-finish.v2":
             raise RuntimeError("golden_actual_framework_capture_required")
-        framework = validate_framework(claim.native.get("framework") or {})
+        framework = validate_framework(claim.native.get("framework") or {}, purpose="kyc_worker_collection_only")
         receipt = framework["trusted_receipt"]
         if not capture or any(
             receipt.get(key) != value

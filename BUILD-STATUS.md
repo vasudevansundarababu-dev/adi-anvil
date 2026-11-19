@@ -1,5 +1,75 @@
 # Build status
 
+## Qualification candidate checkpoint — 19 November 2026
+
+This is an engineering/test-build checkpoint, NOT a completed release or runtime
+qualification. QA still serves151d6fb/schema132. Latest unit run:1273passed,
+5skipped,10subtests; `.local/qa-qualification133-final-units.log`. Fresh private
+SQL controls5passed (`.local/qa-private-admission-sql-v6.log`). The full SQL
+regression is running; changes during that run require a fresh frozen rerun.
+
+Implemented restricted grader policies (no membership grant), distinct synthetic
+private-scoring admissions, actual executor observations, kernel-authenticated
+worker/SDK guardian and a separate fixed no-effect transport control. Independent
+read-only source reviews found no remaining blocker in these reviewed paths;
+that is not physical qualification. Full runtime closure is verified at held SDK
+peer entry/exit; each status query rechecks current kernel identity/profile/plan,
+original deadline and closing. Worker-known MACs do not authenticate root;
+SO_PEERCRED on the actual sockets plus host user-namespace identity does.
+
+Physical grader/transport QA tests, native Trial repeat, failure/death controls,
+qualification aggregation, three-phase build/deploy and QA smoke remain pending.
+New root-only operator harnesses retain fresh isolated databases, exact owned
+containers and diagnostics; they never replay consumed jobs or issue production
+approvals. No live calls or live Authoring integration authorized.
+
+## Active completion work — UNCOMMITTED, NOT RELEASE READY — 19 November 2026
+
+Serving QA remains151d6fb/schema132. HEAD698a002 is documentation only.
+User explicitly authorized finishqualification/private-scoring/workerbridge,
+deploy/test existingQA, no live calls, emaildone/blocked. Source edits only in
+this worktree; preserve unrelated apps/web/AGENTS.md and registry drafts.
+
+Draft133 adds OWNER-ONLY synthetic test admission restricted to fresh standalone
+anvil_golden_kyc_component_* DB+marker, exactstoredtask/B0/code/source/image/review,
+private queue purpose fencing and immutable one-use intent. No production
+qualification/publication/legal/rights/paidcapture rows. Actualprivate programs(),
+queue/idempotence/revoke/RLS tests3passed; permissionfailurefixed by scopingold
+PUBLIC project_scope policies onlytoapp/worker, graderusesexistingruntime_scope;
+no broad membership SELECT. Latest5test run session27010/log
+.local/qa-private-admission-sql-v4.log includes postclaimrevocation/crosspurpose.
+Fixed arithmetic code/cases independentlyreviewed by open_weight_review; pins
+7e0785.../ea5467... and actualreviewfile186be4... are now hardpinned.
+New private_scoring_fixture.py creates realunqualifiedFK/frozenmetadata; new
+private_scoring_controls.py separategrader/coordinator modes NOT physicallyrun.
+Requires actualexecution_observation +ValueError line14 to distinguish expected
+programerror frominfra failure. No qualification may be inferred from these drafts.
+
+Draft workerV2: golden_kyc_worker_bridge.py exactinstalledcandidate/source/closure,
+fresh brokerreadiness+originaldeadline; submit_v2 and golden_native_mediated.py
+newownedplans/componentqualificationgate; anvil_harbor.environment ownsnewmode.
+Draft frontSDKpeer usesactualSO_PEERCRED/PIDFD/cgroup/image/command/profile,
+unreapedgroup.exited (NOTpoll), technicalhostv2profile recorded. Newread-only
+inspect_sdk avoids LocalDocker configmkdir collision. Legacy closedgates intact.
+Operatorproofcurrentpin b9eb90efd56ced12ca45d2bb576fe159825ff54e8c5c4f941bab20c0e05aab37
+aligned in environment_harbor and marketing_native_private_records.
+
+BLOCKERS before any release: worker-sideNativeGateway has no unforgeableSDKpeer
+boundary across workerprivatePID namespace; heartbeat/token insufficient.
+Need fixed hostguardian/forwarder or equivalent authenticated transport, actual
+per-turnSDKpidfd liveness andclosing/cancellationfence; do NOT grantworkerhostPID.
+SDKprofiles need independentfixedmount/env allowlists, notself-observedTOFU.
+Need distinct nonspending workerV2protocol actuallytested endtoend, notfakepaid
+readiness. marketing_review is proposingguarddesign read-only. Newmediated
+draftNOTready/NOTdeployed, incompletecancel/deadline/ownership controls.
+Qualification producer/independentactualrequest-absence evidence also stillneeded.
+
+Intermediate1247units+10subtests passed4skips BEFORElatestbridge edits;
+focusednewpeer9passed1Linuxskip; mediatedfocusedtests session53347 needsresult.
+Fullunit/SQL+physicalcurrentcandidate checks must rerun aftersourcefreeze.
+GCP authorized120GBboot expanded,46Gfree lastobserved, authprivateconfigsame.
+No new email yet thisworkturn. Priorhashfixcompletionemail1a1f4a60e539c69e.
+
 ## Hash fix deployed and no-model controls verified — 19 November 2026
 
 QA serves151d6fbdea701be0d1f1c02bd869456c8dbad318/schema132, all6services

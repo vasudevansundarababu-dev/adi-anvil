@@ -50,11 +50,13 @@ def publish(path, value):
         temporary.unlink()
 
 
-def heartbeat(attempt, subject, sequence):
+def heartbeat(attempt, subject, sequence, *, owner=None):
     temporary = attempt / (".heartbeat-" + uuid4().hex)
     private_json(
         temporary, {"binding_sha256": subject, "sequence": sequence, "sent_at": time.time()}
     )
+    if owner is not None and owner != os.getuid():
+        os.chown(temporary, owner, -1)
     os.replace(temporary, attempt / "heartbeat.json")
 
 
@@ -76,14 +78,14 @@ def coordinator_alive(attempt, subject):
 
 
 @contextmanager
-def live_attempt(attempt, subject):
+def live_attempt(attempt, subject, *, owner=None):
     stopped = threading.Event()
-    heartbeat(attempt, subject, 0)
+    heartbeat(attempt, subject, 0, owner=owner)
 
     def pulse():
         sequence = 1
         while not stopped.wait(0.5):
-            heartbeat(attempt, subject, sequence)
+            heartbeat(attempt, subject, sequence, owner=owner)
             sequence += 1
 
     pulser = threading.Thread(target=pulse, daemon=True)
@@ -122,9 +124,11 @@ def validate_binding(binding, public_actor):
             raise ValueError("Exact native attempt hash required")
 
 
-def validate_framework(value):
+def validate_framework(value, *, purpose=None):
     """Custody evidence never substitutes for broker spend or task scoring."""
     UUID(value["framework_trial_id"])
+    if value.get("worker_bridge_purpose") != purpose:
+        raise ValueError("Control and production worker results are disjoint")
     if (
         value.get("harness") != "harbor-0.25.0-host-mediated-components-v1"
         or value.get("mediated_candidate") is not True
@@ -147,6 +151,23 @@ def validate_framework(value):
 
 def submit(root, binding, public_actor, callback, *, seconds):
     """Run callback only inside a real Harbor actor invocation, once at most."""
+    return _submit(root, binding, public_actor, callback, seconds=seconds)
+
+
+def submit_v2(root, binding, public_actor, session, *, seconds):
+    from anvil.golden_kyc_worker_bridge import KycWorkerSession
+
+    if type(session) is not KycWorkerSession or not 1 <= seconds <= 300:
+        raise ValueError("Exact fixed KYC worker and qualified episode interval required")
+    session.validate(binding, public_actor)
+    session.guard()
+    return _submit(root, binding, public_actor, session.invoke, seconds=seconds, session=session)
+
+
+def _submit(root, binding, public_actor, callback, *, seconds, session=None):
+    from anvil.golden_native_control import TransportControlSession
+
+    control = type(session) is TransportControlSession
     root = private_root(root)
     if type(seconds) is not int or not 1 <= seconds <= 900:
         raise ValueError("Bounded native episode deadline required")
@@ -157,18 +178,25 @@ def submit(root, binding, public_actor, callback, *, seconds):
     attempt.mkdir(mode=0o700)
     subject = digest(binding)
     done = threading.Event()
-    deadline = time.time() + seconds + 90
+    deadline = time.time() + seconds + 90 if session is None else time.time() + min(seconds, session.absolute_deadline-time.monotonic())
     result = {}
+    guardian = None
 
-    def receive(route, session, state):
-        if session != subject or time.time() >= deadline or route in state:
+    def receive(route, peer_session, state):
+        if peer_session != subject or time.time() >= deadline or route in state:
             raise ValueError("Native attempt expired, mismatched or replayed")
-        if route == "/actor" and not state:
+        if route == "/guard" and not state and session is not None:
+            if guardian is None or not guardian.check():
+                raise RuntimeError("Original SDK guardian required before readiness")
+            value = session.guard()
+            state[route] = value
+            return value
+        if route == "/actor" and (not state if session is None else set(state) == {"/guard"}):
             # Persist consumption before any model/tool effect. A crash keeps
             # the attempt consumed; neither process may replay it.
             private_json(attempt / "actor-started.json", {"binding_sha256": subject})
             state[route] = {"started": True}
-            output, receipt = callback(lambda: coordinator_alive(attempt, subject))
+            output, receipt = callback(guardian.check if guardian is not None else lambda: coordinator_alive(attempt, subject))
             value = {"output": output, "receipt": receipt}
             if len(canonical(value)) > 65536:
                 raise ValueError("Native callback public result exceeds bound")
@@ -182,7 +210,7 @@ def submit(root, binding, public_actor, callback, *, seconds):
                 or sealed["callback_sha256"] != result.get("callback_sha256")
             ):
                 raise ValueError("Native completion differs from this attempt")
-            framework = validate_framework(sealed["framework"])
+            framework = validate_framework(sealed["framework"], purpose="native_transport_control_only" if control else "kyc_worker_collection_only" if session is not None else None)
             if digest(framework["trusted_receipt"]) != result["receipt_sha256"]:
                 raise ValueError("Native collector receipt differs from scheduler capture")
             result["framework"] = framework
@@ -202,12 +230,17 @@ def submit(root, binding, public_actor, callback, *, seconds):
         return output, receipt
 
     callback = recorded_callback
-    gateway = NativeGateway(attempt, receive, socket_root=root)
+    from anvil.golden_native_guardian import GuardianClient, root_peer
+
+    gateway = NativeGateway(attempt, receive, socket_root=root, peer_guard=root_peer if session is not None else None)
+    if session is not None:
+        guardian = GuardianClient(attempt, subject, gateway.token, session.absolute_deadline,
+            purpose="native_transport_control_only" if control else "kyc_worker_collection_only")
     try:
         publish(
             attempt / "request.json",
             {
-                "schema_version": "anvil.native-bridge-request.v1",
+                "schema_version": "anvil.native-bridge-request.v1" if session is None else "anvil.native-control-bridge-request.v2" if control else "anvil.native-bridge-request.v2",
                 "binding": binding,
                 "binding_sha256": subject,
                 "public_actor": public_actor,
@@ -215,6 +248,8 @@ def submit(root, binding, public_actor, callback, *, seconds):
                 "gateway_token": gateway.token,
                 "deadline": deadline,
                 "actor_seconds": seconds,
+                **({"handler": "fixed_custody_ping_v2" if control else "kyc_worker_candidate_v2", "preparation_sha256": session.preparation_sha256,
+                    "original_deadline_monotonic": session.absolute_deadline} if session is not None else {}),
             },
         )
         while not done.wait(0.1):
@@ -277,9 +312,59 @@ def rpc(request, route):
         return json.loads(raw)
 
 
+def coordinator_root(value):
+    root = Path(value)
+    info = root.lstat()
+    if (os.geteuid() == 0 and info.st_uid == 10001 and root.is_absolute() and root.resolve() == root
+            and stat.S_ISDIR(info.st_mode) and not info.st_mode & 0o077):
+        return root
+    return private_root(root)
+
+
+def publish_ipc(path, value, owner):
+    if owner == os.getuid():
+        return publish(path, value)
+    if os.geteuid() != 0 or owner != 10001:
+        raise ValueError("Fixed worker/coordinator ownership required")
+    temporary = path.parent / (".pending-" + uuid4().hex)
+    private_json(temporary, value)
+    try:
+        os.chown(temporary, owner, -1)
+        os.link(temporary, path, follow_symlinks=False)
+    finally:
+        temporary.unlink()
+
+
+def process_v2(attempt, work_root, value, *, host, python, owner):
+    from anvil.golden_native_mediated import execute, request
+
+    request(value)
+    socket_path = Path(value["gateway_socket"])
+    if (socket_path.parent.parent != attempt.parent or socket_path.name != "gateway.sock"
+            or coordinator_root(socket_path.parent).stat().st_uid != owner):
+        raise ValueError("Exact worker-owned private bridge socket required")
+    socket_info = socket_path.lstat()
+    if not stat.S_ISSOCK(socket_info.st_mode) or socket_info.st_mode & 0o077 or socket_info.st_uid != owner:
+        raise ValueError("Actual isolated worker socket required")
+    try:
+        with live_attempt(attempt, value["binding_sha256"], owner=owner):
+            framework, captured = execute(attempt, work_root, value, host=host, python=python)
+            validate_framework(framework, purpose="native_transport_control_only" if value["schema_version"] == "anvil.native-control-bridge-request.v2" else "kyc_worker_collection_only")
+            completion = {"binding_sha256": value["binding_sha256"], "callback_sha256": digest(captured), "framework": framework}
+            if len(canonical(completion)) > 65536:
+                raise ValueError("Bounded mediated completion required")
+            publish_ipc(attempt / "completion.json", completion, owner)
+            rpc(value, "/complete")
+            publish_ipc(attempt / "acknowledged.json", {"binding_sha256": value["binding_sha256"], "framework_sha256": digest(framework)}, owner)
+        return {"attempt": attempt.name, "framework_trial_id": framework["framework_trial_id"]}
+    except BaseException:
+        publish_ipc(attempt / "failed.json", {"binding_sha256": value["binding_sha256"], "no_replay": True}, owner)
+        raise
+
+
 def process_one(root, work_root, *, host, python, execute=None, attempt_id=None):
     """Coordinator has Docker only; it cannot import or connect to a SQL role."""
-    root, work_root = private_root(root), private_root(work_root)
+    root, work_root = coordinator_root(root), private_root(work_root)
     if execute is None:
         from anvil.environment_harbor import execute
     if attempt_id is not None and not re.fullmatch(r"[a-f0-9]{32}", attempt_id):
@@ -287,7 +372,7 @@ def process_one(root, work_root, *, host, python, execute=None, attempt_id=None)
     for attempt in [root / attempt_id] if attempt_id is not None else sorted(root.iterdir()):
         if not re.fullmatch(r"[a-f0-9]{32}", attempt.name):
             continue
-        private_root(attempt)
+        coordinator_root(attempt)
         pending, claimed = attempt / "request.json", attempt / "claimed.json"
         if not pending.exists() or claimed.exists():
             continue
@@ -298,7 +383,15 @@ def process_one(root, work_root, *, host, python, execute=None, attempt_id=None)
         except FileExistsError:
             continue
         pending.unlink()
-        request = owned_json(attempt, "claimed.json")
+        owner = attempt.stat().st_uid
+        if owner != os.getuid():
+            from anvil.golden_native_mediated import read_owned
+
+            request = read_owned(attempt / "claimed.json", owner)
+        else:
+            request = owned_json(attempt, "claimed.json")
+        if request.get("schema_version") in {"anvil.native-bridge-request.v2", "anvil.native-control-bridge-request.v2"}:
+            return process_v2(attempt, work_root, request, host=host, python=python, owner=owner)
         validate_binding(request["binding"], request["public_actor"])
         expected = {
             "schema_version",
@@ -377,17 +470,23 @@ def process_one(root, work_root, *, host, python, execute=None, attempt_id=None)
 
 def recover_attempt(root, work_root, attempt_id, *, host):
     """Reconcile one crashed child, never restart its SDK or native effect."""
-    root, work_root = private_root(root), private_root(work_root)
+    root, work_root = coordinator_root(root), private_root(work_root)
     if not re.fullmatch(r"[a-f0-9]{32}", attempt_id):
         raise ValueError("Exact native recovery attempt required")
-    attempt = private_root(root / attempt_id)
+    attempt = coordinator_root(root / attempt_id)
     name = "claimed.json" if (attempt / "claimed.json").exists() else "request.json"
-    request = owned_json(attempt, name)
+    owner = attempt.stat().st_uid
+    if owner != os.getuid():
+        from anvil.golden_native_mediated import read_owned
+
+        request = read_owned(attempt / name, owner)
+    else:
+        request = owned_json(attempt, name)
     validate_binding(request["binding"], request["public_actor"])
     failed = {"binding_sha256": request["binding_sha256"], "no_replay": True}
     if not (attempt / "failed.json").exists():
-        publish(attempt / "failed.json", failed)
-    elif owned_json(attempt, "failed.json") != failed:
+        publish_ipc(attempt / "failed.json", failed, owner)
+    elif (owned_json(attempt, "failed.json") if owner == os.getuid() else read_owned(attempt / "failed.json", owner)) != failed:
         raise ValueError("Native recovery binding changed")
     folder = work_root / attempt_id
     if folder.exists():
@@ -424,7 +523,7 @@ def main():
         for key, value in os.environ.items()
     ):
         raise RuntimeError("native_coordinator_must_not_receive_database_or_provider_secrets")
-    root = private_root(os.environ["ANVIL_NATIVE_BRIDGE_ROOT"])
+    root = coordinator_root(os.environ["ANVIL_NATIVE_BRIDGE_ROOT"])
     work = private_root(os.environ["ANVIL_GOLDEN_NATIVE_WORK_ROOT"])
     host = os.environ["ANVIL_HARBOR_DOCKER_HOST"]
     python = os.environ["ANVIL_HARBOR_PYTHON"]
@@ -464,9 +563,9 @@ def main():
                     continue
             time.sleep(1)
             continue
-        attempt = private_root(pending[0])
+        attempt = coordinator_root(pending[0])
         child = subprocess.Popen(
-            [sys.executable, "-m", "anvil.golden_native_bridge", "--once", attempt.name],
+            [sys.executable, "-I", "-B", "-m", "anvil.golden_native_bridge", "--once", attempt.name],
             start_new_session=True,
         )
         # This supervisor retains its Linux PID namespace while a worker child

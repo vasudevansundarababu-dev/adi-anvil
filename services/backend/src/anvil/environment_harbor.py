@@ -33,7 +33,7 @@ from anvil.owned_process_group import UnreapedProcessGroup
 from anvil.praxis_generic_contract import canonical
 
 PRESTART_GUARD_SHA256 = "32cff9841bb9999a1ea4bcc7b8db94674a73cd71b67e33693fcd7732d5c0a19d"
-OPERATOR_PROOF_SHA256 = "1394f7a7b5d4d934e3259da282088d70ac44064a9b151c76c5ddd49eaa8f5d38"
+OPERATOR_PROOF_SHA256 = "b9eb90efd56ced12ca45d2bb576fe159825ff54e8c5c4f941bab20c0e05aab37"
 
 
 def prestart_guards():
@@ -872,10 +872,11 @@ def _execute_lifecycle(
     fixed_adapter=None,
     fixed_assets=None,
     technical_probe_job=None,
+    mediated_plan=None,
 ):
     if fixed_adapter is not None:
         fixed_trial_gate()
-    managed = fixed_adapter is not None or technical_probe_job is not None
+    managed = fixed_adapter is not None or technical_probe_job is not None or mediated_plan is not None
     # Admission validation consumes the original lifecycle allowance too. Do not
     # start a second, later deadline after revalidating the installed runtime.
     deadline = (
@@ -896,6 +897,17 @@ def _execute_lifecycle(
                     or str(python) != host_record["python"]
                     or any(bindings.get(key) != permission[key] for key in ("job_id", "plan_sha256", "request_sha256"))):
                 raise ValueError("Exact independently stored probe required")
+    if mediated_plan is not None:
+        from anvil.golden_native_mediated import MediatedCallback, MediatedPlan
+
+        if type(mediated_plan) is not MediatedPlan or type(callback) is not MediatedCallback or callback.plan is not mediated_plan:
+            raise ValueError("Exact installed mediated worker callback required")
+        body = mediated_plan.body()
+        if (technical_probe_job is not None or fixed_adapter is not None or not mediated_candidate
+                or canonical(body["assets"]) != canonical(fixed_assets) or body["folder"] != str(folder)
+                or canonical(body["request"]["public_actor"]) != canonical(actor)):
+            raise ValueError("Mediated and technical authority cannot be combined")
+        deadline.ends = min(deadline.ends, body["request"]["original_deadline_monotonic"])
     callback_manifest_sha256 = bindings["callback_manifest_sha256"]
     request_sha256 = bindings["request_sha256"]
     reviewed_service_sha256s = bindings["service_projection_sha256s"]
@@ -939,9 +951,11 @@ def _execute_lifecycle(
         },
     )
     collected = {}
-    if technical_probe_job is not None:
+    if managed:
         collected["_callback_lock"] = threading.RLock()
         collected["_callback_closing"] = threading.Event()
+    if mediated_plan is not None:
+        callback.holder = collected
 
     def gateway_call(route, session, state):
         expected = name + ("__env" if route == "/actor" else "__verifier__trial")
@@ -970,7 +984,9 @@ def _execute_lifecycle(
                 output, receipt = callback()
             else:
                 verify_fixed_role_snapshots(folder, fixed_assets["trial_config"], bindings)
-                if technical_probe_job is not None:
+                if mediated_plan is not None:
+                    output, receipt = callback()
+                elif technical_probe_job is not None:
                     from anvil.golden_kyc_probe import dispatch
 
                     output, receipt = dispatch(technical_probe_job, folder=folder, assets=fixed_assets, deadline=deadline,
@@ -1021,8 +1037,18 @@ def _execute_lifecycle(
     # length limit. The gateway owns a fresh short private directory, never a
     # candidate mount; the existing gateway closes/removes its socket on exit.
     gateway_home = tempfile.TemporaryDirectory(prefix=".anvil-ng-", dir="/tmp")
+    peer_guard = None
+    if technical_probe_job is not None:
+        from anvil.golden_native_peer import OwnedSDKPeer
+
+        peer_guard = OwnedSDKPeer(collected, docker, fixed_assets["host_image_custody"]["sdk_profile"], technical_probe_job, folder)
+    elif mediated_plan is not None:
+        from anvil.golden_native_peer import OwnedSDKPeer
+
+        peer_guard = OwnedSDKPeer(collected, docker, fixed_assets["host_image_custody"]["sdk_profile"], bindings["job_id"], folder,
+                                  mediated_plan=mediated_plan)
     try:
-        gateway = NativeGateway(folder, gateway_call, socket_root=Path(gateway_home.name).resolve())
+        gateway = NativeGateway(folder, gateway_call, socket_root=Path(gateway_home.name).resolve(), peer_guard=peer_guard)
     except BaseException:
         gateway_home.cleanup()
         raise
@@ -1076,22 +1102,26 @@ def _execute_lifecycle(
         env.pop("PYTHONPATH", None)
         env.update({"ANVIL_HARBOR_TECHNICAL_PROBE_JOB": technical_probe_job,
                     "ANVIL_ROOT": str(ROOT), "ANVIL_FIXED_OPERATION_NONCE": bindings["operation_nonce"]})
+    elif mediated_plan is not None:
+        env.pop("PYTHONPATH", None)
+        env.update(ANVIL_HARBOR_MEDIATED_PLAN=str(mediated_plan.path), ANVIL_ROOT=str(ROOT))
     child_process = None
     result = None
     try:
         child_process = subprocess.Popen(
-            [str(python), *(["-I", "-B"] if technical_probe_job is not None else []),
+            [str(python), *(["-I", "-B"] if technical_probe_job is not None or mediated_plan is not None else []),
              "-m", "anvil_harbor.environment", str(folder / "trial.json")],
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             start_new_session=True,
         )
-        if technical_probe_job is not None:
+        if technical_probe_job is not None or mediated_plan is not None:
             child_process._anvil_owned_group = UnreapedProcessGroup(child_process)
             child_process._anvil_stop_lock = threading.RLock()
             child_process._anvil_start_identity = process_identity(child_process.pid)
             child_process._anvil_group_nonce = bindings["operation_nonce"]
+            collected["_framework_child"] = child_process
             private_json(folder / "framework-process.json", {"pid": child_process.pid,
                          "identity": child_process._anvil_start_identity, "host_domain": bindings["host_domain"],
                          "started_monotonic_ns": int(deadline.ends * 1000000000) - fixed_assets["validated_limits"]["lifecycle_seconds"] * 1000000000,
@@ -1104,7 +1134,7 @@ def _execute_lifecycle(
             },
         )
         try:
-            if technical_probe_job is not None:
+            if technical_probe_job is not None or mediated_plan is not None:
                 try:
                     stdout, stderr = _collect_fixed_child(child_process,
                         ends=time.monotonic() + deadline.remaining(actor_seconds + 90))
@@ -1209,7 +1239,7 @@ def _cleanup_lifecycle(
 
     failures = []
     callback_child = None
-    if technical:
+    if callback_holder is not None and "_callback_lock" in callback_holder:
         with callback_holder["_callback_lock"]:
             callback_holder["_callback_closing"].set()
             callback_child = callback_holder.get("_owned_callback")
@@ -1238,6 +1268,8 @@ def _cleanup_lifecycle(
             failures.append({"owned_session": "fixed_callback", "error": type(error).__name__})
     failures.extend(stop_owned(docker, name))
     gateway.close()
+    if callback_holder is not None and callback_holder.get("_mediated_callback_active") is not None and callback_holder["_mediated_callback_active"].is_set():
+        failures.append({"owned_session": "mediated_callback", "error": "inflight_unknown_no_replay"})
     gateway_home.cleanup()
     private_json(
         folder / "cleanup.json", {"complete": not failures, "failures": failures, "retained": True}

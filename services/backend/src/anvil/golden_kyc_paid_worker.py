@@ -224,14 +224,16 @@ def execute(connections, job, *, dispatch, environment, harness=None, tools_fact
             "input_sha256": digest(public),
         }
         if harness is None:
-            from anvil.golden_native_bridge import submit
+            from anvil.golden_kyc_worker_bridge import KycWorkerSession
+            from anvil.golden_native_bridge import submit_v2
 
             def harness(binding, public, callback, seconds):
-                return submit(
+                session = KycWorkerSession(callback, digest(binding), digest(public), digest(prepared), deadline[0])
+                return submit_v2(
                     os.environ["ANVIL_NATIVE_BRIDGE_ROOT"],
                     binding,
                     public,
-                    callback,
+                    session,
                     seconds=seconds,
                 )
 

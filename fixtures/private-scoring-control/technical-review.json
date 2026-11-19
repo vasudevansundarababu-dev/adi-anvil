@@ -1,0 +1,15 @@
+{
+  "schema_version": "anvil.synthetic-private-scoring-review.v1",
+  "scope": "synthetic_arithmetic_engineering_only",
+  "reviewer": "/root/open_weight_review",
+  "review_date": "2026-11-19",
+  "origin": "independent_agent_read_only_review",
+  "code_sha256": "7e0785d67fab37b8e1c7d339000cd3190b667961cbd2af2a79712fdb02780dc7",
+  "cases_sha256": "ea5467e5a1419e6d278a2b99807d40e789c9b48a86b18631df7994362e0dee6b",
+  "observed_cases": {"exact": "pass", "near": "partial", "wrong": "fail", "missing": "unscored", "boolean": "unscored", "exception": "error"},
+  "host_verdict_injection_checks": "both_actual_and_expected_rejected",
+  "findings": [],
+  "legal_sme_rights_approval": false,
+  "model_performance": false,
+  "qualification_granted": false
+}

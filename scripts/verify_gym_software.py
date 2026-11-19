@@ -18,6 +18,7 @@ root = Path.cwd()
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--policy-only", action="store_true")
 parser.add_argument("--hash-proof-only", action="store_true")
+parser.add_argument("--private-control-only", action="store_true")
 options = parser.parse_args()
 assert (root / "services/backend/src/anvil/golden_kyc_service.py").is_file()
 assert not (root / ".env").exists(), "Use a clean isolated checkout, never operational credentials"
@@ -66,7 +67,7 @@ for _ in range(60):
         time.sleep(0.5)
 else:
     raise RuntimeError("Fresh PostgreSQL did not become ready")
-database = "anvil_golden_kyc_" + secrets.token_hex(5)
+database = ("anvil_golden_kyc_component_" if options.private_control_only else "anvil_golden_kyc_") + secrets.token_hex(5)
 with psycopg.connect(base, autocommit=True) as c:
     for role, password in [("anvil_app", app), ("anvil_worker", worker)]:
         c.execute(
@@ -137,6 +138,8 @@ if options.policy_only:
     tests = ["services/backend/tests/benchmark/test_kyc_policy_reviews_sql.py"]
 if options.hash_proof_only:
     tests = ["services/backend/tests/benchmark/test_software_resource_proof_sql.py"]
+if options.private_control_only:
+    tests = ["services/backend/tests/benchmark/test_private_scoring_control_sql.py"]
 log = private / "pytest.log"
 with log.open("w") as handle:
     result = subprocess.run(

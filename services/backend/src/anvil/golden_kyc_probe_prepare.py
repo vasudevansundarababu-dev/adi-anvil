@@ -251,7 +251,10 @@ def prepare(request_path):
         store._private(info)
         provider = dict(provider, field="env.GOLDEN_SCHEDULER_DATABASE_URL", sha256=measured(provider_path))
         domain = store._domain()
-        host = {"schema_version": "anvil.kyc-probe-host.v1", "folder": str(folder),
+        from anvil.golden_native_peer import inspect_sdk
+
+        sdk_profile = inspect_sdk(request["docker_host"])
+        host = {"schema_version": "anvil.kyc-probe-host.v2", "folder": str(folder), "sdk_profile": sdk_profile,
                 "docker_host": request["docker_host"], "python": python, "image_digest": native.FIXTURE_IMAGE,
                 "binaries": binaries, "database_provider": provider, "host_domain": domain,
                 "operation_nonce": nonce, "request_sha256": hashlib.sha256(native.canonical(capsule)).hexdigest(),

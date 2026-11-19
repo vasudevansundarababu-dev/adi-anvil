@@ -144,8 +144,9 @@ async def main(path):
     global _TECHNICAL_RUNTIME
     fixed = "ANVIL_HARBOR_FIXED_CONTEXT" in os.environ
     technical = os.environ.get("ANVIL_HARBOR_TECHNICAL_PROBE_JOB")
+    mediated = os.environ.get("ANVIL_HARBOR_MEDIATED_PLAN")
     permission = None
-    if fixed and technical:
+    if sum(bool(value) for value in (fixed, technical, mediated)) > 1:
         raise ValueError("Business and technical control contexts cannot be combined")
     if fixed:
         fixed_component_gate()
@@ -181,6 +182,31 @@ async def main(path):
                                   "host": host["docker_host"]}
             os.environ["DOCKER_HOST"] = host["docker_host"]
             os.environ["DOCKER_CONFIG"] = docker_args[2]
+    if mediated:
+        from anvil.golden_native_mediated import load_plan, operation_nonce
+        from anvil.praxis_generic_contract import digest as request_digest
+
+        owned_plan = load_plan(mediated)
+        body = owned_plan.body()
+        assets = body["assets"]
+        root = Path(body["folder"])
+        if (str(root) != os.environ["ANVIL_HARBOR_ATTEMPT_ROOT"] or Path(path) != root / "trial.json"
+                or validated != assets["trial_config"]):
+            raise ValueError("Exact owned mediated SDK configuration required")
+        from anvil_harbor.operator_proof import OperatorProofStore
+
+        with OperatorProofStore(Path(os.environ["ANVIL_ROOT"])) as store:
+            store.validate_runtime_seal(assets["runtime_seal"])
+            store.validate_loaded_origins(assets["runtime_seal"], component="harbor")
+            host = assets["host_image_custody"]
+            docker_args = json.loads(os.environ["ANVIL_ENVIRONMENT_DOCKER_COMMAND"])
+            if (len(docker_args) != 5 or docker_args[0] != host["binaries"]["docker"]["path"]
+                    or docker_args[2] != str(root / "empty-docker-config") or docker_args[4] != host["docker_host"]):
+                raise ValueError("Exact mediated engine/config/host required")
+            for record in host["binaries"].values():
+                store._sealed_file(record["path"], record["sha256"])
+        _TECHNICAL_RUNTIME = {"docker": docker_args[0], "compose": host["binaries"]["compose"]["path"], "host": host["docker_host"]}
+        os.environ["DOCKER_HOST"], os.environ["DOCKER_CONFIG"] = host["docker_host"], docker_args[2]
     if version("harbor") != "0.25.0":
         raise ValueError("Exact installed Harbor 0.25.0 required")
     config = TrialConfig.model_validate(validated)
@@ -192,9 +218,11 @@ async def main(path):
     ):
         raise ValueError("Exact retained component trial required")
     trial = await Trial.create(config)
-    if fixed or technical:
+    if fixed or technical or mediated:
         context = (json.loads(os.environ["ANVIL_HARBOR_FIXED_CONTEXT"]) if fixed else
-                   {key: permission[key] for key in ("job_id", "operation_nonce", "request_sha256")})
+                   {"job_id": body["request"]["binding"]["job_id"], "operation_nonce": operation_nonce(owned_plan.path, body["request"]),
+                    "request_sha256": request_digest(body["request"])}
+                   if mediated else {key: permission[key] for key in ("job_id", "operation_nonce", "request_sha256")})
         if set(context) != {"job_id", "operation_nonce", "request_sha256"}:
             raise ValueError("Exact fixed framework context required")
         root = Path(os.environ["ANVIL_HARBOR_ATTEMPT_ROOT"])

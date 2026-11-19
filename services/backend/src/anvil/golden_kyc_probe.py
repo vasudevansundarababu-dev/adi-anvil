@@ -47,8 +47,8 @@ def validate_assets(store, permission):
     host = assets["host_image_custody"]
     folder = store.root / "technical-probe-attempts" / permission["operation_nonce"]
     expected_keys = {"schema_version", "folder", "docker_host", "python", "image_digest", "binaries",
-                     "database_provider", "host_domain", "operation_nonce", "request_sha256", "limits"}
-    if (set(host) != expected_keys or host["schema_version"] != "anvil.kyc-probe-host.v1"
+                     "database_provider", "host_domain", "operation_nonce", "request_sha256", "limits", "sdk_profile"}
+    if (set(host) != expected_keys or host["schema_version"] != "anvil.kyc-probe-host.v2"
             or host["folder"] != str(folder) or host["host_domain"] != permission["host_domain"]
             or host["image_digest"] != native.FIXTURE_IMAGE or host["limits"] != permission["limits"]
             or any(host[key] != permission[key] for key in ("operation_nonce", "request_sha256"))
@@ -56,6 +56,12 @@ def validate_assets(store, permission):
             or not Path(host["docker_host"][7:]).exists()
             or host["python"] != seal["components"]["harbor"]["interpreter"]):
         raise ValueError("Exact probe host, image, interpreter and caps required")
+    from anvil.golden_native_peer import inspect_sdk, validate_control_mounts
+
+    if inspect_sdk(host["docker_host"]) != host["sdk_profile"]:
+        raise ValueError("Operator-observed SDK image or mount profile changed")
+    validate_control_mounts(host["sdk_profile"], proof_root=store.root, provider_path=host["database_provider"]["path"],
+                            docker=host["binaries"]["docker"]["path"], compose=host["binaries"]["compose"]["path"])
     binaries = host["binaries"]
     if set(binaries) != {"docker", "compose", "python", "opa"} or binaries["python"]["path"] != host["python"]:
         raise ValueError("Exact native executable inventory required")

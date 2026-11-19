@@ -25,6 +25,7 @@ CHECKS = {
     "no_model_calls",
 }
 REQUIRED_DEPENDENCIES = {
+    "services/backend/src/anvil/golden_native_peer.py",
     "services/backend/src/anvil/golden_kyc_probe.py",
     "services/backend/src/anvil/golden_kyc_probe_prepare.py",
     "services/harbor/src/anvil_harbor/environment.py",
@@ -1279,7 +1280,7 @@ class TechnicalProbeStore(OperatorProofStore):
         finally:
             os.close(folder)
         process = observed["framework-process.json"][0]
-        timed = host.get("schema_version") == "anvil.kyc-probe-host.v1"
+        timed = host.get("schema_version") in {"anvil.kyc-probe-host.v1", "anvil.kyc-probe-host.v2"}
         need(
             set(process) == ({"pid", "identity", "host_domain", "started_monotonic_ns", "deadline_monotonic_ns"}
                              if timed else {"pid", "identity", "host_domain"})
@@ -1330,7 +1331,7 @@ class TechnicalProbeStore(OperatorProofStore):
             command
             == b"\0".join(
                 str(v).encode()
-                for v in (host["python"], *(["-I", "-B"] if host.get("schema_version") == "anvil.kyc-probe-host.v1" else []),
+                for v in (host["python"], *(["-I", "-B"] if host.get("schema_version") in {"anvil.kyc-probe-host.v1", "anvil.kyc-probe-host.v2"} else []),
                           "-m", "anvil_harbor.environment", expected / "trial.json")
             )
             + b"\0",
