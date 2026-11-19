@@ -39,10 +39,11 @@ not authenticated Authoring API evidence. Exact registration, explicit local PO
 publication attestation, technical qualification and current policy/input/review
 bindings remain separate. Upload cannot create any of those approvals by itself.
 
-Actual Admin browser registration was attempted; the browser upload security
-gate declined permission. Read-only QA lookup still found only unchanged v7.
-User was provided exact UI registration steps; no alternate upload or credential
-workaround was attempted. Runtime engineering continues independently.
+The browser upload security gate declined the agent's registration attempt.
+The user then registered v8 manually; read-only UI verification confirmed the
+exact template hash above with v7 unchanged. No alternate upload or credential
+workaround was attempted. Publication staging/attestation remains separate and
+has not been confirmed. Runtime engineering continues independently.
 
 No live model calls, live Authoring integration, v7 modifications, policy
 approvals or private dataset/expectation disclosures were performed.

@@ -87,6 +87,22 @@ qualification of newer source. Tests with manufactured evidence remain labelled.
 
 ## Runtime and technical qualification
 
+19 November continuation: QA 5b19a72 passed actual installed Harbor log-profile
+parity but native attempt063a350f reached its original120-second limit during
+repeated runtime admission checks. No worker intent/SQL effect was observed;
+cleanup complete and unknown outcome retained. Candidate5b0ccfe deduplicates
+common hashes only within one call and only after kernel-readonly inspection of
+all closure files/directories, including nested mounts and resolved interpreter.
+Original limits and every component source/mirror check remain. Independent review
+clear;1203 units/10subtests passed,4skipped;77 fresh/repeated SQL checks passed.
+Cloud build/actual native rerun remain pending. Private timeout prefixes now retained
+with safe stack metadata; public evidence never contains raw private logs.
+
+Custom Python physical core5controls passed on5b19a72. The combined7control
+harness exhausted its own budget before resource controls; those two are NOT
+passed. Fixed core/resources suites use separate original85-second budgets,
+fresh intents and no execution retry; resource-only physical run in progress.
+
 | ID | Status / owner | Observed gap and evidence | Prevention requirement | Closure evidence |
 |---|---|---|---|---|
 | RUN-01 | QA_SUBCHECK_VERIFIED / Forge operations | Scheduler/grader had sleep placeholders rather than real polling. Actual role polling was deployed; E05. | Inventory must test each real service operation, not process existence. | Exact serving image/source, live queue-poll observation and role separation. Full business execution remains separate. |
