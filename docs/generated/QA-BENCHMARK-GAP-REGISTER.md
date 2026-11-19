@@ -419,3 +419,15 @@ curation/review are required; old evidence is never patched to appear complete.
 Studio/release tooling must schema-check producer/consumer evidence on actual
 installed process/engine output before a long qualification campaign. Missing
 data is a reporting failure, not an excuse to synthesize a successful receipt.
+
+## Operations 26 — validate existing mount encodings before service effects
+
+The first08rollout migrated133, then its checker rejected legacy short binds that
+the wiring producer had correctly preserved. Owned rollback restored old6services;
+schema133 remains additive. Writer/validator must agree on both reviewed encodings
+before mutation. Service-only retry admits only exact observed absolute short
+binds, preserves defaultRW, keeps strict long-bind RO/type/path/duplicate checks,
+and never replays migration. Local parser controls/source review pass; actual
+retry awaits renewed GCP sign-in. Future deployment preflight must validate all
+mount encodings before effects and checkpoint schema/config/service stages
+independently. Technical qualification19ece… passed; deployment is still pending.

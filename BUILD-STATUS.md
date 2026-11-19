@@ -1,5 +1,43 @@
 # Build status
 
+## 19November21:31UTC — qualified runtime; deployment blocked by GCP sign-in
+
+Actual technical component qualification published ONCE, SHA
+19ece673da61599de0bd74e787c67909e8929df41a3484c072c7442209b80284,
+at `runtime-functional/harbor-proof/component-qualification/current.json`.
+All14technical checks passed; spending/human-legal-rights/model-performance false;
+expires20November21:14:06UTC. Independent actual raw review SHA
+2f09363b8213d7ec3a516aeb6698dac24c0c789f5f178b7e4c44afa5675e9eef.
+Positive installed acceptance plus actual corrupted-hash/disabled-NNP negative
+clones passed. Bundle `component-evidence-08d45ff-a6d18abe`, controls2fad3bc,
+manifest44776b6f0535c4b38ec5e44614572bac5f8d6695a4a52ea04fc69c0ac4c91f00.
+App08/sourcee8/runtimefeedc1 unchanged; no new build is required for retry.
+
+First rollout applied132→133 ONCE, then failed a checker that rejected existing
+short mount syntax. Owned rollback restored old6services151d6fb (running/restarts0)
+and stopped both new08coordinators (PID0/restarts0); rollback failures[]. Original
+backup/migration intent retained in `backups/qualification-08d45ff`.
+**Serving QA is old151d6fb with additive schema133; new release NOT accepted.**
+Technical receipt19ece remains; real project bindings/approvals remain separate.
+
+Service-ONLY retry prepared locally: `/private/tmp/forge-services-retry-08d45ff.py`,
+SHAb062604a6e9198716a98633f6c2db9891260870644723278a6781ff0442affb3.
+Independent full source review PASS. Ruff/compile,3legacy groups/RO preservation/
+13negative parser and4explicit path/NUL controls PASS. Only exact observed short
+binds accepted; strict long binds/RO/security/duplicates/OFF checks retained.
+Retry requires actual133+Alembic133, restored config/old151, current19ece and exact
+owned stopped coordinator profiles; fresh v2backup/one intent, NO migration run.
+It has NOT been copied/executed on QA. Next coor state/security read was blocked
+by expired GCP auth; do not infer those pending actual preflight checks passed.
+
+`gcloud auth login --brief` opened Google sign-in using existing
+`.local/gcloud-anvil`/anvil-mvp-v1 config; awaiting user callback. Owner prompted;
+blocker email1a1f5b72f50da43f sent ONLY to vasudevan.sundarababu@adi-labs.ai.
+Resume: verify auth, reconcile current schema/coordinator IDs+profiles, stage final
+retry and execute services-only once, then actual health/role/UI smoke. Never
+rerun consumed original rollout/migration. No live calls, Authoring, Staging or
+Production. Real dataset context gapBinding24 remains documented/nonrunnable.
+
 ## Current08 physical worker bridge and native SQL Trial passed
 
 All v12 phases succeeded: Core03cb6863-cdbe-4154-90cd-0f71f8fe8201,
