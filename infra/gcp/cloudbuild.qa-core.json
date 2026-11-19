@@ -83,6 +83,7 @@
     "logging": "CLOUD_LOGGING_ONLY"
   },
   "timeout": "1800s",
+  "queueTtl": "300s",
   "tags": [
     "${_RUNTIME_TAG}"
   ]

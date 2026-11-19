@@ -17,10 +17,10 @@ def script():
 
 
 def config():
-    return {"schema_version": "anvil.synthetic-sql-component-config.v1",
+    return {"schema_version": "anvil.synthetic-sql-component-config.v2",
         "fixture_nonce": "a" * 64, "fixture_label": "synthetic-component-control-not-performance",
         "database": "anvil_golden_kyc_component_test", "scheduler_dsn": "synthetic-private",
-        "grader_dsn": "synthetic-private", "project_id": str(uuid4()), "user_id": str(uuid4()),
+        "grader_dsn": "synthetic-private", "app_dsn": "synthetic-private", "project_id": str(uuid4()), "user_id": str(uuid4()),
         "pack_id": "synthetic-pack", "application_id": "GB-001", **{name: "b" * 64 for name in (
             "snapshot_sha256", "golden_source_sha256", "broker_source_sha256", "runtime_image_sha256")}}
 
@@ -47,3 +47,37 @@ def test_private_bounded_exact_config_required_before_database_import(script, tm
 
 def test_global_deadline_cannot_be_swallowed_as_an_individual_failure(script):
     assert not issubclass(script.ControlDeadline, Exception)
+
+
+def test_old_schema_and_missing_app_identity_cannot_reuse_v1_fixture(script, tmp_path):
+    path = tmp_path / "old.json"
+    body = config()
+    body["schema_version"] = "anvil.synthetic-sql-component-config.v1"
+    path.write_text(json.dumps(body))
+    path.chmod(0o600)
+    with pytest.raises(ValueError):
+        script.read_config(path)
+    body["schema_version"] = "anvil.synthetic-sql-component-config.v2"
+    body.pop("app_dsn")
+    path.write_text(json.dumps(body))
+    with pytest.raises(ValueError):
+        script.read_config(path)
+
+
+@pytest.mark.parametrize("host", ["127.0.0.1", "localhost", "remote.example", "relative/socket"])
+def test_all_database_credentials_require_unix_socket_host(script, host):
+    with pytest.raises(ValueError):
+        script.validate_unix_params({"host": host, "dbname": "anvil_golden_kyc_component_test"}, "anvil_golden_kyc_component_test")
+
+
+def test_unix_socket_alias_or_wrong_database_is_refused(script, tmp_path, monkeypatch):
+    socket = tmp_path / "socket"
+    socket.mkdir()
+    alias = tmp_path / "alias"
+    alias.symlink_to(socket)
+    monkeypatch.setattr(Path, "is_socket", lambda self: True)
+    script.validate_unix_params({"host": str(socket), "dbname": "synthetic"}, "synthetic")
+    with pytest.raises(ValueError):
+        script.validate_unix_params({"host": str(alias), "dbname": "synthetic"}, "synthetic")
+    with pytest.raises(ValueError):
+        script.validate_unix_params({"host": str(socket), "dbname": "serving"}, "synthetic")

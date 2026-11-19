@@ -30,7 +30,8 @@ def planner(tmp_path):
     target = {"project": "synthetic-project", "region": "us-west1", "repository": "synthetic-repo"}
 
     def plan(receipts=None, **kw):
-        return module.plan(root, target, receipts, source_sha256=kw.get("source_sha256", "a" * 64), source_commit="abcdef1234")
+        return module.plan(root, target, receipts, source_sha256=kw.get("source_sha256", "a" * 64), source_commit="abcdef1234",
+                           **({"build_location": kw["build_location"]} if "build_location" in kw else {}))
 
     return module, root, target, plan
 
@@ -105,6 +106,7 @@ def test_configs_have_separate_builds_and_immutable_environment_input():
         if step["id"] in {"kyc-identity", "marketing-identity"}:
             assert "TASK_RUNTIME_IMAGE=${_ENVIRONMENT_IMAGE}" in step["args"]
     assert not any("deploy" in json.dumps(value) for value in configs.values())
+    assert all(config["queueTtl"] == "300s" and config["timeout"] == "1800s" for config in configs.values())
 
 
 def test_missing_or_symlinked_input_blocks_and_retry_ceilings_are_explicit(planner):
@@ -160,3 +162,20 @@ def test_context_is_archive_only_and_submit_uses_exact_absolute_path(planner):
     (root / ".git").write_text("gitdir: /synthetic/private-worktree")
     with pytest.raises(ValueError, match="archive"):
         make()
+
+
+def test_build_location_is_global_by_default_and_independent_of_registry(planner):
+    _, _, target, make = planner
+    default, regional = make(), make(build_location="us-west1")
+    assert default["build_location"] == "global" and regional["build_location"] == "us-west1"
+    assert default["target"] == regional["target"] == target
+    for phase in ("core", "environments", "evaluation"):
+        first, second = default["phases"][phase], regional["phases"][phase]
+        assert first["input_sha256"] != second["input_sha256"]
+        assert first["operation_token"] != second["operation_token"]
+        assert first["substitutions"]["_ARTIFACT_PREFIX"] == second["substitutions"]["_ARTIFACT_PREFIX"]
+        assert "--region=global" in first["reconcile_command"]
+        assert "--region=us-west1" in second["reconcile_command"]
+        if "submit_command" in first:
+            assert "--region=global" in first["submit_command"]
+            assert "--region=us-west1" in second["submit_command"]

@@ -37,7 +37,7 @@ def setup(path, output):
     require(os.geteuid() == 0 and sys.flags.isolated and sys.dont_write_bytecode)
     config = read_private(path)
     require(set(config) == {"schema_version", "host", "dbname", "user", "password", "new_database", "runtime_image_sha256"}
-            and config["schema_version"] == "anvil.synthetic-sql-fixture-setup.v1"
+            and config["schema_version"] == "anvil.synthetic-sql-fixture-setup.v2"
             and config["dbname"] == "postgres" and config["user"] == "postgres"
             and type(config["password"]) is str and 1 <= len(config["password"]) <= 256
             and re.fullmatch(r"anvil_golden_kyc_component_[a-z0-9_]{1,36}", config["new_database"])
@@ -68,7 +68,7 @@ def setup(path, output):
 
     admin = {key: config[key] for key in ("host", "dbname", "user", "password")}
     passwords = {role: secrets.token_urlsafe(40) for role in ("anvil_app", "anvil_worker")}
-    runtime_roles = {role: "component_" + role + "_" + secrets.token_hex(5) for role in ("scheduler", "grader")}
+    runtime_roles = {role: "component_" + role + "_" + secrets.token_hex(5) for role in ("scheduler", "grader", "app")}
     for role in runtime_roles.values():
         passwords[role] = secrets.token_urlsafe(40)
     database = config["new_database"]
@@ -109,7 +109,7 @@ def setup(path, output):
         connection.execute("GRANT USAGE ON ALL SEQUENCES IN SCHEMA anvil_checkpoints TO anvil_worker")
         connection.execute("SET search_path TO public")
         for role, login in runtime_roles.items():
-            connection.execute(sql.SQL("GRANT {} TO {}").format(sql.Identifier("anvil_golden_" + role), sql.Identifier(login)))
+            connection.execute(sql.SQL("GRANT {} TO {}").format(sql.Identifier("anvil_app" if role == "app" else "anvil_golden_" + role), sql.Identifier(login)))
     with psycopg.connect(**target, connect_timeout=2, row_factory=dict_row) as connection:
         connection.execute("INSERT INTO anvil.organizations VALUES(%s,%s)", (organization, label))
         connection.execute("INSERT INTO anvil.projects(id,org_id,name) VALUES(%s,%s,%s)", (project, organization, label))
@@ -123,7 +123,7 @@ def setup(path, output):
             connection.execute(sql.SQL("GRANT USAGE ON SCHEMA anvil TO {}").format(sql.Identifier(login)))
             connection.execute(sql.SQL("GRANT SELECT ON anvil.component_control_fixture TO {}").format(sql.Identifier(login)))
         connection.execute(sql.SQL("GRANT UPDATE(consumed_at) ON anvil.component_control_fixture TO {}").format(sql.Identifier(runtime_roles["scheduler"])))
-    control = {"schema_version": "anvil.synthetic-sql-component-config.v1", "fixture_nonce": nonce,
+    control = {"schema_version": "anvil.synthetic-sql-component-config.v2", "fixture_nonce": nonce,
         "fixture_label": label, "database": database, "project_id": project, "user_id": user, "pack_id": str(pack),
         "application_id": application["id"], "snapshot_sha256": application["snapshot_sha256"],
         "golden_source_sha256": source_hash(), "broker_source_sha256": code_digest(),

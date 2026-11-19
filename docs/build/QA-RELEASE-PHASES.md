@@ -62,6 +62,16 @@ The build configs tag each build with its operation token for reconciliation.
 Core and Environments have no artifact dependency on each other. Evaluation stays
 blocked until an observed successful environment artifact is available by digest.
 
+Cloud Build location is independent of the Artifact Registry region. The
+planner defaults `--build-location` to `global`; `--region us-west1` continues
+to select the registry host. Submit and reconciliation commands use the build
+location. An explicit location change invalidates phase inputs and operation
+tokens without changing registry addresses. Prior receipt target keys remain
+project/region/repository. All three configs expire queued work after 300 seconds
+(`queueTtl`) and retain a separate 1800-second running-build timeout. Before
+resubmitting in another location, cancel any previous queued build and observe
+its authoritative CANCELLED state; never duplicate a possibly running build.
+
 ## Retain and reuse observed results
 
 An operator may supply a prior results document using

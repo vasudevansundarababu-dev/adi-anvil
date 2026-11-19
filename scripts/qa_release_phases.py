@@ -49,7 +49,9 @@ def inventory(root, phase):
     return dict(sorted(files.items()))
 
 
-def plan(root, target, receipts=None, *, source_sha256, source_commit):
+def plan(root, target, receipts=None, *, source_sha256, source_commit, build_location="global"):
+    if not re.fullmatch(r"global|[a-z]+-[a-z]+[0-9]", build_location):
+        raise ValueError("Explicit Cloud Build location required")
     root = root.resolve()
     if (root / ".git").exists():
         raise ValueError("Use a fresh committed git-archive extraction, never a working tree")
@@ -70,6 +72,7 @@ def plan(root, target, receipts=None, *, source_sha256, source_commit):
             dependencies = {"environment_input_sha256": environment["input_sha256"],
                             "environment_image": environment.get("artifacts", {}).get("task-runtime")}
         fingerprint = digest({"files": files, "target": target, "dependencies": dependencies,
+                              "build_location": build_location,
                               "golden_source_sha256": source_sha256})
         token = "qa-" + phase + "-" + digest({"target": target, "input_sha256": fingerprint})[:32]
         previous = receipts.get("phases", {}).get(phase, {})
@@ -94,7 +97,7 @@ def plan(root, target, receipts=None, *, source_sha256, source_commit):
         if phase == "evaluation" and dependencies["environment_image"]:
             item["substitutions"]["_ENVIRONMENT_IMAGE"] = dependencies["environment_image"]
         item["reconcile_command"] = ["gcloud", "builds", "list", "--project=" + target["project"],
-                                     "--region=" + target["region"], "--filter=tags=" + token,
+                                     "--region=" + build_location, "--filter=tags=" + token,
                                      "--limit=10", "--format=json"]
         if previous and not valid:
             item["prior_result"] = "not_reusable; inspect prior build ID before resubmitting any pending/unknown operation"
@@ -102,10 +105,10 @@ def plan(root, target, receipts=None, *, source_sha256, source_commit):
                 item["action"] = "reconcile_build_id_before_submit"
         if item["action"] == "prepare_build":
             item["submit_command"] = ["gcloud", "builds", "submit", str(root), "--async",
-                "--project=" + target["project"], "--region=" + target["region"], "--config=" + str(root / item["config"]),
+                "--project=" + target["project"], "--region=" + build_location, "--config=" + str(root / item["config"]),
                 "--substitutions=" + ",".join(key + "=" + value for key, value in item["substitutions"].items())]
         output[phase] = item
-    return {"schema_version": "anvil.qa-release-phase-plan.v1", "target": target, "phases": output,
+    return {"schema_version": "anvil.qa-release-phase-plan.v1", "target": target, "build_location": build_location, "phases": output,
             "build_context": {"root": str(root), "required_origin": "fresh extraction of clean committed git archive",
                               "provenance_verified": False,
                               "operator_requirement": "Verify archive commit/pin and use this exact extraction for planning and submission; no working-tree/private overlay files.",
@@ -124,6 +127,7 @@ def main():
     parser.add_argument("--receipts-sha256")
     parser.add_argument("--source-sha256", required=True)
     parser.add_argument("--source-commit", required=True)
+    parser.add_argument("--build-location", default="global")
     args = parser.parse_args()
     receipts = None
     if args.receipts:
@@ -132,7 +136,8 @@ def main():
             raise ValueError("Exact independently retained prior receipt pin required")
         receipts = json.loads(raw)
     print(json.dumps(plan(args.root.resolve(), {name: getattr(args, name) for name in ("project", "region", "repository")}, receipts,
-                         source_sha256=args.source_sha256, source_commit=args.source_commit), sort_keys=True, indent=2))
+                         source_sha256=args.source_sha256, source_commit=args.source_commit,
+                         build_location=args.build_location), sort_keys=True, indent=2))
 
 
 if __name__ == "__main__":

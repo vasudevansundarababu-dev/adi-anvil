@@ -122,6 +122,7 @@ print(
     flush=True,
 )
 tests = [
+    "services/backend/tests/benchmark/test_golden_product_sql.py",
     "services/backend/tests/benchmark/test_custom_python_scoring_sql.py",
     "services/backend/tests/benchmark/test_offline_publication_sql.py",
     "services/backend/tests/benchmark/test_kyc_policy_reviews_sql.py",
