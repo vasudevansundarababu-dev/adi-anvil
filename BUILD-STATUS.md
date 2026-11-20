@@ -1,5 +1,28 @@
 # Build status
 
+## Corrected restricted-database catalogue query — not yet deployed
+
+Candidate62abd00/source355c1e00 completed Core d4d3c479-3601-4e93-802c-b3c075f3896b,
+Environment481810af-7ff2-4873-98cd-dda224ae09eb and Evaluationd47d8ec5-fd2e-44f6-9379-28a97058874b.
+It is NOT deployed/qualified: its first actual capture probe failed the privilege
+identity SELECT with InsufficientPrivilege42501. Owned container0a9917903b6158d412caf63ca954a1dfcfa16b5f45ad226d194596c177198274
+is terminal/PID0/exit1; cleanup failures[]; no qualification or replay. Its
+read-only setup had succeeded. Text private-table privilege lookup caused the
+schema access failure, not a missing driver, timeout or failed TLS connection.
+
+Current correction resolves both real hidden-reference tables by catalogue OID,
+requires their existence and forced RLS, rejects table or column SELECT and
+retains only safe error category/SQLSTATE/stage. No private USAGE/SELECT grant.
+Actual separate metadata-only candidate query on QA passed with restricted=true,
+read_only=true/ssl=true. This does not qualify full capture execution. Focused68
+tests and six API-only wiring tests pass. Full units1343passed/10subtests/4skips
+in136.48s; wiring six are additional. First fresh SQL run98passed/2failed due
+to a reserved-word test cleanup error, not admitted as PASS. The stopped fixture
+is retained; corrected cleanup is being verified in a new disposable fixture.
+Source896b9c2b39b33ff45f75c989a73f11437abe0b00daa0932d0b639c5336a0e088
+needs a new frozen build and actual full qualification; failed62 evidence and
+current serving08/q19 remain unchanged and distinct.
+
 ## Capture contract correction — local verified; QA TLS transport verified
 
 New capture API-only receipt/probe and catalogue separation are implemented,

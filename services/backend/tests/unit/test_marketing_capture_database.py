@@ -10,6 +10,15 @@ import pytest
 from anvil import marketing_capture_database as database
 
 
+def test_unknown_retains_safe_category_without_private_error_message():
+    error = database.DatabaseUnknown(database.psycopg.errors.InsufficientPrivilege(
+        "PRIVATE_PASSWORD PRIVATE_DSN PRIVATE_SQL"), stage="wait")
+    assert error.original_error_type == "InsufficientPrivilege" and error.original_sqlstate == "42501"
+    assert error.stage == "wait"
+    assert all(value not in str(error) + repr(error) + repr(vars(error))
+               for value in ("PRIVATE_PASSWORD", "PRIVATE_DSN", "PRIVATE_SQL"))
+
+
 @pytest.mark.parametrize("phase", [None, "connect", "rls", "timeout_setup", "operation", "commit", "close"])
 def test_one_original_deadline_covers_connect_rls_work_commit_and_close(monkeypatch, phase):
     events = []

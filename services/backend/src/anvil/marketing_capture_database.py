@@ -7,6 +7,7 @@ Shared anvil.db defaults and other application connections are unchanged.
 
 import asyncio
 import math
+import re
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from time import monotonic
@@ -22,8 +23,15 @@ CANCEL_RESERVE_SECONDS = .05  # Taken from original work time; never added after
 
 
 class DatabaseUnknown(RuntimeError):
-    def __init__(self):
+    def __init__(self, cause=None, *, stage=None):
         super().__init__("Capture database outcome/cleanup unknown; no retry")
+        # Operator diagnostics need the cause CATEGORY, never its message,
+        # query, DSN, credentials, repr or exception chain.
+        name = type(cause).__name__ if cause is not None else None
+        self.original_error_type = name if name and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,79}", name) else None
+        state = getattr(cause, "sqlstate", None)
+        self.original_sqlstate = state if type(state) is str and re.fullmatch(r"[0-9A-Z]{5}", state) else None
+        self.stage = stage if stage in {"wait", "transaction"} else None
 
 
 def remaining(deadline):
@@ -57,7 +65,7 @@ class _CaptureConnection(psycopg.AsyncConnection):
             async with asyncio.timeout(work):
                 started = True
                 return await waiting.wait_async(gen, self.pgconn.socket, interval=interval, timeout=work)
-        except BaseException:
+        except BaseException as error:
             try:
                 # Closing the socket alone did not terminate a deferred-trigger
                 # COMMIT in independent PostgreSQL testing. Cancel and drain
@@ -75,7 +83,7 @@ class _CaptureConnection(psycopg.AsyncConnection):
                 pass  # Unknown cancellation/cleanup stays unknown, never ready.
             finally:
                 self.pgconn.finish()
-            raise DatabaseUnknown() from None
+            raise DatabaseUnknown(error, stage="wait") from None
 
 
 async def _connect():
@@ -128,11 +136,13 @@ async def transaction(project=None, user=None, *, absolute_deadline, read_only=F
             await connection.close()
             if not connection.closed:
                 raise DatabaseUnknown()
-    except BaseException:
+    except BaseException as error:
         if connection is not None:
             # No cancellation thread, reconnect, drain allowance or rollback
             # replay. Actual server termination remains independently observed.
             connection.pgconn.finish()
-        raise DatabaseUnknown() from None
+        if isinstance(error, DatabaseUnknown):
+            raise
+        raise DatabaseUnknown(error, stage="transaction") from None
     finally:
         _cutoff.reset(token)

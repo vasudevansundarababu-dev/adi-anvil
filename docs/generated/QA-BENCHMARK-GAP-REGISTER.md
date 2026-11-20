@@ -2,6 +2,20 @@
 
 ## Capture and catalogue acceptance — 19 November, after deployed08d45ff
 
+CAPTURE-30 (ACTUAL FAILURE REPRODUCED; corrected query verified read-only): all
+three62abd00 image builds passed, but its real capture probe failed the identity
+SELECT with PostgreSQL42501. Text relation privilege checks required private
+schema USAGE; the query also named nonexistent campaign_private.expectations
+instead of campaign_private.references. No private schema access was granted.
+The corrected query resolves exactly both expected tables using catalogue OIDs,
+requires forced RLS and denies table-wide OR any-column SELECT. A fresh scoped
+metadata-only QA diagnostic returned restricted=true/read_only=true/ssl=true.
+This is query evidence, not complete driver/cancellation qualification. Failed
+probe container is retained terminal/PID0/exit1, with no cleanup failures and no
+receipt/replay. Studio must test under actual restricted credentials, include
+missing-relation/column-grant/RLS negatives and retain safe original error class/
+SQLSTATE. Admin/owner success or mocked driver tests cannot prove this boundary.
+
 CAPTURE-27 (CODE BUILT, actual qualification pending): capture configuration had
 no target/driver runtime-qualification receipt contract; frontend and backend
 therefore always reported not ready. QA PostgreSQL actually had SSL off and its

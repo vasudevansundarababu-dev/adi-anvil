@@ -54,9 +54,14 @@ async def probe(*, absolute_deadline):
                 "AND NOT pg_has_role(session_user,'anvil_golden_grader','MEMBER') "
                 "AND NOT pg_has_role(session_user,'anvil_capture_peer_writer','MEMBER') "
                 "AND NOT pg_has_role(session_user,'anvil_capture_registrar','MEMBER') "
+                "AND NOT pg_has_role(session_user,'anvil_capture_enrollment_owner','MEMBER') "
                 "AND NOT pg_has_role(session_user,'anvil_private_grade_owner','MEMBER') "
-                "AND NOT has_table_privilege(session_user,'banking_private.expectations','SELECT') "
-                "AND NOT has_table_privilege(session_user,'campaign_private.expectations','SELECT') AS restricted "
+                "AND (SELECT count(*)=2 AND bool_and(c.relrowsecurity IS TRUE AND c.relforcerowsecurity IS TRUE "
+                "AND pg_catalog.has_table_privilege(session_user,c.oid,'SELECT') IS FALSE "
+                "AND pg_catalog.has_any_column_privilege(session_user,c.oid,'SELECT') IS FALSE) "
+                "FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace "
+                "WHERE c.relkind='r' AND (n.nspname,c.relname) IN "
+                "(('banking_private','expectations'),('campaign_private','references'))) AS restricted "
                 "FROM pg_roles WHERE rolname=session_user"
             )).fetchone()
             if (not measured or measured["login"] != parameters["user"]
