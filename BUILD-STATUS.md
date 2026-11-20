@@ -1,5 +1,44 @@
 # Build status
 
+## 20 November — PAUSED at owner's airport departure request
+
+Owner explicitly requested stopping deployment. Core build
+1ccc41b8-c22c-4b2a-9de4-0c69c8a59809 and Environment build
+f10bbfae-b553-47cd-85bc-5d2aba9a0c22 were submitted successfully after
+reauthentication, then cancelled at the owner's request. Evaluation was not
+submitted. No new image rollout or qualification publication occurred; serving
+QA remains unchanged. Registration failure remains unresolved. Do not resume
+builds, deployment, or qualification until the owner asks to resume. Retain the
+v15 intents and cancelled build IDs; prepare a fresh reconciled retry record
+on resumption instead of replaying or overwriting submission intents.
+
+## 20 November — registration diagnostics ready; cloud reauthentication required
+
+App revision ae6cb429e0e15a031696ab6248c05d77f8adbd9f adds bounded,
+private-safe error origins and an explicit missing four-product reference
+diagnostic. Golden source is
+4e53d1c1b41ca373b2c9eecf695c22654c3d3885fdbed84dd70a5b1c74f730f0.
+Full backend unit suite: 1361 passed, 4 skipped, 10 subtests passed in
+125.68 seconds. This is not serving QA registration acceptance.
+
+The separate full-ASGI synthetic HTTP diagnostic against the existing backend
+image returned HTTP 200 with four bindings and fifty evaluators. It used only
+an isolated fixture database; the serving registration failure remains
+undiagnosed. No owner registration retry, approval replay, or live model call.
+
+Fresh committed archive and phase plan v15 prepared under
+/private/tmp/forge-registration-ae6cb42/source. Core and Environment submit
+attempts both failed during credential refresh: Google reauthentication
+required, no successful Cloud Build acknowledgement. Durable submission intents
+are retained. After sign-in, reconcile each operation token before submitting
+again; do not overwrite or blindly replay an uncertain attempt. Evaluation
+remains blocked on the new Environment digest. Existing QA serving images and
+qualification receipts remain unchanged. A Google sign-in was opened and the
+owner was asked to complete it. No new deployment or qualification claimed.
+
+Tokens: qa-core-ae299ec4bd9a29d16742a589f0798902;
+qa-environments-9058aa1a6e00721b3cbb6801c2e7db3c.
+
 ## 20 November, 07:03 PST — owner reference registration failed; HTTP context diagnosis
 
 Owner confirmed clicking Register four-product software reference; screenshot
