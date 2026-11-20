@@ -47,6 +47,9 @@ confirms ready/configuration_ready/runtime_qualified=true, target8e8d48c9,
 receiptbe7bb486, API-only scope/spending=false, connection_probe_performed=false.
 Supplemental raw SHA6338db04f8b6afb5b01e04f4bda4231f6fed95045979a8077bfbfa56e715f684;
 no database probe or qualification replay was performed.
+Harbor and Aegis independently accepted this supplemental result and closed the
+narrow serving API capture-reader evidence gap. Browser/UI and actual project
+publication/attestation gates remain separate and blocked as described above.
 Blocked-status email sent only tovasudevan.sundarababu@adi-labs.ai, Gmail
 message1a1f6c55f2cdaa31/thread1a1f5549b730b54b, covering build/fixes/checks/QA
 link, browser blocker, actual v8 publication gate and receipt expiry.
