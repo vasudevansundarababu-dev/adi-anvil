@@ -1,0 +1,12 @@
+{
+  "steps": [{
+    "id": "web-only-reference-action",
+    "name": "gcr.io/cloud-builders/docker",
+    "args": ["build", "--platform=linux/amd64", "--label", "org.opencontainers.image.revision=${_SOURCE_COMMIT}", "-f", "infra/docker/web.Dockerfile", "-t", "${_WEB_IMAGE}", "."]
+  }],
+  "images": ["${_WEB_IMAGE}"],
+  "options": {"machineType": "E2_HIGHCPU_8", "logging": "CLOUD_LOGGING_ONLY"},
+  "timeout": "1800s",
+  "queueTtl": "300s",
+  "tags": ["qa-web-reference-only"]
+}

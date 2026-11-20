@@ -65,6 +65,7 @@ export default function GoldenKycWorkbench({
 }) {
   const api = base.replace(/\/workspace$/, '') + '/golden-banking/v1';
   const [packs, setPacks] = useState<Pack[]>([]);
+  const [referencePack, setReferencePack] = useState('');
   const [applications, setApplications] = useState<Application[]>([]);
   const [trials, setTrials] = useState<Trial[]>([]);
   const [imports, setImports] = useState<Imported[]>([]);
@@ -298,6 +299,40 @@ export default function GoldenKycWorkbench({
           >
             Import and bind in Forge
           </button>
+        )}
+        {canAdmin && packs.length > 0 && (
+          <fieldset disabled={busy}>
+            <legend>Four-product adapter software reference</legend>
+            <p>
+              Register a synthetic software reference for template adapter conformance only.
+              This does not import authored tasks, select the KYC v8 benchmark population,
+              approve dataset context, policy or rights, or authorize a run.
+            </p>
+            <label>
+              Software reference pack{' '}
+              <select value={referencePack} onChange={(event) => setReferencePack(event.target.value)}>
+                <option value="">Select an existing pack</option>
+                {packs.map((pack) => (
+                  <option key={pack.id} value={pack.id}>
+                    {pack.manifest.version} · {pack.manifest.application_count} cases · {pack.id}
+                  </option>
+                ))}
+              </select>
+            </label>{' '}
+            <button
+              disabled={!packs.some((pack) => pack.id === referencePack)}
+              onClick={() => void anvilAction('/anvil/import', {
+                pack_id: referencePack,
+                task_mode: 'reusable_application_workflow',
+              })}
+            >
+              Register four-product software reference
+            </button>
+            <p>
+              Genuine KYC v8 dataset binding and benchmark execution remain on hold until their
+              separate reviews and admission checks pass. Registration does not start a run.
+            </p>
+          </fieldset>
         )}
         {imports[0] && (
           <div>
