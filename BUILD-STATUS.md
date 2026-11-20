@@ -39,7 +39,17 @@ healthy polling workers, health200/schema133 and exact activated config
 2c2046ee44311b9478f008e5dbe75cbd1b6676082b386d9c6c11b761f9d1dcbc.
 Serving summary SHA690d127658be15b3a8dce1bf2304fb0d3644d46c5dbc495d4b850cfb74d0b3a9;
 sanitized21-file bundle SHA9b3f58d13fb543f603e5ca1167d7430c64fba275f2eec5d1a1781d1b5a300332.
-Independent serving acceptance was requested from Harbor and Aegis.
+Harbor independently accepted actual serving profiles, canonical receipt pins,
+source, config, schema, flags and health. Aegis reconciled the21-file packet and
+requested actual serving API capture readiness as a separate evidence item.
+Fresh read-only result at02:25:28UTC from exact API containerdedc755854b1
+confirms ready/configuration_ready/runtime_qualified=true, target8e8d48c9,
+receiptbe7bb486, API-only scope/spending=false, connection_probe_performed=false.
+Supplemental raw SHA6338db04f8b6afb5b01e04f4bda4231f6fed95045979a8077bfbfa56e715f684;
+no database probe or qualification replay was performed.
+Blocked-status email sent only tovasudevan.sundarababu@adi-labs.ai, Gmail
+message1a1f6c55f2cdaa31/thread1a1f5549b730b54b, covering build/fixes/checks/QA
+link, browser blocker, actual v8 publication gate and receipt expiry.
 No live calls, model benchmark, Authoring integration or performance report ran.
 
 The entries below are chronological history and describe earlier candidates.
