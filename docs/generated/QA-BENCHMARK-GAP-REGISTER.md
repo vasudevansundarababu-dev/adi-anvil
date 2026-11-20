@@ -1,5 +1,31 @@
 # QA benchmark exercise — living gap register
 
+## 19 November, deployed39cb2d9 — verified technical closure and remaining gates
+
+CAPTURE-27/30: corrected restricted catalogue OID checks and API-only capture
+qualification are deployed. Actual TLS verify-full probe passed all six
+identity/read-only/cancellation/cleanup controls without granting private schema
+access. Independent review and installed API receipt consumption passed.
+Technical-component qualification passed14 controls, including actual native
+Trial, worker/SDK transport, private scoring and SQL/registry controls. Receipts
+are scoped and expiring; Studio must automate renewal/invalidation, not preserve
+a permanent Ready flag. Failed62 candidate remains retained and unqualified.
+
+CATALOGUE-28: current39 UI separates installed technical evidence from project
+readiness; five actual measured observations refreshed. No project binding or
+qualification was invented. Two roles without genuine measured observations
+remain unobserved. Authenticated current39 visual acceptance is blocked by a
+missing controllable Chrome window, not admitted as passed.
+
+OFFLINE PUBLICATION: fresh database read still shows v8 publication/subject/PO
+attestation counts0 and six historical blocked qualification rows. The exact
+publication record exists in the owner package; it is not missing from Authoring.
+The owner must stage it and attest locally using their real account. Studio
+should show this precise next action, distinguish upload/registration/publication/
+qualification and avoid demanding SME re-authoring or silently approving it.
+Dataset/context review and actual Gym bindings remain distinct later run gates.
+No live model calls or Authoring integration were performed.
+
 ## Capture and catalogue acceptance — 19 November, after deployed08d45ff
 
 CAPTURE-30 (ACTUAL FAILURE REPRODUCED; corrected query verified read-only): all

@@ -1,5 +1,75 @@
 # Build status
 
+## 19 November, 18:20 PST — 39cb2d9 deployed; browser acceptance blocked
+
+The three-phase release39cb2d96418fd029f7c87274941b00639d12d87a is now
+serving on https://anvil-qa.adi-labs.ai/workspace. Actual rollout acknowledged
+all eight services running with zero restarts, source896b9c2b39b33ff45f75c989a73f11437abe0b00daa0932d0b639c5336a0e088,
+schema/Alembic133 and no migration replay. Installed source/receipt checks,
+native SDK profile equality and API/workspace health passed. Actual security,
+resource, runtime-user/entrypoint and mount profiles match the reviewed plan.
+Durable release evidence is in QA `backups/qualification-39cb2d9/`.
+
+Technical-component receipt3b2ae3bee8c472ec627a212c24350576ead069bbc09353c6d1106fb1bccbad0d
+is activated; all14 technical controls passed independent review. It expires
+20 November21:00UTC. API-only capture receiptbe7bb48642cb448877635a93d4900cd6e586fe3f0685877c142e20104203553a
+is mounted and actual installed readiness passed without a connection probe.
+It expires21 November01:13:03UTC. Neither receipt grants project, policy,
+rights, publication, spending or model-performance authority. Live provider,
+Authoring and application real-email flags remain false.
+
+Five measured catalogue observations were appended at20 November02:17UTC
+(19 November18:17PST) for API, business worker, grader, scheduler and native
+coordinator, using actual39 images/interpreters/locks/packages. They remain
+observed_not_qualified with no fabricated target/binding/expiry.
+
+Fresh read-only KYC v8 query confirms template937a438d-aada-4f02-807f-d0a4ac36511b
+registered, but zero publications, offline subjects and PO attestations; all six
+existing qualification rows remain blocked. The owner must stage the supplied
+publication record and record their real PO attestation in the deployed UI;
+no agent imported the package or bypassed the browser upload permission gate.
+
+Sentinel could not inspect current39 UI: Chrome returned cgWindowNotFound
+(-10005), with no controllable window. This is an environment blocker, not an
+observed application failure. Authenticated UI acceptance is BLOCKED, not
+passed; historical08 findings are not current39 results. Open Forge QA in a
+visible Chrome window to resume. Final sanitized serving collection passed at
+02:22:30UTC: eight profiles, seven installed-source records, six receipt readers,
+healthy polling workers, health200/schema133 and exact activated config
+2c2046ee44311b9478f008e5dbe75cbd1b6676082b386d9c6c11b761f9d1dcbc.
+Serving summary SHA690d127658be15b3a8dce1bf2304fb0d3644d46c5dbc495d4b850cfb74d0b3a9;
+sanitized21-file bundle SHA9b3f58d13fb543f603e5ca1167d7430c64fba275f2eec5d1a1781d1b5a300332.
+Independent serving acceptance was requested from Harbor and Aegis.
+No live calls, model benchmark, Authoring integration or performance report ran.
+
+The entries below are chronological history and describe earlier candidates.
+
+## 19 November — corrected39 controls passed; activation pending
+
+App39cb2d96418fd029f7c87274941b00639d12d87a/source896b9c2b39b33ff45f75c989a73f11437abe0b00daa0932d0b639c5336a0e088
+completed all three build phases. Release manifest SHA509abde53df86b2254b9b13994406196953fabfc40a4ab29de0c44507dcd8dbf.
+Final regression evidence:1343units+10subtests/4skips, additional6wiring tests,
+100fresh SQL and5private SQL passed. Both local SQL fixtures stopped/retained.
+Actual QA fixed native Trial604a4cba passed/evidence9d0570bf...; worker/SDK
+transport both exited0/evidenceeeeb5d3d...; six private cases+audit5f570912...,
+SQL691dc50c..., registrycfb50ab7..., componentsa39b19f9... all passed.
+Original coordinator restored; old serving08/config4d566/q19 unchanged/schema133.
+
+Independent actual component review SHA8e86933d006e2220d13fc9db595ef21c8e5588b74f590709cf00da706d5370dd
+passed8primary+56related hashes/23profiles/950trace files (no INET connects).
+Bundle `component-evidence-39cb2d9-96f9a9c8`; installed verify-only passed with
+candidate receipt3b2ae3bee8c472ec627a212c24350576ead069bbc09353c6d1106fb1bccbad0d.
+Candidate publication/activation and final UI acceptance remain pending. New
+receipt expires20 November21:00UTC; no project/human/spending/model-performance
+authority. Old q19 stays canonical until old readers stop during reviewed rollout.
+
+Capture API actual probe0.311761s passed all6 controls; Aegis reviewdfae9973...
+and installed network-none preview passed. API-only receipt
+be7bb48642cb448877635a93d4900cd6e586fe3f0685877c142e20104203553a is published,
+target8e8d48c90e9aed61044241af255268156386802a1cd3713a9d6f0d3fb318b1ec,
+expires21 November01:13:03UTC. It is not yet mounted into the serving old API.
+No live provider/Authoring calls, migrations, owner package import or attestations.
+
 ## Corrected restricted-database catalogue query — not yet deployed
 
 Candidate62abd00/source355c1e00 completed Core d4d3c479-3601-4e93-802c-b3c075f3896b,
