@@ -2,7 +2,64 @@
 
 import json
 import re
+from pathlib import Path
 from uuid import uuid4
+
+
+def safe_error_evidence(error, first_party_root):
+    """Bounded static locations only; never messages, locals, paths or source lines."""
+    known = {
+        'Inactive or foreign software resource operation': 'software_resource_inactive_or_foreign',
+        'Foreign software operation connection': 'software_resource_connection_mismatch',
+        'Software resource closure changed before commit': 'software_resource_closure_changed',
+        'Software resource digest changed before commit': 'software_resource_digest_changed',
+        'Unexpected software resource type': 'software_resource_type',
+        'Software resource changed while measuring': 'software_resource_changed_during_measurement',
+        'Resource outside software operation inventory': 'software_resource_inventory',
+        'Private KYC transaction cannot change scope or database role': 'private_kyc_scope_mismatch',
+    }
+    allowed_types = (RuntimeError, ValueError, TypeError, TimeoutError, OSError, PermissionError,
+                     FileNotFoundError, Exception, ExceptionGroup, BaseExceptionGroup,
+                     ConnectionError, EOFError, MemoryError, ImportError, ModuleNotFoundError,
+                     AttributeError, KeyError, IndexError, AssertionError)
+    result = {'exception_types': [], 'guards': [], 'locations': []}
+    pending, seen, inspected_frames = [(error, 0)], set(), 0
+    while pending and len(seen) < 4:
+        current, depth = pending.pop()
+        if id(current) in seen or depth > 3:
+            continue
+        seen.add(id(current))
+        label = next((kind.__name__ for kind in allowed_types if type(current) is kind), 'external_exception')
+        result['exception_types'].append(label)
+        args = BaseException.args.__get__(current)
+        guard = known.get(args[0], 'unclassified') if type(current) is RuntimeError and len(args) == 1 and type(args[0]) is str else 'unclassified'
+        result['guards'].append(guard)
+        trace = BaseException.__traceback__.__get__(current)
+        while trace is not None and inspected_frames < 64:
+            inspected_frames += 1
+            code = trace.tb_frame.f_code
+            path = Path(code.co_filename)
+            if (path.is_absolute() and '..' not in path.parts and path.is_relative_to(first_party_root)
+                    and re.fullmatch(r'[A-Za-z0-9_]{1,80}\.py', path.name)
+                    and len(result['locations']) < 8):
+                function = code.co_name
+                if not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]{0,79}|<module>|<lambda>', function):
+                    function = 'redacted'
+                result['locations'].append({'file': path.name, 'function': function, 'line': trace.tb_lineno})
+            trace = trace.tb_next
+        children = []
+        if isinstance(current, BaseExceptionGroup):
+            children.extend(BaseExceptionGroup.exceptions.__get__(current)[:4])
+        for descriptor in (BaseException.__cause__, BaseException.__context__):
+            child = descriptor.__get__(current)
+            if child is not None:
+                children.append(child)
+        for child in children:
+            if len(pending) < 8:
+                pending.append((child, depth + 1))
+    while len(json.dumps(result, separators=(',', ':')).encode()) > 2048 and result['locations']:
+        result['locations'].pop()
+    return result
 
 
 class RequestBodyTooLarge(ValueError):

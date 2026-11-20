@@ -61,7 +61,17 @@ def conformance(c, project, spec):
         (project, source_hash(), expected_mode),
     )
     if not imported:
-        raise ValueError("Current qualified Golden import required")
+        # A missing project provisioning record is not an unsupported adapter.
+        # Qualification must not create an import or bind a dataset implicitly.
+        return {
+            "passed": False,
+            "origin": "golden_project_runtime_import_required",
+            "requirements": ["AV_KYC_PROJECT_RUNTIME_IMPORT_REQUIRED"],
+            "required_task_mode": expected_mode,
+            "golden_source_sha256": source_hash(),
+            "case_grading_performed": False,
+            "model_performance": False,
+        }
     validate(c, imported)
     if execution.environment.version == "2" and imported["manifest"].get("task_mode") != expected_mode:
         raise ValueError("Exact qualified reusable workflow import required; legacy state qualification cannot authorize application routing")

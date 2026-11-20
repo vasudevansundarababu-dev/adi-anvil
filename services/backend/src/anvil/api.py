@@ -1,5 +1,7 @@
+import json
 import logging
 from contextlib import contextmanager
+from pathlib import Path
 from uuid import UUID
 
 from fastapi import FastAPI, HTTPException, Query, Request, UploadFile
@@ -45,7 +47,7 @@ from anvil.provider_api import routes as provider_routes
 from anvil.readiness import routes as readiness_routes
 from anvil.reports import prepare_report
 from anvil.reports import routes as report_routes
-from anvil.request_limits import RequestLimits
+from anvil.request_limits import RequestLimits, safe_error_evidence
 from anvil.runtime_admin import routes as runtime_admin_routes
 from anvil.schemas import Decision, FixtureImport, Rights, Withdrawal
 from anvil.shared_execution_budget import routes as shared_budget_routes
@@ -76,9 +78,15 @@ async def security_headers(request, call_next):
     try:
         response = await call_next(request)
     except Exception as exc:
-        logging.getLogger("anvil.api").error(
-            "request=%s code=%s", request.state.request_id, type(exc).__name__
-        )
+        try:
+            evidence = safe_error_evidence(exc, Path(__file__).parent)
+            logging.getLogger("anvil.api").error(
+                "request=%s code=%s evidence=%s", request.state.request_id,
+                evidence['exception_types'][0], json.dumps(evidence, separators=(',', ':')),
+            )
+        except Exception:
+            # Diagnostic projection/logging cannot replace the original response.
+            pass
         response = JSONResponse(
             {
                 "error": {

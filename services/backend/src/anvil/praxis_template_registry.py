@@ -143,6 +143,7 @@ def qualify(c, project, user, template_id):
         probe = {"passed": False, "origin": "adapter_not_supported"}
     if not probe["passed"]:
         missing.append("AV_ENVIRONMENT_PROVISIONING_REQUIRED")
+        missing.extend(probe.get("requirements", []))
     if not publication_accepted:
         missing.append("REVIEW_PRAXIS_PUBLICATION")
     receipt = {
