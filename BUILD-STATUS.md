@@ -1,5 +1,38 @@
 # Build status
 
+## 20 November, 07:03 PST — owner reference registration failed; HTTP context diagnosis
+
+Owner confirmed clicking Register four-product software reference; screenshot
+06:42 shows generic server error. Fresh14:43:12UTC reads show imports[] and
+registration idempotency receipts0: NOT registered. No POST retry requested.
+Serving API safe log has RuntimeError/request1f176d8a-bba3-474f-b28e-5232ddc547a3;
+middleware logs no underlying frames/message/route. Edge query had no matching
+logged500. Existing source/reference control qualification is not evidence that
+this actual registration succeeded.
+
+Read-only diagnostics in actual API image41: proof entry/source896/exit passed;
+50fixed local evaluator controls passed5.60s. Repeated with full API imports,
+normal non-isolated/no-B interpreter, UID10001 and nonwritable source directory
+passed5.48s. No SQL writes, case grading, model calls or qualification producer.
+
+Fresh isolated exactbackend41 SQL reproduction2 used synthetic generator data,
+restricted fixture identity, same idempotent/register/response encoder and real
+transaction/savepoint, then forced outer rollback. It succeeded4bindings/50
+evaluators; project+user/login/engineer/visible200 checks made zero imports/jobs/
+idempotency after rollback nonvacuous. Setup1e7bd6b57e72a24c867479b128e9291ef2aa36687c670e426e9082941b60f42f,
+worker3942f751d33f0a87ee021f85f9682948c8ede4810500f8e49cdb24ae957c13b5,
+Postgres10a7654ab23d62c55bf16ac7c9011341d41d8bb36d0862cc7d49c7b1823919e1
+all terminalExited0/PID0 after verified independent owned cleanup. No serving
+database, real identities/approvals, provider calls or qualification writes.
+Diagnostic1 failed a manifest-key lookup BEFORE any container creation; retained
+empty fixture dirs, then corrected control_files lookup under a fresh attempt.
+Exact scripts reviewed Harbor/Aegis; no custody/deadline check weakened.
+
+Conclusion: underlying actual HTTP/cloud/long-lived context failure remains
+UNDIAGNOSED; do not claim reproduction or fix from direct-function success.
+Continue with a separate synthetic full-HTTP/middleware diagnostic, keep user
+POST untouched, and retain no-live/Authoring-pause/project-data HOLD.
+
 ## 20 November, 06:34 PST — web06fdab4 reference action deployed and verified
 
 06:38PST handoff update: attempted normal genuine-Admin UI operation under
