@@ -46,7 +46,7 @@ def apply(config, image, image_digest):
     grader = services["golden-grader"]
     grader["environment"]["ANVIL_PRIVATE_PYTHON_GRADING_ROOT"] = PRIVATE
     # Execution still requires current SQL qualification/author/revocation gates.
-    grader["environment"]["ANVIL_CUSTOM_PYTHON_SCORING_ENABLED"] = "true"
+    grader["environment"]["ANVIL_CUSTOM_PYTHON_SCORING_ENABLED"] = "false"
     append_mount(grader, mount(PRIVATE))
     common = {"image": image, "read_only": True, "user": "0:0", "network_mode": "none", "restart": "no",
         "cap_drop": ["ALL"], "security_opt": ["no-new-privileges"], "mem_limit": "1536m", "pids_limit": 256,

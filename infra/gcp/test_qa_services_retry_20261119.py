@@ -9,6 +9,17 @@ spec.loader.exec_module(module)
 
 
 class MountControls(unittest.TestCase):
+    def test_compose_command_matches_complete_docker_argv(self):
+        entrypoint = ['/opt/anvil-runtime/bin/python','-I','-B','-m','anvil.golden_kyc_service']
+        command = ['--role','grader','--max-cycles','1']
+        desired = {'entrypoint':entrypoint,'command':command}
+        info = {'Config':{'Entrypoint':entrypoint,'Cmd':command},'Path':entrypoint[0],'Args':entrypoint[1:]+command}
+        module.software_command(info,desired)
+        for bad in (info|{'Args':command}, info|{'Path':'/bin/sh'},
+                    info|{'Config':{'Entrypoint':entrypoint,'Cmd':command+['--unknown']}}):
+            with self.assertRaises(AssertionError):
+                module.software_command(bad,desired)
+
     def test_exact_observed_legacy_groups_preserve_rw(self):
         for role, values in module.LEGACY.items():
             with self.subTest(role=role):

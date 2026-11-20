@@ -5,6 +5,7 @@ Only a safe status/reason/hash may leave this module; never return its private
 effective libpq parameters or descriptor through an API or diagnostic repr.
 """
 
+import hashlib
 import hmac
 import ipaddress
 import os
@@ -87,10 +88,29 @@ def inspect_target(*, setting_name="DATABASE_URL"):
                 or any(key.startswith("oauth_") and value for key, value in parameters.items())
                 or "oauth" in parameters.get("require_auth", "")):
             raise TargetUnavailable("capture_database_nonfallback_security_profile_required")
+        if parameters.get("sslcrldir"):
+            # Directory contents can rotate independently of the target pin.
+            # This contract admits a bounded explicit CRL file instead.
+            raise TargetUnavailable("capture_database_trust_file_required")
         descriptor = {"schema_version": "anvil.capture-database-target-configuration.v1", "host": host,
                       "port": str(int(port)), "database": parameters["dbname"], "user": parameters["user"],
                       "target_session_attrs": parameters.get("target_session_attrs", "any"),
                       "tls": {key: parameters.get(key) for key in TLS_FIELDS}}
+        # Trust/certificate rotation at the same filename must invalidate the
+        # target. Never read or publish a client's private key/password.
+        trust = {}
+        for name in ("sslrootcert", "sslcert", "sslcrl"):
+            filename = parameters.get(name)
+            if filename:
+                file = Path(filename)
+                if not file.is_absolute() or file.resolve(strict=True) != file:
+                    raise TargetUnavailable("capture_database_trust_file_required")
+                info = file.stat()
+                if not stat.S_ISREG(info.st_mode) or not 0 < info.st_size <= 1048576:
+                    raise TargetUnavailable("capture_database_trust_file_required")
+                trust[name] = hashlib.sha256(file.read_bytes()).hexdigest()
+        if trust:
+            descriptor["trust_files_sha256"] = trust
         if host.startswith("/"):
             if address:
                 raise TargetUnavailable("capture_database_single_target_required")
@@ -148,6 +168,13 @@ def readiness():
         value["configuration_ready"] = True
         value["reason"] = ("capture_database_runtime_qualification_required" if capabilities.has_cancel_safe()
                            else "capture_database_driver_qualification_required")
+        if capabilities.has_cancel_safe():
+            from anvil.marketing_capture_database_qualification import installed
+
+            receipt = installed(fingerprint)
+            if receipt is not None:
+                value.update(ready=True, runtime_qualified=True, qualification=receipt,
+                             reason="capture_database_runtime_qualified")
     except TargetUnavailable as error:
         value["reason"] = error.code
     return value

@@ -40,6 +40,21 @@ def test_wiring_cannot_silently_activate_live_or_overwrite_existing_bridge():
     value["services"]["api"]["environment"]["ANVIL_LIVE_PROVIDERS_ENABLED"] = "true"
     with pytest.raises(ValueError, match="live activation"):
         wiring.apply(value, "synthetic-image", "a" * 64)
+
+
+def test_software_grader_wiring_passes_actual_dispatch_flag_validator():
+    from anvil.golden_kyc_service import validate_environment
+
+    value = config()
+    value["services"]["golden-grader"]["environment"] = {
+        "ANVIL_GOLDEN_KYC_ENABLED": "true",
+        "ANVIL_GOLDEN_GRADER_DATABASE_URL": "synthetic-disjoint-login-no-connection",
+        "ANVIL_LIVE_PROVIDERS_ENABLED": "false",
+    }
+    generated = wiring.apply(value, "synthetic-image", "a" * 64)
+    environment = generated["services"]["golden-grader"]["environment"]
+    assert environment["ANVIL_CUSTOM_PYTHON_SCORING_ENABLED"] == "false"
+    validate_environment("grader", environment)
     value = config()
     value["services"]["golden-scheduler"]["volumes"] = [wiring.mount(wiring.BRIDGE)]
     with pytest.raises(ValueError, match="reconciliation"):

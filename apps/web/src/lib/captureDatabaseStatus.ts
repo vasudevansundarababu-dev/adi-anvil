@@ -1,4 +1,6 @@
 const messages: Record<string, string> = {
+  capture_database_runtime_qualified: 'The capture API database target and cancellation controls are qualified. Project and operator bindings remain separate.',
+  capture_database_trust_file_required: 'Forge must restore and qualify the database trust certificate.',
   capture_database_runtime_qualification_required: 'Forge still needs to verify this database binding in the actual runtime.',
   capture_database_driver_qualification_required: 'Forge needs a qualified database client before capture can run.',
   capture_database_binding_pin_required: 'Forge provisioning needs to record the database binding.',
@@ -21,12 +23,24 @@ export function captureDatabaseStatus(value: unknown) {
   const configurationReady = record?.owner === 'anvil_provisioning'
     && record.configuration_ready === true
     && (reason === 'capture_database_runtime_qualification_required'
-      || reason === 'capture_database_driver_qualification_required');
+      || reason === 'capture_database_driver_qualification_required'
+      || reason === 'capture_database_runtime_qualified');
+  const proof = record?.qualification && typeof record.qualification === 'object'
+    ? record.qualification as Record<string, unknown> : null;
+  const isHash = (value: unknown) => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
+  const ready = configurationReady && reason === 'capture_database_runtime_qualified'
+    && record?.ready === true && record.runtime_qualified === true
+    && record.connection_probe_performed === false
+    && proof?.schema_version === 'anvil.capture-database-runtime-qualification.v1'
+    && proof.scope === 'capture_api_database_target_only' && proof.spending_authority === false
+    && isHash(proof.receipt_sha256) && isHash(record.target_sha256)
+    && proof.target_sha256 === record.target_sha256
+    && typeof proof.expires_at === 'string' && Date.parse(proof.expires_at) > Date.now();
   return {
-    // No applicable database runtime-qualification receipt contract exists yet.
-    // A pin, generic role flag or server "ready" boolean cannot invent one.
-    ready: false,
+    ready,
     configurationReady,
-    message: messages[reason] || 'Forge database readiness has not been reported.',
+    message: reason === 'capture_database_runtime_qualified' && !ready
+      ? 'Current capture database qualification evidence is incomplete or expired.'
+      : messages[reason] || 'Forge database readiness has not been reported.',
   };
 }

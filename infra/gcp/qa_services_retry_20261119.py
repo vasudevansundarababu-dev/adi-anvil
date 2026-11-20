@@ -13,6 +13,8 @@ from pathlib import Path, PurePosixPath
 REVISION = '08d45ff8eeb515561fbcd50916d6a7adb8fca42c'
 MANIFEST_SHA = '44776b6f0535c4b38ec5e44614572bac5f8d6695a4a52ea04fc69c0ac4c91f00'
 RECEIPT_SHA = '19ece673da61599de0bd74e787c67909e8929df41a3484c072c7442209b80284'
+INTERRUPTED = {'golden-scheduler':'9df3237c116ba79a1cb68061bd961e0b516c6d92a4d7b7d52071a59f3db9f2ec',
+               'golden-grader':'51dae248d6c0bda5b9b3e2b52d27a2671eadb1e1cb25f433bb8ac5d27a935539'}
 LEGACY = {'api': {'/var/lib/anvil-qa-v1/artifacts:/app/.data/artifacts',
     '/var/lib/anvil-qa-v1/benchmark-vault:/app/.data/benchmark-vault',
     '/var/lib/anvil-qa-v1/secret-index:/app/.data/secret-index'},
@@ -38,6 +40,14 @@ def bind_map(role, volumes):
         assert target not in result, 'Duplicate intended mount target'
         result[target] = (source, readonly)
     return result
+
+
+def software_command(info, desired):
+    entrypoint = ['/opt/anvil-runtime/bin/python','-I','-B','-m','anvil.golden_kyc_service']
+    command = list(map(str,desired['command']))
+    assert desired['entrypoint'] == entrypoint and info['Config']['Entrypoint'] == entrypoint
+    assert info['Config']['Cmd'] == command
+    assert [info['Path'],*info['Args']] == entrypoint + command
 
 
 def main():
@@ -67,6 +77,16 @@ def main():
             else 'da7793db67a9c2587f45728e2a302bbf2b1bda00ddf74afd8ed29bdb73d87e3a')
         assert old['services'][name]['image'].endswith('sha256:'+expected)
         new['services'][name]['image'] = images['kyc-runtime' if name.startswith('golden-') else 'web' if name == 'web' else 'backend']
+    for name in INTERRUPTED:
+        assert not old['services'][name].get('depends_on'), 'Stopped software restore must have no dependent effects'
+        command = list(old['services'][name]['command'])
+        assert all(command.count(flag) == 1 for flag in ('--max-cycles','--max-seconds','--poll-seconds','--continuous'))
+        index = command.index('--max-cycles')
+        assert str(command[index+1]) == '300' and '--continuous' in command
+        assert str(command[command.index('--max-seconds')+1]) == '600'
+        assert str(command[command.index('--poll-seconds')+1]) == '10'
+        command[index+1] = '1'
+        new['services'][name]['command'] = command
     new['services']['migrate']['image'] = images['backend']
     new['services']['migrate']['command'] = ['python','-m','alembic','-c','services/backend/alembic.ini','upgrade','133']
     for name in set(old['services']) - set(old_services) - {'migrate'}:
@@ -77,9 +97,13 @@ def main():
     wiring = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(wiring)
     new = wiring.apply(new,images['kyc-runtime'],images['kyc-runtime'].rsplit('sha256:',1)[1])
+    # Explicit reduced-authority override of the retained80ae wiring artifact.
+    assert new['services']['golden-grader']['environment']['ANVIL_CUSTOM_PYTHON_SCORING_ENABLED'] == 'true'
+    new['services']['golden-grader']['environment']['ANVIL_CUSTOM_PYTHON_SCORING_ENABLED'] = 'false'
     for name in services:
         bind_map(name,new['services'][name].get('volumes',[]))
-    backup = root/'backups/qualification-08d45ff-services-v2'
+    assert not (root/'backups/qualification-08d45ff-services-v2/service-retry-intent.json').exists()
+    backup = root/'backups/qualification-08d45ff-services-v3'
     backup.mkdir(mode=0o700)
     shutil.copy2(config,backup/config.name)
 
@@ -101,6 +125,10 @@ def main():
     def versions():
         command = 'exec psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -X -A -t -c "SELECT max(version) FROM anvil.schema_versions; SELECT version_num FROM anvil.alembic_version"'
         return run('docker','exec','anvil-qa-v1-postgres-1','sh','-c',command).decode().strip().splitlines()
+
+    def empty_custody():
+        command = 'exec psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -X -A -t -c "SELECT (SELECT rolsuper OR rolbypassrls FROM pg_roles WHERE rolname=current_user),(SELECT count(*) FROM banking.commands),(SELECT count(*) FROM banking.execution_jobs)"'
+        assert run('docker','exec','anvil-qa-v1-postgres-1','sh','-c',command).decode().strip() == 't|0|0'
 
     def inspected(name):
         values = json.loads(run('docker','inspect','anvil-qa-v1-'+name+'-1'))
@@ -134,25 +162,46 @@ def main():
         env = dict(item.split('=',1) for item in info['Config']['Env'] if '=' in item)
         for flag in ('ANVIL_LIVE_PROVIDERS_ENABLED','ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED','ANVIL_PRAXIS_TEMPLATE_CALLS_ENABLED','ANVIL_REAL_EMAIL_ENABLED'):
             assert env.get(flag,'false') == 'false'
+        if name in INTERRUPTED:
+            software_command(info,desired)
+            assert env.get('ANVIL_CUSTOM_PYTHON_SCORING_ENABLED','false') == 'false'
 
     assert versions() == ['133','133'], 'Do not replay migration or accept another schema'
+    empty_custody()
     assert shutil.disk_usage('/').free > 10*1024**3
     for name in old_services:
         info = inspected(name)
-        assert info['State']['Running'] and info['Config']['Image'] == old['services'][name]['image']
+        assert info['Config']['Image'] == old['services'][name]['image']
         assert info['Config']['Labels']['org.opencontainers.image.revision'] == '151d6fbdea701be0d1f1c02bd869456c8dbad318'
+        if name in INTERRUPTED:
+            assert info['Id'] == INTERRUPTED[name] and not info['State']['Running'] and info['State']['Pid'] == 0
+            software_command(info,old['services'][name])
+            assert info['State']['ExitCode'] == 1 and not info['State']['Restarting'] and info['RestartCount'] == 0
+            assert not info['State'].get('OOMKilled') and not info['State'].get('Error') and not info['State'].get('Dead')
+            retained = (prior/(name+'-reconciled-startup.log')).read_bytes()
+            logs = subprocess.run(['docker','logs','--tail','100',info['Id']],capture_output=True,timeout=30,check=True)
+            assert logs.stdout+logs.stderr == retained
+            assert b'RuntimeError: Software worker interrupted; inspect retained custody, no retry' in retained
+        else:
+            assert info['State']['Running']
     reconciled = {}
     for name in new_names:
         info = inspected(name)
         candidate(name,info,False)
         reconciled[name] = info['Id']
-    temporary = config.with_name('compose-qualification-08d45ff-services-v2.json')
+    temporary = config.with_name('compose-qualification-08d45ff-services-v3.json')
     with os.fdopen(os.open(temporary,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600),'w') as out:
         json.dump(new,out,indent=2)
     run('docker','compose','-p','anvil-qa-v1','-f',str(temporary),'config','--quiet')
     assert versions() == ['133','133']
+    empty_custody()
     with os.fdopen(os.open(backup/'service-retry-intent.json',os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600),'w') as out:
-        json.dump({'revision':REVISION,'migration_replayed':False,'schema':133,'prior_owned_stopped_ids':reconciled,'attempts':1},out)
+        json.dump({'revision':REVISION,'migration_replayed':False,'schema':133,'prior_owned_stopped_ids':reconciled,
+            'empty_commands_and_execution_jobs':True,'software_max_cycles':1,'software_window_seconds':600,
+            'software_grader_custom_scoring_enabled':False,'interrupted_old_ids':INTERRUPTED,'attempts':1,
+            'before_config_sha256':hashlib.sha256((backup/config.name).read_bytes()).hexdigest(),
+            'after_config_sha256':hashlib.sha256(temporary.read_bytes()).hexdigest(),
+            'software_commands':{name:{'before':old['services'][name]['command'],'after':new['services'][name]['command']} for name in INTERRUPTED}},out)
         out.flush()
         os.fsync(out.fileno())
     compose = ['docker','compose','-p','anvil-qa-v1','-f',str(config)]
@@ -176,7 +225,9 @@ def main():
             observed[name] = {'id':info['Id'],'image':info['Config']['Image'],'running':True,'restarts':0}
         assert versions() == ['133','133'] and hashlib.sha256(qualification.read_bytes()).hexdigest() == RECEIPT_SHA
         result = {'revision':REVISION,'schema':133,'services':observed,'migration_replayed':False,
-            'technical_component_receipt_sha256':RECEIPT_SHA,'project_qualification_granted':False,'live_calls_enabled':False}
+            'technical_component_receipt_sha256':RECEIPT_SHA,'project_qualification_granted':False,'live_calls_enabled':False,
+            'config_sha256':hashlib.sha256(config.read_bytes()).hexdigest(),'software_max_cycles':1,
+            'software_grader_custom_scoring_enabled':False,'software_window_seconds':600}
         with os.fdopen(os.open(backup/'rollout-summary.json',os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600),'w') as out:
             json.dump(result,out,indent=2)
         print(json.dumps(result))
@@ -192,11 +243,35 @@ def main():
                 assert after['Id'] == info['Id'] and not after['State']['Running'] and after['State']['Pid'] == 0 and not after['State']['Restarting']
             except Exception as error:
                 failures.append({'service':name,'error_type':type(error).__name__})
-        try:
-            run(*compose,'up','-d','--no-deps',*old_services)
-            for name in old_services:
+        # Every owned role gets independent cleanup; one failure must not
+        # prevent the other software role or the four healthy roles restoring.
+        restorable = []
+        for name in INTERRUPTED:
+            try:
                 info = inspected(name)
-                assert info['State']['Running'] and info['Config']['Image'] == old['services'][name]['image']
+                assert info['Config']['Image'] in {old['services'][name]['image'],images['kyc-runtime']}
+                assert info['Config']['Labels']['org.opencontainers.image.revision'] in {REVISION,'151d6fbdea701be0d1f1c02bd869456c8dbad318'}
+                if info['State']['Running']:
+                    run('docker','stop','--time','6',info['Id'])
+                after = inspected(name)
+                assert after['Id'] == info['Id'] and not after['State']['Running'] and after['State']['Pid'] == 0
+                restorable.append(name)
+            except Exception as error:
+                failures.append({'service':name,'phase':'software_stop','error_type':type(error).__name__})
+        for name in restorable:
+            try:
+                run(*compose,'create','--no-build','--force-recreate',name)
+                info = inspected(name)
+                assert info['Config']['Image'] == old['services'][name]['image']
+                assert not info['State']['Running'] and info['State']['Pid'] == 0
+            except Exception as error:
+                failures.append({'service':name,'phase':'software_restore_stopped','error_type':type(error).__name__})
+        try:
+            run(*compose,'up','-d','--no-deps',*(name for name in old_services if name not in INTERRUPTED))
+            for name in (item for item in old_services if item not in INTERRUPTED):
+                info = inspected(name)
+                assert info['Config']['Image'] == old['services'][name]['image']
+                assert info['State']['Running']
         except Exception as error:
             failures.append({'service':'old-service-restore','error_type':type(error).__name__})
         with os.fdopen(os.open(backup/'rollback-outcome.json',os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600),'w') as out:

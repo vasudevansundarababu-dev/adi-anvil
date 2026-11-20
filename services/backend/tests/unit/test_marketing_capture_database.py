@@ -164,6 +164,9 @@ def test_expired_deadline_starts_no_connect_or_setup(monkeypatch):
 
 
 def test_prebound_target_preserves_hostname_without_any_dns_or_reconnect(monkeypatch):
+    from anvil import marketing_capture_database_qualification as qualification
+
+    monkeypatch.setattr(qualification, "installed", lambda _: {"scope": qualification.SCOPE})
     calls = []
     parameters = {"host": "original-db.example", "hostaddr": "192.0.2.1", "sslmode": "verify-full"}
     monkeypatch.setattr(database, "configuration", lambda: (parameters, "a" * 64))
@@ -188,6 +191,24 @@ def test_prebound_target_preserves_hostname_without_any_dns_or_reconnect(monkeyp
     asyncio.run(run())
     assert len(calls) == 1 and calls[0]["hostaddr"] == "192.0.2.1"
     assert calls[0]["host"] == "original-db.example" and calls[0]["sslmode"] == "verify-full"
+
+
+def test_unqualified_database_starts_no_connection(monkeypatch):
+    from anvil import marketing_capture_database_qualification as qualification
+
+    monkeypatch.setattr(database, "configuration", lambda: ({}, "a" * 64))
+    monkeypatch.setattr(qualification, "installed", lambda _: None)
+
+    async def forbidden(**_):
+        pytest.fail("Unqualified target cannot connect")
+
+    monkeypatch.setattr(database._CaptureConnection, "connect", forbidden)
+    token = database._cutoff.set(monotonic() + 1)
+    try:
+        with pytest.raises(ValueError, match="qualification required"):
+            asyncio.run(database._connect())
+    finally:
+        database._cutoff.reset(token)
 
 
 def test_configuration_denial_starts_no_connection(monkeypatch):

@@ -537,6 +537,7 @@ def role_view(role, observed=None, candidates=(), revoked=False, now=None):
 
 
 def listing(c, project):
+    from anvil.golden_component_qualification import installed as component_qualification
     from anvil.marketing_capture_database_target import readiness as capture_database_readiness
     from anvil.runtime_admin_qa import discover
 
@@ -562,8 +563,19 @@ def listing(c, project):
         item = role_view(role, observed, candidates, revoked)
         item["qa_operator"] = discover(c, project, role)
         items.append(item)
+    technical = component_qualification()
+    evidence = technical.get("evidence", {}) if technical.get("ready") is True else {}
     return {
         "roles": items,
+        "technical_components": {
+            "ready": technical.get("ready") is True,
+            "scope": "technical_components_only", "spending_authority": False,
+            "project_qualification_granted": False,
+            "expires_at": evidence.get("expires_at"),
+            "source_sha256": evidence.get("golden_source_sha256"),
+            "runtime_image_sha256": evidence.get("runtime_image_sha256"),
+            "missing": technical.get("missing", []),
+        },
         "capture_database": capture_database_readiness(),
         "history_limit_per_role": 20,
         "candidate_staging_only": True,

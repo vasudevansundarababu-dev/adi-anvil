@@ -82,7 +82,12 @@ async def _connect():
     """One original target/address only; never driver host failover/retry."""
     if not capabilities.has_cancel_safe():
         raise ValueError("Capture requires qualified nonblocking libpq cancellation; no thread fallback")
-    parameters, _ = configuration()
+    parameters, fingerprint = configuration()
+    remaining(_cutoff.get())
+    from anvil.marketing_capture_database_qualification import installed
+
+    if installed(fingerprint) is None:
+        raise ValueError("Current exact capture API database qualification required")
     remaining(_cutoff.get())  # No DNS or implicit target lookup is performed.
     return await _CaptureConnection.connect(row_factory=dict_row, **parameters)
 

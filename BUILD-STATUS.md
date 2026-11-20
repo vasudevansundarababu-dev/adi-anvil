@@ -1,5 +1,55 @@
 # Build status
 
+## Capture contract correction — local verified; QA TLS transport verified
+
+New capture API-only receipt/probe and catalogue separation are implemented,
+not yet deployed. Final focused67tests,2frontend readiness controls, TypeScript,
+Ruff and diff checks pass. Configured broad unit run1341passed,10subtests,4skips
+in132.69s; final focused rerun covers later trust/type hardening. First invocations
+lacked the runtime interpreter/Marketing fixture/process permissions and did not
+pass; their logs remain distinct, not counted as product regressions or PASS.
+Corrected run uses the existing OpenEnv environment, original pinned Marketing
+v1.1 fixtures and authorized actual local process/socket access.
+
+QA TLS operator source31b884d16688e7f756c04b34c72a98232f8fcd497a7b8df73ca7ce39c6939ff4
+passed independent Harbor review, then executed once. Actual current API made a
+new verify-full/numeric-address/explicit-CA connection: TLS1.3, read-only control
+passed, PostgreSQL postmaster unchanged. No restart, HBA/role/grant change,
+migration, compose change, qualification publication or model call. Retained VM
+backup `backups/capture-tls-20261119-v1`; original auto.conf SHA0874e665ecf5c0a6135a73158ea1b71a959dafb809574810da5c9cc28c0c63ed,
+new9a0a51dc15a7d0d49463b07f006031cdd43d0edd1e303cc2c010103ae6b119be.
+Public CA SHAe347fddc56e0eeeed5446e479fff6be823e83f374d762caca35611f187cdd550.
+This is transport-only evidence, not capture runtime qualification. Permanent
+client read-only trust mount, exact target pin, installed-image cancel control,
+independent evidence review, receipt and changed-source technical requalification
+remain required before release acceptance. Current serving08/q19 remains intact.
+
+## 19 November, 16:09 PST — runtime fix deployed; remaining acceptance open
+
+QA now serves `08d45ff8eeb515561fbcd50916d6a7adb8fca42c`, Golden source
+`e8fade572ca204830402fd40fb75b6aaeda595bfecb57a6e40e4c09a13c05086`, schema/Alembic133.
+All eight services were observed running with zero restarts; API health and
+workspace returned HTTP200. Harbor independently verified the sanitized actual
+serving packet, summary SHA `de739ef4ad46d5975311d80174a4fe741794eeb10ae8726a7c5089f9863928f0`.
+Service-only recovery used the retained v3 intent and did NOT replay migration133.
+Scheduler/grader polling now renews after one cycle within the unchanged600s
+software window; the native Trial retains its original300s cutoff. The software
+grader's incompatible custom-Python flag is false; private scoring stays isolated.
+
+Technical receipt `19ece673da61599de0bd74e787c67909e8929df41a3484c072c7442209b80284`
+passed14 controls and expires20 November21:14:06UTC. It grants no project, legal,
+rights, model-performance or spending approval. Live providers, real email from
+the application, and Authoring integration remain disabled.
+
+Remaining acceptance: intermittent blank workspace pages; stale project-scoped
+runtime catalogue versus current technical evidence; missing capture-database
+target/driver qualification contract. Exact KYC v8 is registered but has no accepted
+offline publication/attestation and all six qualification attempts remain blocked.
+Do not call the project benchmark ready or bypass the owner's upload/attestation.
+The older sign-in/deployment-blocked entries below are retained history, superseded
+by this observed deployment. Continue independent software fixes while owner
+publication and later dataset-context review remain separate requirements.
+
 ## 19November21:31UTC — qualified runtime; deployment blocked by GCP sign-in
 
 Actual technical component qualification published ONCE, SHA

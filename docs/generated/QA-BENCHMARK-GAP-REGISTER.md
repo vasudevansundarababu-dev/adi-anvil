@@ -1,5 +1,39 @@
 # QA benchmark exercise — living gap register
 
+## Capture and catalogue acceptance — 19 November, after deployed08d45ff
+
+CAPTURE-27 (CODE BUILT, actual qualification pending): capture configuration had
+no target/driver runtime-qualification receipt contract; frontend and backend
+therefore always reported not ready. QA PostgreSQL actually had SSL off and its
+default connection profile permitted fallback. New code separates an API-only,
+operator-owned read-only receipt from project/peer/registrar qualification. It
+binds source, lock, actual capture image, driver/libpq, exact target and public
+trust-file bytes; requires independent review, six actual controls and <=24h
+expiry. The explicit operator probe requires read-only actual identity, actual
+driver cancellation acknowledgement, exact backendPID+start disappearance and
+observer closure. No inventory GET probe or automatic qualification producer.
+TLS provisioning must use explicit trust and verify-full, never disable checks.
+Studio must generate this target/probe/review/mount lifecycle and invalidate on
+address, source, driver, trust rotation, expiry or revocation. Preserve unknown
+cleanup and forbid replay. A generic software role receipt cannot substitute.
+
+CATALOGUE-28 (CODE BUILT, deployment pending): four recorded Project observations
+still described151d6fb after08d45ff was serving and independently qualified.
+Three Project roles lacked observations. The UI conflated these with platform
+installation/technical failure. New projection displays current platform technical
+controls separately and labels the existing table Project readiness/recorded
+Project check. This does not fabricate target/binding IDs or grant readiness.
+Studio should retain per-image installed provenance plus distinct per-project
+operation evidence and refresh measured observations after accepted deployment.
+
+OPS-29 (DEPLOYED CONFIG FIX): continuous software scheduler/grader max-cycles300
+could exhaust its600s poll window despite no jobs. One-cycle polling renewal
+keeps the original600s window and native300s cutoff; no catch-and-ignore of real
+failures. Software grader also rejected its custom-Python enabled flag; it is now
+false while the separate private-scoring coordinator remains isolated. Future
+rendered configuration must be checked by each actual service validator, not
+only by Compose syntax or a copied feature flag.
+
 ## Physical integration findings — 19 November 2026
 
 RUNTIME-21 (BUILT, actual verification pending): an untraced real4eb0c6c Trial

@@ -32,6 +32,10 @@ type Inventory = {
   candidate_staging_only: boolean;
   deployment_available: boolean;
   capture_database?: unknown;
+  technical_components?: {
+    ready: boolean; scope: string; spending_authority: boolean;
+    project_qualification_granted: boolean; expires_at: string | null;
+  };
 };
 const labels: Record<string, string> = {
   api: 'API',
@@ -47,7 +51,7 @@ const reasons: Record<string, string> = {
   invalid_operator_observation: 'The recorded runtime evidence could not be verified.',
   deployed_role_observation_required: 'A check of the deployed runtime is still required.',
   independent_runtime_qualification_required:
-    'Installed software has not passed independent execution checks.',
+    'No independent qualification is linked to this Project runtime record.',
   qualification_revoked: 'The previous runtime qualification was revoked.',
   current_qualification_required: 'Runtime qualification has expired.',
   source_bound_operation_qualification_required:
@@ -107,19 +111,32 @@ export default function RuntimeInventory({ base }: { base: string }) {
         </button>
       </div>
       <p>
-        Versions and status come from the deployed runtime evidence. A saved framework profile does
-        not install or qualify software.
+        Platform technical controls and Project readiness are separate checks. The table shows
+        recorded Project runtime evidence, including when it was last checked.
       </p>
       {busy && <p role="status">Loading recorded runtime checks…</p>}
       {error && <p role="alert">{error}</p>}
       {inventory && (
         <>
+          <section aria-label="Platform technical qualification">
+            <h3>Platform technical controls</h3>
+            <strong>{inventory.technical_components?.ready === true
+              && inventory.technical_components.scope === 'technical_components_only'
+              && inventory.technical_components.spending_authority === false
+              && inventory.technical_components.project_qualification_granted === false
+              && typeof inventory.technical_components.expires_at === 'string'
+              && Date.parse(inventory.technical_components.expires_at) > Date.now()
+              ? 'Verified' : 'Not currently verified'}</strong>
+            <p>These checks do not approve a Project binding, policy, dataset or paid run.</p>
+            {inventory.technical_components?.expires_at && <p>Evidence expires:{' '}
+              {new Date(inventory.technical_components.expires_at).toLocaleString()}</p>}
+          </section>
           <section aria-label="Capture database readiness">
             <h3>Capture database</h3>
             <strong>{captureDatabase.ready ? 'Ready' : 'Not ready'}</strong>
             <p>Configuration: {captureDatabase.configurationReady ? 'Ready' : 'Not ready'}</p>
             <p>{captureDatabase.message}</p>
-            <p>Forge provisioning owns this setup. Runtime qualification is still required.</p>
+            <p>Forge provisioning owns this setup. Peer and registrar identities require their own checks.</p>
           </section>
           <div className={s.tableScroll}>
             <table>
@@ -127,8 +144,8 @@ export default function RuntimeInventory({ base }: { base: string }) {
                 <tr>
                   <th>Runtime</th>
                   <th>Software & version</th>
-                  <th>Status</th>
-                  <th>Last checked</th>
+                  <th>Project readiness</th>
+                  <th>Recorded Project check</th>
                   <th>Update</th>
                 </tr>
               </thead>
