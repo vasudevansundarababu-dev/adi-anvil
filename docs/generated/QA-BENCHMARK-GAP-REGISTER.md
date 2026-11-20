@@ -1,5 +1,33 @@
 # QA benchmark exercise — living gap register
 
+## 20 November — product-mode provisioning and diagnostic gap
+
+KYC-REFERENCE-31: actual project canonical runtime import count0 caused v8
+conformance failure despite installed platform qualification. Existing API
+supports four-product reusable_application_workflow, but UI omitted task_mode
+and defaulted to five-state mode. WEBONLY06fdab4 adds explicit Admin pack choice
+and four-product software-reference registration, independently reviewed and
+verified deployed. Registration is an explicit nonpaid engineering operation,
+not authored-task import or real dataset approval. Verify4bindings/50evaluator
+refs/population conservation and absence of queued jobs/real inputs afterward;
+never auto-register during qualify. Current PO attestation is accepted.
+
+KYC-DIAGNOSTIC-32: broad ValueError catch labels missing current project runtime
+import adapter_not_supported. Safe local diagnostic patch returns a distinct
+provisioning code/mode without implicit writes; it is tested but UNDEPLOYED to
+preserve current qualified backend source. Studio should distinguish installed
+runtime, canonical reference provisioning, template conformance, authenticated
+or locally attested publication, and genuine run-data qualification.
+
+KYC-PURPOSE-33 (BACKLOG, NOT IMPLEMENTED): existing imports have no hard
+reference-only purpose/provenance admission fence. A software-reference UI label
+is not enforcement. Future design must handle same-pack aliases/legacy imports,
+exact selected import revalidation, durable SQL resolved-input guards, historical
+and resumed input/package readers and early application-policy dispatch. Do not
+alter published v8/task hashes or manufacture genuine dataset classification.
+Current bounded reference registration has no automatic input binding/enqueue;
+genuine v8 data/context/policy/private-expectation/rights/run gates remain HOLD.
+
 ## 19 November, deployed39cb2d9 — verified technical closure and remaining gates
 
 CAPTURE-27/30: corrected restricted catalogue OID checks and API-only capture

@@ -1,5 +1,67 @@
 # Build status
 
+## 20 November, 06:34 PST — web06fdab4 reference action deployed and verified
+
+Owner has completed the v8 offline PO attestation; do not repeat it. Fresh
+14:33UTC read confirms1attestation, zero canonical banking imports, commands,
+execution jobs, software runs, paid bindings/plans, project B0, resolved inputs,
+policy qualifications/reviews or authored source resolutions in projecta745.
+The actual v8 adapter tools/full schemas,20criteria/sevenrule hashes match.
+Missing canonical product-mode runtime import is the provisioning blocker;
+the old generic ValueError reports adapter_not_supported misleadingly.
+
+WEBONLY commit06fdab43dc111515ffb7af1e8871c0b300a69515 is deployed:
+image6e5590587a4f1d222535ed321928832c0de4b5556c1919e88dda7cb56539f6fe,
+webID0ce197debfe137f5acacd3ac0d162417d1ec8179833304513cbc9efb4f12eee4,
+configb3708916990c6f149ba420fd4712a505a025b87125e39e787df96b4f82ddeeb2.
+Build46e63c29-88bc-478c-bccd-22b4b70b01d5 SUCCESS from clean committed archive.
+Backend/runtime remain39cb2d9/source896 and their original immutable images;
+all other seven IDs, schema/Alembic133 and qualification3b2/capturebe7 unchanged.
+No phase2/3, migration, runtime rebuild/restart, model or Authoring call.
+
+The new Admin action requires explicit pack selection and sends existing API
+task_mode=reusable_application_workflow. Current legacy button omits mode,
+defaulting to five-state workflow and cannot satisfy four-product conformance.
+Actual identified control pack7e17aa6b-4a23-4abc-a28f-f4ba97186c2d has200 unique
+original snapshots,20 product/state cells10each; all hashes retained unchanged.
+It is a synthetic software reference, not selected/approved v8 execution data.
+Plan: docs/generated/kyc-v8-reference-ui-plan-20261120.md.
+
+Aegis/Keystone reviewed actual UI+operation plan PASS. TSC passed; rollout11
+ownership/environment/rollback tests and Ruff passed. Harbor accepted actual
+web serving profile: full HostConfig, ordered commands and mounts identical;
+unique environment mapping identical (list order differs). Sanitized4-file
+serving bundle SHAcd94935784e35bcdfadb00dd7cf0c27ee025f8e0bc6c4c0f280f44e3597c4729.
+Public verified-TLS route/7JSassets200; new control present in served chunk
+392-e4ad1af35284f0e3.js. Sentinel genuine Admin UI PASS: new fieldset, blank
+dropdown/fullpackID+200case option, button disabled before selection, honest
+reference-only/no dataset/context/policy/rights/run authority text. No action
+was clicked by reviewers; browser handed back for real Admin registration.
+
+First web attempt failed a guard and restored exact old config/image; original
+primary failure was not retained and is not claimed diagnosed. Actual rollback
+webIDa71c607c9378ea3f1cb3fc35513c25547c41b769e60496e4c6426b52d508464c.
+Stopped profile preview showed exact Env mappings but changed order; its
+additional OomKillDisablefalse vs runningnull was not suppressed. V2 retained
+full HostConfig guard and passed (running old/new OomKillDisable bothnull),
+with safe failure-phase diagnostics and a fresh exclusive backup/intent.
+Original failed packet and both stopped-preview attempts are retained; preview
+3643aabf91288ffdde3dffc7a6a728a2f42aa433d15c2ebc94650979faf64b8f
+remains created/PID0/restartno, never started. No destructive cleanup.
+
+NEXT: real Admin selects7e17pack and clicks ONLY Register four-product software
+reference once; reconcile any ambiguous response before retry. Verify actual
+4bindings/50evaluator refs, source/import/environment/population pins, unchanged
+200snapshot hashes and zero new run/input/approval effects. Then separately
+Check qualificationv8 with current installation/accepted PO basis. No genuine
+v8 input binding or benchmark run approval is granted by this reference.
+Hard purpose/provenance fencing remains backlog, not an implemented guarantee.
+
+Local backend diagnostic patch in praxis_golden_kyc.py/template_registry.py and
+test_kyc_template_provisioning.py (3tests pass) is UNCOMMITTED/UNSHIPPED, excluded
+from the UI archive. Deploying it would require a separate changed-source
+qualification cycle; current runtime qualification remains tied to source896.
+
 ## 19 November, 18:20 PST — 39cb2d9 deployed; browser acceptance blocked
 
 The three-phase release39cb2d96418fd029f7c87274941b00639d12d87a is now
