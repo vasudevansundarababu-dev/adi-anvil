@@ -10,7 +10,7 @@ from pathlib import Path
 
 BACKEND = 'us-west1-docker.pkg.dev/adi-anvil-mvp-2026/anvil-qa-v1/backend@sha256:41e94e67b009582338415f1f791655902f1fe42e2c97350b7faf7afb8083bf9c'
 POSTGRES = 'us-west1-docker.pkg.dev/adi-anvil-mvp-2026/anvil-qa-v1/core-postgres-security@sha256:2bb3e2ab0cea85749f75dd2751ae015075274e89fb3c04736c64d932693927a2'
-BASE = Path('/var/lib/anvil-qa-v1/runtime-functional/registration-api41-repro2')
+BASE = Path('/var/lib/anvil-qa-v1/runtime-functional/registration-api41-http1')
 
 
 def private(path, raw):
@@ -46,8 +46,8 @@ def main():
     raw = Path('/var/lib/anvil-qa-v1/runtime-functional/controls-39cb2d9/runtime-checks/kyc_sql_fixture_setup.py').read_bytes()
     assert hashlib.sha256(raw).hexdigest() == release['control_files']['runtime-checks/kyc_sql_fixture_setup.py']
     private(BASE / 'scripts/setup.py', raw)
-    raw = Path('/tmp/qa_registration_repro_worker.py').read_bytes()
-    assert hashlib.sha256(raw).hexdigest() == '93a1c634410b8fddb833e06630d60c65b45d7b28ce436cfd96317e6f10351705'
+    raw = Path('/tmp/qa_registration_http_worker.py').read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == '2703d97e4bdc202985984aa3bd98590acc959a4b8fdc86e06e42c1891539af18'
     private(BASE / 'scripts/repro.py', raw)
     (BASE / 'scripts').chmod(0o755)
     (BASE / 'scripts/repro.py').chmod(0o644)
@@ -55,23 +55,23 @@ def main():
     private(BASE / 'owner/postgres.env', ('POSTGRES_PASSWORD=' + password + '\nPOSTGRES_INITDB_ARGS=--auth-local=scram-sha-256\n').encode())
     private(BASE / 'owner/setup.json', json.dumps({'schema_version': 'anvil.synthetic-sql-fixture-setup.v2',
         'host': '/probe-socket', 'dbname': 'postgres', 'user': 'postgres', 'password': password,
-        'new_database': 'anvil_golden_kyc_component_api41_repro2', 'runtime_image_sha256': BACKEND.rsplit(':', 1)[1]}).encode())
-    pgname = 'forge-registration-api41-repro2-postgres'
+        'new_database': 'anvil_golden_kyc_component_api41_http1', 'runtime_image_sha256': BACKEND.rsplit(':', 1)[1]}).encode())
+    pgname = 'forge-registration-api41-http1-postgres'
     for image in (BACKEND, POSTGRES):
         subprocess.run(['docker', 'image', 'inspect', image], check=True, capture_output=True, timeout=15)
-    names = {'postgres': pgname, 'setup': 'forge-registration-api41-repro2-setup',
-             'register': 'forge-registration-api41-repro2-register'}
+    names = {'postgres': pgname, 'setup': 'forge-registration-api41-http1-setup',
+             'register': 'forge-registration-api41-http1-register'}
     for name in names.values():
         observed = subprocess.run(['docker', 'inspect', name], capture_output=True, timeout=15)
         assert observed.returncode == 1 and b'no such' in observed.stderr.lower(), 'Fresh diagnostic names must be absent'
-    private(BASE / 'intent.json', json.dumps({'scope': 'isolated-registration-api41-repro2',
+    private(BASE / 'intent.json', json.dumps({'scope': 'isolated-registration-api41-http1',
         'containers': names, 'backend': BACKEND, 'postgres': POSTGRES, 'serving_database_used': False}).encode())
     observed = None
     failure = None
     cleanup = {}
     try:
         result = subprocess.run(['docker', 'create', '--pull=never', '--name', pgname,
-        '--label', 'io.adi.forge.scope=isolated-registration-api41-repro2', '--network', 'none',
+        '--label', 'io.adi.forge.scope=isolated-registration-api41-http1', '--network', 'none',
         '--memory', '768m', '--pids-limit', '128', '--cpus', '2', '--env-file', str(BASE / 'owner/postgres.env'),
         '--mount', 'type=bind,src=' + str(BASE / 'data') + ',dst=/var/lib/postgresql/data',
         '--mount', 'type=bind,src=' + str(socket) + ',dst=/var/run/postgresql', POSTGRES],
@@ -100,8 +100,8 @@ def main():
                   '--mount', 'type=bind,src=' + str(BASE / 'scripts') + ',dst=/probe-scripts,readonly',
                   '--mount', 'type=bind,src=' + str(BASE / 'control') + ',dst=/probe-control']
         def execute(phase, args):
-            command = common + ['--name', 'forge-registration-api41-repro2-' + phase,
-                '--label', 'io.adi.forge.scope=isolated-registration-api41-repro2', *args]
+            command = common + ['--name', 'forge-registration-api41-http1-' + phase,
+                '--label', 'io.adi.forge.scope=isolated-registration-api41-http1', *args]
             created = subprocess.run(command, capture_output=True, check=True, timeout=60)
             identifier = created.stdout.decode().strip()
             private(BASE / (phase + '-id.json'), json.dumps({'id': identifier, 'image': BACKEND}).encode())
@@ -134,7 +134,7 @@ def main():
                 info = json.loads(response.stdout)[0]
                 image = POSTGRES if phase == 'postgres' else BACKEND
                 assert (info['Name'] == '/' + names[phase] and info['Config']['Image'] == image
-                        and info['Config']['Labels'].get('io.adi.forge.scope') == 'isolated-registration-api41-repro2')
+                        and info['Config']['Labels'].get('io.adi.forge.scope') == 'isolated-registration-api41-http1')
                 if info['State']['Running']:
                     subprocess.run(['docker', 'stop', '--time', '5', info['Id']], check=True, capture_output=True, timeout=15)
                 terminal = json.loads(subprocess.check_output(['docker', 'inspect', info['Id']], timeout=15))[0]
