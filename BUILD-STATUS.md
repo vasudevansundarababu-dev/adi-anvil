@@ -45,8 +45,12 @@ real model call, model result or Stage/Production change occurred. See the
 Authoring correction ask and 20-cell matrix; passing fixtures are not real
 benchmark admission. Harbor's final independent actual serving-profile acceptance
 passed, including complete original security/resource/mount preservation and
-exact unchanged reference-import ledger. Owner email is being prepared; local
-evidence is under `.local/releases/e49e149/`.
+exact unchanged reference-import ledger. Completion/blocker email was sent only
+to `vasudevan.sundarababu@adi-labs.ai`, Gmail acknowledged message
+`1a1fc68054dba17d` in the existing deployment thread. Verified deployment/source
+archive checkpoint `df7010138244877b6bf1826e4db9f1827f527650` was pushed and
+independently matched against the GitHub branch. Local evidence is under
+`.local/releases/e49e149/`.
 
 Checkpoint verification: the unchanged credential patterns found no matches in
 23 staged documentation/archive paths; all 19 archived operators exactly match
