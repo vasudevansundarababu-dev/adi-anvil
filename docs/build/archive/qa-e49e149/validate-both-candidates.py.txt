@@ -1,0 +1,87 @@
+"""One exact candidate API receipt readback, no database connection or promotion."""
+import hashlib
+import json
+import os
+import subprocess
+from pathlib import Path
+
+assert os.geteuid() == 0 and os.uname().nodename == 'anvil-qa-v1'
+base = Path('/var/lib/anvil-qa-v1/runtime-functional')
+pins = {
+    base / 'harbor-proof/component-qualification/current.json': '634fc636eb4df0c5fe265457a006f42ab7900b71ad739907ac38b808b48e41a1',
+    base / 'capture-database-qualification/current.json': 'dcad1e15003676eac58cacef48f56624990b05e791de2bf21d877632b5afdfa7',
+    Path('/var/lib/anvil-qa-v1/config/compose-app.json'): '48ca71dac9acea4e3650452474d4c6ce23a8eece847be556b50c274dd68ec5bc',
+}
+def unchanged():
+    assert all(hashlib.sha256(path.read_bytes()).hexdigest() == pin for path, pin in pins.items())
+unchanged()
+component = base / 'harbor-proof/component-qualification-candidate-e49e149'
+capture = base / 'capture-database-qualification-candidate-e49e149'
+assert hashlib.sha256((component / 'current.json').read_bytes()).hexdigest() == '05ee9325ada9634653a22f47a9d84195127f943f661e9a8ca8a4f0805034a482'
+assert hashlib.sha256((capture / 'current.json').read_bytes()).hexdigest() == 'ec98eb6bcacdbb16217227d43a37fa7359169c8190e4dc4cf4aa5120a505acff'
+image = 'us-west1-docker.pkg.dev/adi-anvil-mvp-2026/anvil-qa-v1/backend@sha256:71ac0ce351cc1e61868bf7e808e9b899ea356eb733769aa9010760a9b96415de'
+name = 'forge-both-candidate-readback-e49-v1'
+absent = subprocess.run(['docker', 'inspect', name], capture_output=True, timeout=15)
+assert absent.returncode == 1 and b'no such' in absent.stderr.lower()
+folder = base / 'both-candidate-readback-e49-v1'
+folder.mkdir(mode=0o700)
+code = ('import json;from anvil.golden_component_qualification import installed;'
+    'from anvil.golden_kyc_source import source_hash;from anvil.praxis_generic_contract import digest;'
+    'from anvil.marketing_capture_database_target import readiness;'
+    'q=installed();c=readiness();'
+    'assert source_hash()=="c26a7965e3ee215aa74e495c5341c15a2e0423f3952a1799111e8eef688201e4";'
+    'assert q["ready"] and len(q["evidence"]["checks"])==14;'
+    'assert digest(q["evidence"])=="05ee9325ada9634653a22f47a9d84195127f943f661e9a8ca8a4f0805034a482";'
+    'assert c["ready"] and c["connection_probe_performed"] is False;'
+    'assert c["qualification"]["receipt_sha256"]=="ec98eb6bcacdbb16217227d43a37fa7359169c8190e4dc4cf4aa5120a505acff";'
+    'print(json.dumps({"source_sha256":source_hash(),"component_ready":q["ready"],'
+    '"component_receipt_sha256":digest(q["evidence"]),"capture":c,"spending_authority":False},sort_keys=True))')
+command = ['docker', 'run', '--pull=never', '--name', name, '--label', 'io.adi.forge.scope=both-candidate-readback-e49',
+    '--read-only', '--user', '10001:10001', '--network', 'none', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges',
+    '--memory', '512m', '--cpus', '1', '--pids-limit', '128', '--tmpfs', '/tmp:rw,nosuid,nodev,noexec,size=128m',
+    '--mount', f'type=bind,src={component},dst=/app/.data/component-qualification,readonly',
+    '--mount', f'type=bind,src={capture},dst=/app/.data/runtime-qualification/capture-database,readonly',
+    '--mount', f'type=bind,src={base}/capture-database-trust,dst=/app/.data/capture-database-trust,readonly',
+    '--env-file', '/var/lib/anvil-qa-v1/config/capture-runtime.env', '-e', 'ANVIL_ENV=local', '-e', 'WEB_ORIGIN=http://127.0.0.1:3202',
+    '-e', 'ANVIL_RUNTIME_IMAGE_DIGEST=cbd37c0a896f3b6e7e49bf53b5721297ae3bad08dedc9f00b0b36ce48ba4fe7c',
+    '-e', 'ANVIL_GOLDEN_COMPONENT_QUALIFICATION_FILE=/app/.data/component-qualification/current.json',
+    '-e', 'ANVIL_CAPTURE_DATABASE_IMAGE_DIGEST=' + image.rsplit('sha256:', 1)[1],
+    '-e', 'ANVIL_CAPTURE_DATABASE_TARGET_SHA256=8e8d48c90e9aed61044241af255268156386802a1cd3713a9d6f0d3fb318b1ec',
+    '-e', 'ANVIL_CAPTURE_DATABASE_QUALIFICATION_FILE=/app/.data/runtime-qualification/capture-database/current.json',
+    '-e', 'ANVIL_LIVE_PROVIDERS_ENABLED=false', '-e', 'ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED=false',
+    '-e', 'ANVIL_PRAXIS_TEMPLATE_CALLS_ENABLED=false', '-e', 'ANVIL_REAL_EMAIL_ENABLED=false',
+    '--entrypoint', '/app/services/backend/.venv/bin/python', image, '-I', '-B', '-c', code]
+with (folder / 'intent.json').open('x') as stream:
+    json.dump({'name': name, 'image': image, 'attempts': 1, 'connection_probe': False}, stream)
+    stream.flush()
+    os.fsync(stream.fileno())
+result = None
+cleanup = {'complete': False, 'retry_permitted': False}
+try:
+    result = subprocess.run(command, capture_output=True, timeout=300)
+    (folder / 'result.stdout').write_bytes(result.stdout)
+    (folder / 'result.private.stderr').write_bytes(result.stderr)
+    assert result.returncode == 0, 'Candidate readback failed; never replay'
+finally:
+    try:
+        info = json.loads(subprocess.check_output(['docker', 'inspect', name], timeout=15))[0]
+        assert info['Name'] == '/' + name and info['Config']['Image'] == image
+        assert info['Config']['Labels'].get('io.adi.forge.scope') == 'both-candidate-readback-e49'
+        identifier = info['Id']
+        if info['State']['Running']:
+            subprocess.run(['docker', 'stop', '--time', '1', identifier], capture_output=True, timeout=6, check=True)
+        terminal = json.loads(subprocess.check_output(['docker', 'inspect', identifier], timeout=15))[0]
+        assert not terminal['State']['Running'] and not terminal['State']['Restarting'] and terminal['State']['Pid'] == 0
+        cleanup.update(complete=True, id=identifier, exit_code=terminal['State']['ExitCode'])
+    except BaseException as error:
+        cleanup['error_type'] = type(error).__name__
+    try:
+        unchanged()
+        cleanup['serving_baseline_unchanged'] = True
+    finally:
+        with (folder / 'cleanup.json').open('x') as stream:
+            json.dump(cleanup, stream, sort_keys=True)
+            stream.flush()
+            os.fsync(stream.fileno())
+assert cleanup['complete'] and cleanup['exit_code'] == 0 and cleanup['serving_baseline_unchanged']
+print(result.stdout.decode(), end='')

@@ -2,7 +2,7 @@
 
 This is the actual serving **software-reference** import, not an authored ZIP or model benchmark. Paid calls are off; Authoring is paused; Stage/Production are on hold.
 
-Serving source: `4e53d1c1b41ca373b2c9eecf695c22654c3d3885fdbed84dd70a5b1c74f730f0`. Proposed decoder source `c26a7965…201e4` is not yet deployed or qualified.
+Serving application revision is `e49e149`; source `c26a7965e3ee215aa74e495c5341c15a2e0423f3952a1799111e8eef688201e4` is deployed and technically qualified by 14 fresh independent controls. Component receipt `05ee9325…4a482` is distinct from authored-task admission. The preserved software-reference import below remains bound to its original source `4e53d1c1b41ca373b2c9eecf695c22654c3d3885fdbed84dd70a5b1c74f730f0`; its bindings have not been relabelled to the new application source.
 
 Actual import `d2e76679-9362-4082-90ec-3792c5dbd43f`, manifest `c065f96c1046572646525d31b15089eba9526c1fdb10178f2f2fd48fea12dc28`, pack `7e17aa6b-4a23-4abc-a28f-f4ba97186c2d`, environment `a9058247-8ac8-4bbe-bac6-c7791ca34471`, task group `10a913b7-edcb-4924-b871-c691bcdf27cf`. Four product bindings share 50 evaluator configurations; all 200 original snapshot hashes and product selectors match.
 
@@ -37,7 +37,7 @@ Actual import `d2e76679-9362-4082-90ec-3792c5dbd43f`, manifest `c065f96c10465726
 - Authoring system/owner review: correct the nine undeclared procedure tool references in the reviewed successor export; retain original approved records. See `KYC-V8-AUTHORING-TOOL-BINDING-CORRECTION.md`.
 - Gym data/policy owners: bind the real approved assessment-date/charter context, actual data and private expectations, current rights and case/policy reviews. Reference fixtures must not be relabelled as real V8 inputs. These are not Authoring dataset responsibilities.
 - QA: after admission is possible, verify actual authored resolution, exact environment/evaluator binding, no-model native flow and reports for every product/state subject. Until then those stages are blocked/not run, not passed by extrapolation.
-- Actual model benchmarking: remains separately disabled and requires exact user model/budget selection and existing run admission.
+- Actual model benchmarking: remains separately disabled. It requires exact model/version selection, confirmation that existing budget authority covers the run, and application run admission. The current no-live-calls instruction remains in force.
 
 ## Evidence
 

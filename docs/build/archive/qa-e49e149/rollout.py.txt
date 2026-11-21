@@ -1,0 +1,521 @@
+"""Exact QA-only eight-service rollout, no migration or paid activation.
+
+Requires an independently accepted candidate component receipt before prepare.
+Retains old config/receipt and rolls back each owned service on failed checks.
+No template publication, import, policy/data approval or benchmark dispatch.
+"""
+
+import argparse
+import copy
+import hashlib
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+import urllib.request
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT = Path("/var/lib/anvil-qa-v1")
+REVISION = "e49e149d814d43b8028d11cfe95e7398acbf8318"
+SOURCE = "c26a7965e3ee215aa74e495c5341c15a2e0423f3952a1799111e8eef688201e4"
+MANIFEST_SHA = "2825d469a78a8126e14bc71d6d592c49abb73f2c117088e8a80bc358a1936404"
+OLD_CONFIG_SHA = "48ca71dac9acea4e3650452474d4c6ce23a8eece847be556b50c274dd68ec5bc"
+OLD_RECEIPT_SHA = "634fc636eb4df0c5fe265457a006f42ab7900b71ad739907ac38b808b48e41a1"
+CAPTURE_SHA = None
+OLD_CAPTURE_SHA = "dcad1e15003676eac58cacef48f56624990b05e791de2bf21d877632b5afdfa7"
+TARGET = "8e8d48c90e9aed61044241af255268156386802a1cd3713a9d6f0d3fb318b1ec"
+SERVICES = ("api", "worker", "business-worker", "golden-scheduler", "golden-grader", "web",
+            "native-coordinator", "private-scoring-coordinator")
+OLD_IDS = {
+    "api": "bad245f36a8c729f5139bf97bfc29e93adae149a034bc2c4e299af8c97e7999b",
+    "business-worker": "7804ed2839f3a9593a6776a1e7334cf75ff75e3c06fceef489afb84b039109ff",
+    "golden-grader": "0dc1fae1885722a31cbc4ce79249962bf195b6b7fc70538ab819f1ce3d10f4d7",
+    "golden-scheduler": "169781ba1a685df1f977e7767cac763b8478711577546d79010bcfe3ca9ee11f",
+    "native-coordinator": "859ec87154c9c33a40bb21104804d83895dacd6f0e839a769f6d455c0d6cc22f",
+    "private-scoring-coordinator": "d6c1348434a2d6f283c6a6ad78033cb8a2808884c73c1b8936f295168830905b",
+    "web": "edf9cfc2992692d67c28b420b647bde56208b56fddb5552ac8bdddca2e1dd0fb",
+    "worker": "7a48d3c013c9a29ab72c3ae5d46a6dd834ddf2e0f7f24c78b3adfa4c7b3de9d5"
+}
+OLD_REVISIONS = {
+    "api": "88214ba7b67dafe097dc297825611beb85df9637",
+    "business-worker": "88214ba7b67dafe097dc297825611beb85df9637",
+    "golden-grader": "88214ba7b67dafe097dc297825611beb85df9637",
+    "golden-scheduler": "88214ba7b67dafe097dc297825611beb85df9637",
+    "native-coordinator": "88214ba7b67dafe097dc297825611beb85df9637",
+    "private-scoring-coordinator": "88214ba7b67dafe097dc297825611beb85df9637",
+    "web": "88214ba7b67dafe097dc297825611beb85df9637",
+    "worker": "88214ba7b67dafe097dc297825611beb85df9637"
+}
+
+FLAGS = ("ANVIL_LIVE_PROVIDERS_ENABLED", "ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED",
+         "ANVIL_PRAXIS_TEMPLATE_CALLS_ENABLED", "ANVIL_REAL_EMAIL_ENABLED")
+INTENT_LABEL = "qualification-e49e149-v2"
+
+
+def sha(raw):
+    return hashlib.sha256(raw).hexdigest()
+
+
+def sync_directory(path):
+    descriptor = os.open(path, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def replace_sync(source, destination):
+    os.replace(source, destination)
+    sync_directory(destination.parent)
+
+
+def exclusive(path, raw, mode=0o600):
+    with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, mode), "wb") as stream:
+        os.fchmod(stream.fileno(), mode)
+        stream.write(raw)
+        stream.flush()
+        os.fsync(stream.fileno())
+    sync_directory(path.parent)
+
+
+def image_matches(info, expected):
+    metadata = json.loads(subprocess.check_output(["docker", "image", "inspect", expected], timeout=15))[0]
+    return (info["Config"]["Image"] == expected and info["Image"] == metadata["Id"]
+            and expected in metadata["RepoDigests"] and metadata["Os"] == "linux" and metadata["Architecture"] == "amd64")
+
+
+def comparable_host_config(value):
+    """Ignore only order of literal unique binds with disjoint destinations."""
+    result = copy.deepcopy(value)
+    binds = result.get("Binds")
+    if binds is None:
+        return result
+    if not isinstance(binds, list) or any(type(item) is not str for item in binds) or len(binds) != len(set(binds)):
+        raise ValueError("Exact duplicate-free bind list required")
+    targets = []
+    for item in binds:
+        parts = item.split(":")
+        if len(parts) != 3 or parts[2] not in {"ro", "rw"}:
+            raise ValueError("Unambiguous literal bind mode required")
+        for raw in parts[:2]:
+            path = Path(raw)
+            if (not path.is_absolute() or ".." in path.parts or str(path) != raw
+                    or any(character in raw for character in ("\\", "\n", "\r", "\x00"))):
+                raise ValueError("Canonical literal absolute bind paths required")
+        target = Path(parts[1])
+        if any(target == other or target.is_relative_to(other) or other.is_relative_to(target) for other in targets):
+            raise ValueError("Overlapping bind destinations cannot be normalized")
+        targets.append(target)
+    result["Binds"] = sorted(binds)
+    return result
+
+
+def owned_kind(info, name, expected_image, old_image):
+    """A familiar name or revision alone can never authorize cleanup."""
+    labels = info["Config"]["Labels"]
+    if (info["Name"] != "/anvil-qa-v1-" + name + "-1"
+            or not re.fullmatch(r"[a-f0-9]{64}", info["Id"])
+            or labels.get("com.docker.compose.project") != "anvil-qa-v1"
+            or labels.get("com.docker.compose.service") != name):
+        raise ValueError("Unknown service identity; do not stop or recreate")
+    if not image_matches(info, expected_image if info["Config"]["Image"] == expected_image else old_image):
+        raise ValueError("Actual immutable image ID/digest mismatch")
+    if (info["Id"] == OLD_IDS[name] and info["Config"]["Image"] == old_image
+            and labels.get("org.opencontainers.image.revision") == OLD_REVISIONS[name]):
+        return "old"
+    if (info["Id"] != OLD_IDS[name] and info["Config"]["Image"] == expected_image
+            and labels.get("org.opencontainers.image.revision") == REVISION
+            and labels.get("io.adi.forge.release_intent") == INTENT_LABEL):
+        return "candidate"
+    raise ValueError("Unknown service ownership; retain and reconcile")
+
+
+def inspect(identifier):
+    return json.loads(subprocess.check_output(["docker", "inspect", identifier], timeout=15))[0]
+
+
+def schema():
+    command = 'exec psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -X -A -t -c "SELECT max(version) FROM anvil.schema_versions; SELECT version_num FROM anvil.alembic_version"'
+    value = subprocess.check_output(["docker", "exec", "anvil-qa-v1-postgres-1", "sh", "-c", command], timeout=15).decode().strip().splitlines()
+    if value != ["133", "133"]:
+        raise ValueError("Exact schema133 and Alembic133 required; never run migrate")
+    return value
+
+
+def quiescent():
+    for folder in ("native-control-bridge", "private-grading-bridge"):
+        root = ROOT / "runtime-functional" / folder
+        for path in root.iterdir():
+            if (path.is_dir() and (path / "request.json").exists()
+                    and not any((path / name).exists() for name in ("completion.json", "failed.json", "result.json"))):
+                raise ValueError("Reconcile owned bridge attempts before rollout")
+    command = 'exec psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -X -A -t -c "SELECT (SELECT count(*) FROM banking.commands),(SELECT count(*) FROM banking.execution_jobs)"'
+    if subprocess.check_output(["docker", "exec", "anvil-qa-v1-postgres-1", "sh", "-c", command], timeout=15).decode().strip() != "0|0":
+        raise ValueError("Explicit reconciliation required for existing banking jobs")
+
+
+def main(args):
+    global CAPTURE_SHA
+    CAPTURE_SHA = args.capture_receipt_sha256
+    if not all(re.fullmatch("[a-f0-9]{64}", value) for value in (args.receipt_sha256, CAPTURE_SHA, args.capture_review_sha256)):
+        raise ValueError("Exact independently reviewed receipt pins required")
+    if os.geteuid() != 0 or os.uname().nodename != "anvil-qa-v1":
+        raise ValueError("Existing QA root operator only")
+    os.umask(0o077)
+    config = ROOT / "config/compose-app.json"
+    current = ROOT / "runtime-functional/harbor-proof/component-qualification/current.json"
+    candidate = ROOT / "runtime-functional/harbor-proof/component-qualification-candidate-e49e149/current.json"
+    capture = ROOT / "runtime-functional/capture-database-qualification/current.json"
+    capture_candidate = ROOT / "runtime-functional/capture-database-qualification-candidate-e49e149/current.json"
+    release_raw = Path("/tmp/forge-release-e49e149/release.json").read_bytes()
+    if sha(release_raw) != MANIFEST_SHA or sha(config.read_bytes()) != OLD_CONFIG_SHA or sha(current.read_bytes()) != OLD_RECEIPT_SHA:
+        raise ValueError("Exact current serving baseline required")
+    new_receipt = candidate.read_bytes()
+    release, receipt = json.loads(release_raw), json.loads(new_receipt)
+    if (release["revision"] != REVISION or release["source_sha256"] != SOURCE
+            or sha(new_receipt) != args.receipt_sha256 or sha(capture.read_bytes()) != OLD_CAPTURE_SHA or sha(capture_candidate.read_bytes()) != CAPTURE_SHA
+            or receipt.get("qualified") is not True or receipt.get("scope") != "technical_components_only"
+            or receipt.get("spending_authority") is not False or receipt.get("human_legal_rights_approval") is not False
+            or receipt.get("model_performance") is not False or receipt.get("golden_source_sha256") != SOURCE
+            or receipt.get("runtime_image_sha256") != release["images"]["kyc-runtime"].rsplit("sha256:", 1)[1]
+            or datetime.fromisoformat(receipt["expires_at"].replace("Z", "+00:00")) <= datetime.now(timezone.utc)
+            or len(receipt.get("checks", {})) != 14
+            or any(item.get("status") != "passed" for item in receipt["checks"].values())):
+        raise ValueError("Current exact accepted component/capture qualification required")
+    controls = ROOT / "runtime-functional/controls-e49e149"
+    for name in ("infra/gcp/qa_capture_database_wiring.py", "infra/gcp/qa_native_wiring.py"):
+        if sha((controls / name).read_bytes()) != (release["control_files"] | release["operational_files"])[name]:
+            raise ValueError("Pinned pure wiring source required")
+    sys.path.insert(0, str(controls))
+    from infra.gcp.qa_capture_database_wiring import PRIVATE_ENV
+
+    old_raw, old_receipt, old_capture = config.read_bytes(), current.read_bytes(), capture.read_bytes()
+    new_capture = capture_candidate.read_bytes()
+    cap = json.loads(new_capture)
+    if (cap["target_sha256"] != TARGET or cap["runtime_identity"]["image_sha256"] != release["images"]["backend"].rsplit("sha256:", 1)[1]
+            or cap["review_receipt_sha256"] != args.capture_review_sha256
+            or datetime.fromisoformat(cap["expires_at"].replace("Z", "+00:00")) <= datetime.now(timezone.utc)):
+        raise ValueError("Fresh exact independently reviewed capture receipt required")
+    old = json.loads(old_raw)
+    new = copy.deepcopy(old)
+    expected = {}
+    before = {}
+    for name in SERVICES:
+        info = inspect(OLD_IDS[name])
+        if (not info["State"]["Running"] or info["Id"] != OLD_IDS[name] or info["RestartCount"]
+                or info["Config"]["Labels"]["com.docker.compose.service"] != name
+                or info["Config"]["Labels"]["org.opencontainers.image.revision"] != OLD_REVISIONS[name]):
+            raise ValueError("Exact actual eight-service baseline required")
+        before[name] = info
+        image = release["images"]["web" if name == "web" else "backend" if name in ("api", "worker", "business-worker") else "kyc-runtime"]
+        expected[name] = image
+        if owned_kind(info, name, image, old["services"][name]["image"]) != "old":
+            raise ValueError("Actual baseline image ID/digest ownership required")
+        service = new["services"][name]
+        service["image"] = image
+        service.setdefault("labels", {})["io.adi.forge.release_intent"] = INTENT_LABEL
+        environment = service.setdefault("environment", {})
+        for flag in FLAGS:
+            environment[flag] = "false"
+        if name != "web":
+            environment["ANVIL_RUNTIME_IMAGE_DIGEST"] = release["images"]["kyc-runtime"].rsplit("sha256:", 1)[1]
+    if before["api"]["HostConfig"].get("Tmpfs", {}).get("/tmp") != "rw,nosuid,nodev,noexec,size=128m":
+        raise ValueError("Accepted bounded API scratch baseline must be preserved")
+    api_service = new["services"]["api"]
+    if api_service.get("env_file", []).count(PRIVATE_ENV) != 1:
+        raise ValueError("Exactly one existing private capture environment required")
+    capture_environment = api_service["environment"]
+    if (capture_environment.get("ANVIL_CAPTURE_DATABASE_TARGET_SHA256") != TARGET
+            or capture_environment.get("ANVIL_CAPTURE_DATABASE_QUALIFICATION_FILE") != "/app/.data/runtime-qualification/capture-database/current.json"
+            or capture_environment.get("ANVIL_CAPTURE_DATABASE_IMAGE_DIGEST") != old["services"]["api"]["image"].rsplit("sha256:", 1)[1]):
+        raise ValueError("Existing capture wiring changed")
+    capture_environment["ANVIL_CAPTURE_DATABASE_IMAGE_DIGEST"] = release["images"]["backend"].rsplit("sha256:", 1)[1]
+    private_env = Path(PRIVATE_ENV)
+    if private_env.resolve() != private_env or private_env.stat().st_uid != 0 or private_env.stat().st_mode & 0o077:
+        raise ValueError("Existing private capture setting custody required")
+    private_env_sha = sha(private_env.read_bytes())
+
+    schema()
+    quiescent()
+    backup = ROOT / "backups/qualification-e49e149-v2"
+    backup.mkdir(mode=0o700)
+    sync_directory(backup.parent)
+    exclusive(backup / "compose-app.json", old_raw)
+    exclusive(backup / "old-component-receipt.json", old_receipt, 0o644)
+    exclusive(backup / "old-capture-receipt.json", old_capture, 0o644)
+    for name, info in before.items():
+        exclusive(backup / ("baseline-profile-" + name + ".json"), json.dumps({"id": info["Id"],
+            "image": info["Config"]["Image"], "image_id": info["Image"], "host_config": info["HostConfig"],
+            "mounts": info["Mounts"], "user": info["Config"]["User"], "entrypoint": info["Config"]["Entrypoint"],
+            "cmd": info["Config"]["Cmd"], "path": info["Path"], "args": info["Args"],
+            "env_values_redacted": True}, sort_keys=True).encode())
+
+    planned = backup / "compose-candidate.json"
+    new_raw = json.dumps(new, sort_keys=True).encode()
+    exclusive(planned, new_raw)
+
+    active_phase = "preflight"
+    mutation_unknown = False
+    diagnostic_failures = []
+    def run(phase, command, timeout=180):
+        nonlocal active_phase, mutation_unknown
+        active_phase = phase
+        try:
+            result = subprocess.run(command, capture_output=True, timeout=timeout)
+        except subprocess.TimeoutExpired as error:
+            mutation_unknown = phase in {"stop-old", "up-candidate"}
+            for suffix, raw in (("stdout", error.stdout or b""), ("stderr", error.stderr or b"")):
+                try:
+                    exclusive(backup / (phase + ".partial.private." + suffix), raw)
+                except BaseException as retention:
+                    diagnostic_failures.append({"phase": phase, "error_type": type(retention).__name__})
+            raise
+        except BaseException:
+            mutation_unknown = phase in {"stop-old", "up-candidate"}
+            raise
+        exclusive(backup / (phase + ".private.stdout"), result.stdout)
+        exclusive(backup / (phase + ".private.stderr"), result.stderr)
+        if result.returncode:
+            raise RuntimeError("QA release command failed; private diagnostics retained")
+
+    for key in ("backend", "web", "kyc-runtime", "marketing-runtime"):
+        image_info = json.loads(subprocess.check_output(["docker", "image", "inspect", release["images"][key]], timeout=15))[0]
+        if (image_info["Config"]["Labels"]["org.opencontainers.image.revision"] != REVISION
+                or release["images"][key] not in image_info["RepoDigests"]):
+            raise ValueError("Actual immutable candidate image revision mismatch")
+    run("compose-preflight", ["docker", "compose", "-p", "anvil-qa-v1", "-f", str(planned), "config", "--quiet"])
+    schema()
+    quiescent()
+    if sha(config.read_bytes()) != OLD_CONFIG_SHA or sha(current.read_bytes()) != OLD_RECEIPT_SHA:
+        raise ValueError("Baseline changed before release intent")
+    exclusive(backup / "intent.json", json.dumps({"revision": REVISION, "old_ids": OLD_IDS,
+        "old_config_sha256": OLD_CONFIG_SHA, "new_config_sha256": sha(new_raw),
+        "old_receipt_sha256": OLD_RECEIPT_SHA, "new_receipt_sha256": args.receipt_sha256,
+        "capture_receipt_sha256": CAPTURE_SHA, "old_capture_receipt_sha256": OLD_CAPTURE_SHA,
+        "private_env_sha256": private_env_sha, "schema": 133, "migration_replayed": False}).encode())
+    try:
+        run("stop-old", ["docker", "stop", "--time", "10", *OLD_IDS.values()], timeout=120)
+        if any(inspect(identifier)["State"]["Running"] or inspect(identifier)["State"]["Pid"] for identifier in OLD_IDS.values()):
+            raise RuntimeError("Old receipt readers did not stop")
+        schema()
+        quiescent()
+        active_phase = "preactivation-expiry-and-private-setting"
+        now = datetime.now(timezone.utc)
+        if (datetime.fromisoformat(receipt["expires_at"].replace("Z", "+00:00")) <= now
+                or datetime.fromisoformat(cap["expires_at"].replace("Z", "+00:00")) <= now):
+            raise RuntimeError("Qualification expired before activation")
+        if sha(private_env.read_bytes()) != private_env_sha:
+            raise RuntimeError("Private capture configuration changed before activation")
+        active_phase = "activate-capture-receipt"
+        temporary = capture.with_name("pending-e49e149-v2.json")
+        exclusive(temporary, new_capture, 0o644)
+        replace_sync(temporary, capture)
+        active_phase = "activate-component-receipt"
+        temporary = current.with_name("pending-e49e149.json")
+        exclusive(temporary, new_receipt, 0o644)
+        replace_sync(temporary, current)
+        active_phase = "activate-compose"
+        temporary = config.with_name("compose-e49e149-v2.json")
+        exclusive(temporary, new_raw)
+        replace_sync(temporary, config)
+        run("up-candidate", ["docker", "compose", "-p", "anvil-qa-v1", "-f", str(config), "up", "-d",
+            "--no-deps", "--force-recreate", "--no-build", *SERVICES])
+        active_phase = "candidate-health"
+        until = time.monotonic() + 180
+        while True:
+            try:
+                with urllib.request.urlopen("https://anvil-qa.adi-labs.ai/api/v1/health", timeout=5) as response:
+                    health = json.load(response)["data"]
+                if (health["api"] == "ready" and health["database"] == "ready"
+                        and health["live_inference"] == "disabled" and health["harbor_live_dispatch"] == "disabled"):
+                    with urllib.request.urlopen("https://anvil-qa.adi-labs.ai/workspace", timeout=5) as response:
+                        if response.status != 200:
+                            raise ValueError("Workspace unavailable")
+                    break
+            except (OSError, ValueError, KeyError):
+                pass
+            if time.monotonic() >= until:
+                raise RuntimeError("Candidate API health did not pass")
+            time.sleep(2)
+        observed = {}
+        for name in SERVICES:
+            active_phase = "profile-" + name
+            info = inspect("anvil-qa-v1-" + name + "-1")
+            safe_profile = {"id": info["Id"], "image": info["Config"]["Image"], "image_id": info["Image"],
+                "host_config": info["HostConfig"], "mounts": info["Mounts"], "user": info["Config"]["User"],
+                "entrypoint": info["Config"]["Entrypoint"], "cmd": info["Config"]["Cmd"], "path": info["Path"], "args": info["Args"],
+                "state": {key: info["State"][key] for key in ("Running", "Restarting", "Pid", "ExitCode", "OOMKilled")},
+                "host_differences": {key: [before[name]["HostConfig"].get(key), info["HostConfig"].get(key)]
+                    for key in set(before[name]["HostConfig"]) | set(info["HostConfig"])
+                    if before[name]["HostConfig"].get(key) != info["HostConfig"].get(key)},
+                "env_values_redacted": True}
+            safe_profile["identity_labels"] = {key: info["Config"]["Labels"].get(key) for key in
+                ("com.docker.compose.project", "com.docker.compose.service", "org.opencontainers.image.revision", "io.adi.forge.release_intent")}
+            exclusive(backup / ("candidate-profile-" + name + ".json"), json.dumps(safe_profile, sort_keys=True).encode())
+            if owned_kind(info, name, expected[name], before[name]["Config"]["Image"]) != "candidate":
+                raise RuntimeError("Exact owned candidate identity required")
+            environment = dict(value.split("=", 1) for value in info["Config"]["Env"])
+            if (info["Config"]["Image"] != expected[name] or not info["State"]["Running"]
+                    or info["State"]["Pid"] <= 0 or info["RestartCount"]
+                    or info["Config"]["Labels"]["org.opencontainers.image.revision"] != REVISION
+                    or any(environment.get(flag, "false") != "false" for flag in FLAGS)):
+                raise RuntimeError("Actual candidate service identity/state/OFF flags failed")
+            if (info["Config"]["User"] != before[name]["Config"]["User"]
+                    or info["Path"] != before[name]["Path"] or info["Args"] != before[name]["Args"]):
+                raise RuntimeError("Actual runtime user/entrypoint differs from baseline")
+            if comparable_host_config(info["HostConfig"]) != comparable_host_config(before[name]["HostConfig"]):
+                raise RuntimeError("Full actual HostConfig differs from baseline")
+            if (info["Config"]["Entrypoint"] != before[name]["Config"]["Entrypoint"]
+                    or info["Config"]["Cmd"] != before[name]["Config"]["Cmd"]):
+                raise RuntimeError("Ordered configured entrypoint/command differs from baseline")
+            old_pairs = [item.split("=", 1) for item in before[name]["Config"]["Env"]]
+            new_pairs = [item.split("=", 1) for item in info["Config"]["Env"]]
+            if len(old_pairs) != len({p[0] for p in old_pairs}) or len(new_pairs) != len({p[0] for p in new_pairs}):
+                raise RuntimeError("Duplicate environment keys refused")
+            expected_environment = dict(old_pairs)
+            expected_environment.update({key: "false" for key in FLAGS})
+            if name != "web":
+                expected_environment["ANVIL_RUNTIME_IMAGE_DIGEST"] = release["images"]["kyc-runtime"].rsplit("sha256:", 1)[1]
+            if name == "api":
+                expected_environment["ANVIL_CAPTURE_DATABASE_IMAGE_DIGEST"] = release["images"]["backend"].rsplit("sha256:", 1)[1]
+            exclusive(backup / ("candidate-env-diff-" + name + ".json"), json.dumps({
+                "difference_keys": sorted(key for key in set(expected_environment) | set(dict(new_pairs))
+                    if expected_environment.get(key) != dict(new_pairs).get(key)),
+                "expected_key_count": len(expected_environment), "actual_key_count": len(new_pairs),
+                "env_values_redacted": True}, sort_keys=True).encode())
+            if dict(new_pairs) != expected_environment:
+                raise RuntimeError("Environment changed beyond explicit reviewed image pins/OFF flags")
+            def mounts(value):
+                return {item["Destination"]: (item["Type"], item["Source"], item["RW"], item.get("Propagation"), item.get("Mode")) for item in value["Mounts"]}
+            expected_mounts = mounts(before[name])
+            if name == "api":
+                expected_mounts.update({
+                    "/app/.data/capture-database-trust": ("bind", str(ROOT / "runtime-functional/capture-database-trust"), False, "rprivate", "ro"),
+                    "/app/.data/runtime-qualification/capture-database": ("bind", str(ROOT / "runtime-functional/capture-database-qualification"), False, "rprivate", "ro")})
+            if mounts(info) != expected_mounts or len(info["Mounts"]) != len(expected_mounts):
+                raise RuntimeError("Actual role mount scope differs from exact plan")
+            if name != "web":
+                native = name not in ("api", "worker", "business-worker")
+                python = "/opt/anvil-runtime/bin/python" if native else "/app/services/backend/.venv/bin/python"
+                code = ("import json;from anvil.golden_kyc_source import source_hash;"
+                        "from anvil.golden_component_qualification import installed;"
+                        "assert source_hash()==" + repr(SOURCE) + ";q=installed();"
+                        "assert q['ready'] is " + repr(name != "private-scoring-coordinator") + ";")
+                if name == "api":
+                    code += ("from anvil.marketing_capture_database_target import readiness;"
+                             "c=readiness();assert c['ready'] is True and c['connection_probe_performed'] is False;"
+                             "assert c['target_sha256']==" + repr(TARGET) + ";"
+                             "assert c['qualification']['receipt_sha256']==" + repr(CAPTURE_SHA) + ";")
+                if name == "native-coordinator":
+                    code += ("from anvil.golden_native_peer import inspect_sdk;from anvil.praxis_generic_contract import digest;"
+                             "s=inspect_sdk('unix:///run/docker.sock');"
+                             "assert digest(s)==q['evidence']['mediated_sdk_profile_sha256'];")
+                code += "print(json.dumps({'source_sha256':source_hash(),'component_ready':q['ready']}))"
+                run("installed-" + name, ["docker", "exec", info["Id"], python, "-I", "-B", "-c", code], timeout=60)
+            observed[name] = {"id": info["Id"], "image": info["Config"]["Image"], "restarts": info["RestartCount"]}
+        active_phase = "final-receipt-config-readback"
+        schema()
+        if (sha(current.read_bytes()) != args.receipt_sha256 or sha(config.read_bytes()) != sha(new_raw)
+                or sha(capture.read_bytes()) != CAPTURE_SHA or sha(private_env.read_bytes()) != private_env_sha):
+            raise RuntimeError("Activated receipt/config changed")
+        exclusive(backup / "rollout-summary.json", json.dumps({"revision": REVISION, "source_sha256": SOURCE,
+            "services": observed, "schema": 133, "migration_replayed": False, "health": health,
+            "component_receipt_sha256": args.receipt_sha256, "capture_receipt_sha256": CAPTURE_SHA,
+            "config_sha256": sha(new_raw), "project_qualification_granted": False}).encode())
+        print(json.dumps({"status": "deployed_requires_acceptance", "revision": REVISION,
+            "schema": 133, "migration_replayed": False, "services": observed}))
+    except BaseException as primary:
+        failures, safe = [], []
+        try:
+            exclusive(backup / "primary-failure.json", json.dumps({"error_type": type(primary).__name__, "phase": active_phase,
+                "ambiguous_mutation": mutation_unknown, "diagnostic_failures": diagnostic_failures}).encode())
+        except BaseException as retention:
+            failures.append({"phase": "retain-primary", "error_type": type(retention).__name__})
+        for name in SERVICES:
+            try:
+                info = inspect("anvil-qa-v1-" + name + "-1")
+                kind = owned_kind(info, name, expected[name], before[name]["Config"]["Image"])
+                if kind in {"candidate", "old"}:
+                    exclusive(backup / ("rollback-owned-" + name + ".json"), json.dumps({"id": info["Id"],
+                        "project": "anvil-qa-v1", "service": name, "image": expected[name], "intent": INTENT_LABEL}).encode())
+                    subprocess.run(["docker", "stop", "--time", "5", info["Id"]], capture_output=True, timeout=15, check=True)
+                terminal = inspect(info["Id"])["State"]
+                if terminal["Pid"] == 0 and not terminal["Running"] and not terminal["Restarting"]:
+                    safe.append(name)
+            except BaseException as error:
+                failures.append({"service": name, "phase": "stop-candidate", "error_type": type(error).__name__})
+        # A restored old receipt fails closed for any unconfirmed new reader.
+        # Restore safe services independently rather than abandoning all API/UI
+        # recovery because one coordinator could not be reconciled.
+        restore_success = True
+        readers_quiescent = len(safe) == len(SERVICES)
+        try:
+            quiescent()
+        except BaseException as error:
+            readers_quiescent = False
+            failures.append({"phase": "rollback-quiescence", "error_type": type(error).__name__})
+        for path, raw in ((current, old_receipt), (capture, old_capture), (config, old_raw)):
+            try:
+                temporary = path.with_name(path.name + ".rollback-e49e149-v2")
+                exclusive(temporary, raw, 0o600 if path == config else 0o644)
+                replace_sync(temporary, path)
+                if sha(path.read_bytes()) != sha(raw):
+                    raise RuntimeError("Restored byte mismatch")
+            except BaseException as error:
+                restore_success = False
+                failures.append({"phase": "restore-file", "file": str(path.relative_to(ROOT)), "error_type": type(error).__name__})
+        if not restore_success or mutation_unknown or not readers_quiescent:
+            safe = []
+            failures.append({"phase": "restore-readers", "held_for_explicit_reconciliation": True})
+        for name in safe:
+            try:
+                quiescent()
+                subprocess.run(["docker", "compose", "-p", "anvil-qa-v1", "-f", str(config), "up", "-d",
+                    "--no-deps", "--force-recreate", "--no-build", name], capture_output=True, timeout=120, check=True)
+                restored = inspect("anvil-qa-v1-" + name + "-1")
+                if (not image_matches(restored, before[name]["Config"]["Image"])
+                        or restored["Config"]["Labels"].get("org.opencontainers.image.revision") != OLD_REVISIONS[name]
+                        or restored["Config"]["Labels"].get("com.docker.compose.project") != "anvil-qa-v1"
+                        or restored["Config"]["Labels"].get("com.docker.compose.service") != name
+                        or not restored["State"]["Running"] or restored["State"]["Pid"] <= 0
+                        or restored["State"]["Restarting"] or comparable_host_config(restored["HostConfig"]) != comparable_host_config(before[name]["HostConfig"])
+                        or restored["Config"]["User"] != before[name]["Config"]["User"]
+                        or restored["Config"]["Entrypoint"] != before[name]["Config"]["Entrypoint"]
+                        or restored["Config"]["Cmd"] != before[name]["Config"]["Cmd"]
+                        or restored["Path"] != before[name]["Path"] or restored["Args"] != before[name]["Args"]
+                        or {item["Destination"]: (item["Type"], item["Source"], item["RW"], item.get("Propagation"), item.get("Mode")) for item in restored["Mounts"]}
+                        != {item["Destination"]: (item["Type"], item["Source"], item["RW"], item.get("Propagation"), item.get("Mode")) for item in before[name]["Mounts"]}
+                        or len(restored["Mounts"]) != len(before[name]["Mounts"])
+                        or dict(item.split("=", 1) for item in restored["Config"]["Env"]) != dict(item.split("=", 1) for item in before[name]["Config"]["Env"])):
+                    raise RuntimeError("Restored actual runtime differs from baseline")
+                exclusive(backup / ("restored-" + name + ".json"), json.dumps({"id": restored["Id"], "image": restored["Config"]["Image"], "running": True,
+                    "qualification_granted": False}).encode())
+            except BaseException as error:
+                failures.append({"service": name, "phase": "restore-old", "error_type": type(error).__name__})
+        def restored_bytes(path, expected):
+            try:
+                return sha(path.read_bytes()) == expected
+            except OSError:
+                return False
+        rollback_report = {"failures": failures, "safe_services": safe,
+            "old_receipt_restored": restored_bytes(current, OLD_RECEIPT_SHA),
+            "old_config_restored": restored_bytes(config, OLD_CONFIG_SHA),
+            "old_capture_restored": restored_bytes(capture, OLD_CAPTURE_SHA),
+            "restored_receipts_qualified_now": False, "migration_replayed": False}
+        try:
+            exclusive(backup / "rollback.json", json.dumps(rollback_report).encode())
+        except BaseException as retention:
+            rollback_report["report_retention_error"] = type(retention).__name__
+            print(json.dumps(rollback_report), file=sys.stderr, flush=True)
+        raise RuntimeError("Candidate failed; retained rollback evidence requires reconciliation, never replay") from None
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--receipt-sha256", required=True)
+    parser.add_argument("--capture-receipt-sha256", required=True)
+    parser.add_argument("--capture-review-sha256", required=True)
+    main(parser.parse_args())

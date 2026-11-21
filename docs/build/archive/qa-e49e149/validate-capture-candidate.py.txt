@@ -1,0 +1,84 @@
+"""Stage an independently reviewed candidate receipt; exact backend reads only."""
+import hashlib
+import json
+import os
+import subprocess
+from pathlib import Path
+
+assert os.geteuid() == 0 and os.uname().nodename == 'anvil-qa-v1'
+base = Path('/var/lib/anvil-qa-v1')
+assert hashlib.sha256((base / 'config/compose-app.json').read_bytes()).hexdigest() == '48ca71dac9acea4e3650452474d4c6ce23a8eece847be556b50c274dd68ec5bc'
+canonical = base / 'runtime-functional/capture-database-qualification/current.json'
+old_pin = 'dcad1e15003676eac58cacef48f56624990b05e791de2bf21d877632b5afdfa7'
+assert hashlib.sha256(canonical.read_bytes()).hexdigest() == old_pin
+raw = Path('/tmp/forge-capture-e49-candidate.json').read_bytes()
+pin = 'ec98eb6bcacdbb16217227d43a37fa7359169c8190e4dc4cf4aa5120a505acff'
+assert hashlib.sha256(raw).hexdigest() == pin
+receipt = json.loads(raw)
+assert receipt['review_receipt_sha256'] == 'a4f1b83526366235c1298f2db6cc757bd5975988a727b55f7a4e82aecf587f76'
+folder = base / 'runtime-functional/capture-database-qualification-candidate-e49e149'
+name = 'forge-capture-receipt-readback-e49-v1'
+absent = subprocess.run(['docker', 'inspect', name], capture_output=True, timeout=15)
+assert absent.returncode == 1 and b'no such' in absent.stderr.lower()
+folder.mkdir(mode=0o755)
+with (folder / 'current.json').open('xb') as stream:
+    stream.write(raw)
+    stream.flush()
+    os.fsync(stream.fileno())
+(folder / 'current.json').chmod(0o644)
+for path in (folder, folder.parent):
+    fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+image = 'us-west1-docker.pkg.dev/adi-anvil-mvp-2026/anvil-qa-v1/backend@sha256:71ac0ce351cc1e61868bf7e808e9b899ea356eb733769aa9010760a9b96415de'
+code = ('import json;from anvil.marketing_capture_database_target import readiness;'
+        'v=readiness();assert v["ready"] is True and v["connection_probe_performed"] is False;'
+        'assert v["qualification"]["receipt_sha256"]=="' + pin + '";print(json.dumps(v,sort_keys=True))')
+command = ['docker', 'run', '--pull=never', '--name', name, '--read-only', '--user', '10001:10001',
+    '--label', 'io.adi.forge.scope=capture-candidate-readback-e49',
+    '--network', 'none', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges', '--memory', '512m', '--pids-limit', '128',
+    '--tmpfs', '/tmp:rw,nosuid,nodev,noexec,size=32m',
+    '--mount', 'type=bind,src=' + str(folder) + ',dst=/app/.data/runtime-qualification/capture-database,readonly',
+    '--mount', 'type=bind,src=' + str(base / 'runtime-functional/capture-database-trust') + ',dst=/app/.data/capture-database-trust,readonly',
+    '--env-file', str(base / 'config/capture-runtime.env'), '-e', 'ANVIL_ENV=local', '-e', 'WEB_ORIGIN=http://127.0.0.1:3202',
+    '-e', 'ANVIL_CAPTURE_DATABASE_IMAGE_DIGEST=' + image.rsplit('sha256:', 1)[1],
+    '-e', 'ANVIL_CAPTURE_DATABASE_TARGET_SHA256=8e8d48c90e9aed61044241af255268156386802a1cd3713a9d6f0d3fb318b1ec',
+    '-e', 'ANVIL_CAPTURE_DATABASE_QUALIFICATION_FILE=/app/.data/runtime-qualification/capture-database/current.json',
+    '-e', 'ANVIL_LIVE_PROVIDERS_ENABLED=false', '-e', 'ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED=false',
+    '-e', 'ANVIL_PRAXIS_TEMPLATE_CALLS_ENABLED=false', '-e', 'ANVIL_REAL_EMAIL_ENABLED=false',
+    '--entrypoint', '/app/services/backend/.venv/bin/python', image, '-I', '-B', '-c', code]
+with (folder / 'validation-intent.json').open('x') as stream:
+    json.dump({'image': image, 'receipt_sha256': pin, 'name': name, 'attempts': 1, 'connection_probe': False}, stream)
+    stream.flush()
+    os.fsync(stream.fileno())
+result = None
+cleanup = {'complete': False, 'retry_permitted': False}
+try:
+    result = subprocess.run(command, capture_output=True, timeout=60)
+    (folder / 'validation.stdout').write_bytes(result.stdout)
+    (folder / 'validation.private.stderr').write_bytes(result.stderr)
+    assert result.returncode == 0, 'Candidate readback failed; reconcile exact name, never replay'
+finally:
+    try:
+        info = json.loads(subprocess.check_output(['docker', 'inspect', name], timeout=15))[0]
+        assert info['Name'] == '/' + name and info['Config']['Image'] == image
+        assert info['Config']['Labels'].get('io.adi.forge.scope') == 'capture-candidate-readback-e49'
+        identifier = info['Id']
+        if info['State']['Running']:
+            subprocess.run(['docker', 'stop', '--time', '1', identifier], capture_output=True, timeout=6, check=True)
+        terminal = json.loads(subprocess.check_output(['docker', 'inspect', identifier], timeout=15))[0]
+        assert terminal['State']['Pid'] == 0 and not terminal['State']['Running'] and not terminal['State']['Restarting']
+        cleanup.update(complete=True, container_id=identifier, exit_code=terminal['State']['ExitCode'])
+    except BaseException as error:
+        cleanup['error_type'] = type(error).__name__
+    try:
+        cleanup['canonical_unchanged'] = hashlib.sha256(canonical.read_bytes()).hexdigest() == old_pin
+    finally:
+        with (folder / 'validation-cleanup.json').open('x') as stream:
+            json.dump(cleanup, stream, sort_keys=True)
+            stream.flush()
+            os.fsync(stream.fileno())
+assert cleanup['complete'] and cleanup['exit_code'] == 0 and cleanup['canonical_unchanged'], 'Incomplete cleanup; no qualification'
+print(result.stdout.decode(), end='')

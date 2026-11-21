@@ -1,0 +1,206 @@
+"""One fixed no-model QA capture API target probe; no receipt publication."""
+import hashlib
+import ipaddress
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import re
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
+assert os.geteuid() == 0 and os.uname().nodename == 'anvil-qa-v1'
+os.umask(0o077)
+base = Path('/var/lib/anvil-qa-v1')
+assert hashlib.sha256((base / 'config/compose-app.json').read_bytes()).hexdigest() == '48ca71dac9acea4e3650452474d4c6ce23a8eece847be556b50c274dd68ec5bc'
+manifest_raw = Path('/tmp/forge-release-e49e149/release.json').read_bytes()
+assert hashlib.sha256(manifest_raw).hexdigest() == sys.argv[1]
+release = json.loads(manifest_raw)
+assert release['revision'] == 'e49e149d814d43b8028d11cfe95e7398acbf8318'
+assert release['source_sha256'] == 'c26a7965e3ee215aa74e495c5341c15a2e0423f3952a1799111e8eef688201e4'
+image = release['images']['backend']
+assert re.fullmatch(r'us-west1-docker.pkg.dev/adi-anvil-mvp-2026/anvil-qa-v1/backend@sha256:[a-f0-9]{64}', image)
+digest = image.rsplit('sha256:', 1)[1]
+api = 'bad245f36a8c729f5139bf97bfc29e93adae149a034bc2c4e299af8c97e7999b'
+root = base / 'runtime-functional/capture-probe-e49e149-v1'
+absent = subprocess.run(['docker', 'inspect', 'forge-capture-probe-e49e149-v1'], capture_output=True, timeout=15)
+assert absent.returncode == 1 and b'no such' in absent.stderr.lower()
+root.mkdir(mode=0o700)
+fd = os.open(root.parent, os.O_RDONLY | os.O_DIRECTORY)
+try:
+    os.fsync(fd)
+finally:
+    os.close(fd)
+
+def run(*args, timeout=60):
+    result = subprocess.run(args, capture_output=True, timeout=timeout)
+    if result.returncode:
+        (root / 'last-command.private.stderr').write_bytes(result.stderr)
+        raise RuntimeError('Capture operator command failed; private error retained, no qualification')
+    return result.stdout
+
+current, pg = json.loads(run('docker', 'inspect', api, 'anvil-qa-v1-postgres-1'))
+assert current['Id'] == api and current['State']['Running'] and pg['State']['Running']
+networks = set(current['NetworkSettings']['Networks']) & set(pg['NetworkSettings']['Networks'])
+assert len(networks) == 1
+network = networks.pop()
+address = str(ipaddress.ip_address(pg['NetworkSettings']['Networks'][network]['IPAddress']))
+pairs = [item.split('=', 1) for item in current['Config']['Env']]
+assert len({item[0] for item in pairs}) == len(pairs)
+environment = dict(pairs)
+url = urlsplit(environment['DATABASE_URL'])
+assert url.hostname == 'postgres' and url.scheme in {'postgresql', 'postgres'}
+trust = base / 'runtime-functional/capture-database-trust'
+assert trust.is_dir() and trust.resolve() == trust
+assert trust.stat().st_uid == 0 and trust.stat().st_mode & 0o777 == 0o755
+public_ca = (base / 'backups/capture-tls-20261119-v1/ca.crt').read_bytes()
+assert hashlib.sha256(public_ca).hexdigest() == 'e347fddc56e0eeeed5446e479fff6be823e83f374d762caca35611f187cdd550'
+assert (trust / 'ca.pem').read_bytes() == public_ca
+assert (trust / 'ca.pem').stat().st_uid == 0 and (trust / 'ca.pem').stat().st_mode & 0o777 == 0o644
+destination = '/app/.data/capture-database-trust/ca.pem'
+pairs = parse_qsl(url.query, keep_blank_values=True)
+assert len({item[0] for item in pairs}) == len(pairs)
+query = dict(pairs)
+assert not any(key in query for key in ('service', 'options', 'sslcrldir'))
+assert query.get('hostaddr') == address and query.get('sslmode') == 'verify-full'
+assert query.get('gssencmode') == 'disable' and query.get('sslrootcert') == destination
+dsn = urlunsplit(url)
+assert '\n' not in dsn and '\r' not in dsn
+envfile = root / 'capture.private.env'
+envfile.write_text('DATABASE_URL=' + dsn + '\n')
+envfile.chmod(0o600)
+(root / 'intent.json').write_text(json.dumps({'image': image, 'revision': 'e49e149d814d43b8028d11cfe95e7398acbf8318',
+    'scope': 'capture_api_database_target_only', 'attempts': 1, 'spending_authority': False,
+    'qualification_publication': False, 'origin': 'owned_explicit_no_model_probe'}, sort_keys=True))
+metadata = json.loads(run('docker', 'image', 'inspect', image))[0]
+assert image in metadata['RepoDigests']
+assert metadata['Config']['Labels']['org.opencontainers.image.revision'] == 'e49e149d814d43b8028d11cfe95e7398acbf8318'
+code = ('import asyncio,json,os;from time import monotonic;'
+        'from anvil.marketing_capture_database_target import inspect_target,PIN;'
+        'from anvil.marketing_capture_database_probe import probe;'
+        '_,pin=inspect_target();'
+        'assert pin=="8e8d48c90e9aed61044241af255268156386802a1cd3713a9d6f0d3fb318b1ec";'
+        'os.environ[PIN]=pin;'
+        'result=asyncio.run(probe(absolute_deadline=monotonic()+300));'
+        'print(json.dumps(result,sort_keys=True))')
+name = 'forge-capture-probe-e49e149-v1'
+command = ['docker', 'create', '--pull=never', '--name', name,
+    '--label', 'io.adi.forge.scope=capture-database-qualification', '--read-only', '--user', '10001:10001',
+    '--network', network, '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges', '--memory', '512m',
+    '--pids-limit', '128', '--cpus', '1', '--tmpfs', '/tmp:rw,nosuid,nodev,noexec,size=32m',
+    '--mount', 'type=bind,src=' + str(trust) + ',dst=/app/.data/capture-database-trust,readonly',
+    '--env-file', str(envfile), '-e', 'ANVIL_ENV=local', '-e', 'WEB_ORIGIN=http://127.0.0.1:3202',
+    '-e', 'ANVIL_CAPTURE_DATABASE_IMAGE_DIGEST=' + digest,
+    '-e', 'ANVIL_LIVE_PROVIDERS_ENABLED=false', '-e', 'ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED=false',
+    '-e', 'ANVIL_PRAXIS_TEMPLATE_CALLS_ENABLED=false', '-e', 'ANVIL_REAL_EMAIL_ENABLED=false',
+    '--entrypoint', '/app/services/backend/.venv/bin/python', image, '-I', '-B', '-c', code]
+try:
+    container_id = run(*command).decode().strip()
+except BaseException:
+    # A lost create acknowledgement never permits another creation attempt.
+    reconciliation = {'name': name, 'outcome_unknown': True, 'retry_permitted': False}
+    try:
+        observed = json.loads(run('docker', 'inspect', name))[0]
+        assert observed['Name'] == '/' + name and observed['Config']['Image'] == image
+        assert observed['Config']['Labels'].get('io.adi.forge.scope') == 'capture-database-qualification'
+        reconciliation.update(container_id=observed['Id'], running=observed['State']['Running'], pid=observed['State']['Pid'])
+    except BaseException as error:
+        reconciliation['reconcile_error_type'] = type(error).__name__
+    with (root / 'create-unknown.json').open('x') as stream:
+        json.dump(reconciliation, stream, sort_keys=True)
+        stream.flush()
+        os.fsync(stream.fileno())
+    raise RuntimeError('Capture create acknowledgement unknown; reconcile retained exact identity, never replay') from None
+assert len(container_id) == 64 and all(character in '0123456789abcdef' for character in container_id)
+intent = json.loads((root / 'intent.json').read_bytes())
+intent['container_id'] = container_id
+(root / 'intent.json').write_text(json.dumps(intent, sort_keys=True))
+for path in (root / 'intent.json', envfile):
+    with path.open('rb') as stream:
+        os.fsync(stream.fileno())
+fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
+try:
+    os.fsync(fd)
+finally:
+    os.close(fd)
+process = None
+
+def unknown_cleanup(reason):
+    failures, state = [], None
+    stdout, stderr = b'', b''
+    try:
+        run('docker', 'stop', '--time', '1', container_id, timeout=6)
+    except BaseException as error:
+        failures.append('stop_' + type(error).__name__)
+    if process is not None:
+        try:
+            stdout, stderr = process.communicate(timeout=3)
+        except subprocess.TimeoutExpired:
+            try:
+                process.kill()
+            except BaseException as error:
+                failures.append('kill_' + type(error).__name__)
+            try:
+                stdout, stderr = process.communicate(timeout=3)
+            except BaseException as error:
+                failures.append('reap_' + type(error).__name__)
+        except BaseException as error:
+            failures.append('communicate_' + type(error).__name__)
+    for name, raw in [('probe.partial.stdout', stdout), ('probe.partial.private.stderr', stderr)]:
+        try:
+            (root / name).write_bytes(raw)
+        except BaseException as error:
+            failures.append('retain_' + type(error).__name__)
+    try:
+        inspected = json.loads(run('docker', 'inspect', container_id))[0]
+        assert inspected['Id'] == container_id and inspected['Config']['Image'] == image
+        assert inspected['Config']['Labels'].get('io.adi.forge.scope') == 'capture-database-qualification'
+        state = {key: inspected['State'][key] for key in ('Running', 'Restarting', 'Pid', 'Status', 'ExitCode')}
+    except BaseException as error:
+        failures.append('terminal_inspect_' + type(error).__name__)
+    finally:
+        record = {'container_id': container_id, 'terminal': state is not None and not state['Running'] and not state['Restarting'] and state['Pid'] == 0,
+            'state': state, 'reason': reason, 'qualification_granted': False, 'failures': failures}
+        with (root / 'failed-cleanup.json').open('x') as out:
+            json.dump(record, out, sort_keys=True)
+            out.flush()
+            os.fsync(out.fileno())
+        fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+    raise RuntimeError('Capture probe interrupted; outcome unknown, no replay') from None
+
+try:
+    process = subprocess.Popen(['docker', 'start', '--attach', container_id], stdin=subprocess.DEVNULL,
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    stdout, stderr = process.communicate(timeout=330)
+except BaseException:
+    unknown_cleanup('attach_interrupted')
+(root / 'probe.private.stderr').write_bytes(stderr)
+(root / 'probe.stdout').write_bytes(stdout)
+try:
+    info = json.loads(run('docker', 'inspect', container_id))[0]
+except BaseException:
+    unknown_cleanup('attach_terminal_inspect_unknown')
+if (process.returncode or info['State']['Running'] or info['State']['Restarting'] or info['State']['Pid'] != 0
+        or info['State']['ExitCode']):
+    unknown_cleanup('abnormal_client_or_container_exit')
+# Do not retain Config.Env: it contains the DB credential. Identity/profile
+# evidence intentionally excludes raw environment, query strings and passwords.
+safe = {'id': info['Id'], 'image': info['Config']['Image'], 'exit_code': info['State']['ExitCode'],
+    'state': {key: info['State'][key] for key in ('Status', 'Running', 'Pid', 'OOMKilled', 'StartedAt', 'FinishedAt')},
+    'profile': {key: info['HostConfig'][key] for key in ('ReadonlyRootfs', 'NetworkMode', 'CapDrop', 'SecurityOpt', 'Memory', 'PidsLimit')},
+    'mounts': info['Mounts'], 'user': info['Config']['User'], 'credentials_redacted': True}
+(root / 'container-safe.json').write_text(json.dumps(safe, sort_keys=True))
+if process.returncode or info['State']['ExitCode']:
+    raise RuntimeError('Actual capture probe did not pass; terminal evidence retained, no qualification')
+evidence = json.loads(stdout)
+assert evidence['runtime_identity']['image_sha256'] == digest
+raw = json.dumps(evidence, sort_keys=True).encode()
+(root / 'evidence.json').write_bytes(raw)
+print(json.dumps({'status': 'passed_probe_only', 'evidence_sha256': hashlib.sha256(raw).hexdigest(),
+    'evidence_root': str(root), 'target_sha256': evidence['target_sha256'],
+    'elapsed_seconds': evidence['elapsed_seconds'], 'scope': evidence['scope'], 'qualification_granted': False}))

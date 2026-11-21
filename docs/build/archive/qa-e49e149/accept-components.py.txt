@@ -1,0 +1,151 @@
+"""QA-only reviewed evidence acceptance; no SQL, provider, model or policy grant."""
+import argparse
+import hashlib
+import json
+import os
+import re
+import secrets
+import subprocess
+from pathlib import Path
+
+assert os.geteuid() == 0 and os.uname().nodename == 'anvil-qa-v1'
+parser = argparse.ArgumentParser()
+parser.add_argument('--bundle', required=True, type=Path)
+parser.add_argument('--mode', required=True, choices=('verify', 'publish'))
+parser.add_argument('--manifest-sha256', required=True)
+args = parser.parse_args()
+base = Path('/var/lib/anvil-qa-v1/runtime-functional')
+bundle = args.bundle
+assert re.fullmatch(str(base) + r'/component-evidence-e49e149-[a-f0-9]{8}', str(bundle))
+assert bundle.resolve() == bundle and bundle.stat().st_uid == 0 and bundle.stat().st_mode & 0o077 == 0
+manifest_path = Path('/tmp/forge-release-e49e149/release.json')
+manifest_sha = args.manifest_sha256
+assert re.fullmatch('[a-f0-9]{64}', manifest_sha)
+assert hashlib.sha256(manifest_path.read_bytes()).hexdigest() == manifest_sha
+release = json.loads(manifest_path.read_bytes())
+assert release['revision'] == 'e49e149d814d43b8028d11cfe95e7398acbf8318'
+assert release['source_sha256'] == 'c26a7965e3ee215aa74e495c5341c15a2e0423f3952a1799111e8eef688201e4'
+controls = base / 'controls-e49e149'
+for name, expected in (release['control_files'] | release['operational_files']).items():
+    path = controls / name
+    assert path.resolve() == path and path.stat().st_uid == 0 and not path.stat().st_mode & 0o022
+    assert hashlib.sha256(path.read_bytes()).hexdigest() == expected
+input_path = bundle / 'input-reviewed.json'
+input_raw = input_path.read_bytes()
+assert json.loads(input_raw)['release'] == release
+input_sha = hashlib.sha256(input_raw).hexdigest()
+canonical_qualification = base / 'harbor-proof/component-qualification'
+assert hashlib.sha256((canonical_qualification / 'current.json').read_bytes()).hexdigest() == '634fc636eb4df0c5fe265457a006f42ab7900b71ad739907ac38b808b48e41a1'
+qualification = base / 'harbor-proof/component-qualification-candidate-e49e149'
+if not qualification.exists():
+    qualification.mkdir(mode=0o755)
+    qualification.chmod(0o755)
+assert qualification.resolve() == qualification
+current = qualification / 'current.json'
+assert qualification.stat().st_uid == 0 and qualification.stat().st_mode & 0o777 == 0o755
+
+def private(path, value):
+    with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600), 'wb') as out:
+        out.write(value)
+        out.flush()
+        os.fsync(out.fileno())
+    fd = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+if args.mode == 'publish':
+    verified = json.loads((bundle / 'accept-verified.json').read_bytes())
+    assert verified['input_sha256'] == input_sha and verified['manifest_sha256'] == manifest_sha
+    assert not current.exists(), 'Reconcile an existing technical receipt before any further publication'
+    private(bundle / 'accept-publication-intent.json', json.dumps({'input_sha256': input_sha,
+        'expected_receipt_sha256': verified['receipt_sha256'], 'attempts': 1}).encode())
+
+nonce = secrets.token_hex(4)
+name = 'forge-components-' + args.mode + '-' + nonce
+command = ['docker', 'run', '--pull=never', '--name', name, '--label', 'io.adi.forge.scope=component-evidence-acceptance',
+    '--label', 'io.adi.forge.operation=' + name,
+    '--read-only', '--user', '0:0', '--network', 'none', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges',
+    '--uts', 'host', '--memory', '1536m', '--pids-limit', '128', '--cpus', '2',
+    '--tmpfs', '/tmp:rw,nosuid,nodev,noexec,size=128m',
+    '--mount', f'type=bind,src={controls},dst=/ops,readonly',
+    '--mount', f'type=bind,src={controls}/runtime-checks,dst=/controls,readonly',
+    '--mount', f'type=bind,src={bundle},dst={bundle},readonly',
+    '--mount', f'type=bind,src={base}/harbor-proof,dst={base}/harbor-proof,readonly',
+    '--mount', f'type=bind,src={qualification},dst={canonical_qualification}' + (',readonly' if args.mode == 'verify' else ''),
+    '-e', 'ANVIL_ENV=local', '-e', 'WEB_ORIGIN=http://127.0.0.1:3202',
+    '-e', 'ANVIL_RUNTIME_IMAGE_DIGEST=' + release['images']['kyc-runtime'].rsplit('sha256:', 1)[1],
+    '-e', 'ANVIL_LIVE_PROVIDERS_ENABLED=false', '-e', 'ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED=false',
+    '-e', 'ANVIL_PRAXIS_TEMPLATE_CALLS_ENABLED=false', '-e', 'ANVIL_REAL_EMAIL_ENABLED=false',
+    '--entrypoint', '/opt/anvil-runtime/bin/python', release['images']['kyc-runtime'], '-I', '-B',
+    '/ops/infra/gcp/qualify_native_components.py', '--input', str(input_path), '--output', str(canonical_qualification / 'current.json')]
+if args.mode == 'verify':
+    command.append('--verify-only')
+absent = subprocess.run(['docker', 'inspect', name], capture_output=True, timeout=15)
+assert absent.returncode == 1 and b'no such' in absent.stderr.lower()
+private(bundle / (name + '.intent.json'), json.dumps({'name': name, 'mode': args.mode,
+    'image': release['images']['kyc-runtime'], 'input_sha256': input_sha, 'attempts': 1}).encode())
+result, primary = None, None
+retention_failures = []
+cleanup = {'complete': False, 'retained': True, 'failures': [], 'retry_permitted': False}
+try:
+    try:
+        result = subprocess.run(command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=300)
+    except BaseException as error:
+        primary = error
+        for suffix, raw in (('partial.stdout', getattr(error, 'stdout', None) or b''), ('partial.stderr', getattr(error, 'stderr', None) or b'')):
+            try:
+                private(bundle / (name + '.' + suffix), raw)
+            except BaseException as retention:
+                retention_failures.append(type(retention).__name__)
+    else:
+        for suffix, raw in (('stdout', result.stdout), ('stderr', result.stderr)):
+            try:
+                private(bundle / (name + '.' + suffix), raw)
+            except BaseException as retention:
+                retention_failures.append(type(retention).__name__)
+finally:
+    # Reconciliation is unconditional: diagnostics cannot skip owned cleanup.
+    try:
+        infos = json.loads(subprocess.check_output(['docker', 'inspect', name], timeout=15))
+        assert len(infos) == 1
+        info = infos[0]
+        assert info['Name'] == '/' + name and info['Config']['Image'] == release['images']['kyc-runtime']
+        assert info['Config']['Labels'].get('io.adi.forge.scope') == 'component-evidence-acceptance'
+        assert info['Config']['Labels'].get('io.adi.forge.operation') == name
+        identifier = info['Id']
+        if info['State']['Running']:
+            subprocess.run(['docker', 'stop', '--time', '1', identifier], capture_output=True, timeout=6, check=True)
+        terminal = json.loads(subprocess.check_output(['docker', 'inspect', identifier], timeout=15))[0]
+        assert terminal['Id'] == identifier and terminal['Name'] == '/' + name
+        assert not terminal['State']['Running'] and not terminal['State']['Restarting'] and terminal['State']['Pid'] == 0
+        cleanup.update(complete=True, id=identifier, state={key: terminal['State'][key] for key in ('Running', 'Restarting', 'Pid', 'ExitCode')})
+    except BaseException as error:
+        cleanup['failures'].append({'phase': 'owned_cleanup', 'error_type': type(error).__name__})
+    try:
+        cleanup['current_receipt_sha256'] = hashlib.sha256(current.read_bytes()).hexdigest() if current.exists() else None
+        cleanup['canonical_unchanged'] = hashlib.sha256((canonical_qualification / 'current.json').read_bytes()).hexdigest() == '634fc636eb4df0c5fe265457a006f42ab7900b71ad739907ac38b808b48e41a1'
+    except BaseException as error:
+        cleanup['failures'].append({'phase': 'receipt_readback', 'error_type': type(error).__name__})
+    try:
+        private(bundle / (name + '.cleanup.json'), json.dumps(cleanup, sort_keys=True).encode())
+    except BaseException as retention:
+        retention_failures.append(type(retention).__name__)
+        print(json.dumps({'cleanup': cleanup, 'retention_failures': retention_failures}), file=__import__('sys').stderr, flush=True)
+if primary is not None:
+    raise RuntimeError('Acceptance interrupted; reconcile retained identity and receipt, never replay') from None
+assert not retention_failures, 'Evidence retention failed; no acceptance'
+assert cleanup['complete'] and not cleanup['failures'] and cleanup['canonical_unchanged'], 'Incomplete cleanup; no acceptance'
+assert cleanup['state']['ExitCode'] == 0, 'Owned acceptance container did not exit successfully'
+print(json.dumps({'mode': args.mode, 'exit_code': result.returncode, 'container': name}), flush=True)
+assert result.returncode == 0, 'Acceptance failed; inspect retained private diagnostics, never synthesize receipt'
+packet = json.loads(result.stdout)
+assert packet['status'] == ('verified_not_published' if args.mode == 'verify' else 'technical_components_qualified_not_spend_authorized')
+assert re.fullmatch('[a-f0-9]{64}', packet['receipt_sha256']) and packet['spending_authority'] is False
+if args.mode == 'verify':
+    private(bundle / 'accept-verified.json', json.dumps({'input_sha256': input_sha, 'manifest_sha256': manifest_sha,
+        'receipt_sha256': packet['receipt_sha256']}).encode())
+else:
+    assert hashlib.sha256(current.read_bytes()).hexdigest() == packet['receipt_sha256'] == verified['receipt_sha256']
+print(json.dumps(packet))

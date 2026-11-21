@@ -1,5 +1,103 @@
 # Build status
 
+## 20 November, 10:38 PM Chicago — e49 deployed; technical qualification passed
+
+The exact frozen application revision
+`e49e149d814d43b8028d11cfe95e7398acbf8318` is now serving QA. All three builds
+passed every step; the single guarded rollout completed successfully with eight
+new exact-image containers and zero restarts. No migration was replayed.
+Golden source is `c26a7965e3ee215aa74e495c5341c15a2e0423f3952a1799111e8eef688201e4`.
+
+All 14 fresh technical component checks passed independent Aegis review
+`a94fa462…2a3bf`, then actual candidate-runtime verification and publication.
+Serving component receipt is `05ee9325…4a482`; capture receipt is
+`ec98eb6b…5acff`, independently reviewed as `a4f1b835…87f76`. The earliest
+receipt expiry is **21 November, 10:12:40 PM Chicago** (22 November 04:12:40 UTC).
+Expiry concerns the bounded pilot qualification, not whether software remains
+installed. Existing exact images do not require rebuilding merely to renew tests.
+
+Actual serving acceptance `c6a7aa14…3eb8` records schema/Alembic 133, the original
+200 reference applications, unchanged import/idempotency counts, no pending app
+transaction and zero banking commands/execution jobs. Full original security,
+mounts, limits and API 128 MiB scratch configuration were preserved. New compose
+SHA is `59945afc…98142`. Installed-role readback `f81b3f57…2dc8c` confirms exact
+new source and SDK profile `7c9c9a77…666a0` matching the technical receipt; the
+private coordinator's restricted component-reader result remains intentionally
+false. Its separate six-case physical private-scoring controls passed.
+
+The actual serving API protected OPA scratch control passed with guard None,
+no witness differences, no database operations and no model calls
+(`01dade5b…8bd7f`). GET-only smoke passed health/workspace 200 and anonymous
+protected template route 401 (`78ed2622…5566`). Local Python 3.14's missing CA
+trust chain blocked the first HTTP probe; the normal system-trusted curl check
+passed with certificate verification intact. No TLS check was disabled.
+The previously completed application suite passed 1399 tests/10 subtests with
+4 skips; 26 deployment ownership/profile/custody negatives also passed.
+
+**Still blocked/not run:** the actual authored ZIP has nine unsupported procedure
+tool references; the selected real Gym dataset's assessment-date/charter context,
+private expectations and required policy/case/rights reviews must be reconciled.
+The existing software-reference import and older template qualification were
+preserved, not relabelled to the new source. Fresh genuine Admin acceptance for
+changed application subjects and authenticated UI smoke remain pending. The
+owner's Chrome was not controlled. No authored ZIP import, Authoring live call,
+real model call, model result or Stage/Production change occurred. See the
+Authoring correction ask and 20-cell matrix; passing fixtures are not real
+benchmark admission. Harbor's final independent actual serving-profile acceptance
+passed, including complete original security/resource/mount preservation and
+exact unchanged reference-import ledger. Owner email is being prepared; local
+evidence is under `.local/releases/e49e149/`.
+
+Checkpoint verification: the unchanged credential patterns found no matches in
+23 staged documentation/archive paths; all 19 archived operators exactly match
+the executed bytes. The archived native-control program intentionally preserves
+its original extra newline at EOF. Git's default whitespace check reports that
+historical blank; all other whitespace checks pass with only `blank-at-eof`
+excluded for this immutable source archive. No scanner policy was changed.
+
+## 20 November late evening — fresh e49 QA builds submitted once
+
+Continuing the user's explicit QA-only deployment instruction, frozen revision
+`e49e149d814d43b8028d11cfe95e7398acbf8318` has two active Cloud Builds:
+Core `843aaf20-67fa-4b7b-aaf5-e8f593dec02e` and Environments
+`3fc3a095-0058-49b7-aabe-f0b4270f8484`. Both passed, as did Evaluation
+`8211c08d-7f22-42d0-9695-5b91b10cf965`, pinned to the exact successful Environment
+image. Every build step passed. Release manifest SHA
+`2825d469a78a8126e14bc71d6d592c49abb73f2c117088e8a80bc358a1936404`
+and 22-file public control archive SHA
+`3df9714377da9bf3a020d30b04cfdc0e49de7556e25f8fcc7a174ee4b6a48857`
+were independently reconciled by Harbor before QA staging. Build receipts,
+durable one-shot submit intents and pinned phase plan are retained privately in
+`.local/releases/e49e149/`. No duplicate submission or serving rollout occurred.
+Harbor independently verified the committed archive, phase input inventories and
+recipes; its two custody corrections (remove owned cache and assert raw plan hash)
+were applied before submission. The archive commit remains the build subject;
+later documentation edits do not replace it.
+
+Fresh read-only QA baseline confirms all eight services on revision `88214ba`,
+zero restarts, both schema versions 133, config `48ca71da…ec5bc`, API
+`bad245f3…7999b`, native coordinator `859ec871…cc22f`, and unchanged old component
+and capture receipts. The API's accepted 128 MiB scratch fix must survive rollout.
+Fresh native Trial `410354ec-5303-4888-a57f-002446f81860` passed, with prepare and
+Trial exit 0/terminal and proxy reaped. Isolated SQL, registry, policy-engine
+controls and all six private-scoring cases plus audit passed. Observer sensitivity
+passed positive and successful-forbidden-peer cases and independent review.
+One fresh transport control passed both worker and SDK exit 0 and restored the
+same old coordinator `859ec871…cc22f`; no consumed request was replayed.
+Curated component evidence is at
+`/var/lib/anvil-qa-v1/runtime-functional/component-evidence-e49e149-07833c71`;
+fresh full independent review, candidate receipt validation and serving rollout
+are still pending. The new restricted capture target probe passed six controls;
+Aegis review `a4f1b835…87f76` binds candidate `ec98eb6b…5acff`, expiring
+2026-11-22 04:12:43 UTC. Exact new backend readback passed with networking disabled,
+no connection probe, terminal cleanup and old serving receipt unchanged.
+Twenty-six deployment ownership, immutable-image, evidence-custody and strict
+profile negative checks also passed locally. These are software observations,
+not authored-task or model benchmark results. Nine authored tool references remain
+an external import blocker. Live calls remain OFF, Authoring live integration
+paused and Stage/Production on hold. Do not use Chrome while the owner resumes
+other work.
+
 ## 20 November evening — V8 qualified; decoder correction and authored tool bindings remain
 
 The genuine Admin UI qualification succeeded once at 03:36:06 UTC (9:36 PM

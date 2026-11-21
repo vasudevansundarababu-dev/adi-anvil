@@ -1,0 +1,22 @@
+"""Read sanitized identity and existing terminal capture validation evidence."""
+import hashlib
+import json
+import os
+import subprocess
+from pathlib import Path
+
+assert os.geteuid() == 0 and os.uname().nodename == 'anvil-qa-v1'
+base = Path('/var/lib/anvil-qa-v1/runtime-functional')
+folder = base / 'capture-database-qualification-candidate-e49e149'
+cleanup = json.loads((folder / 'validation-cleanup.json').read_bytes())
+intent = json.loads((folder / 'validation-intent.json').read_bytes())
+info = json.loads(subprocess.check_output(['docker', 'inspect', cleanup['container_id']], timeout=15))[0]
+assert info['Name'] == '/' + intent['name'] and info['Config']['Image'] == intent['image']
+assert info['Config']['Labels'].get('io.adi.forge.scope') == 'capture-candidate-readback-e49'
+assert not info['State']['Running'] and not info['State']['Restarting'] and info['State']['Pid'] == 0 and info['State']['ExitCode'] == 0
+canonical = hashlib.sha256((base / 'capture-database-qualification/current.json').read_bytes()).hexdigest()
+assert canonical == 'dcad1e15003676eac58cacef48f56624990b05e791de2bf21d877632b5afdfa7'
+print(json.dumps({'cleanup': cleanup, 'intent': intent, 'id': info['Id'], 'image': info['Config']['Image'],
+    'state': {key: info['State'][key] for key in ('Running', 'Restarting', 'Pid', 'ExitCode', 'OOMKilled')},
+    'host_config': info['HostConfig'], 'mounts': info['Mounts'], 'user': info['Config']['User'],
+    'canonical_receipt_sha256': canonical, 'env_values_redacted': True}, sort_keys=True))

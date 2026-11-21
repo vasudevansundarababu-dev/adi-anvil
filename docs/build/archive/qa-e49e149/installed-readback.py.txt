@@ -1,0 +1,23 @@
+"""Read retained successful installed-role output and current SDK profile."""
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+assert os.geteuid() == 0 and os.uname().nodename == 'anvil-qa-v1'
+root = Path('/var/lib/anvil-qa-v1')
+folder = root / 'backups/qualification-e49e149-v2'
+out = {'installed': {}}
+for role in ('api','worker','business-worker','golden-scheduler','golden-grader','native-coordinator','private-scoring-coordinator'):
+    raw = (folder / ('installed-' + role + '.private.stdout')).read_bytes()
+    body = json.loads(raw)
+    assert body['source_sha256'] == 'c26a7965e3ee215aa74e495c5341c15a2e0423f3952a1799111e8eef688201e4'
+    assert body['component_ready'] is (role != 'private-scoring-coordinator')
+    out['installed'][role] = {'body':body,'stdout_sha256':hashlib.sha256(raw).hexdigest()}
+program = "import json;from anvil.golden_native_peer import inspect_sdk;from anvil.praxis_generic_contract import digest;s=inspect_sdk('unix:///run/docker.sock');print(json.dumps({'profile':s,'profile_sha256':digest(s)}))"
+raw = subprocess.check_output(['docker','exec','anvil-qa-v1-native-coordinator-1','/opt/anvil-runtime/bin/python','-I','-B','-c',program],timeout=60)
+out['sdk'] = json.loads(raw)
+receipt = json.loads((root / 'runtime-functional/harbor-proof/component-qualification/current.json').read_bytes())
+out['receipt_sdk_sha256'] = receipt['mediated_sdk_profile_sha256']
+assert out['sdk']['profile_sha256'] == out['receipt_sdk_sha256']
+print(json.dumps(out,sort_keys=True))

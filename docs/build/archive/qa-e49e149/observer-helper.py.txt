@@ -1,0 +1,87 @@
+"""Fixed Unix socket sensitivity control, no application or provider imports."""
+import json
+import os
+import socket
+import struct
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+role, target = sys.argv[1:]
+path = Path(target)
+assert role in {'worker', 'sdk'}
+assert path.parent in {
+    Path('/var/lib/anvil-qa-v1/runtime-functional/native-control-bridge/.bm-gw-oe49p'),
+    Path('/var/lib/anvil-qa-v1/runtime-functional/native-control-bridge/.bm-gw-oe49n'),
+}
+assert path.name == ('gateway.sock' if path.parent.name.endswith('p') else 'forbidden.sock')
+client = """import socket,sys
+s=socket.socket(socket.AF_UNIX,socket.SOCK_STREAM)
+s.settimeout(10)
+s.connect(sys.argv[1])
+s.sendall(b'ping')
+reply=b''
+while len(reply)<4:
+ part=s.recv(4-len(reply))
+ assert part
+ reply+=part
+assert reply==b'pong'
+s.close()
+"""
+
+def child():
+    return subprocess.Popen([sys.executable, '-I', '-B', '-c', client, str(path)],
+        stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+def reap(process):
+    try:
+        stdout, stderr = process.communicate(timeout=12)
+    except BaseException:
+        process.kill()
+        process.communicate(timeout=3)
+        raise
+    assert process.returncode == 0 and not stdout and not stderr
+
+if role == 'sdk':
+    assert os.geteuid() == os.getegid() == 0
+    # Keep the fixed tiny workload alive until launch-time custody is observed.
+    time.sleep(1)
+    process = child()
+    reap(process)
+    print(json.dumps({'role': role, 'child_pid': process.pid, 'child_exit': 0, 'successful_connect': str(path)}))
+else:
+    assert os.geteuid() == os.getegid() == 10001
+    listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    listener.settimeout(40)
+    process = None
+    peers = []
+    try:
+        listener.bind(str(path))
+        listener.listen(2)
+        process = child()
+        for index in range(2):
+            if index == 1:
+                reap(process)
+                (path.parent / 'ready').write_text('ready')
+            connection, _ = listener.accept()
+            with connection:
+                connection.settimeout(10)
+                pid, uid, gid = struct.unpack('3i', connection.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12))
+                assert uid == gid == (10001 if index == 0 else 0)
+                received = b''
+                while len(received) < 4:
+                    part = connection.recv(4 - len(received))
+                    assert part
+                    received += part
+                assert received == b'ping'
+                connection.sendall(b'pong')
+                peers.append({'uid': uid, 'gid': gid})
+        print(json.dumps({'role': role, 'accepted': 2, 'peers': peers, 'self_child_exit': process.returncode}))
+    finally:
+        listener.close()
+        if process is not None and process.poll() is None:
+            process.kill()
+            process.communicate(timeout=3)
+        if path.exists():
+            path.unlink()

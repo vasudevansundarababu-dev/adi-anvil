@@ -1,0 +1,28 @@
+"""Retain independently supplied review with the original curated observations."""
+import hashlib
+import json
+import os
+from pathlib import Path
+
+assert os.geteuid() == 0 and os.uname().nodename == 'anvil-qa-v1'
+root = Path('/var/lib/anvil-qa-v1/runtime-functional/component-evidence-e49e149-07833c71')
+assert root.resolve() == root and root.stat().st_uid == 0 and root.stat().st_mode & 0o077 == 0
+review = Path('/tmp/component-review.json').read_bytes()
+review_pin = 'a94fa4627fa33257c4a51bae90f014a0456fa1a61ed2631df1f510151842a3bf'
+assert hashlib.sha256(review).hexdigest() == review_pin
+raw = Path('/tmp/input-reviewed.json').read_bytes()
+assert hashlib.sha256(raw).hexdigest() == 'c069c1ffb53f01d36f2e171557d1c7f85e25de573198e9b0e887f6f9d32f8213'
+body = json.loads(raw)
+assert body['packets'].pop('review') == {'path': 'review.json', 'sha256': review_pin}
+assert body == json.loads((root / 'input-without-review.json').read_bytes())
+for name, content in [('review.json', review), ('input-reviewed.json', raw)]:
+    with os.fdopen(os.open(root / name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600), 'wb') as stream:
+        stream.write(content)
+        stream.flush()
+        os.fsync(stream.fileno())
+fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
+try:
+    os.fsync(fd)
+finally:
+    os.close(fd)
+print(json.dumps({'review_sha256': review_pin, 'input_sha256': hashlib.sha256(raw).hexdigest(), 'qualification_published': False}))

@@ -1,0 +1,181 @@
+"""Single installed QA preparation/Trial, no model dispatch or qualification."""
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import sys
+import time
+
+assert os.geteuid() == 0 and os.uname().nodename == 'anvil-qa-v1'
+image = sys.argv[1]
+assert re.fullmatch(r'us-west1-docker.pkg.dev/adi-anvil-mvp-2026/anvil-qa-v1/kyc-runtime@sha256:[a-f0-9]{64}', image)
+manifest_raw = Path('/tmp/forge-release-e49e149/release.json').read_bytes()
+assert hashlib.sha256(manifest_raw).hexdigest() == sys.argv[2]
+release = json.loads(manifest_raw)
+assert release['revision'] == 'e49e149d814d43b8028d11cfe95e7398acbf8318'
+assert release['source_sha256'] == 'c26a7965e3ee215aa74e495c5341c15a2e0423f3952a1799111e8eef688201e4'
+assert image == release['images']['kyc-runtime']
+root = Path('/var/lib/anvil-qa-v1/runtime-functional')
+private = root / 'probe-config-e49e149-v1'
+proof = root / 'harbor-proof'
+proxy = root / 'probe-pg-proxy-e49e149-v1'
+original = root / 'probe-config-d9f3d6a-v4'
+assert not proxy.exists()
+for phase in ('prepare', 'trial'):
+    p = subprocess.run(['docker', 'inspect', 'forge-native-' + phase + '-e49e149-v1'], capture_output=True, timeout=15)
+    assert p.returncode == 1 and b'no such' in p.stderr.lower()
+pins = {
+    '/tmp/forge-release-e49e149/native-proxy.py': 'd0be9fb2cdc6a2da032dee4f73775400c78f66a1afd67d768063e6931dcb57c4',
+    '/var/lib/anvil-qa-v1/runtime-functional/probe-config-d9f3d6a-v4/scheduler.json': '649049eaed2744717662a2ac2639e07b2d1a4058f3032f5624099e91eb64cd5f',
+    '/var/lib/anvil-qa-v1/runtime-functional/probe-config-d9f3d6a-v4/request.json': '7b0ae1983ff7b1900d3567819897303e40faa14e20971373ef15f8d74f2f418a',
+}
+for name, pin in pins.items():
+    p = Path(name)
+    assert p.resolve() == p and p.stat().st_uid == 0 and not p.stat().st_mode & 0o022
+    assert hashlib.sha256(p.read_bytes()).hexdigest() == pin
+metadata = json.loads(subprocess.check_output(['docker', 'image', 'inspect', image], timeout=15))[0]
+assert metadata['Config']['Labels']['org.opencontainers.image.revision'] == 'e49e149d814d43b8028d11cfe95e7398acbf8318'
+private.mkdir(mode=0o700)
+shutil.copyfile(original / 'scheduler.json', private / 'scheduler.json')
+(private / 'scheduler.json').chmod(0o600)
+request = json.loads((original / 'request.json').read_bytes())
+request['docker_host'] = 'unix:///run/docker.sock'
+request['database_provider']['path'] = str(private / 'scheduler.json')
+with os.fdopen(os.open(private / 'request.json', os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), 'w') as out:
+    json.dump(request, out, sort_keys=True, separators=(',', ':'))
+proxy_source = Path('/tmp/forge-release-e49e149/native-proxy.py').read_text()
+old = '/var/lib/anvil-qa-v1/runtime-functional/probe-pg-proxy-d9f3d6a'
+assert proxy_source.count(old) == 1
+proxy_source = proxy_source.replace(old, str(proxy))
+program = private / 'unix-transport.py'
+program.write_text(proxy_source)
+program.chmod(0o600)
+transport = None
+owned = {}
+
+def command(name):
+    return ['docker', 'create', '--pull=never', '--name', name, '--label', 'io.adi.forge.scope=owned-native-control',
+            # Trusted root operator already owns the daemon UDS; it must inspect
+            # real host PID1's namespace. No such access reaches either actor
+            # or verifier Compose profiles, which remain cap-drop ALL/none-net.
+            '--read-only', '--user', '0:0', '--cap-drop', 'ALL', '--cap-add', 'SYS_PTRACE',
+            '--security-opt', 'no-new-privileges', '--security-opt', 'apparmor=unconfined',
+            '--pid', 'host', '--uts', 'host', '--userns', 'host', '--cgroupns', 'host', '--network', 'none',
+            '--memory', '1536m', '--pids-limit', '256', '--cpus', '2',
+            '--tmpfs', '/tmp:rw,nosuid,nodev,noexec,size=128m',
+            '--mount', 'type=bind,src=' + str(proof) + ',dst=' + str(proof),
+            '--mount', 'type=bind,src=' + str(private) + ',dst=' + str(private) + ',readonly',
+            '--mount', 'type=bind,src=' + str(proxy) + ',dst=/var/run/forge-probe-postgresql,readonly',
+            '--mount', 'type=bind,src=/run/docker.sock,dst=/run/docker.sock,readonly',
+            '--mount', 'type=bind,src=/usr/bin/docker,dst=/usr/bin/docker,readonly',
+            '--mount', 'type=bind,src=/usr/libexec/docker/cli-plugins/docker-compose,dst=/usr/libexec/docker/cli-plugins/docker-compose,readonly',
+            '-e', 'ANVIL_ENV=local', '-e', 'WEB_ORIGIN=http://127.0.0.1:3202',
+            '-e', 'ANVIL_LIVE_PROVIDERS_ENABLED=false', '-e', 'ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED=false',
+            '-e', 'ANVIL_REAL_EMAIL_ENABLED=false', '--entrypoint', '/opt/anvil-runtime/bin/python', image, '-I', '-B']
+
+def retain(name, raw):
+    with os.fdopen(os.open(private / name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), 'wb') as out:
+        out.write(raw)
+        out.flush()
+        os.fsync(out.fileno())
+    fd = os.open(private, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+def run(phase, arguments):
+    name = 'forge-native-' + phase + '-e49e149-v1'
+    created = subprocess.run(command(name) + arguments, capture_output=True, timeout=60)
+    retain(phase + '.create.private.stderr', created.stderr)
+    assert created.returncode == 0, 'Unknown creation acknowledgement; reconcile exact name'
+    identifier = created.stdout.decode().strip()
+    assert re.fullmatch('[a-f0-9]{64}', identifier)
+    owned[phase] = identifier
+    retain(phase + '.id.json', json.dumps({'id': identifier, 'image': image}).encode())
+    result = subprocess.run(['docker', 'start', '--attach', identifier], capture_output=True, timeout=430)
+    retain(phase + '.stdout', result.stdout)
+    retain(phase + '.stderr', result.stderr)
+    assert result.returncode == 0, 'Native control failed; retained without replay'
+    return json.loads(result.stdout)
+
+retain('intent.json', json.dumps({'image': image, 'inputs': pins, 'model_calls_authorized': 0}, sort_keys=True).encode())
+try:
+    log = os.open(private / 'transport.private.log', os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    transport = subprocess.Popen(['/usr/bin/python3', str(program)], stdout=log, stderr=log, start_new_session=True)
+    os.close(log)
+    for _ in range(30):
+        if (proxy / '.s.PGSQL.5432').exists():
+            break
+        assert transport.poll() is None, 'AF_UNIX transport failed; private logs retained'
+        time.sleep(0.1)
+    else:
+        raise RuntimeError('AF_UNIX transport startup deadline')
+
+    diagnostic = """import json,traceback
+from anvil.golden_kyc_probe_prepare import prepare
+try:
+ print(json.dumps(prepare(%r)))
+except Exception as e:
+ print(json.dumps({'error_type':type(e).__name__,'message':str(e),'frames':[{'file':f.filename,'line':f.lineno,'function':f.name} for f in traceback.extract_tb(e.__traceback__)]}))
+ raise SystemExit(1)
+""" % str(private / 'request.json')
+    prepared = run('prepare', ['-c', diagnostic])
+    assert prepared['status'] == 'prepared_not_launched' and prepared['qualification_granted'] is False
+    # This job is launched once. Failure/ambiguity is retained and never replayed.
+    trial_diagnostic = """import json,traceback
+from anvil.golden_kyc_probe import run
+try:
+ print(json.dumps(run(%r)))
+except Exception as e:
+ print(json.dumps({'error_type':type(e).__name__,'frames':[{'file':f.filename,'line':f.lineno,'function':f.name} for f in traceback.extract_tb(e.__traceback__)]}))
+ raise SystemExit(1)
+""" % prepared['job_id']
+    run('trial', ['-m', 'anvil.golden_kyc_probe', '--job', prepared['job_id']])
+finally:
+    cleanup = {}
+    for phase in ('prepare', 'trial'):
+        name = 'forge-native-' + phase + '-e49e149-v1'
+        try:
+            p = subprocess.run(['docker', 'inspect', owned.get(phase, name)], capture_output=True, timeout=15)
+            if phase not in owned and p.returncode == 1 and b'no such' in p.stderr.lower():
+                cleanup[phase] = {'not_created': True}
+                continue
+            info = json.loads(p.stdout)[0]
+            assert info['Name'] == '/' + name and info['Config']['Image'] == image
+            assert info['Config']['Labels'].get('io.adi.forge.scope') == 'owned-native-control'
+            if phase in owned:
+                assert info['Id'] == owned[phase]
+            else:
+                retain(phase + '.reconciled-id.json', json.dumps({'id': info['Id'], 'image': image}).encode())
+            if info['State']['Running']:
+                subprocess.run(['docker', 'stop', '--time', '1', info['Id']], capture_output=True, check=True, timeout=6)
+            terminal = json.loads(subprocess.check_output(['docker', 'inspect', info['Id']], timeout=15))[0]
+            assert not terminal['State']['Running'] and not terminal['State']['Restarting'] and terminal['State']['Pid'] == 0
+            cleanup[phase] = {'id': info['Id'], 'terminal': True, 'exit_code': terminal['State']['ExitCode']}
+        except BaseException as error:
+            cleanup[phase] = {'unknown_retained': True, 'error_type': type(error).__name__}
+    try:
+        if proxy.exists():
+            (proxy / 'STOP').touch(mode=0o600, exist_ok=True)
+        if transport is not None:
+            try:
+                transport.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                transport.terminate()
+                try:
+                    transport.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    transport.kill()
+                    transport.wait(timeout=3)
+            cleanup['transport'] = {'reaped': transport.poll() is not None, 'exit_code': transport.returncode}
+    except BaseException as error:
+        cleanup['transport'] = {'unknown_retained': True, 'error_type': type(error).__name__}
+    retain('cleanup.json', json.dumps(cleanup, sort_keys=True).encode())
+assert all(not v.get('unknown_retained') for v in cleanup.values()), 'Incomplete cleanup; no qualification'
+assert all(v.get('not_created') or v.get('exit_code') == 0 for k, v in cleanup.items() if k != 'transport')
+print(json.dumps({'status': 'observed_not_qualified', 'job_id': prepared['job_id'], 'evidence': str(private), 'cleanup': cleanup, 'qualification_granted': False}))
+

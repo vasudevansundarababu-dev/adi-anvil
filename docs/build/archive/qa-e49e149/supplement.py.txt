@@ -1,0 +1,34 @@
+"""Read-only namespace and retained self-test profile supplement; no raw Env."""
+import hashlib
+import json
+import os
+import subprocess
+from datetime import datetime, timezone
+from pathlib import Path
+
+base = Path('/var/lib/anvil-qa-v1/runtime-functional')
+root = base / 'observer-selftest-e49e149-v1'
+result = json.loads((root / 'result.json').read_bytes())
+profiles = {}
+for case in result['results']:
+    for role, outcome in case['outcomes'].items():
+        info = json.loads(subprocess.check_output(['docker', 'inspect', outcome['container_id']], timeout=10))[0]
+        profile = {'user': info['Config']['User'], 'host': info['HostConfig'], 'mounts': info['Mounts']}
+        assert hashlib.sha256(json.dumps(profile, sort_keys=True).encode()).hexdigest() == outcome['profile_sha256']
+        profiles[case['case'] + '-' + role] = {'profile': profile, 'image': info['Config']['Image'], 'image_id': info['Image'],
+            'id': info['Id'], 'state': {key: info['State'][key] for key in ('Running', 'Restarting', 'Pid', 'ExitCode')}}
+raw = json.dumps(profiles, sort_keys=True).encode()
+with (root / 'profile-readback.json').open('xb') as out:
+    out.write(raw)
+    out.flush()
+    os.fsync(out.fileno())
+supplement = {'observed_at': datetime.now(timezone.utc).isoformat(),
+    'host_namespaces': {key: os.readlink(Path('/proc/1/ns') / key) for key in ('pid', 'uts', 'user', 'cgroup', 'net', 'mnt')},
+    'serving': {}, 'selftest_profiles_sha256': hashlib.sha256(raw).hexdigest(), 'qualification_granted': False}
+for name in ('api', 'worker', 'business-worker', 'golden-scheduler', 'golden-grader', 'web', 'native-coordinator', 'private-scoring-coordinator'):
+    info = json.loads(subprocess.check_output(['docker', 'inspect', 'anvil-qa-v1-' + name + '-1'], timeout=10))[0]
+    proc = Path('/proc', str(info['State']['Pid']))
+    groups = next(line.split(':', 1)[1].split() for line in (proc / 'status').read_text().splitlines() if line.startswith('Groups:'))
+    supplement['serving'][name] = {'id': info['Id'], 'image_id': info['Image'],
+        'apparmor': (proc / 'attr/current').read_text().strip(), 'docker_socket_group_member': '994' in groups}
+print(json.dumps(supplement, sort_keys=True))

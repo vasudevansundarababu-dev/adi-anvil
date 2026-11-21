@@ -1,0 +1,41 @@
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tarfile
+
+assert os.geteuid() == 0 and os.uname().nodename == 'anvil-qa-v1'
+archive = Path('/tmp/forge-release-e49e149/controls.tar')
+assert hashlib.sha256(archive.read_bytes()).hexdigest() == sys.argv[2]
+manifest = Path('/tmp/forge-release-e49e149/release.json')
+assert hashlib.sha256(manifest.read_bytes()).hexdigest() == sys.argv[1]
+release = json.loads(manifest.read_bytes())
+assert release['revision'] == 'e49e149d814d43b8028d11cfe95e7398acbf8318'
+assert release['source_sha256'] == 'c26a7965e3ee215aa74e495c5341c15a2e0423f3952a1799111e8eef688201e4'
+assert shutil.disk_usage('/').free > 10 * 1024 ** 3
+root = Path('/var/lib/anvil-qa-v1/runtime-functional/controls-e49e149')
+root.mkdir(mode=0o700)
+with tarfile.open(archive) as stream:
+    members = stream.getmembers()
+    pins = release['control_files'] | release['operational_files']
+    assert len(members) == len(pins) and {member.name for member in members} == set(pins)
+    for member in members:
+        assert member.isfile() and not member.name.startswith('/') and '..' not in Path(member.name).parts
+        raw = stream.extractfile(member).read()
+        assert hashlib.sha256(raw).hexdigest() == pins[member.name]
+        output = root / member.name
+        output.parent.mkdir(mode=0o755, parents=True, exist_ok=True)
+        with output.open('xb') as target:
+            target.write(raw)
+        output.chmod(0o644)
+for kind, image in release['images'].items():
+    result = subprocess.run(['docker', 'pull', image], capture_output=True, timeout=120)
+    (root / (kind + '.pull.private.stderr')).write_bytes(result.stderr)
+    assert result.returncode == 0, 'Image pull failed; retain evidence and reconcile'
+    metadata = json.loads(subprocess.check_output(['docker', 'image', 'inspect', image], timeout=15))[0]
+    assert image in metadata['RepoDigests']
+    assert metadata['Config']['Labels']['org.opencontainers.image.revision'] == release['revision']
+print(json.dumps({'controls': str(root), 'images': release['images'], 'qualification_granted': False}))

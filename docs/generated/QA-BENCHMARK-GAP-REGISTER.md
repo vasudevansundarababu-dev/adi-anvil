@@ -1,5 +1,35 @@
 # QA benchmark exercise — living gap register
 
+## 20 November late evening — release reuse and qualification evidence
+
+The e49 correction passed all three exact-image builds and fresh physical
+no-model controls before qualification review. The release used a clean committed
+archive, immutable Environment digest for Evaluation, one submission per phase,
+durable operation intents, independently reconciled artifacts, and the preserved
+128 MiB API scratch mount. Existing serving data and receipt bytes stayed intact
+during controls. These observations do not admit authored tasks or real runs.
+
+Future Studio/release automation must address two remaining operational gaps:
+
+- Artifact reuse must be based on each component's exact inputs, identity and
+  compatible qualification dependencies. Separate build phases alone do not make
+  a release assembler that requires one Git revision on every image safely accept
+  mixed, unchanged component revisions. Test that reuse explicitly; do not remove
+  immutable-image or source checks to obtain it. This e49 backend decoder change
+  affects the shared runtime source, so fresh environment/evaluation evidence was
+  required.
+- Qualification should orchestrate fresh names, exact current baselines,
+  cancellation/terminal cleanup, independent review, receipt staging, expiry and
+  guarded cutover as durable stages. Current one-shot operators are retained as
+  consumed evidence. Replacing their pins or replaying old intents is not a
+  supported automated retry. Diagnostic-file failures must not skip known safe
+  cleanup, while ambiguous execution must remain a visible hold.
+
+The real-import blockers remain separately recorded: unsupported authored tool
+references, exact Gym dataset/policy-context compatibility and required reviews,
+and genuine Admin acceptance for changed qualification subjects. Live integration
+would transport artifacts; it would not supply missing reviewed semantics.
+
 ## 20 November evening — exact exported-source coverage
 
 EXPORT-OPTIONAL-42: generated SME forms can preserve an empty string for an

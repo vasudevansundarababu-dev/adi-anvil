@@ -1,0 +1,22 @@
+"""Anonymous GET-only QA smoke; no cookies, tokens, uploads or model calls."""
+import json
+import subprocess
+
+origin = 'https://anvil-qa.adi-labs.ai'
+checks = {}
+for name, path, expected in (
+    ('health', '/api/v1/health', 200),
+    ('workspace', '/workspace', 200),
+    ('protected_templates', '/api/v1/projects/a7454c18-602e-4907-bdd9-277067c36233/dataset-exports/generic/templates', 401)):
+    result = subprocess.run(['curl', '--silent', '--show-error', '--max-time', '20', '--location',
+        '--write-out', '\n%{http_code}', origin + path], capture_output=True, check=True, timeout=25)
+    body, separator, raw_status = result.stdout.rpartition(b'\n')
+    assert separator
+    status = int(raw_status)
+    checks[name] = {'status': status, 'expected': expected, 'passed': status == expected}
+    if name == 'health':
+        checks[name]['data'] = json.loads(body)['data']
+        assert all(checks[name]['data'][key] == value for key, value in (
+            ('api', 'ready'), ('database', 'ready'), ('live_inference', 'disabled'), ('harbor_live_dispatch', 'disabled')))
+assert all(value['passed'] for value in checks.values()), checks
+print(json.dumps({'checks': checks, 'authenticated_ui_test': 'not_run_owner_browser_not_controlled', 'model_calls_authorized': 0}, sort_keys=True))
