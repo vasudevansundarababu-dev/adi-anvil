@@ -1,5 +1,17 @@
 # Build status
 
+## 21 November — binding read deadline and Gym-owned upload UI fix
+
+The previous bindings view eventually loaded. Source diagnosis identified repeated
+evaluator qualification hashing in the options route as a possible latency source,
+not a measured root cause. This change bounds only frontend GET waits to60s,
+cancels obsolete reads and releases navigation on failure; no mutation retry or
+server cancellation claim. Also exposes structured Gym input upload when the
+authored task has no default dataset, preserving explicit legacy actor inputs.
+Four focused Node regressions and TypeScript passed; independent read-only
+review found no blocking issue. Qualified backend/runtime closure remains
+`bd0ff0c7…b01ba`. Preparing web-only QA rollout; no backend/migration changes.
+
 ## 21 November 17:10 UTC — QA deployed; revised tasks imported; context registration pending
 
 QA serves `eeaf22273df7f75a5692d44ae6216f0dc0a8fc79` on all eight roles,

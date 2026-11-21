@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { workspaceApi as api } from '../lib/workspace';
+import { bindingReads, structuredInputPanel } from '../lib/bindingReads';
 import TaskFlowViewer from './TaskFlowViewer';
 import CustomPythonEditor from './CustomPythonEditor';
 import SafetyPromptLibrary from './SafetyPromptLibrary';
@@ -283,6 +284,7 @@ export default function ProjectBindings({
   const [savedInput, setSavedInput] = useState<InputDraft | null>(null);
   const [inputSaveUnknown, setInputSaveUnknown] = useState(false);
   const loadGeneration = useRef(0);
+  const loadController = useRef<AbortController | null>(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     onNavigationLockChange?.(dirty || busy || loading);
@@ -293,16 +295,19 @@ export default function ProjectBindings({
   }
   const load = useCallback(async () => {
     const generation = ++loadGeneration.current;
+    loadController.current?.abort();
+    const controller = new AbortController();
+    loadController.current = controller;
     setLoading(true);
     setReadiness(null);
     setError('');
     try {
-      const [saved, choices, status, policyResult] = await Promise.all([
-        api(endpoint + '/bindings'),
-        api(endpoint + '/binding-options'),
-        api(endpoint + '/readiness'),
-        api(`${base}/workspace/benchmark/groups/${encodeURIComponent(group.id)}/policies`),
-      ]);
+      const [saved, choices, status, policyResult] = await bindingReads([
+        endpoint + '/bindings',
+        endpoint + '/binding-options',
+        endpoint + '/readiness',
+        `${base}/workspace/benchmark/groups/${encodeURIComponent(group.id)}/policies`,
+      ], (path, signal) => api(path, 'GET', undefined, undefined, undefined, signal), controller);
       if (generation !== loadGeneration.current) return;
       const checked = checkedReadiness(status);
       const savedRef = saved.binding?.snapshot?.execution_data || null;
@@ -385,6 +390,7 @@ export default function ProjectBindings({
     return () => {
       active = false;
       loadGeneration.current++;
+      loadController.current?.abort();
     };
   }, [load]);
   function edit(section: Section, ref: Ref) {
@@ -1163,9 +1169,11 @@ export default function ProjectBindings({
         )}
         {tab === 2 && (
           <>
-            {(options.execution_data_options?.default_input &&
-              !draft.data.some((reference) => reference.target === 'actor-input')) ||
-            draft.execution_data ? (
+            {structuredInputPanel(
+              options.execution_data_options,
+              draft.data.some((reference) => reference.target === 'actor-input'),
+              !!draft.execution_data,
+            ) ? (
               <ProjectInputData
                 endpoint={endpoint}
                 value={inputDraft || savedInput}
@@ -1181,7 +1189,7 @@ export default function ProjectBindings({
               />
             ) : (
               <>
-                {!!options.execution_data_options?.default_input && (
+                {!!options.execution_data_options && (
                   <button
                     disabled={busy}
                     onClick={() => {
@@ -1201,7 +1209,9 @@ export default function ProjectBindings({
                       setDirty(true);
                     }}
                   >
-                    Use the Project default input or upload a replacement
+                    {options.execution_data_options?.default_input
+                      ? 'Use the Project default input or upload a replacement'
+                      : 'Choose Gym input data'}
                   </button>
                 )}
                 <h3>Input Data</h3>

@@ -88,6 +88,7 @@ export async function workspaceApi(
   body?: unknown,
   version?: number,
   idempotencyKey?: string,
+  signal?: AbortSignal,
 ) {
   const csrf =
     document.cookie
@@ -95,6 +96,7 @@ export async function workspaceApi(
       .find((v) => v.startsWith('anvil_csrf='))
       ?.split('=')[1] || '';
   const response = await fetch('/api/v1' + path, {
+    signal,
     method,
     cache: 'no-store',
     headers: {
