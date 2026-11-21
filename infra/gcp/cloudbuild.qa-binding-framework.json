@@ -1,0 +1,34 @@
+{
+  "steps": [
+    {
+      "id": "binding-framework",
+      "name": "gcr.io/cloud-builders/docker",
+      "args": [
+        "build", "--platform=linux/amd64",
+        "--build-arg", "CORE_IMAGE=${_CORE_IMAGE}",
+        "--build-arg", "NATIVE_SOURCE_SHA256=${_NATIVE_SOURCE_SHA256}",
+        "--label", "org.opencontainers.image.revision=${_SOURCE_COMMIT}",
+        "-f", "infra/docker/kyc-binding-framework.Dockerfile",
+        "-t", "${_ARTIFACT_PREFIX}binding-framework:${_RUNTIME_TAG}", "."
+      ]
+    },
+    {
+      "id": "binding-framework-source-check",
+      "name": "gcr.io/cloud-builders/docker",
+      "args": [
+        "run", "--rm", "--network=none", "--read-only", "--cap-drop=ALL",
+        "--security-opt=no-new-privileges", "--user=10001:10001",
+        "-e", "ANVIL_ENV=local", "-e", "WEB_ORIGIN=http://127.0.0.1:3202",
+        "-e", "EXPECTED_SOURCE=${_NATIVE_SOURCE_SHA256}",
+        "--entrypoint", "python", "${_ARTIFACT_PREFIX}binding-framework:${_RUNTIME_TAG}",
+        "-B", "-c",
+        "import hashlib,os,runpy; from pathlib import Path; from anvil.golden_kyc_source import source_hash; assert source_hash()==os.environ['EXPECTED_SOURCE']; module=runpy.run_path('/opt/forge-bindings/observe.py'); assert callable(module['observe']); assert callable(module['read_capability']); from alembic.config import Config; from alembic.script import ScriptDirectory; assert ScriptDirectory.from_config(Config('services/backend/alembic.ini')).get_revision('135').down_revision=='134'; print('unchanged_native_source_and_operator_migration_verified')"
+      ]
+    }
+  ],
+  "images": ["${_ARTIFACT_PREFIX}binding-framework:${_RUNTIME_TAG}"],
+  "options": {"machineType": "E2_HIGHCPU_8", "logging": "CLOUD_LOGGING_ONLY"},
+  "timeout": "900s",
+  "queueTtl": "300s",
+  "tags": ["${_RUNTIME_TAG}"]
+}

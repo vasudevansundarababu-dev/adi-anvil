@@ -18,6 +18,14 @@ evidence and explicitly report actual schema135. Never relabel native134 traces
 as135 or edit an old reviewed component receipt to attach new observations.
 A new composite reviewed receipt must carry the new evidence and review hashes.
 
+The separately built binding-framework image derives from the exact accepted
+8a22280 backend digest and adds only the135 migration/wrapper and observer. It
+must pass the unchanged native-source hash and Alembic revision-map checks without
+network access. Use it only for one-shot migrations/observations, never substitute
+it for API, worker or native actors. This keeps135 known to the migration driver
+without hot-mounting new version files into an immutable native image. The final
+Compose migration service must reference this exact independent image digest.
+
 Existing permissive PUBLIC policies could otherwise admit an unenrolled role
 using a forged Admin/project GUC. Each new table read therefore also has an
 AS RESTRICTIVE enrollment predicate. The predicate binds actual session_user,
