@@ -1,6 +1,48 @@
 # Build status
 
+## 21 November —11463ac deployed; authenticated setup awaiting sign-in
+
+All eight QA services now serve11463ac332e58f9c0076bc6a79313e8e837f3a2b.
+Independent serving acceptance passed: exact images, zero restarts, retained role
+profiles, health ready, schema/Alembic135, Praxis preserved, model/Harbor/email
+flags off. No migration replay or rollback. Acceptance artifact SHA
+10efa23fa99a730bb2694fbcc698714d42ecf2ea5bf6f811c5a2e5d066bf1756.
+Component receipt184a6683e3030454376ef0f5508885e1424b2feffc173b14ec97af54a8c03495
+and capture receiptfb71af712dd25081cdbbc3ae1de11c7f0bee5e95bfe29db1af85cd66c2b7cd4d
+passed exact-candidate verify/publication and new backend dual readback. These
+technical receipts do not establish task-specific qualification or model results.
+
+The first post-rollout authenticated UI check reached Forge sign-in, then the
+ADI-Forge QA Keycloak password form. Requested actual Admin sign-in; no credential
+extraction or impersonation. Projects/import success, current reference refresh,
+new preparation/input bindings and task qualification remain unverified. Do not
+claim the stale-binding import defect fixed on QA until that smoke test passes.
+Deployment/sign-in-blocker email sent only to the authorized work address;
+Gmail message1a20056cc494f3d2. No live model calls.
+
+Task-specific capability observation/publication still needs a dedicated restricted
+producer. Existing schema089 has no scoped operator publication path. Next bounded
+engineering work requires separately tested enrolled operator reads/appends,
+actual task/method/evaluator controls and real foreign-project witnesses; exclude
+safety publication without actual framework generation evidence. No synthetic
+mechanics packet or owner approval may substitute for these missing controls.
+The private200-case expectation packet is still a draft, not ready for owner
+approval. Policy20-subject review may proceed under D-SIMPLE; no mandatory
+independent or legal reviewer was added by engineering.
+
 ## 21 November — candidate physical controls and receipt readback
+
+Subsequent checkpoint: private-scoring and transport completed successfully.
+Independent whole-component review passed with no findings: eight packets,
+60 related files, 23 role profiles, 22 dependencies, six arithmetic outcomes,
+969 transport traces, observer sensitivity and coordinator restoration verified.
+Review deffe4931f40d599b15dca7c4f4dddbe58117f2ef1f85c1dbb2e93e6bf07e51d
+expires November22 at21:53:22UTC. Original schema contexts remain explicit.
+Four independent assertion programs are now retained privately for reuse.
+The final exact-candidate runtime verifier is running; receipt publication and
+rollout remain pending. A Google Compute API metadata timeout was reconciled
+as leaving no artifact/process before a separately recorded readback succeeded.
+Prepared rollout passed nine ownership/rollback tests and independent review.
 
 Candidate application revision remains 11463ac; serving remains 8a22280/schema135.
 All three candidate build phases and the independent framework build succeeded.

@@ -75,7 +75,7 @@ you to approve the final packet; a CSV approval cell is not an application recei
 
 The append-only review API, private loader, owner UI and frozen-binding/grader
 checks are deployed in8a22280. After restricted staging of the final packet,
-and restricted staging, use **Data & Environments → KYC expectation review**:
+use **Data & Environments → KYC expectation review**:
 inspect the private worksheet, compare the exact canonical packet hash, then
 explicitly approve/reject with rationale, evidence reference and future expiry.
 Only metadata/hashes reach this UI. An uploaded `approved` string is insufficient.
@@ -83,7 +83,7 @@ The ordinary API and scheduler never receive private expectation bodies. A later
 review does not replace the review frozen into an existing preparation; save a
 new preparation explicitly. No new Authoring task is requested.
 
-Exact UI sequence once Gym supplies the final privately reviewed worksheet and
+Exact UI sequence once Gym supplies the final privately prepared worksheet and
 canonical packet (the current draft is not ready for this approval):
 
 1. Open **Data & Environments → KYC private expectation reviews**.
