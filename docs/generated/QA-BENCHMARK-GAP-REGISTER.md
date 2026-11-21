@@ -1,5 +1,52 @@
 # QA benchmark exercise — living gap register
 
+## 20 November evening — qualification consumer isolation and actual host evidence
+
+RUNTIME-CONSUMER-34: a qualification request used the canonical native bridge
+while the serving old coordinator was polling that same bridge. The old runtime
+claimed and completed it; the new SDK's --once invocation skipped the consumed
+request and exited0. The observer correctly refused candidate qualification
+because there was no positive new-SDK connection evidence. Retained claim
+a0e41fab83174973879ab5a76789299f records old60c, not candidate364. Process exit0
+and a successful worker result are insufficient attribution. Studio/release
+automation must reserve one consumer per qualification queue/generation, join
+actual claimant SDK identity/image/source to every receipt, and distinguish a
+no-op claim from executed work. Do not replay consumed attempts. Current bounded
+remediation is an independently reviewed idle-coordinator pause with exact
+ownership/quiescence/baseline guards, one fresh attempt and verified restoration;
+its actual corrective outcome remains pending.
+
+OBSERVER-SENSITIVITY-35: host security settings alone do not prove capture works.
+Require a source-pinned physical known Unix connection from a descendant through
+the same worker attachment and filtered SDK launch gates. Require actual ACK,
+successful connect=0, exact peer, terminal original/descendant traces and PIDFD
+closure. Separately require a successful controlled forbidden-peer connection
+to be rejected; zero observations or failed connects cannot satisfy that test.
+Actual candidate364 self-test passed both roles/cases and independent Aegis
+review of29 safe files/inventory9f33fb56...64bfdd. This proves observer sensitivity,
+not actual KYC transport, performance, policy/data rights or paid-run admission.
+Keep classifier and container security restrictions unchanged.
+
+OPS-BASELINE-36: provisioning defaults and old deployment metadata are not actual
+serving truth. QA-specific baseline must retain current OS/kernel/engine/cgroup,
+CPU/memory/disk/inodes/time sync/security, effective UID/GID/caps/namespaces,
+mount/socket custody and exact image/service identity. Actual baseline4011de5c...
+68db8 plus supplement294ec849...be8a1 passed Harbor review; existing capacity and
+profiles meet the reviewed QA requirements without VM rebuild or resource
+increase. Old global/capture receipts are expired; healthy host/container state
+does not extend qualification expiry. Keep host, image, observer, application
+transport and genuine benchmark readiness as separate evidence layers.
+
+OPS-DURABILITY-37: temporary local operational files disappeared during the pause.
+Recover only exact tracked or hash-verified retained server operators, and retain
+plans, intents, actual build receipts and sanitized review packets in durable
+release evidence. Preserve source/version distinctions and never reconstruct
+successful outcomes from a command template. Record executed guard versions:
+the completed cache staging used its original300s pull guard; a later120s source
+correction was not retroactively executed. No cosmetic replay or rewritten
+historical evidence. Private configs, credentials and raw application data stay
+outside Git and exported public evidence.
+
 ## 20 November — product-mode provisioning and diagnostic gap
 
 KYC-REFERENCE-31: actual project canonical runtime import count0 caused v8

@@ -1,5 +1,87 @@
 # Build status
 
+## 20 November evening — all builds pass; first-principles transport isolation gate
+
+All v16 builds are actual SUCCESS with all recipe steps successful:
+Core 5ed0b4f6-95c8-44bb-8523-7a24d751f6c4;
+Environment 8438b91b-0450-457c-80d4-a5280d9fb771;
+Evaluation 3dd35f12-1fa9-4eac-87ee-6992fcb3855f.
+Exact release manifest SHA ae9dbaa5e28a14a72cbd9ce08ffac11e05142d8f535e7901ef5b519e45ca8c4b
+and full receipts are retained in .local/releases/88214ba. Forge, Harbor and
+Aegis independently reconciled actual immutable images, source substitutions,
+recipes and Evaluation's exact new Environment dependency.
+
+Actual new-image controls PASS: SQL c81367dc...29f7b, registry42a6db14...9b3fc,
+components6139c698...ab77a2, six private-scoring cases610c789b...f96cb;
+native Trial6306365a-cb7a-48b4-b080-ff13e7e06baf with prepare/trial exit0/PID0
+and reaped transport0. Its first preflight stopped before any process/Trial
+because the old proxy script was user-owned; exact pinned bytes were copied
+to root custody and the focused two-path correction was independently reviewed.
+Capture probe49c9771e...d29fd passed all six controls, independent Aegis review
+103889e1...dd73; candidate receipt dcad1e15...dfa7 was separately staged and
+consumed successfully in the exact new backend with no connection probe.
+
+Actual transport worker/SDK exited0, but observer refused to qualify it:
+candidate SDK had zero Unix connections. Retained claim a0e41fab83174973879ab5a76789299f
+proves the already-serving old60c runtime consumed the shared queue request,
+not the traced candidate364 runtime. Original attempt stays consumed/nonqualifying.
+No parser, security, resource or deadline relaxation. Reviewed exclusive-consumer
+wrapper6325df12...4910c pauses only the exact idle old coordinator and restores it
+only after successful source-pinned observer completion, terminal owned children,
+bridge/job quiescence and unchanged baseline/profile. It has NOT run yet.
+
+Owner required first-principles host/observer verification first. Actual host
+packet4011de5c...68db8 and supplement294ec849...be8a1 independently reviewed by
+Harbor: expected QA platform, synchronized time, sufficient existing headroom,
+effective UID/caps/seccomp/AppArmor/namespaces/mount/socket profiles and exact
+eight-service baseline match; no VM rebuild/resource increase indicated.
+Physical observer sensitivity harness69e790ae...b986f/helper439081b9...bcd0cd
+completed both allowed Unix peer and successful forbidden-peer rejection cases;
+29 safe evidence files/inventory9f33fb56...64bfdd are awaiting independent Aegis
+acceptance before the one corrective real transport control.
+
+Operational deviation retained candidly: completed image cache staging used
+the original766e9af1 script's 300-second per-pull guard, not the plan's120s guard.
+All five exact digest pulls exited0 without retry; per-image elapsed wasn't
+instrumented. Future c0d5edf0 stager uses120s. No cosmetic rerun or claim that
+the corrected guard executed. This cache operation granted no qualification.
+
+No serving rollout, receipt activation, owner registration retry, live model
+call or Authoring integration. Canonical old receipts are expired and are
+preserved baseline/rollback bytes, not current Ready authority. Registration
+failure itself remains unresolved pending qualified rollout and genuine QA
+acceptance. Resume from this evidence, not a new build or old qualification.
+
+## 20 November — owner resumed QA build and registration recovery
+
+Owner returned and explicitly resumed builds and QA deployment with existing
+workers. Frozen candidate is pushed commit
+88214ba7b67dafe097dc297825611beb85df9637; Golden source remains
+4e53d1c1b41ca373b2c9eecf695c22654c3d3885fdbed84dd70a5b1c74f730f0.
+The full backend suite already passed on identical app/runtime source. Forge
+independently compared all 1495 archive Git blobs and executable modes: zero
+mismatches or extra files, excluding the unrelated dirty AGENTS formatting.
+Archive SHA256: 84af2fe6593234e340d09a4229ed4e19cc668fe4437f9848ad8466bfd572ae30.
+
+GCP read-only authentication succeeded. Both prior airport-pause builds were
+reconciled CANCELLED. Fresh v16 actual build acknowledgements:
+Core 5ed0b4f6-95c8-44bb-8523-7a24d751f6c4;
+Environment 8438b91b-0450-457c-80d4-a5280d9fb771.
+Both observed WORKING, not yet successful or qualified. Evaluation waits for
+the exact successful new Environment digest. Keep prior cancelled and current
+build IDs distinct even though deterministic input operation tokens match.
+
+No serving changes yet. QA resource check: 31 GB free boot, 112 GB free data;
+all eight serving application/runtime containers running. Prior qualification
+receipts do not qualify the new source and must be freshly replaced through
+reviewed controls, including capture. Root remains sole source/cloud executor;
+Harbor/Forge/Keystone/Aegis/Sentinel perform focused independent review and
+acceptance. Paid calls OFF, Authoring integration PAUSED, Stage/Production HOLD.
+Actual registration root cause remains undiagnosed; isolated HTTP success and
+the bounded diagnostics update are not evidence of a serving registration fix.
+Recovered public prior operators and current phase evidence are retained in
+.local/releases/88214ba; no private runtime configs or credentials copied.
+
 ## 20 November — PAUSED at owner's airport departure request
 
 Owner explicitly requested stopping deployment. Core build
