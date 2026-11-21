@@ -44,8 +44,8 @@ def main(manifest_path, bundle):
             or hashlib.sha256(audit_path.read_bytes()).hexdigest() != manifest["operational_files"].get("runtime-checks/private_scoring_audit.py")):
         raise ValueError("Exact root-owned read-only audit source required")
     image = manifest["images"]["kyc-runtime"]
-    if manifest["schema"] != 133 or not re.fullmatch(r"us-west1-docker\.pkg\.dev/adi-anvil-mvp-2026/anvil-qa-v1/kyc-runtime@sha256:[a-f0-9]{64}", image):
-        raise ValueError("Exact immutable schema133 release required")
+    if manifest["schema"] != 134 or not re.fullmatch(r"us-west1-docker\.pkg\.dev/adi-anvil-mvp-2026/anvil-qa-v1/kyc-runtime@sha256:[a-f0-9]{64}", image):
+        raise ValueError("Exact immutable schema134 release required")
     nonce = secrets.token_hex(4)
     base = Path("/var/lib/anvil-qa-v1/runtime-functional") / ("private-score-" + nonce)
     base.mkdir(mode=0o700)

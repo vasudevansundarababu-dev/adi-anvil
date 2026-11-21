@@ -91,8 +91,8 @@ def setup(path, output):
             database=database, query={"host": str(host)}).render_as_string(hide_password=False)
         migration = Config(str(ROOT / "services/backend/alembic.ini"))
         migration.set_main_option("prepend_sys_path", "")
-        command.upgrade(migration, "133")
-        command.upgrade(migration, "133")
+        command.upgrade(migration, "134")
+        command.upgrade(migration, "134")
     finally:
         if old is None:
             os.environ.pop("MIGRATION_DATABASE_URL", None)
@@ -102,7 +102,7 @@ def setup(path, output):
     nonce = secrets.token_hex(32)
     label = "synthetic-component-control-not-performance"
     with psycopg.connect(**target, connect_timeout=2, autocommit=True, row_factory=dict_row) as connection:
-        require(connection.execute("SELECT version_num FROM anvil.alembic_version").fetchone()["version_num"] == "133")
+        require(connection.execute("SELECT version_num FROM anvil.alembic_version").fetchone()["version_num"] == "134")
         connection.execute("SET search_path TO anvil_checkpoints")
         PostgresSaver(connection).setup()
         connection.execute("GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA anvil_checkpoints TO anvil_worker")

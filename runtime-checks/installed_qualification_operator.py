@@ -30,8 +30,8 @@ def main(manifest_path, bundle, kind):
         raise ValueError("Exact existing QA control mode required")
     release = json.loads(Path(manifest_path).read_bytes())
     image = release["images"]["kyc-runtime"]
-    if release["schema"] != 133 or not re.fullmatch(r"us-west1-docker\.pkg\.dev/adi-anvil-mvp-2026/anvil-qa-v1/kyc-runtime@sha256:[a-f0-9]{64}", image):
-        raise ValueError("Exact immutable schema133 QA runtime required")
+    if release["schema"] != 134 or not re.fullmatch(r"us-west1-docker\.pkg\.dev/adi-anvil-mvp-2026/anvil-qa-v1/kyc-runtime@sha256:[a-f0-9]{64}", image):
+        raise ValueError("Exact immutable schema134 QA runtime required")
     nonce = secrets.token_hex(4)
     prefix = "forge-qualification-" + kind + "-" + nonce
     base = Path("/var/lib/anvil-qa-v1/runtime-functional") / ("qualification-" + kind + "-" + nonce)

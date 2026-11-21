@@ -20,6 +20,7 @@ SOURCE_PATHS = tuple("services/backend/src/anvil/" + name for name in (
     "golden_kyc_native_program.py", "golden_kyc_grader.py",
     "golden_kyc_evaluators.py", "golden_kyc_criterion_support.py",
     "golden_kyc_state_checks.py", "golden_kyc_tables.py", "policy_rules.py",
+    "kyc_expectation_reviews.py",
 ))
 
 
@@ -192,3 +193,16 @@ def receipts(selection, result, snapshot, state, events):
                                   "maximum_points": 5,
                                   "status": "unscored" if result["checks"][entry["criterion"]] is None else "scored"}
             for entry in selection]
+
+
+def frozen_expectation_review(c, project, paid):
+    execution = one(c, "SELECT snapshot FROM anvil.workspace_execution_groups WHERE project_id=%s AND id=%s",
+                    (project, paid["group_id"]))
+    ref = (execution or {}).get("snapshot", {}).get("preparation", {}).get("project_binding")
+    if not ref:
+        return None
+    row = one(c, "SELECT snapshot,snapshot_sha256 FROM anvil.project_binding_versions WHERE project_id=%s AND id=%s AND task_group_id=%s",
+              (project, ref["id"], ref["task_group_id"]))
+    if not row or digest(row["snapshot"]) != row["snapshot_sha256"] or row["snapshot_sha256"] != ref["snapshot_sha256"]:
+        raise ValueError("Frozen KYC expectation binding changed")
+    return row["snapshot"].get("kyc_expectation_review")

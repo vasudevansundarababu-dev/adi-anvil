@@ -6,6 +6,7 @@ import { bindingReads, structuredInputPanel } from '../lib/bindingReads';
 import { nativeBindingDraft, nativePreparationDraft } from '../lib/nativeBindingDraft';
 import KycInputSetup from './KycInputSetup';
 import KycPolicyReview from './KycPolicyReview';
+import KycExpectationReview from './KycExpectationReview';
 import TaskFlowViewer from './TaskFlowViewer';
 import CustomPythonEditor from './CustomPythonEditor';
 import SafetyPromptLibrary from './SafetyPromptLibrary';
@@ -1176,6 +1177,7 @@ export default function ProjectBindings({
               <KycPolicyReview key={'policy:' + group.id} base={base} tasks={group.tasks} onBusyChange={setBusy} />
             </div>
             <div hidden={tab !== 2}>
+              <KycExpectationReview key={'expectations:' + group.id} base={base} blocked={dirty || busy || loading} onBusyChange={setBusy} />
               <KycInputSetup key={group.id} base={base} endpoint={endpoint}
                 bindingId={binding?.id} blocked={dirty || busy || loading} onBusyChange={setBusy}
                 onBasePrepared={(registered) => {

@@ -1,5 +1,39 @@
 # Build status
 
+## 21 November — private expectation review implemented; QA release pending
+
+Added migration134, disjoint private staging role with no seeded LOGIN/enrollment,
+salted public population metadata, immutable private packets/versions, authentic
+PO decisions/revocations and deferred backing-population integrity triggers.
+API/scheduler cannot access expected answers. Exact review references are frozen
+into preparation and checked again at dispatch/grading; a newer receipt cannot
+silently replace a frozen review. Added owner metadata UI with durable idempotency
+reconciliation and private owner-only packet/worksheet preparation script.
+Policy-reference approvals require actual current domain review and exact current
+registry/materialization; disposition approval alone confers no policy authority.
+
+Focused grading/review tests58 passed. Actual Alembic133→134 and repeat plus4
+restricted-role SQL tests passed in new marked synthetic clone
+anvil_review_alembic_5d6b8e2d53. Prior SQL run caught context-owner capture/seal
+privilege denial: fixed by retaining private isolation and deriving only public
+closed-paid-trial context through a dedicated grader function. Actual grade()
+already verifies sealed state integrity and successful capture before this call.
+String UUID worker input now normalized at this trusted check. Original scheduler
+assignment checks remain unchanged. Full regression1499 passed,4 skipped,
+10subtests passed in130.31s; one existing Authlib deprecation warning.
+TypeScript, touched-source Ruff and diff whitespace checks pass. Active installed
+control operators and isolated SQL setup now require schema134; historical
+release-specific operators are preserved. These operator schema changes require
+new installed physical acceptance, not promotion of the old133 receipt.
+
+Local private review draft contains200 proposals and missing normative/state
+references; no proposal approved, no private packet installed inQA, no operator
+enrollment or owner decisions made. Exact binding-control/method/safety producers,
+skill-step associations, fresh physical controls, independent qualification and
+backend rollout remain unfinished. Serving QA remains runtime dde352b/schema133,
+web c4d0339. GCP read-only build access succeeded. No model calls or cloud writes.
+See docs/generated/KYC-OWNER-REVIEWS-20261121.md for exact owner decisions.
+
 ## 21 November — typed sealed KYC grading implemented locally; not deployed
 
 User renewed authorization: finish Gym engineering/grading/qualification, deploy

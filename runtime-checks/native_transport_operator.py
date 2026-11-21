@@ -27,7 +27,7 @@ def main(manifest_path, *, observe_network=False):
         raise ValueError("Existing QA root only")
     release = json.loads(Path(manifest_path).read_bytes())
     image = release["images"]["kyc-runtime"]
-    if release["schema"] != 133 or not re.fullmatch(r"us-west1-docker\.pkg\.dev/adi-anvil-mvp-2026/anvil-qa-v1/kyc-runtime@sha256:[a-f0-9]{64}", image):
+    if release["schema"] != 134 or not re.fullmatch(r"us-west1-docker\.pkg\.dev/adi-anvil-mvp-2026/anvil-qa-v1/kyc-runtime@sha256:[a-f0-9]{64}", image):
         raise ValueError("Exact release required")
     base = Path("/var/lib/anvil-qa-v1/runtime-functional")
     proof, bridge = base / "harbor-proof", base / "native-control-bridge"

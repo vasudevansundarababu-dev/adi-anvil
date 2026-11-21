@@ -224,6 +224,14 @@ def grade(c, project, trial, generation):
     expectation = (
         expectation["expectation"] if expectation else {"independent_expectation_review": "pending"}
     )
+    if paid_binding:
+        from anvil.golden_kyc_native_program import frozen_expectation_review
+        from anvil.kyc_expectation_reviews import reviewed
+
+        expectation = reviewed(c, project, row["pack_id"], row["application_id"], snapshot["snapshot"],
+                               resolved_task_id=paid_binding["resolved_task_id"],
+                               frozen_reference=frozen_expectation_review(c, project, paid_binding),
+                               trial_id=trial, generation=generation)
     events = c.execute(
         "SELECT action,record,sequence FROM banking.events WHERE trial_id=%s AND generation=%s ORDER BY sequence",
         (trial, generation),
@@ -308,6 +316,10 @@ def grade(c, project, trial, generation):
         result = apply_overrides(result, expectation, custom["receipts"])
     if state_reason:
         result["issues"].append(state_reason)
+    if expectation.get("review_issue"):
+        result["issues"].append(expectation["review_issue"])
+    if expectation.get("expectation_review"):
+        result["expectation_review"] = expectation["expectation_review"]
     if selected_criteria is not None:
         from anvil.golden_kyc_native_program import receipts
 

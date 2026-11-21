@@ -105,7 +105,7 @@ def main(input_path, output_path, *, verify_only=False):
     from anvil.golden_kyc_anvil import source_hash
     from anvil.harbor_agents import code_digest
 
-    require(release["schema"] == 133 and release["source_sha256"] == source_hash()
+    require(release["schema"] == 134 and release["source_sha256"] == source_hash()
         and release["images"]["kyc-runtime"].rsplit("sha256:", 1)[1] == os.environ.get("ANVIL_RUNTIME_IMAGE_DIGEST"),
         "Current installed source and runtime image required")
     observed = {}

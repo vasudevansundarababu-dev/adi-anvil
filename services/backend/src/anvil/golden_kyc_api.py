@@ -56,6 +56,9 @@ def routes(context, wrap, idempotent):
     from anvil.kyc_policy_review_api import routes as policy_review_routes
 
     router.include_router(policy_review_routes(context, wrap, idempotent))
+    from anvil.kyc_expectation_review_api import routes as expectation_review_routes
+
+    router.include_router(expectation_review_routes(context, wrap, idempotent))
 
     def authorize(roles, admin=False):
         if os.environ.get("ANVIL_GOLDEN_KYC_ENABLED") != "true":

@@ -30,6 +30,9 @@ def admitted(c, claim, preparing=False, *, absolute_deadline=None):
     ):
         raise RuntimeError("golden_paid_admission_revoked")
     native = plan["config"]["golden_native_binding"]
+    from anvil.kyc_expectation_reviews import require_plan as require_expectations
+
+    require_expectations(c, claim.project_id, plan)
     task_context(
         c,
         claim.project_id,

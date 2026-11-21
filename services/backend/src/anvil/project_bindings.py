@@ -541,6 +541,9 @@ def save(c, project, user, identifier, body):
     from anvil.diagnostic_bindings import freeze as freeze_diagnostics
 
     snapshot.update(freeze_diagnostics(c, snapshot, descriptors))
+    from anvil.kyc_expectation_reviews import freeze as freeze_expectations
+
+    snapshot.update(freeze_expectations(c, project, snapshot))
     sha = digest(snapshot)
     if old and old["snapshot_sha256"] == sha:
         return public(old)
@@ -858,6 +861,9 @@ def readiness(c, project, identifier, reference_cache=None):
             selection_gaps(c, project, imported, snapshot["execution_data"], snapshot["workflow"])
         )
     mapped_targets = {mapping["target"] for mapping in snapshot.get("skill_mapping_bindings", [])}
+    from anvil.kyc_expectation_reviews import binding_gaps as expectation_gaps
+
+    gaps.extend(expectation_gaps(c, project, snapshot))
     for descriptor in descriptors["skill_requirements"]:
         if descriptor["target"] not in mapped_targets:
             gaps.append(

@@ -44,12 +44,23 @@ Current child pack: `729266f3-1741-563b-b4ba-586cf7fae4b3`,200 applications,
 It currently has0 installed reviewed expectations. Parent expectations must not
 be silently inherited into this changed context.
 
-Gym must first provide a private review packet and append-only review mechanism
-bound to exact application snapshot and expectation hashes, reviewer, decision,
-evidence, expiry and revocation. An uploaded `approved` string is insufficient.
-The ordinary API and scheduler must never receive private expectation bodies.
-This review mechanism is a remaining Gym engineering task; there is no complete
-current UI action that you can use to close it. No new Authoring task is requested.
+Gym has prepared a local private worksheet and salted canonical review packet in
+`.local/kyc-owner-review-20261121/` (not committed or emailed). This is a draft,
+not a reviewed population: all200 proposed outcomes need confirmation against the
+changed child context. Normative criterion and state-reference evidence remains
+absent, so those checks cannot be promoted to scored correctness by approving
+the dispositions alone. Gym must finish the evidence preparation before asking
+you to approve the final packet; a CSV approval cell is not an application receipt.
+
+The append-only review API, private loader, owner UI and frozen-binding/grader
+checks are implemented and tested locally, pending QA release. After deployment
+and restricted staging, use **Data & Environments → KYC expectation review**:
+inspect the private worksheet, compare the exact canonical packet hash, then
+explicitly approve/reject with rationale, evidence reference and future expiry.
+Only metadata/hashes reach this UI. An uploaded `approved` string is insufficient.
+The ordinary API and scheduler never receive private expectation bodies. A later
+review does not replace the review frozen into an existing preparation; save a
+new preparation explicitly. No new Authoring task is requested.
 
 ## 3. Processing rights and run authorization: after model selection
 
