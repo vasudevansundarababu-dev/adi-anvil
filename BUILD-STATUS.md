@@ -1,5 +1,36 @@
 # Build status
 
+## 21 November — all three8a22280 builds passed; disk approval blocks QA staging
+
+Exact committed candidate8a22280f3ac7a78b0f3b9f6d1e47fc6adf93438b;
+Golden source0ad34c122a56e9fa1f83bce6f2c09e8fe672d946a3f6b25222fae391238c4368.
+Core15c9cb27-bcee-42ed-84e8-a81ae9614d4a, Environments
+c71c0f8c-4beb-480f-a01a-9db615dc739c and Evals
+46b30d42-f8cf-44d1-9f5f-06fb9763ecb2 allSUCCESS, all declared stepsSUCCESS.
+Frozen local release manifest SHA
+c41ceaaee57a96e2290a9b1f1a33b1622ab9dd25333b18c2e4adfef99def8538;
+control archivec7727de70ad1c3617e733ed5af407eae031b57205b7be751b57c1c3b4fb1187a.
+No candidate staging, physical candidate controls, migration134 or rollout yet.
+
+Fresh read-only QA baseline confirmed exact eight service IDs, config/receipt
+pins, healthy API/database and disabled live flags. Only6GB free on120GB disk;
+candidate staging requires10GB. Read-only Docker inventory found47 unreferenced
+QA app images. Prepared exact13-image cache cleanup with all-container reference
+rechecks, registry-recovery verification, no force/prune and retained inspection
+audit. It preserves current/rollback revisions, containers, volumes, database,
+backups and evidence. Automatic approval review rejected the attempted command
+before execution: deployment/testing authority does not explicitly cover deleting
+shared QA caches. No cleanup or intent command ran. Explicit approval question
+is pending (13-image cleanup or160GB expansion); do not bypass rejection.
+
+Blocked status email sent only to vasudevan.sundarababu@adi-labs.ai. It clearly
+distinguished local tested changes from serving QA and listed remaining owner
+reviews and unfinished exact binding/method/safety engineering. No model calls.
+Adapted candidate operators remain local; review caught/fixed stale coordinator
+label and observer socket/name collisions, helper pin recomputed. Bootstrap,
+migration/rollout review and final controls still required after disk resolution.
+Serving runtime dde352b/schema133 and web c4d0339 unchanged.
+
 ## 21 November — private expectation review implemented; QA release pending
 
 Added migration134, disjoint private staging role with no seeded LOGIN/enrollment,
