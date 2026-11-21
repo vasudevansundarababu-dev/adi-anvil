@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { workspaceApi as api } from '../lib/workspace';
 import { bindingReads, structuredInputPanel } from '../lib/bindingReads';
 import KycInputSetup from './KycInputSetup';
+import KycPolicyReview from './KycPolicyReview';
 import TaskFlowViewer from './TaskFlowViewer';
 import CustomPythonEditor from './CustomPythonEditor';
 import SafetyPromptLibrary from './SafetyPromptLibrary';
@@ -1169,9 +1170,14 @@ export default function ProjectBindings({
           />
         )}
         {canAdmin && group.tasks.length > 0 && group.tasks.every(task => task.template?.profile_id === 'golden-kyc-application-type-v1') && (
-          <div hidden={tab !== 2}>
+          <div>
+            <div hidden={tab !== 1}>
+              <KycPolicyReview key={'policy:' + group.id} base={base} tasks={group.tasks} onBusyChange={setBusy} />
+            </div>
+            <div hidden={tab !== 2}>
               <KycInputSetup key={group.id} base={base} endpoint={endpoint}
                 bindingId={binding?.id} blocked={dirty || busy || loading} onBusyChange={setBusy} />
+            </div>
           </div>
         )}
         {tab === 2 && (

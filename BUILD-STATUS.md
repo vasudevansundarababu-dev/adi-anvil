@@ -1,5 +1,33 @@
 # Build status
 
+## 21 November —83baf21 builds passed; fresh candidate controls running
+
+Golden source `8e2897c12567383ef3abd35f87c41f007c7b398627fad25bd409dff02229a9f2`,
+Praxis source `d67ff0ceb50068a1a4520ffb25e8622f175fce63968672590c3f782ec9261568`.
+Configured full units:1430 passed,4 skipped,10 subtests in132.68s; initial unconfigured
+run failed missing owned Marketing fixture/process permissions and is not counted
+as passing.16 focused profile/proof and2 real isolated SQL checks also passed.
+Core19b0fec1-3480-464c-a447-2427967f4d26, environment3f5aa7d1-5e1c-47b1-8327-f4ee93714600,
+evaluationb7a927d5-60a7-4504-95a5-fbea13ceea9a all SUCCESS. Exact release manifest
+`5fd05f8bfa9f709bcfa7eb1b564500a5f07754ac550a41254533bf7c2a594163`.
+Native Trial,capture,SQL,components operators completed; registry/private/observer
+are running, transport remains to run. Original evidence is pending review;
+no new receipt or backend/runtime serving cutover occurred yet.
+
+Input feature flag readback: API/scheduler both unset. Coming rollout must explicitly
+enable only API structured input upload, preserving all provider OFF flags and
+leaving automatic generic scheduler population disabled so prepared controls are
+not discarded. This is configuration of existing Admin/RLS-scoped functionality,
+not an access grant or paid activation; include it in exact environment checks.
+
+User selected the one-day pilot interval:12 November inclusive to13 November exclusive.
+20 exact policy subjects are prepared with that interval; content approval remains
+pending. Frontend-only policy staging/review UI uses existing authenticated APIs,
+group/task revision checks, per-subject hashes and a durable unknown-outcome hold.
+It never auto-approves. Independent review findings fixed;5 frontend regressions
+and TS passed. Runtime source remains exactly8e2897c1…29a9f2. Preparing this final
+web-only image for after the83baf21 backend rollout, without rebuilding runtimes.
+
 ## 21 November — real QA catalogue409 diagnosed; backend correction verified locally
 
 Web-only `adcfbc944322435f67cca2f7605d1ea877f8104c` is deployed, image

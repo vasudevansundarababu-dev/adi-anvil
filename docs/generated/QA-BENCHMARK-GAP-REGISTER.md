@@ -1,5 +1,40 @@
 # QA benchmark exercise — living gap register
 
+## 21 November — authored product-profile input setup
+
+GYM-INPUT-44: the real four-product v8 import succeeded, but structured input
+upload was hidden when Authoring supplied no default dataset. Gym owns that
+dataset; an absent authored default must expose Gym provisioning, not suppress
+the input controls. Frontend fix is deployed in adcfbc9; actual QA navigation
+exposed the next API defect below. No Authoring edit is needed.
+
+GYM-PROFILE-45: the imported tasks correctly declare the already supported
+`golden-kyc-application-type-v1` profile, but the input-family classifier listed
+only the older reusable-state profile. Actual dataset GET returned409. Candidate
+83baf21 recognizes the exact product profile; unknown/mixed families remain
+blocked. Future Template/Environment Studio must register profile-to-input-schema
+and native-adapter capabilities together and exercise an actual published task
+through import, input catalogue, upload, binding and readiness. A successful ZIP
+validation alone is inadequate evidence of this path. Native/read-only/software
+qualification and real benchmark admission remain distinct.
+
+GYM-LOAD-46: unbounded binding GETs locked navigation while the full options
+catalogue loaded. Frontend now cancels obsolete reads and bounds the wait to60s,
+without applying that rule to mutations. Backend candidate83baf21 reuses verified
+resource bytes within the existing proof/savepoint and performs its final full
+closure verification. Individual configuration/revocation/receipt checks remain;
+uncovered adapters use their ordinary path. Future Studio needs latency budgets,
+read-stage diagnostics and safe reload, with no global authority cache or blind
+mutation retries. Actual backend latency improvement awaits candidate deployment.
+
+POLICY-INTERVAL-47: all20 prepared policy cells retain explicit source decisions
+and hashes, but lack concrete applicability intervals. A simulation assessment
+date/capture date is not automatically a legal effective interval. Twenty draft
+subjects (15 applicable and5 not-applicable) are prepared with a proposed one-day
+pilot scope, pending the owner's interval choice. Staging is not approval. Domain
+decisions, rights and private expectation reviews require their exact application
+subjects; neither import success nor a technical receipt creates those decisions.
+
 ## 20 November late evening — release reuse and qualification evidence
 
 The e49 correction passed all three exact-image builds and fresh physical
