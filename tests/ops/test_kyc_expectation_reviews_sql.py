@@ -28,7 +28,7 @@ def scope():
     passwords = {loader: secrets.token_urlsafe(32), grader: secrets.token_urlsafe(32)}
     with psycopg.connect(dsn, row_factory=dict_row) as c:
         assert c.execute("SELECT label FROM public.context_registrar_test_marker").fetchone() == {"label": "synthetic-context-registrar-only"}
-        assert c.execute("SELECT max(version) AS v FROM anvil.schema_versions").fetchone()["v"] == 134
+        assert c.execute("SELECT max(version) AS v FROM anvil.schema_versions").fetchone()["v"] in {134, 135}
         c.execute("INSERT INTO anvil.organizations VALUES(%s,'Synthetic expectation review SQL')", (org,))
         c.execute("INSERT INTO anvil.projects(id,org_id,name) VALUES(%s,%s,'Synthetic review SQL')", (project, org))
         c.execute("INSERT INTO anvil.users(id,org_id,issuer,subject,name) VALUES(%s,%s,'synthetic-test',%s,'Synthetic PO')", (user, org, str(user)))

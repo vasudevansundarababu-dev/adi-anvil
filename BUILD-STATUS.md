@@ -1,5 +1,27 @@
 # Build status
 
+## 21 November — disk clearance and candidate controls; operator component tested
+
+User explicitly approved the13-image cache plan. Guarded cleanup stopped after10
+removals when free space reached14.3GB (from6GB), with registry recovery verified
+and every container reference rechecked. No containers, volumes, registry images,
+database data, backups or evidence removed. Candidate8a22280 images/control bytes
+then staged privately. Native Trial, capture, SQL, OPA/ZEN components, registry and
+observer-sensitivity operators completed successfully; independent review remains
+required. Private scoring and transport controls are not yet complete. No rollout.
+
+Added separate phase3 migration135/operator read component and observer.15 local
+observer tests pass.135 Alembic upgrade/repeat and10 actual SQL role/grader/private
+review controls pass, including known foreign witnesses, unenrolled/forged GUC
+denial and revoked owner. Existing PUBLIC policies require an AS RESTRICTIVE
+enrollment AND gate; this was caught in read-only review and fixed before release.
+Catalog preflight uses OIDs instead of granting private-schema USAGE. No actual
+QA135 schema/role/enrollment changes yet. No source8 image/source-tree edits.
+Native Golden hash remains0ad34c122a56e9fa1f83bce6f2c09e8fe672d946a3f6b25222fae391238c4368.
+Final composite deployment must report actual135 plus native134 component evidence
+and separately pinned135 SQL/Alembic/operator evidence, never relabel old traces.
+See BUILD-DECISIONS.json and KYC-BINDING-OPERATOR-COMPONENT-20261121.md.
+
 ## 21 November — all three8a22280 builds passed; disk approval blocks QA staging
 
 Exact committed candidate8a22280f3ac7a78b0f3b9f6d1e47fc6adf93438b;
