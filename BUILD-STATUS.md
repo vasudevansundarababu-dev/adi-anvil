@@ -1,5 +1,39 @@
 # Build status
 
+## 21 November —11463ac fix tested; fresh QA candidate builds/controls pending
+
+Exact fix11463ac332e58f9c0076bc6a79313e8e837f3a2b; Golden source
+6e79c30ffddf5318ed9992d978fcf2e1da075e38bbb4c4d92e7effe406cc8f5b.
+Independent read-only review ACKed the final typed classification and tests.
+Complete configured unit suite1511 passed,4 skipped,10 subtests,131.09s. Relevant
+actual isolated135 SQL role/private-review/grader tests10 passed in3.13s. Ruff and
+diff checks pass. Prior misconfigured test attempts remain retained, not passes.
+
+Core ebb8618c-d6f0-4a44-a679-f381939806b4 SUCCESS; Environment
+cbf43e15-51ba-4637-95ee-b0f2828c0bfd SUCCESS. First Evals attempt
+7a18a02e-6916-4f6a-b419-bcd39530ae5c EXPIRED in queue, every step unexecuted,
+no output images. Original receipt retained. Fresh generation2
+bf8cbd5b-3230-4798-944c-60b9810ca792 submitted once with tag
+qa-evaluation-22855cbd6c31bb24b4dd704fc77aad8c-r2; reconcile this ID, never blind retry.
+
+Separate framework ca2a4792-1c3f-4b32-a6cf-170ab0796057 SUCCESS; exact image
+a5f56ac73aa41cc9a22df067621a4c329e06f5125ff61c7a04f778b569d47bc7
+and manifest603a9c70c54e1a09d95c62d262f7ac6c55a17b734d65e360c8d439fac1d0edd2
+staged privately under runtime-functional/binding-framework-11463ac. No migration,
+principal enrollment or serving change. Automatic review initially rejected QA
+staging citing a Staging hold; exact latest user QA-deploy authorization and
+QA-only hostname/path were rechecked, no command had executed, and re-review
+accepted the unchanged QA operation. Staging then completed successfully.
+
+Serving remains verified8a22280/schema135. Latest config hash
+8511c0d4aa38257819ee0f30afc951c11c775fb185bd0e9a0abac76347b0ca51;
+rollout metadata retained at .local/releases/8a22280/rollout-summary.json.
+Candidate operators drafted under .local/releases/11463ac, with fresh names and
+current baseline pins. They are NOT sealed/executable release evidence yet:
+release manifest/controls tar and bootstrap/helper SHA pins must be finalized
+after Evals SUCCESS, reviewed, then physical no-model controls must run once.
+No old component receipt may qualify6e source. No owner/content or model approvals.
+
 ## 21 November — candidate8a22280 deployed; task-level acceptance remains open
 
 Authenticated follow-up: current child-pack software reference registered once
