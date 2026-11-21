@@ -1,5 +1,65 @@
 # Build status
 
+## 21 November — authenticated native preparation and B1 save succeeded
+
+Current child import7a42d639-4599-414a-9840-35ec2ab840d9 has source d2051636…ff946.
+The unchanged ZIP passed conformance under resolution6b775116-9fbe-4a1f-9fff-25e2e4e3612c.
+Saved technical B0 45344dc5-23de-4d26-846f-b82f47adb84b:80 criterion evaluator
+references and one shared environment. Bound200 inputs, receipt
+ac07c973-b63c-44da-b684-1d1bae5da1bc / 01e2a88e2ee1e579bb699377db544ed20f97df3de39fa4e0facda7023bf97aa0.
+Prepared four native packages, then explicitly saved package-only B1
+4df5e92a-4815-4efb-9267-faf88c9e6990 / b2ac003079ed210ba436064c0b4b15f37f7e6bdb1c910d3bfcc01303a6ef6b66.
+Actual DB readback confirms4 workflow/80 rubric/1 data/0 policy/0 safety refs.
+UI confirms saved, still Binding Pending with310 readiness gaps; this is not
+benchmark-ready. No ambiguous request replay, no model calls or human approvals.
+
+Remaining engineering/configuration: exact skill-to-step/role mappings, typed
+diagnostic evaluators, current method qualification, policy/safety selections and
+run-specific qualification. Existing policy operator enrollment count is0; do not
+impersonate an operator or fabricate exact scope control evidence. Policy/rights/
+case-expectation reviews remain pending. New execution selections require a new
+B0 and rebind/package-only B1, never mutation of existing ancestry.
+
+Read-only review found a UI profile recognition defect hiding existing v8 S5
+steps. Fixed both viewer projections to recognize golden-kyc-application-type-v1;
+all existing step validation remains. TypeScript and ad-hoc v8/legacy/malformed
+projection controls passed (initial harness JSON import failed, corrected harness
+passed). Web-only deployment of this display fix pending. Chrome released;
+screenshot /private/tmp/forge-qa-native-bindings-saved-20261121.jpg.
+
+## 21 November — runtime and final UI deployed; authenticated qualification passed
+
+Eight-service dde352b rollout and web-only 5bdfc5d rollout both completed.
+Schema/Alembic remain 133, seven non-web service identities were preserved during
+the web cutover, health passed and model/provider dispatch remains disabled.
+Installed HTTP wire control passed seven cases, preserving domain strictness,
+with zero database or internet connection attempts in that isolated control.
+Evidence: ignored release directories dde352b and 5bdfc5d, rollout-result.json,
+rollout-summary.json and installed-wire-smoke.json.
+
+Under the real Admin session, registered the existing child pack
+729266f3-1741-563b-b4ba-586cf7fae4b3 against the deployed source: UI confirmed
+four task bindings and 50 evaluator configurations. Refreshed v8 qualification:
+qualified, independently_qualified_installed_golden_runtime. Offline PO
+publication attestation remains explicitly not API verified. No policy, rights
+or expectation approvals granted. Authenticated project binding smoke continues.
+
+## 21 November —dde candidate receipts accepted; guarded rollout running
+
+Independent in-place review passed1039artifacts/8packets,56related files,23role
+profiles,22native dependencies,6private arithmetic outcomes and all14control
+mappings. Raw evidence remained on QA. Genuine review558ea01d…831b staged;
+strict candidate verification and publication passed, receipt
+884dc59b4d52ebd4f82994321f7d00e701c5498f9fb49acbdaf83208c1333b24.
+Combined exact-backend readback passed for that receipt and captureb33788ae…421c.
+Guarded8serviceQArollout submitted once; serving acceptance still pending.
+
+Web-only handoff5bdfc5d3c8737537dfede9240a3c58df108db2b3 build
+b258031e-617c-4453-a383-00afed8b5ce3 SUCCESS, imageea3c8fba91a6e5c21d65c817c533be9b56d205936b56ffb0d6b1d4e9638efa70.
+Its rollout follows the actual accepted runtime baseline.11frontend tests passed;
+runtime source remainsd2051636…ff946. No model/provider dispatch or human policy,
+rights or expectation approval. Chrome is still released to the user.
+
 ## 21 November — all8dde controls completed; frontend ancestry handoff reviewed
 
 All fresh physical controls completed, including transport restoration of the

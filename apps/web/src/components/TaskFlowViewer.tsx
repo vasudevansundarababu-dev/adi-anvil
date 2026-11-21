@@ -36,7 +36,9 @@ export default function TaskFlowViewer({
   const node = flow.nodes.find((n) => n.id === nodeId) || flow.nodes[0];
   const actor =
     task.actor && typeof task.actor === 'object' ? (task.actor as Record<string, unknown>) : {};
-  const kyc = object(actor.profile).id === 'golden-kyc-reusable-v1';
+  const kyc = ['golden-kyc-reusable-v1', 'golden-kyc-application-type-v1'].includes(
+    object(actor.profile).id as string,
+  );
   const section = (key: string) => object(object(actor.sections)[key]);
   const tools =
     kyc && Array.isArray(section('S3').tools)

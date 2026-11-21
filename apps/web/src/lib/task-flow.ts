@@ -218,7 +218,11 @@ export function taskFlow(actor: unknown): TaskFlow {
       reason: 'Authored workflow graph v1. Definition only; runtime qualification is separate.',
     };
   }
-  if (record(source.profile)?.id === 'golden-kyc-reusable-v1') {
+  if (
+    ['golden-kyc-reusable-v1', 'golden-kyc-application-type-v1'].includes(
+      record(source.profile)?.id as string,
+    )
+  ) {
     const steps = record(record(source.sections)?.S5)?.steps;
     if (Array.isArray(steps) && steps.length > 0 && steps.length <= 100) {
       if (
