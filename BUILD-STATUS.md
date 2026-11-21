@@ -1,5 +1,88 @@
 # Build status
 
+## 21 November 17:10 UTC — QA deployed; revised tasks imported; context registration pending
+
+QA serves `eeaf22273df7f75a5692d44ae6216f0dc0a8fc79` on all eight roles,
+zero restarts, schema133. Fresh native Trial, SQL, registry, private scoring,
+observer and worker/SDK transport controls passed independent technical review.
+Installed component receipt `42eba294cbac28b75c5a5167b7c983456526dc4ea4b2dab3d3a8e03a4d4c1f68`;
+capture receipt `40f8e90ed612315c14c710b672f15640432b83a66e7d35d280eaa368b70d0e5f`.
+Earliest expiry: 22 November 09:21:32 Chicago. HTTP health/workspace200 and
+protected anonymous routes401 verified. All model/provider dispatch stays disabled.
+
+Actual Admin confirmed and granted self-only source-review access through the UI,
+expiring21 November18:53:17 Chicago; no judge access or review authority granted.
+The exact revised package SHA `3b6d922a489e7a3d5f78f491a84f209cd1d436287f45afd6f1ca2d4e0a078128`
+passed conformance and imported four current tasks as displayProject7,
+group `1d2321f4-736f-4e5e-9e41-3cbaf454ee4a`, resolution
+`10c96f07-943c-466f-a90e-f9bef1c30211`. v8 technical qualification passed.
+The screenshot and database readback independently confirm import, not admission.
+
+Remaining: actual Project7 actor-input upload, private context registration,
+application-input/native-package bindings, scoped policy/rights/expectation review.
+The signed-in native Chrome AX view remains on 'Loading current bindings';
+Reload has no frame and screenshot remains on the earlier import receipt.
+No further authenticated action was inferred from these inconsistent observations.
+No queued actor input or policy subject/decision exists in the last QA readback.
+
+Prepared append-only v5 context manifest
+`5c1f08e69ffcdd8e261e04e6f3ac036c6f2393c5a2d0689f0697a9bc0c80f9ae`;
+population `37e42886bc9362b5a6e39b51a1be6b34f1e06b8e0e631ef8abeb2b09abba5cf0`.
+Explicitly adds70 missing quality=unspecified fields to match the upload serializer;
+preserves original data, private controls and pending reviews. Source re-read hash
+race and nested-output hazards caught in review and fixed with negative tests.
+
+New bounded operational registrar uses only the existing dedicated scheduler
+login and a real queued Admin input. It checks frozen schema/source/input hashes,
+actual parent snapshots/private controls and lineage; atomically inserts a new
+child pack/provision and completes the job. No expectation writes, approvals,
+impersonation, grants, migrations or backend/runtime source changes. Generic
+population is unsuitable because it discards the prepared private follow-up controls.
+Registrar has not run on QA. Isolated SQL tests use a separate local synthetic
+PostgreSQL17 container `anvil-context-registrar-sql-20261121`; never Praxis/QA data.
+Final combined run:37 passed in4.49s, including5 actual SQL tests. Ruff and
+`git diff --check` passed. Actual v5 bundle registrar preflight passed and Golden
+source hash remains exactly `bd0ff0c7…b01ba`. Test container stopped with data retained.
+See `docs/generated/KYC-CONTEXT-REGISTRATION-20261121.md` for resume steps.
+
+Earlier entries below are historical; their pending rollout/import claims are superseded.
+
+## 21 November — protected-reference fix built; fresh controls in progress
+
+Frozen code `eeaf22273df7f75a5692d44ae6216f0dc0a8fc79`, Golden source
+`bd0ff0c722cff0e7af969707ab6b2caeab86e255c1e7fe93665cf445da3b01ba`.
+Reviewed Admin self-only eight-hour source-review access flow, revocation and
+current import diagnostics; no RLS/schema or model/review authority changes.
+36 focused regression tests and 10 subtests passed, plus TypeScript and Ruff.
+Independent read-only code review findings were fixed before freeze.
+
+All three builds passed: core `f94ac0da-fdcd-4c83-ba48-d8090c6198a0`, environment
+`e9dba4c2-178e-483f-9691-853104415232`, evaluation
+`00581fd5-2444-4f00-9d1e-51954e7eb78e`. Release manifest SHA
+`6b4c445d4b57bf97bbb2f7196e4d1ce2203ed5556bf863abded2a1f2afe62c27`.
+Exact images/controls are privately staged; serving remains `016d027`.
+The staging/operator inventory and cleanup guards passed independent preflight
+review. A changed observer-helper hash was reconciled before controls started.
+
+Fresh native Trial `f49d620e-c02f-46a4-8e29-d0235efa467f`, SQL, registry and
+component controls passed, all with original terminal evidence. Capture probe
+passed and received a genuine independent review; canonical review SHA
+`6a8ce3e918d8f99b4c9ca8cdb31185c91dc366990263e14d6ca11904d47ac00c`.
+Capture candidate `40f8e90ed612315c14c710b672f15640432b83a66e7d35d280eaa368b70d0e5f`
+is verified ready in the exact new backend with network disabled, not serving.
+Observer sensitivity completed and awaits evidence review. Private scoring is
+still running; transport/curation/component acceptance/rollout remain pending.
+Each control has a root-owned single-attempt intent; do not blindly rerun.
+
+Private operational artifacts: ignored `.local/releases/eeaf222/`; remote root
+`/tmp/forge-release-eeaf222`, controls
+`/var/lib/anvil-qa-v1/runtime-functional/controls-eeaf222`.
+Prepared rollout source SHA `62cebda95365d0c3d24d26ad08f865e03f8b5245d7441c2468a8d2946348fa49`;
+26 exact-profile/security/negative operator tests passed. It is not yet executed.
+No actual protected-storage grant, source task import, policy approval or paid
+dispatch has been performed. The actual access grant requires explicit consent
+under the real Admin session after the new UI is deployed.
+
 ## 21 November — QA rollout verified; exact task import blocked on Gym storage access
 
 QA now serves `016d027649847b5d122ca7ad413bff7f31138fab` across all eight

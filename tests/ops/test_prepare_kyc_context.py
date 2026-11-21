@@ -240,3 +240,107 @@ def test_complete_offline_bundle_checks_arrays_original_hashes_and_pending_grade
         stream.write(b' ')
     with pytest.raises(ValueError, match='hash or length'):
         checker.verify(output)
+
+
+def normalization_bundle(tmp_path):
+    actor, scenarios, expectations, lineage, impact, context = prepared()
+    membership, index = module.dataset_membership(actor)
+    output = tmp_path / 'normalization-source'
+    module.write_bundle(output, {'actor-input.json': actor, 'private/scenarios.json': scenarios,
+        'private/expectations.json': expectations, 'lineage.json': lineage, 'impact.json': impact,
+        'context.json': context, 'policy-cells.json': module.prepare_policies(policy_export(tmp_path)),
+        'evaluator-plan.json': module.evaluator_plan(), 'dataset-manifest.json': membership, 'private/type-index.json': index})
+    return output
+
+
+def normalization_module(monkeypatch):
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / 'scripts'))
+    import normalize_kyc_context
+
+    return normalize_kyc_context
+
+
+def test_wire_normalization_appends_version_preserves_controls_and_never_approves(tmp_path, monkeypatch):
+    import hashlib
+
+    from anvil.project_input_contract import INPUT
+
+    source = normalization_bundle(tmp_path)
+    original = {str(p.relative_to(source)): p.read_bytes() for p in source.rglob('*') if p.is_file()}
+    normalizer = normalization_module(monkeypatch)
+    output = tmp_path / 'normalized'
+    result = normalizer.normalize(source, hashlib.sha256(original['manifest.json']).hexdigest(), output)
+    actor = json.loads((output / 'actor-input.json').read_bytes())
+    assert actor == INPUT.validate_python(actor).model_dump(mode='json')
+    assert result['added_quality_fields'] == 70
+    assert result['acceptance']['case_resets'] == result['acceptance']['pending_expectations_remain_unscored'] == 200
+    assert result['run_authority'] == 'not_granted'
+    assert original == {str(p.relative_to(source)): p.read_bytes() for p in source.rglob('*') if p.is_file()}
+    old_controls = json.loads(original['private/scenarios.json'])
+    new_controls = json.loads((output / 'private/scenarios.json').read_bytes())
+    for app, old, new in zip(actor['applications'], old_controls, new_controls, strict=True):
+        assert new == old | {'snapshot_sha256': snapshot_digest(app)}
+    assert (output / 'policy-cells.json').read_bytes() == original['policy-cells.json']
+    assert json.loads((output / 'context.json').read_bytes())['rights_review'] == 'pending'
+
+
+def test_normalization_rejects_unpinned_source_before_creating_output(tmp_path, monkeypatch):
+    source = normalization_bundle(tmp_path)
+    output = tmp_path / 'rejected'
+    with pytest.raises(ValueError, match='Exact original'):
+        normalization_module(monkeypatch).normalize(source, '0' * 64, output)
+    assert not output.exists()
+
+
+def test_normalization_rechecks_captured_source_after_acceptance(tmp_path, monkeypatch):
+    import hashlib
+
+    source = normalization_bundle(tmp_path)
+    normalizer = normalization_module(monkeypatch)
+    pinned = hashlib.sha256((source / 'manifest.json').read_bytes()).hexdigest()
+    real_verify = normalizer.verify
+
+    def swap_after_verify(root):
+        result = real_verify(root)
+        (root / 'policy-cells.json').write_bytes(b'{}')
+        return result
+
+    monkeypatch.setattr(normalizer, 'verify', swap_after_verify)
+    output = tmp_path / 'rejected'
+    with pytest.raises(ValueError, match='Captured source artifact'):
+        normalizer.normalize(source, pinned, output)
+    assert not output.exists()
+
+
+def test_normalization_rejects_output_inside_original_bundle(tmp_path, monkeypatch):
+    source = normalization_bundle(tmp_path)
+    with pytest.raises(ValueError, match='outside'):
+        normalization_module(monkeypatch).normalize(source, '0' * 64, source / 'child')
+    assert not (source / 'child').exists()
+
+
+def test_normalization_rejects_serializer_changes_to_existing_facts(tmp_path, monkeypatch):
+    import hashlib
+
+    from anvil.project_input_contract import INPUT
+
+    source = normalization_bundle(tmp_path)
+    normalizer = normalization_module(monkeypatch)
+    real_validate = INPUT.validate_python
+
+    class ChangedSerializer:
+        def model_dump(self, **kwargs):
+            body = real_validate(json.loads((source / 'actor-input.json').read_bytes())).model_dump(**kwargs)
+            body['applications'][0]['purpose'] = 'Unapproved changed purpose'
+            return body
+
+    class BadInput:
+        @staticmethod
+        def validate_python(value):
+            return ChangedSerializer()
+
+    monkeypatch.setattr(normalizer, 'INPUT', BadInput())
+    output = tmp_path / 'rejected'
+    with pytest.raises(ValueError, match='add only'):
+        normalizer.normalize(source, hashlib.sha256((source / 'manifest.json').read_bytes()).hexdigest(), output)
+    assert not output.exists()
