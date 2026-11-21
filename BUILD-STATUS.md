@@ -1,5 +1,41 @@
 # Build status
 
+## 21 November — typed sealed KYC grading implemented locally; not deployed
+
+User renewed authorization: finish Gym engineering/grading/qualification, deploy
+and test QA, no model calls, exact owner checklist, email done/blocked.
+Added typed native_kyc programs bound to criterion and exact grader/normalizer
+source, fixed0/2/5/unscored anchors and explicit review requirements. Registration
+now creates20 actual sealed-criterion configurations instead of generic Boolean
+rubric wrappers. Generic facts cannot qualify these programs. Paid private grading
+resolves the exact frozen B1 selections and configuration/validation hashes and
+retains per-criterion sealed snapshot/state/events provenance after overrides.
+Missing intended decision stays unknown; state/custodial/review gates retained.
+
+36 focused tests pass, including actual sealed normalization, wrong-party/stale/
+missing/unread verification and partial citation. Configured full units1472 pass,
+4 skipped,10subtests,130.48s (before5 additional focused normalization tests).
+Initial bare environment collection failed for missing OpenEnv; initial combined
+run lacked required Marketing fixture/fixture flag and sandbox process privileges.
+Correct documented environment and permission scope passed; failures were not
+suppressed. One existing Authlib deprecation warning remains.
+
+Two actual SQL tests passed in retained synthetic clone
+anvil_golden_kyc_native_59b6057280 inside owned local fixture container. They use a
+new restricted grader LOGIN and applied schema133: exact20configuration readback,
+cross-project denial, write denial and real revocation recheck. Initial harness
+refused missing marker; created a separate explicitly marked clone, preserving
+the original database. Revocation fixture initially lacked genuine synthetic
+Admin context; fixed fixture to use real project/user GUCs and app role. No
+production/QA approvals or expectations installed. Final focused tests and Ruff
+pass; full source remains unqualified and must not replace serving runtime yet.
+
+Owner checklist: docs/generated/KYC-OWNER-REVIEWS-20261121.md. Review investigation
+confirmed processing rights are consumed by actual execution-group authorization;
+private expectation review still lacks a hash-bound genuine PO receipt producer
+and admission/grader linkage. That is remaining Gym engineering, not an Owner
+or Authoring failure. Exact-binding/method/safety producers remain unfinished.
+
 ## 21 November — v8 procedure viewer fix deployed; readiness remains blocked
 
 Web-only c4d033941016a7e1d57cd476fd36cef45d037770 built successfully in

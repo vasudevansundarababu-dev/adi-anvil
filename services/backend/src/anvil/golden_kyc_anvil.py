@@ -57,25 +57,35 @@ def _evaluators(c, project, user, *, _resource_proof=None):
     entries = []
     current = source_hash() if _resource_proof is None else source_hash(_resource_proof=_resource_proof)
     groups = [
-        ("rubric", CRITERIA, "zen"),
+        ("rubric", CRITERIA, "builtin"),
         ("business", ZEN_TABLES, "zen"),
         ("safety", OPA_POLICIES, "opa-local"),
         ("trace", TRACE_CHECKS, "builtin"),
     ]
     for group, names, adapter in groups:
         for name in names:
+            if group == "rubric":
+                from anvil.golden_kyc_native_program import program
+
+                body = configurations.Configure(
+                    name=f"Golden KYC sealed criterion: {name}", adapter="builtin",
+                    native_kyc=program(name, _resource_proof=_resource_proof),
+                )
+            else:
+                body = configurations.Configure(
+                    name=f"Golden KYC {group}: {name}", adapter=adapter,
+                    rule=Rule(kind="equals", field="supported", value=True),
+                )
             config = configurations.create(
                 c,
                 project,
                 user,
-                configurations.Configure(
-                    name=f"Golden KYC {group}: {name}",
-                    adapter=adapter,
-                    rule=Rule(kind="equals", field="supported", value=True),
-                ),
+                body,
                 _resource_proof=_resource_proof,
             )
-            config = configurations.test(
+            config = configurations.test_kyc_runtime(
+                c, project, user, config["id"], _resource_proof=_resource_proof,
+            ) if group == "rubric" else configurations.test(
                 c,
                 project,
                 user,
@@ -102,6 +112,8 @@ def _evaluators(c, project, user, *, _resource_proof=None):
                     "validation_id": str(config["validation"]["id"]),
                     "validation_sha256": config["validation"]["evidence_sha256"],
                     "normalizer_source_sha256": current,
+                    **({"evaluation_mode": "native_kyc", "criterion": name}
+                       if group == "rubric" else {}),
                 }
             )
     return entries

@@ -197,7 +197,8 @@ def evaluate(sealed_state, expectation, observed_checks, critical_failures=()):
             issues.append(f"evaluator_error:{criterion}")
     final = sealed_state.get("final")
     decision = final.get("decision") if final else None
-    correct = decision == expectation.get("intended_decision") if reviewed else None
+    intended = expectation.get("intended_decision")
+    correct = decision == intended if reviewed and isinstance(decision, str) and decision and isinstance(intended, str) and intended else None
     mandatory = observed_checks.get("mandatory_conditions") if reviewed else None
     output = score(
         checks,

@@ -206,6 +206,11 @@ def grade(c, project, trial, generation):
     ).fetchone()
     if old:
         return old["result"]
+    selected_criteria = None
+    if paid_binding:
+        from anvil.golden_kyc_native_program import selected
+
+        selected_criteria = selected(c, project, paid_binding)
     snapshot = c.execute(
         "SELECT snapshot,snapshot_sha256 FROM banking.applications WHERE project_id=%s AND pack_id=%s AND id=%s",
         (project, row["pack_id"], row["application_id"]),
@@ -303,6 +308,12 @@ def grade(c, project, trial, generation):
         result = apply_overrides(result, expectation, custom["receipts"])
     if state_reason:
         result["issues"].append(state_reason)
+    if selected_criteria is not None:
+        from anvil.golden_kyc_native_program import receipts
+
+        result["criterion_evaluators"] = receipts(
+            selected_criteria, result, snapshot["snapshot"], row["state"], events
+        )
     c.execute(
         "INSERT INTO banking_private.results(id,project_id,trial_id,generation,result) VALUES(%s,%s,%s,%s,%s)",
         (uid(), project, trial, generation, Jsonb(result)),

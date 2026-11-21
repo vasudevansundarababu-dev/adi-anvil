@@ -107,6 +107,14 @@ def routes(context, wrap, idempotent):
                 request,
             )
 
+    @router.post("/{identifier}/test-kyc-runtime")
+    def test_kyc_runtime(project: UUID, identifier: UUID,
+                         body: configurations.DiagnosticRuntimeTest, request: Request):
+        with context(request, project) as (c, user, roles):
+            authorize(roles)
+            return wrap(idempotent(c, project, user, request, body,
+                                  lambda: configurations.test_kyc_runtime(c, project, user, identifier)), request)
+
     @router.post("/{identifier}/test-diagnostic-runtime")
     def test_diagnostic_runtime(
         project: UUID,

@@ -9,6 +9,7 @@ from pydantic import Field, SecretStr, model_validator
 
 from anvil import workspace_secrets
 from anvil.db import Jsonb, audit, digest, one, uid
+from anvil.golden_kyc_native_program import Program as KycProgram
 from anvil.native_diagnostic import Program as DiagnosticProgram
 from anvil.native_ordinal import Award, Program
 from anvil.native_semantic import SavedProgram as SemanticProgram
@@ -35,6 +36,9 @@ def _source_paths(adapter):
         paths.append("services/backend/src/anvil/campaign_semantic_contract.py")
         paths.append("services/backend/src/anvil/native_semantic_validation.py")
         paths.append("services/backend/src/anvil/native_diagnostic.py")
+        from anvil.golden_kyc_native_program import SOURCE_PATHS
+
+        paths.extend(SOURCE_PATHS)
     if adapter in {"nemo", "promptfoo", "opa-local"}:
         paths += ["services/backend/src/anvil/evaluator_runtimes.py"]
     if adapter in {"nemo", "promptfoo"}:
@@ -74,13 +78,14 @@ class Configure(Model):
     native_ordinal: Program | None = None
     native_semantic: SemanticProgram | None = None
     native_diagnostic: DiagnosticProgram | None = None
+    native_kyc: KycProgram | None = None
     endpoint: str | None = Field(default=None, max_length=300)
     resource_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_/-]{1,100}$")
     secret: SecretStr | None = Field(default=None, min_length=1, max_length=4096)
 
     @model_validator(mode="after")
     def shape(self):
-        programs = (self.native_ordinal, self.native_semantic, self.native_diagnostic)
+        programs = (self.native_ordinal, self.native_semantic, self.native_diagnostic, self.native_kyc)
         if sum(program is not None for program in programs) > 1:
             raise ValueError("Choose exactly one native evaluator program")
         if any(program is not None for program in programs):
@@ -144,6 +149,30 @@ class SemanticRuntimeTest(Strict):
 
 class DiagnosticRuntimeTest(Strict):
     pass
+
+
+def test_kyc_runtime(c, project, user, identifier, *, _resource_proof=None):
+    from anvil.golden_kyc_native_program import controls
+
+    row = get(c, identifier, _resource_proof=_resource_proof)
+    program = row["configuration"].get("native_kyc")
+    if row["status"] == "revoked" or program is None or str(row["project_id"]) != str(project):
+        raise HTTPException(409, "Select a current project sealed KYC evaluator")
+    try:
+        evidence = controls(program, _resource_proof=_resource_proof) | {
+            "runtime_version": ADAPTER_VERSION,
+            "adapter_source_sha256": adapter_source_sha256("builtin", _resource_proof=_resource_proof),
+        }
+    except (ValueError, TypeError, KeyError, ImportError, OSError, RuntimeError):
+        raise HTTPException(503, "Sealed KYC software controls failed; no receipt was created") from None
+    receipt = uid()
+    c.execute(
+        "INSERT INTO anvil.evaluator_validation_receipts(id,project_id,configuration_id,configuration_sha256,evidence,evidence_sha256,created_by) VALUES(%s,%s,%s,%s,%s,%s,%s)",
+        (receipt, project, identifier, row["configuration_sha256"], Jsonb(evidence), digest(evidence), user),
+    )
+    audit(c, project, user, "evaluator.kyc_software_tested", identifier,
+          {"receipt_id": receipt, "case_review_granted": False, "provider_calls": 0})
+    return get(c, identifier, _resource_proof=_resource_proof)
 
 
 def test_diagnostic_runtime(c, project, user, identifier, body):
@@ -357,6 +386,9 @@ def get(c, identifier, *, _resource_proof=None):
     )
     semantic = row["configuration"].get("native_semantic")
     row["evaluation_mode"] = (
+        "native_kyc"
+        if row["configuration"].get("native_kyc") is not None
+        else
         "native_diagnostic"
         if row["configuration"].get("native_diagnostic") is not None
         else "native_semantic"
@@ -366,6 +398,19 @@ def get(c, identifier, *, _resource_proof=None):
         else "deterministic"
     )
     diagnostic = row["configuration"].get("native_diagnostic")
+    native_kyc = row["configuration"].get("native_kyc")
+    if native_kyc is not None:
+        from anvil.golden_kyc_native_program import qualified
+
+        if not revoked:
+            row["status"] = "ready" if current_receipt and qualified(
+                native_kyc, receipt, _resource_proof=_resource_proof
+            ) else "needs_testing"
+        row["native_kyc_requirements"] = {
+            "evidence": "private_sealed_trace", "criterion": native_kyc.get("criterion"),
+            "case_expectation_review_required": True, "legal_review_for_state_criteria_required": True,
+            "software_validation_only": True, "model_performance": False,
+        }
     if diagnostic is not None:
         from anvil.native_diagnostic import VERSION, qualified_receipt
 
@@ -417,6 +462,8 @@ def get(c, identifier, *, _resource_proof=None):
 
 def test(c, project, user, identifier, body, *, _resource_proof=None):
     row = get(c, identifier, _resource_proof=_resource_proof)
+    if row["configuration"].get("native_kyc") is not None:
+        raise HTTPException(409, "Caller facts cannot qualify sealed KYC grading; use KYC software controls")
     if _resource_proof is not None and row["configuration"].get("native_ordinal") is not None:
         raise RuntimeError("Software resource proof supports deterministic Golden controls only")
     if row["status"] == "revoked":
