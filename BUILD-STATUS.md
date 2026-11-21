@@ -2,6 +2,18 @@
 
 ## 21 November —11463ac fix tested; fresh QA candidate builds/controls pending
 
+Evals generation2bf8cbd5b-3230-4798-944c-60b9810ca792 nowSUCCESS, every step
+SUCCESS. Allthree candidate phases complete. Frozen release manifest8dccbc7e7b90ab688570fd4247e8381869cda2013ecd41abd659b00482459f8b;
+controls tar18fc6ba2fd976c58f2117e316cfee26f60ddb43a4bf968331c701fc11a1d76d0.
+Prestage independent review caught stale API ID and partially replaced cleanup
+revision prefix; both corrected and8bootstrap hashes resealed/verified before
+anycandidate control/staging execution. Final review pending.
+
+Added separately pinned method-mechanics control script; local actual scoring
+cases6 and diagnostic targets39/controls162 passed. These are manufactured
+software observations, not project/task qualification or model performance.
+Credential guard broadened after read-only review. See KYC-METHOD-MECHANICS-CONTROLS-20261121.md.
+
 Exact fix11463ac332e58f9c0076bc6a79313e8e837f3a2b; Golden source
 6e79c30ffddf5318ed9992d978fcf2e1da075e38bbb4c4d92e7effe406cc8f5b.
 Independent read-only review ACKed the final typed classification and tests.
