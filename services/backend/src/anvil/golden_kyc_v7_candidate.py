@@ -195,6 +195,10 @@ def decode_candidate(raw, variants):
         if type(identity) is not dict or identity.get("applicationType") != entry.case_selector.value:
             raise ValueError("Product selector must derive from required S1.applicationType")
         example = identity.get("exampleGoverningState")
+        # Optional pick lists permit an empty string. Project absence without
+        # changing any original authored, actor or private-reference bytes.
+        if type(example) is str and example == "":
+            example = None
         if example is None:
             if "coverage" in document["tasks"][index]:
                 raise ValueError("Omit optional example coverage when absent")

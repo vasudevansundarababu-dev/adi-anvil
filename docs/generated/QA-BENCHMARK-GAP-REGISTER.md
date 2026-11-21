@@ -1,5 +1,61 @@
 # QA benchmark exercise — living gap register
 
+## 20 November evening — exact exported-source coverage
+
+EXPORT-OPTIONAL-42: generated SME forms can preserve an empty string for an
+optional pick list. The published form/general field validator permits it, but
+the product decoder treated an empty example-state string as a selected state
+and demanded impossible coverage metadata. Gym's bounded fix projects only exact
+string-empty example metadata to absence without rewriting approved source or
+hashes. Missing/None/blank and all contradictory/type/whitespace cases now have
+decoder tests. This is a Gym defect, not a requirement to re-author SME tasks or
+invent a state. Studio must test the actual form's empty-value representations
+through the full decoder before declaring an export compatible.
+
+EXPORT-TOOLS-43: the final authored ZIP contains nine procedure tool names outside
+the exact published V8 execution catalogue. A free-text tool field passed SME
+approval but cannot select an executable capability. Authoring should generate
+tool choices and exact ID/schema bindings from the template and validate them
+before approval/export. Gym must reject unknown names rather than guess aliases.
+Preserve approved originals and use reviewed successor corrections when bound
+source bytes change. The consolidated nine-location request is in
+`KYC-V8-AUTHORING-TOOL-BINDING-CORRECTION.md`; datasets/private expected answers
+remain Gym-owned, not an extra Authoring responsibility.
+
+QA-SUBJECT-44: 20 registry-reader software candidates are not 20 completed native
+episodes, evaluator executions or reports. Evidence must join the actual current
+four-product import, frozen data membership, task/environment/evaluator versions
+and per-cell stage outcomes. Mark manufactured prerequisites and blocked/not-run
+stages explicitly. Current reference registration conserves all 200 snapshots
+(ten per product/state); authored import/execution is still blocked. A change to
+hashed decoder code also requires new source-bound image qualification; old
+platform or template receipts must not be silently carried forward.
+
+## 20 November, 9:34 PM Chicago — first-write filesystem parity
+
+OPS-SCRATCH-40: the isolated HTTP test mounted `/tmp` as tmpfs while the serving
+API wrote temporary OPA files into its image filesystem. A fresh controlled pair
+showed the first image-filesystem write changed only the container root's ctime
+and correctly tripped the complete ancestor witness. A dedicated bounded tmpfs
+passed the unchanged guard; later tests in an already-written container had
+missed the first-write condition. The API-only configuration correction and
+actual real Admin registration succeeded without changing images or integrity
+checks. Studio/environment contracts must declare scratch storage, mount flags,
+capacity, UID/mode and memory accounting; test fresh first-use and repeated-use
+conditions against the actual role profile, not just the same image. Do not
+prewarm tempfile selection before measuring a first-write control. API and native
+control profiles must not silently diverge in the test harness. The QA provisioner
+now preserves this scratch contract and rejects destination aliases/overlap.
+
+OPS-ACCEPTANCE-41: runtime deployment, platform qualification, software-reference
+registration, exact template qualification, authored ZIP admission and model-run
+admission are separate results. The corrected reference has four bindings and
+50 evaluator configurations; this is not the authored task ZIP or a real model
+benchmark. Browser actions refused before input are not submitted requests;
+reconcile immutable receipts and pending transactions before a fresh visible
+action. An inaccessible window is not an expired login or a server qualification
+failure. Keep real policy/data/case reviews visible after technical acceptance.
+
 ## 20 November, 8:55 PM Chicago — rollout contract and authenticated acceptance
 
 OPS-PROFILE-38: Docker Compose can reorder a bind list while preserving every

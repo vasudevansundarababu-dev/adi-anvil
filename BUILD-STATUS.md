@@ -1,5 +1,139 @@
 # Build status
 
+## 20 November evening — V8 qualified; decoder correction and authored tool bindings remain
+
+The genuine Admin UI qualification succeeded once at 03:36:06 UTC (9:36 PM
+Chicago). Committed receipt `67e80441-c410-48ee-a01f-32d336381aa9`, SHA
+`d9af7a13d00ce1dae7f7da34d54d3cd7e97b7d920e4e5b4a694819274a071a5b`,
+has status qualified, no requirements, passed product-selector conformance,
+exact source `4e53d1c1...f730f0`, import `c065f96c...dc28`, native image `3640267a...71386`
+and independent review `234243b1...cf41de`. Latest count 9, no pending transaction,
+not revoked, existing PO publication current in the required project scope.
+Authoring events remain 7 and export resolutions 0: no Authoring call or ZIP import.
+The temporary browser-window blocker is resolved. Do not repeat registration,
+qualification or publication attestation for this already-accepted source.
+
+The full **actual unchanged ZIP** check then exposed a Gym decoder bug: the
+published optional example-state pick list permits `""`, but the product decoder
+required coverage metadata for that blank. The local fix projects only exact
+string-empty metadata to None, preserving all original task/actor/private/ZIP
+bytes and hashes. Missing, None and blank pass; real states require matching
+coverage; whitespace, unsupported types and contradictory/null coverage still
+fail. Regression before fix: 1 failed, 10 passed. After fix: 19 decoder boundary
+tests pass. Together with native/capture wiring: 47 targeted tests pass; changed
+active Python files pass Ruff and diff checks.
+
+New proposed Golden source:
+`c26a7965e3ee215aa74e495c5341c15a2e0423f3952a1799111e8eef688201e4`.
+New proposed template source:
+`f77ee84c45526ac63582bcbf44552a18d2269bbeea87fdae1805984731d7b935`.
+These are **not yet deployed or qualified**. Old source-bound receipts do not
+qualify the changed code. New three-phase images and affected runtime controls,
+review, deployment and exact-version qualification are still required. The full
+unit suite passed: 1399 tests, 10 subtests, 4 platform-specific skips, 129.70s,
+in the documented locked OpenEnv test environment with its existing Marketing
+source fixture and local socket permissions. Initial
+backend-only/unconfigured attempts had collection/environment failures, not a
+passing full-suite result; retain those logs candidly. Final command:
+`ANVIL_ENV=local WEB_ORIGIN=http://127.0.0.1:3202 ANVIL_FIXTURE_MODE=true ANVIL_ROOT=$PWD ANVIL_MARKETING_SOURCE_FIXTURE_ROOT=<existing-owned-Marketing-fixture> ANVIL_LIVE_PROVIDERS_ENABLED=false ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED=false ANVIL_PRAXIS_TEMPLATE_CALLS_ENABLED=false ANVIL_REAL_EMAIL_ENABLED=false services/openenv/.venv/bin/python -m pytest services/backend/tests/unit -q --tb=short`.
+All logs remain under `.local/releases/88214ba/`, outside Git. The skips are not
+counted as passed physical native qualification.
+The repository-wide secret scan reported one pre-existing regex false positive
+inside a public `schema_version` identifier in unchanged `task_safety_sources.py`
+(the `sk-` substring within `task-`). That file matches HEAD exactly; this is not
+a credential. The unchanged scanner's patterns found no matches in the 15 staged
+change paths, and the full scan reported no local-credential matches or private
+tracked files. No scanner rule or blanket exception was added. Preserve the
+baseline finding rather than claiming an entirely clean whole-repository scan.
+
+After the optional-field fix, the complete diagnostic visited all four actual
+ZIP tasks and reported nine remaining `PX_TOOL_CALL_MISSING` errors, all procedure
+tool names outside V8's declared runtime. No other conformance errors were
+reported. Do not invent aliases or modify approved task records. Consolidated
+Authoring correction request:
+`docs/generated/KYC-V8-AUTHORING-TOOL-BINDING-CORRECTION.md`.
+The exact original ZIP SHA remains `ced49fece4cc9d0ad46b7c3a3b1d3ab4f15ffbf2a33e03646e0bb74595674f60`.
+An import-ready claim is still blocked; this is separate from the successful
+runtime deployment, reference registration and V8 technical qualification.
+
+Owner additionally requested all 20 product/state cells through the full QA
+flow. Current serving readback SHA
+`486e7eac622681dcbd74ec3bac4f1684bd8f469d85e5421f956a8c455110f21f`
+joins every cell to the **real four-product reference import**: four bindings,
+50 configurations, exact environment `a9058247-8ac8-4bbe-bac6-c7791ca34471`,
+task group `10a913b7-edcb-4924-b871-c691bcdf27cf`, ten original snapshots per
+product/state and 200 total; original snapshot hashes and product selectors all
+match. The corrected registry fixture also uses `application_types=True` and
+passes all 20 candidate-reader cells under explicitly manufactured software
+prerequisites. Neither is an authored ZIP/native/evaluator/report end-to-end pass.
+Full-flow stages remain blocked/not run until source compatibility and real
+Gym-owned dataset/policy/private-expectation/rights gates are closed. No live calls.
+
+## 20 November, 9:34 PM Chicago — API scratch correction and real reference registration passed
+
+The real Admin's first post-rollout registration failed with request
+`56968eac-879f-4879-b019-e42639e8907d`, logged at 03:02:09 UTC. The new bounded
+diagnostic identified `software_resource_closure_changed`; all registration
+writes rolled back. A fresh full HTTP/SQL synthetic fixture passed, exposing a
+test/serving difference: the fixture mounted `/tmp` as tmpfs; the serving API did
+not. A controlled fresh-container pair reproduced the original guard failure
+on the first temporary write to the image filesystem, changing only `/` ctime;
+the same image with bounded `/tmp` tmpfs passed the unchanged proof. No source,
+custody, digest, deadline or rollback check was relaxed.
+
+Pair result SHA `65933e0669bab1580e62101d2a26d1c93219bb047c1bb1b9c18f7d8e5c8e7ff9`.
+The observed mechanism, corrected profile, and subsequent real registration
+success establish the correction; the lost original witness maps are not
+retroactively presented as measured evidence.
+
+One independently reviewed API-only correction ran under operator SHA
+`9f9e9d375391344edac31593b7fa09ba5bb174e2b963eca1b22bdcd06cf03cdb`.
+New API ID `bad245f36a8c729f5139bf97bfc29e93adae149a034bc2c4e299af8c97e7999b`,
+same qualified backend `f0376998...453ed` and application revision `88214ba`.
+Compose SHA `48ca71dac9acea4e3650452474d4c6ce23a8eece847be556b50c274dd68ec5bc`.
+The only HostConfig change is `/tmp:rw,nosuid,nodev,noexec,size=128m`;
+six existing binds, UID, commands, security, environment and limits are preserved.
+All seven peer service IDs and full configurations are unchanged. No migration,
+image build, disk expansion or receipt renewal occurred.
+
+Actual correction result SHA `b19bccef5a393f490b2e2b300a328e433f8ce11ecf883e0aa31be2942e6d885b`;
+full serving packet SHA `6354542aa4afe499fe547ddf4cc4c4c1aa7970239e49ef2b55555f5f40469d4e`.
+Harbor and Aegis independently accepted both. The original protected OPA check
+passed on the new serving API with no witness differences. Effective scratch
+mode 1777, capacity/free 128 MiB, more than four million free inodes; observed API
+memory 204 MiB, peak 310 MiB, unchanged limit 2 GiB and PIDs 256. These are narrow
+registration-scope checks, not a concurrent upload capacity certification.
+Component receipt `634fc636...e41a1` and capture receipt `dcad1e15...dfa7` retain
+their exact bytes, original subjects and expiry. The new API profile has separate
+operational acceptance. API capture readiness performed no connection probe.
+Public health/workspace return 200, live inference/Harbor dispatch remain disabled.
+
+The single corrective genuine Admin UI click succeeded: four product task
+bindings and 50 evaluator configurations. Independent DB readback at 03:28:22 UTC:
+
+- Exactly one import `d2e76679-9362-4082-90ec-3792c5dbd43f`;
+  manifest SHA `c065f96c1046572646525d31b15089eba9526c1fdb10178f2f2fd48fea12dc28`.
+- Exact pack `7e17aa6b-4a23-4abc-a28f-f4ba97186c2d`, source `4e53d1c1...f730f0`,
+  task mode `reusable_application_workflow`, 200 frozen application snapshots.
+- Registration idempotency 1, pending app transactions 0, commands 0,
+  execution jobs 0, schema/Alembic 133. No authored ZIP import or model run.
+
+Future fresh QA provisioning now uses the same bounded API scratch mount and
+rejects conflicting, aliased or overlapping destinations. 28 targeted native and
+capture wiring tests passed; 26 release profile/ownership tests passed. The
+application source hash remains exactly `4e53d1c1...f730f0`. Exact reviewed public
+operators and diagnostic worker source are retained in Git, without private
+configuration, raw logs, credentials or actual runtime evidence payloads.
+
+Remaining: submit the normal UI KYC V8 qualification check once, verify the
+current receipt/import gate, then report offline import readiness. Browser
+control temporarily reported no accessible Chrome windows; no qualification was
+submitted. Owner has now replied “QA visible”; Sentinel is resuming with fresh
+state. Fresh preflight still shows eight historical qualifications, latest old
+receipt `e5b55637...`, no pending transaction, Authoring events unchanged at 7,
+and export resolutions 0. Existing publication attestation remains valid; do not
+repeat it. Paid calls OFF, Authoring PAUSED, Stage/Production HOLD.
+
 ## 20 November, 8:55 PM Chicago — corrected QA rollout verified; Forge sign-in blocks registration
 
 The single corrected rollout completed at 02:35 UTC on 21 November

@@ -1,0 +1,79 @@
+"""Fresh synthetic ASGI fixture only; observe exact witness without relaxing it."""
+import hashlib
+import json
+import logging
+import os
+import secrets
+import signal
+import sys
+from pathlib import Path
+import psycopg
+from psycopg.conninfo import conninfo_to_dict
+from psycopg.rows import dict_row
+
+def main():
+    signal.signal(signal.SIGALRM,lambda *args: (_ for _ in ()).throw(TimeoutError('Isolated diagnostic deadline')))
+    signal.alarm(300)
+    config=json.loads(Path('/probe-control/control.json').read_bytes())
+    params=conninfo_to_dict(config['app_dsn'])
+    assert params['host']=='/probe-socket' and params['dbname']=='anvil_golden_kyc_component_api882_http1'
+    origin='https://fixture.invalid'
+    os.environ.update(ANVIL_ENV='cloud',WEB_ORIGIN=origin,OIDC_ISSUER='https://fixture-auth.invalid/realms/fixture',DATABASE_URL=config['app_dsn'],ANVIL_FIXTURE_MODE='false')
+    from fastapi.testclient import TestClient
+    from anvil.api import app
+    from anvil.auth import hashed
+    from anvil.golden_kyc_source import source_hash
+    from anvil import software_resource_proof as proof
+    assert source_hash()=='4e53d1c1b41ca373b2c9eecf695c22654c3d3885fdbed84dd70a5b1c74f730f0'
+    original_witness=proof._witness
+    snapshots=[]
+    # Observation in this synthetic fixture process only. Return exactly the
+    # original result: the deployed guard still compares and rejects differences.
+    def observed_witness(root,names):
+        value=original_witness(root,names)
+        snapshots.append(value)
+        return value
+    proof._witness=observed_witness
+    caught=[]
+    class Capture(logging.Handler):
+        def emit(self,record):
+            if record.msg=='request=%s code=%s evidence=%s' and len(caught)<4:
+                identifier,code,raw=record.args
+                assert len(raw.encode())<=2048
+                caught.append({'request_id':identifier,'code':code,'evidence':json.loads(raw)})
+    token,csrf=secrets.token_urlsafe(48),secrets.token_urlsafe(32)
+    def counts(connection):
+        connection.execute("SELECT set_config('anvil.project',%s,true),set_config('anvil.user',%s,true)",(config['project_id'],config['user_id']))
+        assert connection.execute('SELECT anvil.golden_engineer(%s) AS allowed',(config['project_id'],)).fetchone()['allowed'] is True
+        return {table:connection.execute('SELECT count(*) AS n FROM '+table).fetchone()['n'] for table in ('banking.anvil_imports','banking.execution_jobs','anvil.idempotency')}
+    with psycopg.connect(**params,row_factory=dict_row) as connection:
+        assert all(value==0 for value in counts(connection).values())
+        connection.execute('INSERT INTO anvil.sessions(token_hash,user_id,csrf_hash) VALUES(%s,%s,%s)',(hashed(token),config['user_id'],hashed(csrf)))
+    handler=Capture();logger=logging.getLogger('anvil.api');logger.addHandler(handler)
+    try:
+        with TestClient(app,base_url=origin,raise_server_exceptions=False,follow_redirects=False) as client:
+            client.cookies.set('anvil_session',token)
+            response=client.post('/api/v1/projects/'+config['project_id']+'/golden-banking/v1/anvil/import',headers={'Origin':origin,'X-CSRF-Token':csrf,'Idempotency-Key':'synthetic-http-api882-1'},json={'pack_id':config['pack_id'],'task_mode':'reusable_application_workflow'})
+            body=response.json()
+    finally:
+        logger.removeHandler(handler)
+        proof._witness=original_witness
+    with psycopg.connect(**params,row_factory=dict_row) as connection:
+        final=counts(connection)
+        assert final['banking.execution_jobs']==0
+        assert connection.execute('SELECT count(*) AS n FROM banking.applications WHERE pack_id=%s',(config['pack_id'],)).fetchone()['n']==200
+    differences=[]
+    fields=('device','inode','mode','uid','gid','nlink','size','mtime','ctime')
+    if len(snapshots)>=2:
+        before,after=snapshots[0],snapshots[-1]
+        for path in sorted(set(before)|set(after)):
+            if before.get(path)==after.get(path):continue
+            item={'path':path,'present_before':path in before,'present_after':path in after}
+            if path in before and path in after:
+                item['metadata_fields']=[field for index,field in enumerate(fields) if before[path][0][index]!=after[path][0][index]]
+                item['content_changed']=before[path][1]!=after[path][1]
+            differences.append(item)
+    assert len(differences)<=50
+    print(json.dumps({'scope':'isolated_synthetic_cloud_asgi_witness_diagnostic','http_status':response.status_code,'request_id':body.get('error',{}).get('request_id'),'captured':caught,'witness_snapshots':len(snapshots),'witness_differences':differences,'fixture_counts':final,'normal_bytecode_setting':not sys.dont_write_bytecode,'model_calls':False,'qualification_granted':False,'serving_database_used':False,'real_oidc_or_tls_test':False,'source_file_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest()},sort_keys=True))
+
+if __name__=='__main__':main()

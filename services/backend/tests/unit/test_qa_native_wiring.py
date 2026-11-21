@@ -42,6 +42,45 @@ def test_wiring_cannot_silently_activate_live_or_overwrite_existing_bridge():
         wiring.apply(value, "synthetic-image", "a" * 64)
 
 
+def test_api_scratch_is_bounded_without_changing_other_role_limits_or_input():
+    original = config()
+    original["services"]["api"].update(mem_limit="2g", pids_limit=256, tmpfs=["/run:rw,size=16m", "/tmpfs:rw,size=16m"])
+    generated = wiring.apply(original, "synthetic-image", "a" * 64)
+    assert generated["services"]["api"]["tmpfs"] == ["/run:rw,size=16m", "/tmpfs:rw,size=16m", wiring.SCRATCH]
+    assert generated["services"]["api"]["mem_limit"] == "2g"
+    assert generated["services"]["api"]["pids_limit"] == 256
+    assert original["services"]["api"]["tmpfs"] == ["/run:rw,size=16m", "/tmpfs:rw,size=16m"]
+    assert all("tmpfs" not in generated["services"][role] for role in ("worker", "business-worker", "golden-scheduler", "golden-grader"))
+
+
+@pytest.mark.parametrize("entries", [["/tmp:rw,exec,size=128m"], ["/tmp:rw,size=1g"],
+    [wiring.SCRATCH, wiring.SCRATCH], ["/tmp/nested:rw"], {"/tmp": "rw"},
+    ["/:rw"], ["//tmp:rw"], ["/other/../tmp:rw"], ["/./tmp:rw"], ["relative:rw"]])
+def test_conflicting_api_scratch_is_rejected_without_overwriting(entries):
+    value = config()
+    value["services"]["api"]["tmpfs"] = entries
+    with pytest.raises(ValueError, match="scratch mount"):
+        wiring.apply(value, "synthetic-image", "a" * 64)
+    assert value["services"]["api"]["tmpfs"] == entries
+
+
+@pytest.mark.parametrize("target", ["/", "//tmp", "/other/../tmp", "/./tmp", "/tmp/", "relative", None])
+def test_api_scratch_rejects_ambiguous_or_overlapping_bind_destinations(target):
+    value = config()
+    value["services"]["api"]["volumes"] = [wiring.mount("/synthetic", target)] if target is not None else [{"type": "bind", "source": "/synthetic"}]
+    with pytest.raises(ValueError, match="scratch mount"):
+        wiring.apply(value, "synthetic-image", "a" * 64)
+
+
+def test_existing_exact_api_scratch_is_not_duplicated_or_overlaid_by_bind():
+    value = config()
+    value["services"]["api"]["tmpfs"] = [wiring.SCRATCH]
+    assert wiring.apply(value, "synthetic-image", "a" * 64)["services"]["api"]["tmpfs"] == [wiring.SCRATCH]
+    value["services"]["api"]["volumes"] = [wiring.mount("/synthetic", "/tmp")]
+    with pytest.raises(ValueError, match="scratch mount"):
+        wiring.apply(value, "synthetic-image", "a" * 64)
+
+
 def test_software_grader_wiring_passes_actual_dispatch_flag_validator():
     from anvil.golden_kyc_service import validate_environment
 

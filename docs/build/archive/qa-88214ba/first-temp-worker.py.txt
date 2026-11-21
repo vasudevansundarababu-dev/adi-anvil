@@ -1,0 +1,31 @@
+"""No-DB first temporary-write control under the unchanged resource proof."""
+import json
+import os
+from pathlib import Path
+from anvil import software_resource_proof as p
+from anvil.golden_kyc_source import source_hash, _source_paths
+from anvil.evaluator_configurations import _source_paths as adapter_paths
+from anvil.policy_rules import Rule, evaluate_opa
+assert source_hash()=='4e53d1c1b41ca373b2c9eecf695c22654c3d3885fdbed84dd70a5b1c74f730f0'
+root=p.resources.qualification_root()
+assert root==Path('/app')
+names={str(path.relative_to(root)) for path in _source_paths(root)}
+for adapter in ('builtin','zen','opa-local'):names.update(adapter_paths(adapter))
+before=p._witness(root,names)
+guard=None
+try:
+    with p.software_resources(object()):
+        rule=Rule(kind='equals',field='supported',value=True)
+        assert evaluate_opa(rule,{'supported':True},os.environ['ANVIL_OPA_BINARY'],expected_sha256=os.environ['ANVIL_OPA_SHA256'])['outcome']=='pass'
+except RuntimeError as error:
+    assert type(error) is RuntimeError and error.args==('Software resource closure changed before commit',)
+    guard='software_resource_closure_changed'
+after=p._witness(root,names)
+fields=('device','inode','mode','uid','gid','nlink','size','mtime','ctime')
+differences=[]
+for path in sorted(set(before)|set(after)):
+    if before.get(path)==after.get(path):continue
+    assert path in before and path in after
+    differences.append({'trusted_path':path,'metadata_fields':[field for index,field in enumerate(fields) if before[path][0][index]!=after[path][0][index]],'content_changed':before[path][1]!=after[path][1]})
+assert len(differences)<=8
+print(json.dumps({'scope':'isolated_first_temp_write_under_original_proof','guard':guard,'differences':differences,'source_sha256':source_hash(),'database_operations':0,'model_calls':0,'qualification_granted':False},sort_keys=True))

@@ -1,0 +1,73 @@
+"""One fresh overlay/tmpfs pair; no serving data, networking or qualification."""
+import hashlib
+import json
+import os
+import subprocess
+from pathlib import Path
+ROOT=Path('/var/lib/anvil-qa-v1/runtime-functional/first-temp-882-v1')
+IMAGE='us-west1-docker.pkg.dev/adi-anvil-mvp-2026/anvil-qa-v1/backend@sha256:f0376998cb35ab64a9be0869658fadfc09723303033a559483539a408aa453ed'
+def sync(path):
+    descriptor=os.open(path,os.O_RDONLY|os.O_DIRECTORY)
+    try:os.fsync(descriptor)
+    finally:os.close(descriptor)
+def retain(path,raw):
+    with os.fdopen(os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600),'wb') as stream:
+        stream.write(raw);stream.flush();os.fsync(stream.fileno())
+    sync(path.parent)
+def main():
+    assert os.geteuid()==0 and os.uname().nodename=='anvil-qa-v1'
+    worker=Path('/tmp/forge-first-temp-worker-882.py').read_bytes()
+    assert hashlib.sha256(worker).hexdigest()==WORKER_SHA
+    image=json.loads(subprocess.check_output(['docker','image','inspect',IMAGE],timeout=15))[0]
+    assert IMAGE in image['RepoDigests'] and image['Architecture']=='amd64' and image['Os']=='linux'
+    names={kind:'forge-first-temp-882-v1-'+kind for kind in ('overlay','tmpfs')}
+    for name in names.values():
+        result=subprocess.run(['docker','inspect',name],capture_output=True,timeout=15)
+        assert result.returncode==1 and b'no such' in result.stderr.lower()
+    ROOT.mkdir(mode=0o700)
+    sync(ROOT.parent)
+    retain(ROOT/'intent.json',json.dumps({'image':IMAGE,'names':names,'worker_sha256':WORKER_SHA,'serving_database_used':False}).encode())
+    outcomes={}
+    for kind,name in names.items():
+        identifier=None
+        outcomes[kind]={}
+        try:
+            command=['docker','create','--pull=never','--interactive','--name',name,'--label','io.adi.forge.scope=first-temp-882-v1','--network','none','--cap-drop','ALL','--security-opt','no-new-privileges','--memory','768m','--pids-limit','128','--cpus','1','--user','10001:10001','-e','ANVIL_ENV=local','-e','WEB_ORIGIN=http://127.0.0.1:3202','-e','ANVIL_LIVE_PROVIDERS_ENABLED=false','-e','ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED=false','-e','ANVIL_PRAXIS_TEMPLATE_CALLS_ENABLED=false','-e','ANVIL_REAL_EMAIL_ENABLED=false']
+            if kind=='tmpfs':command+=['--tmpfs','/tmp:rw,nosuid,nodev,noexec,size=128m']
+            command+=['--entrypoint','/app/services/backend/.venv/bin/python',IMAGE,'-I','-B','-']
+            identifier=subprocess.check_output(command,timeout=30).decode().strip()
+            retain(ROOT/(kind+'-id.json'),json.dumps({'id':identifier,'image':IMAGE}).encode())
+            info=json.loads(subprocess.check_output(['docker','inspect',identifier],timeout=15))[0]
+            assert info['Image']==image['Id'] and info['Config']['Image']==IMAGE and info['HostConfig']['NetworkMode']=='none'
+            assert not info['Mounts'] and info['Config']['User']=='10001:10001'
+            expected_tmpfs={} if kind=='overlay' else {'/tmp':'rw,nosuid,nodev,noexec,size=128m'}
+            assert (info['HostConfig'].get('Tmpfs') or {})==expected_tmpfs
+            result=subprocess.run(['docker','start','--attach','--interactive',identifier],input=worker,capture_output=True,timeout=90)
+            retain(ROOT/(kind+'.private.stdout'),result.stdout);retain(ROOT/(kind+'.private.stderr'),result.stderr)
+            assert result.returncode==0
+            outcomes[kind]['observation']=json.loads(result.stdout)
+        except BaseException as error:
+            outcomes[kind]['failure']={'error_type':type(error).__name__}
+        finally:
+            try:
+                # Resolve even an ambiguous create ACK by the prechecked fresh
+                # name; never create/start/retry a missing acknowledgement.
+                response=subprocess.run(['docker','inspect',identifier or name],capture_output=True,timeout=15)
+                assert response.returncode==0
+                info=json.loads(response.stdout)[0]
+                assert info['Name']=='/'+name and info['Image']==image['Id'] and info['Config']['Image']==IMAGE and info['Config']['Labels'].get('io.adi.forge.scope')=='first-temp-882-v1'
+                if identifier:assert info['Id']==identifier
+                identifier=info['Id']
+                if info['State']['Running']:subprocess.run(['docker','stop','--time','5',identifier],check=True,capture_output=True,timeout=15)
+                info=json.loads(subprocess.check_output(['docker','inspect',identifier],timeout=15))[0]
+                assert info['Id']==identifier and not info['State']['Running'] and not info['State']['Restarting'] and info['State']['Pid']==0
+                outcomes[kind]['terminal']={'id':identifier,'pid':0,'exit_code':info['State']['ExitCode'],'tmpfs':info['HostConfig'].get('Tmpfs'),'mounts':info['Mounts']}
+            except BaseException as error:
+                outcomes[kind]['cleanup_unknown']={'error_type':type(error).__name__}
+            retain(ROOT/(kind+'-result.json'),json.dumps(outcomes[kind],sort_keys=True).encode())
+        if 'failure' in outcomes[kind] or 'cleanup_unknown' in outcomes[kind]:break
+    retain(ROOT/'result.json',json.dumps(outcomes,sort_keys=True).encode())
+    print(json.dumps(outcomes,sort_keys=True))
+    if len(outcomes)!=2 or any('failure' in value or 'cleanup_unknown' in value for value in outcomes.values()):raise SystemExit(1)
+WORKER_SHA='49ab2e1133a068a4fe2e95d282c052825481136f45635549e1e6c0f54e8981e8'
+if __name__=='__main__':main()

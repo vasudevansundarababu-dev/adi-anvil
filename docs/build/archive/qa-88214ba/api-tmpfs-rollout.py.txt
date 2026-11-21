@@ -1,0 +1,187 @@
+"""One API-only QA scratch-mount correction; same qualified images and receipts."""
+import copy
+import hashlib
+import importlib.util
+import json
+import os
+import subprocess
+import time
+import urllib.request
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT=Path('/var/lib/anvil-qa-v1')
+INTENT='api-tmpfs-882-v1'
+CONFIG_SHA='5fe24238cbf3a082c5de75a3bb888128d633a5e87bf0e81ad0a9b9e04a692d8c'
+SERVING_SHA='1ff83bd587f234e5a1c68f30aca023e1dbf62610592914e0b0c797bf5ea55f66'
+TMPFS='rw,nosuid,nodev,noexec,size=128m'
+def main():
+    assert os.geteuid()==0 and os.uname().nodename=='anvil-qa-v1'
+    os.umask(0o077)
+    source=Path('/tmp/forge-release-88214ba/rollout-v2.py')
+    assert hashlib.sha256(source.read_bytes()).hexdigest()=='2e6807ecd3c0724ee8a7e68e5d2ed3d5f042c41258c88b39f1d932c3941f93b6'
+    spec=importlib.util.spec_from_file_location('reviewed_rollout',source);old=importlib.util.module_from_spec(spec);spec.loader.exec_module(old)
+    snapshot=Path('/tmp/forge-serving-acceptance-882.json').read_bytes()
+    assert old.sha(snapshot)==SERVING_SHA
+    baseline=json.loads(snapshot)
+    config=ROOT/'config/compose-app.json';original=config.read_bytes()
+    assert old.sha(original)==CONFIG_SHA
+    before={name:old.inspect('anvil-qa-v1-'+name+'-1') for name in old.SERVICES}
+    private_env=ROOT/'config/capture-runtime.env';private_env_sha=old.sha(private_env.read_bytes())
+    for name,info in before.items():
+        expected=baseline['services'][name]
+        assert info['Id']==expected['id'] and info['Config']['Image']==expected['image'] and info['Image']==expected['image_id'] and info['State']['Running'] and info['RestartCount']==0
+        assert old.comparable_host_config(info['HostConfig'])==old.comparable_host_config(baseline['profiles'][name]['HostConfig'])
+        assert info['Mounts']==baseline['profiles'][name]['Mounts']
+        environment=dict(item.split('=',1) for item in info['Config']['Env'])
+        assert all(environment.get(flag)=='false' for flag in old.FLAGS)
+    receipts={'component':ROOT/'runtime-functional/harbor-proof/component-qualification/current.json','capture':ROOT/'runtime-functional/capture-database-qualification/current.json'}
+    def receipt_check(require_fresh=True):
+        assert old.sha(private_env.read_bytes())==private_env_sha
+        for key,path in receipts.items():
+            raw=path.read_bytes();body=json.loads(raw)
+            assert old.sha(raw)==baseline['receipts'][key]['sha256']
+            if require_fresh:assert datetime.fromisoformat(body['expires_at'].replace('Z','+00:00'))>datetime.now(timezone.utc)
+    def ledger():
+        old.schema();old.quiescent()
+        sql="SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND usename='anvil_app' AND xact_start IS NOT NULL AND pid<>pg_backend_pid()"
+        command='exec psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -X -A -t -q -v ON_ERROR_STOP=1'
+        result=subprocess.check_output(['docker','exec','-i','anvil-qa-v1-postgres-1','sh','-c',command],input=sql.encode(),timeout=15)
+        assert result.strip()==b'0'
+    receipt_check();ledger()
+    candidate=copy.deepcopy(json.loads(original))
+    assert not candidate['services']['api'].get('tmpfs') and not before['api']['HostConfig'].get('Tmpfs')
+    candidate['services']['api']['tmpfs']=['/tmp:'+TMPFS]
+    candidate['services']['api'].setdefault('labels',{})['io.adi.forge.runtime_intent']=INTENT
+    backup=ROOT/'backups'/INTENT;backup.mkdir(mode=0o700);old.sync_directory(backup.parent)
+    old.exclusive(backup/'compose-original.json',original)
+    planned=backup/'compose-candidate.json';raw=json.dumps(candidate,sort_keys=True).encode();old.exclusive(planned,raw)
+    old.exclusive(backup/'intent.json',json.dumps({'scope':'api_scratch_mount_only','images_unchanged':True,'before_ids':{k:v['Id'] for k,v in before.items()},'old_config_sha256':CONFIG_SHA,'candidate_config_sha256':old.sha(raw),'tmpfs':TMPFS,'receipts_reissued':False}).encode())
+    unknown=False;activated=False;stopped=False;mutation_attempted=False;phase='preflight';terminal_mutations=set();diagnostic_failures=[]
+    def note(path,value):
+        try:old.exclusive(path,json.dumps(value,sort_keys=True).encode())
+        except BaseException as error:diagnostic_failures.append({'phase':phase,'error_type':type(error).__name__})
+    def run(phase,args,timeout=120,mutation=False,data=None):
+        nonlocal unknown,mutation_attempted
+        current_phase=phase
+        set_phase(current_phase)
+        if mutation:mutation_attempted=True
+        try:result=subprocess.run(args,input=data,capture_output=True,timeout=timeout)
+        except BaseException as error:
+            if mutation:unknown=True
+            if isinstance(error,subprocess.TimeoutExpired):
+                for suffix,payload in (('stdout',error.stdout or b''),('stderr',error.stderr or b'')):
+                    try:old.exclusive(backup/(phase+'.partial.private.'+suffix),payload)
+                    except BaseException as retention:diagnostic_failures.append({'phase':phase,'error_type':type(retention).__name__})
+            raise
+        if mutation:terminal_mutations.add(phase)
+        old.exclusive(backup/(phase+'.private.stdout'),result.stdout);old.exclusive(backup/(phase+'.private.stderr'),result.stderr)
+        assert result.returncode==0,'Owned operation failed; retain private diagnostics'
+        return result.stdout
+    def set_phase(value):
+        nonlocal phase
+        phase=value
+    def other_services():
+        for name in old.SERVICES:
+            if name=='api':continue
+            info=old.inspect(before[name]['Id']);assert info['State']['Running'] and info['RestartCount']==0 and info['Config']==before[name]['Config'] and info['HostConfig']==before[name]['HostConfig'] and info['Mounts']==before[name]['Mounts']
+    def health():
+        end=time.monotonic()+120
+        while True:
+            try:
+                with urllib.request.urlopen('https://anvil-qa.adi-labs.ai/api/v1/health',timeout=5) as response:
+                    body=json.load(response)['data'];assert response.status==200 and body['api']=='ready' and body['database']=='ready' and body['live_inference']=='disabled' and body['harbor_live_dispatch']=='disabled'
+                with urllib.request.urlopen('https://anvil-qa.adi-labs.ai/workspace',timeout=5) as response:assert response.status==200
+                return body
+            except Exception:
+                if time.monotonic()>=end:raise
+                time.sleep(1)
+    def api_profile(info,with_tmpfs):
+        assert info['Config']['Image']==before['api']['Config']['Image'] and info['Image']==before['api']['Image'] and info['Config']['User']==before['api']['Config']['User']
+        assert info['State']['Running'] and info['RestartCount']==0
+        for key in ('Cmd','Entrypoint','WorkingDir'):assert info['Config'][key]==before['api']['Config'][key]
+        for key in ('Path','Args'):assert info[key]==before['api'][key]
+        def env(value):
+            rows=value['Config']['Env'];result=dict(row.split('=',1) for row in rows);assert len(result)==len(rows);return result
+        assert env(info)==env(before['api'])
+        expected=copy.deepcopy(before['api']['HostConfig'])
+        if with_tmpfs:expected['Tmpfs']={'/tmp':TMPFS}
+        assert old.comparable_host_config(info['HostConfig'])==old.comparable_host_config(expected)
+        assert info['Mounts']==before['api']['Mounts']
+        labels=info['Config']['Labels']
+        for key in ('com.docker.compose.project','com.docker.compose.service','org.opencontainers.image.revision','io.adi.forge.release_intent'):assert labels[key]==before['api']['Config']['Labels'][key]
+        if with_tmpfs:assert labels.get('io.adi.forge.runtime_intent')==INTENT
+        else:assert labels.get('io.adi.forge.runtime_intent') is None
+    compose=['docker','compose','-p','anvil-qa-v1','-f',str(config)]
+    run('preflight',['docker','compose','-p','anvil-qa-v1','-f',str(planned),'config','--quiet'])
+    try:
+        receipt_check();ledger();other_services()
+        run('stop-api',['docker','stop','--time','10',before['api']['Id']],mutation=True);stopped=True
+        state=old.inspect(before['api']['Id'])['State'];assert not state['Running'] and not state['Restarting'] and state['Pid']==0
+        old.exclusive(backup/'stopped-original.json',json.dumps({'id':before['api']['Id'],'state':state}).encode())
+        ledger();receipt_check()
+        temporary=config.with_name('compose-api-tmpfs-882-v1.json');old.exclusive(temporary,raw);old.replace_sync(temporary,config);activated=True
+        run('up-api',compose+['up','-d','--no-deps','--force-recreate','--no-build','--pull','never','api'],mutation=True)
+        phase='new-api-profile';info=old.inspect('anvil-qa-v1-api-1');assert info['Id']!=before['api']['Id'];api_profile(info,True);other_services()
+        worker=Path('/tmp/forge-first-temp-worker-882.py').read_bytes()
+        assert old.sha(worker)=='49ab2e1133a068a4fe2e95d282c052825481136f45635549e1e6c0f54e8981e8'
+        result=json.loads(run('first-opa-proof',['docker','exec','-i',info['Id'],'/app/services/backend/.venv/bin/python','-I','-B','-'],data=worker,timeout=90))
+        assert result['guard'] is None and result['differences']==[]
+        readiness=Path('/tmp/forge-validate-both-882.py').read_bytes()
+        assert old.sha(readiness)=='0f4a2f55beb6a35b0c61963a317e166175c64e70c20f8589f1ab2243e3e0337f'
+        current=json.loads(run('api-readiness',['docker','exec','-i',info['Id'],'/app/services/backend/.venv/bin/python','-I','-B','-'],data=readiness,timeout=60))
+        assert current['component_ready'] and current['capture']['ready'] and current['capture']['connection_probe_performed'] is False
+        measurement="""import json,os,stat;from pathlib import Path
+s=os.stat('/tmp');v=os.statvfs('/tmp');entries=[line.split() for line in Path('/proc/self/mountinfo').read_text().splitlines()];entry=next(row for row in entries if row[4]=='/tmp');split=entry.index('-');assert entry[split+1]=='tmpfs';assert {'rw','nosuid','nodev','noexec'}<=set(entry[5].split(','));assert stat.S_IMODE(s.st_mode)==0o1777
+c=Path('/sys/fs/cgroup');memory={name:int((c/name).read_text()) for name in ('memory.current','memory.peak','memory.max','pids.current','pids.max')};assert memory['memory.max']==2147483648 and memory['memory.current']<memory['memory.max']-134217728
+print(json.dumps({'tmpfs':True,'mode':oct(stat.S_IMODE(s.st_mode)),'uid':s.st_uid,'gid':s.st_gid,'capacity_bytes':v.f_frsize*v.f_blocks,'available_bytes':v.f_frsize*v.f_bavail,'inodes':v.f_files,'available_inodes':v.f_favail,'cgroup':memory},sort_keys=True))
+"""
+        resources=json.loads(run('tmpfs-resources',['docker','exec',info['Id'],'/app/services/backend/.venv/bin/python','-I','-B','-c',measurement],timeout=30))
+        assert resources['capacity_bytes']==134217728 and resources['available_bytes']>100*1024*1024 and resources['available_inodes']>4096
+        phase='health-final-readback';ready=health();receipt_check();ledger();other_services();api_profile(old.inspect(info['Id']),True)
+        assert old.sha(config.read_bytes())==old.sha(raw)
+        outcome={'status':'api_tmpfs_corrected_requires_ui_acceptance','api_id':info['Id'],'image':info['Config']['Image'],'profile':{'HostConfig':info['HostConfig'],'Mounts':info['Mounts']},'first_opa_proof':result,'api_readiness':current,'scratch_resources':resources,'health':ready,'config_sha256':old.sha(raw),'other_services_unchanged':True,'schema':133,'qualification_reissued':False,'paid_calls':False}
+        old.exclusive(backup/'result.json',json.dumps(outcome,sort_keys=True).encode());print(json.dumps(outcome,sort_keys=True))
+    except BaseException as error:
+        failure={'error_type':type(error).__name__,'phase':phase,'mutation_unknown':unknown,'activated':activated,'stopped':stopped}
+        note(backup/'failure.json',failure)
+        if not mutation_attempted:
+            print(json.dumps({'status':'precondition_refused_no_serving_mutation','failure':failure,'diagnostic_failures':diagnostic_failures}));raise SystemExit(1)
+        if unknown:
+            print(json.dumps({'status':'reconcile_unknown_mutation','failure':failure}));raise SystemExit(1)
+        restored_config=False
+        try:
+            phase='rollback-config'
+            assert old.sha(config.read_bytes()) in (CONFIG_SHA,old.sha(raw))
+            temporary=config.with_name('compose-api-tmpfs-rollback-882-v1.json');old.exclusive(temporary,original);old.replace_sync(temporary,config)
+            restored_config=old.sha(config.read_bytes())==CONFIG_SHA
+        except BaseException as restore_error:
+            note(backup/'config-restore-failure.json',{'error_type':type(restore_error).__name__})
+        if not restored_config:
+            print(json.dumps({'status':'config_restore_failed_no_further_mutation','failure':failure,'diagnostic_failures':diagnostic_failures}));raise SystemExit(1)
+        try:
+            phase='rollback-api-reconciliation'
+            response=subprocess.run(['docker','inspect','anvil-qa-v1-api-1'],capture_output=True,timeout=15)
+            # A missing canonical name does not prove renamed attempt-owned
+            # containers are absent. Restore config, then HOLD for label/ID
+            # reconciliation; never blindly recreate another API container.
+            if response.returncode==1 and b'no such' in response.stderr.lower():
+                note(backup/'missing-api-reconciliation-required.json',{'scope':'all_attempt_owned_api_names_and_ids','original_config_restored':True})
+                raise RuntimeError('API family reconciliation required before recreate')
+            assert response.returncode==0
+            info=json.loads(response.stdout)[0]
+            assert info['Name']=='/anvil-qa-v1-api-1' and info['Image']==before['api']['Image'] and info['Config']['Image']==before['api']['Config']['Image']
+            labels=info['Config']['Labels'];assert labels.get('com.docker.compose.project')=='anvil-qa-v1' and labels.get('com.docker.compose.service')=='api'
+            assert info['Id']==before['api']['Id'] or labels.get('io.adi.forge.runtime_intent')==INTENT
+            if info['State']['Running']:run('rollback-stop',['docker','stop','--time','10',info['Id']],mutation=True)
+            info=old.inspect(info['Id']);assert not info['State']['Running'] and not info['State']['Restarting'] and info['State']['Pid']==0
+            assert restored_config
+            ledger();receipt_check(False);other_services()
+            run('rollback-up',compose+['up','-d','--no-deps','--force-recreate','--no-build','--pull','never','api'],mutation=True)
+            restored=old.inspect('anvil-qa-v1-api-1');api_profile(restored,False);other_services();ready=health()
+            assert old.sha(config.read_bytes())==CONFIG_SHA
+            note(backup/'rollback.json',{'status':'original_profile_restored','api_id':restored['Id'],'config_sha256':CONFIG_SHA,'health':ready,'registration_accepted':False})
+        except BaseException as rollback_error:
+            note(backup/'rollback-failure.json',{'error_type':type(rollback_error).__name__,'phase':phase,'mutation_unknown':unknown})
+        print(json.dumps({'status':'api_tmpfs_failed_retained','failure':failure,'diagnostic_failures':diagnostic_failures}));raise SystemExit(1)
+if __name__=='__main__':main()

@@ -5,6 +5,7 @@ The operator creates and verifies host directories before using this result.
 """
 
 import copy
+from pathlib import PurePosixPath
 
 BASE = "/var/lib/anvil-qa-v1/runtime-functional"
 PROOF = BASE + "/harbor-proof"
@@ -12,6 +13,7 @@ BRIDGE = BASE + "/native-control-bridge"
 PRIVATE = BASE + "/private-grading-bridge"
 QUALIFICATION = PROOF + "/component-qualification"
 NATIVE_QUALIFICATION = "/opt/anvil-runtime-source/.data/component-qualification"
+SCRATCH = "/tmp:rw,nosuid,nodev,noexec,size=128m"
 
 
 def mount(source, target=None, readonly=False):
@@ -27,9 +29,42 @@ def append_mount(service, value):
     volumes.append(value)
 
 
+def api_scratch(service):
+    """Keep temporary writes off the measured image/source ancestor closure."""
+    entries = service.get("tmpfs", [])
+    if not isinstance(entries, list) or any(not isinstance(item, str) for item in entries):
+        raise ValueError("Existing API scratch mount requires explicit reconciliation")
+    def destination(value):
+        if (not isinstance(value, str) or not value or len(value) > 512
+                or value.startswith("//") or any(character in value for character in ("\\", "\n", "\r", "\x00"))):
+            raise ValueError("Existing API scratch mount requires explicit reconciliation")
+        path = PurePosixPath(value)
+        if not path.is_absolute() or str(path) != value or ".." in path.parts:
+            raise ValueError("Existing API scratch mount requires explicit reconciliation")
+        return path
+    temporary_root = PurePosixPath("/tmp")
+    def overlaps(path):
+        return path == temporary_root or path in temporary_root.parents or temporary_root in path.parents
+    temporary = [item for item in entries if overlaps(destination(item.split(":", 1)[0]))]
+    if temporary and temporary != [SCRATCH]:
+        raise ValueError("Existing API scratch mount requires explicit reconciliation")
+    for item in service.get("volumes", []):
+        if isinstance(item, dict):
+            target = item.get("target")
+        elif isinstance(item, str) and 1 <= len(item.split(":")) <= 3:
+            target = item.split(":")[1] if ":" in item else item
+        else:
+            raise ValueError("Existing API scratch mount requires explicit reconciliation")
+        if overlaps(destination(target)):
+            raise ValueError("Existing API scratch mount requires explicit reconciliation")
+    if not temporary:
+        service["tmpfs"] = [*entries, SCRATCH]
+
+
 def apply(config, image, image_digest):
     config = copy.deepcopy(config)
     services = config["services"]
+    api_scratch(services["api"])
     for name in ("api", "worker", "business-worker", "golden-scheduler", "golden-grader"):
         service = services[name]
         environment = service.setdefault("environment", {})
@@ -50,7 +85,7 @@ def apply(config, image, image_digest):
     append_mount(grader, mount(PRIVATE))
     common = {"image": image, "read_only": True, "user": "0:0", "network_mode": "none", "restart": "no",
         "cap_drop": ["ALL"], "security_opt": ["no-new-privileges"], "mem_limit": "1536m", "pids_limit": 256,
-        "cpus": 2, "tmpfs": ["/tmp:rw,nosuid,nodev,noexec,size=128m"], "entrypoint": ["/opt/anvil-runtime/bin/python"],
+        "cpus": 2, "tmpfs": [SCRATCH], "entrypoint": ["/opt/anvil-runtime/bin/python"],
         "environment": {"ANVIL_ENV": "local", "WEB_ORIGIN": "http://127.0.0.1:3202", "ANVIL_RUNTIME_IMAGE_DIGEST": image_digest,
             "ANVIL_LIVE_PROVIDERS_ENABLED": "false", "ANVIL_HARBOR_LIVE_PROVIDERS_ENABLED": "false", "ANVIL_REAL_EMAIL_ENABLED": "false"}}
     docker_mounts = [mount("/run/docker.sock", readonly=True), mount("/usr/bin/docker", readonly=True)]
