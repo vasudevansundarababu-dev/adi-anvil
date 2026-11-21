@@ -1,5 +1,36 @@
 # QA benchmark exercise — living gap register
 
+## 20 November, 8:55 PM Chicago — rollout contract and authenticated acceptance
+
+OPS-PROFILE-38: Docker Compose can reorder a bind list while preserving every
+effective mount. Comparing serialized list order rejected the first cutover and
+also obscured rollback acceptance. The corrected operator compares only unique
+literal canonical source/destination/mode bindings without overlapping
+destinations as an unordered set; effective mounts, mode, propagation, UID,
+ordered commands and all other HostConfig fields remain exact. Twenty-six focused
+guard tests passed. Automation should retain candidate profiles and safe field
+diffs before enforcing guards, distinguish never-started preview defaults from
+running-container state, and retain immutable executed-operator bytes. The single
+corrected rollout succeeded with all eight qualified images and zero restarts;
+no security-profile exception or image rebuild was needed.
+
+OPS-AUTH-39: successful cloud deployment does not establish an authenticated
+Forge Admin browser session. The actual QA tab shows Keycloak sign-in; no
+registration was submitted. Release completion should report platform health,
+authenticated application acceptance, reference provisioning, exact template
+qualification and authored-package import admission separately. A different
+Google OAuth window is not evidence that GCP or Forge authentication failed.
+Continue independent checks and request only the actual missing sign-in.
+
+RUNTIME-CONSUMER-34 follow-up: the reviewed exclusive-consumer corrective control
+did run successfully. Both candidate worker and SDK exited naturally with zero;
+the observer attributed actual transport to the candidate runtime and the exact
+old coordinator was restored after terminal/quiescence checks. The original
+shared-queue attempt remains nonqualifying and was not replayed. The accepted
+component receipt now covers the corrected actual evidence and is consumed by
+the deployed API/native readers. This closes the bounded technical control,
+not the future automation gap or project/paid-run admission.
+
 ## 20 November evening — qualification consumer isolation and actual host evidence
 
 RUNTIME-CONSUMER-34: a qualification request used the canonical native bridge

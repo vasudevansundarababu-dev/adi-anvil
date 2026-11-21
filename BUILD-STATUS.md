@@ -1,5 +1,62 @@
 # Build status
 
+## 20 November, 8:55 PM Chicago — corrected QA rollout verified; Forge sign-in blocks registration
+
+The single corrected rollout completed at 02:35 UTC on 21 November
+(20 November, 8:35 PM Chicago). Reconciliation confirmed it had already succeeded;
+it was not replayed. Executed operator SHA
+`2e6807ecd3c0724ee8a7e68e5d2ed3d5f042c41258c88b39f1d932c3941f93b6`.
+QA serves the qualified application revision `88214ba7b67dafe097dc297825611beb85df9637`,
+not the later documentation checkpoint. All eight owned services run their exact
+manifest images with zero restarts. Schema/Alembic remain 133; no migration replay.
+At 02:55:36 UTC public health and workspace both returned 200; API/database ready,
+live inference and Harbor live dispatch disabled. Authoring remains paused;
+Stage/Production remain on hold.
+
+Safe serving evidence remains under `.local/releases/88214ba/`:
+
+- `serving-acceptance-final.json`, SHA
+  `1ff83bd587f234e5a1c68f30aca023e1dbf62610592914e0b0c797bf5ea55f66`:
+  actual eight-service identities, full effective profiles, OFF flags, receipt
+  freshness, health, schema and pre-registration ledger.
+- `serving-installed-readiness.json`, SHA
+  `e1354c6fe00c72ca393184d24042b6738a0daf179fc0217b53e8b752e7181743`:
+  seven retained successful installed-role outputs, source `4e53d1c1...f730f0`;
+  six component readers ready, private coordinator intentionally not a component
+  reader; actual native SDK profile matches receipt pin `5bffaa5952...c4beeb2`.
+- `serving-api-readiness.json`, SHA
+  `6b8f56add34db124361602b9b3d75a417b82db2ac0f29873e8638fad8d89be5c`:
+  actual API consumes component receipt `634fc636...e41a1` and capture receipt
+  `dcad1e15...dfa7`, both ready. Capture connection probe performed: false.
+
+Capture expiry is 21 November, 7:22:52 PM Chicago; component expiry is
+21 November, 7:55:21 PM Chicago. Never extend receipt timestamps or reuse them
+after expiry. Existing no-model controls passed before rollout, including the
+corrective exclusive-consumer transport attempt; the original shared-queue
+attempt remains consumed and nonqualifying.
+
+The first rollout failed its exact API profile comparison and restored the old
+baseline. A never-started candidate preview and post-rollback comparison isolated
+bind-list ordering as the observed profile difference. The reviewed correction
+normalizes only unique literal binds with disjoint destinations, retains exact
+effective mounts including mode/propagation, and preserves every other profile
+check. It does not waive OOM, permissions, namespaces or security differences.
+
+Fresh ledger before UI verification: imports 0, registration idempotency 0,
+commands 0, execution jobs 0, frozen application snapshots 200. Sentinel opened
+a separate QA tab without touching the unrelated Google OAuth flow; Forge itself
+shows “Sign in with Keycloak,” so no genuine Admin session is available. ZERO
+registration submissions by Sentinel. Owner sign-in requested. Blocker email
+sent only to the owner, Gmail ID `1a1fc09851ca7727`.
+
+Next: after genuine Forge sign-in, reconcile current ledger again, perform the
+single normal UI four-product software-reference registration if still absent,
+verify its result/bindings, then check exact KYC V8 qualification and import
+admission. Existing publication attestation stays accepted; do not repeat it.
+The authored ZIP remains unimported; no upload-permission bypass. No project,
+policy, rights, case-review, paid-run or model-performance approval is implied
+by platform qualification or successful deployment.
+
 ## 20 November evening — all builds pass; first-principles transport isolation gate
 
 All v16 builds are actual SUCCESS with all recipe steps successful:
