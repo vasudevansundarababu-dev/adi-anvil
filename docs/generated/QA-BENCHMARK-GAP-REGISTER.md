@@ -1,5 +1,30 @@
 # QA benchmark exercise — living gap register
 
+## 21 November — freeze setup before creating native packages
+
+GYM-HANDOFF-49: native package preparation returned exact package/environment/
+evaluator references but the UI only displayed them. A naive restore of all refs
+after package creation would violate the existing B0→B1 ancestry contract: B1
+may add packages only; all other execution fields and array order must match B0.
+No ancestry check was weakened. Frontend now loads registered environment and
+exact authored-criterion evaluator refs into a new preparation draft, preserves
+policy/safety/input choices, requires explicit saving, then binds inputs. Package
+completion stages package additions only. Old same-task package choices are
+cleared only in the new preparation draft; saved history remains immutable.
+
+Eleven Node tests cover timeout/cancellation, exact group/revision membership,
+malformed/duplicate/hash-corrupted refs, source criterion coverage, preservation
+of the complete non-package projection and non-package workflow refs sharing a
+task target. TypeScript and read-only review passed; authenticated QA acceptance
+is still pending. Mutation journals begin after successful read preflight, and
+unconfirmed mutation outcomes still prohibit automatic retry.
+
+Studio must expose an explicit setup plan B0 (all execution selections plus
+input) followed by a package plan and package-only B1. A changed setup creates a
+successor preparation and new packages, not mutable ancestry or another SME task
+revision. Registration/source approval, software qualification, policy/data
+decisions and spending admission remain separate states.
+
 ## 21 November — actual HTTP package-preparation boundary
 
 GYM-WIRE-48: after actual Admin upload, scheduler registration, case import and

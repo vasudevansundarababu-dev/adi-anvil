@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { workspaceApi as api } from '../lib/workspace';
 import { bindingReads, structuredInputPanel } from '../lib/bindingReads';
+import { nativeBindingDraft, nativePreparationDraft } from '../lib/nativeBindingDraft';
 import KycInputSetup from './KycInputSetup';
 import KycPolicyReview from './KycPolicyReview';
 import TaskFlowViewer from './TaskFlowViewer';
@@ -1176,7 +1177,36 @@ export default function ProjectBindings({
             </div>
             <div hidden={tab !== 2}>
               <KycInputSetup key={group.id} base={base} endpoint={endpoint}
-                bindingId={binding?.id} blocked={dirty || busy || loading} onBusyChange={setBusy} />
+                bindingId={binding?.id} blocked={dirty || busy || loading} onBusyChange={setBusy}
+                onBasePrepared={(registered) => {
+                  if (!binding) throw new Error('Save the input selection before preparing native bindings.');
+                  const next = nativePreparationDraft(draft, registered, group.tasks.map(task => task.task_id),
+                    options.descriptors.rubric_criteria);
+                  const signature = (refs: Ref[]) => JSON.stringify(refs.map(ref => [ref.kind, ref.id, ref.sha256, ref.target]));
+                  const matches = (['workflow', 'data', 'rubric'] as const).every(section =>
+                    signature(next[section]) === signature(binding.snapshot[section] || []));
+                  if (matches) return true;
+                  setDraft(next); setDirty(true);
+                  setNotice('Registered environment and evaluator selections loaded for a new preparation. Save before binding inputs; policy and safety choices remain unchanged.');
+                  return false;
+                }}
+                onPrepared={(result) => {
+                  const next = nativeBindingDraft(draft, result, group.tasks.map(task => task.task_id),
+                    options.descriptors.rubric_criteria.map(criterion => criterion.target));
+                  setDraft(next); setDirty(true);
+                  setNotice('Exact native package, environment and evaluator references loaded. Save to create the execution binding version. Reviews remain separate.');
+                  const generation = loadGeneration.current;
+                  void bindingReads<Options>([endpoint + '/binding-options'],
+                    (path, signal) => api(path, 'GET', undefined, undefined, undefined, signal),
+                    new AbortController()).then(([choices]) => {
+                      if (generation !== loadGeneration.current || choices.source_sha256 !== options.source_sha256) return;
+                      setOptions({ ...choices, descriptors: options.descriptors,
+                        workflow_step_options: options.workflow_step_options });
+                    }).catch(() => {
+                      if (generation === loadGeneration.current)
+                        setError('Packages were prepared and exact references are in the draft. Option labels could not refresh; save or inspect the prepared receipt before reloading.');
+                    });
+                }} />
             </div>
           </div>
         )}

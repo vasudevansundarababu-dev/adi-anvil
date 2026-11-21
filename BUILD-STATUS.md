@@ -1,5 +1,39 @@
 # Build status
 
+## 21 November — all8dde controls completed; frontend ancestry handoff reviewed
+
+All fresh physical controls completed, including transport restoration of the
+same83coordinator. Curated root component-evidence-dde352b-2c7d4789 remains on QA;
+independent in-place component review is running. Capture candidate b33788ae…421c
+passed exact-backend network-none validation; canonical serving receipts unchanged.
+
+Frontend handoff fixes are separate from runtime source: load registered technical
+environment/evaluators, explicitly save B0, then bind inputs; package completion
+may add only packages in B1, preserving the complete non-package projection.
+No automatic Save/approval/Ready flag.11Node tests, TypeScript and read-only review
+passed. Golden source remainsd2051636…ff946; web-only release pending.
+
+## 21 November —dde352b three-phase builds succeeded; controls staging
+
+Update: all candidate images staged; native Trial, capture and component controls
+completed, original cleanup retained. Fresh capture review passed and exact-backend
+candidate validation submitted. SQL/registry controls running. Full configured
+backend units passed1441, skipped4, with10subtests passed in133.19s; one existing
+Authlib deprecation warning. No live model/provider calls or human approvals.
+
+Committed UUID wire fix dde352ba60d07172b7fa0a30d6bcc9acbfc382dd; clean archive
+source identity verified as d2051636…ff946, Praxis source unchanged. Core
+380acc8a-cb6e-4972-ae43-9a7bfa2f6926, Environments22f5497d-f829-4bd6-b093-42533f472e7c,
+Evals/Bindingsafbe1eab-375c-4f8f-9aa4-a27e94afdeb5 all SUCCESS. Exact release
+manifest61248cdc01fafb54693245457c8366739e3424fa3e25e899ae4108069b884aba;
+controls archive518cf556d76b617474af26458ffc3462eb9ff60c659c1a7005e1bad02bd40c78.
+49focused regression tests and26rollout/rollback/profile tests passed. Reviewed
+operators/bootstrap staged to unique QA candidate directory; bootstrap image pulls
+running. Current serving remains runtime83baf21/web5bc3047, all8IDs/flags/health
+freshly verified;10.99GiB free before candidate pulls. Fresh actual controls,
+independent evidence review and source-bound receipts remain required before
+new cutover. Do not reuse83receipts for changed source. Chrome released to user.
+
 ## 21 November —200 input assignments stored; package wire fix pending release
 
 Supported Admin application-input binding succeeded for all200cases using B0

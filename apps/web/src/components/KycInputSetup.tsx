@@ -2,11 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { workspaceApi as api } from '../lib/workspace';
+import { bindingReads } from '../lib/bindingReads';
 
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
-export default function KycInputSetup({ base, endpoint, bindingId, blocked, onBusyChange }: {
+export default function KycInputSetup({ base, endpoint, bindingId, blocked, onBusyChange, onPrepared, onBasePrepared }: {
   base: string; endpoint: string; bindingId?: string; blocked: boolean;
   onBusyChange: (busy: boolean) => void;
+  onPrepared: (result: unknown) => void;
+  onBasePrepared: (registered: unknown) => boolean;
 }) {
   const [resolution, setResolution] = useState('');
   const [caseImport, setCaseImport] = useState('');
@@ -29,21 +32,45 @@ export default function KycInputSetup({ base, endpoint, bindingId, blocked, onBu
     } catch { setUnknown(true); }
     setReconciled(true);
   }, [journal]);
+  async function ensureBase() {
+    const [imports] = await bindingReads<unknown[]>([base + '/golden-banking/v1/anvil/imports'],
+      (path, signal) => api(path, 'GET', undefined, undefined, undefined, signal), new AbortController());
+    if (!Array.isArray(imports)) throw new Error('Registered KYC imports could not be read.');
+    const selected = imports.find(value => value && (value as { id?: string }).id === caseImport);
+    if (!selected) throw new Error('The exact registered case import was not found.');
+    return onBasePrepared(selected);
+  }
+  async function loadBase() {
+    if (blocked || busy || unknown || !uuid.test(caseImport)) return;
+    setBusy(true); onBusyChange(true); setError('');
+    try { await ensureBase(); } catch (error) { setError((error as Error).message); }
+    finally { setBusy(false); onBusyChange(false); }
+  }
   async function submit(prepare: boolean) {
     if (!reconciled || unknown || blocked || busy || !bindingId || !uuid.test(resolution) || !uuid.test(caseImport)) return;
+    if (prepare && (!receipt || receipt.project_binding_id !== bindingId)) return;
     setBusy(true); onBusyChange(true); setError('');
+    let submitted = false;
     try {
+      if (!prepare && !await ensureBase()) {
+        setError('Registered selections are loaded into the draft. Save the Project bindings, then bind the inputs.');
+        return;
+      }
       const key = crypto.randomUUID();
       sessionStorage.setItem(journal, JSON.stringify({ resolution, caseImport, bindingId, prepare, key,
         turns, resolved_input: receipt, status: 'pending_requires_reconciliation' }));
+      submitted = true;
       if (prepare && receipt) {
         const result = await api(endpoint + '/native-packages', 'POST', {
           max_model_calls: turns, resolved_input: { id: receipt.id, sha256: receipt.content_sha256 },
         }, undefined, key);
         if (!result || !Array.isArray(result.packages) || !result.packages.length ||
             !Array.isArray(result.restored_workflow_refs) || !Array.isArray(result.restored_data_refs) ||
-            !Array.isArray(result.restored_rubric_refs) || result.run_authority !== 'not_granted' || result.model_calls !== 0)
+            !Array.isArray(result.restored_rubric_refs) || result.run_authority !== 'not_granted' || result.model_calls !== 0 ||
+            result.case_count !== receipt.input_count || result.resolved_input?.id !== receipt.id ||
+            result.resolved_input?.sha256 !== receipt.content_sha256)
           throw new Error('Package preparation receipt was incomplete; reconcile before another submission.');
+        onPrepared(result);
         setPrepared(result);
       } else {
         const result = await api(base + '/golden-banking/v1/anvil/application-inputs', 'POST', {
@@ -57,18 +84,20 @@ export default function KycInputSetup({ base, endpoint, bindingId, blocked, onBu
     } catch (e) {
       const failure = e as Error & { status?: number };
       setError(failure.message);
-      if (!failure.status || failure.status >= 500) setUnknown(true);
-      else sessionStorage.removeItem(journal);
+      if (submitted && (!failure.status || failure.status >= 500)) setUnknown(true);
+      else if (submitted) sessionStorage.removeItem(journal);
     } finally {
       setBusy(false); onBusyChange(false);
     }
   }
   return <details>
     <summary>Native KYC input setup</summary>
-    <p>Save the Project input selection first. Link its exact imported tasks and registered case pack here. This does not approve policy, rights or expectations and starts no model call.</p>
+    <p>Save the Project input selection and finish other execution selections first. Link its exact imported tasks and registered case pack here. Changing execution selections later requires a new preparation. This does not approve policy, rights or expectations and starts no model call.</p>
     <p>Saved preparation binding: {bindingId || 'Save required'}</p>
     <label>Source resolution ID <input value={resolution} disabled={busy || !!receipt || unknown} onChange={e => setResolution(e.target.value.trim())} /></label>
     <label>Registered case import ID <input value={caseImport} disabled={busy || !!receipt || unknown} onChange={e => setCaseImport(e.target.value.trim())} /></label>
+    <button disabled={blocked || busy || unknown || !!receipt || !uuid.test(caseImport)} onClick={() => void loadBase()}>Load registered environment and evaluators for a new preparation</button>
+    <p>Save these selections before binding inputs. A new preparation clears this group's old package selections in the draft; saved history stays unchanged.</p>
     <button disabled={!reconciled || blocked || busy || unknown || !!receipt || !bindingId || !uuid.test(resolution) || !uuid.test(caseImport)} onClick={() => void submit(false)}>Bind tasks to registered inputs</button>
     {error && <p role="alert">{error}</p>}
     {unknown && <p role="alert">The operation outcome is unconfirmed. Reconcile the saved server records before another submission.</p>}
