@@ -1,5 +1,34 @@
 # Build status
 
+## 21 November — candidate physical controls and receipt readback
+
+Candidate application revision remains 11463ac; serving remains 8a22280/schema135.
+All three candidate build phases and the independent framework build succeeded.
+The last three of the previously approved thirteen obsolete image caches were
+removed only after registry recovery and container-use checks; no broader cleanup.
+
+Native, capture, isolated SQL, registry, observer and repaired component operators
+completed. Independent capture, mechanics and component reviews passed within
+their respective limited scopes. Whole-component qualification remains pending.
+Private-scoring permission-v3 and transport schema134-v2 are running; reconcile
+their original evidence before any retry. No model calls are authorized.
+
+The initial release manifest incorrectly conflated serving schema135 with isolated
+fixture schema134. Original manifest8dcc is retained for original native/capture
+observations. Corrected manifestc763 changes only fixture schema; explicit
+correction provenance is retained. Actual serving schema remains135.
+Protected staging umask masked five intended source directories to0700, blocking
+non-root controls before module execution. Their exact pinned directories were
+restored to0755 after terminal evidence reconciliation; protected parent0700,
+source bytes, file modes, credentials and serving configuration were preserved.
+
+Fresh capture candidate receipt fb71af712dd25081cdbbc3ae1de11c7f0bee5e95bfe29db1af85cd66c2b7cd4d
+was independently reviewed and accepted by the exact new backend's network-none
+reader: ready=true, connection_probe_performed=false. It is candidate-only;
+canonical serving receipts and configuration remain unchanged. Review expiry
+is November22 at21:34:33UTC. Private operational evidence is under
+.local/releases/11463ac and is excluded from Git. QA is not yet benchmark ready.
+
 ## 21 November —11463ac fix tested; fresh QA candidate builds/controls pending
 
 Evals generation2bf8cbd5b-3230-4798-944c-60b9810ca792 nowSUCCESS, every step

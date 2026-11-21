@@ -1,5 +1,26 @@
 # QA benchmark exercise — living gap register
 
+## 21 November — deployment and qualification setup gaps
+
+The deployment manifest must distinguish the serving application schema from
+isolated control-fixture schemas. This candidate's original manifest used135
+where the existing isolated controller required134. Preserve original evidence
+and publish a separately hashed correction; never relabel completed observations.
+Studio should validate these separate contexts before staging any controller.
+
+Protected staging must verify directory traversal modes explicitly. A restrictive
+operator umask masked intended0755 source directories to0700; non-root controls
+could not open their pinned modules. Keep the protected parent0700 and secrets
+0600, but assert the exact code mount's readable traversal before execution.
+Do not fix this by running candidate/grader controls as root.
+
+Queued builds need separate queue and execution deadlines plus durable terminal
+reconciliation. One evaluation build expired before any step ran; a fresh tagged
+generation followed its terminal no-output receipt. Ambiguous dispatch is never
+permission for a blind retry. The three build phases exist; the complete release
+and qualification workflow still uses separately reviewed operational helpers.
+An automated end-to-end pipeline is a remaining engineering improvement.
+
 ## 21 November — freeze setup before creating native packages
 
 GYM-HANDOFF-49: native package preparation returned exact package/environment/
