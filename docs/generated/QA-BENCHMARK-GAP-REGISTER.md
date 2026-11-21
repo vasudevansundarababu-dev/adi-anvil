@@ -781,3 +781,43 @@ and never replays migration. Local parser controls/source review pass; actual
 retry awaits renewed GCP sign-in. Future deployment preflight must validate all
 mount encodings before effects and checkpoint schema/config/service stages
 independently. Technical qualification19ece… passed; deployment is still pending.
+## 21 November authenticated preparation findings
+
+The deployed dde352b runtime passed its generic no-model qualification. Under the
+real Admin session, v8 technical qualification passed; the unchanged authored ZIP
+passed import;200 application assignments and four native packages were created.
+Saved B1 `4df5e92a-4815-4efb-9267-faf88c9e6990` contains4 package references,
+80 criterion evaluator references and one environment. This is preparation,
+not benchmark readiness or run authority. Actual readiness still lists310 gaps.
+
+* **G-SCOPED-RUNTIME-PRODUCER:** `kyc_policy_provision.retain_runtime_review`
+  requires independently observed `binding_controls` for the exact runtime
+  source/image and environment/evaluator hashes. The installed generic component
+  producer does not emit those controls. The retention CLI consumes evidence;
+  it cannot manufacture it. Implement and negatively test a bounded no-model
+  scoped producer plus independent verification/publication. Deduplicate equal
+  subjects, preserve project/expiry/revocation checks, and never patch invented
+  controls into the existing receipt. This is Gym engineering, not an Authoring
+  defect or a missing task re-export.
+* **G-EXECUTION-SELECTIONS:**80 official criterion references do not cover all
+  diagnostic skill targets. Exact skill-to-authored-step/role mappings, compatible
+  typed diagnostic evaluators, current method qualification, and policy/safety
+  bindings remain. Use actual public S5 steps and typed producer evidence; do not
+  infer measured diagnostics or safety qualification from fixture results.
+* **G-QUALIFIER-ENROLLMENT:** QA currently has0 policy operator principals for
+  this project. A real disjoint restricted login must be explicitly enrolled
+  against the actual project operator before the provision CLI can run. Owner
+  SQL impersonation is not a substitute.
+* **G-V8-VIEWER:** the frontend recognized only the legacy KYC profile and hid
+  supplied v8 procedure steps. Add application-type profile recognition in both
+  task flow projections, retaining existing S5 format checks. Local v8/legacy/
+  malformed projection controls and TypeScript passed; web deployment pending.
+* **G-REVIEW-STATE:**20 staged policy subjects and the approved one-day interval
+  do not approve contents. Domain/rights/case-expectation decisions remain
+  pending; the child dataset has0 installed expectations. No automatic approval.
+
+Studio prevention: produce a complete typed binding/qualification inventory at
+template publication and task intake. Report software qualification, exact
+configuration qualification, human reviews and paid admission separately. An
+accepted task must not imply readiness. A changed execution selection creates a
+new B0, followed by fresh input binding and package-only B1; retain old ancestry.

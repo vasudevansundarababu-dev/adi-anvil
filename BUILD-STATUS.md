@@ -1,5 +1,27 @@
 # Build status
 
+## 21 November — v8 procedure viewer fix deployed; readiness remains blocked
+
+Web-only c4d033941016a7e1d57cd476fd36cef45d037770 built successfully in
+53695d38-964f-498a-9410-ff4968a87d8a, image
+be68ac984411b47edcef5faf59a27f3b886d62c7f952440c68a3462727bbddcc.
+Guarded rollout succeeded, new web f7dfab5f…99a1e, Compose SHA
+cf0ff5889b00903bcef880168ef324007839bfb8f14e9118fae696aae29bd083.
+Other seven services, runtime receipts and schema133 unchanged; no migrations or
+model calls. Rollout operator tests11 passed after updating the prior-release
+fixture; authenticated post-rollout viewer acceptance not yet run (Chrome released).
+
+Read-only review confirmed additional missing exact method/safety qualification
+producers; existing native diagnostic software test endpoint is available but
+does not establish task/release capability. Public actor step mapping proposal
+contains supported and uncertain rows, never saved fabricated associations.
+See KYC-EXACT-BINDING-QUALIFICATION-REMAINING-20261121.md and
+KYC-SKILL-STEP-MAPPING-PROPOSAL-20261121.md. Existing default evaluator registration
+uses generic supported==True checks; do not claim substantive80-criterion KYC
+correctness from those software controls. Owner case expectations/rights/policy
+reviews remain pending. Status email sent only to the authorized recipient,
+Gmail message1a1ff948d0d7bc00. This is not benchmark-ready or work completion.
+
 ## 21 November — authenticated native preparation and B1 save succeeded
 
 Current child import7a42d639-4599-414a-9840-35ec2ab840d9 has source d2051636…ff946.
