@@ -1,5 +1,140 @@
 # Build status
 
+## Hash fix deployed and no-model controls verified — 19 November 2026
+
+QA serves151d6fbdea701be0d1f1c02bd869456c8dbad318/schema132, all6services
+running/zero restarts; health/workspace200. All3phase builds succeeded, no migration
+run; backup /var/lib/anvil-qa-v1/backups/hashproof-151d6fb. Installed50configuration
+byte proof:2fullscans/17.217s. Fresh isolated SQLv5 all4control groups passed in
+62.920s, compared with old code failing180s and300s. Actual private/project SQL
+isolation, OpenEnv/MCP reset, four-product registration/conservation/bindings and
+checkpoint no-replay passed; no qualification written.
+Nativeaca17fb8-aab5-4e7e-b9b6-9da31472e154 completed observed_not_qualified,
+exit0, allintent/outcome records, cleanupcomplete/0failures at189.851s.
+Evidence2ed7033c1efc6e7eff959ac7cfecf296bced4e2bd169829098d4ea97d597869b.
+Modelauthorization0/actualcountnull; live/Authoring remain disabled. Full benchmark
+qualification, policy/private-scoring controls, worker bridge and real project
+reviews remain separate unfinished gates. No benchmark-ready claim.
+Boot120GBpersistent verified;118Gusable/46Gfree afterdeployment. Separate120GBdata
+unchanged. Baseline recorded in deployment.json. Preserve unrelated edits and
+untracked policy-registry control drafts; do not deploy root's older checkout.
+
+## Active hash-fix release and persistent QA storage — 19 November 2026
+
+Engineering checkpoint151d6fb, source4c439e71e914ac52d016a91def303e85446a8dba1f86303ed2b7584cce7ff357:
+1,247units+10subtests passed,4skips;90SQL+2actual rollback/revocation tests passed.
+Core and Environment phases passed; installed50configuration byte-proof control
+measured exactly2fullscans/17.217seconds. Evaluation phase514be781-e187-4cc7-9928-c6ce8cb183e5
+is pending. Existing serving release remainsc80e9dd/schema132 until rollout.
+User approved boot-disk120GB; GCPdisk and live rootpartition/ext4 expanded;
+df118Gtotal/50Gfree. Existing120GBdata disk unchanged. Bothpersistent/autodeletefalse.
+QA baseline stored in infra/gcp/deployment.json; no production provisioning changes.
+
+## QA corrective release deployed — 19 November 2026
+
+Revision c80e9dd6c98b0118401b80db212414f36cdba47d is serving on QA with
+schema132. All six application services are running with zero restarts;
+health and workspace returned HTTP200. Backup: /var/lib/anvil-qa-v1/backups/fence132-c80e9dd.
+All three phased builds succeeded. Callback limit is 300 seconds; total
+technical lifecycle is 420 seconds. Live provider and Authoring calls remain disabled.
+Fresh no-model native control and isolated SQL controls are running; qualification
+and benchmark readiness are NOT yet established. Do not replay their attempts.
+SQL fixture setup passed against exact f9e5d50 source and restricted fresh v3 database.
+Native job51226ac4-8930-498f-bf24-721dd65c6f66 completed with observed_not_qualified,
+exit0, evidence1d1708d496b11445a839f19c87283976b6726770489795bcb0e4eaf5db42e64a.
+Cleanup complete with no failures at135.018seconds; model authorization0,
+actual model-call countnull. This is measured technical evidence, not qualification.
+Isolated SQLv3 stopped at its180second ControlDeadline in repeated Beartype
+RECORD verification via evaluator_configurations.get. No replay. Performance
+review assigned to open_weight_review; no global mutable trust cache permitted.
+Blocked-status email sent only to authorized user address, Gmail id1a1f48950c70e38b.
+
+
+## QA five-minute release serving — 19 November 2026
+
+Continue only in .local/open-weight-models-20261117. Revision b508a0a is deployed
+to QA/schema131 through three independently successful Core, Environments and
+Evaluation builds. All6services running/zero restarts, health/workspace200;
+backup /var/lib/anvil-qa-v1/backups/five-minute-b508a0a. Technical callback300s,
+lifecycle420s, cleanup6s; business/paid limits unchanged; live/Authoring flagsfalse.
+Freshnativejob288ded65 reached worker intent then failed restricted scheduler
+project KEY SHARE permission; cleanupcomplete/unknown retained/no replay. Additive
+132 narrow fence is being implemented without granting project UPDATE rights.
+Separate pinned-Beartype loader compatibility patch passed review/1238units+
+10subtests(4skips)/85freshSQL onsource69a83a9e...ad191c1, not deployed yet.
+Actual SDK post-import image regression added. See engineering BUILD-STATUS for
+exact builds and evidence. V8 registered; publication stage/attestation absent,
+action email sent only to user's work address. No fake approvals/qualification.
+
+## Runtime fix rollout in progress — 19 November 2026
+
+Use engineering worktree .local/open-weight-models-20261117. Runtime revision
+5b0ccfe255a5bd0ba5db853fab7db8298a5ba2f0, source0dac7d11...c6696a;
+Cloud Build0e3bd02c-f531-463d-aa39-0cb9c5d1c7bb SUCCESS, all7stepspassed.
+Frozen1203units/10subtests PASS,4skips;77fresh/repeatedSQLPASS. Runtime optimization
+passed independent review after nested writable-mount correction. Five physical
+Python sandboxcore controls plus separatePID/memory controls passed on prior5b19a72.
+ExactnewQA rollout executing with backup/rollback, live/Authoringflagsfalse;
+fresh native qualification is still pending. Actualv8registration verified by
+readonlySQL; publication subjects/attestations/policyqualifications all0. Prior
+browseruploaddeclined: user must stage exactpublication manually, noalternatepath.
+No human approvals or qualified-runtime records invented. Continueengineering.
+
+## Latest QA native131 follow-up — 18 November 2026
+
+Active engineering remains .local/open-weight-models-20261117, sourcebf839a4.
+QA API/workers954f1bcd..., GoldenKYC64c94bd7..., webc09e9587... serving schema131;
+CloudBuildebce1615-3463-4e33-afbd-1f329ef31ba6 SUCCESS incl installedHarbor entry
+regression. All6updatedservices verified running/zero restarts; health/workspace200,
+live/Authoringflagsfalse. QA boot diskuserapproved50→80GB, grown online; backups
+retained /var/lib/anvil-qa-v1/backups/native131-bf839a4. No deletions.
+Combined1178units+10subtests PASS,3platform/root/Harbor skips;71fresh/repeatSQLPASS.
+Actual QA installedMCPstdio auth/schema/stalegeneration plus OPA/ZENcontrols PASS
+in readonly/nonroot/networknone/no-credential container; not full qualification.
+4servingrole installed observations refreshed withoutpromotingNotready.
+User supplied finalv8folder:68payloadhashes/ZIP/schema/4successorrefs PASS.
+User manuallyregistered exactv8hash8449adb0...334f7d5 afterbrowserupload declined;
+UIconfirmed. Publication staging/POattestation still pending; usergiven steps.
+ActualnativeTrial remains failing, latestjobdc982159-7a52-4b17-b0b8-edfc023ee00d
+retained, no retry/replay. Diagnose persistedframe/cleanup evidence next. Do not
+claim final benchmark-ready deployment or qualified runtime. No live calls.
+
+## Combined Gym code deployed to QA — 18 November 2026
+
+Activeengineering .local/open-weight-models-20261117 checkpointd9f3d6a. QA backend
+8d5ba746...e42bf4 and GoldenKYC runtimebb130892...70e49c serve schema129;
+Cloud Builddcb643b3-e7be-4d9d-acce-ccf031da6eac SUCCESS. All5updatedservices
+running/zero restarts, health/workspace200, anonymousnewpolicyAPI401. Webe0ec104
+unchanged, livecallsdisabled. Finalsource0c372bc8...367ec68:1156units+10subtests
+PASS/2skips;40freshSQLPASS. ActualnativeTrial controlsstillinprogress, noinstalled
+qualification. RootkernelcontrolPASS; setupsocketaliasfailurecorrectedbeforeany
+Trial. V8sourcepackageunpublished/notimportZIP; userhasvalidationhandoffZIP and
+work-addressactionemail. Continueengineering; don'twaitforAuthoringfolder.
+
+## QA backend rollout verified — 18 November 2026
+
+Serving backend780e447 in `.local/open-weight-models-20261117`; Cloud Build
+92e9fff1-dc79-4df6-a318-a280805d9ac9 SUCCESS, digest5f70ee4a...ecc21a1. Three backend
+services running/zero restarts; health/workspace200, anonymous contracts401 and
+installed projection controls PASS. Web e0ec104 unchanged. Exact checkpoint1111
+units+10 subtests PASS,1 Linux skip. Native gate remains closed; actual qualification
+and policy provisioning incomplete; Authoring successor/Run creation NOT RUN.
+No live/Authoring calls. Details in candidate docs/generated/gym-offline-qa-2026-11-18.md.
+
+## Active Gym continuation — 18 November 2026
+
+Engineering worktree `.local/open-weight-models-20261117`, local checkpoint780e447.
+Do not deploy this older root branch. Candidate fixes external dataset discovery
+privacy and the stored Admin offline-ZIP/user_session input-binding mismatch.
+1100-unit regression PASS with1 Linux skip/10 subtests; subsequent focused14 PASS;
+read-only review clear. Corrected ownership handoff and51-gap living register in
+candidate. Authoring prepares reviewed successor offline under unchanged-content
+SME migration exception. Gym data/hidden expectations remain private.
+QA backend-only Cloud Build92e9fff1-dc79-4df6-a318-a280805d9ac9 is WORKING;
+not yet deployed. QA remains web e0ec104/backend818afca. Actual native Trial owner,
+technical controls and scoped policy provisioning remain unfinished. No live calls
+or Authoring integration enabled; no benchmark-ready claim.
+
 ## Authoring contract and probe-permission checkpoint — 18 November 2026
 
 Resume worktree .local/open-weight-models-20261117 at545a7cd. User-requested handoff
