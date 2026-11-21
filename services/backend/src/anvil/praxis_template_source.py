@@ -25,6 +25,7 @@ def source_hash():
             "praxis_capabilities.py",
             "qualification_resources.py",
             "praxis_template_registry.py",
+            "praxis_validation_report.py",
             "praxis_template_source.py",
             "praxis_template_client.py",
             "praxis_template_delivery.py",

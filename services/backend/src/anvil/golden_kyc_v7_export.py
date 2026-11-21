@@ -4,6 +4,8 @@ Selection requires an exact current registry qualification. A ZIP selector or a
 version number alone never registers this extension or grants Run readiness.
 """
 
+import hashlib
+
 from pydantic import ValidationError
 
 from anvil.golden_kyc_v7_candidate import (
@@ -62,6 +64,7 @@ def qualified_variants(connection, project):
 
 def validate_registered(raw, files, source, lookup):
     errors, needs, variants, registered = [], [], [], {}
+    variant_keys = set()
     manifest, decoded, tasks = None, None, []
 
     def need(code, task=None):
@@ -86,10 +89,9 @@ def validate_registered(raw, files, source, lookup):
     if manifest:
         for entry in manifest.tasks:
             key = (entry.template.id, entry.template.version, entry.template.sha256)
-            if key in registered:
-                continue
-            current = lookup(entry.template)
-            registered[key] = current
+            if key not in registered:
+                registered[key] = lookup(entry.template)
+            current = registered[key]
             if not current or current.get("integrity", True) is not True:
                 need("AV_TEMPLATE_INTEGRITY_REQUIRED" if current else "AV_TEMPLATE_NOT_REGISTERED", entry.task_id)
             elif not product_template(current["row"]["spec"]):
@@ -97,9 +99,11 @@ def validate_registered(raw, files, source, lookup):
             elif (current.get("qualified") is not True
                   or (current.get("qualification") or {}).get("receipt", {}).get("conformance", {}).get("export_selector_field") != "product"):
                 need("AV_TEMPLATE_QUALIFICATION_REVOKED" if current.get("revoked") else "AV_TEMPLATE_NOT_QUALIFIED", entry.task_id)
-            else:
+                needs[-1]["qualification"] = current.get("qualification_diagnostics", {"status": "blocked"})
+            elif key not in variant_keys:
                 variants.append(PublishedVariant(TemplateRef.model_validate(entry.template.model_dump()),
                                                  current["qualification"]["receipt_sha256"], canonical(current["row"]["spec"])))
+                variant_keys.add(key)
         if not needs:
             try:
                 decoded = decode_candidate(raw, tuple(variants))
@@ -125,7 +129,7 @@ def validate_registered(raw, files, source, lookup):
                          for code in ("REVIEW_DOMAIN_SIGNOFF", "REVIEW_DATA_RIGHTS", "REVIEW_CASE_EXPECTATIONS")],
         # Preserve the decoder's exact original ZIP fingerprint. It is not a
         # reference to a selected dataset, an authenticated review or a Run.
-        "package_sha256": decoded.package_sha256 if decoded else None,
+        "package_sha256": hashlib.sha256(raw).hexdigest(),
         "validation_coverage": "incomplete" if unknown else "registered_template_conformance" if decoded else "not_evaluated",
         "run_authority": "not_granted", "paid_calls": False,
     }

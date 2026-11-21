@@ -217,6 +217,7 @@ def lookup(c, project, reference):
             (project, qualification["id"]),
         ).fetchone()
     )
+    current_source = source_hash() if qualification else None
     valid = bool(
         qualification
         and digest(row["spec"]) == row["spec_sha256"]
@@ -226,7 +227,7 @@ def lookup(c, project, reference):
         == catalogue(row["spec"]["execution"]["catalogue_version"])["sha256"]
         and qualification["status"] == "qualified"
         and digest(qualification["receipt"]) == qualification["receipt_sha256"]
-        and qualification["receipt"]["source_sha256"] == source_hash()
+        and qualification["receipt"]["source_sha256"] == current_source
         and qualification["receipt"].get("template_sha256") == row["spec_sha256"]
         and qualification["receipt"].get("part_hashes") == row["part_hashes"]
         and qualification["receipt"].get("catalogue_sha256")
@@ -255,12 +256,30 @@ def lookup(c, project, reference):
             == current_installation.get("evidence", {}).get("broker_source_sha256")
             and (not product_template(row["spec"]) or recorded.get("export_selector_field") == "product")
         )
+    reasons = []
+    if not qualification:
+        reasons.append("qualification_missing")
+    else:
+        if qualification["status"] != "qualified":
+            reasons.append("qualification_status_blocked")
+        if qualification["receipt"].get("source_sha256") != current_source:
+            reasons.append("template_source_changed")
+        if revoked:
+            reasons.append("qualification_revoked")
+    if not valid and not reasons:
+        reasons.append("qualification_not_current")
     return {
         "row": row,
         "integrity": integrity,
         "qualified": valid and integrity,
         "qualification": qualification,
         "revoked": revoked,
+        "qualification_diagnostics": {
+            "status": "current" if valid and integrity else "blocked",
+            "reason_codes": reasons,
+            "recorded_status": qualification["status"] if qualification else None,
+            "receipt_sha256": qualification["receipt_sha256"] if qualification else None,
+        },
     }
 
 

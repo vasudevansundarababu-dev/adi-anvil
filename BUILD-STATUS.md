@@ -1,5 +1,25 @@
 # Build status
 
+## 21 November — validation-report release candidate
+
+Owner directs completion against supplied tasks; no further Authoring/template
+redesign is requested for missing Gym setup. Confirmed live DB cause:
+`AV_TEMPLATE_NOT_QUALIFIED`, because the exact v8 receipt references the old
+template source and runtime/review/image while the serving installed component
+qualification itself is ready. Initial RLS-hidden API read was not evidence of
+absent registration; operator readback confirmed the row.
+
+Candidate adds request correlation, exact ZIP identity when blocked, per-task
+qualification reasons and actionable Anvil-owned fixes, plus separate existing
+binding-readiness assessment with private dataset/reference details withheld.
+No validity, version, approval, rights or paid-dispatch gates are relaxed.
+Ten focused report/HTTP/privacy/registry tests pass; Ruff and diff checks pass.
+Full unit run with correct fixtures: 1,394 passed, five skipped, 12 sandbox-only
+socket/process failures. Owned-gateway retest passed with local socket permission;
+all 13 integrity-module tests passed with permission to invoke ps, resolving the
+remaining failures. No model calls. See
+`docs/generated/VALIDATION-JSON-AND-GYM-SETUP-20261121.md`.
+
 ## 21 November, 8:49 AM Chicago — continuation and release checkpoint
 
 Read-only QA check: zero authored export resolutions, zero resolved task rows,

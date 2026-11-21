@@ -95,6 +95,8 @@ def routes(access, context, wrap, idempotent):
             )
 
     async def process(project, request, resolving=False):
+        from anvil.praxis_validation_report import binding_assessment, report
+
         with access(request, project, resolving) as (c, user, roles):
             auth.require(roles, *(("admin",) if resolving else ("admin", "rl-engineer")))
             enabled()
@@ -127,7 +129,7 @@ def routes(access, context, wrap, idempotent):
                                 "status": "blocked",
                             }
                         ]
-                        return JSONResponse(wrap(result, request), status_code=409)
+                        return JSONResponse(wrap(report(result, request.state.request_id), request), status_code=409)
                     key = request.headers.get("Idempotency-Key", "")
                     if not key or len(key) > 200:
                         raise HTTPException(428, "Bounded Idempotency-Key required")
@@ -175,7 +177,8 @@ def routes(access, context, wrap, idempotent):
                 if result["valid"] is None or result["status"] == "anvil_blocked"
                 else 200
             )
-            return JSONResponse(wrap(result, request), status_code=status)
+            setup = binding_assessment(c, project, result)
+            return JSONResponse(wrap(report(result, request.state.request_id, setup), request), status_code=status)
 
     @router.post(
         "/validate",

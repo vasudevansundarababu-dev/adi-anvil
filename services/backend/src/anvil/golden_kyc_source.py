@@ -49,6 +49,7 @@ def _source_paths(repository):
             root.parents[1] / "migrations/102_project_execution_inputs.sql",
             root / "praxis_project_intake.py",
             root / "praxis_template_registry.py",
+            root / "praxis_validation_report.py",
             root / "praxis_template_source.py",
             root / "db.py",
             root / "harbor_agent_source.py",
