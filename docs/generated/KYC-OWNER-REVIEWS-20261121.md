@@ -30,6 +30,27 @@ Use the reviewed source bundle as evidence, not a software-test result. The API
 already supports listing/detail, decisions and revocation under
 `/golden-banking/v1/policy-reviews`. No decisions have been made on your behalf.
 
+Exact UI sequence (after the Projects-list defect is repaired):
+
+1. Sign in to https://anvil-qa.adi-labs.ai/workspace as the actual project PO.
+2. Open **Projects → KYC onboarding and refresh → Policy Binding to Evals**.
+3. Expand **KYC policy review subjects** and click **Reload staged subjects and decisions**.
+4. Choose a staged subject. Inspect its product, state, charter caveats, source
+   references, applicability interval and full subject hash. Repeat for all20;
+   do not assume a UUID in the selector identifies the intended state.
+5. Enter **Decision rationale** (at least10 characters), **Reviewed evidence
+   reference**, the exact64-character **Reviewed evidence SHA-256** from the
+   reviewed artifact/manifest, and a future **Review expiry** in local time.
+6. Only after reviewing the evidence, check **I reviewed this exact subject and
+   its source evidence**, then choose **Record Product Owner approval** or
+   **Record rejection**. Inspect **Recorded decisions** for the returned receipt.
+
+The UI attaches the displayed subject hash itself; no JSON or code writing is
+required. Do not use an invented evidence hash, a software-control hash or the
+pilot interval as statutory effective dates. Missing source effectivity remains
+an explicit content gap. If an outcome is unconfirmed, keep the hold and ask for
+reconciliation; do not repeat the decision under a new identity/key.
+
 ## 2. Case expectations: one exact frozen200-case population review
 
 Review the expected outcome and evidence requirements for every case included in
@@ -53,7 +74,7 @@ the dispositions alone. Gym must finish the evidence preparation before asking
 you to approve the final packet; a CSV approval cell is not an application receipt.
 
 The append-only review API, private loader, owner UI and frozen-binding/grader
-checks are implemented and tested locally, pending QA release. After deployment
+checks are deployed in8a22280. After restricted staging of the final packet,
 and restricted staging, use **Data & Environments → KYC expectation review**:
 inspect the private worksheet, compare the exact canonical packet hash, then
 explicitly approve/reject with rationale, evidence reference and future expiry.
@@ -61,6 +82,25 @@ Only metadata/hashes reach this UI. An uploaded `approved` string is insufficien
 The ordinary API and scheduler never receive private expectation bodies. A later
 review does not replace the review frozen into an existing preparation; save a
 new preparation explicitly. No new Authoring task is requested.
+
+Exact UI sequence once Gym supplies the final privately reviewed worksheet and
+canonical packet (the current draft is not ready for this approval):
+
+1. Open **Data & Environments → KYC private expectation reviews**.
+2. Click **Load expectation review subjects**, then **Inspect** for the exact
+   child pack/population. Confirm200 cases, the subject hash and private packet hash.
+3. Review every expected outcome/evidence obligation in the private worksheet.
+   Keep unsupported normative/state checks unscored. Report corrections to Gym
+   before approving; changing the packet creates a different review subject.
+4. Enter **SHA-256 of the privately reviewed canonical packet** (must match the
+   displayed hash), choose Approve/Reject, enter a rationale of at least10
+   characters, a **Private review evidence reference**, and future **Review expires**.
+5. Check **I reviewed this exact private packet and population**, then click
+   **Record owner decision**. Confirm the receipt/current-review status.
+
+Do not upload private answers into this screen. One decision can cover the exact
+enumerated200-case population;200 individual approval clicks are not required.
+Engineering will explicitly save a new preparation using that receipt afterward.
 
 ## 3. Processing rights and run authorization: after model selection
 

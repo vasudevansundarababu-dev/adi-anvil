@@ -365,8 +365,15 @@ def selection_gaps(c, project, imported, reference, workflow=()):
             {"section": "data", "code": "AV_INPUT_EXECUTION_BINDING_REQUIRED", "owner": "anvil"}
         ]
     from anvil.golden_kyc_paid_package import task_set_assignments
+    from anvil.golden_kyc_resolved_store import StaleProductBinding
 
-    assignments = task_set_assignments(c, project, packages)
+    try:
+        assignments = task_set_assignments(c, project, packages)
+    except StaleProductBinding:
+        # A retained package may refer to an older runtime/input generation.
+        # Report a closed readiness gate; never hide the Project or promote its
+        # stale package, and never turn authorization/database failures into gaps.
+        return [{"section": "data", "code": "AV_INPUT_EXECUTION_BINDING_STALE", "owner": "anvil"}]
     if {a["application_id"]: a["application_sha256"] for a in assignments} != {
         m["id"]: m["snapshot_sha256"] for m in overlay["cases"]
     }:

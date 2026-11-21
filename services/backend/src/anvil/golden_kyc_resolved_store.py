@@ -17,6 +17,10 @@ from anvil.praxis_template_registry import lookup
 from anvil.project_input_contract import MAX_BYTES
 
 
+class StaleProductBinding(ValueError):
+    """A frozen binding needs explicit refresh, never automatic replacement."""
+
+
 def persist_candidate(connection, project, user, resolution_id, case_import_id, candidate):
     """One immutable append/idempotent lookup in the caller's transaction.
 
@@ -121,7 +125,7 @@ def policy_scope(connection, project, input_id, task_id, revision_id):
     current = lookup(connection, project, reference)
     if (not current or current.get("qualified") is not True
             or current["qualification"]["receipt_sha256"] != task["template_qualification_receipt_sha256"]):
-        raise ValueError("Anvil current exact template qualification required")
+        raise StaleProductBinding("Anvil current exact template qualification required")
     scope = body["scope"]
     return ProductRegistryScope.model_validate_json(canonical({
         **scope, "source_sha256": record["snapshot"]["source_sha256"],

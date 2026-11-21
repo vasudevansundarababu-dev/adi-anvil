@@ -1,5 +1,53 @@
 # Build status
 
+## 21 November — candidate8a22280 deployed; task-level acceptance remains open
+
+Authenticated follow-up: current child-pack software reference registered once
+successfully (case import36ef1d10-8191-46d5-acf4-471e2dfd0b5c, source0ad,
+four task bindings/50 configurations, software ready); exact v8 qualification
+returned qualified. No PO review/publication decision or model authority created.
+Projects listing and same-ZIP import-response construction fail on old frozen
+template/runtime bindings (product_context.load→policy_scope). Import request
+3957513c-b68c-4c0c-95ab-a69f26b30443 returned unconfirmed; no blind retry. Read-only
+reconciliation shows latest authored resolution remains6b775116 from19:18UTC and
+latest new group is only the21:41UTC software-reference group10. The failed import
+response was built inside the still-uncommitted transaction; metadata shows no
+new authored resolution/group, and commands/jobs remain zero. Operator enrollment0.
+
+Local narrow fix introduces typed StaleProductBinding for current qualification,
+source/image drift only. Readiness returns AV_INPUT_EXECUTION_BINDING_STALE;
+execution/admission still reject. Payload/product/task-mode/integrity/access and
+database failures remain errors.20 focused tests and Ruff pass. Full suite first
+used incomplete backend dependencies, then lacked the Marketing fixture/loopback
+permissions; those environment failures are retained, not passed. Correct complete
+runtime/fixture suite now running. Any changed Golden source needs fresh build
+and controls; do not reuse8a's qualification receipt for this fix. Blocker email
+sent to vasudevan.sundarababu@adi-labs.ai (message1a20016694d0ddce).
+
+QA now serves eight exact8a22280 image profiles with zero restarts. API/database
+health ready; live inference and Harbor live dispatch disabled. The reviewed
+rollout retained prior config/receipts/profiles, preserved Praxis identity scope
+and all role mounts/limits, and verified current source0ad34c122a56e9fa1f83bce6f2c09e8fe672d946a3f6b25222fae391238c4368.
+All eight no-model physical controls completed and independent component/capture
+reviews passed. Active component02633365a241fe4dfd15a2444de2c31b297388021fec0c24bedaef65c07c3782
+and captureb232b647eb455a407c0885d3cd71ca0b35fee7d117738d1c9cb07fc604f80185.
+Both expire22 November20:04:26UTC; do not renew without applicable fresh review.
+
+Consistent snapshot backup/isolated data-schema restore/rehearsal succeeded before
+additive133→135 migration. Restore used no-owner/no-ACL; it does not prove role/ACL
+recovery. Live schema135 and separate framework image8c3ffa733ce54b516b5bddab60ca2504c4e83e981f27fdb0dd83064249914e3d
+are installed. Native component controls observed134; never relabel them135.
+The135 operator role/isolation tests passed separately. Migration was not replayed
+during app rollout. Local ignored result: .local/releases/8a22280/rollout-result.json.
+
+Authenticated actual Admin session resumed. Current-source reference registration
+submitted once through UI; reconcile its result before resubmission. Next: exact
+template qualification refresh, same approved ZIP re-resolution, new explicit B0
+and input binding, scoped runtime observations and independently reviewed binding
+receipt. Method/safety/diagnostic qualification producers and defensible skill
+mappings remain engineering gaps. No content reviews, benchmark admission or paid
+dispatch granted. See KYC-OWNER-REVIEWS-20261121.md for actual PO decisions.
+
 ## 21 November — disk clearance and candidate controls; operator component tested
 
 User explicitly approved the13-image cache plan. Guarded cleanup stopped after10

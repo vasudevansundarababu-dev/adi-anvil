@@ -13,7 +13,7 @@ from anvil.project_input_contract import MAX_BYTES
 def load(c, project, resolved, reference):
     from anvil.golden_component_qualification import installed
     from anvil.golden_kyc_anvil import source_hash, validate
-    from anvil.golden_kyc_resolved_store import policy_scope
+    from anvil.golden_kyc_resolved_store import StaleProductBinding, policy_scope
 
     if type(reference) is not dict or set(reference) != {"id", "sha256"}:
         raise ValueError("Explicit immutable product input reference required")
@@ -32,12 +32,13 @@ def load(c, project, resolved, reference):
     scope = policy_scope(c, UUID(str(project)), UUID(reference["id"]), resolved["task_key"], resolved["revision"])
     current_installation = installed()
     if (scope.payload_sha256 != resolved["private_reference_sha256"]
-            or scope.runtime_source_sha256 != source_hash()
-            or not current_installation["ready"]
-            or scope.runtime_image_sha256 != current_installation.get("evidence", {}).get("runtime_image_sha256")
             or scope.workflow_product != resolved["binding"].get("case_selector", {}).get("value")
             or resolved["binding"].get("task_mode") != "reusable_application_workflow"):
-        raise ValueError("Exact product task/runtime input changed")
+        raise ValueError("Exact product task/input identity changed")
+    if (scope.runtime_source_sha256 != source_hash()
+            or not current_installation["ready"]
+            or scope.runtime_image_sha256 != current_installation.get("evidence", {}).get("runtime_image_sha256")):
+        raise StaleProductBinding("Exact product task/runtime input changed")
     imported = one(c, "SELECT * FROM banking.anvil_imports WHERE project_id=%s AND id=%s", (project, row["case_import_id"]))
     if not imported or imported["manifest"].get("task_mode") != "reusable_application_workflow":
         raise ValueError("Exact original shared product environment required")
