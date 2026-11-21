@@ -1,5 +1,29 @@
 # QA benchmark exercise — living gap register
 
+## 21 November — actual HTTP package-preparation boundary
+
+GYM-WIRE-48: after actual Admin upload, scheduler registration, case import and
+200 persisted task/input assignments, native package preparation returned422 at
+`body.resolved_input.id`: the UUID string in valid JSON was rejected because the
+HTTP DTO reused a strict Python domain-registry model. No Authoring change is
+needed. A dedicated transport reference now parses UUID strings while retaining
+exact SHA format, forbidden extra fields and strict1–100integer turn limits.
+The registry model remains strict.49 focused regressions passed, including11
+actual FastAPI JSON boundary cases. Review passed; fresh build/qualification
+and QA acceptance remain required before calling this deployed or fixed in QA.
+
+Future Studio acceptance must exercise real HTTP JSON all the way through
+import→input upload→context registration→saved B0→task/input links→native package
+preparation, with malformed IDs/hashes/extra authority fields rejected. Testing
+only `model_validate_json` misses FastAPI's decoded-Python input behavior. Surface
+safe validation locations and request IDs in the UI instead of only “Invalid input.”
+Source-bound qualification must stay intact when repairing this boundary.
+
+Deployment/setup evidence:83baf21runtime and5bc3047UI deployed and verified;
+v8technical qualification passed. New context has200cases/0expectations, original
+parent unchanged,20policy subjects staged with owner's one-day interval only.
+Policy decisions, rights and case-expectation reviews were not manufactured.
+
 ## 21 November — authored product-profile input setup
 
 GYM-INPUT-44: the real four-product v8 import succeeded, but structured input

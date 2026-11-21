@@ -14,7 +14,6 @@ from pydantic import Field, ValidationError, model_validator
 
 from anvil import auth, evaluator_configurations, task_method_compatibility
 from anvil.db import Jsonb, audit, digest, one, uid
-from anvil.golden_kyc_policy_registry import ReceiptReference
 from anvil.project_input_contract import FrozenSelection
 from anvil.schemas import Strict
 from anvil.skill_step_bindings import SkillMapping
@@ -109,9 +108,16 @@ class FrozenBinding(Strict):
     snapshot_sha256: str = Field(pattern=SHA)
 
 
+class NativeInputReference(Strict):
+    """HTTP JSON reference; domain registry models retain strict Python types."""
+
+    id: UUID
+    sha256: str = Field(pattern=SHA)
+
+
 class NativePreparation(Strict):
     max_model_calls: int = Field(ge=1, le=100, strict=True)
-    resolved_input: ReceiptReference | None = None
+    resolved_input: NativeInputReference | None = None
 
 
 def group(c, project, identifier):

@@ -1,5 +1,49 @@
 # Build status
 
+## 21 November —200 input assignments stored; package wire fix pending release
+
+Supported Admin application-input binding succeeded for all200cases using B0
+f22220f2-141d-40df-9751-651ff59f903a, resolutionbdcb7242-4c97-44c9-b524-d0bf2aa17ca9,
+and caseimport97edf342-3b56-4173-b04c-937696e1e207. Native package POST returned
+422 at body.resolved_input.id (strict Python UUID domain model reused as JSON DTO).
+One diagnostic repeat captured the same422; no packages/model calls dispatched.
+Dedicated wire DTO fix passed49focused tests (11HTTPboundary regressions), Ruff,
+diff checks and read-only review. Domain strictness/admission unchanged.
+New Golden source d2051636d53087c1a0778b9e0abecc6989b698fd15301ca5725cca56708ff946;
+Praxis source remainsd67ff0ce…1568. Current serving83receipts cannot qualify the
+changed backend. Fresh build/technical qualification required, still in progress.
+User resumed other work; Chrome released. No further browser use until needed.
+
+## 21 November — runtime83baf21 and policy UI5bc3047 deployed
+
+Eight-service runtime rollout completed with exact profiles, installed receipt
+reads, schema133, health ready and provider dispatch disabled. Web-only5bc3047
+then completed, preserving the other seven service IDs and both receipts.
+Current compose SHA b32714c191e827e04ccb09578ef3b147f424e35d5d90498d4986f90a792ec6f2.
+Combined receipt check initially rejected a stale harness runtime-image pin;
+terminal cleanup and unchanged serving baseline were reconciled, the pin was
+corrected, and the new isolated combined readback passed before rollout.
+
+Credential-free network-none full-context validation passed on QA. Sanitized
+four-file registration handoff SHA8960d468303aad248f9892f53a438f495d85d4d66c707548fb4b77c7006590d3;
+zero database writes, no expectation answers in the handoff. First archive check
+rejected macOS metadata before any staging/container; corrected exact two-file
+archive passed. Actual queued input registration and bindings remain pending.
+Real Admin signed in again. v8 check returned project runtime import required;
+current-source four-product technical reference registration succeeded; v8 now
+reports qualified with offline PO publication attestation retained. Same authored
+ZIP revalidated/imported successfully under current source, new resolution
+bdcb7242-4c97-44c9-b524-d0bf2aa17ca9. No authored task/template bytes changed.
+
+Real Admin uploaded inputa21956ed-40eb-4342-aa16-8245d39998d0, saved B0
+f22220f2-141d-40df-9751-651ff59f903a, and staged20 exact policy subjects.
+Reviewed scheduler operator registered childpack729266f3-1741-563b-b4ba-586cf7fae4b3
+with200cases and0expectations; originalparent still200cases/200expectations and
+originale8d5populationhash. Childfour-product import97edf342-3b56-4173-b04c-937696e1e207
+registered4technicaltaskbindings/50evaluatorconfigs against source8e2897c1…29a9f2.
+Policy interval chosen only; no policy/data/rights approval. Task/input links and
+native package configuration remain in progress; no model/provider calls.
+
 ## 21 November — all fresh controls reviewed in place; candidate verification passed
 
 All8 physical operators for83baf21 completed, with cleanup and original coordinator
