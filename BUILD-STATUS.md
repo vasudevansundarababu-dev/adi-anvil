@@ -1,5 +1,98 @@
 # Build status
 
+## 21 November, 8:49 AM Chicago — continuation and release checkpoint
+
+Read-only QA check: zero authored export resolutions, zero resolved task rows,
+zero policy subjects/decisions/materializations for the selected project. The
+local authored ZIP still hashes to `ff6db0db…0fcfb4` and retains pending-TIN
+steps; no scope-corrected successor is present at the supplied path. The active
+connection/grant and staged context are installed; final task bindings cannot
+be created against an export that has not arrived. No reviews were invented.
+
+Both offline helpers compile. The most recent relevant suite passed 94 tests;
+the earlier 61-test context suite and 18-test retry also passed. Qualified Golden
+source hash recomputed as `c26a7965e3ee215aa74e495c5341c15a2e0423f3952a1799111e8eef688201e4`,
+identical to the deployed image's accepted source. No application rebuild/rollout
+is necessary for these offline helpers and documentation. Runtime qualification
+receipts expire 21 November 10:12:40 PM Chicago; renew actual checks if needed
+when the new package arrives. Model calls remain disabled; Chrome is released.
+
+## 21 November — Praxis managed identity linked by actual Admin
+
+Owner confirmed the specific link at action time. Supported authenticated adoption
+POST returned 200 (request `2a9feebd-a955-4b84-8b3f-c89238e9a33b`); UI shows
+Managed service identity / Grant active. Read-only DB check confirms the existing
+grant, unchanged scope/expiry, now maps the real Praxis QA service identity.
+No key issued or SQL approval fabricated. API/database health ready, model and
+Harbor live dispatch disabled. Mapping blocker is closed; actual approved-task
+delivery awaits Praxis's final scope-corrected export. No end-to-end transfer or
+final binding completion claim. Latest local related suite: 94 passed.
+
+## 21 November — QA Praxis API connection enabled; inbound mapping pending
+
+User authorized transfer-only integration. API now has Praxis template calls and
+workload identity enabled against the fixed QA origin. Existing image/source,
+mounts and security/resource settings are preserved (Docker bind-order difference
+was reconciled separately). Actual authenticated contract GET passed; wrong
+project denied; anonymous route 401; public health ready with live inference and
+Harbor dispatch disabled. All running container provider flags remain disabled.
+No DB grant was fabricated. Existing grant lacks its workload principal; real
+Admin adoption is required before incoming task transfer. See
+`docs/generated/PRAXIS-GYM-QA-INTEGRATION-20261121.md` for exact current IDs,
+rollback config, identity and next supported endpoint. Final scope-corrected
+tasks and genuine binding reviews remain pending; no benchmark admission claim.
+
+## 21 November — owner requested pending-TIN scope exclusion
+
+The owner canceled the experimental TIN capability; all five runtime source
+edits were removed and verified to have no remaining diff. No deployment occurred.
+Prepared the exact successor-task request and Gym finalization boundary in
+`docs/generated/KYC-PENDING-TIN-SCOPE-CORRECTION.md`. Final task-scoped bindings
+cannot be activated against the incoming successor IDs before actual import;
+case/rights and policy ledger reviews remain pending. The private staged bundle
+remains immutable and does not mark excluded verification as passed.
+
+## 21 November — corrected authored export passes local source checks
+
+Validated `praxis-cf0150fcd57e972a4773f7a4-p1.zip`, SHA-256
+`ff6db0dbf22523bc7d1375c864d824000d7a4dbb69eb5a8b80adb5ee6a0fcfb4`:
+safe 10-member archive, four typed product tasks, exact asset hashes/public actor
+projections, unchanged v8 template hash `8449adb0…34f7d5`, approved-revision
+metadata and existing S1–S8 source checks all pass with zero errors/needs.
+Compared authored content against the previous ZIP: adult joint unchanged;
+individual five, teen joint two and custodial two S5 tool-only changes. Two
+pending-TIN tool fields remain blank (CG-01); no TIN runtime capability is claimed.
+This is offline source conformance, not independent approval, registry
+qualification or model admission. Evidence: ignored
+`.local/gym-context-setup-20261120/corrected-export-validation.json`.
+No DB writes or live calls. User must upload through the authenticated Forge QA
+import screen; preserve the previous browser upload-permission boundary.
+
+## 21 November — private QA context staging verified
+
+After explicit user authorization and renewed Google authentication, installed
+the prepared bundle at `/var/lib/anvil-qa-v1/dataset-staging/kyc-context-fe9571ece2c3-v1`.
+Separate readback verified all 11 files against manifest `108d8f17…cefbe`, root
+ownership, directory mode 0700 and file mode 0600. Offline acceptance passed again:
+200 resets, 100 follow-ups, 200 pending expectations unscored, 20 policy cells and
+178 reconstructed chunks. The 18 preparation tests also passed on this retry.
+No database writes, service configuration changes or model calls. This supersedes
+the earlier staging/authentication blockers only; registration and final bindings
+still await the corrected export and genuine owner reviews.
+
+## 20 November — Gym context preparation checkpoint
+
+Prepared a separate 200-case KYC context, 20 source-preserving policy cells and
+the seven-rule/50-evaluator binding plan. All 61 related tests passed; offline
+checks exercised 200 resets, 100 follow-ups and 178 policy chunks. Pending
+expectations remained unscored. No live calls or database writes. Runtime source
+and deployed images are unchanged. Final registration and task-scoped bindings
+await corrected Authoring task IDs and genuine owner reviews. Private QA staging
+installation was rejected by automatic approval review citing the staging hold;
+the installer did not execute. See
+`docs/generated/KYC-GYM-CONTEXT-SETUP-20261120.md` for exact boundaries and resume
+steps. Preserve unrelated `apps/web/AGENTS.md` edits.
+
 ## 20 November, 10:38 PM Chicago — e49 deployed; technical qualification passed
 
 The exact frozen application revision
