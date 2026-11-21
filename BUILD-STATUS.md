@@ -1,5 +1,31 @@
 # Build status
 
+## 21 November — all fresh controls reviewed in place; candidate verification passed
+
+All8 physical operators for83baf21 completed, with cleanup and original coordinator
+restoration. Independent component review passed using read-only checks on QA;
+raw artifacts stayed there after automatic review rejected a recursive download.
+Only sanitized counts/booleans/hashes returned:1026 artifacts,8 primary packets,
+56 related files,23 profiles,6 private arithmetic checks,22 native dependencies,
+8 worker/947 SDK traces,4/120 scoped Unix connections and0 scoped Internet events.
+These are synthetic technical checks, not model performance/global-call evidence.
+Canonical component review `fe3f70ac41613a10b7ab7bb266d48686df13a977950db1e2d52cd3ce716bbd4b`;
+candidate verification passed with expected receipt
+`fdb18656920fac1b5f7046ead9505a082e7f85de3f126e2569d889fc713eeef2`.
+Candidate publication/combined readback/serving cutover remain in progress.
+Fresh capture candidate `77ab9d605c1fe1f540bff9eccd49c02fbd369766e2a2c6c3af4d46f0cd46468a`
+passed exact-backend network-none verification; expires22 November10:47:56Chicago.
+
+Standalone registrar hardened before first QA data write: full private bundle
+validation occurs in an isolated credential-free process. Only4 manifest-bound
+artifacts cross to the scheduler; no expectation answers enter its filesystem.
+CLI modes and early guards enforce the split.40 tests passed, including5 realSQL;
+read-only review passed subject to the planned environment isolation. Runtime
+source remains8e2897c1…29a9f2; no rebuild needed for this standalone operational tool.
+Policy UI5bc3047 built SUCCESS, image444a1942…8b6826, pending a web-only rollout
+after the83baf21 backend cutover. User chose the one-day policy interval only;
+no domain/rights/case approval or model dispatch occurred.
+
 ## 21 November —83baf21 builds passed; fresh candidate controls running
 
 Golden source `8e2897c12567383ef3abd35f87c41f007c7b398627fad25bd409dff02229a9f2`,

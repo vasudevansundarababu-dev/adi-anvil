@@ -24,9 +24,17 @@ expectations; offline checks keep all200 unscored. Twenty policy cells reconstru
    `private/` files out of this upload and out of Authoring. Record its genuine
    queued input ID and content hash. Expected actor hash:
    `cb15e0b441157d2ea3675a6b772806f822ec8acb9f306b173c458dd291cd90bd`.
-3. Run `scripts/register_kyc_context.py` inside the existing dedicated scheduler
-   operational context, with the exact project/group/input/source/manifest flags
-   and its existing scheduler connection environment. Never supply an owner/app
+3. First run the same tool with `--check-bundle`, pinned manifest and `--output`
+   in a credential-free, network-isolated validator. Keep the complete bundle,
+   especially `private/expectations.json`, outside the scheduler container. The
+   validator emits a canonical registration envelope containing only actor input,
+   private service scenarios, lineage and context, cryptographically tied to the
+   exact original manifest. Transfer only that envelope and the reviewed code.
+   Run `scripts/register_kyc_context.py --registration-input <envelope>` inside
+   the existing dedicated scheduler operational context, with exact
+   project/group/input/source/manifest flags and its existing scheduler connection.
+   Full-bundle verification is rejected when scheduler credentials are present;
+   the writer rejects any fifth file or changed artifact bytes. Never supply an owner/app
    connection or set an Admin identity in SQL. The script rejects privileged or
    mixed logins, completed jobs, stale schema/source/input and changed private
    controls. It locks the same job as generic population. A failed/ambiguous
@@ -62,8 +70,8 @@ whole-transaction rollback and revoked-Admin/owner negatives. Initial fixture se
 failed the existing authenticated-engineer trigger; corrected the synthetic
 fixture identity rather than changing any production guard.
 
-Final result:37 passed in4.49s (23 preparation/normalization,9 registrar integrity,
-5 actual SQL tests). Ruff and `git diff --check` passed. Actual v5 bundle passes
+Initial result:37 passed in4.49s. After separating validation from scheduler input,
+40 passed in5.32s, including5 actual SQL tests. Ruff and `git diff --check` passed. Actual v5 bundle passes
 registrar preflight; Golden source hash is unchanged. The isolated test container
 is stopped and retained. Commands used the locked OpenEnv Python with
 `ANVIL_ROOT=$PWD ANVIL_FIXTURE_MODE=true ANVIL_ENV=local

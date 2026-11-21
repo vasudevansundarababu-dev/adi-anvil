@@ -319,6 +319,33 @@ def test_normalization_rejects_output_inside_original_bundle(tmp_path, monkeypat
     assert not (source / 'child').exists()
 
 
+def test_registration_handoff_omits_expected_answers_and_rechecks_exact_bytes(tmp_path, monkeypatch):
+    import hashlib
+
+    from anvil.praxis_generic_contract import canonical
+
+    source = normalization_bundle(tmp_path)
+    normalizer = normalization_module(monkeypatch)
+    normalized = tmp_path / 'normalized-registration'
+    normalizer.normalize(source, hashlib.sha256((source / 'manifest.json').read_bytes()).hexdigest(), normalized)
+    import register_kyc_context as registrar
+
+    pin = hashlib.sha256((normalized / 'manifest.json').read_bytes()).hexdigest()
+    raw = registrar.registration_input(normalized, pin)
+    files = registrar.read_registration_input(raw, pin)
+    assert set(files) == registrar.REGISTRATION_FILES
+    assert 'private/expectations.json' not in files
+    assert b'independent_expectation_review' not in canonical(files)
+    body = json.loads(raw)
+    body['files']['actor-input.json']['applications'][0]['purpose'] = 'tampered'
+    with pytest.raises(ValueError, match='differs from pinned'):
+        registrar.read_registration_input(canonical(body), pin)
+    body = json.loads(raw)
+    body['files']['private/expectations.json'] = []
+    with pytest.raises(ValueError, match='non-expectation'):
+        registrar.read_registration_input(canonical(body), pin)
+
+
 def test_normalization_rejects_serializer_changes_to_existing_facts(tmp_path, monkeypatch):
     import hashlib
 

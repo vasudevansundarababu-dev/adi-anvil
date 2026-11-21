@@ -67,4 +67,16 @@ def test_cross_project_context_rejected_before_identity_or_database(registrar):
     other = '00000000-0000-0000-0000-000000000001'
     with pytest.raises(ValueError, match='another project'):
         registrar.register(None, project, other, other, '0' * 64,
-                           {'context.json': {'parent_project_id': other}}, '0' * 64)
+                           {'context.json': {'parent_project_id': other}, 'actor-input.json': {},
+                            'private/scenarios.json': [], 'lineage.json': []}, '0' * 64)
+
+
+def test_scheduler_rejects_expected_answers_before_database_access(registrar):
+    with pytest.raises(ValueError, match='non-expectation'):
+        registrar.register(None, None, None, None, None, {'private/expectations.json': []}, '0' * 64)
+
+
+def test_full_bundle_cannot_be_read_in_scheduler_credential_context(registrar, monkeypatch, tmp_path):
+    monkeypatch.setenv('ANVIL_GOLDEN_SCHEDULER_DATABASE_URL', 'synthetic-not-a-real-connection')
+    with pytest.raises(ValueError, match='without scheduler credentials'):
+        registrar.read_bundle(tmp_path / 'must-not-be-read', '0' * 64)

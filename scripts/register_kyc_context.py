@@ -23,8 +23,12 @@ from anvil.golden_kyc_policy import library
 from anvil.praxis_generic_contract import canonical
 from anvil.project_input_contract import INPUT
 
+REGISTRATION_FILES = frozenset(('context.json', 'actor-input.json', 'private/scenarios.json', 'lineage.json'))
+
 
 def read_bundle(root, pinned):
+    if os.environ.get('ANVIL_GOLDEN_SCHEDULER_DATABASE_URL'):
+        raise ValueError('Private bundle verification requires a process without scheduler credentials')
     root = Path(root).resolve()
     raw = (root / 'manifest.json').read_bytes()
     if hashlib.sha256(raw).hexdigest() != pinned:
@@ -55,6 +59,40 @@ def read_bundle(root, pinned):
     return files
 
 
+def registration_input(root, pinned):
+    """Run only in a credential-free isolated validator, never the scheduler."""
+    files = read_bundle(root, pinned)
+    body = {'schema_version': 'anvil.kyc-context-registration-input.v1',
+            'preparation_manifest_utf8': (Path(root) / 'manifest.json').read_text(),
+            'files': {name: files[name] for name in sorted(REGISTRATION_FILES)}}
+    raw = canonical(body)
+    # Recheck the final captured manifest and every scheduler-visible byte.
+    read_registration_input(raw, pinned)
+    return raw
+
+
+def read_registration_input(raw, pinned):
+    if len(raw) > 16 * 1048576:
+        raise ValueError('Bounded registration input required')
+    body = json.loads(raw)
+    if (set(body) != {'schema_version', 'preparation_manifest_utf8', 'files'}
+            or body['schema_version'] != 'anvil.kyc-context-registration-input.v1'
+            or canonical(body) != raw or set(body['files']) != REGISTRATION_FILES):
+        raise ValueError('Only the four non-expectation registration artifacts are permitted')
+    manifest_raw = body['preparation_manifest_utf8'].encode()
+    if hashlib.sha256(manifest_raw).hexdigest() != pinned:
+        raise ValueError('Exact original preparation manifest required')
+    manifest = json.loads(manifest_raw)
+    if manifest['registered'] is not False or manifest['run_authority'] != 'not_granted':
+        raise ValueError('Registration input cannot supply review authority')
+    for name, value in body['files'].items():
+        encoded = canonical(value)
+        expected = manifest['files'][name]
+        if len(encoded) != expected['bytes'] or hashlib.sha256(encoded).hexdigest() != expected['sha256']:
+            raise ValueError('Registration artifact differs from pinned preparation')
+    return body['files']
+
+
 def checked_parent(files, rows, manifest):
     context = files['context.json']
     if (digest([row['snapshot'] for row in rows]) != context['parent_population_sha256']
@@ -76,6 +114,8 @@ def checked_parent(files, rows, manifest):
 
 def register(c, project, group, input_id, source_sha256, files, pinned):
     """Call only inside a fresh transaction with a disjoint scheduler LOGIN."""
+    if set(files) != REGISTRATION_FILES:
+        raise ValueError('Scheduler may receive only non-expectation registration artifacts')
     project, group, input_id = map(lambda v: str(UUID(str(v))), (project, group, input_id))
     if str(files['context.json']['parent_project_id']) != project:
         raise ValueError('Prepared context belongs to another project')
@@ -144,16 +184,32 @@ def register(c, project, group, input_id, source_sha256, files, pinned):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--bundle', type=Path, required=True)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument('--check-bundle', type=Path)
+    mode.add_argument('--registration-input', type=Path)
+    parser.add_argument('--output', type=Path)
     parser.add_argument('--manifest-sha256', required=True)
-    parser.add_argument('--project', required=True)
-    parser.add_argument('--group', required=True)
-    parser.add_argument('--input', required=True)
-    parser.add_argument('--source-sha256', required=True)
+    parser.add_argument('--project')
+    parser.add_argument('--group')
+    parser.add_argument('--input')
+    parser.add_argument('--source-sha256')
     args = parser.parse_args()
-    prepared = read_bundle(args.bundle, args.manifest_sha256)
-    with psycopg.connect(os.environ['ANVIL_GOLDEN_SCHEDULER_DATABASE_URL'], row_factory=dict_row,
-                         connect_timeout=5) as connection:
-        receipt = register(connection, args.project, args.group, args.input, args.source_sha256,
-                           prepared, args.manifest_sha256)
-    print(json.dumps(receipt, sort_keys=True))
+    if args.check_bundle:
+        if not args.output or any((args.project, args.group, args.input, args.source_sha256)):
+            parser.error('Credential-free validation requires only --output and the pinned manifest')
+        encoded = registration_input(args.check_bundle, args.manifest_sha256)
+        with os.fdopen(os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600), 'wb') as out:
+            out.write(encoded)
+            out.flush()
+            os.fsync(out.fileno())
+        print(json.dumps({'status': 'validated_registration_input_without_expectations',
+                          'sha256': hashlib.sha256(encoded).hexdigest(), 'database_writes': 0}))
+    else:
+        if args.output or not all((args.project, args.group, args.input, args.source_sha256)):
+            parser.error('Registration requires exact project/group/input/source and no full bundle')
+        prepared = read_registration_input(args.registration_input.read_bytes(), args.manifest_sha256)
+        with psycopg.connect(os.environ['ANVIL_GOLDEN_SCHEDULER_DATABASE_URL'], row_factory=dict_row,
+                             connect_timeout=5) as connection:
+            receipt = register(connection, args.project, args.group, args.input, args.source_sha256,
+                               prepared, args.manifest_sha256)
+        print(json.dumps(receipt, sort_keys=True))
