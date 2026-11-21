@@ -10,6 +10,7 @@
 !services/openenv
 !integrations/evaluators
 !infra/docker
+!infra/gcp/kyc_binding_observation.py
 !contracts
 !runtime-checks
 !fixtures
