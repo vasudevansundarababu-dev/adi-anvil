@@ -50,7 +50,7 @@ def family(task):
     source = task.get("source", {})
     profile = source.get("template", {}).get("profile_id")
     if (
-        profile == "golden-kyc-reusable-v1"
+        profile in {"golden-kyc-reusable-v1", "golden-kyc-application-type-v1"}
         or source.get("schema_version") == "anvil.golden-kyc.task.v1"
     ):
         return "kyc"

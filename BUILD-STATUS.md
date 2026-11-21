@@ -1,5 +1,35 @@
 # Build status
 
+## 21 November — real QA catalogue409 diagnosed; backend correction verified locally
+
+Web-only `adcfbc944322435f67cca2f7605d1ea877f8104c` is deployed, image
+`sha256:722fad722668ec93ce90f1c2450196d1f83686942174cd3c154a95fb0824a636`.
+Compose `87b46a193dfcee66fd4069217a069f00f55ee04277d9ae05a038fd2d7932aec3`;
+seven other service IDs and existing receipts unchanged. Actual Admin UI loads
+Project7 and exposes structured upload, but GETdata-inputs returns409. Read-only
+QA metadata confirms all4 published tasks use `golden-kyc-application-type-v1`;
+`golden_targets.family` recognized only the older profile. No export change needed.
+
+Backend fix recognizes that exact existing profile; unknown/mixed families still
+fail closed. Binding-options reuses existing request-scoped software proof inside
+a SQL savepoint for builtin/zen/opa-local. Each evaluator still checks current
+revocation/receipt/configuration; unsupported adapters keep their ordinary checks;
+late source changes reject the result. No global cache or relaxed source check.
+16 focused tests,2 actual isolated SQL rollback/revocation tests, Ruff and TS passed.
+Initial isolated SQL runs failed for stale dynamic port/missing OPA environment;
+reconciled container port and supplied the existing pinned binary, then passed.
+Full backend unit suite is in progress; no fresh qualification or rollout yet.
+
+Admin native input setup UI uses existing authenticated endpoints, requires a saved
+binding and exact resolution/import IDs, and starts no model. Retained ambiguous
+attempts block remount/reload submission via session-scoped journal. Package
+responses are checked, and no review approval is manufactured. Read-only review
+findings were fixed. Both Golden and Praxis source closures change, so old
+receipts cannot qualify the coming backend revision; rebuild and fresh controls next.
+Prepared v5 context is root-private staged on QA at
+`/var/lib/anvil-qa-v1/dataset-staging/kyc-context-37e42886bc93-v5` (13 hashes verified),
+still not registered. No model calls or final binding/review approval has occurred.
+
 ## 21 November — binding read deadline and Gym-owned upload UI fix
 
 The previous bindings view eventually loaded. Source diagnosis identified repeated

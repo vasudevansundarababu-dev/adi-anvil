@@ -10,6 +10,7 @@ import pytest
 from anvil import evaluator_configurations as evaluators
 from anvil import golden_kyc_anvil as golden
 from anvil import golden_kyc_source as source
+from anvil import project_bindings
 from anvil import software_resource_proof as resources
 
 
@@ -22,6 +23,45 @@ def measured(tmp_path, monkeypatch):
     monkeypatch.setattr(source, "_source_paths", lambda root: [root / "code.py"])
     monkeypatch.setattr(evaluators, "_source_paths", lambda adapter: ["code.py"])
     return path, scans
+
+
+@pytest.mark.parametrize('changed', [False, True])
+def test_binding_catalogue_reuses_scans_but_rejects_late_source_change(measured, monkeypatch, changed):
+    path, scans = measured
+    calls = []
+
+    class Connection:
+        @contextmanager
+        def transaction(self):
+            yield
+
+        def execute(self, query):
+            return self
+
+        def fetchall(self):
+            return [{'id': i, 'adapter': 'builtin'} for i in range(50)] + [{'id': 50, 'adapter': 'nemo'}]
+
+    c = Connection()
+
+    def checked(connection, identifier, **kwargs):
+        calls.append(identifier)
+        if identifier < 50:
+            resources.check_connection(kwargs['_resource_proof'], connection)
+        else:
+            assert kwargs == {}  # Unsupported proof inventory retains the ordinary get path.
+            if changed:
+                path.write_text('value = 2\n')
+        return {'id': identifier, 'name': 'synthetic', 'adapter': 'builtin' if identifier < 50 else 'nemo',
+                'configuration_sha256': 'a' * 64, 'status': 'revoked' if identifier == 3 else 'ready'}
+
+    monkeypatch.setattr(evaluators, 'get', checked)
+    if changed:
+        with pytest.raises(RuntimeError, match='changed'):
+            project_bindings.evaluator_options(c)
+    else:
+        result = project_bindings.evaluator_options(c)
+        assert len(result) == 51 and result[3]['status'] == 'revoked'
+    assert len(scans) == 2 and calls == list(range(51))
 
 
 def test_fifty_configurations_reuse_bytes_but_two_full_scans_per_operation(measured):

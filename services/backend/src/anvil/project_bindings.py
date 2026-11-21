@@ -26,6 +26,25 @@ SHA = r"^[a-f0-9]{64}$"
 MAX_REQUIREMENTS = 300
 
 
+def evaluator_options(c):
+    """Catalogue current statuses with one lexical byte proof, never cached authority."""
+    from anvil.software_resource_proof import software_resources
+
+    result = []
+    with c.transaction():
+        with software_resources(c) as proof:
+            for item in c.execute(
+                "SELECT id,adapter FROM anvil.evaluator_configurations ORDER BY created_at DESC,id LIMIT 300"
+            ).fetchall():
+                row = evaluator_configurations.get(
+                    c, item["id"],
+                    **({"_resource_proof": proof} if item["adapter"] in {"builtin", "zen", "opa-local"} else {}),
+                )
+                result.append({"id": row["id"], "name": row["name"], "adapter": row["adapter"],
+                               "sha256": row["configuration_sha256"], "status": row["status"]})
+    return result
+
+
 class Reference(Strict):
     kind: Literal[
         "revision",
@@ -1117,20 +1136,7 @@ def routes(context, wrap, idempotent):
         with context(request, project) as (c, user, roles):
             auth.require(roles, *READ_ROLES)
             imported = group(c, project, task_group_id)
-            evaluators = []
-            for item in c.execute(
-                "SELECT id FROM anvil.evaluator_configurations ORDER BY created_at DESC,id LIMIT 300"
-            ).fetchall():
-                row = evaluator_configurations.get(c, item["id"])
-                evaluators.append(
-                    {
-                        "id": row["id"],
-                        "name": row["name"],
-                        "adapter": row["adapter"],
-                        "sha256": row["configuration_sha256"],
-                        "status": row["status"],
-                    }
-                )
+            evaluators = evaluator_options(c)
             return wrap(
                 {
                     "source_sha256": imported["content_sha256"],
