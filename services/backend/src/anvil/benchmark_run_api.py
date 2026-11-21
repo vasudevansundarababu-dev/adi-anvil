@@ -1,11 +1,14 @@
 """Authenticated project-scoped configuration, Run and exact-scope export endpoints."""
 
+from datetime import timedelta
+from typing import Literal
 from uuid import UUID
 from zipfile import BadZipFile
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import Response
+from pydantic import BaseModel, ConfigDict
 
 from anvil import auth
 from anvil import benchmark_business_fixture as fixture
@@ -13,7 +16,13 @@ from anvil import benchmark_project_import as imports
 from anvil import benchmark_report_policy as review_policy
 from anvil import benchmark_run_views as views
 from anvil import benchmark_runs as runs
+from anvil.db import audit, uid
 from anvil.request_limits import RequestBodyTooLarge
+
+
+class ReferenceStorageConsent(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    confirmation: Literal['allow_my_protected_reference_import_for_8_hours']
 
 
 def routes(context, wrap, idempotent):
@@ -21,6 +30,92 @@ def routes(context, wrap, idempotent):
 
     def permit(roles):
         auth.require(roles, "admin", "rl-engineer")
+
+    @router.get('/reference-storage-access')
+    def reference_storage_access(project: UUID, request: Request):
+        with context(request, project) as (c, user, roles):
+            auth.require(roles, 'admin')
+            allowed = c.execute(
+                "SELECT anvil.benchmark_private_access(%s,'benchmark_eval',NULL::uuid) AS allowed",
+                (project,),
+            ).fetchone()['allowed']
+            own = c.execute(
+                "SELECT id,expires_at FROM anvil.benchmark_private_assignments a "
+                "WHERE a.project_id=%s AND a.user_id=%s AND a.granted_by=%s "
+                "AND a.scope='source_review' AND a.artifact_id IS NULL AND a.expires_at>now() "
+                "AND NOT EXISTS(SELECT 1 FROM anvil.benchmark_private_revocations r "
+                "WHERE r.project_id=a.project_id AND r.assignment_id=a.id) "
+                "ORDER BY a.created_at DESC,a.id DESC LIMIT 1", (project, user, user),
+            ).fetchone()
+            return wrap({'allowed': allowed, 'scope': 'source_review',
+                         'assignment_id': own['id'] if own else None,
+                         'expires_at': own['expires_at'] if own else None,
+                         'paid_calls': False, 'review_approval': False}, request)
+
+    @router.post('/reference-storage-access')
+    def grant_reference_storage(project: UUID, body: ReferenceStorageConsent, request: Request):
+        with context(request, project) as (c, user, roles):
+            auth.require(roles, 'admin')
+
+            def grant():
+                # The real authenticated Admin can grant only their own existing
+                # source-review duty. No recipient, role, scope or expiry is accepted.
+                c.execute('SELECT id FROM anvil.projects WHERE id=%s FOR UPDATE', (project,))
+                old = c.execute(
+                    "SELECT id,expires_at FROM anvil.benchmark_private_assignments a "
+                    "WHERE a.project_id=%s AND a.user_id=%s AND a.granted_by=%s "
+                    "AND a.scope='source_review' AND a.artifact_id IS NULL AND a.expires_at>now() "
+                    "AND NOT EXISTS(SELECT 1 FROM anvil.benchmark_private_revocations r "
+                    "WHERE r.project_id=a.project_id AND r.assignment_id=a.id) "
+                    "ORDER BY a.created_at DESC,a.id DESC LIMIT 1", (project, user, user),
+                ).fetchone()
+                if old is None:
+                    old = c.execute(
+                        "INSERT INTO anvil.benchmark_private_assignments"
+                        "(id,project_id,user_id,scope,artifact_id,granted_by,expires_at) "
+                        "VALUES(%s,%s,%s,'source_review',NULL,%s,now()+%s) RETURNING id,expires_at",
+                        (uid(), project, user, user, timedelta(hours=8)),
+                    ).fetchone()
+                    audit(c, project, user, 'benchmark.reference_storage_access_granted', old['id'],
+                          {'scope': 'source_review', 'recipient': str(user),
+                           'expires_at': old['expires_at'].isoformat(),
+                           'purpose': 'approved_task_reference_import', 'review_approval': False,
+                           'paid_calls': False})
+                return {'assignment_id': old['id'], 'expires_at': old['expires_at'],
+                        'scope': 'source_review', 'allowed': True,
+                        'review_approval': False, 'paid_calls': False}
+
+            receipt = idempotent(c, project, user, request, body.model_dump(), grant)
+            # A replay is a historical grant receipt, not evidence of current access.
+            allowed = c.execute(
+                "SELECT anvil.benchmark_private_access(%s,'benchmark_eval',NULL::uuid) AS allowed",
+                (project,),
+            ).fetchone()['allowed']
+            return wrap(receipt | {'allowed': allowed}, request)
+
+    @router.post('/reference-storage-access/{assignment}/revoke')
+    def revoke_reference_storage(project: UUID, assignment: UUID, request: Request):
+        with context(request, project) as (c, user, roles):
+            auth.require(roles, 'admin')
+
+            def revoke():
+                row = c.execute(
+                    "SELECT id FROM anvil.benchmark_private_assignments WHERE project_id=%s "
+                    "AND id=%s AND user_id=%s AND granted_by=%s AND scope='source_review' "
+                    "AND artifact_id IS NULL", (project, assignment, user, user),
+                ).fetchone()
+                if row is None:
+                    raise HTTPException(404, 'Own source-review assignment not found')
+                c.execute(
+                    "INSERT INTO anvil.benchmark_private_revocations"
+                    "(project_id,assignment_id,revoked_by,rationale) VALUES(%s,%s,%s,%s) "
+                    "ON CONFLICT(assignment_id) DO NOTHING",
+                    (project, assignment, user, 'Admin ended their temporary reference-import access'),
+                )
+                audit(c, project, user, 'benchmark.reference_storage_access_revoked', assignment)
+                return {'assignment_id': assignment, 'revoked': True, 'paid_calls': False}
+
+            return wrap(idempotent(c, project, user, request, {'assignment': str(assignment)}, revoke), request)
 
     def scope(request):
         q = request.query_params
@@ -139,6 +234,7 @@ def routes(context, wrap, idempotent):
             from anvil.praxis_case_registry import lookup as dataset_lookup
             from anvil.praxis_generic_export import validate as validate_authored
             from anvil.praxis_project_intake import store as store_authored
+            from anvil.praxis_validation_report import binding_assessment, report
 
             with context(request, project) as (c, user, roles):
                 auth.require(roles, "admin")
@@ -157,13 +253,26 @@ def routes(context, wrap, idempotent):
                     lambda ref: dataset_lookup(c, project, ref),
                 )
                 if validation["valid"] is not True:
-                    raise HTTPException(422 if validation["valid"] is False else 409, validation)
+                    raise HTTPException(
+                        422 if validation["valid"] is False else 409,
+                        report(validation, request.state.request_id),
+                    )
                 if not c.execute(
                     "SELECT anvil.benchmark_private_access(%s,'benchmark_eval',NULL::uuid) AS allowed",
                     (project,),
                 ).fetchone()["allowed"]:
                     raise HTTPException(
-                        409, {"code": "AV_PRIVATE_STORAGE_ASSIGNMENT_REQUIRED", "owner": "anvil"}
+                        409, report(validation | {
+                            'code': 'AV_PRIVATE_STORAGE_ASSIGNMENT_REQUIRED', 'owner': 'anvil',
+                            'anvil_requirements': validation['anvil_requirements'] + [{
+                                'code': 'AV_PRIVATE_STORAGE_ASSIGNMENT_REQUIRED',
+                                'owner': 'anvil', 'status': 'blocked',
+                            }],
+                        }, request.state.request_id, {
+                            'status': 'blocked', 'owner': 'anvil',
+                            'reason': 'protected_reference_import_access_required',
+                            'execution_setup_ready': False, 'paid_dispatch_authorized': False,
+                        })
                     )
                 prepared = describe_private(project, raw, "benchmark_eval", "application/zip")
 
@@ -173,23 +282,25 @@ def routes(context, wrap, idempotent):
                         from anvil.praxis_generic_resolution import resolve
 
                         resolution = resolve(c, project, user, validation, parsed, prepared)
-                    return store_authored(c, project, user, validation, parsed, prepared) | {
+                    stored = store_authored(c, project, user, validation, parsed, prepared)
+                    return stored | {
                         "validation": validation,
                         "resolution": resolution,
                         "execution_ready": False,
                     }
 
-                response = wrap(
-                    idempotent(
-                        c,
-                        project,
-                        user,
-                        request,
-                        {"package_sha256": validation["package_sha256"]},
-                        save_authored,
-                    ),
+                result = idempotent(
+                    c,
+                    project,
+                    user,
                     request,
+                    {"package_sha256": validation["package_sha256"]},
+                    save_authored,
                 )
+                response = wrap(result | {
+                    'validation': report(result['validation'], request.state.request_id,
+                                         binding_assessment(c, project, result['validation'])),
+                }, request)
                 # SQL changes remain uncommitted. Publish only after validation,
                 # intake, idempotency and response construction all succeeded.
                 stage_private(project, raw, "benchmark_eval", "application/zip")

@@ -7,6 +7,7 @@ import { projectPresentation } from '../lib/projectPresentation';
 import TaskFlowViewer from './TaskFlowViewer';
 import s from './BenchmarkRunDashboard.module.css';
 import TemplateSetup from './TemplateSetup';
+import ReferenceStorageAccess from './ReferenceStorageAccess';
 
 type Group = ImportedProject & {
   content_sha256?: string;
@@ -145,6 +146,15 @@ function ScopedImportedProjects({
             if (xhr.status >= 200 && xhr.status < 300) resolve(body.data);
             else {
               const validation = body.error?.message;
+              const code =
+                validation && typeof validation === 'object' &&
+                typeof validation.code === 'string' && /^[A-Z0-9_]{1,100}$/.test(validation.code)
+                  ? validation.code
+                  : null;
+              const requestId = body.meta?.request_id || body.error?.request_id;
+              const trace = typeof requestId === 'string' && /^[a-zA-Z0-9-]{1,100}$/.test(requestId)
+                ? ` Request ID: ${requestId}.`
+                : '';
               if (
                 validation &&
                 typeof validation === 'object' &&
@@ -156,8 +166,10 @@ function ScopedImportedProjects({
                 Object.assign(
                   new Error(
                     typeof body.error?.message === 'string'
-                      ? body.error.message
-                      : 'Package validation or import failed. No successful import confirmed.',
+                      ? body.error.message + trace
+                      : code === 'AV_PRIVATE_STORAGE_ASSIGNMENT_REQUIRED'
+                        ? `Gym setup required: your account needs a current protected-reference storage assignment in this project before import. No successful import confirmed.${trace}`
+                        : `Package validation or import failed${code ? ` (${code})` : ''}. No successful import confirmed.${trace}`,
                   ),
                   { outcomeUnconfirmed: xhr.status >= 500 },
                 ),
@@ -293,6 +305,7 @@ function ScopedImportedProjects({
         {error && <p role="alert">{error}</p>}
         {importing ? (
           <>
+            {canAdmin && <ReferenceStorageAccess key={base} base={base} />}
             <label>
               Authoring export package{' '}
               <input

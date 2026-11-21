@@ -1,5 +1,81 @@
 # Build status
 
+## 21 November — QA rollout verified; exact task import blocked on Gym storage access
+
+QA now serves `016d027649847b5d122ca7ad413bff7f31138fab` across all eight
+application/runtime roles, with zero restarts. Compose SHA is
+`622e49bf13022e7ecf87b8b4071b946a080bf86f5503564c30a6490d838e1411`.
+Core, environment and evaluation builds passed. Fresh native Trial, SQL,
+registry, OPA/ZEN, six private-scoring cases, worker/SDK transport and observer
+controls passed and received independent technical review. Component receipt
+`9f416f56…acca9` and capture receipt `4e64e2b3…caf6f3` are installed; earliest
+expiry is 22 November 08:22:56 Chicago. All six intended component readers
+report ready. The private-scoring coordinator intentionally cannot read the
+component receipt; its scoped control evidence passed separately.
+
+Anonymous HTTP smoke passed: health 200, workspace 200, protected templates 401.
+Provider/Harbor dispatch stays disabled; Praxis transfer remains enabled.
+These controls are synthetic technical qualification, not benchmark performance.
+
+Using the owner's real authenticated Admin UI, registered the current four-product
+technical reference (4 bindings, 50 evaluator configurations), then refreshed
+the exact immutable v8 qualification successfully. The supplied ZIP
+`ff6db0dbf22523bc7d1375c864d824000d7a4dbb69eb5a8b80adb5ee6a0fcfb4`
+was submitted once through Projects → Import. No successful import was confirmed.
+A separate **read-only** validation under the recorded real Admin scope then
+returned `valid: true`, `status: export_valid`, zero errors and zero source-side
+Anvil requirements. The protected-storage permission check returned **false**;
+operator readback confirmed zero private assignments and zero task resolutions.
+This identifies `AV_PRIVATE_STORAGE_ASSIGNMENT_REQUIRED` as a remaining Gym
+import gate. No Authoring task/template edits are requested. Domain, data-rights
+and case-expectation review gates remain pending; they were not approved.
+
+Remaining engineering/authority boundary: provide an authenticated, audited way
+for the real Admin to grant the narrow protected-reference assignment (the
+schema has source/evaluation assignments, but no supported assignment creation
+route was found). Do not insert an assignment by impersonating the owner or
+silently grant access. After the actual authorized grant, import once, attach
+the prepared private dataset/context and actual policy/evaluator bindings, and
+assess the genuine review gates. Benchmark readiness is **not** established.
+
+The Projects import UI currently hides a structured permission error behind a
+generic failure message. A local UI-only correction now displays the known
+storage-access explanation and safe request ID/code; TypeScript check passed.
+This UI correction is **not deployed**. It does not change qualified backend
+source or bypass permission gates. Private readbacks live only under ignored
+`.local/releases/016d027/`; no private cases/logs/credentials are committed.
+
+## 21 November, 9:34 AM Chicago — 016d027 builds and fresh controls passed
+
+Frozen candidate `016d027649847b5d122ca7ad413bff7f31138fab`, Golden source
+`5b2b014e3f614b769fbcc6a4fa83b59386f8dd5257a49d21f8531e2e7679e686`.
+All three builds passed: core `b863073e-cb53-48a2-8995-34e7e47c6dad`,
+environments `732dffce-182e-4465-9052-5bb82dcebd28`, evaluation
+`0ef60c6b-c4ca-4144-8b19-092f20d48d5a`. Exact manifest SHA
+`e2a2a75c1e59e579b30f62e166d6008c8797df8c996f2c781fbb900f110d0b6e`.
+Images staged, no serving rollout yet. Current serving compose remains `f199…`.
+
+Fresh actual no-model controls passed: native Trial
+`b69190ba-66a8-48c2-9691-486384d0702a`, SQL, registry, OPA/ZEN components,
+six private-scoring cases, worker/SDK transport and physical positive/negative
+observer sensitivity. Transport restored the exact known idle coordinator.
+Capture probe independently reviewed and candidate verified in the new backend;
+candidate receipt `4e64e2b3…caf6f3` remains separately staged, not serving.
+
+Component evidence is under independent read-only review: local ignored
+`.local/releases/016d027/component-evidence/`, 1,039 files, inventory SHA
+`f7a0e9447ee2be25da9d043abe5fc382185505cf6258a9ba4ee468410e1dbaeb`;
+remote `/var/lib/anvil-qa-v1/runtime-functional/component-evidence-016d027-cfdb4521`.
+No qualified receipt is fabricated or promoted before that review. Two preflight
+runner identifier mismatches were caught before controls, corrected under exact
+old/new pins, independently rechecked and retained with backup readback/fsync.
+Rollout source independently reviewed; 26 rollout/security comparison tests pass.
+Keep the owner-enabled Praxis API integration true while model/Harbor/email
+flags remain false. Do not use old release scripts or replay completed controls.
+After genuine review: stage reviewed input, verify/publish candidate components,
+verify both candidates, perform guarded rollout, then refresh template/project
+setup through supported authenticated paths. No further task redesign requested.
+
 ## 21 November — validation-report release candidate
 
 Owner directs completion against supplied tasks; no further Authoring/template
