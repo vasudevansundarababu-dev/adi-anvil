@@ -1,5 +1,47 @@
 # Build status
 
+## 21 November evening continuation — framework136 installed, core identity pending
+
+32 method packet tests and21 isolated real-LOGIN SQL tests passed. Local commits
+3dff605/eb0b8fe contain operator136 and original-evidence expiry controls.
+3151c78 fixes the exact Docker allowlist omission from failed build8daaf551.
+Tracked retry502a79e3 passed; framework digest
+8497c1332a266b3162b4f515ce95f73068595248da686b3bba1b272ac60a0f62
+was installed after a protected QA database backup. SQL136 and Alembic136 agree;
+all eight serving container IDs/images were unchanged and public API/database
+health passed with model/Harbor dispatch OFF. This is not task qualification.
+
+User explicitly approved an eight-hour restricted QA qualifier. Its actual LOGIN
+and Golden KYC project enrollment committed, expiry2026-11-22T08:50:23Z;
+credentials remain QA root-only. No human review, paid approval or model call
+was created. One public synthetic isolation-control group exists in a separate
+test project; its explicitly synthetic non-OIDC attribution and membership were
+deactivated before commit. The first fixture transaction failed its author guard
+and rolled back; retained v2 evidence documents the corrected fixture.
+
+An owner-password observer attempt was rejected by automatic approval review
+before execution. A safer SELECT-only transaction through the existing local DB
+maintenance interface succeeded without credential retrieval or a new privileged
+container. Original SQL/stdout and metadata-only owner/witness files remain on
+QA. They establish actual DB identity and known foreign-row existence, not any
+qualification or human approval.
+
+Actual serving API has no ANVIL_DEPLOYMENT_QUALIFICATION_SHA256. Prepared a
+same-image configuration repair for api/worker/business-worker, with protected
+backup, Compose preflight and rollback; not activated yet. The immutable joint
+component descriptor SHA is
+6f94623f4ebf2ed5d263992cb5f833861febcfedf0565fa513787305c39d98f8.
+Its exact metadata is awaiting independent review. Native grading also reads
+this variable; leaving those roles unchanged keeps that path blocked. Do not
+claim complete grading readiness from a core-only identity repair.
+
+Next: accept exact descriptor, activate core identity with unchanged images,
+stage original mechanics files and run the real restricted task observation;
+independently review original outcomes before publication. Other known work:
+typed diagnostic configuration, reviewed expectation custody in diagnostic
+producer, substantive44 policy-rule targets, skill mapping/applicability and
+owner reviews. No live calls or new Authoring export is authorized/required here.
+
 ## 21 November late evening — task-method publication safeguards locally verified
 
 New framework-only migration136 and operator remain separate from serving11463ac.
