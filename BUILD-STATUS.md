@@ -24,6 +24,21 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
 
 Tests (21 Nov 2026, this worktree, stack running):
 
+- **Studio link, 22 Nov 2026 (local, owner-approved order):**
+  - The RL Gym follows the local Studio (`RLGYM_STUDIO_URL=http://127.0.0.1:8060`; switched by the owner with
+    `python3 scripts/local.py rlgym-registry studio`). Studio runs in RL Gym mode against 8200.
+  - Studio released `golden-kyc-openenv@3` (Studio's id, seed family `synthetic-kyc-cases@1.0.0:20261119`). The RL
+    Gym mirrored it under Studio's registry, applied seq 1–3 (seq 3 was a duplicate `version.qualified`, harmless),
+    and ran its six qualification checks against Studio's `/stub/env` routes: all pass (receipt `qr-8853c89ab404`).
+  - `rlgym-registry check`: every route ok.
+  - Studio activated its template `tpl_x5rwt6d5eu` v1 (A-03: validate, known-case tests for 20 criteria, activation).
+  - The ADI Forge stub exported `prj_kycstudio01` ("KYC via Studio") on it: 40 tasks, Ready, binding Studio's `@3`.
+  - `run-0152` (three controlled-mock agents) completed with 120 episodes scored; the image was built from Studio's
+    image-context.
+  - Studio's client key reads the run, its episodes and single episodes (200).
+  - The stub's projects (KYC November, KYC December) keep running on the stub's versions; each version's data comes
+    from the registry that released it.
+
 - **All four suites pass, 22 Nov 2026 (after repairing the older workspace tests):**
   - `pnpm check` EXIT 0.
   - `pnpm test:unit` EXIT 0: 396 passed.
