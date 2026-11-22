@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import sys
 import time
 from uuid import UUID
@@ -104,7 +105,15 @@ def health():
             time.sleep(2)
     else:
         raise RuntimeError("OIDC unavailable")
-    print("Canonical database and OIDC ready. Live inference disabled.")
+    live = os.environ.get("ANVIL_LIVE_PROVIDERS_ENABLED", "false") == "true"
+    print(
+        "Canonical database and OIDC ready. "
+        + (
+            "Live providers enabled: calls still need a matching live approval."
+            if live
+            else "Live inference disabled."
+        )
+    )
 
 
 def main():
