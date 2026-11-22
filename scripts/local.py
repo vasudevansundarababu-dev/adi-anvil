@@ -182,28 +182,30 @@ def rlgym_registry(target):
     if target == "check":
         base = REGISTRIES["studio"]
         key = values.get("RLGYM_ANVIL_KEY", "")
+        # Studio issues `<contract>@<n>` ids; override with RLGYM_LINK_SAMPLE_VERSION if it releases another number.
+        sample = values.get("RLGYM_LINK_SAMPLE_VERSION", "golden-kyc-openenv@3")
         probes = [
             ("registry event log", "GET", "/api/v1/registry/events?after_seq=0", {}),
-            ("version record", "GET", "/api/v1/registry/versions/golden-kyc-openenv@v3", {}),
+            ("version record", "GET", f"/api/v1/registry/versions/{sample}", {}),
             (
                 "cases (actor fields)",
                 "GET",
-                "/api/v1/registry/versions/golden-kyc-openenv@v3/cases",
+                f"/api/v1/registry/versions/{sample}/cases",
                 {},
             ),
             (
                 "image recipe",
                 "GET",
-                "/api/v1/registry/versions/golden-kyc-openenv@v3/image-context",
+                f"/api/v1/registry/versions/{sample}/image-context",
                 {},
             ),
             (
                 "references (scorer only)",
                 "GET",
-                "/api/v1/registry/versions/golden-kyc-openenv@v3/references?ids=kyc-individual-001",
+                f"/api/v1/registry/versions/{sample}/references?ids=kyc-individual-001",
                 {"X-ADI-Audience": "scorer"},
             ),
-            ("environment simulator", "GET", "/stub/env/golden-kyc-openenv@v3/health", {}),
+            ("environment simulator", "GET", f"/stub/env/{sample}/health", {}),
         ]
         ready = True
         for label, method, path, extra in probes:

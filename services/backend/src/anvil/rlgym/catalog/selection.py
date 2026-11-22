@@ -14,7 +14,7 @@ def selectable_environments(c, contract_id):
                               WHERE q.subject_kind='environment_version' AND q.subject_id=v.id
                               ORDER BY issued_at DESC LIMIT 1) r ON true
            WHERE v.contract_id=%s AND v.state='qualified' AND coalesce(r.result,'qualified')='qualified'
-           ORDER BY v.version DESC""",
+           ORDER BY v.version DESC, v.mirrored_at DESC""",
         (contract_id,),
     ).fetchall()
 

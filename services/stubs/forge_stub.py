@@ -148,11 +148,24 @@ def _send(body, packages):
 @app.post("/stub/projects/{pid}/export")
 def export(pid: str, body: dict = Body(default={})):
     """Stands for: an ADI Forge PM exports (or re-exports) a project (KYC November on V8, KYC December on V9)."""
-    if pid not in g.PROJECTS:
-        raise HTTPException(404, "the stub knows only KYC November (V8) and KYC December (V9)")
+    linked = None
+    if body.get("template"):
+        # Stands for: a PM creates a project in ADI Forge on a template another registry (the local Studio) released.
+        t = body["template"]
+        if not all(t.get(k) for k in ("id", "version", "spec_sha256")):
+            raise HTTPException(422, "template needs id, version and spec_sha256")
+        linked = {"template": t, "project_name": body.get("project_name") or pid}
+    elif pid not in g.PROJECTS:
+        raise HTTPException(
+            404,
+            "the stub knows KYC November (V8) and KYC December (V9); pass a template for others",
+        )
     export_id = body.get("export_id", "exp-0001")
-    reason = body.get("reason", f"first export of {g.PROJECTS[pid]['name']}")
-    payload, packages = g.project_export(export_id, reason, body.get("corrections"), project_id=pid)
+    name = (linked or {}).get("project_name") or g.PROJECTS.get(pid, {}).get("name", pid)
+    reason = body.get("reason", f"first export of {name}")
+    payload, packages = g.project_export(
+        export_id, reason, body.get("corrections"), project_id=pid, linked=linked
+    )
     if (
         body.get("send") is False
     ):  # store the packages only; the caller sends the export itself (tests)

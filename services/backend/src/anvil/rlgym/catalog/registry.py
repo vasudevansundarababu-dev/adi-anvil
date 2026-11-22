@@ -74,9 +74,10 @@ def _upsert_version(c, v, seq, state, reg):
         "SELECT * FROM catalog.environment_versions WHERE id=%s", (v["id"],)
     ).fetchone()
     if not existing:
+        # Within one registry a contract's version number names one release; another registry may reuse it.
         clash = c.execute(
-            "SELECT id FROM catalog.environment_versions WHERE contract_id=%s AND version=%s",
-            (v.get("contract_id"), v.get("version")),
+            "SELECT id FROM catalog.environment_versions WHERE registry=%s AND contract_id=%s AND version=%s",
+            (reg, v.get("contract_id"), v.get("version")),
         ).fetchone()
         if clash:
             return [f"id (already released as {clash['id']})"]

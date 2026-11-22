@@ -651,20 +651,46 @@ def forge_tasks(
     return out
 
 
-def project_export(export_id, reason, corrections=None, extra=None, project_id=FORGE_PROJECT_ID):
-    project = PROJECTS[project_id]
-    t = template(project["template_version"])
-    tasks = forge_tasks(export_id, corrections, project["template_version"], project_id)
-    body = {
-        "schema": "rlgym.project-export.v1",
-        "project_id": project_id,
-        "project_name": project["name"],
-        "template": {
+def project_export(
+    export_id, reason, corrections=None, extra=None, project_id=FORGE_PROJECT_ID, linked=None
+):
+    """`linked` = {project_name, template: {id, version, spec_sha256, forge_template_id, forge_version}} exports the
+    same 40 Golden KYC tasks for a template another registry released (the local Studio link); otherwise one of
+    PROJECTS (V8 KYC November, V9 KYC December)."""
+    if linked:
+        template_ref = linked["template"]
+        version = int(template_ref["version"])
+        name = linked.get("project_name") or project_id
+        tasks = forge_tasks(export_id, corrections, version, project_id)
+        for task in tasks:
+            # Packages are bound to this project and template so they never collide with another project's tasks.
+            task["package"]["actor"]["project"] = project_id
+            task["package"]["private"]["template"] = {
+                k: template_ref[k] for k in ("id", "version", "spec_sha256")
+            }
+            task["package_sha256"] = sha(task["package"])
+    else:
+        project = PROJECTS[project_id]
+        t = template(project["template_version"])
+        tasks = forge_tasks(export_id, corrections, project["template_version"], project_id)
+        name = project["name"]
+        template_ref = {
             "id": TEMPLATE_ID,
             "version": project["template_version"],
             "spec_sha256": t["spec_sha256"],
             "forge_template_id": FORGE_TEMPLATE_ID,
             "forge_version": project["forge_version"],
+        }
+    body = {
+        "schema": "rlgym.project-export.v1",
+        "project_id": project_id,
+        "project_name": name,
+        "template": {
+            "id": template_ref["id"],
+            "version": int(template_ref["version"]),
+            "spec_sha256": template_ref["spec_sha256"],
+            "forge_template_id": template_ref.get("forge_template_id", FORGE_TEMPLATE_ID),
+            "forge_version": int(template_ref.get("forge_version", 1)),
         },
         "project_config": {"mode": "single_agent"},
         "export_id": export_id,
