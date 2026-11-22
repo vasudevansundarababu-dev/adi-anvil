@@ -162,18 +162,6 @@ def routes():
         with scope(request, ws) as ctx:
             return ok({"items": projects.exports(ctx.c, ctx.ws, pid)}, request)
 
-    @r.get(W + "/projects/{pid}/suites")
-    def project_suites(ws: str, pid: str, request: Request):
-        with scope(request, ws) as ctx:
-            projects.get_project_row(ctx.c, ctx.ws, pid)
-            return ok(
-                {
-                    "items": [],
-                    "note": "Suites (bindings, data plan, Trust & Safety) are work package 2.6 and not built yet.",
-                },
-                request,
-            )
-
     @r.get(W + "/projects/{pid}/selection-rules")
     def selection_rules(ws: str, pid: str, request: Request):
         with scope(request, ws, services=STUDIO) as ctx:

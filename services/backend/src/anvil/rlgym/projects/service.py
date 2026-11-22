@@ -230,13 +230,19 @@ def receive_export(c, ws, actor, project_id, body):
             counts["superseding"] += 1
         else:
             counts["new"] += 1
+    from anvil.rlgym.common import Actor
+    from anvil.rlgym.suites import service as suites
+
+    refresh_state(c, ws, project_id)
+    default_suite = suites.ensure_default(
+        c, ws, Actor("rlgym", "system", "RL Gym"), project_id, body["project_name"]
+    )
     receipt = {
         "project_id": project_id,
         "export_id": body["export_id"],
         **counts,
         "blocked": blocked,
-        "default_suite_version": None,
-        "default_suite_note": "Suites (work package 2.6) are not built yet; no default suite version was created.",
+        "default_suite_version": default_suite,
     }
     receipt["receipt_sha256"] = sha(receipt)
     c.execute(

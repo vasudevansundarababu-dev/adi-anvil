@@ -159,3 +159,36 @@ test('models, model sets and keys use the controlled mock locally', async ({ bro
   await expect(page.getByRole('row', { name: /Controlled mock/ })).toContainText('••••mock');
   await page.screenshot({ path: 'artifacts/test-runs/rlgym-v2-keys.png', fullPage: true });
 });
+
+test('short data plan: lower one cell, send more data to Studio, save the suite', async ({
+  browser,
+}) => {
+  const page = await signIn(browser, 'researcher');
+  await page.goto(`/gym/projects/${PROJECT}/suites`);
+  await expect(page.getByRole('row', { name: /KYC November default/ })).toContainText('v1');
+  await page
+    .getByRole('button', { name: /New suite version|Open draft/ })
+    .first()
+    .click();
+  await expect(page.getByRole('heading', { name: 'Can this suite run?' })).toBeVisible();
+  await page.getByRole('link', { name: '2 Data plan' }).click();
+  await page.getByLabel('Sample size (cases per run, per model and attempt)').fill('400');
+  await page.getByLabel('minor_without_tin').fill('40');
+  await page.getByRole('button', { name: 'Apply data plan' }).click();
+  await expect(page.getByText('the plan asks for 40; the data has 33')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save suite version' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Lower to what exists' }).first().click();
+  await page.getByRole('button', { name: 'Send to Studio inbox (more data)' }).click();
+  const form = page.getByRole('dialog', { name: 'Send to Studio inbox (more data)' });
+  for (const box of await form.locator('textarea').all()) {
+    await box.fill('More synthetic applications of this kind, same rules, varied states (e2e)');
+  }
+  await form.getByRole('button', { name: 'Send to Studio inbox' }).click();
+  await expect(page.getByText(/More-data item .* queued/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save suite version' })).toBeEnabled();
+  await page.screenshot({ path: 'artifacts/test-runs/rlgym-v2-suite-short.png', fullPage: true });
+  await page.getByRole('button', { name: 'Save suite version' }).click();
+  await expect(page.getByText(/Saved as kyc-november-default-v\d+/)).toBeVisible();
+  await page.getByRole('button', { name: /To do/ }).click();
+  await expect(page.getByRole('dialog', { name: 'To do' })).toContainText('Studio inbox');
+});

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { GymApiError, send, short, when, wsBase } from './api';
+import { SuiteEditor, SuitesTab } from './Suites';
 import { Badge, Env, Failure, Hash, Loading, Search, Tabs, useData, useGym } from './ui';
 
 function caseText(sel: any) {
@@ -159,6 +160,8 @@ export function ProjectPage({ id, tab, rest }: { id: string; tab: string; rest: 
   const project = useData<any>(`${wsBase(ws)}/projects/${id}`);
   const base = `/gym/projects/${id}`;
   if (tab === 'tasks' && rest[0]) return <TaskDetail project={id} taskId={rest[0]} />;
+  if (tab === 'suites' && rest[0])
+    return <SuiteEditor project={id} id={rest[0]} step={rest[1] ?? 'bindings'} />;
   return (
     <Loading data={project.data} error={project.error}>
       {() => {
@@ -461,17 +464,6 @@ function ExportsTab({ project }: { project: string }) {
         </div>
       )}
     </Loading>
-  );
-}
-
-function SuitesTab({ project }: { project: string }) {
-  const { ws } = useGym();
-  const { data } = useData<any>(`${wsBase(ws)}/projects/${project}/suites`);
-  return (
-    <div className="banner" role="status">
-      <strong>Suites and runs are not built yet.</strong> {data?.note ?? ''} The default suite (all
-      ready tasks after the latest export) is created by work package 2.6.
-    </div>
   );
 }
 

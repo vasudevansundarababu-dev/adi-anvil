@@ -1,6 +1,6 @@
 # Build status
 
-## RL Gym v2: local run, stubs, projects, catalog, evaluators, models — 21 November 2026
+## RL Gym v2: local run, stubs, projects, catalog, evaluators, models, suites — 21 November 2026
 
 Branch `claude/rlgym-v2-8919f6` (worktree), local only; nothing pushed, deployed or emailed; no model called.
 Design: adi-labs-design `rl-gym/BUILD-LOCAL.md` work packages 2.1–2.10. Decisions RG-01..RG-14 in BUILD-DECISIONS.json
@@ -16,7 +16,7 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
 | 2.3 Catalog, selection rules, overrides | done | registry mirror by sequence with gap resync; Same data/Pinned/Latest; D20 evaluator rules; overrides need a different binding approver (API + DB CHECK); remove override; Admin → Environments and environment page with environment-defect inbox item; urgent path on failed re-qualification |
 | 2.4 Frameworks and evaluator configurations | done (python framework only) | A-06 create (same binding = same version), known-case tests in sandboxed subprocess (allowed→pass, disallowed→fail, missing→blocked), fix versions, deprecate, revoke with impact, B4; A-03 validate/known-case-tests/activation; Admin → Evaluators, configuration page, Templates. ZEN/Promptfoo/Pramaana registered but not installed locally |
 | 2.5 Models, keys, model sets | done (mock provider only) | migration 040; keys in the existing encrypted local store (last4 only), immutable model versions, probes (controlled mock ok; real providers `live_disabled`, never called), model sets with versions; Admin → Models, Model sets, Keys |
-| 2.6 Suites, data plan, Trust & Safety | not started | — |
+| 2.6 Suites, data plan, Trust & Safety | done (local generator) | migration 041; default suite per export (receipt `default_suite_version`, backfilled by `pnpm rlgym:seed`); drafts and saved versions (`suite_sha256`, final); bindings follow project rule or custom with reason (D20 per criterion); data plan cells vs the bound version's case catalog, Lower to / Lower all / Use what is available / Send to Studio inbox (more data); Trust & Safety categories (core + Banking KYC/AML pack), custom-category check, generate (local template generator; Promptfoo not installed), review, approve with prompt-set hash; save refuses until every item resolves. Suggestions are rule-based (no model) |
 | 2.7 Runs, admission, execution, scoring | not started | Runs screens say so |
 | 2.8 Report and PDF | not started | — |
 | 2.9 Episodes, viewer, SME review | not started | — |
@@ -32,7 +32,9 @@ Tests (21 Nov 2026, this worktree, stack running):
   `artifacts/test-runs/journey.json` and retained run evidence from the retired journey spec, which a fresh worktree
   does not have (factory, modern-workspace ×3), and credential-refresh (legacy model-list pagination timeout). Not
   investigated further; code they exercise was not changed.
-- `pnpm test:integration`: 150 passed, 19 skipped, 43 failed — none in RL Gym v2 files. 33 failures are missing fixture
+- Suites (2.6) added later the same day: RL Gym v2 integration 19 passed (`test_rlgym_v2_suites.py` +5), browser 6/6
+  (`tests/e2e/rlgym-v2.spec.ts`, incl. short data plan → more-data item → save), `pnpm check` passed again, `pnpm test:unit` 376 passed / same 3 pre-existing failures.
+- `pnpm test:integration` (full, before 2.6): 150 passed, 19 skipped, 43 failed — none in RL Gym v2 files. 33 failures are missing fixture
   artifacts (`FileNotFoundError`, same cause as above); others are the expired pricing records, a missing local Docker
   image and import-pipeline outcome assertions in unchanged legacy modules. RL Gym v2 integration: 14 passed
   (`test_rlgym_v2.py`, `test_rlgym_v2_systems.py`; each run uses its own disposable `it-…` workspace).

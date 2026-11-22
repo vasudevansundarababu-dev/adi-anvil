@@ -131,6 +131,22 @@ def seed():
                 Actor("local-seed", "system", "Local seed"),
             )
         )
+        # Default suites for projects exported before suites existed (2.6); idempotent.
+        from anvil.rlgym.suites.service import ensure_default
+
+        for ws_row in c.execute("SELECT id, slug FROM admin.workspaces").fetchall():
+            c.execute("SELECT set_config('rlgym.workspace', %s, true)", (str(ws_row["id"]),))
+            for proj in c.execute(
+                "SELECT project_id, name FROM projects.projects WHERE workspace_id=%s",
+                (ws_row["id"],),
+            ).fetchall():
+                ensure_default(
+                    c,
+                    ws_row["id"],
+                    Actor("rlgym", "system", "RL Gym"),
+                    proj["project_id"],
+                    proj["name"],
+                )
         if not c.execute(
             "SELECT 1 FROM admin.audit_events WHERE workspace_id=%s AND action='rlgym_local_seed'",
             (WORKSPACE_ID,),

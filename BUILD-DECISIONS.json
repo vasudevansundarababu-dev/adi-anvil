@@ -234,7 +234,11 @@
           "id": "RG-14",
           "decision": "Evaluator rule pinning (PUT /projects/{id}/evaluator-rules/{criterion}) needs a reason and is audited but no second approver; environment alias overrides need a different binding approver.",
           "why": "ARCHITECTURE 9.6 defines the PUT directly; SPEC requires the second person for alias overrides. Open question for the owner."
-        }
+        },
+      {"id": "RG-15", "decision": "Suite suggestions (bindings, data mix, Trust & Safety categories) are rule-based and labelled `rule_based_no_model`; the Diagnostic mix is unavailable until runs exist.", "why": "No model is approved for assist calls locally; a person applies a suggestion and the suite records the source."},
+      {"id": "RG-16", "decision": "Trust & Safety prompts are produced by a deterministic local template generator, labelled synthetic with the generator name, because Promptfoo is registered but not installed locally.", "why": "BUILD-LOCAL 2.6 asks for a pinned Promptfoo with a mock generator model; the Promptfoo image is not available on this machine, so nothing claims Promptfoo ran."},
+      {"id": "RG-17", "decision": "A short data-plan cell counts as resolved when it is lowered, when the plan says 'use what is available', or when a more-data item covering it was sent (runs then use the cases that exist until the new version qualifies).", "why": "SPEC 07.5 lists the three choices; the third is recorded per cell (inbox_item_id)."},
+      {"id": "RG-18", "decision": "The default suite is created (and versioned when the ready task set changes) by the export receipt, as a system actor `rlgym`; projects exported before 2.6 get one from `pnpm rlgym:seed`.", "why": "ARCHITECTURE 9.2 receipt returns default_suite_version."}
       ],
       "not_changed": [
         "Auth (OIDC sessions, CSRF), project isolation, immutable version binding, hidden-reference isolation and spending gates are unchanged or stricter.",
