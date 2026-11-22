@@ -121,6 +121,16 @@ def seed():
                    WHERE catalog.framework_versions.installed_locally""",
                 (fid, runtime, version, digest, evidence, installed, note, state),
             )
+        from anvil.rlgym.common import Actor, Ctx
+        from anvil.rlgym.systems.service import seed_mock_lineup
+
+        seed_mock_lineup(
+            Ctx(
+                c,
+                {"id": WORKSPACE_ID, "slug": WORKSPACE_SLUG},
+                Actor("local-seed", "system", "Local seed"),
+            )
+        )
         if not c.execute(
             "SELECT 1 FROM admin.audit_events WHERE workspace_id=%s AND action='rlgym_local_seed'",
             (WORKSPACE_ID,),

@@ -153,6 +153,13 @@ def export(pid: str, body: dict = Body(default={})):
     export_id = body.get("export_id", "exp-0001")
     reason = body.get("reason", "first export of KYC November")
     payload, packages = g.project_export(export_id, reason, body.get("corrections"))
+    if (
+        body.get("send") is False
+    ):  # store the packages only; the caller sends the export itself (tests)
+        with LOCK:
+            S["packages"].update(packages)
+            _save()
+        return {"status": 0, "export": payload}
     return _send(payload, packages)
 
 

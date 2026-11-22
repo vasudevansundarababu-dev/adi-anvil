@@ -160,5 +160,86 @@
     "credential_sdk_mock_contract": "Original internal helper remains mandatory exact MockTransport and Admin/project scoped, with no HTTP route/default real transport. Its contract evidence remains software-only; it is not promoted into a live endpoint. A separate authorized server broker now reuses internal SDK plumbing behind exact native request/credential/echo guards.",
     "execution_group_increment_031": "Interactive user authorization on31October2026 extends planning into exact execution-group admission over existing Harbor plans/checks/jobs/calls and evaluation_spend_windows. One aggregate reservation, durable ordered children and database claim fencing enforce sequential dispatch; failed/cancelled/unknown predecessors stop later dispatch. Project KEY SHARE precedes worker/intent group/job/plan/check locks; no network-spanning locks. Owner-only exact-group operator authority, current declared pricing, real assigned PO rights/run review and two distinct real Admin activation/paid decisions remain independently required; no identities promoted or controls bypassed. Native OpenAI/Claude/Gemini brokers resolve only exact scoped key versions, force no retry/redirect/global fallback, preserve invalid JSON, use provider-specific billing bounds and tag mock execution as software-only. Finalized captured output and hash-verified actually revealed actor contexts join existing result dashboards; private bindings/references stay server-side. Live flags remain off, no paid calls/deployment authorized or performed. This newer policy supersedes the earlier029 planning-only implementation status, while preparations remain immutable non-executing records."
   },
+  "rlgym_v2_increment": {
+      "date": "2026-11-21",
+      "source": "adi-labs-design branch claude/rl-gym-spec-forge-changes-mockups: rl-gym/BUILD-LOCAL.md, SPEC.md, ARCHITECTURE.md (D17-D20), SCREENS.md, shared/PLATFORM.md",
+      "scope": "Local only. New RL Gym behind RLGYM_V2=1 at /gym; the existing workspace (/workspace), its data and routes are unchanged.",
+      "decisions": [
+        {
+          "id": "RG-01",
+          "decision": "SQL migrations continue at 039 (not 022 as the build guide says): 022-038 already exist in this repository.",
+          "why": "Migration numbers are append-only; reusing 022 would collide."
+        },
+        {
+          "id": "RG-02",
+          "decision": "Backend modules live in services/backend/src/anvil/rlgym/<module> (admin, catalog, projects, scoring so far), one PostgreSQL schema per module (admin, catalog, projects, infra), instead of top-level packages under services/backend/src.",
+          "why": "The uv project packages only src/anvil; a sub-package keeps one installable project and separate module boundaries."
+        },
+        {
+          "id": "RG-03",
+          "decision": "Local compose project name is configurable (ANVIL_COMPOSE_PROJECT); this worktree uses adi-anvil-rlgym with its own volumes on the same ports.",
+          "why": "A fresh setup with the default name would reuse the main checkout's adi-anvil volumes with new passwords. No volumes were deleted."
+        },
+        {
+          "id": "RG-04",
+          "decision": "Studio/registry and ADI Forge are local FastAPI stubs (services/stubs, ports 8211/8212) started by pnpm dev; seed data is synthetic Golden KYC V8 generated deterministically (synthetic-kyc-cases@1.0.0, seed 20261119).",
+          "why": "BUILD-LOCAL 2.1. Real Studio is being built in adi-BenchmarkUtil; no real Studio, registry or ADI Forge is called. Integration URLs must be loopback (enforced)."
+        },
+        {
+          "id": "RG-05",
+          "decision": "Environment qualification (six checks) runs locally against the Studio stub's per-version environment simulator; receipts are labelled mode=stub_environment_simulator.",
+          "why": "Docker-built golden-kyc-openenv images arrive with work package 2.7; the checks and failure classification are real, the environment is a simulator."
+        },
+        {
+          "id": "RG-06",
+          "decision": "A version whose latest RL Gym qualification failed is not selectable even while the registry still says qualified; on a failed re-qualification of a selected version the RL Gym re-selects at once and sends an urgent environment_defect inbox item by itself.",
+          "why": "SPEC 07.0a: the urgent case is stopped immediately, before the registry reacts."
+        },
+        {
+          "id": "RG-07",
+          "decision": "Only the sandboxed Python framework (fw-python-1.0.0) is installed locally: an isolated interpreter subprocess (python -I -S, empty environment, CPU/file limits, 10 s timeout). ZEN, Promptfoo and Pramaana framework versions are registered but marked not installed and refuse to run. The stub's Golden KYC S7 bindings therefore use the python framework with a declarative rule configuration.",
+          "why": "No ZEN/Promptfoo/Pramaana images exist on this machine; simulating them would misstate what ran. Container-per-framework scoring is part of 2.7."
+        },
+        {
+          "id": "RG-08",
+          "decision": "Known cases in an A-06 binding carry their evidence bundle and reference inline (allowed/disallowed/missing_evidence, plus extra cases added by fix versions).",
+          "why": "Lets the RL Gym run known-case tests without any candidate invocation; references stay in the scoring sandbox."
+        },
+        {
+          "id": "RG-09",
+          "decision": "Imported task packages are fetched from the ADI Forge stub by package hash and stored split into actor and private parts (projects.task_payloads); only stub://forge/ refs are accepted.",
+          "why": "No arbitrary URL or filesystem reads; the private part is only for scoring and audited Reviewer-only views (D12)."
+        },
+        {
+          "id": "RG-10",
+          "decision": "Workspace path segment is the workspace slug (adi-labs-research); RLS keys on admin.workspaces.id set per transaction after membership or client-key checks.",
+          "why": "Readable URLs; isolation is enforced by RLS policies on every workspace table (anvil_app is NOBYPASSRLS)."
+        },
+        {
+          "id": "RG-11",
+          "decision": "Service clients (studio, adi-forge) use per-client bearer keys generated into .env; registry webhooks and RL Gym→Studio events are HMAC-SHA256 signed with a 5-minute window; the RL Gym calls stubs with its own ANVIL key.",
+          "why": "ARCHITECTURE 9.1/10, local equivalent of workload identity. Keys are never printed or committed."
+        },
+        {
+          "id": "RG-12",
+          "decision": "Columns added beyond ARCHITECTURE 6.3 where SCREENS marks TBDs: notifications group/reason/action/severity, rule_overrides short_id/from/to version/data_change, selection_rules template_rule/override_id, project_exports receipt, inbox_items studio_id/timeline, environment_versions schema_tables/image_recipe, template_activations name/mode/case_dimensions/checks.",
+          "why": "SCREENS section 5 lists these as gaps; storing them avoids deriving UI facts from free text."
+        },
+        {
+          "id": "RG-13",
+          "decision": "Second seed family: the stub's golden-kyc-openenv v4 (kyc_cases-20261203) was released without the template's known fixtures and failed RL Gym qualification (environment defect). Released versions are final, so the stub's fixed release is v5. SCREENS uses v5 for the inb-0042 more-data release; locally that release will take the next free number.",
+          "why": "Found by the integration test; the mirror row and receipts of v4 were kept, not rewritten."
+        },
+        {
+          "id": "RG-14",
+          "decision": "Evaluator rule pinning (PUT /projects/{id}/evaluator-rules/{criterion}) needs a reason and is audited but no second approver; environment alias overrides need a different binding approver.",
+          "why": "ARCHITECTURE 9.6 defines the PUT directly; SPEC requires the second person for alias overrides. Open question for the owner."
+        }
+      ],
+      "not_changed": [
+        "Auth (OIDC sessions, CSRF), project isolation, immutable version binding, hidden-reference isolation and spending gates are unchanged or stricter.",
+        "No cloud deploy, no GitHub push, no email, no live model call."
+      ]
+    },
   "note": "Pending values are not consent. The build agent must not fill user approvals from inference. Dependency/default choices are proposals; live keys never belong in this file."
 }

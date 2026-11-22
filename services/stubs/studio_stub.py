@@ -439,16 +439,33 @@ def bootstrap():
     return out
 
 
-@app.post("/stub/scenarios/release-v4")
-def release_v4():
-    """Stands for: Studio releases golden-kyc-openenv v4 with another seed family (kyc_cases-20261203)."""
-    vid = "golden-kyc-openenv@v4"
+def _release(vid):
     if vid not in S["state"]:
         _publish("version.registered", vid)
+    result = None
     if S["state"][vid]["state"] == "registered":
-        _ask_qualification(vid)
-        _wait_state(vid, "qualified")
-    return {"version": vid, "state": S["state"][vid]["state"]}
+        result = _ask_qualification(vid).get("data", {})
+        if result.get("result") == "qualified":
+            _wait_state(vid, "qualified")
+    return {
+        "version": vid,
+        "state": S["state"][vid]["state"],
+        "qualification": result and result.get("result"),
+        "failure_class": result and result.get("failure_class"),
+    }
+
+
+@app.post("/stub/scenarios/release-v4")
+def release_v4():
+    """Stands for: Studio releases golden-kyc-openenv v4, another seed family (kyc_cases-20261203). This release lacks
+    the template's known fixtures, so the RL Gym's qualification fails it (environment defect)."""
+    return _release("golden-kyc-openenv@v4")
+
+
+@app.post("/stub/scenarios/release-v5")
+def release_v5():
+    """Stands for: Studio's fixed release of the second seed family (kyc_cases-20261203) after v4 failed."""
+    return _release("golden-kyc-openenv@v5")
 
 
 @app.post("/stub/scenarios/fault/{vid}")

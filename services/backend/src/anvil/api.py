@@ -191,8 +191,10 @@ app.include_router(marketing_routes(context, wrap, idempotent))
 from anvil.rlgym.common import GymError  # noqa: E402
 from anvil.rlgym.integrations import start_dispatcher  # noqa: E402
 from anvil.rlgym.routes import routes as rlgym_routes  # noqa: E402
+from anvil.rlgym.systems.routes import routes as rlgym_system_routes  # noqa: E402
 
 app.include_router(rlgym_routes())
+app.include_router(rlgym_system_routes())
 
 
 @app.exception_handler(GymError)

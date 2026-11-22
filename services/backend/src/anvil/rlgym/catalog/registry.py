@@ -121,26 +121,29 @@ def receive(ev, via="webhook"):
         ).fetchone()["last_seq"]
         if seq <= last:
             return {"status": "duplicate", "last_seq": last}
-        applied = 0
+        applied, top = 0, last
         if seq > last + 1:
+            # Gap: replay the registry's own log in order; the cursor moves only as far as events really applied.
             log = registry_get("/events", {"after_seq": last})
             for item in sorted(log["events"], key=lambda e: e["data"]["seq"]):
                 if item["data"]["seq"] <= seq:
                     applied += apply_event(c, item, "resync")
+                    top = max(top, int(item["data"]["seq"]))
             c.execute(
                 "UPDATE catalog.registry_cursor SET resynced_at=now() WHERE consumer=%s",
                 (CONSUMER,),
             )
         else:
             applied += apply_event(c, ev, via)
+            top = seq
         c.execute(
             "UPDATE catalog.registry_cursor SET last_seq=%s, updated_at=now() WHERE consumer=%s",
-            (seq, CONSUMER),
+            (top, CONSUMER),
         )
         return {
-            "status": "applied",
+            "status": "applied" if top >= seq else "gap_unresolved",
             "applied": applied,
-            "last_seq": seq,
+            "last_seq": top,
             "resynced": seq > last + 1,
         }
 

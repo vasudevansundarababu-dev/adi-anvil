@@ -244,9 +244,9 @@ def _account_type(product):
     }[product]
 
 
-def _make_case(product, n):
+def _make_case(product, n, seed=SEED):
     """One synthetic case. Deterministic per (product, n) so v2's 20 cases are kept unchanged in v3."""
-    rng = random.Random(f"{SEED}:{product}:{n}")
+    rng = random.Random(f"{seed}:{product}:{n}")
     parties = 1 if product == "individual" else 2
     edge = []
     if product in ("teen_joint", "custodial") and rng.random() < 0.18:
@@ -333,8 +333,8 @@ def _make_case(product, n):
     }
 
 
-def cases(per_product):
-    return [_make_case(p, n) for p in PRODUCTS for n in range(1, per_product + 1)]
+def cases(per_product, seed=SEED):
+    return [_make_case(p, n, seed) for p in PRODUCTS for n in range(1, per_product + 1)]
 
 
 def case_catalog(rows):
@@ -366,18 +366,22 @@ def case_catalog(rows):
 
 def environment_versions():
     """Registry content for golden-kyc-openenv. v2 shipped with Golden KYC V8 (rel-0412); v3 is the current
-    environment-only release (rel-0431); v4 (another seed family) is published only by a stub scenario."""
+    environment-only release (rel-0431). The second seed family (kyc_cases-20261203) is published only by a stub
+    scenario: v4 was released without the template's known fixtures (renamed case IDs), so the RL Gym refuses it at
+    qualification (environment defect); a released version is final, so the fixed release is v5."""
     out = {}
     for version, per_product, release, released_at, family in [
         (2, 5, "rel-0412", "2026-11-18T10:00:00Z", SEED_FAMILY),
         (3, 100, "rel-0431", "2026-11-21T09:14:00Z", SEED_FAMILY),
         (4, 100, "rel-0447", "2026-12-03T09:00:00Z", SECOND_SEED_FAMILY),
+        (5, 100, "rel-0449", "2026-12-04T09:00:00Z", SECOND_SEED_FAMILY),
     ]:
-        rows = (
-            cases(per_product)
-            if family == SEED_FAMILY
-            else [{**c, "case_id": c["case_id"] + "-d"} for c in cases(per_product)]
-        )
+        if family == SEED_FAMILY:
+            rows = cases(per_product)
+        elif version == 4:
+            rows = [{**c, "case_id": c["case_id"] + "-d"} for c in cases(per_product)]
+        else:
+            rows = cases(per_product, seed=20261203)
         seed_sha = sha([c["case_id"] for c in rows] + [sha(c) for c in rows])
         recipe = {
             "base": "python:3.12-slim",

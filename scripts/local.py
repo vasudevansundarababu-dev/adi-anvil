@@ -419,9 +419,31 @@ def main():
     elif cmd == "worker-restart":
         restart_worker()
     elif cmd == "check":
-        run([str(PY), "-m", "ruff", "check", "services/backend", "scripts", "tests"], env=env())
         run(
-            [str(PY), "-m", "ruff", "format", "--check", "services/backend", "scripts", "tests"],
+            [
+                str(PY),
+                "-m",
+                "ruff",
+                "check",
+                "services/backend",
+                "services/stubs",
+                "scripts",
+                "tests",
+            ],
+            env=env(),
+        )
+        run(
+            [
+                str(PY),
+                "-m",
+                "ruff",
+                "format",
+                "--check",
+                "services/backend",
+                "services/stubs",
+                "scripts",
+                "tests",
+            ],
             env=env(),
         )
         run(

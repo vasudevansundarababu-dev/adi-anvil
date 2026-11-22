@@ -1,5 +1,46 @@
 # Build status
 
+## RL Gym v2: local run, stubs, projects, catalog, evaluators, models — 21 November 2026
+
+Branch `claude/rlgym-v2-8919f6` (worktree), local only; nothing pushed, deployed or emailed; no model called.
+Design: adi-labs-design `rl-gym/BUILD-LOCAL.md` work packages 2.1–2.10. Decisions RG-01..RG-14 in BUILD-DECISIONS.json
+(`rlgym_v2_increment`). Runbook: docs/runbooks/rlgym-v2-local.md.
+
+What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs, Admin, To do bell; `/workspace` unchanged):
+
+| Package | State | Evidence |
+|---|---|---|
+| Local run | done | `pnpm preflight` ok; `pnpm setup:local` ok on isolated compose project `adi-anvil-rlgym` (new volumes; main checkout's volumes untouched); `pnpm dev` starts API, worker, web and both stubs; `pnpm rlgym:demo` idempotent |
+| 2.1 Studio and ADI Forge stubs | done | services/stubs (8211, 8212): registry reads/events/resync log, receipts, usage, inbox, environment simulator; Forge packages, run-reviews, qualification records, exports. Golden KYC V8 (tpl_kyc_01, 20 S7 criteria, 4 products), golden-kyc-openenv v2 (20 cases) and v3 (400, 100 per product), synthetic |
+| 2.2 Projects and exports | done (suites part is 2.6) | migration 039; export idempotent by hash, packages hash-checked, corrections supersede, receipts; Projects list with suggested actions; project page (Tasks, Selection rules, Exports; Suites tab says 2.6); task detail with audited Reviewer-only part |
+| 2.3 Catalog, selection rules, overrides | done | registry mirror by sequence with gap resync; Same data/Pinned/Latest; D20 evaluator rules; overrides need a different binding approver (API + DB CHECK); remove override; Admin → Environments and environment page with environment-defect inbox item; urgent path on failed re-qualification |
+| 2.4 Frameworks and evaluator configurations | done (python framework only) | A-06 create (same binding = same version), known-case tests in sandboxed subprocess (allowed→pass, disallowed→fail, missing→blocked), fix versions, deprecate, revoke with impact, B4; A-03 validate/known-case-tests/activation; Admin → Evaluators, configuration page, Templates. ZEN/Promptfoo/Pramaana registered but not installed locally |
+| 2.5 Models, keys, model sets | done (mock provider only) | migration 040; keys in the existing encrypted local store (last4 only), immutable model versions, probes (controlled mock ok; real providers `live_disabled`, never called), model sets with versions; Admin → Models, Model sets, Keys |
+| 2.6 Suites, data plan, Trust & Safety | not started | — |
+| 2.7 Runs, admission, execution, scoring | not started | Runs screens say so |
+| 2.8 Report and PDF | not started | — |
+| 2.9 Episodes, viewer, SME review | not started | — |
+| 2.10 Home, To do, Users | partial | To do opened/closed by events (import, ready, override, inbox, urgent, evaluator cohort/B4); Users list with profile and binding-approver edits; leaderboard waits for runs; invites not built |
+
+Tests (21 Nov 2026, this worktree, stack running):
+
+- `pnpm check`: passed (ruff incl. services/stubs, prettier, tsc, `next build`, OpenAPI contract regenerated).
+- `pnpm test:unit`: 376 passed, 3 failed — the 3 are pre-existing `test_workspace_costs.py` price records past their
+  expiry date (identical failure before any change: 345 passed, 3 failed). RL Gym v2: 31 passed (`test_rlgym_v2_unit.py`).
+- `pnpm test:e2e`: 14 passed, 5 failed (before 2.5 test was added). RL Gym v2 4/4 passed; now 5/5
+  (`pnpm exec playwright test tests/e2e/rlgym-v2.spec.ts`). The 5 failures are existing workspace specs that need
+  `artifacts/test-runs/journey.json` and retained run evidence from the retired journey spec, which a fresh worktree
+  does not have (factory, modern-workspace ×3), and credential-refresh (legacy model-list pagination timeout). Not
+  investigated further; code they exercise was not changed.
+- `pnpm test:integration`: 150 passed, 19 skipped, 43 failed — none in RL Gym v2 files. 33 failures are missing fixture
+  artifacts (`FileNotFoundError`, same cause as above); others are the expired pricing records, a missing local Docker
+  image and import-pipeline outcome assertions in unchanged legacy modules. RL Gym v2 integration: 14 passed
+  (`test_rlgym_v2.py`, `test_rlgym_v2_systems.py`; each run uses its own disposable `it-…` workspace).
+- Screenshots: artifacts/test-runs/rlgym-v2-*.png (ignored).
+
+Known limits: qualification runs against the Studio stub's environment simulator (Docker-built environments are 2.7);
+only the sandboxed Python evaluator framework runs; Hugging Face "Use latest" is off; live providers stay disabled.
+
 ## Hash fix deployed and no-model controls verified — 19 November 2026
 
 QA serves151d6fbdea701be0d1f1c02bd869456c8dbad318/schema132, all6services
