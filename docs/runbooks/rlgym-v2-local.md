@@ -66,7 +66,15 @@ runs → Package (n) writes a hashed JSON bundle to `.local/rlgym/packages/`.
 | `POST :8211/stub/inbox-items/{id}/status` `{"state": "planned", "planned_version": "v6"}` | Studio plans, releases or declines an inbox item |
 | `POST :8212/stub/projects/prj_7f3a91c2/export` `{"export_id": "exp-0002", "corrections": {...}}` | ADI Forge re-exports corrected tasks |
 
-Checks, in order: `pnpm check`, `pnpm test:unit`, `pnpm test:e2e`, `pnpm test:integration` (needs `pnpm dev` running).
+Checks, in order (with `pnpm dev` running): `pnpm check`, `pnpm test:unit`, `pnpm test:e2e`, then
+
+```bash
+ANVIL_HARBOR_DOCKER_HOST=unix:///Users/vasudevansundarababu/.docker/run/docker.sock pnpm test:integration
+```
+
+The Docker host is an explicit opt-in for the import sandbox's Docker-backed tests (Docker Desktop has no
+/var/run/docker.sock). `pnpm test:e2e` and `pnpm test:integration` rebuild `artifacts/test-runs/journey.json` with
+`tests/prepare_journey_fixture.py` when it is missing or stale.
 RL Gym v2 tests: `tests/e2e/rlgym-v2.spec.ts`, `services/backend/tests/unit/test_rlgym_v2_unit.py`,
 `services/backend/tests/integration/test_rlgym_v2*.py` (each module creates its own disposable `it-…` workspace).
 Run tests (`test_rlgym_v2_runs.py`) need Docker.

@@ -7,9 +7,25 @@ from test_api_security import USERS
 from test_praxis_harbor import BASE, imported
 from test_workspace_execution import configured  # noqa: F401
 
-from anvil import artifacts
+from anvil import artifacts, workspace_costs
 from anvil.cli import OUTSIDER_PROJECT, PROJECT
 from anvil.db import one, transaction
+
+
+class _CheckedPriceWindow(__import__("datetime").datetime):
+    """Managed rates were checked on 1-2 Nov 2026 and expire a week later by design (fail closed). These tests check
+    readiness and budget logic inside that window, not today's wall clock."""
+
+    @classmethod
+    def now(cls, tz=None):
+        import datetime as _dt
+
+        return _dt.datetime(2026, 11, 5, 12, 0, tzinfo=tz or _dt.timezone.utc)
+
+
+@pytest.fixture(autouse=True)
+def checked_price_window(monkeypatch):
+    monkeypatch.setattr(workspace_costs, "datetime", _CheckedPriceWindow)
 
 
 def test_task_detail_search_and_environment_intake_remain_scoped_and_inert(client_factory):

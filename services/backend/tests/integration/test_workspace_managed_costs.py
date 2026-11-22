@@ -14,6 +14,22 @@ from anvil import workspace_execution as execution
 from anvil.db import one, transaction
 
 
+class _CheckedPriceWindow(__import__("datetime").datetime):
+    """Managed rates were checked on 1-2 Nov 2026 and expire a week later by design (fail closed). These tests check
+    readiness and budget logic inside that window, not today's wall clock."""
+
+    @classmethod
+    def now(cls, tz=None):
+        import datetime as _dt
+
+        return _dt.datetime(2026, 11, 5, 12, 0, tzinfo=tz or _dt.timezone.utc)
+
+
+@pytest.fixture(autouse=True)
+def checked_price_window(monkeypatch):
+    monkeypatch.setattr(workspace_costs, "datetime", _CheckedPriceWindow)
+
+
 @pytest.mark.parametrize("configured", ["managed-costs"], indirect=True)
 def test_no_manual_cost_or_terms_setup_and_refresh_preserves_history_and_budget(
     configured, monkeypatch

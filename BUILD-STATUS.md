@@ -24,6 +24,29 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
 
 Tests (21 Nov 2026, this worktree, stack running):
 
+- **All four suites pass, 22 Nov 2026 (after repairing the older workspace tests):**
+  - `pnpm check` EXIT 0.
+  - `pnpm test:unit` EXIT 0: 396 passed.
+  - `pnpm test:e2e` EXIT 0: 26 passed (12 RL Gym v2, 14 workspace).
+  - `ANVIL_HARBOR_DOCKER_HOST=unix:///Users/vasudevansundarababu/.docker/run/docker.sock pnpm test:integration`
+    EXIT 0: 223 passed, 19 skipped (`ANVIL_TEST_HARBOR` / Praxis-export optional tests), 0 failed. Without the Docker
+    host setting the 4 Docker-backed import tests fail ("Docker operation failed: image"): Docker Desktop has no
+    /var/run/docker.sock here and the import sandbox deliberately inherits no Docker context (opt-in, as in the
+    repo's earlier reports), so the scripts do not set it automatically.
+  - Repairs (tests and fixtures only; no product rule changed):
+    1. `tests/prepare_journey_fixture.py` rebuilds `artifacts/test-runs/journey.json` (a reviewed six-episode
+       synthetic diagnostic run, approved report, built sales kit and one simulated fixture delivery with
+       `real_email_sent=false`) through the local API with the test-session helper; `pnpm test:e2e` and
+       `pnpm test:integration` run it when the file is missing or stale. The retired classic-UI journey spec used to
+       leave this file behind.
+    2. Managed price records expire 7 days after they were checked (1–2 Nov), by design. The cost unit tests and two
+       cost integration modules now pin the clock inside the checked window, plus a test that an expired rate still
+       fails closed on the real clock. The product's rates and expiry were not changed: re-verifying prices is the
+       owner's step before any live call.
+    3. Two access tests asserted rows that migrations 028/033 write only when upgrading a database that already had
+       members; on a freshly created database they are empty. The tests now check the rule (history and its audit
+       events match) and keep the read-only checks.
+
 - **Final, 22 Nov 2026 (all packages):** `pnpm check` EXIT 0. `pnpm test:unit` 392 passed, 3 failed (the same expired
   price records in `test_workspace_costs.py`). `pnpm test:e2e` 22 passed, 4 failed: all 12 RL Gym v2 browser tests
   pass; failures are the 3 legacy specs that need `artifacts/test-runs/journey.json` and `workspace-task-pages`

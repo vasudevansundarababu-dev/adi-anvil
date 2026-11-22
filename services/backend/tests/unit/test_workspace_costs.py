@@ -1,7 +1,29 @@
+from datetime import datetime, timezone
+
 import pytest
 
 from anvil import workspace_costs as costs
 from anvil.workspace_execution import billed_usage, required_cost
+
+
+class _CheckedWindow(datetime):
+    """The managed rates were checked on 1-2 Nov 2026 and expire a week later by design (fail closed). These tests
+    check the arithmetic and the expiry rule inside that window, not today's wall clock."""
+
+    @classmethod
+    def now(cls, tz=None):
+        return datetime(2026, 11, 5, 12, 0, tzinfo=tz or timezone.utc)
+
+
+@pytest.fixture(autouse=True)
+def checked_window(monkeypatch):
+    monkeypatch.setattr(costs, "datetime", _CheckedWindow)
+
+
+def test_expired_rates_fail_closed_on_the_real_clock(monkeypatch):
+    monkeypatch.setattr(costs, "datetime", datetime)
+    price = costs.managed("anthropic", "claude-opus-5-5")
+    assert costs.current({**price, "expires_at": "2020-01-01T00:00:00Z"}) is False
 
 
 def test_opus_standard_rates_fit_reservation_and_cache_remains_fail_closed():

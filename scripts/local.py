@@ -464,8 +464,13 @@ def main():
         run(["pnpm", "--filter", "@anvil/web", "build"], env=env())
         backend("contracts")
     elif cmd in ["unit", "integration"]:
+        if cmd == "integration":
+            # Workspace tests read a reviewed diagnostic run; rebuild it when missing or stale (needs pnpm dev).
+            run([str(PY), "tests/prepare_journey_fixture.py", "--if-missing"], env=env())
         run([str(PY), "-m", "pytest", f"services/backend/tests/{cmd}", "-q"], env=env())
     elif cmd in ["e2e", "smoke"]:
+        if cmd == "e2e":
+            run([str(PY), "tests/prepare_journey_fixture.py", "--if-missing"], env=env())
         run(["pnpm", "exec", "playwright", "test", *args], env=env())
     elif cmd == "rlgym-demo":
         ensure_rlgym_settings()
