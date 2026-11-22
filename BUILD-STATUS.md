@@ -1,5 +1,56 @@
 # Build status
 
+## 21 November late evening — task-method publication safeguards locally verified
+
+New framework-only migration136 and operator remain separate from serving11463ac.
+31 local method-packet tests passed (one existing Authlib deprecation warning);
+21 real-LOGIN SQL tests passed on a fresh explicitly marked synthetic clone.
+The SQL controls cover scoped publication, private-body exclusion, actual-login
+enrollment, sponsor/enrollment locks, revocation serialization, a project/config
+publication fence and a metadata-only owner existence observation. These are
+software tests, not QA task qualifications or owner approvals.
+
+Publication now repeats current binding validation under project/configuration
+locks before any INSERT, rejects revoked/changed bindings, and loads separately
+hashed original owner-witness bytes rather than trusting repeated hash claims.
+Original observation, witness, independent review, installed runtime and expiry
+must agree. No runtime enrollment or qualification was fabricated. Method source
+and migration136 are not deployed yet. Framework packaging now includes these
+operators without rebuilding the native environment or changing its source hash.
+
+QA UI confirms saved four-task package bindings; readiness remains311 findings
+(including repeated layers), predominantly explicit skill-to-public-step mapping,
+typed diagnostic/rule evaluators and pending method/runtime/safety qualifications.
+Do not mark this project benchmark-ready. No model calls were made.
+
+## 21 November evening — authenticated import and input setup progressed
+
+Actual Admin session confirmed. Projects listing and the four-task Project7
+binding detail loaded on11463ac. Existing pack729266f3 was registered once for
+the current source: case import e02782ac-8f3f-440a-8ce9-dc81f58d033a, synthetic
+reference group d19a7333-aa5f-4e4f-83dc-16bdd972f58c. UI reports four task bindings,
+50 evaluator configurations, software ready. KYCv8 technical qualification
+refreshed successfully, preserving the prior offline PO attestation status.
+
+Approved ZIP SHA3b6d922a489e7a3d5f78f491a84f209cd1d436287f45afd6f1ca2d4e0a078128
+import succeeded through the real Admin UI. Committed resolution
+0c21c153-b783-40a2-90f3-75ec27fa6892 resolves four tasks into existing authored
+group1d2321f4-736f-4e5e-9e41-3cbaf454ee4a, contentSHA95783b4aa369f9277b6c2a89b54c0cdb759304f02f5555bb0a829cd40412219f.
+Thus the prior stale-binding import500 is verified fixed for this exact ZIP.
+Owner domain, rights and expectation reviews remain pending; import success is
+not benchmark readiness. Independent bounded DB readback found production
+commands, execution jobs, governed AI calls and Harbor-agent calls all zero.
+
+Current environment/evaluator references were loaded and saved as new preparation
+B0 32390806-ad24-4d4e-8e89-74affb5e8780. UI returned200 task/input assignments:
+input10194727-165d-4d89-a01b-7b7726e46579,
+SHA2850a32885cc2027287a186c36667eb611dfcb5ef07e559eeee0066e9157b029.
+The response explicitly says stored_candidate_not_qualified and run authority
+not granted; independent committed-input readback is still required. Native
+package preparation was submitted once and is currently unresolved. Do not retry
+or change the frozen B0 while that mutation is in progress. Earlier B0/B1 history
+was preserved. No model/provider calls are authorized.
+
 ## 21 November —11463ac deployed; authenticated setup awaiting sign-in
 
 All eight QA services now serve11463ac332e58f9c0076bc6a79313e8e837f3a2b.

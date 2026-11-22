@@ -22,7 +22,7 @@
         "-e", "EXPECTED_SOURCE=${_NATIVE_SOURCE_SHA256}",
         "--entrypoint", "python", "${_ARTIFACT_PREFIX}binding-framework:${_RUNTIME_TAG}",
         "-B", "-c",
-        "import hashlib,os,runpy; from pathlib import Path; from anvil.golden_kyc_source import source_hash; assert source_hash()==os.environ['EXPECTED_SOURCE']; module=runpy.run_path('/opt/forge-bindings/observe.py'); assert callable(module['observe']); assert callable(module['read_capability']); from alembic.config import Config; from alembic.script import ScriptDirectory; assert ScriptDirectory.from_config(Config('services/backend/alembic.ini')).get_revision('135').down_revision=='134'; print('unchanged_native_source_and_operator_migration_verified')"
+        "import os,runpy; from anvil.golden_kyc_source import source_hash; assert source_hash()==os.environ['EXPECTED_SOURCE']; module=runpy.run_path('/opt/forge-bindings/observe.py'); assert callable(module['observe']); assert callable(module['read_capability']); from infra.gcp import task_method_qualification,task_method_owner_observation; assert callable(task_method_qualification.publish); assert callable(task_method_owner_observation.observe); from alembic.config import Config; from alembic.script import ScriptDirectory; assert ScriptDirectory.from_config(Config('services/backend/alembic.ini')).get_revision('136').down_revision=='135'; print('unchanged_native_source_and_operator_migration_verified')"
       ]
     }
   ],
