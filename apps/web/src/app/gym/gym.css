@@ -1036,3 +1036,13 @@ body:has(#gym) {
 #gym .button.brand-primary:hover {
   background: #5b21b6;
 }
+
+/* New case kind / S4 edge case in four parts (2.12) */
+#gym fieldset.edge-parts {
+  border: 1px solid var(--line, #e5e5e5);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: grid;
+  gap: 6px;
+  margin: 6px 0;
+}

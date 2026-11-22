@@ -190,8 +190,8 @@ def receive_export(c, ws, actor, project_id, body):
             )
         c.execute(
             """INSERT INTO projects.task_imports(id,workspace_id,project_id,export_id,task_id,revision,title,package_ref,package_sha256,
-                 case_selector,actor_payload,private_payload,state,state_reason,corrects_id,sme_batch_id)
-               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                 case_selector,actor_payload,private_payload,state,state_reason,corrects_id,sme_batch_id,complexity,archetype)
+               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 str(uuid4()),
                 ws,
@@ -209,6 +209,9 @@ def receive_export(c, ws, actor, project_id, body):
                 reason,
                 latest["id"] if latest else None,
                 task.get("sme_batch_id"),
+                # Slice tags (2.12): the private part of the authored package (S1 lists of the template).
+                package["private"].get("complexity"),
+                package["private"].get("archetype"),
             ),
         )
         if latest:

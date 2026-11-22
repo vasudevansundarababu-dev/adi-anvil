@@ -77,6 +77,7 @@ def validate(c, ws, doc):
             }
         )
     checks += _verifier_checks(c, ws, doc, bound)
+    checks += _edge_case_checks(doc)
     checks.append(
         {
             "check": "runtime_supports_mode",
@@ -127,6 +128,46 @@ def _verifier_checks(c, ws, doc, bound):
             }
         )
     return out
+
+
+def _edge_case_checks(doc):
+    """S4 edge cases (2.12): each has a tag, a recipe, an expected outcome with a recommendation, a minimum, and slice
+    tags from the template's S1 lists. The tags must be unique."""
+    edges = doc.get("edge_cases")
+    if not edges:
+        return []
+    lists = doc.get("slice_lists") or {}
+    reasons, seen = [], set()
+    for e in edges:
+        tag = e.get("tag") or "?"
+        if tag in seen:
+            reasons.append(f"{tag}: duplicate edge-case tag")
+        seen.add(tag)
+        if not (e.get("recipe") or "").strip():
+            reasons.append(f"{tag}: no generator recipe, so its data cannot be asked for")
+        if not (e.get("expected_outcome") or {}).get("recommendation"):
+            reasons.append(f"{tag}: expected outcome needs a recommendation")
+        minimum = e.get("minimum")
+        if not (isinstance(minimum, dict) and minimum) and not isinstance(minimum, int):
+            reasons.append(f"{tag}: minimum cases (per product) is required")
+        for key in ("complexity", "archetype"):
+            allowed = lists.get(key)
+            if e.get(key) and allowed and e[key] not in allowed:
+                reasons.append(f"{tag}: {key} {e[key]!r} is not in the template's S1 list")
+    return [
+        {
+            "check": "edge_cases_valid",
+            "ok": not reasons,
+            "edge_cases": len(edges),
+            "reason": "; ".join(reasons) or None,
+            "reasons": reasons,
+        }
+    ]
+
+
+def edge_minimum(edge):
+    m = edge.get("minimum")
+    return sum(int(v) for v in m.values()) if isinstance(m, dict) else int(m or 0)
 
 
 def known_case_tests(c, ws, actor, body):
@@ -285,6 +326,9 @@ def activate(c, ws, actor, doc):
         "verifier_blocks_valid": all(
             ch["ok"] for ch in result["checks"] if ch["check"] == "verifier_blocks_valid"
         ),
+        "edge_cases_valid": all(
+            ch["ok"] for ch in result["checks"] if ch["check"] == "edge_cases_valid"
+        ),
         "known_case_tests_passed": kct["passed"],
         "known_case_tests": f"{sum(r['result'] == 'qualified' for r in kct['criteria'])} of {len(kct['criteria'])}",
         "detail": result["checks"],
@@ -293,8 +337,8 @@ def activate(c, ws, actor, doc):
     row = c.execute(
         """INSERT INTO catalog.template_activations(workspace_id,template_id,version,template_key,name,mode,spec_sha256,template_sha256,
              forge_template_id,forge_version,studio_release,default_bindings,workflow,case_dimensions,pass_mark,checks,state,state_reason,
-             activated_at,activated_by,forge_template_version_hash,expected_values_from,failure_taxonomy)
-           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),%s,%s,%s,%s) RETURNING *""",
+             activated_at,activated_by,forge_template_version_hash,expected_values_from,failure_taxonomy,edge_cases,slice_lists)
+           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),%s,%s,%s,%s,%s,%s) RETURNING *""",
         (
             ws,
             doc["template_id"],
@@ -318,6 +362,8 @@ def activate(c, ws, actor, doc):
             doc.get("forge_template_version_hash"),
             doc.get("expected_values_from"),
             Jsonb(doc["failure_taxonomy"]) if doc.get("failure_taxonomy") else None,
+            Jsonb(doc["edge_cases"]) if doc.get("edge_cases") else None,
+            Jsonb(doc["slice_lists"]) if doc.get("slice_lists") else None,
         ),
     ).fetchone()
     for cr in doc["criteria"]:

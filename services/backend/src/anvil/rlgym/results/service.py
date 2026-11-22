@@ -322,6 +322,21 @@ def _episode(c, ws, episode_id):
     return row
 
 
+def _with_task_tags(c, e, edge):
+    """Slice tags default to the episode's task (complexity, archetype from its authored package)."""
+    edge = dict(edge or {})
+    tags = dict(edge.get("slice_tags") or {})
+    task = c.execute(
+        "SELECT complexity, archetype FROM projects.task_imports WHERE id=%s",
+        (e["task_import_id"],),
+    ).fetchone()
+    for key in ("complexity", "archetype"):
+        if not tags.get(key) and task and task[key]:
+            tags[key] = task[key]
+    edge["slice_tags"] = tags
+    return edge
+
+
 def save_diagnosis(c, ws, actor, episode_id, body):
     _writer(actor)
     e = _episode(c, ws, episode_id)
@@ -462,6 +477,7 @@ def send_inbox(c, ws, actor, episode_id, body):
                 "kind": "new_case_kind",
                 "summary": body.get("summary")
                 or f"Case {e['case_id']} is a kind the template does not have",
+                "edge_case": _with_task_tags(c, e, body.get("edge_case")),
             },
         )
     else:

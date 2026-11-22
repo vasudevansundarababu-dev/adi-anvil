@@ -42,12 +42,90 @@ GATES = {"screening", "decision"}
 # State, Process and Rubric blocks on golden-kyc-openenv v6, which declares Studio's v6 collections and answers a
 # snapshot. v6 has its own seed-family label so V8/V9 projects keep binding v3.
 BLOCKS_VERSION = 10
+# Golden KYC V11 (work package 2.12): V10 plus S4 edge cases (tag, archetype, complexity, products, recipe, expected
+# outcome, minimum per product, and the four plain-English parts) and the S1 slice lists. Its tasks carry complexity and
+# archetype in the private part. address_mismatch asks for more cases than v6 has, so the data plan shows it short.
+EDGES_VERSION = 11
+SLICE_LISTS = {
+    "complexity": ["single_step", "multi_hop", "judgement"],
+    "archetype": [
+        "standard",
+        "sanctions_near_match",
+        "minor_missing_tin",
+        "expired_document",
+        "address_mismatch",
+    ],
+}
+ARCHETYPE_FOR = {
+    "screening_hit": "sanctions_near_match",
+    "minor_without_tin": "minor_missing_tin",
+    "expired_id": "expired_document",
+    "address_mismatch": "address_mismatch",
+}
+S4_EDGE_CASES = [
+    {
+        "tag": "screening_hit",
+        "archetype": "sanctions_near_match",
+        "complexity": "judgement",
+        "products": ["individual", "adult_joint", "teen_joint", "custodial"],
+        "policy_rule": "S4-R11",
+        "scenario_context": "A customer applies for an account; one party is screened against the sanctions list.",
+        "twist": "Screening returns a possible match for that party.",
+        "expected_outcome": {"recommendation": "escalate", "referral": "sanctions"},
+        "rationale": "A possible sanctions match is never approved by the reviewer; it goes to a specialist.",
+        "recipe": "a party of the case has a screening hit (environment fact screening_hits)",
+        "minimum": {"individual": 5, "adult_joint": 5, "teen_joint": 5, "custodial": 5},
+    },
+    {
+        "tag": "minor_without_tin",
+        "archetype": "minor_missing_tin",
+        "complexity": "multi_hop",
+        "products": ["teen_joint", "custodial"],
+        "policy_rule": "S4-R07",
+        "scenario_context": "A joint or custodial account includes a minor.",
+        "twist": "The minor has no taxpayer identification number.",
+        "expected_outcome": {"recommendation": "escalate"},
+        "rationale": "A minor without a TIN needs compliance review before the account opens.",
+        "recipe": "a minor party (minor_joint_owner or beneficiary) has tin_present false",
+        "minimum": {"teen_joint": 10, "custodial": 10},
+    },
+    {
+        "tag": "expired_id",
+        "archetype": "expired_document",
+        "complexity": "single_step",
+        "products": ["individual", "adult_joint", "teen_joint", "custodial"],
+        "policy_rule": "S4-R03",
+        "scenario_context": "A customer submits an identity document with the application.",
+        "twist": "The first party's identity document has expired.",
+        "expected_outcome": {"recommendation": "request_documents", "request_type": "id_document"},
+        "rationale": "An expired document cannot verify identity; ask for a current one.",
+        "recipe": "party P1's document has expired true",
+        "minimum": {"individual": 5, "adult_joint": 5, "teen_joint": 5, "custodial": 5},
+    },
+    {
+        "tag": "address_mismatch",
+        "archetype": "address_mismatch",
+        "complexity": "multi_hop",
+        "products": ["individual", "adult_joint", "teen_joint", "custodial"],
+        "policy_rule": "S4-R05",
+        "scenario_context": "A customer gives a home address on the application.",
+        "twist": "The address on the document differs from the application.",
+        "expected_outcome": {
+            "recommendation": "request_documents",
+            "request_type": "proof_of_address",
+        },
+        "rationale": "The address must be proven before the account opens.",
+        "recipe": "address_on_document_matches is false for the case",
+        "minimum": {"individual": 15, "adult_joint": 15, "teen_joint": 15, "custodial": 15},
+    },
+]
 SNAPSHOT_ENV_VERSION = 6
 SNAPSHOT_SEED_FAMILY = "kyc_cases-20261122"
 PROJECTS = {
     FORGE_PROJECT_ID: {"name": FORGE_PROJECT_NAME, "template_version": 8, "forge_version": 3},
     "prj_d4e9b1a7": {"name": "KYC December", "template_version": 9, "forge_version": 4},
     "prj_b10c4e21": {"name": "KYC Verifier", "template_version": 10, "forge_version": 5},
+    "prj_e11a5c07": {"name": "KYC Edge Cases", "template_version": 11, "forge_version": 6},
 }
 FAILURE_TAXONOMY = [
     "STATE_MUTATION_ERROR",
@@ -814,7 +892,7 @@ def block_evaluator_bindings():
 
 
 def template(version=TEMPLATE_VERSION):
-    if version not in (TEMPLATE_VERSION, GATED_VERSION, BLOCKS_VERSION):
+    if version not in (TEMPLATE_VERSION, GATED_VERSION, BLOCKS_VERSION, EDGES_VERSION):
         raise ValueError(f"unknown Golden KYC version {version}")
     blocks = version >= BLOCKS_VERSION
     doc = {
@@ -824,9 +902,11 @@ def template(version=TEMPLATE_VERSION):
         "name": f"Golden KYC V{version}",
         "mode": "single_agent",
         "pass_mark": PASS_MARK,
-        "studio_release": {TEMPLATE_VERSION: "rel-0412", GATED_VERSION: "rel-0455"}.get(
-            version, "rel-0461"
-        ),
+        "studio_release": {
+            TEMPLATE_VERSION: "rel-0412",
+            GATED_VERSION: "rel-0455",
+            BLOCKS_VERSION: "rel-0461",
+        }.get(version, "rel-0462"),
         "bindings": [
             {
                 "alias": ALIAS,
@@ -864,11 +944,16 @@ def template(version=TEMPLATE_VERSION):
             "edge_cases": EDGE_CASES,
         },
         "forge_template_id": FORGE_TEMPLATE_ID,
-        "forge_version": {TEMPLATE_VERSION: FORGE_VERSION, GATED_VERSION: 4}.get(version, 5),
+        "forge_version": {TEMPLATE_VERSION: FORGE_VERSION, GATED_VERSION: 4, BLOCKS_VERSION: 5}.get(
+            version, 6
+        ),
     }
     if blocks:
         doc["expected_values_from"] = "case_reference"
         doc["failure_taxonomy"] = FAILURE_TAXONOMY
+    if version >= EDGES_VERSION:
+        doc["edge_cases"] = S4_EDGE_CASES
+        doc["slice_lists"] = SLICE_LISTS
     doc["spec_sha256"] = sha(
         {k: v for k, v in doc.items() if k not in ("forge_template_id", "forge_version")}
     )
@@ -951,6 +1036,19 @@ def forge_tasks(
                     "expected": "per case: reference_answers in the environment seed (never shown to the agent)",
                     "grading_notes": corr.get(
                         "grading_note", "Score each S7 criterion from the sealed evidence."
+                    ),
+                    # 2.12 slice tags (S1 lists), private: V11 and later only, so earlier packages keep their hashes.
+                    **(
+                        {
+                            "complexity": {
+                                "complete": "single_step",
+                                "incomplete": "multi_hop",
+                                "edge": "judgement",
+                            }[kind],
+                            "archetype": ARCHETYPE_FOR.get((edge or [None])[0], "standard"),
+                        }
+                        if template_version >= EDGES_VERSION
+                        else {}
                     ),
                 },
             }

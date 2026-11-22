@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { EdgeCaseForm, edgeBody, edgeReady, emptyEdge, type EdgeParts } from './EdgeCase';
 import { useState } from 'react';
 import { GymApiError, send, short, when, wsBase } from './api';
 import { Keys, Models } from './Models';
@@ -1048,6 +1049,7 @@ function TemplatePage({ tid, version }: { tid: string; version: string }) {
   );
   const [summary, setSummary] = useState('');
   const [evidence, setEvidence] = useState('');
+  const [edge, setEdge] = useState<EdgeParts>(emptyEdge);
   const [failure, setFailure] = useState<GymApiError | null>(null);
   return (
     <Loading data={data} error={error}>
@@ -1169,6 +1171,23 @@ function TemplatePage({ tid, version }: { tid: string; version: string }) {
                   {i.studio_id ?? i.id} · {i.kind} · {i.summary} · {i.state}
                 </small>
               ))}
+              {(data.edge_cases ?? []).length > 0 && (
+                <>
+                  <h4>S4 edge cases</h4>
+                  {data.edge_cases.map((e: any) => (
+                    <small key={e.tag}>
+                      <code>{e.tag}</code> · {e.archetype} · {e.complexity} · minimum{' '}
+                      {typeof e.minimum === 'object'
+                        ? Object.values(e.minimum as Record<string, number>).reduce(
+                            (a, b) => a + b,
+                            0,
+                          )
+                        : e.minimum}{' '}
+                      · {e.recipe}
+                    </small>
+                  ))}
+                </>
+              )}
               <h4>Send to Studio inbox (new case kind)</h4>
               <small>
                 The current template version is final: the item changes nothing now and reaches
@@ -1182,8 +1201,9 @@ function TemplatePage({ tid, version }: { tid: string; version: string }) {
                 Evidence (episodes, the case and why it is a new kind)
                 <input value={evidence} onChange={(e) => setEvidence(e.target.value)} />
               </label>
+              <EdgeCaseForm value={edge} onChange={setEdge} lists={data.slice_lists ?? undefined} />
               <button
-                disabled={!summary.trim()}
+                disabled={!summary.trim() || !edgeReady(edge, true)}
                 onClick={async () => {
                   setFailure(null);
                   try {
@@ -1193,9 +1213,11 @@ function TemplatePage({ tid, version }: { tid: string; version: string }) {
                       version: data.version,
                       summary,
                       evidence: { why: evidence },
+                      edge_case: edgeBody(edge),
                     });
                     say(`New case kind item ${item.id} queued for Studio.`);
                     setSummary('');
+                    setEdge(emptyEdge);
                     reload();
                   } catch (e) {
                     setFailure(e as GymApiError);

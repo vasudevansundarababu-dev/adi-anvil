@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { EdgeCaseForm, edgeBody, edgeReady, emptyEdge, type EdgeParts } from './EdgeCase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { GymApiError, send, wsBase } from './api';
@@ -352,6 +353,25 @@ function TasksView({ id, v, models }: { id: string; v: any; models: Model[] }) {
           ),
         ])}
       />
+      {(v.slices ?? []).length > 0 && (
+        <>
+          <h3>Results by complexity and archetype</h3>
+          <small>Slice tags from the authored tasks (the template's S1 lists).</small>
+          <ModelTable
+            head={['Slice', 'Episodes', ...models.map((m) => `${m.name} passed · failed`)]}
+            rows={v.slices.map((s: any) => [
+              <span key="s">
+                {s.dimension} · <code>{s.value}</code>
+              </span>,
+              s.episodes,
+              ...models.map(
+                (m) =>
+                  `${pct(s.per_model[m.system_id]?.pass_rate)} · ${s.per_model[m.system_id]?.failed ?? 0}`,
+              ),
+            ])}
+          />
+        </>
+      )}
       <h3>Results by stratum</h3>
       <ModelTable
         head={['Stratum', 'Episodes', ...models.map((m) => `${m.name} passed`)]}
@@ -530,9 +550,15 @@ function CaseBody({ id, c, models }: { id: string; c: any; models: Model[] }) {
 function FailuresView({ id, v, models }: { id: string; v: any; models: Model[] }) {
   const [model, setModel] = useState('');
   const [cause, setCause] = useState('');
+  const [complexity, setComplexity] = useState('');
+  const [archetype, setArchetype] = useState('');
   const [page, setPage] = useState(1);
   const rows = v.episodes.filter(
-    (e: any) => (!model || e.system_id === model) && (!cause || (e.likely_cause ?? '') === cause),
+    (e: any) =>
+      (!model || e.system_id === model) &&
+      (!cause || (e.likely_cause ?? '') === cause) &&
+      (!complexity || e.complexity === complexity) &&
+      (!archetype || e.archetype === archetype),
   );
   const pages = Math.max(1, Math.ceil(rows.length / 20));
   return (
@@ -576,6 +602,20 @@ function FailuresView({ id, v, models }: { id: string; v: any; models: Model[] }
           />
         </>
       )}
+      {(v.slices ?? []).length > 0 && (
+        <>
+          <h3>Failures by complexity and archetype</h3>
+          <ModelTable
+            head={['Slice', ...models.map((m) => `${m.name} failed`)]}
+            rows={v.slices.map((s: any) => [
+              <span key="s">
+                {s.dimension} · <code>{s.value}</code>
+              </span>,
+              ...models.map((m) => s.per_model[m.system_id]?.failed ?? 0),
+            ])}
+          />
+        </>
+      )}
       <h3>Failures by likely cause</h3>
       <small>{v.cause_note}</small>
       <ModelTable
@@ -600,6 +640,27 @@ function FailuresView({ id, v, models }: { id: string; v: any; models: Model[] }
             ))}
           </select>
         </label>
+        {(['complexity', 'archetype'] as const).map((dim) => {
+          const values = Array.from(
+            new Set((v.episodes as any[]).map((e) => e[dim]).filter(Boolean)),
+          ) as string[];
+          if (!values.length) return null;
+          const [value, setValue] =
+            dim === 'complexity' ? [complexity, setComplexity] : [archetype, setArchetype];
+          return (
+            <label key={dim}>
+              {dim === 'complexity' ? 'Complexity' : 'Archetype'}{' '}
+              <select value={value} onChange={(e) => (setValue(e.target.value), setPage(1))}>
+                <option value="">All</option>
+                {values.map((x) => (
+                  <option key={x} value={x}>
+                    {x}
+                  </option>
+                ))}
+              </select>
+            </label>
+          );
+        })}
         <label>
           Cause{' '}
           <select value={cause} onChange={(e) => (setCause(e.target.value), setPage(1))}>
@@ -989,11 +1050,13 @@ function Review({ id, d }: { id: string; d: any }) {
       setFailure(e as GymApiError);
     }
   }
+  const [edge, setEdge] = useState<EdgeParts>(emptyEdge);
   async function inbox(kind: string) {
     try {
       const out = await send('POST', `${base}/episodes/${d.episode_id}/inbox-items`, {
         kind,
         criterion_id: criterion,
+        ...(kind === 'new_case_kind' ? { edge_case: edgeBody(edge) } : {}),
       });
       setItem(out.id);
       say(`Studio inbox item ${out.id} queued.`);
@@ -1105,9 +1168,16 @@ function Review({ id, d }: { id: string; d: any }) {
             </button>
           )}
           {form.task_finding === 'task_defect' && isSaved && !item && (
-            <button onClick={() => inbox('new_case_kind')}>
-              Send to Studio inbox (new case kind)
-            </button>
+            <>
+              <EdgeCaseForm
+                value={edge}
+                onChange={setEdge}
+                tagsHint="defaults to this task's tag"
+              />
+              <button disabled={!edgeReady(edge, false)} onClick={() => inbox('new_case_kind')}>
+                Send to Studio inbox (new case kind)
+              </button>
+            </>
           )}
           {item && <small>Studio inbox {item} · received</small>}
         </div>

@@ -26,6 +26,17 @@ DEFAULT_PLAN = {
 }
 
 
+def _edge_cases(c, ws, pid):
+    """The S4 edge cases of the project's activated template (2.12), by tag."""
+    row = c.execute(
+        """SELECT a.edge_cases FROM projects.projects p JOIN catalog.template_activations a
+           ON a.workspace_id=p.workspace_id AND a.template_id=p.template_id AND a.version=p.template_version
+           WHERE p.workspace_id=%s AND p.project_id=%s""",
+        (ws, pid),
+    ).fetchone()
+    return {e["tag"]: e for e in ((row or {}).get("edge_cases") or [])}
+
+
 def _project(c, ws, pid):
     row = c.execute(
         "SELECT * FROM projects.projects WHERE workspace_id=%s AND project_id=%s", (ws, pid)
@@ -516,6 +527,17 @@ def create_suite(c, ws, actor, pid, name, from_default=True, is_default=False):
         plan_body = {
             **plan_body,
             "sample_size": catalog["cases"],
+            "missing_policy": "use_available",
+        }
+    edges = _edge_cases(c, ws, pid)
+    if not plan and edges:
+        # 2.12: the default plan counts cases per S4 edge-case tag at the template's minimum. A short tag shows in the
+        # plan and can be asked for (more data); the run uses what exists meanwhile.
+        from anvil.rlgym.catalog.templates import edge_minimum
+
+        plan_body = {
+            **plan_body,
+            "required_edges": {tag: edge_minimum(e) for tag, e in edges.items()},
             "missing_policy": "use_available",
         }
     _write_plan(c, ws, sv_id, plan_body, catalog)
@@ -1011,6 +1033,28 @@ def send_more_data(c, ws, actor, sv_id, body):
         "SELECT * FROM suites.data_plans WHERE suite_version_id=%s", (sv_id,)
     ).fetchone()
     env = _bound_env(c, ws, sv["project_id"], sv_id)
+    edges = _edge_cases(c, ws, sv["project_id"])
+
+    def edge_detail(cell_key):
+        """2.12: an edge-case cell carries the tag, the generator recipe and the expected outcome, so Studio can make
+        those cases with the same generator and seed family."""
+        e = edges.get(cell_key.removeprefix("edge:")) if cell_key.startswith("edge:") else None
+        if not e:
+            return {}
+        return {
+            "edge_case": {
+                k: e.get(k)
+                for k in (
+                    "tag",
+                    "recipe",
+                    "expected_outcome",
+                    "archetype",
+                    "complexity",
+                    "products",
+                )
+            }
+        }
+
     cells = [
         {
             "cell_key": s["cell_key"],
@@ -1018,7 +1062,14 @@ def send_more_data(c, ws, actor, sv_id, body):
             "quota": s["original_quota"] or s["quota"],
             "have": s["available"],
             "request": (s["original_quota"] or s["quota"]) - s["available"],
-            "description": (descriptions.get(s["cell_key"]) or "").strip() or None,
+            "description": (descriptions.get(s["cell_key"]) or "").strip()
+            or (
+                edges.get(s["cell_key"].removeprefix("edge:"), {}).get("recipe")
+                if s["cell_key"].startswith("edge:")
+                else None
+            )
+            or None,
+            **edge_detail(s["cell_key"]),
         }
         for s in short
     ]

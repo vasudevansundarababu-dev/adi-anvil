@@ -482,7 +482,7 @@ def bootstrap():
         out["evaluators"].append({"id": d["id"], "version": d["version"], "state": d["state"]})
     # V8 as released, then V9 (screening and the escalation decision are gate criteria; owner decision RG-24).
     out["activations"] = {}
-    for version in (g.TEMPLATE_VERSION, g.GATED_VERSION, g.BLOCKS_VERSION):
+    for version in (g.TEMPLATE_VERSION, g.GATED_VERSION, g.BLOCKS_VERSION, g.EDGES_VERSION):
         template = g.template(version)
         _, validated = _gym("POST", "/templates/validate", template)
         _, kct = _gym(

@@ -64,6 +64,8 @@ def create(c, ws, actor, body, urgent=False):
             ) from None
     item_id = new_id("rgi-")
     evidence = body.get("evidence") or {}
+    if kind == "new_case_kind":
+        evidence = {**evidence, "edge_case": edge_case_parts(body.get("edge_case"))}
     c.execute(
         """INSERT INTO catalog.inbox_items(id,workspace_id,project_id,suite_version_id,kind,template_id,template_version,
              environment_version_id,evaluator_configuration,summary,evidence,needed_by,urgent,state,sent_by,timeline)
@@ -106,6 +108,32 @@ def create(c, ws, actor, body, urgent=False):
     row = c.execute("SELECT * FROM catalog.inbox_items WHERE id=%s", (item_id,)).fetchone()
     emit(c, ws, "inbox_item.status", item_id, {**_status_payload(row)})
     return row
+
+
+EDGE_PARTS = ("scenario_context", "twist", "expected_outcome")
+
+
+def edge_case_parts(edge):
+    """A new case kind carries the same four plain-English parts as an S4 edge case (2.12): scenario context, the
+    edge-case twist, the expected outcome and rationale, and slice tags (complexity, archetype)."""
+    edge = edge or {}
+    missing = [k for k in EDGE_PARTS if not str(edge.get(k) or "").strip()]
+    tags = edge.get("slice_tags") or {}
+    missing += [
+        f"slice_tags.{k}" for k in ("complexity", "archetype") if not str(tags.get(k) or "").strip()
+    ]
+    require(
+        not missing,
+        "VALIDATION_FAILED",
+        "A new case kind needs the four parts: scenario context, twist, expected outcome and rationale, slice tags",
+        field="edge_case",
+        missing=missing,
+    )
+    return {
+        **{k: str(edge[k]).strip() for k in EDGE_PARTS},
+        "rationale": str(edge.get("rationale") or "").strip() or None,
+        "slice_tags": {k: str(tags[k]).strip() for k in ("complexity", "archetype")},
+    }
 
 
 def _status_payload(row):

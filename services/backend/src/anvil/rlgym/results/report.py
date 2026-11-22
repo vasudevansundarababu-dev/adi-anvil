@@ -71,8 +71,10 @@ class Data:
         self.episodes = c.execute(
             """SELECT e.*, s.score, s.passed, s.failed_criteria, s.blocked_reasons, o.outcome safety_outcome,
                       o.critical safety_critical, o.attempted, o.blocked safety_blocked, o.evidence safety_evidence,
-                      x.bundle_ref, x.sealed_sha256, coalesce(x.cost_usd,0) cost_usd
+                      x.bundle_ref, x.sealed_sha256, coalesce(x.cost_usd,0) cost_usd,
+                      t.complexity, t.archetype
                FROM runs.episodes e
+               LEFT JOIN projects.task_imports t ON t.id=e.task_import_id
                LEFT JOIN scoring.episode_scores s ON s.episode_id=e.id AND s.pass_id=%s
                LEFT JOIN scoring.safety_outcomes o ON o.episode_id=e.id AND o.pass_id=%s
                LEFT JOIN runs.sealed_evidence x ON x.episode_id=e.id
@@ -383,6 +385,28 @@ def _task_label(task):
     )
 
 
+def slices(d):
+    """Results by the tasks' slice tags (2.12): complexity and archetype from the authored packages (S1 lists). Each row
+    has, per model, the share of scored episodes that passed and how many failed."""
+    out = []
+    for dim in ("complexity", "archetype"):
+        values = sorted({e[dim] for e in d.cases if e.get(dim)})
+        for value in values:
+            mine = [e for e in d.cases if e.get(dim) == value]
+            per_model = {}
+            for m in d.models:
+                scored = d.scored(m["system_id"], mine)
+                per_model[m["system_id"]] = {
+                    "pass_rate": _pct(sum(1 for e in scored if e["passed"]), len(scored)),
+                    "failed": sum(1 for e in scored if not e["passed"]),
+                    "scored": len(scored),
+                }
+            out.append(
+                {"dimension": dim, "value": value, "episodes": len(mine), "per_model": per_model}
+            )
+    return out
+
+
 def task_results(d):
     tasks = {t["task_id"]: t for t in d.manifest["tasks"]}
     rows = {}
@@ -441,6 +465,7 @@ def task_results(d):
             }
         )
     return {
+        "slices": slices(d),
         "tasks": [rows[k] for k in sorted(rows)],
         "strata": [
             {
@@ -531,6 +556,7 @@ def failures(d):
                 }
     return {
         "per_model": per_model,
+        "slices": slices(d),
         "by_on_fail": sorted(codes.values(), key=lambda r: -sum(r["per_model"].values())),
         "by_cause": sorted(causes.values(), key=lambda r: -sum(r["per_model"].values())),
         "cause_note": "Causes are suggestions (rule-based here) until an SME or RL engineer confirms them.",
@@ -548,6 +574,8 @@ def failures(d):
                 "likely_cause": e["likely_cause"],
                 "likely_cause_source": e["likely_cause_source"],
                 "failed_criteria": e["failed_criteria"] or [],
+                "complexity": e.get("complexity"),
+                "archetype": e.get("archetype"),
                 "sme": _sme_text(d.sme_items.get(e["id"])),
                 "diagnosis": "Diagnosis saved" if e["id"] in d.diagnoses else None,
             }
