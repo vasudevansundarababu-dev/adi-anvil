@@ -30,85 +30,87 @@ export default function PluginsPanel() {
         limits. A version is qualified when its known cases give their expected verdicts.
       </small>
       <Loading data={data} error={error}>
-        {data && (
-          <table className="blocks">
-            <thead>
-              <tr>
-                <th>Plug-in</th>
-                <th>Version</th>
-                <th>Upstream</th>
-                <th>Image</th>
-                <th>Known cases</th>
-                <th>State</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {data.items.map((p: any) => (
-                <tr key={`${p.id}-${p.version}`}>
-                  <td>
-                    {p.name} <code>{p.id}</code>
-                  </td>
-                  <td>{p.version}</td>
-                  <td>{p.upstream ? `${p.upstream.package} ${p.upstream.version}` : '—'}</td>
-                  <td>
-                    <code>{String(p.image).slice(0, 19)}…</code>
-                  </td>
-                  <td>
-                    {(p.known_case_results ?? [])
-                      .map((k: any) => `${k.name}: ${k.result}`)
-                      .join(' · ')}
-                  </td>
-                  <td>
-                    <Badge
-                      state={
-                        p.state === 'qualified'
-                          ? 'ready'
-                          : p.state === 'revoked'
-                            ? 'failed'
-                            : 'deprecated'
-                      }
-                      label={p.state}
-                    />
-                  </td>
-                  <td>
-                    {admin && p.state !== 'revoked' && (
-                      <span className="row">
-                        <button
-                          onClick={() =>
-                            act(
-                              `/evaluators/plugins/${p.id}/${p.version}/test`,
-                              {},
-                              `${p.id} ${p.version} tested.`,
-                            )
-                          }
-                        >
-                          Re-test
-                        </button>
-                        {(['deprecate', 'revoke'] as const).map((a) => (
-                          <button
-                            key={a}
-                            onClick={() => {
-                              const reason = window.prompt(`Reason to ${a} ${p.id} ${p.version}`);
-                              if (reason)
-                                act(
-                                  `/evaluators/plugins/${p.id}/${p.version}/${a}`,
-                                  { reason },
-                                  `${p.id} ${p.version}: ${a}d.`,
-                                );
-                            }}
-                          >
-                            {a === 'deprecate' ? 'Deprecate' : 'Revoke'}
-                          </button>
-                        ))}
-                      </span>
-                    )}
-                  </td>
+        {() =>
+          data && (
+            <table className="blocks">
+              <thead>
+                <tr>
+                  <th>Plug-in</th>
+                  <th>Version</th>
+                  <th>Upstream</th>
+                  <th>Image</th>
+                  <th>Known cases</th>
+                  <th>State</th>
+                  <th />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              </thead>
+              <tbody>
+                {data.items.map((p: any) => (
+                  <tr key={`${p.id}-${p.version}`}>
+                    <td>
+                      {p.name} <code>{p.id}</code>
+                    </td>
+                    <td>{p.version}</td>
+                    <td>{p.upstream ? `${p.upstream.package} ${p.upstream.version}` : '—'}</td>
+                    <td>
+                      <code>{String(p.image).slice(0, 19)}…</code>
+                    </td>
+                    <td>
+                      {(p.known_case_results ?? [])
+                        .map((k: any) => `${k.name}: ${k.result}`)
+                        .join(' · ')}
+                    </td>
+                    <td>
+                      <Badge
+                        state={
+                          p.state === 'qualified'
+                            ? 'ready'
+                            : p.state === 'revoked'
+                              ? 'failed'
+                              : 'deprecated'
+                        }
+                        label={p.state}
+                      />
+                    </td>
+                    <td>
+                      {admin && p.state !== 'revoked' && (
+                        <span className="row">
+                          <button
+                            onClick={() =>
+                              act(
+                                `/evaluators/plugins/${p.id}/${p.version}/test`,
+                                {},
+                                `${p.id} ${p.version} tested.`,
+                              )
+                            }
+                          >
+                            Re-test
+                          </button>
+                          {(['deprecate', 'revoke'] as const).map((a) => (
+                            <button
+                              key={a}
+                              onClick={() => {
+                                const reason = window.prompt(`Reason to ${a} ${p.id} ${p.version}`);
+                                if (reason)
+                                  act(
+                                    `/evaluators/plugins/${p.id}/${p.version}/${a}`,
+                                    { reason },
+                                    `${p.id} ${p.version}: ${a}d.`,
+                                  );
+                              }}
+                            >
+                              {a === 'deprecate' ? 'Deprecate' : 'Revoke'}
+                            </button>
+                          ))}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )
+        }
       </Loading>
       {admin && (
         <>
