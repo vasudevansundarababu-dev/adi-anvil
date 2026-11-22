@@ -38,9 +38,181 @@ FORGE_VERSION = 3
 # gate criteria. V8 stays as released; a project belongs to one template version, so V9 has its own ADI Forge project.
 GATED_VERSION = 9
 GATES = {"screening", "decision"}
+# Golden KYC V10 (work package 2.11, verifier blocks): V9's gates, with the decision and screening criteria checked by
+# State, Process and Rubric blocks on golden-kyc-openenv v6, which declares Studio's v6 collections and answers a
+# snapshot. v6 has its own seed-family label so V8/V9 projects keep binding v3.
+BLOCKS_VERSION = 10
+SNAPSHOT_ENV_VERSION = 6
+SNAPSHOT_SEED_FAMILY = "kyc_cases-20261122"
 PROJECTS = {
     FORGE_PROJECT_ID: {"name": FORGE_PROJECT_NAME, "template_version": 8, "forge_version": 3},
     "prj_d4e9b1a7": {"name": "KYC December", "template_version": 9, "forge_version": 4},
+    "prj_b10c4e21": {"name": "KYC Verifier", "template_version": 10, "forge_version": 5},
+}
+FAILURE_TAXONOMY = [
+    "STATE_MUTATION_ERROR",
+    "POLICY_VIOLATION",
+    "MISSING_PRECONDITION",
+    "UNSAFE_ACTION",
+    "QUALITY",
+]
+BLOCK_CAPABILITY = "golden-kyc-blocks"
+VERIFIER_BLOCKS = {
+    "decision": [
+        {
+            "id": "decision.status",
+            "kind": "state",
+            "table": "recommendations",
+            "row": "case",
+            "column": "recommendation",
+            "op": "equals",
+            "value": {"case_reference": "reference_answers.recommendation"},
+            "on_fail": "STATE_MUTATION_ERROR",
+        },
+        {
+            "id": "decision.single",
+            "kind": "state",
+            "table": "recommendations",
+            "row": "case",
+            "op": "count",
+            "value": {"fixed": 1},
+            "on_fail": "UNSAFE_ACTION",
+        },
+        {
+            "id": "decision.nothing_else",
+            "kind": "state",
+            "table": "recommendations",
+            "op": "nothing_else_changed",
+            "allow": ["findings", "information_requests", "referrals", "notes"],
+            "on_fail": "UNSAFE_ACTION",
+        },
+        {
+            "id": "decision.order",
+            "kind": "process",
+            "must_call": "screening.check",
+            "before": "recommend",
+            "on_fail": "POLICY_VIOLATION",
+        },
+        {
+            "id": "decision.reason",
+            "kind": "rubric",
+            "rubric_id": "reason_is_specific",
+            "share_percent": 20,
+            "on_fail": "QUALITY",
+        },
+    ],
+    "screening": [
+        {
+            "id": "screening.called",
+            "kind": "process",
+            "must_call": "screening.check",
+            "on_fail": "MISSING_PRECONDITION",
+        },
+        {
+            "id": "screening.referred",
+            "kind": "state",
+            "table": "referrals",
+            "row": "case",
+            "op": "count",
+            "value": {"case_reference": "reference_answers.referral"},
+            "on_fail": "POLICY_VIOLATION",
+        },
+        {
+            "id": "screening.tone",
+            "kind": "rubric",
+            "rubric_id": "customer_tone_polite",
+            "share_percent": 10,
+            "on_fail": "QUALITY",
+        },
+    ],
+}
+WRITES = {
+    "finding.write": "findings",
+    "exception.log": "information_requests",
+    "note.write": "notes",
+    "recommend": "recommendations",
+    "escalate": "referrals",
+    "application.write": "applications",
+}
+
+
+def _field(name, kind="string", **extra):
+    return {"name": name, "type": kind, **extra}
+
+
+SCHEMA_V6 = {
+    "collections": [
+        {
+            "name": "applications",
+            "primary_key": ["application_id"],
+            "fields": [
+                _field("application_id"),
+                _field("product"),
+                _field("governing_state"),
+                _field("requested_account"),
+            ],
+        },
+        {
+            "name": "parties",
+            "primary_key": ["party_id"],
+            "fields": [
+                _field("party_id"),
+                _field("application_id"),
+                _field("role"),
+                _field("minor", "boolean"),
+            ],
+        },
+        {
+            "name": "documents",
+            "primary_key": ["document_id"],
+            "fields": [_field("document_id"), _field("application_id")],
+        },
+        {
+            "name": "findings",
+            "primary_key": ["finding_id"],
+            "fields": [
+                _field("finding_id"),
+                _field("application_id"),
+                _field("issue"),
+                _field("evidence_ref"),
+            ],
+        },
+        {
+            "name": "recommendations",
+            "primary_key": ["recommendation_id"],
+            "fields": [
+                _field("recommendation_id"),
+                _field("application_id"),
+                _field("recommendation"),
+            ],
+        },
+        {
+            "name": "information_requests",
+            "primary_key": ["request_id"],
+            "fields": [_field("request_id"), _field("application_id"), _field("request_type")],
+        },
+        {
+            "name": "referrals",
+            "primary_key": ["referral_id"],
+            "fields": [_field("referral_id"), _field("application_id"), _field("question")],
+        },
+        {
+            "name": "notes",
+            "primary_key": ["note_id"],
+            "fields": [_field("note_id"), _field("application_id"), _field("text")],
+        },
+        {
+            "name": "reference_answers",
+            "primary_key": ["application_id"],
+            "fields": [
+                _field("application_id"),
+                _field("recommendation", visibility="private_reference"),
+                _field("referral", "integer", visibility="private_reference"),
+                _field("screening_issue", "boolean", visibility="private_reference"),
+                _field("request_type", visibility="private_reference"),
+            ],
+        },
+    ]
 }
 LOCAL_PYTHON_FRAMEWORK = {"runtime_id": "python", "version": "1.0.0"}
 
@@ -383,8 +555,11 @@ def environment_versions():
         (3, 100, "rel-0431", "2026-11-21T09:14:00Z", SEED_FAMILY),
         (4, 100, "rel-0447", "2026-12-03T09:00:00Z", SECOND_SEED_FAMILY),
         (5, 100, "rel-0449", "2026-12-04T09:00:00Z", SECOND_SEED_FAMILY),
+        (6, 100, "rel-0460", "2026-11-22T12:00:00Z", SNAPSHOT_SEED_FAMILY),
     ]:
-        if family == SEED_FAMILY:
+        if family == SNAPSHOT_SEED_FAMILY:
+            rows = [{**c, "reference": _v6_reference(c)} for c in cases(per_product)]
+        elif family == SEED_FAMILY:
             rows = cases(per_product)
         elif version == 4:
             rows = [{**c, "case_id": c["case_id"] + "-d"} for c in cases(per_product)]
@@ -425,7 +600,35 @@ def environment_versions():
             "case_catalog": case_catalog(rows),
             "_cases": rows,
         }
+        if family == SNAPSHOT_SEED_FAMILY:
+            recipe["snapshot"] = "collections"
+            out[vid]["image_digest"] = "sha256:" + sha({"recipe": recipe, "version": version})
+            out[vid]["schema"] = SCHEMA_V6
+            out[vid]["operations"] = [
+                {
+                    "operation_id": t,
+                    "effect": "write" if t in WRITES else "read",
+                    "collection": WRITES.get(t),
+                }
+                for t in TOOLS
+            ]
+            out[vid]["schema_tables"] = [
+                c["name"] if c["name"] != "reference_answers" else {"name": c["name"], "private": True}
+                for c in SCHEMA_V6["collections"]
+            ]
     return out
+
+
+def _v6_reference(case):
+    """v6 reference answers: the classic fields plus the reference_answers fields verifier blocks read."""
+    ref = case["reference"]
+    return {
+        **ref,
+        "recommendation": ref["decision"],
+        "referral": 1 if ref["decision"] == "escalate" else 0,
+        "screening_issue": "screening_hit" in case["edge_cases"],
+        "request_type": (ref["exceptions"] or [None])[0],
+    }
 
 
 def evaluator_binding(criterion, skill_group, evidence_type, rule):
@@ -515,9 +718,36 @@ def evaluator_bindings():
     return [evaluator_binding(*row) for row in CRITERIA]
 
 
+def block_evaluator_bindings():
+    """A-06 for the verifier-blocks configurations of V10's decision and screening criteria: the configuration is the
+    RL Gym's block runner; the blocks are V10's, sent with the create and test calls."""
+    out = []
+    groups = {c: g for c, g, _, _ in CRITERIA}
+    for criterion, blocks in VERIFIER_BLOCKS.items():
+        out.append(
+            {
+                "schema": "rlgym.evaluator-create.v1",
+                "id": f"{BLOCK_CAPABILITY}:{criterion}",
+                "template": {"id": TEMPLATE_ID, "key": TEMPLATE_KEY, "version": BLOCKS_VERSION},
+                "criterion": criterion,
+                "capability": BLOCK_CAPABILITY,
+                "skill_group": groups[criterion],
+                "weight": 5,
+                "framework": LOCAL_PYTHON_FRAMEWORK,
+                "evidence_type": "snapshots",
+                "verdict_vocabulary": ["pass", "partial", "fail", "blocked"],
+                "config": {"runner": "verifier_blocks", "runner_version": 1, "evidence": "snapshots"},
+                "blocks": blocks,
+                "expected_values_from": "case_reference",
+            }
+        )
+    return out
+
+
 def template(version=TEMPLATE_VERSION):
-    if version not in (TEMPLATE_VERSION, GATED_VERSION):
+    if version not in (TEMPLATE_VERSION, GATED_VERSION, BLOCKS_VERSION):
         raise ValueError(f"unknown Golden KYC version {version}")
+    blocks = version >= BLOCKS_VERSION
     doc = {
         "template_id": TEMPLATE_ID,
         "key": TEMPLATE_KEY,
@@ -525,12 +755,17 @@ def template(version=TEMPLATE_VERSION):
         "name": f"Golden KYC V{version}",
         "mode": "single_agent",
         "pass_mark": PASS_MARK,
-        "studio_release": "rel-0412" if version == TEMPLATE_VERSION else "rel-0455",
+        "studio_release": {TEMPLATE_VERSION: "rel-0412", GATED_VERSION: "rel-0455"}.get(
+            version, "rel-0461"
+        ),
         "bindings": [
             {
                 "alias": ALIAS,
                 "contract_id": CONTRACT,
-                "rule": {"kind": "same_data", "seed_family": SEED_FAMILY},
+                "rule": {
+                    "kind": "same_data",
+                    "seed_family": SNAPSHOT_SEED_FAMILY if blocks else SEED_FAMILY,
+                },
             }
         ],
         "criteria": [
@@ -540,9 +775,12 @@ def template(version=TEMPLATE_VERSION):
                 "skill_group": g,
                 "weight": 5,
                 "is_gate": version >= GATED_VERSION and c in GATES,
-                "configuration_id": f"golden-kyc:{c}",
-                "evidence_type": e,
+                "configuration_id": f"{BLOCK_CAPABILITY}:{c}"
+                if blocks and c in VERIFIER_BLOCKS
+                else f"golden-kyc:{c}",
+                "evidence_type": "snapshots" if blocks and c in VERIFIER_BLOCKS else e,
                 "verdict_vocabulary": ["pass", "partial", "fail", "blocked"],
+                **({"verifier_blocks": VERIFIER_BLOCKS[c]} if blocks and c in VERIFIER_BLOCKS else {}),
             }
             for c, g, e, _ in CRITERIA
         ],
@@ -553,8 +791,11 @@ def template(version=TEMPLATE_VERSION):
             "edge_cases": EDGE_CASES,
         },
         "forge_template_id": FORGE_TEMPLATE_ID,
-        "forge_version": FORGE_VERSION if version == TEMPLATE_VERSION else 4,
+        "forge_version": {TEMPLATE_VERSION: FORGE_VERSION, GATED_VERSION: 4}.get(version, 5),
     }
+    if blocks:
+        doc["expected_values_from"] = "case_reference"
+        doc["failure_taxonomy"] = FAILURE_TAXONOMY
     doc["spec_sha256"] = sha(
         {k: v for k, v in doc.items() if k not in ("forge_template_id", "forge_version")}
     )

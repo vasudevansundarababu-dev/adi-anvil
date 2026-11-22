@@ -342,6 +342,8 @@ class OpenEnvSession:
             raise RuntimeError(
                 f"environment step failed: {status} {out.get('error') or out.get('body')}"
             )
+        if op == "snapshot":  # verifier blocks: GET /state without sealing (never an agent tool)
+            return {"ok": True, "collections": self.bridge.ok("GET", "/state").get("collections")}
         if op == "state":
             state = self.bridge.ok("GET", "/state")
             sealed = (self.bridge.ok("POST", "/reset").get("info")) or {}

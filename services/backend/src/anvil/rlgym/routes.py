@@ -11,7 +11,7 @@ from starlette.concurrency import run_in_threadpool
 from anvil import auth
 from anvil.rlgym import integrations
 from anvil.rlgym.admin import todo, users
-from anvil.rlgym.catalog import evaluators, inbox, registry, selection, templates
+from anvil.rlgym.catalog import evaluators, inbox, registry, selection, templates, verifier
 from anvil.rlgym.common import (
     GymError,
     idempotent,
@@ -406,7 +406,13 @@ def routes():
                     request,
                     body,
                     lambda: evaluators.run_known_case_tests(
-                        ctx.c, ctx.ws, ctx.actor, cid, body["version"]
+                        ctx.c,
+                        ctx.ws,
+                        ctx.actor,
+                        cid,
+                        body["version"],
+                        blocks=body.get("blocks"),
+                        expected_values_from=body.get("expected_values_from"),
                     ),
                 ),
                 request,
@@ -515,6 +521,12 @@ def routes():
                 },
                 request,
             )
+
+    @r.get(W + "/catalog/rubrics")
+    def rubric_registry(ws: str, request: Request):
+        """The rubrics a Rubric verifier block may name (Studio's validate refuses others). Mock judge locally."""
+        with scope(request, ws, services=STUDIO):
+            return ok({"rubrics": verifier.RUBRICS}, request)
 
     @r.get(W + "/catalog/frameworks")
     def framework_list(ws: str, request: Request, q: str | None = None, state: str | None = None):

@@ -6,7 +6,7 @@ configuration versions (D20); every run binds per rule at admission.
 
 from psycopg.types.json import Jsonb
 
-from anvil.rlgym.catalog import evaluators, selection
+from anvil.rlgym.catalog import evaluators, selection, verifier
 from anvil.rlgym.common import GymError, audit, emit, require, sha
 
 
@@ -43,11 +43,14 @@ def _required(doc):
 def validate(c, ws, doc):
     _required(doc)
     checks = []
+    bound = []
     for b in doc["bindings"]:
         rule = {"contract_id": b["contract_id"], **b["rule"]}
         if rule["kind"] == "pinned":
             rule["pinned_version_id"] = rule.get("pinned_version_id")
         pick, code, reason = selection.resolve_environment(c, rule)
+        if pick:
+            bound.append(pick)
         checks.append(
             {
                 "check": "environment_can_bind",
@@ -73,6 +76,7 @@ def validate(c, ws, doc):
                 else ("evidence type differs" if versions else "no qualified configuration"),
             }
         )
+    checks += _verifier_checks(c, ws, doc, bound)
     checks.append(
         {
             "check": "runtime_supports_mode",
@@ -85,15 +89,61 @@ def validate(c, ws, doc):
     return {"valid": all(ch["ok"] for ch in checks), "checks": checks}
 
 
+def _verifier_checks(c, ws, doc, bound):
+    """Verifier blocks (D21): every block must run on the environment version the template binds now (declared
+    collections, fields and operations), with known rubrics and failure codes; and the criterion must bind a
+    verifier-blocks configuration."""
+    out = []
+    source = doc.get("expected_values_from")
+    taxonomy = doc.get("failure_taxonomy") or []
+    for cr in doc["criteria"]:
+        blocks = cr.get("verifier_blocks")
+        if not blocks:
+            continue
+        reasons = []
+        if not bound:
+            reasons.append("no environment version binds now, so the blocks cannot be checked")
+        for env in bound:
+            row = c.execute(
+                "SELECT * FROM catalog.environment_versions WHERE id=%s", (env["id"],)
+            ).fetchone()
+            if not (row and row.get("schema")):
+                reasons.append(f"{env['id']} declares no collections (schema.collections)")
+                continue
+            reasons += verifier.check_blocks(blocks, row, source, taxonomy)
+        versions = selection.selectable_configurations(c, ws, cr["configuration_id"])
+        if versions and not verifier.is_blocks_config(versions[0]["config"]):
+            reasons.append(
+                f"{cr['configuration_id']} is not a verifier-blocks configuration (runner verifier_blocks)"
+            )
+        out.append(
+            {
+                "check": "verifier_blocks_valid",
+                "criterion": cr["criterion_id"],
+                "ok": not reasons,
+                "blocks": len(blocks),
+                "reason": "; ".join(reasons) or None,
+                "reasons": reasons,
+            }
+        )
+    return out
+
+
 def known_case_tests(c, ws, actor, body):
     """POST /templates/known-case-tests: the A-06 test of the current qualified configuration of every criterion."""
     template_id, version = body.get("template_id"), body.get("version")
     criteria = body.get("criteria")
+    source = body.get("expected_values_from")
     if not criteria:
         criteria = c.execute(
-            "SELECT criterion_id, configuration_id FROM catalog.template_criteria WHERE workspace_id=%s AND template_id=%s AND version=%s",
+            "SELECT criterion_id, configuration_id, verifier_blocks FROM catalog.template_criteria WHERE workspace_id=%s AND template_id=%s AND version=%s",
             (ws, template_id, version),
         ).fetchall()
+        act = c.execute(
+            "SELECT expected_values_from FROM catalog.template_activations WHERE workspace_id=%s AND template_id=%s AND version=%s",
+            (ws, template_id, version),
+        ).fetchone()
+        source = source or (act and act["expected_values_from"])
     require(
         criteria, "VALIDATION_FAILED", "No criteria given and no activation found", field="criteria"
     )
@@ -118,7 +168,15 @@ def known_case_tests(c, ws, actor, body):
                 }
             )
             continue
-        test = evaluators.run_known_case_tests(c, ws, actor, cfg, latest["version"])
+        test = evaluators.run_known_case_tests(
+            c,
+            ws,
+            actor,
+            cfg,
+            latest["version"],
+            blocks=cr.get("verifier_blocks"),
+            expected_values_from=source,
+        )
         rows.append(
             {
                 "criterion": crit,
@@ -205,8 +263,13 @@ def activate(c, ws, actor, doc):
         {
             "template_id": doc["template_id"],
             "version": doc["version"],
+            "expected_values_from": doc.get("expected_values_from"),
             "criteria": [
-                {"criterion_id": cr["criterion_id"], "configuration_id": cr["configuration_id"]}
+                {
+                    "criterion_id": cr["criterion_id"],
+                    "configuration_id": cr["configuration_id"],
+                    "verifier_blocks": cr.get("verifier_blocks"),
+                }
                 for cr in doc["criteria"]
             ],
         },
@@ -219,6 +282,9 @@ def activate(c, ws, actor, doc):
         "criteria_can_bind": all(
             ch["ok"] for ch in result["checks"] if ch["check"] == "criterion_can_bind"
         ),
+        "verifier_blocks_valid": all(
+            ch["ok"] for ch in result["checks"] if ch["check"] == "verifier_blocks_valid"
+        ),
         "known_case_tests_passed": kct["passed"],
         "known_case_tests": f"{sum(r['result'] == 'qualified' for r in kct['criteria'])} of {len(kct['criteria'])}",
         "detail": result["checks"],
@@ -227,8 +293,8 @@ def activate(c, ws, actor, doc):
     row = c.execute(
         """INSERT INTO catalog.template_activations(workspace_id,template_id,version,template_key,name,mode,spec_sha256,template_sha256,
              forge_template_id,forge_version,studio_release,default_bindings,workflow,case_dimensions,pass_mark,checks,state,state_reason,
-             activated_at,activated_by,forge_template_version_hash)
-           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),%s,%s) RETURNING *""",
+             activated_at,activated_by,forge_template_version_hash,expected_values_from,failure_taxonomy)
+           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),%s,%s,%s,%s) RETURNING *""",
         (
             ws,
             doc["template_id"],
@@ -250,12 +316,15 @@ def activate(c, ws, actor, doc):
             None if state == "active" else "Activation checks failed",
             actor.id,
             doc.get("forge_template_version_hash"),
+            doc.get("expected_values_from"),
+            Jsonb(doc["failure_taxonomy"]) if doc.get("failure_taxonomy") else None,
         ),
     ).fetchone()
     for cr in doc["criteria"]:
         c.execute(
             """INSERT INTO catalog.template_criteria(workspace_id,template_id,version,criterion_id,capability,skill_group,weight,is_gate,
-                 configuration_id,evidence_type,verdict_vocabulary) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                 configuration_id,evidence_type,verdict_vocabulary,verifier_blocks)
+               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 ws,
                 doc["template_id"],
@@ -268,6 +337,7 @@ def activate(c, ws, actor, doc):
                 cr["configuration_id"],
                 cr["evidence_type"],
                 cr["verdict_vocabulary"],
+                Jsonb(cr["verifier_blocks"]) if cr.get("verifier_blocks") else None,
             ),
         )
     audit(

@@ -115,6 +115,14 @@ def view(c, ws, actor, episode_id):
         for rule in (cfg or {}).get("config", {}).get("rules", []):
             if rule.get("tool") in node_of:
                 nodes.add(node_of[rule["tool"]])
+        for line in r.get("block_lines") or []:
+            tool = (
+                (line.get("expected") or {}).get("must_call")
+                if isinstance(line.get("expected"), dict)
+                else None
+            )
+            if tool in node_of:
+                nodes.add(node_of[tool])
         nodes.discard(None)
         criteria.append(
             {
@@ -125,6 +133,7 @@ def view(c, ws, actor, episode_id):
                 "evaluator": f"{r['configuration_id']} v{r['configuration_version']}",
                 "evidence_refs": r["evidence_refs"],
                 "detail": r["detail"],
+                "block_lines": r.get("block_lines") or [],
                 "nodes": sorted(nodes),
                 "steps": [t["step"] for t in timeline if t["node"] in nodes],
                 "gate": bool(ev.get("is_gate")),

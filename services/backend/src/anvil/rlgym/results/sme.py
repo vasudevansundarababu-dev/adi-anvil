@@ -122,7 +122,9 @@ def create_batch(c, ws, actor, run_id, body):
                             "evaluator",
                             "detail",
                             "nodes",
+                            "block_lines",
                         )
+                        if k in cr
                     }
                     for cr in v["criteria"]
                 ],
@@ -383,10 +385,13 @@ def receive_decisions(c, ws, actor, batch_id, body):
                 b,
                 item,
                 ev["configuration_id"],
-                f"SME review {batch_id}: the S7 criterion {criterion} needs correction",
+                f"SME review {batch_id}: the S7 criterion {criterion} needs correction"
+                + (f" (verifier block {d['block_id']})" if d.get("block_id") else ""),
                 {
                     "criterion_text_must_change": True,
                     "evaluator_configuration": ev["configuration_id"],
+                    # A wrong block is the template's (Studio); the code that runs it would be a fix version.
+                    **({"block_id": d["block_id"]} if d.get("block_id") else {}),
                 },
             )
             follow = {

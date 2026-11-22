@@ -251,7 +251,14 @@ function EnvironmentPage({ vid }: { vid: string }) {
                 <dd>{data.runtime_profile}</dd>
                 <dt>Operations</dt>
                 <dd>
-                  {data.tools} declared ({(data.operations ?? []).slice(0, 5).join(', ')}, …)
+                  {data.tools} declared (
+                  {(data.operations ?? [])
+                    .slice(0, 5)
+                    .map((o: string | { operation_id: string }) =>
+                      typeof o === 'string' ? o : o.operation_id,
+                    )
+                    .join(', ')}
+                  , …)
                 </dd>
                 <dt>Schema</dt>
                 <dd>

@@ -148,6 +148,49 @@ export default function Episode({ runId, episodeId }: { runId: string; episodeId
                     </dd>
                   </dl>
                 )}
+                {crit && (crit.block_lines ?? []).length > 0 && (
+                  <table className="blocks">
+                    <thead>
+                      <tr>
+                        <th>Block</th>
+                        <th>Kind</th>
+                        <th>Expected</th>
+                        <th>Actual</th>
+                        <th>Verdict</th>
+                        <th>Code</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {crit.block_lines.map((l: any) => (
+                        <tr key={l.block_id}>
+                          <td>
+                            <code>{l.block_id}</code>
+                          </td>
+                          <td>{l.kind}</td>
+                          <td>
+                            <code>{JSON.stringify(l.expected)}</code>
+                          </td>
+                          <td>
+                            <code>{JSON.stringify(l.actual)}</code>
+                          </td>
+                          <td>
+                            <Badge
+                              state={
+                                l.verdict === 'pass'
+                                  ? 'ready'
+                                  : l.verdict === 'blocked'
+                                    ? 'draft'
+                                    : 'failed'
+                              }
+                              label={l.verdict}
+                            />
+                          </td>
+                          <td>{l.verdict === 'fail' ? <code>{l.on_fail}</code> : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </section>
               <section className="card">
                 <h4>Investigate</h4>

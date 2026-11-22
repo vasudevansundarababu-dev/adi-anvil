@@ -10,6 +10,7 @@ import datetime as dt
 
 from psycopg.types.json import Jsonb
 
+from anvil.rlgym.catalog import verifier
 from anvil.rlgym.common import GymError, audit, emit, require, sha
 from anvil.rlgym.scoring import sandbox
 
@@ -107,13 +108,28 @@ def create_from_studio(c, ws, actor, body):
         "VALIDATION_FAILED",
         "schema must be rlgym.evaluator-create.v1",
     )
+    blocks_config = verifier.is_blocks_config(body.get("config"))
+    if blocks_config:
+        # The code that runs a template's verifier blocks (D21). Its known cases are built from the blocks it is
+        # tested with (A-06 test call or template known-case tests), so none are required here.
+        require(
+            body["config"].get("runner_version") == 1,
+            "VALIDATION_FAILED",
+            "Unknown verifier-blocks runner version",
+            field="config.runner_version",
+        )
+        body = {**body, "known_cases": body.get("known_cases") or {}}
+        if body.get("blocks"):
+            body["known_cases"] = {
+                "_blocks": body["blocks"],
+                "_expected_values_from": body.get("expected_values_from") or "case_reference",
+            }
     for field in (
         "id",
         "criterion",
         "capability",
         "evidence_type",
         "config",
-        "known_cases",
         "framework",
         "template",
     ):
@@ -130,7 +146,14 @@ def create_from_studio(c, ws, actor, body):
         "id must be <capability>:<criterion>",
         field="id",
     )
-    _validate_known_cases(body["known_cases"])
+    require(
+        blocks_config or body.get("known_cases"),
+        "VALIDATION_FAILED",
+        "known_cases is required",
+        field="known_cases",
+    )
+    if not blocks_config:
+        _validate_known_cases(body["known_cases"])
     fw = _framework(c, body["framework"]["runtime_id"], body["framework"]["version"])
     require(
         fw["state"] not in ("deprecated", "revoked"),
@@ -139,7 +162,14 @@ def create_from_studio(c, ws, actor, body):
         field="framework",
     )
     verdicts = body.get("verdict_vocabulary") or ["pass", "partial", "fail", "blocked"]
-    h = _config_hash(fw["id"], body["evidence_type"], verdicts, body["config"], body["known_cases"])
+    # A verifier-blocks configuration is the runner only: the blocks belong to the template, so they are not hashed.
+    h = _config_hash(
+        fw["id"],
+        body["evidence_type"],
+        verdicts,
+        body["config"],
+        {} if blocks_config else body["known_cases"],
+    )
     same = c.execute(
         "SELECT * FROM catalog.evaluator_configurations WHERE workspace_id=%s AND id=%s AND config_sha256=%s",
         (ws, cid, h),
@@ -211,9 +241,24 @@ def get_version(c, ws, cid, version):
     return row
 
 
-def run_known_case_tests(c, ws, actor, cid, version):
+def _block_cases(row, blocks, expected_values_from):
+    stored = row["known_cases"] or {}
+    blocks = blocks or stored.get("_blocks")
+    require(
+        blocks,
+        "VALIDATION_FAILED",
+        "A verifier-blocks configuration is tested with the blocks it runs: pass blocks",
+        field="blocks",
+    )
+    source = expected_values_from or stored.get("_expected_values_from") or "case_reference"
+    return blocks, source, verifier.known_cases(blocks, source)
+
+
+def run_known_case_tests(c, ws, actor, cid, version, blocks=None, expected_values_from=None):
     """A-06 POST /evaluators/{id}/test: allowed → pass, disallowed → fail, missing evidence → blocked (all distinct).
-    Same configuration, same verdicts: the receipt hash covers inputs and verdicts."""
+    Same configuration, same verdicts: the receipt hash covers inputs and verdicts. A verifier-blocks configuration
+    is tested with the blocks it will run: the three cases are built from them on synthetic snapshots, and the
+    disallowed case must fail with the broken block's on_fail code."""
     row = get_version(c, ws, cid, version)
     require(
         row["state"] != "revoked",
@@ -224,7 +269,43 @@ def run_known_case_tests(c, ws, actor, cid, version):
         "SELECT * FROM catalog.framework_versions WHERE id=%s", (row["framework_version_id"],)
     ).fetchone()
     checks = []
-    for name, case in row["known_cases"].items():
+    blocks_sha = None
+    if verifier.is_blocks_config(row["config"]):
+        blocks, source, cases = _block_cases(row, blocks, expected_values_from)
+        blocks_sha = sha({"blocks": blocks, "expected_values_from": source})
+        for name, case in cases.items():
+            out = sandbox.run(
+                fw,
+                row["config"],
+                case["evidence"],
+                case["reference"],
+                extra={
+                    "blocks": blocks,
+                    "case_id": case["case_id"],
+                    "slots": case["slots"],
+                    "expected_values_from": source,
+                },
+            )
+            ok = out["verdict"] == case["expect"]
+            if ok and case.get("expect_on_fail"):
+                codes = {
+                    line["on_fail"]
+                    for line in out.get("block_lines") or []
+                    if line["verdict"] == "fail" and line["block_id"] == case["expect_block"]
+                }
+                ok = case["expect_on_fail"] in codes
+            checks.append(
+                {
+                    "name": name,
+                    "case_id": case["case_id"],
+                    "expected": case["expect"],
+                    "verdict": out["verdict"],
+                    "result": "pass" if ok else "fail",
+                    "detail": out.get("detail", []),
+                    "block_lines": out.get("block_lines") or [],
+                }
+            )
+    for name, case in ({} if blocks_sha else row["known_cases"]).items():
         expect = case.get("expect", KNOWN_CASE_EXPECT.get(name))
         out = sandbox.run(fw, row["config"], case["evidence"], case["reference"])
         checks.append(
@@ -246,6 +327,8 @@ def run_known_case_tests(c, ws, actor, cid, version):
         "framework": fw["id"],
         "checks": [{k: ch[k] for k in ("name", "case_id", "expected", "verdict")} for ch in checks],
     }
+    if blocks_sha:
+        receipt_body["blocks_sha256"] = blocks_sha
     receipt_id = "kct-" + sha(receipt_body)[:12]
     c.execute(
         """INSERT INTO catalog.qualification_receipts(receipt_id,workspace_id,subject_kind,subject_id,subject_version,result,

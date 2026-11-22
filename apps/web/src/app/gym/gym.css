@@ -910,3 +910,8 @@ body:has(#gym) {
 #gym .sme {
   align-items: start;
 }
+
+/* Verifier block lines (episode viewer) */
+#gym table.blocks { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+#gym table.blocks th, #gym table.blocks td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line, #e5e5e5); vertical-align: top; }
+#gym table.blocks code { word-break: break-word; }

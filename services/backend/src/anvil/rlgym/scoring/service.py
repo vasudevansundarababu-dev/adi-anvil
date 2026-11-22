@@ -107,6 +107,50 @@ def likely_cause(failed, blocked):
     return "output field wrong" if failed else None
 
 
+def verifier_context(c, ws, episode, manifest):
+    """The activated template's verifier blocks per criterion, where open values come from, and the task's private SME
+    slot values and extra State checks. All of it stays in the scoring sandbox; none reaches the candidate."""
+    t = manifest["template"]
+    act = c.execute(
+        "SELECT expected_values_from FROM catalog.template_activations WHERE workspace_id=%s AND template_id=%s AND version=%s",
+        (ws, t["id"], t["version"]),
+    ).fetchone()
+    blocks = {
+        r["criterion_id"]: r["verifier_blocks"]
+        for r in c.execute(
+            """SELECT criterion_id, verifier_blocks FROM catalog.template_criteria
+               WHERE workspace_id=%s AND template_id=%s AND version=%s AND verifier_blocks IS NOT NULL""",
+            (ws, t["id"], t["version"]),
+        ).fetchall()
+    }
+    if not blocks:
+        return None
+    private = c.execute(
+        """SELECT p.content FROM projects.task_imports i JOIN projects.task_payloads p
+           ON p.workspace_id=i.workspace_id AND p.package_sha256=i.package_sha256 AND p.part='private' WHERE i.id=%s""",
+        (episode.get("task_import_id"),),
+    ).fetchone()
+    private = (private or {}).get("content") or {}
+    task = private.get("verifier") or private
+    for extra in task.get("extra_state_checks") or []:
+        own = blocks.get(extra.get("criterion")) or []
+        tables = {b.get("table") for b in own if b.get("kind") == "state"}
+        if extra.get("kind", "state") == "state" and extra.get("table") in tables:
+            blocks[extra["criterion"]] = [
+                *own,
+                {
+                    **extra,
+                    "kind": "state",
+                    "id": extra.get("id") or f"{extra['criterion']}.sme.{len(own) + 1}",
+                },
+            ]
+    return {
+        "blocks": blocks,
+        "expected_values_from": (act or {}).get("expected_values_from") or "case_reference",
+        "slots": task.get("slots") or {},
+    }
+
+
 def score_case(c, ws, episode, pass_row, manifest, sealed):
     bundle = read_sealed(sealed)
     ref_row = c.execute(
@@ -120,6 +164,9 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
         evidence["tool_events"] = bundle["tool_events"]
     if bundle.get("final_output") is not None:
         evidence["final_output"] = bundle["final_output"]
+    vctx = verifier_context(c, ws, episode, manifest)
+    if vctx and bundle.get("snapshots") and bundle["snapshots"].get("end") is not None:
+        evidence["snapshots"] = bundle["snapshots"]
     configs = _configs(c, ws, pass_row["evaluator_versions"])
     by_framework = {}
     for ev, row in configs:
@@ -132,9 +179,26 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
             "installed_locally": group[0][1]["installed_locally"],
             "state": group[0][1]["framework_state"],
         }
+        extras = []
+        for ev, row in group:
+            blocks = (vctx or {}).get("blocks", {}).get(ev["criterion_id"])
+            extras.append(
+                {
+                    "blocks": blocks,
+                    "case_id": episode["case_id"],
+                    "slots": vctx["slots"],
+                    "expected_values_from": vctx["expected_values_from"],
+                }
+                if blocks and row["config"].get("runner") == "verifier_blocks"
+                else {}
+            )
         try:
             verdicts = sandbox.run_batch(
-                framework, [row["config"] for _, row in group], evidence, ref_row["reference"]
+                framework,
+                [row["config"] for _, row in group],
+                evidence,
+                ref_row["reference"],
+                extras=extras,
             )
         except GymError as exc:
             verdicts = [{"verdict": "error", "points": None, "detail": [exc.message]}] * len(group)
@@ -150,6 +214,7 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
         points = v.get("points")
         section = row["evidence_type"]
         refs = [f"{sealed['bundle_ref']}#{section}"] if section in evidence else []
+        lines = v.get("block_lines")
         receipt = {
             "episode_id": episode["id"],
             "pass_id": str(pass_row["id"]),
@@ -162,9 +227,12 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
             "evidence_refs": refs,
             "sealed_sha256": sealed["sealed_sha256"],
         }
+        if lines is not None:
+            receipt["block_lines"] = lines
         c.execute(
             """INSERT INTO scoring.criterion_receipts(episode_id,pass_id,workspace_id,criterion_id,configuration_id,configuration_version,
-                 verdict,points,weight,evidence_refs,detail,receipt_sha256) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                 verdict,points,weight,evidence_refs,detail,receipt_sha256,block_lines)
+               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 episode["id"],
                 pass_row["id"],
@@ -178,6 +246,7 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
                 Jsonb(refs),
                 Jsonb(v.get("detail") or []),
                 sha(receipt),
+                Jsonb(lines) if lines is not None else None,
             ),
         )
         if verdict in SCORABLE:

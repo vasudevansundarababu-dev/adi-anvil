@@ -444,7 +444,7 @@ def bootstrap():
     qualified by the RL Gym, 20 S7 evaluator bindings sent through A-06 and tested, the template validated, its
     known-case tests run and the exact hash activated (A-03). Idempotent."""
     out = {"versions": {}, "evaluators": [], "activation": None}
-    for vid in ("golden-kyc-openenv@v2", "golden-kyc-openenv@v3"):
+    for vid in ("golden-kyc-openenv@v2", "golden-kyc-openenv@v3", "golden-kyc-openenv@v6"):
         if vid not in S["state"]:
             _publish("version.registered", vid)
         if S["state"][vid]["state"] == "registered":
@@ -461,9 +461,28 @@ def bootstrap():
             _, tested = _gym("POST", f"/evaluators/{binding['id']}/test", {"version": d["version"]})
             d = {**d, "state": tested.get("data", {}).get("state")}
         out["evaluators"].append({"id": d["id"], "version": d["version"], "state": d["state"]})
+    # V10's verifier-blocks configurations (work package 2.11): the RL Gym's block runner, tested with V10's blocks.
+    for binding in g.block_evaluator_bindings():
+        status, created = _gym("POST", "/evaluators", binding)
+        if status >= 300:
+            out["evaluators"].append({"id": binding["id"], "error": created})
+            continue
+        d = created["data"]
+        if d["state"] != "qualified":
+            _, tested = _gym(
+                "POST",
+                f"/evaluators/{binding['id']}/test",
+                {
+                    "version": d["version"],
+                    "blocks": binding["blocks"],
+                    "expected_values_from": binding["expected_values_from"],
+                },
+            )
+            d = {**d, "state": tested.get("data", {}).get("state")}
+        out["evaluators"].append({"id": d["id"], "version": d["version"], "state": d["state"]})
     # V8 as released, then V9 (screening and the escalation decision are gate criteria; owner decision RG-24).
     out["activations"] = {}
-    for version in (g.TEMPLATE_VERSION, g.GATED_VERSION):
+    for version in (g.TEMPLATE_VERSION, g.GATED_VERSION, g.BLOCKS_VERSION):
         template = g.template(version)
         _, validated = _gym("POST", "/templates/validate", template)
         _, kct = _gym(
@@ -472,8 +491,13 @@ def bootstrap():
             {
                 "template_id": g.TEMPLATE_ID,
                 "version": version,
+                "expected_values_from": template.get("expected_values_from"),
                 "criteria": [
-                    {"criterion_id": c["criterion_id"], "configuration_id": c["configuration_id"]}
+                    {
+                        "criterion_id": c["criterion_id"],
+                        "configuration_id": c["configuration_id"],
+                        "verifier_blocks": c.get("verifier_blocks"),
+                    }
                     for c in template["criteria"]
                 ],
             },

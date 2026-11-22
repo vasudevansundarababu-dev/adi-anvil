@@ -29,17 +29,27 @@ def _check(framework):
         raise GymError("VALIDATION_FAILED", f"Framework {framework['id']} is revoked")
 
 
-def run(framework, config, evidence, reference, timeout=10):
+def run(framework, config, evidence, reference, timeout=10, extra=None):
     _check(framework)
-    out = _invoke({"config": config, "evidence": evidence, "reference": reference}, timeout)
+    out = _invoke(
+        {**(extra or {}), "config": config, "evidence": evidence, "reference": reference}, timeout
+    )
     return out if isinstance(out, dict) else out[0]
 
 
-def run_batch(framework, configs, evidence, reference, timeout=20):
-    """Score several configurations of one framework version over one episode's evidence in one sandbox process."""
+def run_batch(framework, configs, evidence, reference, timeout=20, extras=None):
+    """Score several configurations of one framework version over one episode's evidence in one sandbox process.
+    `extras` (one dict per configuration) adds the job fields a verifier-blocks configuration needs: blocks, case_id,
+    slots, expected_values_from. They stay in the scoring sandbox, like the reference."""
     _check(framework)
+    extras = extras or [{} for _ in configs]
     out = _invoke(
-        {"jobs": [{"config": c, "evidence": evidence, "reference": reference} for c in configs]},
+        {
+            "jobs": [
+                {**x, "config": c, "evidence": evidence, "reference": reference}
+                for c, x in zip(configs, extras, strict=True)
+            ]
+        },
         timeout,
     )
     if isinstance(

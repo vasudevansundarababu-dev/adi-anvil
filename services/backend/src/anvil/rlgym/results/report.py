@@ -504,8 +504,34 @@ def failures(d):
             cause, {"cause": cause, "per_model": {}, "example_case": e["case_id"]}
         )
         row["per_model"][e["system_id"]] = row["per_model"].get(e["system_id"], 0) + 1
+    # Verifier blocks (D21): failed blocks grouped by their on_fail code, with an example of expected vs actual.
+    codes = {}
+    for e in d.cases:
+        for r in d.by_episode.get(e["id"], {}).values():
+            for line in r.get("block_lines") or []:
+                if line["verdict"] != "fail":
+                    continue
+                row = codes.setdefault(
+                    line["on_fail"] or "UNCODED",
+                    {
+                        "code": line["on_fail"] or "UNCODED",
+                        "per_model": {},
+                        "blocks": {},
+                        "example": None,
+                    },
+                )
+                row["per_model"][e["system_id"]] = row["per_model"].get(e["system_id"], 0) + 1
+                row["blocks"][line["block_id"]] = row["blocks"].get(line["block_id"], 0) + 1
+                row["example"] = row["example"] or {
+                    "episode_id": e["id"],
+                    "case_id": e["case_id"],
+                    "block_id": line["block_id"],
+                    "expected": line["expected"],
+                    "actual": line["actual"],
+                }
     return {
         "per_model": per_model,
+        "by_on_fail": sorted(codes.values(), key=lambda r: -sum(r["per_model"].values())),
         "by_cause": sorted(causes.values(), key=lambda r: -sum(r["per_model"].values())),
         "cause_note": "Causes are suggestions (rule-based here) until an SME or RL engineer confirms them.",
         "episodes": [

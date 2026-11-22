@@ -103,8 +103,8 @@ def _upsert_version(c, v, seq, state, reg):
         return []
     c.execute(
         f"""INSERT INTO catalog.environment_versions({",".join(VERSION_FIELDS)},operations,schema_tables,image_recipe,
-              case_catalog,state,state_seq,registry)
-            VALUES({",".join(["%s"] * len(VERSION_FIELDS))},%s,%s,%s,%s,%s,%s,%s)""",
+              case_catalog,state,state_seq,registry,schema)
+            VALUES({",".join(["%s"] * len(VERSION_FIELDS))},%s,%s,%s,%s,%s,%s,%s,%s)""",
         (
             *[v.get(f) for f in VERSION_FIELDS],
             Jsonb(v.get("operations")),
@@ -114,6 +114,7 @@ def _upsert_version(c, v, seq, state, reg):
             state,
             seq,
             reg,
+            Jsonb(v.get("schema")) if v.get("schema") else None,
         ),
     )
     return []

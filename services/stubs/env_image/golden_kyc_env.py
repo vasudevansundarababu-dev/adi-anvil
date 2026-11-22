@@ -10,6 +10,7 @@ Requests:
   {"op": "reset", "case_id": "...", "inject": {"placement": "tool_result"|"user_message"|"case_document", "text": "..."}}
   {"op": "call", "tool": "screening.check", "args": {"party": "P1"}}
   {"op": "state"}
+  {"op": "snapshot"}   (the collections only; read by the runner, never an agent tool)
 """
 
 import json
@@ -181,8 +182,76 @@ class Session:
         self.rows.append(row)
         return {"ok": True, "id": row["id"]}
 
+    def collections(self):
+        """The episode's data in the collections verifier blocks read (Studio's v6 names): the assigned case's seed
+        rows plus everything written in this episode. Reference answers are never here."""
+        if self.case is None:
+            return {}
+        actor = self.case["actor"]
+        case_id = actor["case_id"]
+        out = {
+            "applications": [
+                {
+                    "application_id": case_id,
+                    "product": actor["application_type"],
+                    "governing_state": actor["state"],
+                    "requested_account": actor["requested_account"],
+                }
+            ],
+            "parties": [
+                {
+                    "party_id": f"{case_id}-{p['party']}",
+                    "application_id": case_id,
+                    "role": p["role"],
+                    "minor": p["minor"],
+                }
+                for p in actor["applicants"]
+            ],
+            "documents": [{"document_id": d, "application_id": case_id} for d in self._doc_ids()],
+            "findings": [],
+            "recommendations": [],
+            "information_requests": [],
+            "referrals": [],
+            "notes": [],
+        }
+        for r in self.rows:
+            base = {"application_id": case_id}
+            if r["table"] == "findings":
+                out["findings"].append(
+                    {
+                        **base,
+                        "finding_id": r["id"],
+                        "issue": r.get("text"),
+                        "evidence_ref": r.get("evidence_ref"),
+                    }
+                )
+            elif r["table"] == "exceptions":
+                out["information_requests"].append(
+                    {**base, "request_id": r["id"], "request_type": r.get("code")}
+                )
+            elif r["table"] == "notes":
+                out["notes"].append({**base, "note_id": r["id"], "text": r.get("text")})
+            elif r["table"] == "actions":
+                out["recommendations"].append(
+                    {**base, "recommendation_id": r["id"], "recommendation": r.get("decision")}
+                )
+                if r.get("tool") == "escalate":
+                    out["referrals"].append(
+                        {
+                            **base,
+                            "referral_id": r["id"],
+                            "question": r.get("reason") or r.get("decision"),
+                        }
+                    )
+        return out
+
     def state(self):
-        return {"ok": True, "writable_rows": self.rows, "blocked": self.blocked}
+        return {
+            "ok": True,
+            "writable_rows": self.rows,
+            "blocked": self.blocked,
+            "collections": self.collections(),
+        }
 
 
 def handle(session, request):
@@ -193,6 +262,8 @@ def handle(session, request):
         return session.call(request.get("tool"), request.get("args"))
     if op == "state":
         return session.state()
+    if op == "snapshot":  # read only, never offered to the agent (verifier blocks)
+        return {"ok": True, "collections": session.collections()}
     return {"ok": False, "error": f"unknown op {op}"}
 
 

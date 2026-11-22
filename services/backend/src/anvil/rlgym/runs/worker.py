@@ -228,6 +228,14 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         reset = session.request({"op": "reset", "case_id": episode["case_id"], "inject": inject})
         if not reset.get("ok"):
             raise RuntimeError(f"environment reset failed: {reset.get('error')}")
+        # Verifier blocks (D21): the environment's declared collections at the start and the end of the episode.
+        # Read by the runner only; the snapshot is not an operation, so the agent never sees it.
+        snapshots = None
+        if (instance or {}).get("env") and instance["env"].get("schema"):
+            snapshots = {
+                "start": session.request({"op": "snapshot"}).get("collections"),
+                "end": None,
+            }
         policy = mock_provider.agent(
             model["model_id"],
             (actor or {}).get("assignment", ""),
@@ -260,6 +268,9 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
             except StopIteration:
                 break
         state = session.request({"op": "state"})
+        end = state.pop("collections", None)  # kept only as the end snapshot, never twice
+        if snapshots is not None:
+            snapshots["end"] = end
     finally:
         session.close()
     wall_ms = int((time.monotonic() - started) * 1000)
@@ -296,6 +307,7 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         "tool_events": events,
         "final_output": final,
         "environment_state": state,
+        "snapshots": snapshots,
         "timings": {"wall_ms": wall_ms, "steps": steps},
         "tokens": {
             "in": steps * mock_provider.STEP_TOKENS[0],

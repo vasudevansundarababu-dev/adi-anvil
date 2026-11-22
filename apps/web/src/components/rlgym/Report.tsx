@@ -550,6 +550,30 @@ function FailuresView({ id, v, models }: { id: string; v: any; models: Model[] }
           </section>
         ))}
       </div>
+      {(v.by_on_fail ?? []).length > 0 && (
+        <>
+          <h3>Failed verifier blocks by code</h3>
+          <small>One count per failed block (State, Process or Rubric), grouped by its on_fail code.</small>
+          <ModelTable
+            head={['Code', ...models.map((m) => m.name), 'Blocks', 'Example: expected → actual']}
+            rows={v.by_on_fail.map((r: any) => [
+              <code key="c">{r.code}</code>,
+              ...models.map((m) => r.per_model[m.system_id] ?? 0),
+              Object.entries(r.blocks)
+                .map(([b, n]) => `${b} (${n})`)
+                .join(', '),
+              <span key="x">
+                <Link href={`/gym/runs/${id}/episodes/${r.example.episode_id}?from=report`}>
+                  {r.example.case_id} · {r.example.block_id}
+                </Link>
+                <small>
+                  {JSON.stringify(r.example.expected)} → {JSON.stringify(r.example.actual)}
+                </small>
+              </span>,
+            ])}
+          />
+        </>
+      )}
       <h3>Failures by likely cause</h3>
       <small>{v.cause_note}</small>
       <ModelTable
