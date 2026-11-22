@@ -587,6 +587,13 @@ body:has(#gym) {
   border-bottom-color: #3b82f6;
   color: var(--ink);
 }
+/* The app-wide stylesheet gives any selected nav link the global --soft background, which is dark whenever the
+   page carries a .dark element, while the RL Gym's own ink stays light-themed: dark text on dark. Use gym tokens. */
+#gym nav a[aria-current='page'] {
+  background: light-dark(#e6eef9, #26384d);
+  color: var(--ink);
+  font-weight: 650;
+}
 #gym a {
   color: var(--green);
 }
@@ -942,8 +949,10 @@ body:has(#gym) {
   color: #d6dcea;
 }
 #gym header.brand-header .navlink[aria-current='page'] {
+  background: #2a1f5c;
   color: #fff;
-  border-bottom: 2px solid #b77ae8;
+  border-color: #b77ae8;
+  box-shadow: inset 0 -2px 0 #b77ae8;
 }
 #gym header.brand-header button {
   background: transparent;
