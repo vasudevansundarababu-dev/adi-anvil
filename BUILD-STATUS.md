@@ -26,6 +26,13 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
 | 2.12 Edge cases and slice tags | done (local stub) | migration 051; activation mirrors S4 edge cases and S1 slice lists (validated); default suite counts per edge-case tag at the template minimum; more-data edge cells carry tag, recipe and expected outcome; tasks keep complexity and archetype; report Task results and Failures & evidence sliced by both (tables and filters); new case kind in four parts (Admin template page and episode diagnosis). Stub Golden KYC V11, project KYC Edge Cases (RG-46) |
 | 2.13 Branding | done | ADI Labs Forge lockup on navy with the gradient rule on every v2 screen and the sign-in page; Keycloak login theme (applied to the existing realm with `python3 scripts/local.py keycloak-theme`); titles `<Page> · RL Gym Evaluation · ADI Labs Forge`; PDF full logo on page 1 and running header; Authoring on screen; banned-name unit test (RG-45) |
 
+- **22 Nov 2026, Promptfoo plug-in (RG-51):**
+  - **Downloads:** promptfoo 0.125.1 and the Node 22 image, approved by the owner.
+  - **Build:** the image was built offline as `sha256:b13291f8ed73…`.
+  - **Install:** installed and qualified in adi-labs-research; 3 known cases with recorded judge answers pass.
+  - **Unit tests:** 480 passed.
+  - **Not yet:** a live judge answer (needs the owner's approval for Gemini 3.5 Flash with use `judge`, its exact model
+    id and verified prices).
 - **22 Nov 2026, verifier plug-ins and GoRules ZEN (RG-50):**
   - **Download:** zen-engine 2.1.3, approved by the owner; SHA-256 verified.
   - **Build:** the image was built offline as `sha256:d6951dc73a7f…`.

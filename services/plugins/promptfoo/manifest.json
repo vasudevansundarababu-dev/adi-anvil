@@ -1,0 +1,179 @@
+{
+  "schema": "adi.verifier-plugin.v1",
+  "id": "promptfoo",
+  "name": "Promptfoo model-graded checks",
+  "version": "1.0.0",
+  "image": "<filled at build>",
+  "entrypoint": [
+    "node",
+    "/app/plugin.mjs"
+  ],
+  "settings_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "required": [
+      "assertion",
+      "rubric",
+      "target"
+    ],
+    "properties": {
+      "assertion": {
+        "enum": [
+          "llm-rubric",
+          "model-graded-closedqa",
+          "factuality"
+        ],
+        "title": "Check",
+        "default": "llm-rubric"
+      },
+      "rubric": {
+        "type": "string",
+        "minLength": 10,
+        "title": "Rubric",
+        "description": "The criterion's scoring rule in plain English"
+      },
+      "target": {
+        "type": "string",
+        "title": "What to grade",
+        "x-widget": "collection-field",
+        "description": "An evidence path, usually output.rationale"
+      },
+      "threshold": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "default": 0.5,
+        "title": "Pass threshold"
+      },
+      "judge": {
+        "type": "string",
+        "title": "Judge model",
+        "description": "A judge model approved by the owner (RL Gym live approvals, use judge); the local mock judge otherwise"
+      }
+    }
+  },
+  "reads": [
+    "output",
+    "tools",
+    "state",
+    "case"
+  ],
+  "calls_model": false,
+  "timeout_seconds": 60,
+  "license": "MIT (promptfoo)",
+  "upstream": {
+    "package": "promptfoo",
+    "version": "0.125.1",
+    "lockfile_sha256": "e2f3ca066d0b75984e3680044cea035b9f7ab51229afe03311067ea86044b15f",
+    "base_image": "node@sha256:1ee7b5f35129c6f4af835661a7a3cfbdd4748944c23b05567aa6ec00c6689e46"
+  },
+  "judge_note": "The judge runs outside the sandbox: recorded answers, the mock judge, or an approved judge model through the RL Gym gateway, passed in as judge_answers.",
+  "known_cases": [
+    {
+      "name": "allowed",
+      "description": "A specific rationale; the recorded judge passes it",
+      "job": {
+        "schema": "adi.verifier-job.v1",
+        "run_id": "known-case",
+        "episode_id": "known-case",
+        "blocks": [
+          {
+            "id": "decision.rationale",
+            "criterion_id": "decision",
+            "on_fail": "QUALITY",
+            "settings": {
+              "assertion": "llm-rubric",
+              "rubric": "The rationale names the specific reason for the recommendation, for example the DOB mismatch on a sanctions hit",
+              "target": "output.rationale",
+              "threshold": 0.5,
+              "judge": "gemini-3.5-flash"
+            }
+          }
+        ],
+        "evidence": {
+          "output": {
+            "rationale": "Specialist review: DOB mismatch on sanctions hit (1962 vs 1991)."
+          }
+        },
+        "case_reference": {},
+        "slots": {},
+        "judge_answers": {
+          "decision.rationale": {
+            "pass": true,
+            "score": 1,
+            "reason": "Names the DOB mismatch.",
+            "judge": "recorded"
+          }
+        }
+      },
+      "expect": "pass"
+    },
+    {
+      "name": "disallowed",
+      "description": "A vague rationale; the recorded judge fails it",
+      "job": {
+        "schema": "adi.verifier-job.v1",
+        "run_id": "known-case",
+        "episode_id": "known-case",
+        "blocks": [
+          {
+            "id": "decision.rationale",
+            "criterion_id": "decision",
+            "on_fail": "QUALITY",
+            "settings": {
+              "assertion": "llm-rubric",
+              "rubric": "The rationale names the specific reason for the recommendation, for example the DOB mismatch on a sanctions hit",
+              "target": "output.rationale",
+              "threshold": 0.5,
+              "judge": "gemini-3.5-flash"
+            }
+          }
+        ],
+        "evidence": {
+          "output": {
+            "rationale": "Looks fine."
+          }
+        },
+        "case_reference": {},
+        "slots": {},
+        "judge_answers": {
+          "decision.rationale": {
+            "pass": false,
+            "score": 0,
+            "reason": "No specific reason.",
+            "judge": "recorded"
+          }
+        }
+      },
+      "expect": "fail",
+      "expect_on_fail": "QUALITY"
+    },
+    {
+      "name": "missing_evidence",
+      "description": "No output",
+      "job": {
+        "schema": "adi.verifier-job.v1",
+        "run_id": "known-case",
+        "episode_id": "known-case",
+        "blocks": [
+          {
+            "id": "decision.rationale",
+            "criterion_id": "decision",
+            "on_fail": "QUALITY",
+            "settings": {
+              "assertion": "llm-rubric",
+              "rubric": "The rationale names the specific reason for the recommendation, for example the DOB mismatch on a sanctions hit",
+              "target": "output.rationale",
+              "threshold": 0.5,
+              "judge": "gemini-3.5-flash"
+            }
+          }
+        ],
+        "evidence": {},
+        "case_reference": {},
+        "slots": {}
+      },
+      "expect": "blocked"
+    }
+  ]
+}

@@ -179,3 +179,33 @@ def test_v12_carries_its_rules_file_inside_the_template_hash():
     assert decision["verifier_blocks"][-1]["plugin"]["id"] == "gorules-zen"
     v11 = g.template(g.EDGES_VERSION)
     assert "verifier_files" not in v11 and t["spec_sha256"] != v11["spec_sha256"]
+
+
+def test_a_result_on_the_last_stdout_line_is_read_when_the_tool_logs_first():
+    logged = b"Starting evaluation...\nRunning 1 test cases\n" + result(JOB)
+    invoke, _ = fake((0, logged, b""))
+    assert runner.run(MANIFEST, JOB, invoke=invoke)["results"][0]["verdict"] == "pass"
+
+
+def test_promptfoo_manifest_pins_its_lockfile_and_base_image():
+    import hashlib
+
+    m = json.loads((ROOT / "services/plugins/promptfoo/manifest.json").read_text())
+    contract.check_manifest({**m, "image": "sha256:" + "e" * 64})
+    lock = (ROOT / "services/plugins/promptfoo/package-lock.json").read_bytes()
+    assert m["upstream"]["lockfile_sha256"] == hashlib.sha256(lock).hexdigest()
+    assert m["upstream"]["version"] == "0.125.1" and m["calls_model"] is False
+    assert m["upstream"]["base_image"].startswith("node@sha256:1ee7b5f3")
+
+
+def test_evidence_paths_in_the_scorer():
+    from anvil.rlgym.scoring.service import _path
+
+    root = {
+        "output": {"rationale": "x"},
+        "state": {"end": {"recommendations": [{"r": "a"}, {"r": "b"}]}},
+    }
+    assert _path(root, "output.rationale") == "x"
+    assert _path(root, "state.end.recommendations[1].r") == "b"
+    assert _path(root, "state.end.recommendations[*].r") == ["a", "b"]
+    assert _path(root, "output.missing") is None

@@ -280,6 +280,8 @@ def plugin_build(name):
     src = ROOT / "services/plugins" / name
     manifest = json.loads((src / "manifest.json").read_text())
     up = manifest["upstream"]
+    if "lockfile_sha256" in up:
+        return _node_plugin_build(name, src, manifest)
     wheel = LOCAL / "vendor" / name / up["wheel"]
     if not wheel.is_file() or hashlib.sha256(wheel.read_bytes()).hexdigest() != up["sha256"]:
         raise SystemExit(
@@ -317,6 +319,36 @@ def plugin_build(name):
     manifest["image"] = image
     out = LOCAL / "plugins" / f"{manifest['id']}-{manifest['version']}.json"
     out.write_text(json.dumps(manifest, indent=2) + "\n")
+    print(json.dumps({"image": image, "tag": tag, "manifest": str(out.relative_to(ROOT))}))
+
+
+def _node_plugin_build(name, src, manifest):
+    """A Node plug-in: the dependency tree installed once from the committed lockfile (owner-approved download) is
+    copied into the build context; the build itself has no network."""
+    import hashlib
+    import json
+    import shutil
+
+    up = manifest["upstream"]
+    vendor = LOCAL / "vendor" / name
+    lock = (src / "package-lock.json").read_bytes()
+    if hashlib.sha256(lock).hexdigest() != up["lockfile_sha256"]:
+        raise SystemExit("package-lock.json does not match the manifest's lockfile_sha256")
+    if not (vendor / "node_modules").is_dir() or (vendor / "package-lock.json").read_bytes() != lock:
+        raise SystemExit(f"{vendor} must hold node_modules installed from this lockfile; nothing is downloaded here")
+    build = LOCAL / "plugins" / f"build-{name}"
+    shutil.rmtree(build, ignore_errors=True)
+    shutil.copytree(src, build, ignore=shutil.ignore_patterns("manifest.json", "__pycache__"))
+    shutil.copytree(vendor / "node_modules", build / "node_modules", symlinks=True)
+    tag = f"rlgym-local/verifier-{name}:{manifest['version']}"
+    run(["docker", "build", "--quiet", "--network", "none", "--build-arg", f"BASE_IMAGE={up['base_image']}", "-t", tag, str(build)])
+    image = subprocess.run(
+        ["docker", "image", "inspect", "--format", "{{.Id}}", tag], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    manifest["image"] = image
+    out = LOCAL / "plugins" / f"{manifest['id']}-{manifest['version']}.json"
+    out.write_text(json.dumps(manifest, indent=2) + "\n")
+    shutil.rmtree(build / "node_modules", ignore_errors=True)
     print(json.dumps({"image": image, "tag": tag, "manifest": str(out.relative_to(ROOT))}))
 
 

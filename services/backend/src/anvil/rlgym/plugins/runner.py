@@ -72,10 +72,15 @@ def _blocked(job, reason):
 
 
 def _parse(job, stdout):
+    """The result is all of stdout, or (for tools that log to stdout) its last non-empty line."""
     try:
         out = json.loads(stdout)
     except ValueError:
-        return None
+        lines = [x for x in stdout.decode(errors="replace").splitlines() if x.strip()]
+        try:
+            out = json.loads(lines[-1]) if lines else None
+        except ValueError:
+            return None
     if not isinstance(out, dict) or out.get("schema") != contract.RESULT:
         return None
     results = out.get("results")

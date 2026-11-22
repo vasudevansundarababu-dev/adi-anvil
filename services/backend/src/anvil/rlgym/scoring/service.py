@@ -155,6 +155,30 @@ def verifier_context(c, ws, episode, manifest):
     }
 
 
+def _path(root, path):
+    """A value at an evidence path (a.b[0].c; [*] collects), or None."""
+    import re
+
+    values, many = [root], False
+    for part in path.split("."):
+        name, idx = re.match(r"^([^\[]*)(.*)$", part).groups()
+        steps = ([name] if name else []) + [i for i in re.findall(r"\[([^\]]*)\]", idx)]
+        for step in steps:
+            nxt = []
+            for v in values:
+                if step == "*" and isinstance(v, list):
+                    nxt.extend(v)
+                    many = True
+                elif isinstance(v, list) and str(step).isdigit() and int(step) < len(v):
+                    nxt.append(v[int(step)])
+                elif isinstance(v, dict) and step in v:
+                    nxt.append(v[step])
+            if not nxt:
+                return None
+            values = nxt
+    return values if many else values[0]
+
+
 PLUGIN_INVOKE = None  # tests replace Docker for the plug-in runner
 
 
@@ -241,6 +265,31 @@ def plugin_results(c, episode, manifest, vctx, bundle, reference):
             **({"slots": vctx["slots"]} if "slots" in reads else {}),
             "files": files,
         }
+        answers = {}
+        for b in blocks:
+            st = b.get("settings") or {}
+            if st.get("judge") and st.get("rubric"):
+                # An approved judge model answers outside the sandbox (gateway, approval use `judge`).
+                from anvil.rlgym.live import judge as live_judge
+
+                target = _path(
+                    evidence_all | {"case_reference": reference}, st.get("target") or "output"
+                )
+                if target is not None:
+                    got = live_judge.answer_rubric(
+                        c,
+                        episode["workspace_id"],
+                        st["judge"],
+                        st["rubric"],
+                        target,
+                        run_id=episode["run_id"],
+                        episode_id=episode["id"],
+                        gateway_factory=JUDGE_GATEWAY,
+                    )
+                    if got:
+                        answers[b["id"]] = got
+        if answers:
+            job["judge_answers"] = answers
         if row["state"] == "revoked":
             result = runner._blocked(job, f"plug-in {m['id']} {m['version']} is revoked")
         else:
