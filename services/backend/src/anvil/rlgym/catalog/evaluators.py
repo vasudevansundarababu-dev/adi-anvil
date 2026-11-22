@@ -78,12 +78,24 @@ def _event(c, ws, kind, row, extra=None):
         **(extra or {}),
     }
     emit(c, ws, f"evaluator.{kind}", f"{row['id']}@{row['version']}", payload)
+    _to_studio(c, ws, f"{row['id']}@{row['version']}", f"evaluator.{kind}", payload)
+
+
+def _to_studio(c, ws, key, kind, payload):
+    """Queue an evaluator or framework event for Studio's /rlgym-events, naming the workspace it happened in (so
+    Studio can tell workspaces apart, for example disposable test workspaces)."""
+    slug = c.execute("SELECT slug FROM admin.workspaces WHERE id=%s", (ws,)).fetchone()
     emit(
         c,
         ws,
         "evaluator.event",
-        f"{row['id']}@{row['version']}",
-        {"_path": "/api/v1/rlgym-events", "type": f"evaluator.{kind}", **payload},
+        key,
+        {
+            "_path": "/api/v1/rlgym-events",
+            "type": kind,
+            **payload,
+            "workspace": {"id": str(ws), "slug": slug["slug"] if slug else None},
+        },
         destination="studio",
     )
 
@@ -550,14 +562,7 @@ def framework_state(c, ws, actor, fid, target, reason):
         "configurations": [f"{x['id']}@{x['version']}" for x in report["configurations"]],
     }
     emit(c, ws, f"framework.{target}", fid, payload)
-    emit(
-        c,
-        ws,
-        "evaluator.event",
-        fid,
-        {"_path": "/api/v1/rlgym-events", "type": f"framework.{target}", **payload},
-        destination="studio",
-    )
+    _to_studio(c, ws, fid, f"framework.{target}", payload)
     return {
         "framework": c.execute(
             "SELECT * FROM catalog.framework_versions WHERE id=%s", (fid,)

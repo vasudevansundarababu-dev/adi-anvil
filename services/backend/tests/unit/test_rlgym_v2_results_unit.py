@@ -121,3 +121,30 @@ def test_forge_qualification_record_matches_p03_only_for_forge_published_templat
     )
     assert out["_base"] == "http://127.0.0.1:8111" and out["_headers"] == {"X-Tenant-Id": "t-1"}
     assert "detail" not in wire["receipt"]["checks"]
+
+
+def test_evaluator_events_for_studio_name_their_workspace(monkeypatch):
+    from anvil.rlgym.catalog import evaluators
+
+    sent = []
+
+    class Conn:
+        def execute(self, sql, params):
+            class Row:
+                def fetchone(self):
+                    return {"slug": "it-1234abcd"}
+
+            return Row()
+
+    monkeypatch.setattr(
+        evaluators,
+        "emit",
+        lambda c, ws, topic, key, payload, **kw: sent.append((topic, payload, kw)),
+    )
+    evaluators._to_studio(
+        Conn(), "ws-1", "golden-kyc:profile@2", "evaluator.failed", {"id": "golden-kyc:profile"}
+    )
+    topic, payload, kw = sent[0]
+    assert topic == "evaluator.event" and kw == {"destination": "studio"}
+    assert payload["type"] == "evaluator.failed"
+    assert payload["workspace"] == {"id": "ws-1", "slug": "it-1234abcd"}
