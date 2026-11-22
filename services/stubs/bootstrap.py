@@ -1,4 +1,4 @@
-"""`pnpm rlgym:demo`: drive the local stubs so the RL Gym receives Golden KYC V8 the way Studio and ADI Forge would
+"""`pnpm rlgym:demo`: drive the local stubs so the RL Gym receives Golden KYC V8 and V9 (gated) the way Studio and ADI Forge would
 send it. Synthetic data only; no model is called. Idempotent: repeating it changes nothing.
 
   --studio-only   registry versions, evaluators and template activation, but no ADI Forge export
@@ -27,13 +27,14 @@ def main():
             raise SystemExit(1)
         if "--studio-only" in sys.argv:
             return
-        export = client.post(FORGE + "/stub/projects/prj_7f3a91c2/export", json={}).json()
-        receipt = (export.get("response") or {}).get("data") or export.get("response")
-        print(
-            f"ADI Forge stub: export exp-0001 → HTTP {export['status']}: {json.dumps(receipt)[:400]}"
-        )
-        if export["status"] >= 300:
-            raise SystemExit(1)
+        for pid in ("prj_7f3a91c2", "prj_d4e9b1a7"):
+            export = client.post(FORGE + f"/stub/projects/{pid}/export", json={}).json()
+            receipt = (export.get("response") or {}).get("data") or export.get("response")
+            print(
+                f"ADI Forge stub: {pid} export exp-0001 → HTTP {export['status']}: {json.dumps(receipt)[:300]}"
+            )
+            if export["status"] >= 300:
+                raise SystemExit(1)
 
 
 if __name__ == "__main__":

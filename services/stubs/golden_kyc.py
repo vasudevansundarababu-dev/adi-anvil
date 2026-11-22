@@ -34,6 +34,14 @@ FORGE_PROJECT_ID = "prj_7f3a91c2"
 FORGE_PROJECT_NAME = "KYC November"
 FORGE_TEMPLATE_ID = "wf_118"
 FORGE_VERSION = 3
+# Golden KYC V9 (owner decision RG-24, 22 Nov 2026): the same 20 criteria with screening and the escalation decision as
+# gate criteria. V8 stays as released; a project belongs to one template version, so V9 has its own ADI Forge project.
+GATED_VERSION = 9
+GATES = {"screening", "decision"}
+PROJECTS = {
+    FORGE_PROJECT_ID: {"name": FORGE_PROJECT_NAME, "template_version": 8, "forge_version": 3},
+    "prj_d4e9b1a7": {"name": "KYC December", "template_version": 9, "forge_version": 4},
+}
 LOCAL_PYTHON_FRAMEWORK = {"runtime_id": "python", "version": "1.0.0"}
 
 TOOLS = [
@@ -507,15 +515,17 @@ def evaluator_bindings():
     return [evaluator_binding(*row) for row in CRITERIA]
 
 
-def template():
+def template(version=TEMPLATE_VERSION):
+    if version not in (TEMPLATE_VERSION, GATED_VERSION):
+        raise ValueError(f"unknown Golden KYC version {version}")
     doc = {
         "template_id": TEMPLATE_ID,
         "key": TEMPLATE_KEY,
-        "version": TEMPLATE_VERSION,
-        "name": TEMPLATE_NAME,
+        "version": version,
+        "name": f"Golden KYC V{version}",
         "mode": "single_agent",
         "pass_mark": PASS_MARK,
-        "studio_release": "rel-0412",
+        "studio_release": "rel-0412" if version == TEMPLATE_VERSION else "rel-0455",
         "bindings": [
             {
                 "alias": ALIAS,
@@ -529,7 +539,7 @@ def template():
                 "capability": "golden-kyc",
                 "skill_group": g,
                 "weight": 5,
-                "is_gate": False,
+                "is_gate": version >= GATED_VERSION and c in GATES,
                 "configuration_id": f"golden-kyc:{c}",
                 "evidence_type": e,
                 "verdict_vocabulary": ["pass", "partial", "fail", "blocked"],
@@ -543,7 +553,7 @@ def template():
             "edge_cases": EDGE_CASES,
         },
         "forge_template_id": FORGE_TEMPLATE_ID,
-        "forge_version": FORGE_VERSION,
+        "forge_version": FORGE_VERSION if version == TEMPLATE_VERSION else 4,
     }
     doc["spec_sha256"] = sha(
         {k: v for k, v in doc.items() if k not in ("forge_template_id", "forge_version")}
@@ -552,7 +562,9 @@ def template():
     return doc
 
 
-def forge_tasks(export_id, corrections=None):
+def forge_tasks(
+    export_id, corrections=None, template_version=TEMPLATE_VERSION, project_id=FORGE_PROJECT_ID
+):
     """40 authored KYC tasks: 10 per product (5 complete, 4 incomplete, 1 edge-case focus). `corrections` maps
     task_id → {revision, sme_batch_id, note} for re-exports after SME review."""
     corrections = corrections or {}
@@ -583,7 +595,7 @@ def forge_tasks(export_id, corrections=None):
                 "task_id": task_id,
                 "revision": revision,
                 "actor": {
-                    "assignment": f"Review this {product.replace('_', ' ')} account application under Golden KYC V8 "
+                    "assignment": f"Review this {product.replace('_', ' ')} account application under Golden KYC V{template_version} "
                     "and return a decision with findings.",
                     "inputs": "The application record for one synthetic case (read with application.read).",
                     "tools": TOOLS[:-2] + ["recommend", "escalate"],
@@ -632,26 +644,27 @@ def forge_tasks(export_id, corrections=None):
                     ),
                     "package": package,
                     "package_sha256": sha(package),
-                    "package_ref": f"stub://forge/exports/{FORGE_PROJECT_ID}/{export_id}/{task_id}-r{revision}.json",
+                    "package_ref": f"stub://forge/exports/{project_id}/{export_id}/{task_id}-r{revision}.json",
                     "case_selector": selector,
                 }
             )
     return out
 
 
-def project_export(export_id, reason, corrections=None, extra=None):
-    t = template()
-    tasks = forge_tasks(export_id, corrections)
+def project_export(export_id, reason, corrections=None, extra=None, project_id=FORGE_PROJECT_ID):
+    project = PROJECTS[project_id]
+    t = template(project["template_version"])
+    tasks = forge_tasks(export_id, corrections, project["template_version"], project_id)
     body = {
         "schema": "rlgym.project-export.v1",
-        "project_id": FORGE_PROJECT_ID,
-        "project_name": FORGE_PROJECT_NAME,
+        "project_id": project_id,
+        "project_name": project["name"],
         "template": {
             "id": TEMPLATE_ID,
-            "version": TEMPLATE_VERSION,
+            "version": project["template_version"],
             "spec_sha256": t["spec_sha256"],
             "forge_template_id": FORGE_TEMPLATE_ID,
-            "forge_version": FORGE_VERSION,
+            "forge_version": project["forge_version"],
         },
         "project_config": {"mode": "single_agent"},
         "export_id": export_id,

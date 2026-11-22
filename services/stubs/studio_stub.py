@@ -461,23 +461,29 @@ def bootstrap():
             _, tested = _gym("POST", f"/evaluators/{binding['id']}/test", {"version": d["version"]})
             d = {**d, "state": tested.get("data", {}).get("state")}
         out["evaluators"].append({"id": d["id"], "version": d["version"], "state": d["state"]})
-    template = g.template()
-    _, out["validate"] = _gym("POST", "/templates/validate", template)
-    _, kct = _gym(
-        "POST",
-        "/templates/known-case-tests",
-        {
-            "template_id": g.TEMPLATE_ID,
-            "version": g.TEMPLATE_VERSION,
-            "criteria": [
-                {"criterion_id": c["criterion_id"], "configuration_id": c["configuration_id"]}
-                for c in template["criteria"]
-            ],
-        },
-    )
-    out["known_case_tests_passed"] = kct.get("data", {}).get("passed")
-    status, act = _gym("POST", "/templates/activations", template)
-    out["activation"] = act.get("data", act)
+    # V8 as released, then V9 (screening and the escalation decision are gate criteria; owner decision RG-24).
+    out["activations"] = {}
+    for version in (g.TEMPLATE_VERSION, g.GATED_VERSION):
+        template = g.template(version)
+        _, validated = _gym("POST", "/templates/validate", template)
+        _, kct = _gym(
+            "POST",
+            "/templates/known-case-tests",
+            {
+                "template_id": g.TEMPLATE_ID,
+                "version": version,
+                "criteria": [
+                    {"criterion_id": c["criterion_id"], "configuration_id": c["configuration_id"]}
+                    for c in template["criteria"]
+                ],
+            },
+        )
+        status, act = _gym("POST", "/templates/activations", template)
+        out["activations"][version] = act.get("data", act)
+        if version == g.TEMPLATE_VERSION:
+            out["validate"] = validated
+            out["known_case_tests_passed"] = kct.get("data", {}).get("passed")
+            out["activation"] = act.get("data", act)
     with LOCK:
         S["bootstrapped"] = True
         _save()

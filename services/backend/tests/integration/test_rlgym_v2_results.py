@@ -202,3 +202,62 @@ def test_a_refused_run_has_no_report(small_suite):
     r = post(admin, base + "/runs", body(small_suite, name=""), expected=None)
     run_id = r.json()["error"]["details"]["run_id"]
     assert admin.get(base + f"/runs/{run_id}/report?tab=overview").status_code == 409
+
+
+def test_gate_criteria_fail_a_model_whatever_its_mean(lineup):
+    """Golden KYC V9 marks screening and the escalation decision as gates (owner decision RG-24): a model that skips
+    screening fails its gate on the KYC December project even when its mean is above the pass mark."""
+    import httpx
+    from test_rlgym_v2 import FORGE, g, service
+
+    from anvil.rlgym.runs import worker
+
+    base, admin, studio = lineup["base"], person("admin-1"), service("studio")
+    v9 = g.template(g.GATED_VERSION)
+    assert {c["criterion_id"] for c in v9["criteria"] if c["is_gate"]} == {"screening", "decision"}
+    act = post(studio, base + "/templates/activations", v9, 201).json()["data"]
+    assert act["state"] == "active"
+    with httpx.Client(timeout=60, trust_env=False) as client:
+        export = client.post(
+            FORGE + "/stub/projects/prj_d4e9b1a7/export", json={"send": False}
+        ).json()["export"]
+    post(
+        service("forge"),
+        base + "/projects/prj_d4e9b1a7/exports",
+        export,
+        201,
+        key=export["export_sha256"],
+    )
+    suites = admin.get(base + "/projects/prj_d4e9b1a7/suites").json()["data"]["items"]
+    sv = next(s for s in suites if s["is_default"])["versions"][0]["id"]
+    run = post(
+        admin,
+        base + "/runs",
+        {
+            "name": "KYC December · gates",
+            "project_id": "prj_d4e9b1a7",
+            "suite_version_id": sv,
+            "model_set": lineup["model_set"],
+            "attempts": 1,
+            "budget_usd": 5,
+        },
+        201,
+    ).json()["data"]["run"]
+    assert worker.drain(timeout=600)
+    cards = {
+        c["name"]: c
+        for c in admin.get(base + f"/runs/{run['id']}/report?tab=overview").json()["data"]["view"][
+            "cards"
+        ]
+    }
+    skips = cards["skips-screening"]
+    assert skips["gate"] == "FAILED" and any(
+        "gate criteria failed" in n for n in skips["gate_notes"]
+    )
+    assert "screening" in skips["gate_notes"][0]
+    assert cards["diligent"]["gate"] == "PASSED"
+    eps = admin.get(base + f"/runs/{run['id']}/episodes?system=skips-screening&size=200").json()[
+        "data"
+    ]["items"]
+    # Every episode of the profile fails screening, so no case passes even where its score is above 90.
+    assert eps and not any(e["passed"] for e in eps if e["kind"] == "case")

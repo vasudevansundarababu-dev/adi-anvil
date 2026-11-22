@@ -147,12 +147,12 @@ def _send(body, packages):
 
 @app.post("/stub/projects/{pid}/export")
 def export(pid: str, body: dict = Body(default={})):
-    """Stands for: an ADI Forge PM exports (or re-exports) the KYC November project to the RL Gym."""
-    if pid != g.FORGE_PROJECT_ID:
-        raise HTTPException(404, "the stub knows only the KYC November project")
+    """Stands for: an ADI Forge PM exports (or re-exports) a project (KYC November on V8, KYC December on V9)."""
+    if pid not in g.PROJECTS:
+        raise HTTPException(404, "the stub knows only KYC November (V8) and KYC December (V9)")
     export_id = body.get("export_id", "exp-0001")
-    reason = body.get("reason", "first export of KYC November")
-    payload, packages = g.project_export(export_id, reason, body.get("corrections"))
+    reason = body.get("reason", f"first export of {g.PROJECTS[pid]['name']}")
+    payload, packages = g.project_export(export_id, reason, body.get("corrections"), project_id=pid)
     if (
         body.get("send") is False
     ):  # store the packages only; the caller sends the export itself (tests)
