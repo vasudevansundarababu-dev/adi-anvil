@@ -72,13 +72,15 @@ def registry_get(path, params=None, audience=None, timeout=10, base=None):
 
 
 def forge_package(task):
-    """Fetch an exported task package from the ADI Forge stub. Only `stub://forge/` refs are accepted; arbitrary
-    URLs and file paths are refused (no remote or filesystem reads from a client-supplied string)."""
+    """Fetch an exported task package from ADI Forge (or its stub) by `package_sha256`, always from the configured
+    ADI Forge URL with the RL Gym's key. `package_ref` is provenance only and is never followed: it must be
+    `stub://forge/…` or `forge://packages/<package_sha256>` (the same hash); anything else is refused."""
     ref = task.get("package_ref", "")
-    if not ref.startswith("stub://forge/"):
+    forge_ref = f"forge://packages/{task.get('package_sha256')}"
+    if not (ref.startswith("stub://forge/") or ref == forge_ref):
         raise GymError(
             "VALIDATION_FAILED",
-            "package_ref must be a stub://forge/ reference",
+            "package_ref must be forge://packages/<package_sha256> (or a stub://forge/ reference)",
             {"task_id": task.get("task_id")},
         )
     try:

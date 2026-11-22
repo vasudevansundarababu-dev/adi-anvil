@@ -5,6 +5,7 @@ An RL Gym Project is the ADI Forge project with the same Project ID; it is creat
 exactly one template version. Tasks change only in ADI Forge: an import is immutable, a correction is a new revision.
 """
 
+import hashlib
 import json
 from uuid import uuid4
 
@@ -141,8 +142,20 @@ def receive_export(c, ws, actor, project_id, body):
             )
         raw = forge_package(task)
         package = json.loads(raw)
-        if sha(package) != task["package_sha256"]:
+        # ADI Forge serves the stored RFC 8785 (JCS) bytes, so the hash is checked over the exact bytes received. The
+        # parsed-content hash (sorted-key compact JSON) is accepted too, for the stub; both bind the content.
+        if (
+            hashlib.sha256(raw).hexdigest() != task["package_sha256"]
+            and sha(package) != task["package_sha256"]
+        ):
             mismatched.append(task["task_id"])
+        for part in ("actor", "private"):
+            require(
+                isinstance(package.get(part), dict),
+                "VALIDATION_FAILED",
+                f"the package needs an {part} object",
+                task=task["task_id"],
+            )
         packages[task["task_id"]] = package
     require(
         not mismatched,

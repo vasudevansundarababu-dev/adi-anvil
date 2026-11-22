@@ -323,3 +323,42 @@ def test_a_missing_schema_is_filled_once_from_the_version_record(monkeypatch):
     assert (
         registry.fill_schema(Conn(stored), "x") == stored and len(calls) == 1
     )  # never re-read or overwritten
+
+
+def test_package_refs_are_provenance_only(monkeypatch):
+    from anvil.rlgym import integrations
+
+    sha = "a" * 64
+    fetched = []
+
+    class Client:
+        def __init__(self, **kw):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def get(self, url, headers=None):
+            fetched.append(url)
+
+            class R:
+                status_code = 200
+                content = b"{}"
+
+            return R()
+
+    monkeypatch.setattr(integrations.httpx, "Client", Client)
+    for ref in (f"forge://packages/{sha}", "stub://forge/exports/p/e/t-r1.json"):
+        assert (
+            integrations.forge_package({"task_id": "t", "package_ref": ref, "package_sha256": sha})
+            == b"{}"
+        )
+    assert all(
+        u.endswith(f"/api/v1/packages/{sha}") for u in fetched
+    )  # always by hash, never the ref
+    for bad in (f"forge://packages/{'b' * 64}", "https://elsewhere/p.json", "file:///etc/passwd"):
+        with pytest.raises(GymError):
+            integrations.forge_package({"task_id": "t", "package_ref": bad, "package_sha256": sha})

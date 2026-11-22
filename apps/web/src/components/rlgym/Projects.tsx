@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { GymApiError, send, short, when, wsBase } from './api';
 import { SuiteEditor, SuitesTab } from './Suites';
 import { Badge, Env, Failure, Hash, Loading, Search, Tabs, useData, useGym } from './ui';
@@ -358,32 +358,13 @@ function TaskDetail({ project, taskId }: { project: string; taskId: string }) {
             </dl>
             <section className="card">
               <h4>As the agent sees it</h4>
-              <dl className="kv">
-                <dt>Assignment</dt>
-                <dd>{data.actor?.assignment}</dd>
-                <dt>Inputs</dt>
-                <dd>{data.actor?.inputs}</dd>
-                <dt>Tools</dt>
-                <dd>{(data.actor?.tools ?? []).join(', ')}</dd>
-                <dt>Output</dt>
-                <dd>{(data.actor?.output_contract ?? []).join(', ')}</dd>
-              </dl>
+              <PartView value={data.actor} labels={ACTOR_LABELS} />
             </section>
             <section className="card">
               <h4>
                 Rubric and expected result <Badge state="deprecated" label={data.private_label} />
               </h4>
-              <dl className="kv">
-                <dt>Rubric</dt>
-                <dd>{data.private?.rubric}</dd>
-                <dt>Criteria</dt>
-                <dd>
-                  {data.private?.criteria} · {data.private?.points_each} points each · pass at{' '}
-                  {data.private?.pass_mark}
-                </dd>
-                <dt>Expected</dt>
-                <dd>{data.private?.expected}</dd>
-              </dl>
+              <PartView value={data.private} labels={PRIVATE_LABELS} />
             </section>
             {data.workflow && (
               <section className="card">
@@ -907,5 +888,51 @@ function ReviewPanel({
         <Failure error={failure} />
       </section>
     </>
+  );
+}
+
+// A task package's actor or private part, whatever its shape (the ADI Forge stub's fields, or Authoring's
+// praxis.authored-task-package.v1 profile, title, sections and workflow): known fields get their label, every other
+// field is shown by name; nested values are shown as formatted JSON.
+const ACTOR_LABELS: Record<string, string> = {
+  assignment: 'Assignment',
+  inputs: 'Inputs',
+  tools: 'Tools',
+  output_contract: 'Output',
+};
+const PRIVATE_LABELS: Record<string, string> = {
+  rubric: 'Rubric',
+  criteria: 'Criteria',
+  points_each: 'Points each',
+  pass_mark: 'Pass mark',
+  expected: 'Expected',
+};
+
+function PartView({ value, labels }: { value: any; labels: Record<string, string> }) {
+  if (!value || typeof value !== 'object') return <small>Not in this package.</small>;
+  const keys = [
+    ...Object.keys(labels).filter((k) => k in value),
+    ...Object.keys(value).filter((k) => !(k in labels)),
+  ];
+  return (
+    <dl className="kv">
+      {keys.map((k) => {
+        const v = value[k];
+        const text =
+          v === null || v === undefined
+            ? '—'
+            : typeof v !== 'object'
+              ? String(v)
+              : Array.isArray(v) && v.every((x) => typeof x !== 'object')
+                ? v.join(', ')
+                : null;
+        return (
+          <Fragment key={k}>
+            <dt>{labels[k] ?? k.replace(/_/g, ' ')}</dt>
+            <dd>{text ?? <pre className="part-json">{JSON.stringify(v, null, 2)}</pre>}</dd>
+          </Fragment>
+        );
+      })}
+    </dl>
   );
 }

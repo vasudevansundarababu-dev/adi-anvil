@@ -1046,3 +1046,11 @@ body:has(#gym) {
   gap: 6px;
   margin: 6px 0;
 }
+#gym pre.part-json {
+  margin: 0;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 240px;
+  overflow: auto;
+}
