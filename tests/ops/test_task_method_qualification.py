@@ -128,6 +128,20 @@ def test_original_owner_bytes_cannot_be_replaced_by_a_matching_hash_claim(packet
         build(changed)
 
 
+def test_qualification_cannot_outlive_original_owner_observation(packets):
+    changed = list(deepcopy(packets))
+    owner = operator.load(changed[9])
+    owner["observed_at"] = (changed[8] - timedelta(hours=24) + timedelta(minutes=5)).isoformat()
+    changed[9] = operator.canonical(owner)
+    changed[5]["owner_observation_sha256"] = hashlib.sha256(changed[9]).hexdigest()
+    changed[6]["foreign_witness_sha256"] = digest(changed[5])
+    changed[7]["owner_observation_sha256"] = changed[5]["owner_observation_sha256"]
+    changed[7]["foreign_witness_sha256"] = digest(changed[5])
+    changed[7]["observation_sha256"] = digest(changed[6])
+    with pytest.raises(ValueError, match="expiry"):
+        build(changed)
+
+
 def test_original_arithmetic_retains_unscored_and_critical_boundaries(packets):
     raw, review, current, _, measured, *_ = packets
     result = operator.reviewed_mechanics(raw, review, current, now=packets[8])

@@ -308,7 +308,8 @@ def receipt(observation, review, review_sha256, current, group_body, mechanics, 
     issued, expires = timestamp(review["issued_at"]), timestamp(review["expires_at"])
     require(timestamp(observation["observed_at"]) <= issued <= now < expires
             and expires <= min(issued + timedelta(hours=24), timestamp(current["component_expires_at"]),
-                               timestamp(mechanics["expires_at"]), timestamp(witness["expires_at"])),
+                               timestamp(mechanics["expires_at"]), timestamp(witness["expires_at"]),
+                               timestamp(load(owner_raw)["observed_at"]) + timedelta(hours=24)),
             "Original evidence/review expiry cannot be extended")
     return {"schema_version": "anvil.task-capability-control.v1", "origin": "independent_qa",
             "project_id": str(project), "task_group_id": str(group), "source_sha256": group_body["source_sha256"],
