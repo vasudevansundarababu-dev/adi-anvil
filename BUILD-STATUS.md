@@ -2,6 +2,12 @@
 
 ## Project stopped at user request — 21 November2026 Chicago
 
+GitHub block cleared by the user's explicit “Override no-push rule and push”
+approval. Source/shutdown checkpoint577fe4d was pushed successfully to existing
+origin branch codex/open-weight-models-20261117. This final documentation update
+records that result; project work remains stopped. Earlier blocked-push notes
+below are retained as history, not the current GitHub status.
+
 Shutdown verified: no task Cloud Builds are queued/running; original task
 observation and diagnosis containers are terminal. Temporary qualifier LOGIN is
 disabled, qualifier membership removed, active connections0 and its temporary
