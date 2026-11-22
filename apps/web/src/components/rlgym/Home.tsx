@@ -101,7 +101,7 @@ export default function Home() {
               <tr>
                 <td colSpan={7} style={{ textAlign: 'left' }}>
                   {projects.length === 0
-                    ? 'No projects yet: projects arrive by ADI Forge export.'
+                    ? 'No projects yet: projects arrive by Authoring export.'
                     : (b?.empty ?? 'Loading…')}
                 </td>
               </tr>

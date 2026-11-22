@@ -1061,7 +1061,7 @@ function TemplatePage({ tid, version }: { tid: string; version: string }) {
               <dd>
                 <code>{data.template_id}</code>
               </dd>
-              <dt>ADI Forge</dt>
+              <dt>Authoring</dt>
               <dd>
                 {data.forge_template_id} v{data.forge_version}
               </dd>
@@ -1249,7 +1249,7 @@ function Users() {
       <small>
         Members are distinct people with their own sign-in (local Keycloak). Profiles are Admin, RL
         Engineer and Viewer; the binding-approver flag lets an Admin or RL Engineer approve rule
-        overrides. SMEs have no accounts here: SME review happens in ADI Forge. Every change is in
+        overrides. SMEs have no accounts here: SME review happens in Authoring. Every change is in
         the audit log.
       </small>
       <div className="toolbar">

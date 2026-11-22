@@ -34,7 +34,9 @@ try {
     printBackground: true,
     margin: { top: '14mm', bottom: '16mm', left: '12mm', right: '12mm' },
     displayHeaderFooter: true,
-    headerTemplate: '<span></span>',
+    // Running header (shared/BRANDING.md): ADI Labs Forge · RL Gym Evaluation
+    headerTemplate:
+      '<div style="font-size:7px;width:100%;padding:0 12mm;color:#5d6475;font-family:Helvetica,Arial,sans-serif;letter-spacing:0.08em">ADI Labs Forge · RL Gym Evaluation</div>',
     footerTemplate: `<div style="font-size:7px;width:100%;padding:0 12mm;color:#536779;display:flex;justify-content:space-between;font-family:Helvetica,Arial,sans-serif"><span>${escape(footer)}</span><span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span></div>`,
   });
   console.log(JSON.stringify({ ok: true }));

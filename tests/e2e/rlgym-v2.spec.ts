@@ -18,7 +18,9 @@ async function signIn(browser: Browser, username: string): Promise<Page> {
     .split('`')[1];
   await page.locator('#password').fill(password);
   await page.locator('#kc-login').click();
-  await expect(page.getByRole('heading', { name: 'RL Gym', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'ADI Labs Forge · RL Gym Evaluation home' }),
+  ).toBeVisible();
   return page;
 }
 
@@ -349,7 +351,7 @@ test('episode viewer and SME review through the ADI Forge stub', async ({ browse
   await boxes.nth(1).check();
   await page.getByRole('button', { name: 'Send 2 to SME review' }).click();
   await expect(page.getByText(/Batch smr-\d+ · 2 items/).first()).toBeVisible();
-  await expect(page.getByText(/ADI Forge rr-\d+/).first()).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText(/Authoring rr-\d+/).first()).toBeVisible({ timeout: 30000 });
   const view = await page.request.get(
     `/api/v1/workspaces/adi-labs-research/runs/${run!.id}/sme-review`,
   );
@@ -373,7 +375,7 @@ test('episode viewer and SME review through the ADI Forge stub', async ({ browse
   await expect(page.getByText(/automated → reviewed/).first()).toBeVisible();
   await page.screenshot({ path: 'artifacts/test-runs/rlgym-v2-sme-review.png', fullPage: true });
   await page.goto(`/gym/runs/${run!.id}/report`);
-  await expect(page.getByText(/2 of 2 decided by SMEs in ADI Forge/)).toBeVisible();
+  await expect(page.getByText(/2 of 2 decided by SMEs in Authoring/)).toBeVisible();
 });
 
 test('leaderboard ranks the latest cohort and an admin invites and removes a viewer', async ({

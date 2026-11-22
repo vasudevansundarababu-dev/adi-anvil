@@ -213,7 +213,7 @@ export default function Episode({ runId, episodeId }: { runId: string; episodeId
                   {e.likely_cause
                     ? `${e.likely_cause} · ${e.likely_cause_source === 'rule' ? 'suggested by rule' : 'set by an RL engineer'}`
                     : 'No cause suggested'}
-                  . A suggestion until SMEs decide in ADI Forge.
+                  . A suggestion until SMEs decide in Authoring.
                 </small>
                 {v.sme && (
                   <p>

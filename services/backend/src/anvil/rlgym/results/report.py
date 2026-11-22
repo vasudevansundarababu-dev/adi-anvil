@@ -322,7 +322,7 @@ def review_sample(d):
     decided = sum(1 for r in rows if r["reviewed"] is not None)
     return {
         "items": rows,
-        "state": f"{decided} of {len(rows)} decided by SMEs in ADI Forge"
+        "state": f"{decided} of {len(rows)} decided by SMEs in Authoring"
         + (" · reviewed" if d.reviewed else ""),
     }
 
@@ -335,7 +335,7 @@ def _stage2(d, e):
         return {
             "state": "Awaiting SME decision"
             if item["batch_state"] != "building"
-            else "Sending to ADI Forge"
+            else "Sending to Authoring"
         }
     return {
         "state": _sme_text(item),

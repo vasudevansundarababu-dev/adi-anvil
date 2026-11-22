@@ -9083,6 +9083,44 @@
         }
       }
     },
+    "/api/v1/workspaces/{ws}/catalog/rubrics": {
+      "get": {
+        "summary": "Rubric Registry",
+        "description": "The rubrics a Rubric verifier block may name (Studio's validate refuses others). Mock judge locally.",
+        "operationId": "rubric_registry_api_v1_workspaces__ws__catalog_rubrics_get",
+        "parameters": [
+          {
+            "name": "ws",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ws"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/workspaces/{ws}/catalog/frameworks": {
       "get": {
         "summary": "Framework List",

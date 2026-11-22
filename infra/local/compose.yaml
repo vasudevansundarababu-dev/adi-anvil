@@ -36,6 +36,7 @@ services:
     ports: ["127.0.0.1:${ANVIL_OIDC_PORT:-8180}:8080"]
     volumes:
       - ../../.local/realm.json:/opt/keycloak/data/import/anvil-realm.json:ro
+      - ../keycloak/themes/adi-labs-forge:/opt/keycloak/themes/adi-labs-forge:ro
       - adi-anvil-keycloak:/opt/keycloak/data
 volumes:
   adi-anvil-postgres:

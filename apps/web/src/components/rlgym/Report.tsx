@@ -553,7 +553,9 @@ function FailuresView({ id, v, models }: { id: string; v: any; models: Model[] }
       {(v.by_on_fail ?? []).length > 0 && (
         <>
           <h3>Failed verifier blocks by code</h3>
-          <small>One count per failed block (State, Process or Rubric), grouped by its on_fail code.</small>
+          <small>
+            One count per failed block (State, Process or Rubric), grouped by its on_fail code.
+          </small>
           <ModelTable
             head={['Code', ...models.map((m) => m.name), 'Blocks', 'Example: expected → actual']}
             rows={v.by_on_fail.map((r: any) => [

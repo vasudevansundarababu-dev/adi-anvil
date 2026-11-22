@@ -1,5 +1,26 @@
 # ADI Anvil — Brand and UI Handoff
 
+> **Superseded on screen for RL Gym v2 (22 Nov 2026, work package 2.13, BUILD-DECISIONS RG-45).** The RL Gym v2 screens
+> (`/gym`), the Keycloak sign-in, page titles and the report PDF now carry the owner's **ADI Labs Forge** brand
+> (design repo `shared/BRANDING.md`, revision 1.1):
+> - **Lockup:** `[shield] ADI LABS-FORGE │ RL GYM EVALUATION` on navy `#082044` with a 3 px rule in the gradient
+>   `#5b21b6 → #8126af → #b77ae8`. Primary buttons use `#8126af` (hover `#5b21b6`).
+> - **Assets:** `apps/web/public/brand/adi-labs-forge-mark-512.png` (the shield; 96 and 240 px copies for the header
+>   and sign-in) and `assets/brand/adi-labs-forge-logo.png` (full logo, light backgrounds only: page 1 of the report PDF).
+>   The favicon and apple-touch icon are made from the shield (`apps/web/src/app/gym/icon.png`, `apple-icon.png`).
+> - **One component:** `apps/web/src/components/rlgym/Brand.tsx` (`BrandLockup`, the `PRODUCT` and `FAMILY` constants,
+>   `pageTitle`).
+> - **Page titles:** `<Page> · RL Gym Evaluation · ADI Labs Forge`.
+> - **PDF:** the full logo on page 1; running header `ADI Labs Forge · RL Gym Evaluation`.
+> - **Sign-in:** Keycloak login theme `infra/keycloak/themes/adi-labs-forge`. New setups set it in the realm; an
+>   existing realm gets it with `python3 scripts/local.py keycloak-theme`.
+> - **Names on screen:** "Authoring" (not "ADI Forge" or "Praxis") and "Studio". "Praxis", "Anvil" and "Benchmark
+>   Utility" never appear in UI-facing strings; `services/backend/tests/unit/test_rlgym_v2_brand_unit.py` fails if they
+>   do. Code names, routes and package names (`adi-anvil`, `anvil.*`) are exempt.
+> - **Legal:** the logo uses "ADI LABS" by the owner's choice; legal should confirm before external release.
+>
+> The text below is the 27 Sep 2026 handoff for the earlier `/workspace` UI, kept for history.
+
 Version: 1.0 · 27 September 2026 · Review asset, not production UI
 
 ## 1. Approved naming

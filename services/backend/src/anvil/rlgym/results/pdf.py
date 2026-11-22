@@ -6,8 +6,24 @@ prompts, F Provenance. Tables print in full; filters are not printed; every page
 "Page n of N" (Chromium footer). No script, no network.
 """
 
+import base64
 import math
+from functools import cache
 from html import escape
+
+from anvil.config import ROOT
+
+# ADI Labs Forge branding (shared/BRANDING.md, work package 2.13): the full logo on page 1 (light background), and the
+# running header on every page (set by scripts/render-report-pdf.mjs).
+BRAND_FAMILY, BRAND_PRODUCT = "ADI Labs Forge", "RL Gym Evaluation"
+RUNNING_HEADER = f"{BRAND_FAMILY} · {BRAND_PRODUCT}"
+
+
+@cache
+def _logo_uri():
+    raw = (ROOT / "assets/brand/adi-labs-forge-logo.png").read_bytes()
+    return "data:image/png;base64," + base64.b64encode(raw).decode()
+
 
 CSS = """
 @page { size: A4; }
@@ -23,6 +39,9 @@ th, td { border-bottom: 1px solid #dbe4e9; padding: 3px 4px; text-align: left; v
 th { background: #f4f6f8; font-weight: 600; }
 tr { break-inside: avoid; }
 .muted { color: #536779; }
+.brand { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.brand img { height: 92px; }
+.brand .product { font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #5d6475; font-size: 10px; }
 .note { background: #fff8e1; border: 1px solid #f0d78c; padding: 5px 7px; margin: 6px 0; }
 .cards { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
 .card { border: 1px solid #dbe4e9; border-radius: 6px; padding: 7px; flex: 1 1 30%; min-width: 150px; break-inside: avoid; }
@@ -146,7 +165,7 @@ def render(view, appendix):
     ]
     # Cover
     parts.append(
-        f"""<section class="cover"><div class="muted">ADI Anvil · RL Gym · run report</div><h1>{e(h["name"])}</h1>
+        f"""<section class="cover"><div class="brand"><img src="{_logo_uri()}" alt="{BRAND_FAMILY}"><div class="product">{BRAND_PRODUCT} · run report</div></div><h1>{e(h["name"])}</h1>
 <p>{e(h["run_id"])} · project {e(h["project"]["name"])} ({e(h["project"]["id"])}) · template {e(h["template"]["name"])} v{e(h["template"]["version"])} · pass mark {e(h["template"]["pass_mark"])}</p>
 <div class="note">{e(h["note"])}</div>{cards(ov["cards"])}
 <p>{e(h["cohort"])}</p>

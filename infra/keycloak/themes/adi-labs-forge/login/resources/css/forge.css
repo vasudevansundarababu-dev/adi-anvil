@@ -1,0 +1,41 @@
+/* ADI Labs Forge (shared/BRANDING.md): navy page, centred shield and lockup, one white card, purple primary button. */
+html, body, .pf-v5-c-login {
+  background: #082044 !important;
+}
+.pf-v5-c-login__container {
+  border-top: 3px solid transparent;
+  border-image: linear-gradient(90deg, #5b21b6, #8126af, #b77ae8) 1;
+}
+#kc-header {
+  text-align: center;
+  padding-top: 24px;
+}
+#kc-header-wrapper {
+  color: #fff !important;
+  font-family: Geist, Inter, system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-size: 16px;
+  text-transform: uppercase;
+}
+#kc-header-wrapper::before {
+  content: '';
+  display: block;
+  width: 112px;
+  height: 112px;
+  margin: 0 auto 14px;
+  background: url('../img/shield.png') center / contain no-repeat;
+}
+.pf-v5-c-login__main {
+  background: #fff;
+  border-radius: 12px;
+}
+.pf-v5-c-button.pf-m-primary,
+#kc-login {
+  background: #8126af !important;
+  border-color: #8126af !important;
+}
+.pf-v5-c-button.pf-m-primary:hover,
+#kc-login:hover {
+  background: #5b21b6 !important;
+}

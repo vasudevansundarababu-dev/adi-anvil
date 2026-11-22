@@ -912,6 +912,126 @@ body:has(#gym) {
 }
 
 /* Verifier block lines (episode viewer) */
-#gym table.blocks { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
-#gym table.blocks th, #gym table.blocks td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line, #e5e5e5); vertical-align: top; }
-#gym table.blocks code { word-break: break-word; }
+#gym table.blocks {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 12px;
+}
+#gym table.blocks th,
+#gym table.blocks td {
+  text-align: left;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--line, #e5e5e5);
+  vertical-align: top;
+}
+#gym table.blocks code {
+  word-break: break-word;
+}
+
+/* ADI Labs Forge brand (shared/BRANDING.md): navy header with the purple gradient rule, lockup, sign-in page. */
+#gym header.brand-header {
+  background: #082044;
+  color: #fff;
+  border-bottom: 3px solid transparent;
+  border-image: linear-gradient(90deg, #5b21b6, #8126af, #b77ae8) 1;
+}
+#gym header.brand-header small,
+#gym header.brand-header a,
+#gym header.brand-header .navlink {
+  color: #d6dcea;
+}
+#gym header.brand-header .navlink[aria-current='page'] {
+  color: #fff;
+  border-bottom: 2px solid #b77ae8;
+}
+#gym header.brand-header button {
+  background: transparent;
+  color: #fff;
+  border: 1px solid #2c3d63;
+}
+#gym .brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+#gym .brand-lockup.header img {
+  height: 30px;
+  width: auto;
+}
+#gym .brand-words {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: Geist, Inter, system-ui, sans-serif;
+}
+#gym .brand-name {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: #fff;
+}
+#gym .brand-forge {
+  color: #b77ae8;
+}
+#gym .brand-divider {
+  width: 1px;
+  height: 18px;
+  background: #2c3d63;
+}
+#gym .brand-product {
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #a9b4cc;
+  font-size: 12px;
+}
+#gym .brand-lockup.light .brand-name {
+  color: #082044;
+}
+#gym .brand-lockup.light .brand-forge {
+  color: #8126af;
+}
+#gym .brand-lockup.light .brand-divider {
+  background: #d9dbe3;
+}
+#gym .brand-lockup.light .brand-product {
+  color: #5d6475;
+}
+#gym .signin-page {
+  min-height: 100vh;
+  background: #082044;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 24px 16px;
+}
+#gym .brand-lockup.signin {
+  flex-direction: column;
+  gap: 14px;
+}
+#gym .signin-card {
+  background: #fff;
+  color: #1f2433;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 420px;
+  width: 100%;
+}
+#gym .signin-card h3 {
+  margin-top: 0;
+}
+#gym .button.brand-primary {
+  display: inline-block;
+  padding: 10px 14px;
+  background: #8126af;
+  color: #fff;
+  border-radius: 8px;
+  text-decoration: none;
+}
+#gym .button.brand-primary:hover {
+  background: #5b21b6;
+}

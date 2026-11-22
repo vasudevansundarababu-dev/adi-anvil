@@ -54,7 +54,7 @@ export function ProjectsList() {
         <div>
           <h2>Projects</h2>
           <small>
-            ADI Forge projects in this workspace. Projects are created only by ADI Forge export.
+            Authoring projects in this workspace. Projects are created only by Authoring export.
           </small>
         </div>
         <Search value={q} onChange={setQ} placeholder="Search projects" />
@@ -170,7 +170,7 @@ export function ProjectPage({ id, tab, rest }: { id: string; tab: string; rest: 
           <div className="work">
             <aside>
               <Link href="/gym/projects">← Back to projects</Link>
-              <small>Project · from ADI Forge</small>
+              <small>Project · from Authoring</small>
               <h3>{p.name}</h3>
               <Badge state={p.state} />
               {p.state_reason ? <small>{p.state_reason}</small> : null}
@@ -187,7 +187,7 @@ export function ProjectPage({ id, tab, rest }: { id: string; tab: string; rest: 
                 </dd>
                 <dt>Project ID</dt>
                 <dd>
-                  <code>{p.project_id}</code> (ADI Forge)
+                  <code>{p.project_id}</code> (Authoring)
                 </dd>
                 <dt>Template ID</dt>
                 <dd>
@@ -206,7 +206,7 @@ export function ProjectPage({ id, tab, rest }: { id: string; tab: string; rest: 
                 Run benchmark
               </Link>
               <small>
-                Results for SME review are sent to this ADI Forge project (SME review is work
+                Results for SME review are sent to this Authoring project (SME review is work
                 package 2.9).
               </small>
             </aside>
@@ -249,7 +249,7 @@ function TasksTab({ project }: { project: string }) {
     <>
       <div className="toolbar">
         <Search value={q} onChange={setQ} placeholder="Search tasks" />
-        <small>Read-only: tasks change only in ADI Forge.</small>
+        <small>Read-only: tasks change only in Authoring.</small>
       </div>
       <Loading data={data} error={error}>
         {() => (
@@ -287,8 +287,8 @@ function TasksTab({ project }: { project: string }) {
                     <td>{caseText(t.case_selector)}</td>
                     <td>
                       {t.corrects_revision
-                        ? `Corrected in ADI Forge (corrects r${t.corrects_revision})`
-                        : 'Exported by ADI Forge'}
+                        ? `Corrected in Authoring (corrects r${t.corrects_revision})`
+                        : 'Exported by Authoring'}
                       {t.sme_batch_id ? <small>SME batch {t.sme_batch_id}</small> : null}
                       <small>{t.export_id}</small>
                     </td>

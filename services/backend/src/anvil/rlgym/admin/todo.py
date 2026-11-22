@@ -356,7 +356,7 @@ def on_event(c, ws, topic, d, event_id):
             "sme_waiting",
             d["batch_id"],
             "import_export",
-            "Results sent to ADI Forge",
+            "Results sent to Authoring",
             f"{d['batch_id']} ({items} items) · waiting for SME decisions.",
             f"/gym/runs/{d['run_id']}/sme",
             None,

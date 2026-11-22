@@ -6,8 +6,8 @@ import { useEffect, useState } from 'react';
 import { GymApiError, send, wsBase } from './api';
 import { Badge, Failure, Hash, Loading, useData, useGym } from './ui';
 
-// Run page → SME review (SCREENS 3.39): choose episodes, send a batch to ADI Forge, follow the SMEs' decisions and act
-// on them. SMEs work only in ADI Forge; decisions arrive from there.
+// Run page → SME review (SCREENS 3.39): choose episodes, send a batch to Authoring, follow the SMEs' decisions and act
+// on them. SMEs work only in Authoring; decisions arrive from there.
 
 export default function Sme({ runId }: { runId: string }) {
   const { ws, say, me } = useGym();
@@ -51,7 +51,7 @@ export default function Sme({ runId }: { runId: string }) {
               <h3>
                 SME review · {runId} · project {d.project_id}
               </h3>
-              <small>Batches go to ADI Forge project {d.project_id}; SMEs decide there.</small>
+              <small>Batches go to Authoring project {d.project_id}; SMEs decide there.</small>
               {!d.can_send && <p>SME review is available when the run is completed.</p>}
               <div className="toolbar">
                 <label className="row">
@@ -70,7 +70,7 @@ export default function Sme({ runId }: { runId: string }) {
                       'POST',
                       `${base}/runs/${runId}/sme-review-batches`,
                       { episode_ids: picked },
-                      'Batch built; sending to ADI Forge.',
+                      'Batch built; sending to Authoring.',
                     );
                     if (out) setPicked([]);
                   }}
@@ -154,10 +154,10 @@ export default function Sme({ runId }: { runId: string }) {
                   </div>
                   <small>
                     package <Hash value={b.batch_sha256} />
-                    {b.forge_batch_ref && ` · ADI Forge ${b.forge_batch_ref}`}
+                    {b.forge_batch_ref && ` · Authoring ${b.forge_batch_ref}`}
                   </small>
                   <ol className="steps">
-                    <li data-done={b.progress.sent ? 'yes' : undefined}>Sent to ADI Forge</li>
+                    <li data-done={b.progress.sent ? 'yes' : undefined}>Sent to Authoring</li>
                     <li data-done={b.progress.decided > 0 ? 'yes' : undefined}>
                       SMEs reviewing ({b.progress.decided} of {b.progress.total} decided
                       {b.progress.deciders.length ? ` · ${b.progress.deciders.join(', ')}` : ''})

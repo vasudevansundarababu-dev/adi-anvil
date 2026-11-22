@@ -17,7 +17,7 @@ export class GymApiError extends Error {
 const MESSAGES: Record<string, string> = {
   NOT_FOUND: 'Not found or no longer available',
   REGISTRY_UNAVAILABLE: "Studio's registry is not answering; try again",
-  FORGE_UNAVAILABLE: 'ADI Forge is not answering; try again',
+  FORGE_UNAVAILABLE: 'Authoring is not answering; try again',
   TENANT_SCOPE_VIOLATION: 'Not in this workspace',
   UNAUTHENTICATED: 'Sign in required',
 };

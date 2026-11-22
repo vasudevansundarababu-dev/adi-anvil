@@ -101,6 +101,8 @@ def bootstrap():
     realm = {
         "realm": "anvil",
         "enabled": True,
+        # ADI Labs Forge sign-in (shared/BRANDING.md, RL Gym 2.13): infra/keycloak/themes/adi-labs-forge.
+        "loginTheme": "adi-labs-forge",
         "registrationAllowed": False,
         "sslRequired": "none",
         "loginWithEmailAllowed": False,
@@ -263,6 +265,48 @@ def rlgym_registry(target):
         f"The RL Gym now follows {target} ({url}). Restart with `pnpm stop` then `pnpm dev`. The mirror keeps a "
         "separate event sequence per registry; Studio's first event is applied from its own seq 1."
     )
+
+
+def keycloak_theme():
+    """Apply the ADI Labs Forge login theme to an existing local realm: recreate the Keycloak container so the theme is
+    mounted (its data volume is kept), then set the realm's loginTheme through the local admin API (loopback only)."""
+    import json
+    import time
+    import urllib.parse
+    import urllib.request
+
+    compose("up", "-d", "keycloak")
+    values = env()
+    base = f"http://127.0.0.1:{values.get('ANVIL_OIDC_PORT', '8180')}"
+    form = urllib.parse.urlencode(
+        {
+            "grant_type": "password",
+            "client_id": "admin-cli",
+            "username": "anvil-bootstrap",
+            "password": values["ANVIL_OIDC_ADMIN_PASSWORD"],
+        }
+    ).encode()
+    token = None
+    for _ in range(60):
+        try:
+            with urllib.request.urlopen(
+                f"{base}/realms/master/protocol/openid-connect/token", form, timeout=5
+            ) as r:
+                token = json.load(r)["access_token"]
+                break
+        except OSError:
+            time.sleep(2)
+    if not token:
+        raise SystemExit("Keycloak did not answer on loopback")
+    req = urllib.request.Request(
+        f"{base}/admin/realms/anvil",
+        data=json.dumps({"loginTheme": "adi-labs-forge"}).encode(),
+        method="PUT",
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=10):
+        pass
+    print(json.dumps({"realm": "anvil", "loginTheme": "adi-labs-forge"}))
 
 
 def compose(*args):
@@ -570,6 +614,8 @@ def main():
             refuse_while_linked("e2e")
             run([str(PY), "tests/prepare_journey_fixture.py", "--if-missing"], env=env())
         run(["pnpm", "exec", "playwright", "test", *args], env=env())
+    elif cmd == "keycloak-theme":
+        keycloak_theme()
     elif cmd == "rlgym-registry":
         rlgym_registry(args[0] if args else "check")
     elif cmd == "rlgym-demo":

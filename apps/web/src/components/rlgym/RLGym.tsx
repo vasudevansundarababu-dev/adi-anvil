@@ -9,6 +9,7 @@ import Home from './Home';
 import { ProjectsList, ProjectPage } from './Projects';
 import Admin from './Admin';
 import Runs from './Runs';
+import { BrandLockup, PRODUCT, pageTitle } from './Brand';
 
 type Me = {
   id: string;
@@ -46,6 +47,21 @@ export default function RLGym({ enabled }: { enabled: boolean }) {
       .catch(setProblem);
   }, [ws]);
   useEffect(() => {
+    // Browser tab: <Page> · RL Gym Evaluation · ADI Labs Forge
+    const names: Record<string, string> = {
+      home: 'Home',
+      projects: 'Projects',
+      runs: 'Runs',
+      admin: 'Admin',
+    };
+    const first = parts[0] ?? 'home';
+    const page = [names[first] ?? 'Not found', parts[1] && first !== 'admin' ? parts[1] : '']
+      .filter(Boolean)
+      .join(' ');
+    document.title = pageTitle(page);
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     refreshTodo();
     const t = setInterval(refreshTodo, 5000);
     return () => clearInterval(t);
@@ -54,6 +70,9 @@ export default function RLGym({ enabled }: { enabled: boolean }) {
   if (!enabled) {
     return (
       <div id="gym">
+        <header className="brand-header">
+          <BrandLockup />
+        </header>
         <main className="page">
           <h2>RL Gym v2 is off</h2>
           <p>
@@ -67,33 +86,20 @@ export default function RLGym({ enabled }: { enabled: boolean }) {
   if (problem?.error?.code === 'UNAUTHENTICATED' || problem?.error?.status === 401) {
     return (
       <div id="gym">
-        <header>
-          <div>
-            <h2>ADI Anvil · RL Gym</h2>
-            <small>Frontier Evaluation &amp; Diagnostics Platform</small>
-          </div>
-        </header>
-        <main className="page">
-          <h3>Sign in</h3>
-          <p>
-            Sign in with your assigned local Keycloak identity. Each identity is a distinct person;
-            switching people means signing out.
-          </p>
-          <p>
-            <a
-              className="button primary"
-              href="/api/v1/auth/login"
-              style={{
-                padding: '8px 12px',
-                background: '#2563eb',
-                color: '#fff',
-                borderRadius: 8,
-                textDecoration: 'none',
-              }}
-            >
-              Sign in with Keycloak
-            </a>
-          </p>
+        <main className="signin-page">
+          <BrandLockup size="signin" />
+          <section className="signin-card">
+            <h3>Sign in to {PRODUCT}</h3>
+            <p>
+              Sign in with your assigned local Keycloak identity. Each identity is a distinct
+              person; switching people means signing out.
+            </p>
+            <p>
+              <a className="button brand-primary" href="/api/v1/auth/login">
+                Sign in with Keycloak
+              </a>
+            </p>
+          </section>
         </main>
       </div>
     );
@@ -143,9 +149,10 @@ export default function RLGym({ enabled }: { enabled: boolean }) {
   return (
     <GymContext.Provider value={gym}>
       <div id="gym">
-        <header>
+        <header className="brand-header">
           <div>
-            <h2>RL Gym</h2>
+            <BrandLockup />
+            <br />
             <small>
               Workspace {home.workspace.slug} · {me.name} · {labelOf(home.me.profile)}
               {home.me.binding_approver ? ' · binding approver' : ''}
@@ -169,7 +176,7 @@ export default function RLGym({ enabled }: { enabled: boolean }) {
             <Bell count={todo?.count ?? home.todo_count} open={todoOpen} setOpen={setTodoOpen} />
           </nav>
           <div className="row">
-            <a href="/workspace" title="The existing Anvil workspace stays available">
+            <a href="/workspace" title="The previous workspace stays available">
               <small>Previous workspace</small>
             </a>
             <button
