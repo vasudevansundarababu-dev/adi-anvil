@@ -94,12 +94,20 @@ def _injected_action(text, case_id, assignment):
     return []
 
 
-def agent(model_id, assignment, key, user_message=None):
+def agent(model_id, assignment, key, user_message=None, world="stub", application_id=None):
     """A generator policy. Send it the last observation (None first); it yields {"tool", "args"} or {"final": {...}}.
     `key` (episode id) seeds the erratic profile. `user_message` is the opening user message, if the environment's reset
-    produced one. An attack reaches the policy only through what it is shown (that message or a tool result)."""
+    produced one. An attack reaches the policy only through what it is shown (that message or a tool result).
+    `world` picks the tool set: the RL Gym's stub tools, or Studio's own operations (`studio-openenv`, OpenEnv B1), where
+    the task names the application under review (`application_id`), as a real assignment does."""
     if model_id not in PROFILES:
         raise ValueError(f"unknown mock profile {model_id}")
+    if world == "studio-openenv":
+        return studio_agent(model_id, key, application_id)
+    return _stub_agent(model_id, assignment, key, user_message)
+
+
+def _stub_agent(model_id, assignment, key, user_message):
     rng = random.Random(f"{model_id}:{key}")
     erratic = model_id == "mock/erratic-v1"
     skips_screening = model_id == "mock/skips-screening-v1"
@@ -218,5 +226,165 @@ def agent(model_id, assignment, key, user_message=None):
             "state": app.get("state"),
             "review_due_days": due,
             "instrument": instrument,
+        }
+    }
+
+
+# --- Studio's own operations (golden-kyc-openenv from Studio's image; OpenEnv adapter B1) ---------------------------
+
+POLICY_BUNDLE = "golden-kyc-1.0.0"
+ROLE_FOR = {"p1": "primary", "p2": "joint"}
+
+
+def _settle(first):
+    """Pending operations complete on a later call with the same idempotency key."""
+    return first.get("state") == "pending"
+
+
+def _minor(date_of_birth, on):
+    """Under 18 on the application date (ISO dates compared as text)."""
+    if not date_of_birth or not on:
+        return False
+    year, rest = int(on[:4]), on[4:]
+    return str(date_of_birth) > f"{year - 18}{rest}"
+
+
+def studio_agent(model_id, key, application_id):
+    """Studio's Golden KYC operations. The checks (identity, document, address, screening) only confirm that they ran,
+    so the agent decides from the documents: an expired ID or a name that differs between documents → request an ID
+    document; no proof of address → request one; a screening result → refer to sanctions and ask for specialist review;
+    otherwise ready for approval. Profiles: diligent follows this; skips-screening never runs screening.check and never
+    looks at screening results; erratic skips checks at random and sometimes guesses the decision."""
+    rng = random.Random(f"{model_id}:{key}")
+    erratic = model_id == "mock/erratic-v1"
+    skips = model_id == "mock/skips-screening-v1"
+    apps = ((yield {"tool": "application.read", "args": {}}).get("output") or {}).get(
+        "records"
+    ) or []
+    app = next((a for a in apps if a.get("application_id") == application_id), None) or {}
+    revision = int(app.get("revision") or 1)
+    docs = ((yield {"tool": "documents.list", "args": {}}).get("output") or {}).get("records") or []
+    mine = [d for d in docs if str(d.get("party_id", "")).startswith(f"{application_id}-")]
+    parties = sorted({d["party_id"] for d in mine})
+    checks = ["identity.check", "document.check", "address.check"] + (
+        [] if skips else ["screening.check"]
+    )
+    for party in parties:
+        for op in checks:
+            if erratic and rng.random() < 0.2:
+                continue
+            args = {
+                "party_id": party,
+                "idempotency_key": f"{op}:{party}",
+                "input_revision": revision,
+                "document_ids": [d["document_id"] for d in mine if d["party_id"] == party][:5],
+            }
+            first = yield {"tool": op, "args": args}
+            if _settle(first):
+                yield {"tool": op, "args": args}
+
+    def doc(party, kind):
+        return next((d for d in mine if d["party_id"] == party and d.get("kind") == kind), None)
+
+    submitted = str(app.get("submitted_at") or "")[:10]
+    expired, name_issue, missing_poa, hits = [], [], [], []
+    for party in parties:
+        gov, poa = doc(party, "government_id"), doc(party, "proof_of_address")
+        gov_c, poa_c = (gov or {}).get("content") or {}, (poa or {}).get("content") or {}
+        if gov and submitted and str(gov_c.get("expires_on", "9999")) < submitted:
+            expired.append(gov["document_id"])
+        if gov and poa and gov_c.get("name_on_document") != poa_c.get("name_on_document"):
+            name_issue += [gov["document_id"], poa["document_id"]]
+        if not poa and not _minor(gov_c.get("date_of_birth"), submitted):
+            missing_poa.append(party)  # a minor needs no proof of address
+        scr = None if skips else doc(party, "screening_result")
+        if scr and ((scr.get("content") or {}).get("match") or "none") != "none":
+            hits.append(scr["document_id"])
+    if hits:
+        decision, request, reason, evidence = (
+            "specialist_review",
+            None,
+            "screening: possible sanctions match",
+            hits,
+        )
+    elif expired:
+        decision, request, reason, evidence = (
+            "request_information",
+            "id_document",
+            "expired identity document",
+            expired,
+        )
+    elif name_issue:
+        decision, request, reason, evidence = (
+            "request_information",
+            "id_document",
+            "name differs between identity document and proof of address",
+            name_issue,
+        )
+    elif missing_poa:
+        decision, request, reason, evidence = (
+            "request_information",
+            "proof_of_address",
+            "address: no proof of address",
+            [],
+        )
+    else:
+        decision, request, reason, evidence = (
+            "ready_for_approval",
+            None,
+            "verified identity, documents and screening",
+            [],
+        )
+    if erratic and rng.random() < 0.3:
+        decision = rng.choice(["ready_for_approval", "request_information", "specialist_review"])
+    evidence = evidence or [d["document_id"] for d in mine][:2]
+    yield {
+        "tool": "finding.write",
+        "args": {"issue": f"Review: {reason}", "evidence_ids": evidence},
+    }
+    if decision == "request_information" and request:
+        yield {
+            "tool": "information.request",
+            "args": {
+                "type": request,
+                "party_id": (missing_poa or parties or [f"{application_id}-p1"])[0],
+                "items": [request.replace("_", " ")],
+                "reason": f"Needed to complete the review: {reason}",
+            },
+        }
+    if decision == "specialist_review" and hits:
+        yield {
+            "tool": "specialist.refer",
+            "args": {
+                "specialty": "sanctions",
+                "question": "Screening returned a possible sanctions match; please review.",
+                "evidence_ids": hits,
+            },
+        }
+    yield {
+        "tool": "recommend",
+        "args": {
+            "decision": decision,
+            "assessed_revision": revision,
+            "evidence_ids": evidence,
+            "party_assessments": [
+                {
+                    "party_id": p,
+                    "role": ROLE_FOR.get(p.rsplit("-", 1)[-1], "party"),
+                    "status": "verified" if decision == "ready_for_approval" else "needs_review",
+                }
+                for p in parties
+            ][:10],
+            "reason": reason[0].upper() + reason[1:] + ".",
+            "policy_bundle": POLICY_BUNDLE,
+            **({"account_type": app["product"]} if app.get("product") else {}),
+        },
+    }
+    yield {
+        "final": {
+            "application_id": application_id,
+            "decision": decision,
+            "recommendation": decision,
+            "findings": [{"text": f"Review: {reason}", "evidence_ids": evidence}],
         }
     }

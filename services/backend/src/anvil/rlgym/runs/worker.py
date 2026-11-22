@@ -242,6 +242,9 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
             # Seeded by what the episode is (not its id), so a repeat run on the same suite is reproducible.
             f"{episode['case_id']}:{episode['task_id']}:{episode['attempt']}:{episode.get('ts_prompt_id')}",
             user_message=reset.get("user_message"),
+            # On Studio's own image the task names the application under review (OpenEnv B1).
+            world=openenv.KIND if on_openenv else "stub",
+            application_id=episode["case_id"] if on_openenv else None,
         )
         action = next(policy)
         for step in range(1, MAX_STEPS + 1):

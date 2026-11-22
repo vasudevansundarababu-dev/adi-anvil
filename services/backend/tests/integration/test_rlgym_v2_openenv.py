@@ -210,3 +210,66 @@ def test_an_image_mismatch_opens_an_environment_defect_card(ws):
         if i["kind"] == "environment_defect" and i["subject"] == vid
     ]
     assert len(cards) == 1 and "image_digest" in cards[0]["reason"]
+
+
+def test_b1_mock_agents_use_studios_operations():
+    """OpenEnv B1: the mock agents speak Studio's own operations. Studio's generator gives each product the same
+    cycle of five (ready, name mismatch, expired ID, screening, no proof of address), so the expected recommendation
+    of case n is known without reading a reference. Diligent matches all; skips-screening misses only the screening
+    cases; no call is refused by the simulator."""
+    from anvil.rlgym.systems import mock_provider
+
+    if not _has_operation("recommend"):
+        pytest.skip("this Studio image predates Studio's 21 operations")
+    cycle = {
+        1: "ready_for_approval",
+        2: "request_information",
+        3: "request_information",
+        4: "specialist_review",
+        5: "request_information",
+    }
+    env = {**_version("it-openenv@1"), "id": "it-openenv@1"}
+    rec = openenv.recipe(env)
+    container, _ = openenv.start_instance(f"run-it{uuid.uuid4().hex[:6]}", env, IMAGE["id"])
+    try:
+        for profile in ("mock/diligent-v1", "mock/skips-screening-v1"):
+            for product in ("individual", "teen-joint"):
+                for n in range(1, 6):
+                    cid = f"kyc-{product}-{n:03d}"
+                    s = openenv.OpenEnvSession(container, rec, time.monotonic() + 120)
+                    s.request({"op": "reset"})
+                    policy = mock_provider.agent(
+                        profile, "", f"{cid}:t:1:None", world="studio-openenv", application_id=cid
+                    )
+                    act = next(policy)
+                    while "final" not in act:
+                        obs = s.request({"op": "call", "tool": act["tool"], "args": act["args"]})
+                        assert obs["ok"], (profile, cid, act["tool"], obs)
+                        act = policy.send(obs)
+                    end = s.request({"op": "state"})
+                    s.close()
+                    expected = cycle[n]
+                    if profile.endswith("skips-screening-v1") and n == 4:
+                        assert act["final"]["decision"] != expected
+                    else:
+                        assert act["final"]["decision"] == expected, (profile, cid)
+                    rows = (end.get("collections") or {}).get("recommendations")
+                    if (
+                        rows is not None
+                    ):  # images with /state rows (Studio's 2.10) show the agent's write
+                        assert rows[-1]["recommendation"] == act["final"]["decision"]
+    finally:
+        images.stop_instance(container)
+
+
+def _has_operation(op):
+    label = f"run-it{uuid.uuid4().hex[:6]}"
+    env = {**_version("it-openenv@1"), "id": "it-openenv@1"}
+    container, _ = openenv.start_instance(label, env, IMAGE["id"])
+    try:
+        bridge = openenv.Bridge(container, IMAGE["port"], time.monotonic() + 30)
+        ops = bridge.ok("GET", "/operations")["operations"]
+        bridge.close()
+        return any(o["operation_id"] == op for o in ops)
+    finally:
+        images.stop_instance(container)

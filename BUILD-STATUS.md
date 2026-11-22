@@ -26,6 +26,13 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
 | 2.12 Edge cases and slice tags | done (local stub) | migration 051; activation mirrors S4 edge cases and S1 slice lists (validated); default suite counts per edge-case tag at the template minimum; more-data edge cells carry tag, recipe and expected outcome; tasks keep complexity and archetype; report Task results and Failures & evidence sliced by both (tables and filters); new case kind in four parts (Admin template page and episode diagnosis). Stub Golden KYC V11, project KYC Edge Cases (RG-46) |
 | 2.13 Branding | done | ADI Labs Forge lockup on navy with the gradient rule on every v2 screen and the sign-in page; Keycloak login theme (applied to the existing realm with `python3 scripts/local.py keycloak-theme`); titles `<Page> · RL Gym Evaluation · ADI Labs Forge`; PDF full logo on page 1 and running header; Authoring on screen; banned-name unit test (RG-45) |
 
+- **22 Nov 2026, OpenEnv B1 agents (RG-48):** mock agents for Studio's 21 operations.
+  - Checked on Studio's `@5` image against Studio's references: diligent 100/100, skips-screening 80/100 (misses
+    exactly the screening cases), erratic 81/100. At most 21 calls per episode; no call refused.
+  - `test_rlgym_v2_openenv.py::test_b1_mock_agents_use_studios_operations` passed, run alone with `--noconftest`
+    because the stack follows Studio; it writes nothing to the outbox.
+  - Not yet: a full Start run on `@5` with Studio's blocks template. It waits for Studio to declare `reference_answers`
+    in `schema` and to activate a template with blocks for its operations.
 - **22 Nov 2026, relinked to Studio (owner's choice):** the RL Gym follows the local Studio again.
   - **Resync:** applied Studio's seq 14–15 (`golden-kyc-openenv@5` registered, then failed by Studio's first attempt
     while the RL Gym followed the stub).
