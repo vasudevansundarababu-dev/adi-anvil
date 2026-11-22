@@ -39,11 +39,12 @@ def _headers(extra=None):
     return {"Authorization": f"Bearer {os.environ.get('RLGYM_ANVIL_KEY', '')}", **(extra or {})}
 
 
-def registry_get(path, params=None):
+def registry_get(path, params=None, audience=None, timeout=10):
+    extra = {"X-ADI-Audience": audience} if audience else None
     try:
-        with httpx.Client(timeout=10, trust_env=False) as client:
+        with httpx.Client(timeout=timeout, trust_env=False) as client:
             r = client.get(
-                studio_url() + "/api/v1/registry" + path, params=params, headers=_headers()
+                studio_url() + "/api/v1/registry" + path, params=params, headers=_headers(extra)
             )
     except httpx.HTTPError as exc:
         raise GymError(

@@ -7,6 +7,7 @@ model version. Locally only the controlled mock provider is called; any other pr
 """
 
 import datetime as dt
+import json
 import os
 import re
 
@@ -578,8 +579,14 @@ def get_system(ctx, system_id):
         "status": _status(ctx, system, latest["version"]),
         "key": _public_key(key),
         "probes": probes,
-        "runs": [],
-        "runs_note": "Not used in a run yet (runs arrive with 2.7).",
+        "runs": (
+            runs := ctx.c.execute(
+                """SELECT r.id, r.name, r.state FROM runs.runs r WHERE r.workspace_id=%s
+                   AND r.model_set->'members' @> %s::jsonb ORDER BY r.created_at DESC LIMIT 20""",
+                (ctx.ws, json.dumps([{"system_id": system_id}])),
+            ).fetchall()
+        ),
+        "runs_note": f"Used in {len(runs)} runs" if runs else "Not used in a run yet.",
     }
 
 

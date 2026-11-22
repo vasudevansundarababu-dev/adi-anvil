@@ -18,7 +18,7 @@ def _limits():
     resource.setrlimit(resource.RLIMIT_NOFILE, (32, 32))
 
 
-def run(framework, config, evidence, reference, timeout=10):
+def _check(framework):
     if framework["runtime_id"] != "python" or not framework["installed_locally"]:
         raise GymError(
             "VALIDATION_FAILED",
@@ -27,7 +27,30 @@ def run(framework, config, evidence, reference, timeout=10):
         )
     if framework["state"] == "revoked":
         raise GymError("VALIDATION_FAILED", f"Framework {framework['id']} is revoked")
-    job = json.dumps({"config": config, "evidence": evidence, "reference": reference})
+
+
+def run(framework, config, evidence, reference, timeout=10):
+    _check(framework)
+    out = _invoke({"config": config, "evidence": evidence, "reference": reference}, timeout)
+    return out if isinstance(out, dict) else out[0]
+
+
+def run_batch(framework, configs, evidence, reference, timeout=20):
+    """Score several configurations of one framework version over one episode's evidence in one sandbox process."""
+    _check(framework)
+    out = _invoke(
+        {"jobs": [{"config": c, "evidence": evidence, "reference": reference} for c in configs]},
+        timeout,
+    )
+    if isinstance(
+        out, dict
+    ):  # the sandbox itself failed: every configuration is an error, never a pass
+        return [out for _ in configs]
+    return out
+
+
+def _invoke(payload, timeout):
+    job = json.dumps(payload)
     try:
         proc = subprocess.run(
             [sys.executable, "-I", "-S", str(PYTHON_RUNNER)],

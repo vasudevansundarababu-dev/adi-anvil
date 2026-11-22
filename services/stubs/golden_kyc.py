@@ -661,3 +661,24 @@ def project_export(export_id, reason, corrections=None, extra=None):
     }
     body["export_sha256"] = sha(body)
     return body, {task["package_sha256"]: task["package"] for task in tasks}
+
+
+def image_seed(rows):
+    """The environment image seed: actor-visible records plus environment facts the tools answer from (which party
+    a synthetic screening list matches). Reference answers are not part of the image; the scorer gets them separately."""
+    lines = []
+    for c in rows:
+        hits = ["P1"] if "screening_hit" in c["edge_cases"] else []
+        lines.append(
+            canonical(
+                {
+                    "case_id": c["case_id"],
+                    "application_type": c["application_type"],
+                    "completeness": c["completeness"],
+                    "edge_cases": c["edge_cases"],
+                    "actor": c["actor"],
+                    "env": {"screening_hits": hits},
+                }
+            )
+        )
+    return "\n".join(lines) + "\n"

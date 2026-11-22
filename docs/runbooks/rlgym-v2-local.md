@@ -31,6 +31,23 @@ pnpm rlgym:demo
 - A worktree can use its own Docker volumes: set `ANVIL_COMPOSE_PROJECT` before the first `pnpm setup:local`
   (this worktree uses `adi-anvil-rlgym`).
 
+## Runs (work package 2.7)
+
+Runs → New run (or Run benchmark on a project or a saved suite version) shows the admission checklist live; Start run
+freezes the manifest and queues the episodes. A runner thread in the API process (`pnpm dev`) then:
+
+1. builds `rlgym-local/golden-kyc-openenv:v3-…` with Docker from the Studio stub's recipe for that version, offline,
+   on the pinned local base image (`RLGYM_ENV_BASE_IMAGE`, digest-pinned; nothing is pulled);
+2. starts one container per run (`rlgym-run-…`, no network, read-only, no capabilities, CPU/memory/pid limits);
+3. runs each episode as a fresh tool-server process in it, with the controlled mock agent (no model called);
+4. seals the evidence bundle to `.local/rlgym/evidence/<workspace>/<run>/` (read-only, SHA-256 in the database);
+5. scores it with the bound evaluator configurations (reference answers fetched for the scorer only) and stops the
+   container when the run finishes.
+
+The default suite (40 cases) with the three mock profiles is 120 episodes and takes about 30 seconds. Re-score is
+explicit (run page ⋯ Re-score…). Set `RLGYM_RUNNER=off` to keep the API from running episodes. Report, PDF, the
+episode viewer and SME review are work packages 2.8 and 2.9.
+
 ## Stub controls (each stands for a real trigger)
 
 | Control | Stands for |
@@ -43,5 +60,6 @@ pnpm rlgym:demo
 
 Checks, in order: `pnpm check`, `pnpm test:unit`, `pnpm test:e2e`, `pnpm test:integration` (needs `pnpm dev` running).
 RL Gym v2 tests: `tests/e2e/rlgym-v2.spec.ts`, `services/backend/tests/unit/test_rlgym_v2_unit.py`,
-`services/backend/tests/integration/test_rlgym_v2.py` (each run creates its own disposable `it-…` workspace).
+`services/backend/tests/integration/test_rlgym_v2*.py` (each module creates its own disposable `it-…` workspace).
+Run tests (`test_rlgym_v2_runs.py`) need Docker.
 Synthetic data only; no model is called.

@@ -232,6 +232,14 @@ export function SuiteEditor({ project, id, step }: { project: string; id: string
                   </button>
                 </div>
               )}
+              {!draft && data.checklist.can_run && (
+                <Link
+                  className="primary"
+                  href={`/gym/runs/new?project=${project}&suite=${data.id}`}
+                >
+                  Run benchmark
+                </Link>
+              )}
               {data.inbox_items.map((item: any) => (
                 <small key={item.id}>
                   Studio inbox {item.studio_id ?? item.id} · more data · {item.state}

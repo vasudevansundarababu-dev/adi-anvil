@@ -200,6 +200,11 @@ from anvil.rlgym.suites.routes import routes as rlgym_suite_routes  # noqa: E402
 
 app.include_router(rlgym_suite_routes())
 
+from anvil.rlgym.runs.routes import routes as rlgym_run_routes  # noqa: E402
+from anvil.rlgym.runs.worker import start_runner  # noqa: E402
+
+app.include_router(rlgym_run_routes())
+
 
 @app.exception_handler(GymError)
 async def gym_error(request, exc):
@@ -219,6 +224,7 @@ async def gym_error(request, exc):
 @app.on_event("startup")
 def rlgym_startup():
     start_dispatcher()
+    start_runner()
 
 
 KINDS = {

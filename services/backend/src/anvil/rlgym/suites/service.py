@@ -1293,12 +1293,18 @@ def list_suites(c, ws, pid):
                                 ORDER BY version DESC NULLS FIRST""",
             (ws, pid, s["suite_id"]),
         ).fetchall()
+        runs = c.execute(
+            """SELECT r.id, r.name, r.state, r.created_at, v.version suite_version FROM runs.runs r
+               JOIN suites.suite_versions v ON v.id=r.suite_version_id
+               WHERE r.workspace_id=%s AND v.project_id=%s AND v.suite_id=%s ORDER BY r.created_at DESC""",
+            (ws, pid, s["suite_id"]),
+        ).fetchall()
         out.append(
             {
                 **s,
                 "versions": versions,
-                "runs": [],
-                "runs_note": "Runs arrive with work package 2.7.",
+                "runs": runs,
+                "runs_note": f"{len(runs)} runs" if runs else "Not used in a run yet.",
             }
         )
     return out

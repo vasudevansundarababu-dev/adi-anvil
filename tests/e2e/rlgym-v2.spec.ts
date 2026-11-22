@@ -60,8 +60,17 @@ test('entry, projects, project page, tasks and exports', async ({ browser }) => 
   );
   await page.screenshot({ path: 'artifacts/test-runs/rlgym-v2-exports.png', fullPage: true });
   // To do: export received and project ready to run, opened by events.
+  // "Ready to run" closes when the project's first run is admitted (run.admitted), so it shows only before any run.
+  const runs = await page.request.get('/api/v1/workspaces/adi-labs-research/runs');
+  const neverRun = ((await runs.json()).data.items as { state: string }[]).every(
+    (r) => r.state === 'refused',
+  );
   await page.getByRole('button', { name: /To do/ }).click();
-  await expect(page.getByRole('dialog', { name: 'To do' })).toContainText('Ready to run');
+  if (neverRun) {
+    await expect(page.getByRole('dialog', { name: 'To do' })).toContainText('Ready to run');
+  } else {
+    await expect(page.getByRole('dialog', { name: 'To do' })).not.toContainText('Ready to run');
+  }
   await expect(page.getByRole('dialog', { name: 'To do' })).toContainText('Import / Export');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: 'To do' })).toHaveCount(0);
@@ -191,4 +200,44 @@ test('short data plan: lower one cell, send more data to Studio, save the suite'
   await expect(page.getByText(/Saved as kyc-november-default-v\d+/)).toBeVisible();
   await page.getByRole('button', { name: /To do/ }).click();
   await expect(page.getByRole('dialog', { name: 'To do' })).toContainText('Studio inbox');
+});
+
+test('new run: admission checklist, start, episodes run in the local container, scores', async ({
+  browser,
+}) => {
+  test.setTimeout(420000);
+  const page = await signIn(browser, 'researcher');
+  await page.goto(`/gym/runs/new?project=${PROJECT}`);
+  await expect(page.getByRole('heading', { name: 'Admission checklist' })).toBeVisible();
+  await page.getByLabel('Suite').selectOption({ label: 'KYC November default · v1' });
+  await page.getByLabel('Budget cap (USD)').fill('0.5');
+  await expect(page.getByText(/BUDGET_EXCEEDED: projected \$1\.2/)).toBeVisible();
+  await page.getByLabel('Budget cap (USD)').fill('5');
+  await expect(page.getByText('Passed', { exact: true })).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText(/120 episodes · projected/)).toBeVisible();
+  await expect(page.getByText(/not model performance/).first()).toBeVisible();
+  await page.screenshot({ path: 'artifacts/test-runs/rlgym-v2-new-run.png', fullPage: true });
+  await page.getByRole('button', { name: 'Start run' }).click();
+  await expect(page).toHaveURL(/\/gym\/runs\/run-\d{4}$/);
+  await expect(page.getByRole('heading', { name: /Completed/ })).toBeVisible({ timeout: 360000 });
+  await expect(page.getByText('What this run used')).toBeVisible();
+  await expect(page.getByText(/golden-kyc-openenv v3 · Follow project rules/)).toBeVisible();
+  await expect(page.getByText(/rlgym-local\/golden-kyc-openenv:v3-/)).toBeVisible();
+  await expect(page.getByText(/Scored 120/)).toBeVisible();
+  await page.screenshot({ path: 'artifacts/test-runs/rlgym-v2-run-overview.png', fullPage: true });
+  await page.getByRole('link', { name: 'Episodes', exact: true }).click();
+  await expect(page.getByText('120 episodes · page 1')).toBeVisible();
+  await page.getByLabel('Verdict').selectOption('failed');
+  await expect(page.getByText(/episodes · page 1/)).toBeVisible();
+  await page.getByRole('link', { name: 'Report', exact: true }).click();
+  await expect(page.getByText(/Not built yet \(work package 2\.8\)/)).toBeVisible();
+  await page.goto('/gym/runs?state=completed');
+  await expect(page.getByRole('row', { name: /KYC November/ }).first()).toContainText('Completed');
+});
+
+test('a viewer sees runs but cannot start one', async ({ browser }) => {
+  const page = await signIn(browser, 'sales');
+  await page.goto(`/gym/runs/new?project=${PROJECT}`);
+  await expect(page.getByText('Viewers cannot start runs.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start run' })).toBeDisabled();
 });

@@ -244,6 +244,51 @@ def cases(vid: str, request: Request):
     }
 
 
+IMAGE_DIR = Path(__file__).resolve().parent / "env_image"
+
+
+@app.get("/api/v1/registry/versions/{vid}/image-context")
+def image_context(vid: str, request: Request):
+    """The image recipe of a released version: Dockerfile, tool server and the case seed (actor records and
+    environment facts, no reference answers). The RL Gym builds the image locally with Docker from this context."""
+    _check_rlgym_key(request)
+    if vid not in S["state"]:
+        raise HTTPException(404, "unknown version")
+    seed = g.image_seed(VERSIONS[vid]["_cases"])
+    files = {
+        "Dockerfile": (IMAGE_DIR / "Dockerfile").read_text(),
+        "golden_kyc_env.py": (IMAGE_DIR / "golden_kyc_env.py").read_text(),
+        "cases.jsonl": seed,
+    }
+    return {
+        "version_id": vid,
+        "recipe": PUBLIC[vid]["image_recipe"],
+        "files": files,
+        "files_sha256": {k: hashlib.sha256(v.encode()).hexdigest() for k, v in files.items()},
+        "image_seed_sha256": hashlib.sha256(seed.encode()).hexdigest(),
+        "cases": len(VERSIONS[vid]["_cases"]),
+        "synthetic": True,
+    }
+
+
+@app.get("/api/v1/registry/versions/{vid}/references")
+def references(vid: str, request: Request, ids: str = ""):
+    """Private reference answers (schema table reference_answers), for the RL Gym scorer only. Never part of the image,
+    the case list or anything a candidate sees."""
+    _check_rlgym_key(request)
+    if request.headers.get("x-adi-audience") != "scorer":
+        raise HTTPException(403, "reference answers are for the scorer audience only")
+    if vid not in S["state"]:
+        raise HTTPException(404, "unknown version")
+    wanted = set(filter(None, ids.split(",")))
+    out = {
+        c["case_id"]: {"reference": c["reference"], "reference_sha256": g.sha(c["reference"])}
+        for c in VERSIONS[vid]["_cases"]
+        if not wanted or c["case_id"] in wanted
+    }
+    return {"version_id": vid, "references": out}
+
+
 @app.get("/api/v1/registry/events")
 def events(request: Request, after_seq: int = 0):
     _check_rlgym_key(request)

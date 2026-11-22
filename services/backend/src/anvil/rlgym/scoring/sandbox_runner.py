@@ -87,13 +87,21 @@ def evaluate(job):
     return {"verdict": verdict, "points": round(fraction, 4), "detail": detail}
 
 
+def _safe(job):
+    try:
+        return evaluate(job)
+    except Exception as exc:  # a broken configuration is an evaluator defect, never a pass
+        return {"verdict": "error", "points": None, "detail": [f"{type(exc).__name__}: {exc}"]}
+
+
 def main():
     job = json.loads(sys.stdin.read())
-    try:
-        result = evaluate(job)
-    except Exception as exc:  # a broken configuration is an evaluator defect, never a pass
-        result = {"verdict": "error", "points": None, "detail": [f"{type(exc).__name__}: {exc}"]}
-    sys.stdout.write(json.dumps(result))
+    # A batch is several configurations of the same framework version over one episode's evidence; each gets its own
+    # verdict, and one configuration's error never changes another's.
+    if "jobs" in job:
+        sys.stdout.write(json.dumps([_safe(j) for j in job["jobs"]]))
+        return
+    sys.stdout.write(json.dumps(_safe(job)))
 
 
 if __name__ == "__main__":

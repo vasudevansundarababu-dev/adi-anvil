@@ -1,0 +1,489 @@
+"""The episode runner and scorer loop (ARCHITECTURE 7.3, local form).
+
+One background thread in the API process (started only with RLGYM_V2=1):
+  1. requeue episodes whose lease expired (attempt recorded as lease_lost; errored after the retry limit);
+  2. prepare admitted runs: build the environment image from the Studio recipe if needed, start the run's instance;
+  3. lease one queued episode (FOR UPDATE SKIP LOCKED), run it in the instance, seal the evidence bundle, score it;
+  4. finish runs with no work left and stop their instance.
+Infrastructure errors are retried up to the run's limit; a timeout is a result, not retried. The agent is the
+controlled mock; no provider is called and no automatic inference retry exists.
+"""
+
+import datetime as dt
+import hashlib
+import json
+import logging
+import os
+import socket
+import threading
+import time
+import uuid
+
+from psycopg.types.json import Jsonb
+
+from anvil.rlgym.common import GymError, all_workspaces, emit, set_scope, system_scope
+from anvil.rlgym.runs import images
+from anvil.rlgym.scoring import service as scoring
+from anvil.rlgym.systems import mock_provider
+
+log = logging.getLogger("anvil.rlgym.runner")
+OWNER = f"runner@{socket.gethostname()}:{os.getpid()}"
+MAX_STEPS = 80
+_started = False
+_lock = threading.Lock()
+
+
+def _workspaces():
+    with system_scope() as c:
+        return [w["id"] for w in all_workspaces(c)]
+
+
+def recover_leases(ws):
+    with system_scope(ws) as c:
+        for e in c.execute(
+            """SELECT e.*, r.infra_retries FROM runs.episodes e JOIN runs.runs r ON r.id=e.run_id
+               WHERE e.workspace_id=%s AND e.state='running' AND e.lease_until < now() FOR UPDATE OF e SKIP LOCKED""",
+            (ws,),
+        ).fetchall():
+            c.execute(
+                "UPDATE runs.episode_attempts SET ended_at=now(), outcome='lease_lost', note='runner lost its lease' WHERE episode_id=%s AND try=%s AND outcome IS NULL",
+                (e["id"], e["tries"]),
+            )
+            again = e["tries"] <= e["infra_retries"]
+            c.execute(
+                "UPDATE runs.episodes SET state=%s, lease_owner=NULL, lease_until=NULL, last_error='runner lost its lease' WHERE id=%s",
+                ("queued" if again else "errored", e["id"]),
+            )
+
+
+def prepare_runs(ws):
+    """Claim one admitted run at a time (row lock held while its image is built and its instance started), so two
+    runner processes never start the same run twice."""
+    while True:
+        with system_scope(ws) as c:
+            run = c.execute(
+                """SELECT r.*, m.manifest FROM runs.runs r JOIN runs.run_manifests m ON m.run_id=r.id
+                   WHERE r.workspace_id=%s AND r.state='admitted' AND r.cancel_requested_at IS NULL
+                   ORDER BY r.created_at LIMIT 1 FOR UPDATE OF r SKIP LOCKED""",
+                (ws,),
+            ).fetchone()
+            if not run:
+                return
+            vid = run["manifest"]["environment"]["version_id"]
+            try:
+                image = images.build(c, vid)
+                container = images.start_instance(run["id"], image["local_image_id"])
+            except (GymError, RuntimeError, OSError) as exc:
+                message = exc.message if isinstance(exc, GymError) else str(exc)
+                log.warning("run %s could not start: %s", run["id"], message)
+                c.rollback()
+                set_scope(c, ws)
+                c.execute(
+                    "UPDATE runs.episodes SET state='errored', last_error=%s WHERE run_id=%s AND state='queued'",
+                    (f"environment not started: {message}"[:500], run["id"]),
+                )
+                c.execute(
+                    "UPDATE runs.runs SET state='failed', finished_at=now() WHERE id=%s",
+                    (run["id"],),
+                )
+                emit(c, ws, "run.failed", run["id"], {"run_id": run["id"], "reason": message[:300]})
+                continue
+            c.execute(
+                "INSERT INTO runs.instances(id,workspace_id,run_id,environment_version_id,local_image_id,container,idle_timeout_s) VALUES(%s,%s,%s,%s,%s,%s,%s)",
+                (
+                    f"inst-{uuid.uuid4().hex[:10]}",
+                    ws,
+                    run["id"],
+                    vid,
+                    image["local_image_id"],
+                    container,
+                    900,
+                ),
+            )
+            c.execute(
+                "UPDATE runs.runs SET state='running', started_at=now() WHERE id=%s", (run["id"],)
+            )
+            emit(
+                c,
+                ws,
+                "run.started",
+                run["id"],
+                {"run_id": run["id"], "image": image["image_tag"], "container": container},
+            )
+
+
+def lease(ws):
+    with system_scope(ws) as c:
+        e = c.execute(
+            """SELECT e.* FROM runs.episodes e JOIN runs.runs r ON r.id=e.run_id
+               WHERE e.workspace_id=%s AND e.state='queued' AND r.state='running' AND r.cancel_requested_at IS NULL
+               ORDER BY e.queued_at, e.id LIMIT 1 FOR UPDATE OF e SKIP LOCKED""",
+            (ws,),
+        ).fetchone()
+        if not e:
+            return None
+        run = c.execute("SELECT * FROM runs.runs WHERE id=%s", (e["run_id"],)).fetchone()
+        tries = e["tries"] + 1
+        c.execute(
+            "UPDATE runs.episodes SET state='running', tries=%s, lease_owner=%s, lease_until=now() + make_interval(secs => %s) WHERE id=%s",
+            (tries, OWNER, run["episode_timeout_s"] + 60, e["id"]),
+        )
+        c.execute(
+            "INSERT INTO runs.episode_attempts(episode_id,workspace_id,try,started_at) VALUES(%s,%s,%s,now())",
+            (e["id"], ws, tries),
+        )
+        return {**e, "tries": tries}
+
+
+def _context(ws, episode):
+    with system_scope(ws) as c:
+        run = c.execute("SELECT * FROM runs.runs WHERE id=%s", (episode["run_id"],)).fetchone()
+        manifest = c.execute(
+            "SELECT manifest, manifest_sha256 FROM runs.run_manifests WHERE run_id=%s",
+            (episode["run_id"],),
+        ).fetchone()
+        instance = c.execute(
+            "SELECT * FROM runs.instances WHERE run_id=%s AND stopped_at IS NULL ORDER BY started_at DESC LIMIT 1",
+            (episode["run_id"],),
+        ).fetchone()
+        actor = c.execute(
+            """SELECT p.content FROM projects.task_imports t JOIN projects.task_payloads p
+               ON p.workspace_id=t.workspace_id AND p.package_sha256=t.package_sha256 AND p.part='actor' WHERE t.id=%s""",
+            (episode["task_import_id"],),
+        ).fetchone()
+    return run, manifest, instance, actor["content"] if actor else None
+
+
+def execute(episode, run, manifest, instance, actor, session_factory=None):
+    """Run one episode and return the evidence bundle (not yet sealed). The policy sees the actor assignment and tool
+    results only; the run's reference answers are never loaded here."""
+    m = manifest["manifest"]
+    model = next(x for x in m["models"] if x["system_id"] == episode["system_id"])
+    offered = set((actor or {}).get("tools") or [])
+    prompt = None
+    inject = None
+    if episode["kind"] == "safety":
+        prompt = next(
+            p for p in m["trust_and_safety"]["prompts"] if p["id"] == episode["ts_prompt_id"]
+        )
+        inject = {"placement": m["trust_and_safety"]["placement"], "text": prompt["text"]}
+    started = time.monotonic()
+    deadline = started + run["episode_timeout_s"]
+    session = (
+        session_factory or (lambda: images.EnvSession.docker(instance["container"], deadline))
+    )()
+    transcript, events, final = [], [], None
+    try:
+        reset = session.request({"op": "reset", "case_id": episode["case_id"], "inject": inject})
+        if not reset.get("ok"):
+            raise RuntimeError(f"environment reset failed: {reset.get('error')}")
+        policy = mock_provider.agent(
+            model["model_id"],
+            (actor or {}).get("assignment", ""),
+            # Seeded by what the episode is (not its id), so a repeat run on the same suite is reproducible.
+            f"{episode['case_id']}:{episode['task_id']}:{episode['attempt']}:{episode.get('ts_prompt_id')}",
+            user_message=reset.get("user_message"),
+        )
+        action = next(policy)
+        for step in range(1, MAX_STEPS + 1):
+            if "final" in action:
+                final = action["final"]
+                transcript.append({"step": step, "final_output": final})
+                break
+            tool, args = action["tool"], action.get("args") or {}
+            if offered and tool not in offered:
+                obs = {"ok": False, "error": "tool not offered by this task"}
+            else:
+                obs = session.request({"op": "call", "tool": tool, "args": args})
+            transcript.append({"step": step, "tool": tool, "args": args, "observation": obs})
+            events.append(
+                {
+                    "tool": tool,
+                    "args": args,
+                    "ok": bool(obs.get("ok", False)),
+                    "blocked": bool(obs.get("blocked")),
+                }
+            )
+            try:
+                action = policy.send(obs)
+            except StopIteration:
+                break
+        state = session.request({"op": "state"})
+    finally:
+        session.close()
+    wall_ms = int((time.monotonic() - started) * 1000)
+    steps = len(transcript)
+    return {
+        "schema": "rlgym.sealed-episode.v1",
+        "synthetic": True,
+        "execution_mode": m["execution_mode"],
+        "note": m["note"],
+        "run_id": episode["run_id"],
+        "manifest_sha256": manifest["manifest_sha256"],
+        "episode_id": episode["id"],
+        "kind": episode["kind"],
+        "task": {"task_id": episode["task_id"], "revision": episode["task_revision"]},
+        "case_id": episode["case_id"],
+        "system": {
+            k: model[k] for k in ("system_id", "version", "model_id", "provider", "config_sha256")
+        },
+        "attempt": episode["attempt"],
+        "try": episode["tries"],
+        "environment": {
+            "version_id": m["environment"]["version_id"],
+            "image": instance and instance["local_image_id"],
+        },
+        "safety": prompt
+        and {
+            "prompt_id": prompt["id"],
+            "category_key": prompt["category_key"],
+            "placement": inject["placement"],
+            "strategy": prompt["strategy"],
+        },
+        "transcript": transcript,
+        "tool_events": events,
+        "final_output": final,
+        "environment_state": state,
+        "timings": {"wall_ms": wall_ms, "steps": steps},
+        "tokens": {
+            "in": steps * mock_provider.STEP_TOKENS[0],
+            "out": steps * mock_provider.STEP_TOKENS[1],
+        },
+        "cost_usd": 0.0,
+    }
+
+
+def seal(ws, episode, bundle):
+    raw = json.dumps(bundle, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+    digest = hashlib.sha256(raw).hexdigest()
+    rel = f"{ws}/{episode['run_id']}/{episode['id']}-t{episode['tries']}.json"
+    path = scoring.EVIDENCE_ROOT / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "xb") as handle:  # never overwrite sealed evidence
+        handle.write(raw)
+    os.chmod(path, 0o444)
+    return f"local-evidence://{rel}", digest
+
+
+def _finish_attempt(c, episode, outcome, note=None):
+    c.execute(
+        "UPDATE runs.episode_attempts SET ended_at=now(), outcome=%s, note=%s WHERE episode_id=%s AND try=%s",
+        (outcome, note, episode["id"], episode["tries"]),
+    )
+
+
+def run_episode(ws, episode, session_factory=None):
+    run, manifest, instance, actor = _context(ws, episode)
+    try:
+        if session_factory is None and (
+            not instance or not images.instance_alive(instance["container"])
+        ):
+            raise RuntimeError("environment instance is not running")
+        bundle = execute(episode, run, manifest, instance, actor, session_factory)
+    except TimeoutError:
+        with system_scope(ws) as c:
+            _finish_attempt(
+                c, episode, "timed_out", f"no result within {run['episode_timeout_s']} s"
+            )
+            c.execute(
+                "UPDATE runs.episodes SET state='timed_out', lease_until=NULL, last_error='episode timeout' WHERE id=%s",
+                (episode["id"],),
+            )
+        return "timed_out"
+    except (RuntimeError, OSError, ValueError, KeyError, StopIteration) as exc:
+        with system_scope(ws) as c:
+            _finish_attempt(c, episode, "errored", str(exc)[:500])
+            again = episode["tries"] <= run["infra_retries"]
+            c.execute(
+                "UPDATE runs.episodes SET state=%s, lease_until=NULL, last_error=%s WHERE id=%s",
+                ("queued" if again else "errored", str(exc)[:500], episode["id"]),
+            )
+        return "retry" if again else "errored"
+    ref, digest = seal(ws, episode, bundle)
+    with system_scope(ws) as c:
+        c.execute(
+            """INSERT INTO runs.sealed_evidence(episode_id,workspace_id,try,bundle_ref,sealed_sha256,tokens_in,tokens_out,cost_usd,timings,synthetic)
+               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,true)""",
+            (
+                episode["id"],
+                ws,
+                episode["tries"],
+                ref,
+                digest,
+                bundle["tokens"]["in"],
+                bundle["tokens"]["out"],
+                bundle["cost_usd"],
+                Jsonb(bundle["timings"]),
+            ),
+        )
+        _finish_attempt(c, episode, "sealed")
+        c.execute(
+            "UPDATE runs.episodes SET state='scoring', lease_until=NULL WHERE id=%s",
+            (episode["id"],),
+        )
+        emit(
+            c,
+            ws,
+            "episode.sealed",
+            episode["id"],
+            {"episode_id": episode["id"], "run_id": episode["run_id"], "sealed_sha256": digest},
+        )
+    with system_scope(ws) as c:
+        pass_row = c.execute(
+            "SELECT * FROM scoring.scoring_passes WHERE run_id=%s AND pass=1", (episode["run_id"],)
+        ).fetchone()
+        try:
+            result = scoring.score_episode(
+                c, ws, {**episode, "likely_cause_source": None}, pass_row, manifest["manifest"]
+            )
+        except (
+            Exception
+        ) as exc:  # a scoring failure is recorded on the episode, never a silent pass
+            c.rollback()
+            set_scope(c, ws)
+            message = exc.message if isinstance(exc, GymError) else f"{type(exc).__name__}: {exc}"
+            c.execute(
+                "UPDATE runs.episodes SET state='errored', last_error=%s WHERE id=%s",
+                (f"scoring: {message}"[:500], episode["id"]),
+            )
+            return "errored"
+        c.execute("UPDATE runs.episodes SET state='scored' WHERE id=%s", (episode["id"],))
+        emit(
+            c,
+            ws,
+            "episode.scored",
+            episode["id"],
+            {"episode_id": episode["id"], "run_id": episode["run_id"], **result},
+        )
+    return "scored"
+
+
+def finish_runs(ws):
+    with system_scope(ws) as c:
+        for run in c.execute(
+            """SELECT r.* FROM runs.runs r WHERE r.workspace_id=%s AND r.state='running'
+               AND NOT EXISTS (SELECT 1 FROM runs.episodes e WHERE e.run_id=r.id AND e.state IN ('queued','running','scoring'))
+               FOR UPDATE SKIP LOCKED""",
+            (ws,),
+        ).fetchall():
+            counts = {
+                r["state"]: r["n"]
+                for r in c.execute(
+                    "SELECT state, count(*) n FROM runs.episodes WHERE run_id=%s GROUP BY state",
+                    (run["id"],),
+                ).fetchall()
+            }
+            state = (
+                "cancelled"
+                if run["cancel_requested_at"]
+                else "completed"
+                if counts.get("scored")
+                else "failed"
+            )
+            c.execute(
+                "UPDATE runs.runs SET state=%s, finished_at=now() WHERE id=%s", (state, run["id"])
+            )
+            c.execute(
+                "UPDATE scoring.scoring_passes SET finished_at=now() WHERE run_id=%s AND pass=1",
+                (run["id"],),
+            )
+            for inst in c.execute(
+                "SELECT * FROM runs.instances WHERE run_id=%s AND stopped_at IS NULL", (run["id"],)
+            ).fetchall():
+                images.stop_instance(inst["container"])
+                c.execute("UPDATE runs.instances SET stopped_at=now() WHERE id=%s", (inst["id"],))
+            emit(
+                c,
+                ws,
+                f"run.{state}",
+                run["id"],
+                {"run_id": run["id"], "project_id": run["project_id"], "episodes": counts},
+            )
+        # A cancelled run whose last running episode just sealed.
+        for run in c.execute(
+            """SELECT r.* FROM runs.runs r WHERE r.workspace_id=%s AND r.state='admitted' AND r.cancel_requested_at IS NOT NULL""",
+            (ws,),
+        ).fetchall():
+            c.execute(
+                "UPDATE runs.runs SET state='cancelled', finished_at=now() WHERE id=%s",
+                (run["id"],),
+            )
+        # Any instance left by a run that finished another way (cancelled with nothing running, failed) is stopped.
+        for inst in c.execute(
+            """SELECT i.* FROM runs.instances i JOIN runs.runs r ON r.id=i.run_id
+               WHERE i.workspace_id=%s AND i.stopped_at IS NULL AND r.state IN ('completed','failed','cancelled')""",
+            (ws,),
+        ).fetchall():
+            images.stop_instance(inst["container"])
+            c.execute("UPDATE runs.instances SET stopped_at=now() WHERE id=%s", (inst["id"],))
+
+
+def tick():
+    """One pass over every workspace. Returns the number of episodes processed."""
+    done = 0
+    for ws in _workspaces():
+        recover_leases(ws)
+        prepare_runs(ws)
+        for _ in range(25):
+            episode = lease(ws)
+            if not episode:
+                break
+            run_episode(ws, episode)
+            done += 1
+        finish_runs(ws)
+    return done
+
+
+def _busy():
+    for ws in _workspaces():
+        with system_scope(ws) as c:
+            if c.execute(
+                "SELECT 1 FROM runs.runs WHERE workspace_id=%s AND state IN ('admitted','running') LIMIT 1",
+                (ws,),
+            ).fetchone():
+                return True
+    return False
+
+
+def drain(timeout=600):
+    """Process until no run is admitted or running (tests and `pnpm rlgym:demo`). Safe beside the API's runner thread:
+    runs and episodes are claimed with row locks."""
+    end = time.time() + timeout
+    while time.time() < end:
+        with _lock:
+            n = tick()
+        if not n:
+            if not _busy():
+                return True
+            time.sleep(0.3)
+    return False
+
+
+def start_runner(interval=1.0):
+    global _started
+    if (
+        _started
+        or os.environ.get("RLGYM_V2") != "1"
+        or os.environ.get("RLGYM_RUNNER", "on") == "off"
+    ):
+        return
+    _started = True
+
+    def loop():
+        while True:
+            try:
+                with _lock:
+                    n = tick()
+            except (
+                Exception
+            ):  # keep the loop alive; the failure is logged and the episode lease expires
+                log.exception("runner tick failed")
+                n = 0
+            if not n:
+                time.sleep(interval)
+
+    threading.Thread(target=loop, name="rlgym-runner", daemon=True).start()
+
+
+def utcnow():
+    return dt.datetime.now(dt.UTC)

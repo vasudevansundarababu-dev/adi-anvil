@@ -701,3 +701,50 @@ body:has(#gym) {
   justify-self: start;
   width: max-content;
 }
+
+/* Runs (2.7): episodes bar and score cards */
+#gym .stack {
+  display: flex;
+  height: 14px;
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  margin-bottom: 8px;
+}
+#gym .stack span,
+#gym .swatch {
+  background: var(--muted);
+}
+#gym .swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+#gym .stack [data-s='scored'],
+#gym .swatch[data-s='scored'] {
+  background: var(--green);
+}
+#gym .stack [data-s='running'],
+#gym .swatch[data-s='running'],
+#gym .stack [data-s='scoring'],
+#gym .swatch[data-s='scoring'] {
+  background: light-dark(#3a7bd5, #7fb0f0);
+}
+#gym .stack [data-s='queued'],
+#gym .swatch[data-s='queued'] {
+  background: var(--line);
+}
+#gym .stack [data-s='errored'],
+#gym .swatch[data-s='errored'],
+#gym .stack [data-s='timed_out'],
+#gym .swatch[data-s='timed_out'] {
+  background: light-dark(#b3261e, #f2a29b);
+}
+#gym .big {
+  font-size: 2rem;
+  font-weight: 600;
+  margin: 4px 0;
+}

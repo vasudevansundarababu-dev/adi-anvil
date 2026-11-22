@@ -1,9 +1,9 @@
 # Build status
 
-## RL Gym v2: local run, stubs, projects, catalog, evaluators, models, suites — 21 November 2026
+## RL Gym v2: local run, stubs, projects, catalog, evaluators, models, suites, runs — 21–22 November 2026
 
 Branch `claude/rlgym-v2-8919f6` (worktree), local only; nothing pushed, deployed or emailed; no model called.
-Design: adi-labs-design `rl-gym/BUILD-LOCAL.md` work packages 2.1–2.10. Decisions RG-01..RG-14 in BUILD-DECISIONS.json
+Design: adi-labs-design `rl-gym/BUILD-LOCAL.md` work packages 2.1–2.10. Decisions RG-01..RG-26 in BUILD-DECISIONS.json
 (`rlgym_v2_increment`). Runbook: docs/runbooks/rlgym-v2-local.md.
 
 What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs, Admin, To do bell; `/workspace` unchanged):
@@ -17,12 +17,23 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
 | 2.4 Frameworks and evaluator configurations | done (python framework only) | A-06 create (same binding = same version), known-case tests in sandboxed subprocess (allowed→pass, disallowed→fail, missing→blocked), fix versions, deprecate, revoke with impact, B4; A-03 validate/known-case-tests/activation; Admin → Evaluators, configuration page, Templates. ZEN/Promptfoo/Pramaana registered but not installed locally |
 | 2.5 Models, keys, model sets | done (mock provider only) | migration 040; keys in the existing encrypted local store (last4 only), immutable model versions, probes (controlled mock ok; real providers `live_disabled`, never called), model sets with versions; Admin → Models, Model sets, Keys |
 | 2.6 Suites, data plan, Trust & Safety | done (local generator) | migration 041; default suite per export (receipt `default_suite_version`, backfilled by `pnpm rlgym:seed`); drafts and saved versions (`suite_sha256`, final); bindings follow project rule or custom with reason (D20 per criterion); data plan cells vs the bound version's case catalog, Lower to / Lower all / Use what is available / Send to Studio inbox (more data); Trust & Safety categories (core + Banking KYC/AML pack), custom-category check, generate (local template generator; Promptfoo not installed), review, approve with prompt-set hash; save refuses until every item resolves. Suggestions are rule-based (no model) |
-| 2.7 Runs, admission, execution, scoring | not started | Runs screens say so |
+| 2.7 Runs, admission, execution, scoring | done (controlled mock agents; local runner, not Harbor) | migration 042 (schemas `runs`, `scoring`); New run with the live admission checklist (every failing item listed; budget, models, image, data plan fit on the bound version); refused runs stored with reasons; Start run builds `golden-kyc-openenv` with Docker from the Studio stub recipe (offline, pinned base, no reference answers in the image), freezes the manifest (template, suite, environment + local image id, 20 evaluator versions, selected case ids, approved safety prompts, tasks, exact model versions) and queues (cases + safety prompts) × models × attempts; episodes run in a no-network, read-only container (one tool-server process each), evidence sealed read-only with SHA-256, scored in the Python sandbox with references fetched for the scorer only; Trust & Safety outcomes from tool effects; cancel, explicit re-score (earlier passes kept; tampered evidence refused), compare (same suite/environment/evaluators, paired bootstrap) and save comparison; run page Overview (progress, per-model mean with likely range, gates, results by stratum, what the run used, cost) and Episodes list. Report tab and Package say 2.8; SME review says 2.9 (RG-19..RG-26) |
 | 2.8 Report and PDF | not started | — |
 | 2.9 Episodes, viewer, SME review | not started | — |
-| 2.10 Home, To do, Users | partial | To do opened/closed by events (import, ready, override, inbox, urgent, evaluator cohort/B4); Users list with profile and binding-approver edits; leaderboard waits for runs; invites not built |
+| 2.10 Home, To do, Users | partial | To do opened/closed by events (import, ready — closed by `run.admitted`, override, inbox, urgent, evaluator cohort/B4); Users list with profile and binding-approver edits; leaderboard not yet fed by runs; invites not built |
 
 Tests (21 Nov 2026, this worktree, stack running):
+
+- Runs (2.7), 22 Nov 2026: `pnpm check` passed (EXIT 0; OpenAPI contract regenerated). `pnpm test:unit` 388 passed,
+  3 failed (same pre-existing `test_workspace_costs.py` expired prices); RL Gym v2 unit 43 passed (+12
+  `test_rlgym_v2_runs_unit.py`). `pnpm test:e2e` 18 passed, 5 failed: RL Gym v2 7/8 (new: New run → Start →
+  120 episodes in the local container → Completed, and viewer cannot start); `entry, projects…` failed on the stale
+  "Ready to run" expectation (the card closes once a run is admitted) and now passes after the test was updated;
+  `short data plan…` fails on a re-run against the same database because saving the identical suite version again is
+  refused (409, correct) — it needs a fresh database; plus the same 3 legacy specs needing `journey.json`.
+  `pnpm test:integration` 168 passed, 19 skipped, 41 failed — none in RL Gym v2 files (33 missing fixture artifacts,
+  remaining legacy causes as below); RL Gym v2 integration 26 passed (+7 `test_rlgym_v2_runs.py`, needs Docker),
+  rerun after the last change: 50 RL Gym tests passed, no run container left running.
 
 - `pnpm check`: passed (ruff incl. services/stubs, prettier, tsc, `next build`, OpenAPI contract regenerated).
 - `pnpm test:unit`: 376 passed, 3 failed — the 3 are pre-existing `test_workspace_costs.py` price records past their
@@ -40,7 +51,7 @@ Tests (21 Nov 2026, this worktree, stack running):
   (`test_rlgym_v2.py`, `test_rlgym_v2_systems.py`; each run uses its own disposable `it-…` workspace).
 - Screenshots: artifacts/test-runs/rlgym-v2-*.png (ignored).
 
-Known limits: qualification runs against the Studio stub's environment simulator (Docker-built environments are 2.7);
+Known limits: qualification still runs against the Studio stub's environment simulator (runs use the Docker-built image);
 only the sandboxed Python evaluator framework runs; Hugging Face "Use latest" is off; live providers stay disabled.
 
 ## Hash fix deployed and no-model controls verified — 19 November 2026
