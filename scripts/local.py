@@ -480,7 +480,13 @@ def dev():
                 with urlopen("http://127.0.0.1:8200/api/v1/health", timeout=2) as response:
                     healthy = json.load(response)["data"]["api"] == "ready"
                 with urlopen("http://127.0.0.1:3202", timeout=2) as response:
-                    healthy = healthy and response.status == 200 and b"ADI Anvil" in response.read()
+                    page = response.read()
+                    # `/` serves the previous workspace, or redirects to RL Gym Evaluation with RLGYM_V2=1.
+                    healthy = (
+                        healthy
+                        and response.status == 200
+                        and (b"ADI Anvil" in page or b"ADI Labs Forge" in page)
+                    )
                 if healthy:
                     break
             except (URLError, TimeoutError, ConnectionError, ValueError):
