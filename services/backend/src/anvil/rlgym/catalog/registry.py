@@ -200,6 +200,14 @@ def receive(ev, via="webhook"):
             "The RL Gym follows another registry; the Studio stub's event was not applied",
             {"following": registry_id()},
         )
+    # And the reverse: while it follows the stub, another registry's events (the local Studio) are refused with this
+    # reason instead of being checked against the stub's sequence and reported as duplicates (22 Nov 2026, @5).
+    if registry_id() == STUB_STUDIO and ev.get("source") != STUB_SOURCE:
+        raise GymError(
+            "CONFLICT",
+            "The RL Gym follows the Studio stub; this registry's event was not applied",
+            {"following": registry_id(), "source": ev.get("source")},
+        )
 
     seq = int(ev["data"]["seq"])
     with system_scope() as c:

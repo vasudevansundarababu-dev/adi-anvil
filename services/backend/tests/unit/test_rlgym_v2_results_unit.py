@@ -148,3 +148,14 @@ def test_evaluator_events_for_studio_name_their_workspace(monkeypatch):
     assert topic == "evaluator.event" and kw == {"destination": "studio"}
     assert payload["type"] == "evaluator.failed"
     assert payload["workspace"] == {"id": "ws-1", "slug": "it-1234abcd"}
+
+
+def test_while_following_the_stub_another_registrys_event_is_refused_not_a_duplicate(monkeypatch):
+    from anvil.rlgym import integrations
+    from anvil.rlgym.catalog import registry
+    from anvil.rlgym.common import GymError
+
+    monkeypatch.setattr(registry, "registry_id", lambda: integrations.STUB_STUDIO)
+    with pytest.raises(GymError) as refused:
+        registry.receive({"source": "adi-utility-registry", "data": {"seq": 14}})
+    assert refused.value.code == "CONFLICT" and "follows the Studio stub" in refused.value.message
