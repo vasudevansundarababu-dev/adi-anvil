@@ -7485,6 +7485,22 @@
               "type": "string",
               "title": "Pid"
             }
+          },
+          {
+            "name": "cohort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cohort"
+            }
           }
         ],
         "responses": {
@@ -9691,6 +9707,157 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{ws}/users/invitations": {
+      "post": {
+        "summary": "User Invite",
+        "operationId": "user_invite_api_v1_workspaces__ws__users_invitations_post",
+        "parameters": [
+          {
+            "name": "ws",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ws"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{ws}/users/{uid}/remove": {
+      "post": {
+        "summary": "User Remove",
+        "operationId": "user_remove_api_v1_workspaces__ws__users__uid__remove_post",
+        "parameters": [
+          {
+            "name": "ws",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ws"
+            }
+          },
+          {
+            "name": "uid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Uid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{ws}/users/{uid}/history": {
+      "get": {
+        "summary": "User History",
+        "operationId": "user_history_api_v1_workspaces__ws__users__uid__history_get",
+        "parameters": [
+          {
+            "name": "ws",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ws"
+            }
+          },
+          {
+            "name": "uid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Uid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -12442,6 +12609,484 @@
         ],
         "responses": {
           "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{ws}/episodes/{episode_id}": {
+      "get": {
+        "summary": "Episode",
+        "operationId": "episode_api_v1_workspaces__ws__episodes__episode_id__get",
+        "parameters": [
+          {
+            "name": "ws",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ws"
+            }
+          },
+          {
+            "name": "episode_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Episode Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{ws}/episodes/{episode_id}/compare": {
+      "get": {
+        "summary": "Compare",
+        "operationId": "compare_api_v1_workspaces__ws__episodes__episode_id__compare_get",
+        "parameters": [
+          {
+            "name": "ws",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ws"
+            }
+          },
+          {
+            "name": "episode_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Episode Id"
+            }
+          },
+          {
+            "name": "other",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Other"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{ws}/episodes/{episode_id}/suspected-cause": {
+      "put": {
+        "summary": "Cause",
+        "operationId": "cause_api_v1_workspaces__ws__episodes__episode_id__suspected_cause_put",
+        "parameters": [
+          {
+            "name": "ws",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ws"
+            }
+          },
+          {
+            "name": "episode_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Episode Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{ws}/runs/{run_id}/sme-review": {
+      "get": {
+        "summary": "Run Sme",
+        "operationId": "run_sme_api_v1_workspaces__ws__runs__run_id__sme_review_get",
+        "parameters": [
+          {
+            "name": "ws",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ws"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{ws}/runs/{run_id}/sme-review-batches": {
+      "post": {
+        "summary": "Create Batch",
+        "operationId": "create_batch_api_v1_workspaces__ws__runs__run_id__sme_review_batches_post",
+        "parameters": [
+          {
+            "name": "ws",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ws"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{ws}/sme-review-batches/{batch_id}": {
+      "get": {
+        "summary": "Batch",
+        "operationId": "batch_api_v1_workspaces__ws__sme_review_batches__batch_id__get",
+        "parameters": [
+          {
+            "name": "ws",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ws"
+            }
+          },
+          {
+            "name": "batch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Batch Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{ws}/sme-review-batches/{batch_id}/decisions": {
+      "post": {
+        "summary": "Decisions",
+        "operationId": "decisions_api_v1_workspaces__ws__sme_review_batches__batch_id__decisions_post",
+        "parameters": [
+          {
+            "name": "ws",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ws"
+            }
+          },
+          {
+            "name": "batch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Batch Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{ws}/sme-review-items/{item_id}/grader-fix": {
+      "post": {
+        "summary": "Grader Fix",
+        "operationId": "grader_fix_api_v1_workspaces__ws__sme_review_items__item_id__grader_fix_post",
+        "parameters": [
+          {
+            "name": "ws",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ws"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{ws}/sme-review-items/{item_id}/validation-run": {
+      "post": {
+        "summary": "Validation",
+        "operationId": "validation_api_v1_workspaces__ws__sme_review_items__item_id__validation_run_post",
+        "parameters": [
+          {
+            "name": "ws",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ws"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {

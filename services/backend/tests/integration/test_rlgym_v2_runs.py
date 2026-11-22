@@ -69,7 +69,9 @@ def small_suite(lineup):
             "data_plan": {
                 "sample_size": 8,
                 "completeness_quotas": {"complete": 50, "incomplete": 50},
-                "required_edges": {"screening_hit": 1},
+                # minor_without_tin asks for more than exists (33): the suite runs on what exists.
+                "required_edges": {"screening_hit": 1, "minor_without_tin": 40},
+                "missing_policy": "use_available",
             }
         },
     )
@@ -132,6 +134,10 @@ def test_admission_lists_every_failing_item_and_viewers_cannot_start(small_suite
     admin.delete(base + f"/suite-versions/{draft['id']}")
     good = admin.post(base + "/runs/admission-check", json=body(small_suite)).json()["data"]
     assert good["passed"], [i for i in good["items"] if not i["ok"]]
+    plan = next(i for i in good["items"] if i["key"] == "data_plan")
+    assert (
+        plan["ok"] and "the data has" in plan["detail"] and "runs on what exists" in plan["detail"]
+    )
     # (8 cases + 2 safety prompts) × 3 models × 1 attempt
     assert good["episodes"] == 30 and good["per_model"][0]["formula"] == "(8 cases + 2 safety) × 1"
     assert good["projected_usd"] == pytest.approx(0.3)

@@ -193,6 +193,8 @@ test('short data plan: lower one cell, send more data to Studio, save the suite'
   await page.getByRole('link', { name: '2 Data plan' }).click();
   await page.getByLabel('Sample size (cases per run, per model and attempt)').fill('400');
   await page.getByLabel('minor_without_tin').fill('40');
+  // A fresh sampling seed makes this suite version new on every run, so the test can repeat on the same database.
+  await page.getByLabel('Sampling seed').fill(String(Date.now() % 1000000000));
   await page.getByRole('button', { name: 'Apply data plan' }).click();
   await expect(page.getByText('the plan asks for 40; the data has 33')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Save suite version' })).toBeDisabled();

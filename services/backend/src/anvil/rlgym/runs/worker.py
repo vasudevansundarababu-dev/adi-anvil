@@ -21,7 +21,7 @@ import uuid
 
 from psycopg.types.json import Jsonb
 
-from anvil.rlgym.common import GymError, all_workspaces, emit, set_scope, system_scope
+from anvil.rlgym.common import GymError, emit, set_scope, system_scope
 from anvil.rlgym.runs import images
 from anvil.rlgym.scoring import service as scoring
 from anvil.rlgym.systems import mock_provider
@@ -34,8 +34,13 @@ _lock = threading.Lock()
 
 
 def _workspaces():
+    """Only workspaces with run work (admitted or running runs, or an instance still up): an idle tick is one query on
+    one connection, however many workspaces exist."""
     with system_scope() as c:
-        return [w["id"] for w in all_workspaces(c)]
+        return [
+            r["workspaces_with_work"]
+            for r in c.execute("SELECT runs.workspaces_with_work()").fetchall()
+        ]
 
 
 def recover_leases(ws):
@@ -435,14 +440,8 @@ def tick():
 
 
 def _busy():
-    for ws in _workspaces():
-        with system_scope(ws) as c:
-            if c.execute(
-                "SELECT 1 FROM runs.runs WHERE workspace_id=%s AND state IN ('admitted','running') LIMIT 1",
-                (ws,),
-            ).fetchone():
-                return True
-    return False
+    with system_scope() as c:
+        return c.execute("SELECT count(*) n FROM runs.workspaces_with_work()").fetchone()["n"] > 0
 
 
 def drain(timeout=600):

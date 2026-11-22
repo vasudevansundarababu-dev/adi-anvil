@@ -260,6 +260,20 @@ def on_event(c, ws, topic, d, event_id):
         close_items(c, ws, event_id, "evaluator_new_cohort", project_id=p)
         if d.get("batch_id"):
             close_items(c, ws, event_id, "validation_ready", subject=d["batch_id"])
+    elif topic == "sme_item.fix_qualified":
+        open_item(
+            c,
+            ws,
+            event_id,
+            "rescore_ready",
+            f"{d['run_id']}:{d['id']}@{d['version']}",
+            "review",
+            "Fix version qualified",
+            f"{d['id']} v{d['version']} qualified after SME review; re-score {d['run_id']} if you want it graded again (explicit)",
+            f"/gym/runs/{d['run_id']}/sme",
+            "Re-score…",
+            project_id=p,
+        )
     elif topic == "run.completed":
         run = c.execute(
             "SELECT purpose, name FROM runs.runs WHERE id=%s", (d["run_id"],)

@@ -17,13 +17,27 @@ from test_rlgym_v2 import (  # noqa: F401
     service,
     ws,
 )
-from test_rlgym_v2_runs import finished, lineup, small_suite  # noqa: F401
+from test_rlgym_v2_runs import body, finished, lineup, small_suite  # noqa: F401
 
 from anvil.config import setting
 from anvil.rlgym import integrations
 from anvil.rlgym.runs import images, worker
 
 pytestmark = pytest.mark.skipif(not images.docker_status()[0], reason="Docker is required for runs")
+
+
+def _wait_sent(client, base, run_id, batch_id, timeout=30):
+    """The dev API's dispatcher may deliver the batch before this process does; wait until it is sent either way."""
+    import time
+
+    end = time.time() + timeout
+    while time.time() < end:
+        integrations.dispatch_once()
+        for b in client.get(base + f"/runs/{run_id}/sme-review").json()["data"]["batches"]:
+            if b["id"] == batch_id and b["state"] != "building":
+                return b
+        time.sleep(0.5)
+    raise AssertionError(f"{batch_id} was not sent")
 
 
 def put(client, path, payload, expected=200):
@@ -102,7 +116,7 @@ def test_sme_loop_end_to_end(finished):
         admin, base + f"/runs/{run_id}/sme-review-batches", {"episode_ids": chosen}, 201
     ).json()["data"]
     assert batch["state"] == "building" and len(batch["items"]) == 5 and batch["batch_sha256"]
-    integrations.dispatch_once()
+    _wait_sent(admin, base, run_id, batch["id"])
     batch = admin.get(base + f"/sme-review-batches/{batch['id']}").json()["data"]
     assert batch["state"] == "sent" and batch["forge_batch_ref"]
     with httpx.Client(timeout=10, trust_env=False) as client:
@@ -225,3 +239,71 @@ def test_sme_loop_end_to_end(finished):
             "SELECT count(*) n FROM scoring.scoring_passes WHERE run_id=%s", (run_id,)
         ).fetchone()["n"]
     assert original >= 1  # the original run's passes are untouched by the SME loop
+
+
+def test_qualified_grader_fix_starts_a_new_cohort(finished):
+    """BUILD-LOCAL 'Done when': a grader fix becomes a new evaluator version and the next run is a new cohort."""
+    base, run_id, admin, forge = (
+        finished["base"],
+        finished["run"]["id"],
+        person("admin-1"),
+        service("forge"),
+    )
+    episode = _episodes(admin, base, run_id, kind="case", system="diligent")[0]
+    batch = post(
+        admin, base + f"/runs/{run_id}/sme-review-batches", {"episode_ids": [episode["id"]]}, 201
+    ).json()["data"]
+    _wait_sent(admin, base, run_id, batch["id"])
+    item = batch["items"][0]
+    post(
+        forge,
+        base + f"/sme-review-batches/{batch['id']}/decisions",
+        {
+            "schema": "rlgym.sme-decisions.v1",
+            "batch_id": batch["id"],
+            "decisions": [
+                {
+                    "item_id": item["id"],
+                    "decision": "grader_wrong",
+                    "criterion_id": "decision",
+                    "rationale": "grader note (it)",
+                    "decided_by": "SME",
+                }
+            ],
+        },
+        200,
+    )
+    # The fix keeps the configuration and adds this episode as a known case with its current verdict: it qualifies.
+    fix = post(
+        admin,
+        base + f"/sme-review-items/{item['id']}/grader-fix",
+        {"expect": "pass", "reason": "known case added after SME review"},
+        201,
+    ).json()["data"]
+    assert fix["configuration"]["state"] == "qualified" and fix["configuration"]["version"] >= 2
+    todo = {
+        i["kind"] for g in admin.get(base + "/todo").json()["data"]["groups"] for i in g["items"]
+    }
+    assert "rescore_ready" in todo  # re-score is offered, never automatic
+    # The earlier corrected re-export changed the ready task set; the re-export already saved a current suite version.
+    old = admin.get(base + f"/suite-versions/{finished['suite_version_id']}").json()["data"]
+    suites = admin.get(base + f"/projects/{PROJECT}/suites").json()["data"]["items"]
+    saved = next(
+        v
+        for v in next(x for x in suites if x["suite_id"] == old["suite_id"])["versions"]
+        if v["state"] == "saved"
+    )
+    second = post(
+        admin,
+        base + "/runs",
+        body(finished, name="after the grader fix", suite_version_id=saved["id"]),
+        201,
+    ).json()["data"]["run"]
+    assert worker.drain(timeout=600)
+    new = admin.get(base + f"/runs/{second['id']}").json()["data"]["manifest"]["evaluators"]
+    assert (
+        next(e for e in new if e["criterion_id"] == "decision")["version"]
+        == fix["configuration"]["version"]
+    )
+    board = admin.get(base + f"/projects/{PROJECT}/leaderboard").json()["data"]
+    assert board["run"]["id"] == second["id"] and len(board["cohorts"]) >= 2

@@ -1,9 +1,9 @@
 # Build status
 
-## RL Gym v2: local run, stubs, projects, catalog, evaluators, models, suites, runs, report — 21–22 November 2026
+## RL Gym v2: local run, stubs, projects, catalog, evaluators, models, all work packages 2.1–2.10 — 21–22 November 2026
 
 Branch `claude/rlgym-v2-8919f6` (worktree), local only; nothing pushed, deployed or emailed; no model called.
-Design: adi-labs-design `rl-gym/BUILD-LOCAL.md` work packages 2.1–2.10. Decisions RG-01..RG-32 in BUILD-DECISIONS.json
+Design: adi-labs-design `rl-gym/BUILD-LOCAL.md` work packages 2.1–2.10. Decisions RG-01..RG-37 in BUILD-DECISIONS.json
 (`rlgym_v2_increment`). Runbook: docs/runbooks/rlgym-v2-local.md.
 
 What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs, Admin, To do bell; `/workspace` unchanged):
@@ -11,7 +11,7 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
 | Package | State | Evidence |
 |---|---|---|
 | Local run | done | `pnpm preflight` ok; `pnpm setup:local` ok on isolated compose project `adi-anvil-rlgym` (new volumes; main checkout's volumes untouched); `pnpm dev` starts API, worker, web and both stubs; `pnpm rlgym:demo` idempotent |
-| 2.1 Studio and ADI Forge stubs | done | services/stubs (8211, 8212): registry reads/events/resync log, receipts, usage, inbox, environment simulator; Forge packages, run-reviews, qualification records, exports. Golden KYC V8 (tpl_kyc_01, 20 S7 criteria, 4 products), golden-kyc-openenv v2 (20 cases) and v3 (400, 100 per product), synthetic |
+| 2.1 Studio and ADI Forge stubs | done | services/stubs (8211, 8212): registry reads/events/resync log, receipts, usage, inbox, environment simulator; Forge packages, run-reviews, qualification records, exports. Golden KYC V8 (tpl_kyc_01, 20 S7 criteria, 4 products) and V9 (screening and decision as gates, owner decision RG-24; KYC December prj_d4e9b1a7), golden-kyc-openenv v2 (20 cases) and v3 (400, 100 per product), synthetic |
 | 2.2 Projects and exports | done (suites part is 2.6) | migration 039; export idempotent by hash, packages hash-checked, corrections supersede, receipts; Projects list with suggested actions; project page (Tasks, Selection rules, Exports; Suites tab says 2.6); task detail with audited Reviewer-only part |
 | 2.3 Catalog, selection rules, overrides | done | registry mirror by sequence with gap resync; Same data/Pinned/Latest; D20 evaluator rules; overrides need a different binding approver (API + DB CHECK); remove override; Admin → Environments and environment page with environment-defect inbox item; urgent path on failed re-qualification |
 | 2.4 Frameworks and evaluator configurations | done (python framework only) | A-06 create (same binding = same version), known-case tests in sandboxed subprocess (allowed→pass, disallowed→fail, missing→blocked), fix versions, deprecate, revoke with impact, B4; A-03 validate/known-case-tests/activation; Admin → Evaluators, configuration page, Templates. ZEN/Promptfoo/Pramaana registered but not installed locally |
@@ -19,10 +19,31 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
 | 2.6 Suites, data plan, Trust & Safety | done (local generator) | migration 041; default suite per export (receipt `default_suite_version`, backfilled by `pnpm rlgym:seed`); drafts and saved versions (`suite_sha256`, final); bindings follow project rule or custom with reason (D20 per criterion); data plan cells vs the bound version's case catalog, Lower to / Lower all / Use what is available / Send to Studio inbox (more data); Trust & Safety categories (core + Banking KYC/AML pack), custom-category check, generate (local template generator; Promptfoo not installed), review, approve with prompt-set hash; save refuses until every item resolves. Suggestions are rule-based (no model) |
 | 2.7 Runs, admission, execution, scoring | done (controlled mock agents; local runner, not Harbor) | migration 042 (schemas `runs`, `scoring`); New run with the live admission checklist (every failing item listed; budget, models, image, data plan fit on the bound version); refused runs stored with reasons; Start run builds `golden-kyc-openenv` with Docker from the Studio stub recipe (offline, pinned base, no reference answers in the image), freezes the manifest (template, suite, environment + local image id, 20 evaluator versions, selected case ids, approved safety prompts, tasks, exact model versions) and queues (cases + safety prompts) × models × attempts; episodes run in a no-network, read-only container (one tool-server process each), evidence sealed read-only with SHA-256, scored in the Python sandbox with references fetched for the scorer only; Trust & Safety outcomes from tool effects; cancel, explicit re-score (earlier passes kept; tampered evidence refused), compare (same suite/environment/evaluators, paired bootstrap) and save comparison; run page Overview (progress, per-model mean with likely range, gates, results by stratum, what the run used, cost) and Episodes list. Report tab and Package say 2.8; SME review says 2.9 (RG-19..RG-26) |
 | 2.8 Report and PDF | done (SME parts wait for 2.9) | migration 043 (schema `results`); Report tab with the five views (Overview: score cards with gates, capability radar, scores by task; Task results: tasks, strata with small-sample marks, per-criterion with sort and paging; Agent performance: capability comparison, skill heat map, workflow strip, same-case outcome; Failures & evidence: per model, by likely cause, filtered failed list; Trust & Safety: cards, critical incidents, resistance by category, safety radar, refusal by attack style, by category) and every drill-down (capability, axes, task, case, Trust & Safety category, policy, risk, review item); RL engineer diagnosis (never changes a score) with Studio inbox `evaluator_defect` for criterion defects and `new_case_kind`; Export PDF: stored report revision + headless Chrome A4 PDF (cover, 5 views, appendices A–F, manifest hash and Page n of N on every page), write-once with hash, preview and download; Package (n) of completed runs. SME review sample and reviewed scores say 'Not yet sent' (2.9) (RG-27..RG-32) |
-| 2.9 Episodes, viewer, SME review | not started | — |
-| 2.10 Home, To do, Users | partial | To do opened/closed by events (import, ready — closed by `run.admitted`, override, inbox, urgent, evaluator cohort/B4); Users list with profile and binding-approver edits; leaderboard not yet fed by runs; invites not built |
+| 2.9 Episodes, viewer, SME review | done | migration 044; read-only episode viewer inside the run (path over the workflow with call counts and the failed node, timeline with node per call, criteria with rubric overlay, output vs expected — audited, suspected cause set by an RL engineer, compare attempts with first divergence); SME review tab: choose episodes, send an immutable `rlgym.sme-review-package.v1` batch to the ADI Forge stub through the outbox, decisions back from ADI Forge's key only (final per item), reviewed scores (automated kept), follow-ups: rubric → Studio `evaluator_defect`, environment → `environment_defect` (one per criterion/version), grader → the RL Gym's fix version with the episode as a known case, task → corrected re-export → validation run with before/after per criterion; report review sample, reviewed cards and PDF use them (RG-33..RG-35) |
+| 2.10 Home, To do, Users | done | leaderboard by project and cohort (suite version + environment + evaluator versions; reviewed scores when decided; gates beside the rank; validation runs excluded); To do opened and closed by events incl. Send for SME review, waiting for ADI Forge, Start validation run, Re-score… after a qualified fix, Studio inbox; Users: invite through the local Keycloak (temporary password shown once), change profile, binding approver, remove access (history kept), access history (RG-36, RG-37) |
 
 Tests (21 Nov 2026, this worktree, stack running):
+
+- **Final, 22 Nov 2026 (all packages):** `pnpm check` EXIT 0. `pnpm test:unit` 392 passed, 3 failed (the same expired
+  price records in `test_workspace_costs.py`). `pnpm test:e2e` 22 passed, 4 failed: all 12 RL Gym v2 browser tests
+  pass; failures are the 3 legacy specs that need `artifacts/test-runs/journey.json` and `workspace-task-pages`
+  (`route.fetch: read ECONNRESET` in its network intercept during the full run; passed twice when rerun alone, so a
+  timing flake). `pnpm test:integration` 182 passed, 19 skipped, 41 failed — **0 in RL Gym v2 files** (33 missing
+  fixture artifacts, the rest the same legacy causes). RL Gym v2: 47 unit, 40 integration, 12 browser tests.
+- **Runner fix found by the full run:** the runner opened new connections for every workspace on every tick; with 48
+  test workspaces the dev API's idle runner made Docker's port forward drop PostgreSQL connections and broke later
+  tests. Migration 045 adds `runs.workspaces_with_work()` (ids only, SECURITY DEFINER); an idle tick is now one query.
+- **BUILD-LOCAL 'Done when' walkthrough** (each step has a passing test):
+  - export received, KYC November Ready on golden-kyc-openenv v3 — e2e `entry, projects…`;
+  - override approved by a second person — e2e `override needs a second binding approver`;
+  - short data plan, more-data item to the Studio stub, run on available cases — e2e `short data plan…`, integration
+    `test_rlgym_v2_suites` and the run suite (asks 40 minor_without_tin, 33 exist, `use what is available`);
+  - three models, report with five views and drill-downs, PDF export — e2e `new run…` and `report:…`;
+  - SME batch, decisions, grader fix → new evaluator version and new cohort — integration `test_sme_loop_end_to_end`,
+    `test_qualified_grader_fix_starts_a_new_cohort`, e2e `episode viewer and SME review…`;
+  - revoke an evaluator version → admission refuses — integration `test_zz_revoked_evaluator_refuses_admission…`;
+  - urgent path on failed re-qualification — integration `test_rlgym_v2.py` (2.3);
+  - nothing deployed, no live model call (controlled mock only).
 
 - Report (2.8), 22 Nov 2026: `pnpm check` passed (EXIT 0; OpenAPI regenerated). `pnpm test:unit` 392 passed, 3 failed
   (same expired prices; RL Gym v2 unit 47 incl. +4 `test_rlgym_v2_results_unit.py`). `pnpm test:e2e` 19 passed, 5

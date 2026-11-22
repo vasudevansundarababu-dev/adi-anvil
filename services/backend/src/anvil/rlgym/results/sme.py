@@ -615,6 +615,19 @@ def grader_fix(c, ws, actor, item_id, body):
             item_id,
         ),
     )
+    if cfg["state"] == "qualified":
+        emit(
+            c,
+            ws,
+            "sme_item.fix_qualified",
+            item_id,
+            {
+                "id": cfg["id"],
+                "version": cfg["version"],
+                "run_id": b["run_id"],
+                "project_id": b["project_id"],
+            },
+        )
     return {
         "configuration": {k: cfg[k] for k in ("id", "version", "state")},
         "known_case_test": out["known_case_test"],
