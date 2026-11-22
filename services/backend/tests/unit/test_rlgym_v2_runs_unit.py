@@ -288,3 +288,38 @@ def test_bootstrap_interval_contains_the_mean():
     low, high = scoring.bootstrap([80, 90, 100, 85, 95])
     assert low <= 90 <= high
     assert scoring.bootstrap([90]) is None
+
+
+def test_a_missing_schema_is_filled_once_from_the_version_record(monkeypatch):
+    from anvil.rlgym.catalog import registry
+
+    calls, updates = [], []
+
+    class Conn:
+        def __init__(self, schema):
+            self.schema = schema
+
+        def execute(self, sql, params):
+            outer = self
+
+            class R:
+                def fetchone(self):
+                    return {"schema": outer.schema, "registry": "http://127.0.0.1:8060"}
+
+            if sql.startswith("UPDATE"):
+                updates.append(params)
+            return R()
+
+    record = {"schema": {"collections": [{"name": "recommendations", "fields": []}]}}
+    monkeypatch.setattr(
+        registry, "registry_get", lambda path, **kw: calls.append((path, kw)) or record
+    )
+    assert registry.fill_schema(Conn(None), "golden-kyc-openenv@5") == record["schema"]
+    assert calls == [
+        ("/versions/golden-kyc-openenv@5", {"timeout": 10, "base": "http://127.0.0.1:8060"})
+    ]
+    assert len(updates) == 1
+    stored = {"collections": []}
+    assert (
+        registry.fill_schema(Conn(stored), "x") == stored and len(calls) == 1
+    )  # never re-read or overwritten

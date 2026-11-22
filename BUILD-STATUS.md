@@ -26,6 +26,15 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
 | 2.12 Edge cases and slice tags | done (local stub) | migration 051; activation mirrors S4 edge cases and S1 slice lists (validated); default suite counts per edge-case tag at the template minimum; more-data edge cells carry tag, recipe and expected outcome; tasks keep complexity and archetype; report Task results and Failures & evidence sliced by both (tables and filters); new case kind in four parts (Admin template page and episode diagnosis). Stub Golden KYC V11, project KYC Edge Cases (RG-46) |
 | 2.13 Branding | done | ADI Labs Forge lockup on navy with the gradient rule on every v2 screen and the sign-in page; Keycloak login theme (applied to the existing realm with `python3 scripts/local.py keycloak-theme`); titles `<Page> · RL Gym Evaluation · ADI Labs Forge`; PDF full logo on page 1 and running header; Authoring on screen; banned-name unit test (RG-45) |
 
+- **22 Nov 2026, relinked to Studio (owner's choice):** the RL Gym follows the local Studio again.
+  - **Resync:** applied Studio's seq 14–15 (`golden-kyc-openenv@5` registered, then failed by Studio's first attempt
+    while the RL Gym followed the stub).
+  - **Schema:** Studio's events omit `schema`, so the RL Gym now reads it once from the version record
+    (`fill_schema`).
+  - **Qualification:** @5 qualified from Studio's own image `sha256:a081b426e3c2…`, receipt `qr-6cf9db5f9c7d`, mode
+    `openenv_http`, identity and all six checks pass. The receipt was delivered on the first attempt; Studio answered
+    with seq 16 `version.qualified`, and @5 is qualified in the mirror.
+  - **While following Studio:** the integration and browser suites refuse to run (by design).
 - **22 Nov 2026, 2.12 (stub registry):** `pnpm check` EXIT 0; unit 449 passed; browser 26 passed; integration 240
   passed, 19 skipped, 2 failed: `test_task_imports.py::test_import_publish_versions_run_and_resume` and
   `test_worker_failures.py::test_episode_updates_enqueue_canonical_graph_projection` (older /workspace tests). Both

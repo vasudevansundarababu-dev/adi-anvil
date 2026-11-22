@@ -120,6 +120,28 @@ def _upsert_version(c, v, seq, state, reg):
     return []
 
 
+def fill_schema(c, vid):
+    """A version's declared collections (`schema`) when its registry event left them out: read once from the version
+    record of the registry that released it (verifier blocks need them). Never overwrites a stored schema."""
+    row = c.execute(
+        "SELECT schema, registry FROM catalog.environment_versions WHERE id=%s", (vid,)
+    ).fetchone()
+    if not row or row["schema"]:
+        return row and row["schema"]
+    try:
+        record = registry_get(f"/versions/{vid}", timeout=10, base=row["registry"])
+    except (
+        Exception
+    ):  # unreachable registry: blocks on this version stay unvalidated (validate says why)
+        return None
+    if record.get("schema"):
+        c.execute(
+            "UPDATE catalog.environment_versions SET schema=%s WHERE id=%s AND schema IS NULL",
+            (Jsonb(record["schema"]), vid),
+        )
+    return record.get("schema")
+
+
 def _conflict(c, vid, diff, reg, kind):
     for ws in all_workspaces(c):
         set_scope(c, ws["id"])
@@ -152,6 +174,8 @@ def apply_event(c, ev, via):
         diff = _upsert_version(c, data["version"], seq, "registered", reg)
         if diff:
             _conflict(c, data["version"]["id"], diff, reg, kind)
+        elif (data["version"].get("image_recipe") or {}).get("kind") == "studio-openenv":
+            fill_schema(c, data["version"]["id"])
     elif kind in STATE_EVENTS:
         vid = data["version"]["id"]
         diff = _upsert_version(c, data["version"], seq - 1 if seq > 1 else 0, "registered", reg)
@@ -370,6 +394,8 @@ def qualify(version_id, requested_by="registry", attempt=1):
     if openenv.is_openenv(v):
         # Studio's own image, run locally with no network (plan decision 1b).
         mode = openenv.MODE
+        with system_scope() as c:
+            fill_schema(c, version_id)
         try:
             checks, failure_class = openenv.qualify(v)
         except (RuntimeError, OSError, subprocess.TimeoutExpired, KeyError, TypeError) as exc:
