@@ -197,16 +197,43 @@ def test_key(ctx, key_id):
             "Not tested: live provider calls are disabled locally; the key was not sent anywhere",
         )
     else:
-        raise GymError(
-            "ADMISSION_REFUSED",
-            "Live key tests need the owner's approved provider, model and budget",
-        )
+        status, note = _live_key_test(ctx, row["provider"])
     ctx.c.execute(
         "UPDATE systems.provider_keys SET status=%s, status_note=%s, last_tested_at=now() WHERE workspace_id=%s AND id=%s",
         (status, note, ctx.ws, key_id),
     )
     audit(ctx.c, ctx.ws, ctx.actor, "key.tested", key_id, details={"status": status})
     return _public_key(_key(ctx, key_id))
+
+
+def _live_key_test(ctx, provider):
+    """Only with the live flag on and an active approval for this provider that allows key tests. The key is read
+    from the allowlist by the gateway, never from this row (which holds a label and last four characters)."""
+    from anvil.rlgym.live import approvals, gateway
+
+    row = ctx.c.execute(
+        """SELECT * FROM systems.live_approvals WHERE workspace_id=%s AND provider=%s AND 'key_test' = ANY(uses)
+             AND revoked_at IS NULL AND expires_at > now() ORDER BY approved_at DESC LIMIT 1""",
+        (ctx.ws, provider),
+    ).fetchone()
+    if not row:
+        return "untested", f"Not tested: no active live approval for {provider} allows a key test"
+    try:
+        valid, note = gateway.check_key(GATEWAY_FACTORY(), provider)
+    except GymError as exc:
+        approvals.record(ctx.c, ctx.ws, row, "key_test", "error", note=exc.message)
+        return "untested", f"Not tested: {exc.message}"
+    approvals.record(ctx.c, ctx.ws, row, "key_test", "ok" if valid else "error", note=note)
+    return ("valid" if valid else "invalid"), note
+
+
+def _gateway():
+    from anvil.rlgym.live.gateway import Gateway
+
+    return Gateway()
+
+
+GATEWAY_FACTORY = _gateway
 
 
 def revoke_key(ctx, key_id, body):
@@ -505,10 +532,7 @@ def probe_system(ctx, system_id, version):
         )
         result, mode, details = "ok", "controlled_mock", {"echo_digest": out["digest"]}
     else:
-        result, mode, latency = "live_disabled", "none", None
-        details = {
-            "note": "No request sent: live provider calls need the owner's approved provider, model, budget and local key"
-        }
+        result, mode, latency, details, cost = _live_probe(ctx, v)
     row = ctx.c.execute(
         """INSERT INTO systems.system_probes(workspace_id,system_id,system_version,result,latency_ms,cost_usd,details,mode,probed_by)
            VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
@@ -518,7 +542,7 @@ def probe_system(ctx, system_id, version):
             int(version),
             result,
             latency,
-            0 if v["provider"] == "mock" else None,
+            0 if v["provider"] == "mock" else cost,
             Jsonb(details),
             mode,
             ctx.actor.id,
@@ -533,6 +557,75 @@ def probe_system(ctx, system_id, version):
         details={"result": result, "mode": mode},
     )
     return row
+
+
+def _live_probe(ctx, v):
+    """A one-turn echo through the gateway, only with the live flag on and an active approval for exactly this
+    provider and model that allows probes; its cost is recorded against the approval."""
+    import time
+
+    from anvil.rlgym.live import approvals, gateway
+
+    none = {
+        "note": "No request sent: live provider calls need the owner's approved provider, model, budget and local key"
+    }
+    if not live_enabled():
+        return "live_disabled", "none", None, none, None
+    a = approvals.find(ctx.c, ctx.ws, v["provider"], v["model_id"], "probe", v.get("hf_revision"))
+    if not a:
+        return (
+            "live_disabled",
+            "none",
+            None,
+            {"note": "No request sent: no active live approval allows a probe"},
+            None,
+        )
+    worst = approvals.max_cost(a, 60, 8)
+    if not approvals.room(ctx.c, ctx.ws, a, None, worst):
+        return (
+            "live_disabled",
+            "none",
+            None,
+            {"note": "No request sent: the approval's total cap would be crossed"},
+            None,
+        )
+    started = time.perf_counter()
+    try:
+        out = GATEWAY_FACTORY().complete(
+            v["provider"],
+            v["model_id"],
+            [{"role": "user", "content": "Connection test. Reply with OK."}],
+            max_output_tokens=8,
+            timeout_s=30,
+            serving=v["serving"],
+            hf_revision=v.get("hf_revision"),
+        )
+    except gateway.Ambiguous as exc:
+        approvals.record(ctx.c, ctx.ws, a, "probe", "ambiguous", cost=worst, note=exc.message)
+        return (
+            "unreachable",
+            "live",
+            None,
+            {"error": exc.message, "approval": a["id"]},
+            float(worst),
+        )
+    except GymError as exc:
+        approvals.record(ctx.c, ctx.ws, a, "probe", "error", note=exc.message)
+        return "unreachable", "live", None, {"error": exc.message, "approval": a["id"]}, 0
+    cost = out.cost(a["price_in_per_mtok_usd"], a["price_out_per_mtok_usd"])
+    approvals.record(ctx.c, ctx.ws, a, "probe", "ok", completion=out, cost=cost)
+    latency = int((time.perf_counter() - started) * 1000)
+    return (
+        "ok",
+        "live",
+        latency,
+        {
+            "approval": a["id"],
+            "model_returned": out.model_returned,
+            "tokens": [out.tokens_in, out.tokens_out],
+        },
+        float(cost),
+    )
 
 
 def set_enabled(ctx, system_id, enabled, reason=None):

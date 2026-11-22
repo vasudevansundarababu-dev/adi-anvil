@@ -36,6 +36,38 @@ def routes():
                 201,
             )
 
+    @r.get(W + "/live/approvals")
+    def live_approvals(ws: str, request: Request):
+        """Live approvals with spend so far (people only). No key or secret is ever part of this."""
+        from anvil.rlgym.live import approvals
+
+        with scope(request, ws, services=(), people=True) as ctx:
+            return ok(
+                {
+                    "items": approvals.list_all(ctx.c, ctx.ws),
+                    "live_enabled": service.live_enabled(),
+                },
+                request,
+            )
+
+    @r.post(W + "/live/approvals", status_code=201)
+    def live_approve(ws: str, request: Request, body: dict = Body(default_factory=dict)):
+        from anvil.rlgym.live import approvals
+
+        with scope(request, ws, services=(), people=True) as ctx:
+            return ok(
+                idempotent(ctx, request, body, lambda: approvals.create(ctx, body)), request, 201
+            )
+
+    @r.post(W + "/live/approvals/{aid}/revoke")
+    def live_revoke(ws: str, aid: str, request: Request, body: dict = Body(default_factory=dict)):
+        from anvil.rlgym.live import approvals
+
+        with scope(request, ws, services=(), people=True) as ctx:
+            return ok(
+                idempotent(ctx, request, body, lambda: approvals.revoke(ctx, aid, body)), request
+            )
+
     @r.get(W + "/systems/{sid}")
     def get(ws: str, sid: str, request: Request):
         with scope(request, ws) as ctx:

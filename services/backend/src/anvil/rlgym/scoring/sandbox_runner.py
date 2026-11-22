@@ -221,6 +221,11 @@ def _texts(ctx):
 def _rubric(block, ctx):
     """The local mock judge (no model is called). Deterministic per rubric id; a real Promptfoo judge replaces it."""
     rid = block["rubric_id"]
+    given = (ctx.get("rubric_verdicts") or {}).get(block["id"])
+    if (
+        given is not None
+    ):  # a live judge's verdict, computed outside the sandbox (behind an approval)
+        return given["verdict"], {"reason": given.get("reason"), "judge": given.get("judge")}, rid
     if ctx["final_output"] is None and ctx["events"] is None:
         return "blocked", None, "no output"
     texts = _texts(ctx)
@@ -272,6 +277,7 @@ def run_blocks(job):
         "snapshots": {"start": snapshots.get("start"), "end": snapshots.get("end")},
         "events": evidence.get("tool_events"),
         "final_output": evidence.get("final_output"),
+        "rubric_verdicts": job.get("rubric_verdicts") or {},
         "criterion_tables": sorted(
             {b["table"] for b in blocks if b.get("kind") == "state" and b.get("table")}
         ),

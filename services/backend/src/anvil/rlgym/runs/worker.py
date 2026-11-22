@@ -33,6 +33,23 @@ _started = False
 _lock = threading.Lock()
 
 
+def _gateway():
+    """The live model gateway (tests replace this with a fake transport). Refuses without the live flag."""
+    from anvil.rlgym.live.gateway import Gateway
+
+    return Gateway()
+
+
+GATEWAY_FACTORY = _gateway
+
+
+def _live_ok():
+    """Only a process with the live flag (or a test with a fake gateway) takes live runs; others leave them queued."""
+    from anvil.rlgym.live.gateway import live_enabled
+
+    return live_enabled() or GATEWAY_FACTORY is not _gateway
+
+
 def _workspaces():
     """Only workspaces with run work (admitted or running runs, or an instance still up): an idle tick is one query on
     one connection, however many workspaces exist."""
@@ -69,8 +86,9 @@ def prepare_runs(ws):
             run = c.execute(
                 """SELECT r.*, m.manifest FROM runs.runs r JOIN runs.run_manifests m ON m.run_id=r.id
                    WHERE r.workspace_id=%s AND r.state='admitted' AND r.cancel_requested_at IS NULL
+                     AND (r.execution_mode <> 'live' OR %s)
                    ORDER BY r.created_at LIMIT 1 FOR UPDATE OF r SKIP LOCKED""",
-                (ws,),
+                (ws, _live_ok()),
             ).fetchone()
             if not run:
                 return
@@ -156,8 +174,9 @@ def lease(ws):
         e = c.execute(
             """SELECT e.* FROM runs.episodes e JOIN runs.runs r ON r.id=e.run_id
                WHERE e.workspace_id=%s AND e.state='queued' AND r.state='running' AND r.cancel_requested_at IS NULL
+                 AND (r.execution_mode <> 'live' OR %s)
                ORDER BY e.queued_at, e.id LIMIT 1 FOR UPDATE OF e SKIP LOCKED""",
-            (ws,),
+            (ws, _live_ok()),
         ).fetchone()
         if not e:
             return None
@@ -236,16 +255,37 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
                 "start": session.request({"op": "snapshot"}).get("collections"),
                 "end": None,
             }
-        policy = mock_provider.agent(
-            model["model_id"],
-            (actor or {}).get("assignment", ""),
-            # Seeded by what the episode is (not its id), so a repeat run on the same suite is reproducible.
-            f"{episode['case_id']}:{episode['task_id']}:{episode['attempt']}:{episode.get('ts_prompt_id')}",
-            user_message=reset.get("user_message"),
-            # On Studio's own image the task names the application under review (OpenEnv B1).
-            world=openenv.KIND if on_openenv else "stub",
-            application_id=episode["case_id"] if on_openenv else None,
-        )
+        live_caller = None
+        if model.get("live"):
+            from anvil.rlgym.live.agent import LiveCaller, live_agent
+
+            live_caller = LiveCaller(
+                GATEWAY_FACTORY(), episode["workspace_id"], episode["run_id"], episode["id"], model
+            )
+            operations = (
+                session.request({"op": "operations"}).get("operations")
+                if on_openenv
+                else sorted(offered)
+                or list((instance or {}).get("env", {}).get("operations") or [])
+            )
+            policy = live_agent(
+                live_caller,
+                (actor or {}).get("assignment", ""),
+                operations or [],
+                application_id=episode["case_id"] if on_openenv else None,
+                user_message=reset.get("user_message"),
+            )
+        else:
+            policy = mock_provider.agent(
+                model["model_id"],
+                (actor or {}).get("assignment", ""),
+                # Seeded by what the episode is (not its id), so a repeat run on the same suite is reproducible.
+                f"{episode['case_id']}:{episode['task_id']}:{episode['attempt']}:{episode.get('ts_prompt_id')}",
+                user_message=reset.get("user_message"),
+                # On Studio's own image the task names the application under review (OpenEnv B1).
+                world=openenv.KIND if on_openenv else "stub",
+                application_id=episode["case_id"] if on_openenv else None,
+            )
         action = next(policy)
         for step in range(1, MAX_STEPS + 1):
             if "final" in action:
@@ -280,7 +320,10 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
     steps = len(transcript)
     return {
         "schema": "rlgym.sealed-episode.v1",
-        "synthetic": True,
+        # A live model's episode is a real execution (on synthetic cases), labelled apart from mock results.
+        "synthetic": not live_caller,
+        "live": bool(live_caller),
+        "data": "synthetic cases",
         "execution_mode": m["execution_mode"],
         "note": m["note"],
         "run_id": episode["run_id"],
@@ -312,11 +355,12 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         "environment_state": state,
         "snapshots": snapshots,
         "timings": {"wall_ms": wall_ms, "steps": steps},
+        # Live: the provider's reported usage and the approval's prices; mock: a deterministic estimate, no spend.
         "tokens": {
-            "in": steps * mock_provider.STEP_TOKENS[0],
-            "out": steps * mock_provider.STEP_TOKENS[1],
+            "in": live_caller.tokens_in if live_caller else steps * mock_provider.STEP_TOKENS[0],
+            "out": live_caller.tokens_out if live_caller else steps * mock_provider.STEP_TOKENS[1],
         },
-        "cost_usd": 0.0,
+        "cost_usd": float(live_caller.cost) if live_caller else 0.0,
     }
 
 
@@ -358,9 +402,33 @@ def run_episode(ws, episode, session_factory=None):
             )
         return "timed_out"
     except (RuntimeError, OSError, ValueError, KeyError, StopIteration, GymError) as exc:
+        message = exc.message if isinstance(exc, GymError) else str(exc)
+        final = isinstance(exc, GymError) and exc.code in (
+            "LIVE_CAP",
+            "LIVE_AMBIGUOUS",
+            "LIVE_DISABLED",
+        )
         with system_scope(ws) as c:
-            _finish_attempt(c, episode, "errored", str(exc)[:500])
-            again = episode["tries"] <= run["infra_retries"]
+            _finish_attempt(c, episode, "errored", message[:500])
+            # A live call that may have been delivered, a cap, or a disabled gateway is never retried automatically.
+            again = not final and episode["tries"] <= run["infra_retries"]
+            if isinstance(exc, GymError) and exc.code == "LIVE_CAP":
+                # The run stops at its cap: nothing more is started for it.
+                c.execute(
+                    "UPDATE runs.episodes SET state='errored', last_error=%s WHERE run_id=%s AND state='queued'",
+                    (f"not run: {message}"[:500], episode["run_id"]),
+                )
+                emit(
+                    c,
+                    ws,
+                    "run.cap_reached",
+                    episode["run_id"],
+                    {
+                        "run_id": episode["run_id"],
+                        "episode_id": episode["id"],
+                        "reason": message[:300],
+                    },
+                )
             c.execute(
                 "UPDATE runs.episodes SET state=%s, lease_until=NULL, last_error=%s WHERE id=%s",
                 ("queued" if again else "errored", str(exc)[:500], episode["id"]),
@@ -370,7 +438,7 @@ def run_episode(ws, episode, session_factory=None):
     with system_scope(ws) as c:
         c.execute(
             """INSERT INTO runs.sealed_evidence(episode_id,workspace_id,try,bundle_ref,sealed_sha256,tokens_in,tokens_out,cost_usd,timings,synthetic)
-               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,true)""",
+               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 episode["id"],
                 ws,
@@ -381,6 +449,7 @@ def run_episode(ws, episode, session_factory=None):
                 bundle["tokens"]["out"],
                 bundle["cost_usd"],
                 Jsonb(bundle["timings"]),
+                bundle["synthetic"],
             ),
         )
         _finish_attempt(c, episode, "sealed")

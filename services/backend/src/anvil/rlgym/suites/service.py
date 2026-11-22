@@ -927,7 +927,10 @@ def patch(c, ws, actor, sv_id, body):
     return view(c, ws, sv_id)
 
 
-def ts_generate(c, ws, actor, sv_id):
+GENERATOR_GATEWAY = None  # tests set a fake gateway factory
+
+
+def ts_generate(c, ws, actor, sv_id, body=None):
     _draft(c, ws, sv_id)
     ts = c.execute("SELECT * FROM suites.ts_plans WHERE suite_version_id=%s", (sv_id,)).fetchone()
     require(ts and ts["enabled"], "VALIDATION_FAILED", "Turn Trust & Safety on first")
@@ -935,9 +938,25 @@ def ts_generate(c, ws, actor, sv_id):
         "SELECT * FROM suites.ts_categories WHERE suite_version_id=%s ORDER BY key", (sv_id,)
     ).fetchall()
     require(cats, "VALIDATION_FAILED", "Choose at least one category")
-    prompts = trust_safety.generate(
-        cats, list(ts["strategies"]), ts["prompts_per_category"], ts["placement"]
-    )
+    gen = (body or {}).get("generator")
+    if gen:
+        from anvil.rlgym.live import generator as live_generator
+
+        prompts, generator_label = live_generator.generate(
+            c,
+            ws,
+            gen,
+            cats,
+            list(ts["strategies"]),
+            ts["prompts_per_category"],
+            ts["placement"],
+            gateway_factory=GENERATOR_GATEWAY,
+        )
+    else:
+        prompts = trust_safety.generate(
+            cats, list(ts["strategies"]), ts["prompts_per_category"], ts["placement"]
+        )
+        generator_label = trust_safety.GENERATOR
     _write_ts(
         c,
         ws,
@@ -956,7 +975,7 @@ def ts_generate(c, ws, actor, sv_id):
         cats,
         prompts,
         "generated",
-        trust_safety.GENERATOR,
+        generator_label,
     )
     audit(
         c,

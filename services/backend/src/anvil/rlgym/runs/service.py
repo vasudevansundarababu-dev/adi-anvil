@@ -24,6 +24,10 @@ from anvil.rlgym.suites import service as suites
 from anvil.rlgym.systems import service as systems
 
 RUNNERS = ("admin", "rl_engineer")
+LIVE_NOTE = (
+    "Live model run on synthetic cases, under the owner's approval (provider, model, caps): real model calls, real "
+    "spend; the cases are synthetic."
+)
 MOCK_NOTE = (
     "Controlled mock agents (predetermined behaviour profiles, no model called): synthetic results, not model "
     "performance."
@@ -90,22 +94,20 @@ def _model_line(ctx, system_id, version):
             "problem": "does not exist",
         }
     status = systems._status(ctx, system, version)
-    problem = None
+    problem, live = None, None
     if not system["enabled"]:
         problem = f"disabled ({system['disabled_reason']})"
     elif v["provider"] != "mock":
-        problem = (
-            "live provider calls are not approved on this machine (owner approval of provider, model and budget, "
-            "and a local key, are required)"
-        )
+        live, problem = _live_line(ctx, v)
     elif status not in ("Ready", "Not tested in 24 h"):
         problem = status
-    key = ctx.c.execute(
-        "SELECT status FROM systems.provider_keys WHERE workspace_id=%s AND id=%s",
-        (ctx.ws, v["key_id"]),
-    ).fetchone()
-    if not problem and (not key or key["status"] != "valid"):
-        problem = "KEY_MISSING: its provider key is not valid"
+    if v["provider"] == "mock":
+        key = ctx.c.execute(
+            "SELECT status FROM systems.provider_keys WHERE workspace_id=%s AND id=%s",
+            (ctx.ws, v["key_id"]),
+        ).fetchone()
+        if not problem and (not key or key["status"] != "valid"):
+            problem = "KEY_MISSING: its provider key is not valid"
     return {
         "system_id": system_id,
         "version": version,
@@ -116,9 +118,42 @@ def _model_line(ctx, system_id, version):
         "synthetic": system["synthetic"],
         "status": status,
         "spend_per_episode_usd": float((v["limits"] or {}).get("spend_per_episode_usd", 0)),
+        "live": live,
         "ok": problem is None,
         "problem": problem,
     }
+
+
+def _live_line(ctx, v):
+    """A live model can run only with the live flag on, its key present through the allowlist (or ADC for Vertex),
+    and an active approval for exactly this provider and model, recorded by an Admin who is not the person starting
+    the run. Returns (live settings frozen into the manifest, problem)."""
+    from anvil.rlgym.live import approvals, gateway
+
+    if not gateway.live_enabled():
+        return (
+            None,
+            "live provider calls are disabled locally (ANVIL_LIVE_PROVIDERS_ENABLED is not true)",
+        )
+    name = gateway.KEY_NAMES.get(v["provider"])
+    if name:
+        present, why = gateway.key_source(name)
+        if not present:
+            return None, f"KEY_MISSING: {name} ({why}); keys are read only from the allowlist"
+    a = approvals.find(ctx.c, ctx.ws, v["provider"], v["model_id"], "agent", v.get("hf_revision"))
+    if not a:
+        return None, f"no active live approval for {v['provider']} {v['model_id']} (agent)"
+    if str(a["approved_by"]) == str(ctx.actor.id):
+        return None, f"the approver of {a['id']} cannot also start this run"
+    return {
+        "approval_id": a["id"],
+        "per_run_cap_usd": float(a["per_run_cap_usd"]),
+        "price_in_per_mtok_usd": float(a["price_in_per_mtok_usd"]),
+        "price_out_per_mtok_usd": float(a["price_out_per_mtok_usd"]),
+        "params": v["params"] or {},
+        "serving": v["serving"] or {},
+        "hf_revision": v.get("hf_revision"),
+    }, None
 
 
 def admission_check(ctx, body):
@@ -421,6 +456,31 @@ def admission_check(ctx, body):
         for m in lines
     ]
     projected = round(sum(p["projected_usd"] for p in per_model), 4)
+    # Live models: the projection (episodes × the version's spend limit per episode, also enforced per call) must fit
+    # the approval's per-run cap and what is left of its total cap.
+    from anvil.rlgym.live import approvals as live_approvals
+
+    for p, m in zip(per_model, lines, strict=True):
+        if not m.get("live"):
+            continue
+        try:
+            live_approvals.require_for(
+                ctx.c,
+                ctx.ws,
+                m["provider"],
+                m["model_id"],
+                "agent",
+                hf_revision=m["live"].get("hf_revision"),
+                requested_by=ctx.actor.id,
+                estimate_usd=p["projected_usd"],
+            )
+            item(
+                "live_approval",
+                True,
+                f"{m['name']}: approval {m['live']['approval_id']} covers ${p['projected_usd']:g}",
+            )
+        except GymError as exc:
+            item("live_approval", False, f"{m['name']}: live approval", exc.message)
     item(
         "budget",
         budget > 0 and projected <= budget,
@@ -497,9 +557,9 @@ def _manifest(run_id, check):
     return {
         "schema": "rlgym.run-manifest.v1",
         "run_id": run_id,
-        "execution_mode": "controlled_mock",
+        "execution_mode": "live" if any(m.get("live") for m in r["models"]) else "controlled_mock",
         "synthetic": True,
-        "note": MOCK_NOTE,
+        "note": LIVE_NOTE if any(m.get("live") for m in r["models"]) else MOCK_NOTE,
         "project": {"id": r["project"]["project_id"], "name": r["project"]["name"]},
         "template": {
             "id": act["template_id"],
@@ -567,7 +627,10 @@ def _manifest(run_id, check):
                     "model_id",
                     "config_sha256",
                     "synthetic",
+                    "live",
+                    "spend_per_episode_usd",
                 )
+                if k in m
             }
             for m in r["models"]
         ],
@@ -623,7 +686,7 @@ def start(ctx, body):
     if check["passed"]:
         # Stale models are probed first (controlled mock only; a live probe never runs here).
         for m in r["models"]:
-            if m["status"] == "Not tested in 24 h":
+            if m["status"] == "Not tested in 24 h" and not m.get("live"):
                 probe = systems.probe_system(ctx, m["system_id"], m["version"])
                 if probe["result"] != "ok":
                     check["items"].append(
@@ -704,8 +767,20 @@ def start(ctx, body):
     manifest = _manifest(run_id, check)
     ctx.c.execute(
         """INSERT INTO runs.runs(id,workspace_id,project_id,name,suite_version_id,model_set,attempts,budget_usd,episode_timeout_s,
-             infra_retries,created_by,execution_mode,state) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'controlled_mock','admitted')""",
-        common,
+             infra_retries,created_by,execution_mode,state,live_approvals) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'admitted',%s)""",
+        (
+            *common,
+            manifest["execution_mode"],
+            Jsonb(
+                {
+                    m["system_id"]: m["live"]["approval_id"]
+                    for m in manifest["models"]
+                    if m.get("live")
+                }
+            )
+            if manifest["execution_mode"] == "live"
+            else None,
+        ),
     )
     manifest_sha = sha(manifest)
     ctx.c.execute(
@@ -1016,8 +1091,42 @@ def get_run(ctx, run_id):
         "statistics": stats,
         "instance": instance,
         "report_available": run["state"] == "completed",
-        "note": MOCK_NOTE if run["execution_mode"] == "controlled_mock" else None,
+        "note": MOCK_NOTE if run["execution_mode"] == "controlled_mock" else LIVE_NOTE,
+        "live_spend": _live_spend(ctx, run_id, m),
     }
+
+
+def _live_spend(ctx, run_id, m):
+    """Per live model: calls, tokens and cost recorded against its approval for this run, with the run cap."""
+    out = []
+    for model in m["manifest"]["models"] if m else []:
+        live = model.get("live")
+        if not live:
+            continue
+        row = ctx.c.execute(
+            """SELECT count(*) calls, coalesce(sum(tokens_in),0) tin, coalesce(sum(tokens_out),0) tout,
+                      coalesce(sum(cost_usd),0) cost, count(*) FILTER (WHERE status='ambiguous') ambiguous,
+                      count(*) FILTER (WHERE status='error') errors
+               FROM systems.live_calls WHERE workspace_id=%s AND approval_id=%s AND run_id=%s""",
+            (ctx.ws, live["approval_id"], run_id),
+        ).fetchone()
+        out.append(
+            {
+                "system_id": model["system_id"],
+                "name": model.get("name"),
+                "provider": model["provider"],
+                "model_id": model["model_id"],
+                "approval_id": live["approval_id"],
+                "per_run_cap_usd": live["per_run_cap_usd"],
+                "calls": row["calls"],
+                "tokens_in": row["tin"],
+                "tokens_out": row["tout"],
+                "cost_usd": round(float(row["cost"]), 6),
+                "ambiguous": row["ambiguous"],
+                "errors": row["errors"],
+            }
+        )
+    return out
 
 
 def episodes(

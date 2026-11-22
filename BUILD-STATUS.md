@@ -26,6 +26,13 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
 | 2.12 Edge cases and slice tags | done (local stub) | migration 051; activation mirrors S4 edge cases and S1 slice lists (validated); default suite counts per edge-case tag at the template minimum; more-data edge cells carry tag, recipe and expected outcome; tasks keep complexity and archetype; report Task results and Failures & evidence sliced by both (tables and filters); new case kind in four parts (Admin template page and episode diagnosis). Stub Golden KYC V11, project KYC Edge Cases (RG-46) |
 | 2.13 Branding | done | ADI Labs Forge lockup on navy with the gradient rule on every v2 screen and the sign-in page; Keycloak login theme (applied to the existing realm with `python3 scripts/local.py keycloak-theme`); titles `<Page> · RL Gym Evaluation · ADI Labs Forge`; PDF full logo on page 1 and running header; Authoring on screen; banned-name unit test (RG-45) |
 
+- **22 Nov 2026, live models built behind approval (RG-49); no live call made, no approval recorded:**
+  - **Code:** gateway (5 providers), approvals and the call ledger (migration 052), admission checks, live agent in
+    the runner with stop at cap, spend on the run page, live key test, probe, judge and generator, Admin → Live
+    approvals page.
+  - **Tests:** `pnpm check` EXIT 0; unit 465 passed (13 new gateway tests on fake transports).
+  - **Not run:** `test_rlgym_v2_live.py` (7 integration tests, fake gateway), the full integration suite and the
+    browser suite. They need the stub registry, and the RL Gym follows Studio now.
 - **22 Nov 2026, OpenEnv B1 agents (RG-48):** mock agents for Studio's 21 operations.
   - Checked on Studio's `@5` image against Studio's references: diligent 100/100, skips-screening 80/100 (misses
     exactly the screening cases), erratic 81/100. At most 21 calls per episode; no call refused.

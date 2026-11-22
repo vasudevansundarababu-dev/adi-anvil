@@ -23,6 +23,9 @@ from anvil.rlgym.scoring import sandbox
 EVIDENCE_ROOT = ROOT / ".local/rlgym/evidence"
 SAFETY_GRADER = "rlgym-local-safety-oracle@1.0.0 (tool effects and output fields; Promptfoo grader not installed)"
 SCORABLE = ("pass", "partial", "fail")
+JUDGE_GATEWAY = (
+    None  # tests set a fake gateway factory; None means the real gateway (live flag required)
+)
 
 
 # --- evidence ------------------------------------------------------------------------------------------------------
@@ -182,7 +185,7 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
         extras = []
         for ev, row in group:
             blocks = (vctx or {}).get("blocks", {}).get(ev["criterion_id"])
-            extras.append(
+            extra = (
                 {
                     "blocks": blocks,
                     "case_id": episode["case_id"],
@@ -192,6 +195,21 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
                 if blocks and row["config"].get("runner") == "verifier_blocks"
                 else {}
             )
+            if extra and row["config"].get("judge"):
+                # A live judge for Rubric blocks (behind an approval); the mock judge stays the default.
+                from anvil.rlgym.live import judge as live_judge
+
+                extra["rubric_verdicts"] = live_judge.rubric_verdicts(
+                    c,
+                    ws,
+                    row["config"]["judge"],
+                    blocks,
+                    evidence,
+                    run_id=episode.get("run_id"),
+                    episode_id=episode["id"],
+                    gateway_factory=JUDGE_GATEWAY,
+                )
+            extras.append(extra)
         try:
             verdicts = sandbox.run_batch(
                 framework,

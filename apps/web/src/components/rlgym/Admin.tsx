@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { EdgeCaseForm, edgeBody, edgeReady, emptyEdge, type EdgeParts } from './EdgeCase';
 import { useState } from 'react';
+import LiveApprovals from './Live';
 import { GymApiError, send, short, when, wsBase } from './api';
 import { Keys, Models } from './Models';
 import { labelOf } from './RLGym';
@@ -13,6 +14,7 @@ export default function Admin({ parts }: { parts: string[] }) {
   const tabs = [
     ['models', 'Models'],
     ['keys', 'Keys'],
+    ['live', 'Live approvals'],
     ['environments', 'Environments'],
     ['evaluators', 'Evaluators'],
     ['templates', 'Templates'],
@@ -29,6 +31,7 @@ export default function Admin({ parts }: { parts: string[] }) {
   else if (section === 'templates') body = <Templates />;
   else if (section === 'users') body = <Users />;
   else if (section === 'keys') body = <Keys />;
+  else if (section === 'live') body = <LiveApprovals />;
   else body = <Models parts={parts.slice(1)} />;
   return (
     <main className="page">

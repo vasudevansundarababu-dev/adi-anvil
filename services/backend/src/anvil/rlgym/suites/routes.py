@@ -93,7 +93,7 @@ def routes():
     @r.post(W + "/suite-versions/{sv}/ts/generate")
     def ts_generate(ws: str, sv: str, request: Request, body: dict = Body(default_factory=dict)):
         return write(
-            ws, request, body, lambda ctx: service.ts_generate(ctx.c, ctx.ws, ctx.actor, sv)
+            ws, request, body, lambda ctx: service.ts_generate(ctx.c, ctx.ws, ctx.actor, sv, body)
         )
 
     @r.post(W + "/suite-versions/{sv}/ts/review")

@@ -342,6 +342,13 @@ class OpenEnvSession:
             raise RuntimeError(
                 f"environment step failed: {status} {out.get('error') or out.get('body')}"
             )
+        if (
+            op == "operations"
+        ):  # the declared action space, for a live agent's prompt (schemas only, no data)
+            return {
+                "ok": True,
+                "operations": self.bridge.ok("GET", "/operations").get("operations"),
+            }
         if op == "snapshot":  # verifier blocks: GET /state without sealing (never an agent tool)
             return {"ok": True, "collections": self.bridge.ok("GET", "/state").get("collections")}
         if op == "state":

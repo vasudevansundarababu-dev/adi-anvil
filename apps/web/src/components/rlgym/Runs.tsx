@@ -806,6 +806,45 @@ function Overview({ r }: { r: any }) {
             </dd>
           </dl>
         )}
+        {(r.live_spend ?? []).length > 0 && (
+          <>
+            <h4>Live spend</h4>
+            <table className="blocks">
+              <thead>
+                <tr>
+                  <th>Model</th>
+                  <th>Approval</th>
+                  <th>Calls</th>
+                  <th>Tokens in · out</th>
+                  <th>Cost · run cap</th>
+                  <th>Not answered · errors</th>
+                </tr>
+              </thead>
+              <tbody>
+                {r.live_spend.map((l: any) => (
+                  <tr key={l.system_id}>
+                    <td>
+                      {l.name} · {l.provider} <code>{l.model_id}</code>
+                    </td>
+                    <td>
+                      <code>{l.approval_id}</code>
+                    </td>
+                    <td>{l.calls}</td>
+                    <td>
+                      {l.tokens_in} · {l.tokens_out}
+                    </td>
+                    <td>
+                      {usd(l.cost_usd)} · {usd(l.per_run_cap_usd)}
+                    </td>
+                    <td>
+                      {l.ambiguous} · {l.errors}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
       </section>
       {r.refusal_reasons && (
         <section className="card">
