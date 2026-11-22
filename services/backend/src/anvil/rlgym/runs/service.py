@@ -18,7 +18,7 @@ from psycopg.types.json import Jsonb
 from anvil.rlgym import integrations
 from anvil.rlgym.catalog import selection
 from anvil.rlgym.common import GymError, audit, emit, new_id, require, sha
-from anvil.rlgym.runs import images, sampling
+from anvil.rlgym.runs import images, openenv, sampling
 from anvil.rlgym.scoring import service as scoring
 from anvil.rlgym.suites import service as suites
 from anvil.rlgym.systems import service as systems
@@ -243,8 +243,26 @@ def admission_check(ctx, body):
                 env = {"binding": b, "version": pick, "rule": effective, "rule_label": label}
         resolved["env"] = env
         ok_docker, docker_detail = images.docker_status()
-        image = images.built(ctx.c, env["version"]["id"]) if env and ok_docker else None
-        if env:
+        env_row = (
+            ctx.c.execute(
+                "SELECT * FROM catalog.environment_versions WHERE id=%s", (env["version"]["id"],)
+            ).fetchone()
+            if env
+            else None
+        )
+        image = None
+        if env and openenv.is_openenv(env_row):
+            # Studio built this image; the RL Gym only checks that the exact registered image is in local Docker.
+            detail, found = docker_detail, None
+            if ok_docker:
+                try:
+                    found = openenv.check_image(env_row, openenv.recipe(env_row))
+                    detail = f"Studio-built {env_row['image_recipe']['image_ref']} · {found[:19]}"
+                except GymError as exc:
+                    detail = exc.message
+            item("image", bool(found), "Environment image present locally", detail)
+        elif env:
+            image = images.built(ctx.c, env["version"]["id"]) if ok_docker else None
             base_ok = ok_docker and images.image_present(images.base_image())
             item(
                 "image",
@@ -258,6 +276,7 @@ def admission_check(ctx, body):
                     else f"{docker_detail}; pinned base image present: {base_ok}"
                 ),
             )
+        resolved["env_row"] = env_row
         resolved["image"] = image
         evaluator_versions, bad = [], []
         criteria = {
@@ -619,7 +638,12 @@ def start(ctx, body):
     if check["passed"] and not r["image"]:
         # The image is built now (from the Studio recipe, no network) so the frozen manifest names the exact image.
         try:
-            r["image"] = images.build(ctx.c, r["env"]["version"]["id"])
+            vid = r["env"]["version"]["id"]
+            r["image"] = (
+                openenv.resolve(ctx.c, vid, r["env_row"])
+                if openenv.is_openenv(r.get("env_row"))
+                else images.build(ctx.c, vid)
+            )
         except GymError as exc:
             check["items"].append(
                 {

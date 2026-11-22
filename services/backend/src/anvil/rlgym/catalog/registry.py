@@ -4,6 +4,7 @@ Events arrive as signed webhooks with a registry sequence number. A duplicate is
 from the registry's event log, so the mirror never skips a revoke. The mirror is written only here.
 """
 
+import subprocess
 import time
 
 import httpx
@@ -309,22 +310,8 @@ LIKELY_CAUSE = {
 }
 
 
-def qualify(version_id, requested_by="registry", attempt=1):
-    """Run the six checks in a disposable episode of the version (locally: the Studio stub's environment
-    simulator; Docker-built environments arrive with work package 2.7). Infrastructure failures retry once."""
-    from anvil.rlgym.common import system_scope
-
-    with system_scope() as c:
-        v = c.execute(
-            "SELECT * FROM catalog.environment_versions WHERE id=%s", (version_id,)
-        ).fetchone()
-    if not v:
-        raise GymError("NOT_FOUND", "Version not in the registry mirror")
-    from anvil.rlgym.integrations import loopback
-
-    # The version is checked against the registry that released it (the stub's versions stay on the stub).
-    base = f"{loopback(v['registry']) if v.get('registry') else studio_url()}/stub/env/{version_id}"
-    episode = new_id("qep-")
+def _qualify_stub(base, episode):
+    """The six checks against the Studio stub's environment simulator. Returns (checks, failure_class)."""
     checks, failure_class = [], None
     try:
         with httpx.Client(timeout=5, trust_env=False) as client:
@@ -348,6 +335,46 @@ def qualify(version_id, requested_by="registry", attempt=1):
                 "likely_cause": "runner lost or environment unreachable",
             }
         )
+    return checks, failure_class
+
+
+def qualify(version_id, requested_by="registry", attempt=1):
+    """Run the six checks in a disposable episode of the version: the Studio stub's environment simulator, or for a
+    `studio-openenv` version Studio's own image in a local no-network container (receipt mode `openenv_http`).
+    Infrastructure failures retry once."""
+    from anvil.rlgym.common import system_scope
+
+    with system_scope() as c:
+        v = c.execute(
+            "SELECT * FROM catalog.environment_versions WHERE id=%s", (version_id,)
+        ).fetchone()
+    if not v:
+        raise GymError("NOT_FOUND", "Version not in the registry mirror")
+    from anvil.rlgym.integrations import loopback
+    from anvil.rlgym.runs import openenv
+
+    # The version is checked against the registry that released it (the stub's versions stay on the stub).
+    base = f"{loopback(v['registry']) if v.get('registry') else studio_url()}/stub/env/{version_id}"
+    episode = new_id("qep-")
+    checks, failure_class = [], None
+    mode = "stub_environment_simulator"
+    if openenv.is_openenv(v):
+        # Studio's own image, run locally with no network (plan decision 1b).
+        mode = openenv.MODE
+        try:
+            checks, failure_class = openenv.qualify(v)
+        except (RuntimeError, OSError, subprocess.TimeoutExpired, KeyError, TypeError) as exc:
+            failure_class = "infrastructure"
+            checks.append(
+                {
+                    "name": "runner",
+                    "result": "fail",
+                    "evidence": {"error": f"{type(exc).__name__}: {str(exc)[:200]}"},
+                    "likely_cause": "runner lost or environment unreachable",
+                }
+            )
+    else:
+        checks, failure_class = _qualify_stub(base, episode)
     if failure_class == "infrastructure" and attempt < 2:
         time.sleep(0.5)
         return qualify(version_id, requested_by, attempt + 1)
@@ -358,7 +385,7 @@ def qualify(version_id, requested_by="registry", attempt=1):
         "result": result,
         "failure_class": failure_class,
         "episode": episode,
-        "mode": "stub_environment_simulator",
+        "mode": mode,
         "attempt": attempt,
     }
     receipt_id = "qr-" + sha(receipt)[:12]
@@ -370,13 +397,14 @@ def qualify(version_id, requested_by="registry", attempt=1):
         ).fetchone()
         c.execute(
             """INSERT INTO catalog.qualification_receipts(receipt_id,subject_kind,subject_id,subject_version,result,failure_class,mode,checks,receipt_sha256)
-               VALUES(%s,'environment_version',%s,%s,%s,%s,'stub_environment_simulator',%s,%s) ON CONFLICT DO NOTHING""",
+               VALUES(%s,'environment_version',%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
             (
                 receipt_id,
                 version_id,
                 str(v["version"]),
                 result,
                 failure_class,
+                mode,
                 Jsonb(checks),
                 sha(receipt),
             ),

@@ -141,6 +141,8 @@ def on_event(c, ws, topic, d, event_id):
                      AND kind='version_stopped' AND closed_at IS NULL""",
             (event_id, ws),
         )
+        if d.get("version_id"):
+            close_items(c, ws, event_id, "environment_defect", subject=d["version_id"])
     elif topic in ("project.blocked", "environment.stopped"):
         kind = "version_stopped" if d.get("urgent") else "version_revoked"
         open_item(
@@ -272,6 +274,23 @@ def on_event(c, ws, topic, d, event_id):
             f"{d['registry']} sent {d['version_id']} with a different {', '.join(d['fields'])}; the mirrored release was kept (released versions are final)",
             f"/gym/admin/environments/{d['version_id']}",
             "View environment",
+            severity="bad",
+        )
+    elif topic == "environment.image_mismatch":
+        open_item(
+            c,
+            ws,
+            event_id,
+            "environment_defect",
+            d["version_id"],
+            "bindings",
+            "Environment differs from its release",
+            f"{d['run_id']} was refused: {d['reason']}"
+            + (f" ({', '.join(sorted(d['mismatches']))})" if d.get("mismatches") else "")
+            + (" (image_digest)" if d.get("image_digest") else ""),
+            f"/gym/admin/environments/{d['version_id']}",
+            "View environment",
+            project_id=p,
             severity="bad",
         )
     elif topic == "delivery.refused":

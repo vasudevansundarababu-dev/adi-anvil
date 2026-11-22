@@ -51,6 +51,17 @@ Tests (21 Nov 2026, this worktree, stack running):
       `/rlgym-events` on the first attempt with valid signatures.
     - **Inbox, Studio → RL Gym:** Studio planned `inb-0003`, and the RL Gym received `inbox_item.status` (seq 4–5);
       the item reads queued → sent → planned.
+  - **OpenEnv adapter Part A (RG-42, 22 Nov 2026):** `studio-openenv` versions run Studio's own image from local
+    Docker (identity by local image id, admission against `/readyz`, HTTP over a no-network `docker exec` bridge,
+    qualification mode `openenv_http`). Against Studio's image `sha256:512077149d35…`: identity and the six checks
+    pass, seed and digest mismatches are refused, two episodes on one instance share nothing.
+    - `pnpm check` EXIT 0; unit 408 passed (9 new); `test_rlgym_v2_openenv.py` 5 passed.
+    - Integration (test process pointed at the stub, the running API still following Studio): 231 passed, 19 skipped,
+      1 failed: `test_evaluator_fix_versions_cohorts_revoke_and_b4` did not find `evaluator.revoked` at the stub. The
+      likely cause is the linked-mode race below (the running API's dispatcher delivers to Studio); not rerun in
+      stub mode yet. E2E not run in this change (needs stub mode).
+    - Not done: a full Start run on a Studio-released `studio-openenv` version (waits for `golden-kyc-openenv@4`);
+      scoring on Studio's operations is B1 (RG-41).
     - **While linked:** switch back to the stub before running the integration or browser suites (runbook). The
       running API refuses the stub's events while it follows Studio.
 

@@ -48,6 +48,18 @@ The default suite (40 cases) with the three mock profiles is 120 episodes and ta
 explicit (run page ⋯ Re-score…). Set `RLGYM_RUNNER=off` to keep the API from running episodes. The episode viewer and SME review are
 work package 2.9.
 
+### Studio's own OpenEnv images (`studio-openenv` recipes)
+
+A version whose recipe has `kind: "studio-openenv"` is not built by the RL Gym. Studio builds the image with the local
+Docker daemon (tag `adi-utility-local/<env>:<context hash>`) and the version record names it (`image_ref`) and its
+local image id (`image_digest`). The admission checklist shows "Environment image present locally"; Start refuses the
+run if the image is missing or its id differs, and an "Environment differs from its release" To do card opens. The
+instance runs the image's own server with no network; `/readyz` must report the registered environment key and seed
+(and spec, when the recipe has one). Qualification receipts for these versions have mode `openenv_http`.
+
+Test: `services/backend/tests/integration/test_rlgym_v2_openenv.py` runs against any local image labelled
+`ai.adi-labs.utility.environment-key=golden-kyc-openenv` and skips when none is present.
+
 ## Report and PDF (work package 2.8)
 
 A completed run's Report tab has five views (Overview, Task results, Agent performance, Failures & evidence, Trust &

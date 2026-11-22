@@ -22,7 +22,7 @@ import uuid
 from psycopg.types.json import Jsonb
 
 from anvil.rlgym.common import GymError, emit, set_scope, system_scope
-from anvil.rlgym.runs import images
+from anvil.rlgym.runs import images, openenv
 from anvil.rlgym.scoring import service as scoring
 from anvil.rlgym.systems import mock_provider
 
@@ -75,14 +75,43 @@ def prepare_runs(ws):
             if not run:
                 return
             vid = run["manifest"]["environment"]["version_id"]
+            env = c.execute(
+                "SELECT * FROM catalog.environment_versions WHERE id=%s", (vid,)
+            ).fetchone()
+            driver = openenv.KIND if openenv.is_openenv(env) else "bridge"
             try:
-                image = images.build(c, vid)
-                container = images.start_instance(run["id"], image["local_image_id"])
+                if driver == openenv.KIND:
+                    if env["state"] != "qualified":
+                        raise GymError(
+                            "CONFLICT", f"{vid} is {env['state']}; only qualified versions run"
+                        )
+                    image = openenv.resolve(c, vid, env)
+                    container, _ready = openenv.start_instance(
+                        run["id"], env, image["local_image_id"]
+                    )
+                else:
+                    image = images.build(c, vid)
+                    container = images.start_instance(run["id"], image["local_image_id"])
             except (GymError, RuntimeError, OSError) as exc:
                 message = exc.message if isinstance(exc, GymError) else str(exc)
+                if isinstance(exc, GymError) and exc.details:
+                    message += " " + json.dumps(exc.details, sort_keys=True, default=str)
                 log.warning("run %s could not start: %s", run["id"], message)
                 c.rollback()
                 set_scope(c, ws)
+                if isinstance(exc, GymError) and exc.code == "HASH_MISMATCH":
+                    emit(
+                        c,
+                        ws,
+                        "environment.image_mismatch",
+                        vid,
+                        {
+                            "version_id": vid,
+                            "run_id": run["id"],
+                            "reason": exc.message,
+                            **exc.details,
+                        },
+                    )
                 c.execute(
                     "UPDATE runs.episodes SET state='errored', last_error=%s WHERE run_id=%s AND state='queued'",
                     (f"environment not started: {message}"[:500], run["id"]),
@@ -113,7 +142,12 @@ def prepare_runs(ws):
                 ws,
                 "run.started",
                 run["id"],
-                {"run_id": run["id"], "image": image["image_tag"], "container": container},
+                {
+                    "run_id": run["id"],
+                    "image": image["image_tag"],
+                    "container": container,
+                    "driver": driver,
+                },
             )
 
 
@@ -151,6 +185,12 @@ def _context(ws, episode):
             "SELECT * FROM runs.instances WHERE run_id=%s AND stopped_at IS NULL ORDER BY started_at DESC LIMIT 1",
             (episode["run_id"],),
         ).fetchone()
+        if instance:
+            env = c.execute(
+                "SELECT * FROM catalog.environment_versions WHERE id=%s",
+                (manifest["manifest"]["environment"]["version_id"],),
+            ).fetchone()
+            instance = {**instance, "env": env}
         actor = c.execute(
             """SELECT p.content FROM projects.task_imports t JOIN projects.task_payloads p
                ON p.workspace_id=t.workspace_id AND p.package_sha256=t.package_sha256 AND p.part='actor' WHERE t.id=%s""",
@@ -174,9 +214,15 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         inject = {"placement": m["trust_and_safety"]["placement"], "text": prompt["text"]}
     started = time.monotonic()
     deadline = started + run["episode_timeout_s"]
-    session = (
-        session_factory or (lambda: images.EnvSession.docker(instance["container"], deadline))
-    )()
+    on_openenv = bool(instance) and openenv.is_openenv(instance.get("env"))
+    if session_factory:
+        session = session_factory()
+    elif on_openenv:
+        session = openenv.OpenEnvSession(
+            instance["container"], openenv.recipe(instance["env"]), deadline
+        )
+    else:
+        session = images.EnvSession.docker(instance["container"], deadline)
     transcript, events, final = [], [], None
     try:
         reset = session.request({"op": "reset", "case_id": episode["case_id"], "inject": inject})
@@ -237,6 +283,7 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         "environment": {
             "version_id": m["environment"]["version_id"],
             "image": instance and instance["local_image_id"],
+            "driver": openenv.KIND if on_openenv else "bridge",
         },
         "safety": prompt
         and {
@@ -295,7 +342,7 @@ def run_episode(ws, episode, session_factory=None):
                 (episode["id"],),
             )
         return "timed_out"
-    except (RuntimeError, OSError, ValueError, KeyError, StopIteration) as exc:
+    except (RuntimeError, OSError, ValueError, KeyError, StopIteration, GymError) as exc:
         with system_scope(ws) as c:
             _finish_attempt(c, episode, "errored", str(exc)[:500])
             again = episode["tries"] <= run["infra_retries"]
