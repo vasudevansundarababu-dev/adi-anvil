@@ -782,8 +782,8 @@ export function Keys() {
           </label>
           <small>
             Saving does not call the provider, so the key starts “untested”. Test checks it by
-            listing the provider’s models (no inference, no cost), only when live calls are on and
-            a live approval allows key tests.
+            listing the provider’s models (no inference, no cost), only when live calls are on and a
+            live approval allows key tests.
           </small>
           <div className="row">
             <button
