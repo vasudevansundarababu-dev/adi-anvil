@@ -134,19 +134,22 @@ def verifier_context(c, ws, episode, manifest):
         (episode.get("task_import_id"),),
     ).fetchone()
     private = (private or {}).get("content") or {}
-    task = private.get("verifier") or private
-    for extra in task.get("extra_state_checks") or []:
-        own = blocks.get(extra.get("criterion")) or []
-        tables = {b.get("table") for b in own if b.get("kind") == "state"}
-        if extra.get("kind", "state") == "state" and extra.get("table") in tables:
-            blocks[extra["criterion"]] = [
-                *own,
-                {
-                    **extra,
-                    "kind": "state",
-                    "id": extra.get("id") or f"{extra['criterion']}.sme.{len(own) + 1}",
-                },
-            ]
+    # Authoring puts them under private.verifiers (AUTHORING-SPEC); earlier packages used private.verifier or the top level.
+    task = private.get("verifiers") or private.get("verifier") or private
+    for n, extra in enumerate(task.get("extra_state_checks") or [], start=1):
+        if extra.get("kind", "state") != "state":
+            continue
+        # An SME's extra State check names a criterion, or (AUTHORING-SPEC 2.4) none: then it joins every criterion
+        # whose own State blocks read the same table. It may use only tables the template's blocks already read.
+        named = extra.get("criterion") or extra.get("criterion_id")
+        targets = [named] if named else list(blocks)
+        for crit in targets:
+            own = blocks.get(crit) or []
+            if extra.get("table") in {b.get("table") for b in own if b.get("kind") == "state"}:
+                blocks[crit] = [
+                    *own,
+                    {**extra, "kind": "state", "id": extra.get("id") or f"{crit}.sme.{n}"},
+                ]
     return {
         "blocks": blocks,
         "expected_values_from": (act or {}).get("expected_values_from") or "case_reference",
