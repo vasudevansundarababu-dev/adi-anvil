@@ -1,9 +1,9 @@
 # Build status
 
-## RL Gym v2: local run, stubs, projects, catalog, evaluators, models, suites, runs — 21–22 November 2026
+## RL Gym v2: local run, stubs, projects, catalog, evaluators, models, suites, runs, report — 21–22 November 2026
 
 Branch `claude/rlgym-v2-8919f6` (worktree), local only; nothing pushed, deployed or emailed; no model called.
-Design: adi-labs-design `rl-gym/BUILD-LOCAL.md` work packages 2.1–2.10. Decisions RG-01..RG-26 in BUILD-DECISIONS.json
+Design: adi-labs-design `rl-gym/BUILD-LOCAL.md` work packages 2.1–2.10. Decisions RG-01..RG-32 in BUILD-DECISIONS.json
 (`rlgym_v2_increment`). Runbook: docs/runbooks/rlgym-v2-local.md.
 
 What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs, Admin, To do bell; `/workspace` unchanged):
@@ -18,11 +18,20 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
 | 2.5 Models, keys, model sets | done (mock provider only) | migration 040; keys in the existing encrypted local store (last4 only), immutable model versions, probes (controlled mock ok; real providers `live_disabled`, never called), model sets with versions; Admin → Models, Model sets, Keys |
 | 2.6 Suites, data plan, Trust & Safety | done (local generator) | migration 041; default suite per export (receipt `default_suite_version`, backfilled by `pnpm rlgym:seed`); drafts and saved versions (`suite_sha256`, final); bindings follow project rule or custom with reason (D20 per criterion); data plan cells vs the bound version's case catalog, Lower to / Lower all / Use what is available / Send to Studio inbox (more data); Trust & Safety categories (core + Banking KYC/AML pack), custom-category check, generate (local template generator; Promptfoo not installed), review, approve with prompt-set hash; save refuses until every item resolves. Suggestions are rule-based (no model) |
 | 2.7 Runs, admission, execution, scoring | done (controlled mock agents; local runner, not Harbor) | migration 042 (schemas `runs`, `scoring`); New run with the live admission checklist (every failing item listed; budget, models, image, data plan fit on the bound version); refused runs stored with reasons; Start run builds `golden-kyc-openenv` with Docker from the Studio stub recipe (offline, pinned base, no reference answers in the image), freezes the manifest (template, suite, environment + local image id, 20 evaluator versions, selected case ids, approved safety prompts, tasks, exact model versions) and queues (cases + safety prompts) × models × attempts; episodes run in a no-network, read-only container (one tool-server process each), evidence sealed read-only with SHA-256, scored in the Python sandbox with references fetched for the scorer only; Trust & Safety outcomes from tool effects; cancel, explicit re-score (earlier passes kept; tampered evidence refused), compare (same suite/environment/evaluators, paired bootstrap) and save comparison; run page Overview (progress, per-model mean with likely range, gates, results by stratum, what the run used, cost) and Episodes list. Report tab and Package say 2.8; SME review says 2.9 (RG-19..RG-26) |
-| 2.8 Report and PDF | not started | — |
+| 2.8 Report and PDF | done (SME parts wait for 2.9) | migration 043 (schema `results`); Report tab with the five views (Overview: score cards with gates, capability radar, scores by task; Task results: tasks, strata with small-sample marks, per-criterion with sort and paging; Agent performance: capability comparison, skill heat map, workflow strip, same-case outcome; Failures & evidence: per model, by likely cause, filtered failed list; Trust & Safety: cards, critical incidents, resistance by category, safety radar, refusal by attack style, by category) and every drill-down (capability, axes, task, case, Trust & Safety category, policy, risk, review item); RL engineer diagnosis (never changes a score) with Studio inbox `evaluator_defect` for criterion defects and `new_case_kind`; Export PDF: stored report revision + headless Chrome A4 PDF (cover, 5 views, appendices A–F, manifest hash and Page n of N on every page), write-once with hash, preview and download; Package (n) of completed runs. SME review sample and reviewed scores say 'Not yet sent' (2.9) (RG-27..RG-32) |
 | 2.9 Episodes, viewer, SME review | not started | — |
 | 2.10 Home, To do, Users | partial | To do opened/closed by events (import, ready — closed by `run.admitted`, override, inbox, urgent, evaluator cohort/B4); Users list with profile and binding-approver edits; leaderboard not yet fed by runs; invites not built |
 
 Tests (21 Nov 2026, this worktree, stack running):
+
+- Report (2.8), 22 Nov 2026: `pnpm check` passed (EXIT 0; OpenAPI regenerated). `pnpm test:unit` 392 passed, 3 failed
+  (same expired prices; RL Gym v2 unit 47 incl. +4 `test_rlgym_v2_results_unit.py`). `pnpm test:e2e` 19 passed, 5
+  failed: RL Gym v2 9/10 — the new-run test failed only on the old 'Not built yet (2.8)' text and passes after the
+  update, the new report test (five views, diagnosis, risk drill, PDF preview and download) passes; `short data plan`
+  needs a fresh database (unchanged); plus the 3 legacy `journey.json` specs. `pnpm test:integration` 174 passed,
+  19 skipped, 41 failed — none in RL Gym v2 files (33 missing fixture artifacts, rest legacy as before); RL Gym v2
+  integration 32 passed (+6 `test_rlgym_v2_results.py`; runs/results suites rerun together: 13 passed). Sample PDF:
+  13 A4 pages in 1.2 s for 120 episodes.
 
 - Runs (2.7), 22 Nov 2026: `pnpm check` passed (EXIT 0; OpenAPI contract regenerated). `pnpm test:unit` 388 passed,
   3 failed (same pre-existing `test_workspace_costs.py` expired prices); RL Gym v2 unit 43 passed (+12

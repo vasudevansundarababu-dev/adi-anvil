@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { GymApiError, send, short, when, wsBase } from './api';
+import Report from './Report';
 import { Badge, Failure, Hash, Loading, Search, Tabs, useData, useGym } from './ui';
 
 // Runs (SCREENS 3.17-3.21): list, New run with the admission checklist, Compare, and the run page (Overview, Report,
@@ -38,12 +39,14 @@ function duration(s?: number | null) {
 export default function Runs({ parts }: { parts: string[] }) {
   if (parts[0] === 'new') return <NewRun />;
   if (parts[0] === 'compare') return <Compare />;
-  if (parts[0]) return <RunPage id={parts[0]} tab={parts[1] ?? 'overview'} />;
+  if (parts[0]) return <RunPage id={parts[0]} tab={parts[1] ?? 'overview'} rest={parts.slice(2)} />;
   return <RunsList />;
 }
 
 function RunsList() {
-  const { ws } = useGym();
+  const { ws, say } = useGym();
+  const [packaged, setPackaged] = useState<any>(null);
+  const [packageError, setPackageError] = useState<GymApiError | null>(null);
   const router = useRouter();
   const [state, setState] = useState('');
   const [q, setQ] = useState('');
@@ -65,7 +68,18 @@ function RunsList() {
           >
             Compare ({ticked.length})
           </button>
-          <button disabled title="Packages are built with work package 2.8 (report and PDF)">
+          <button
+            disabled={ticked.length < 1}
+            onClick={async () => {
+              try {
+                const out = await send('POST', `${wsBase(ws)}/packages`, { run_ids: ticked });
+                setPackaged(out);
+                say(`Package ${out.id} created.`);
+              } catch (e) {
+                setPackageError(e as GymApiError);
+              }
+            }}
+          >
             Package ({ticked.length})
           </button>
           <Link className="primary" href="/gym/runs/new">
@@ -73,6 +87,16 @@ function RunsList() {
           </Link>
         </div>
       </div>
+      {packaged && (
+        <div className="banner" role="status">
+          Package {packaged.id} · {packaged.run_ids.join(', ')} ·{' '}
+          <Hash value={packaged.package_sha256} />{' '}
+          <a href={`${wsBase(ws)}/packages/${packaged.id}/download`} download={packaged.file_name}>
+            Download package
+          </a>
+        </div>
+      )}
+      <Failure error={packageError} />
       <div className="toolbar">
         <Search value={q} onChange={setQ} placeholder="Search runs" />
         <label>
@@ -633,7 +657,7 @@ function pct(v?: number | null) {
   return v === null || v === undefined ? '—' : `${Math.round(v * 100)}%`;
 }
 
-function RunPage({ id, tab }: { id: string; tab: string }) {
+function RunPage({ id, tab, rest }: { id: string; tab: string; rest: string[] }) {
   const { ws, say, me } = useGym();
   const base = wsBase(ws);
   const run = useData<any>(`${base}/runs/${id}`);
@@ -723,20 +747,7 @@ function RunPage({ id, tab }: { id: string; tab: string }) {
                 ]}
               />
               {tab === 'overview' && <Overview r={r} />}
-              {tab === 'report' && (
-                <div className="banner" role="status">
-                  {r.state === 'completed' ? (
-                    <>
-                      <strong>Not built yet (work package 2.8).</strong> The interactive report
-                      (Overview, Task results, Agent performance, Failures & evidence, Trust &
-                      Safety) and Export PDF are the next package. The run&apos;s scores, statistics
-                      by stratum and Trust & Safety counts are on Overview.
-                    </>
-                  ) : (
-                    'The report is ready when the run completes. Live progress is on Overview.'
-                  )}
-                </div>
-              )}
+              {tab === 'report' && <Report id={id} rest={rest} />}
               {tab === 'episodes' && <Episodes id={id} r={r} />}
               {tab === 'sme' && (
                 <div className="banner" role="status">
@@ -963,7 +974,8 @@ function Episodes({ id, r }: { id: string; r: any }) {
   const [state, setState] = useState('');
   const [kind, setKind] = useState('');
   const [verdict, setVerdict] = useState('');
-  const [q, setQ] = useState('');
+  const initial = useSearchParams();
+  const [q, setQ] = useState(initial.get('q') ?? '');
   const [page, setPage] = useState(1);
   const params = new URLSearchParams({ page: String(page), size: '50' });
   if (system) params.set('system', system);

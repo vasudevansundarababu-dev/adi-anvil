@@ -69,6 +69,7 @@ def small_suite(lineup):
             "data_plan": {
                 "sample_size": 8,
                 "completeness_quotas": {"complete": 50, "incomplete": 50},
+                "required_edges": {"screening_hit": 1},
             }
         },
     )

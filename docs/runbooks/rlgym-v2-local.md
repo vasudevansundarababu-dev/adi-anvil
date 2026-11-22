@@ -45,8 +45,16 @@ freezes the manifest and queues the episodes. A runner thread in the API process
    container when the run finishes.
 
 The default suite (40 cases) with the three mock profiles is 120 episodes and takes about 30 seconds. Re-score is
-explicit (run page ⋯ Re-score…). Set `RLGYM_RUNNER=off` to keep the API from running episodes. Report, PDF, the
-episode viewer and SME review are work packages 2.8 and 2.9.
+explicit (run page ⋯ Re-score…). Set `RLGYM_RUNNER=off` to keep the API from running episodes. The episode viewer and SME review are
+work package 2.9.
+
+## Report and PDF (work package 2.8)
+
+A completed run's Report tab has five views (Overview, Task results, Agent performance, Failures & evidence, Trust &
+Safety) and drill-downs (capability, axes, task, case, Trust & Safety category, policy findings, risk, review item with
+the RL engineer diagnosis). Export PDF stores the view as a report revision and prints it with headless Chrome
+(`scripts/render-report-pdf.mjs`, Playwright) to `.local/rlgym/reports/` (write-once, hashed). Runs → tick completed
+runs → Package (n) writes a hashed JSON bundle to `.local/rlgym/packages/`.
 
 ## Stub controls (each stands for a real trigger)
 

@@ -205,6 +205,10 @@ from anvil.rlgym.runs.worker import start_runner  # noqa: E402
 
 app.include_router(rlgym_run_routes())
 
+from anvil.rlgym.results.routes import routes as rlgym_result_routes  # noqa: E402
+
+app.include_router(rlgym_result_routes())
+
 
 @app.exception_handler(GymError)
 async def gym_error(request, exc):

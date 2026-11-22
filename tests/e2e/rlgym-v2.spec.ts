@@ -230,7 +230,7 @@ test('new run: admission checklist, start, episodes run in the local container, 
   await page.getByLabel('Verdict').selectOption('failed');
   await expect(page.getByText(/episodes · page 1/)).toBeVisible();
   await page.getByRole('link', { name: 'Report', exact: true }).click();
-  await expect(page.getByText(/Not built yet \(work package 2\.8\)/)).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Report views' })).toBeVisible();
   await page.goto('/gym/runs?state=completed');
   await expect(page.getByRole('row', { name: /KYC November/ }).first()).toContainText('Completed');
 });
@@ -240,4 +240,74 @@ test('a viewer sees runs but cannot start one', async ({ browser }) => {
   await page.goto(`/gym/runs/new?project=${PROJECT}`);
   await expect(page.getByText('Viewers cannot start runs.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Start run' })).toBeDisabled();
+});
+
+test('report: five views, drill-downs, diagnosis and PDF export', async ({ browser }) => {
+  test.setTimeout(240000);
+  const page = await signIn(browser, 'researcher');
+  const runs = await page.request.get('/api/v1/workspaces/adi-labs-research/runs?state=completed');
+  const run = ((await runs.json()).data.items as { id: string }[])[0];
+  test.skip(!run, 'needs a completed run (the new-run test makes one)');
+  await page.goto('/gym/runs?state=completed');
+  await page
+    .getByRole('row', { name: new RegExp(run.id) })
+    .getByRole('link', { name: 'Report' })
+    .click();
+  await expect(page).toHaveURL(new RegExp(`/gym/runs/${run.id}/report$`));
+  await expect(page.getByText(/Matched cohort: \d+ cases/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Capability profile' })).toBeVisible();
+  await expect(page.getByText('PASSED').first()).toBeVisible();
+  await page.screenshot({
+    path: 'artifacts/test-runs/rlgym-v2-report-overview.png',
+    fullPage: true,
+  });
+  for (const view of [
+    'Task results',
+    'Agent performance',
+    'Failures & evidence',
+    'Trust & Safety',
+  ]) {
+    await page
+      .getByRole('navigation', { name: 'Report views' })
+      .getByRole('link', { name: view })
+      .click();
+    await expect(page.getByRole('link', { name: view, exact: true })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  }
+  await expect(
+    page.getByText(/Trust & Safety was off for this run|approved attack prompts/),
+  ).toBeVisible();
+  await page.getByRole('link', { name: 'Failures & evidence' }).click();
+  await expect(page.getByRole('heading', { name: 'Failures by likely cause' })).toBeVisible();
+  await page.screenshot({
+    path: 'artifacts/test-runs/rlgym-v2-report-failures.png',
+    fullPage: true,
+  });
+  await page.getByRole('link', { name: 'Diagnose' }).first().click();
+  await expect(
+    page.getByRole('heading', { name: 'Stage 1 · Sealed automated score' }),
+  ).toBeVisible();
+  await page.getByLabel('Attributed to').selectOption('agent');
+  await page.getByLabel('Strength of evidence').selectOption('strong');
+  await page.getByLabel('K3 Agent output and state').check();
+  await page
+    .getByLabel('Why this evidence supports the finding')
+    .fill('The agent skipped a required check (e2e).');
+  await page.getByRole('button', { name: 'Save diagnosis' }).click();
+  await expect(page.getByRole('button', { name: 'Saved' })).toBeVisible();
+  await page.getByRole('link', { name: 'Report', exact: true }).first().click();
+  await page.getByRole('link', { name: 'Risk & escalation summary' }).click();
+  await expect(page.getByRole('cell', { name: /Possible screening match/ })).toBeVisible();
+  await page.goto(`/gym/runs/${run.id}/report`);
+  await page.getByRole('link', { name: 'Export PDF' }).click();
+  await expect(page.getByRole('heading', { name: /PDF preview · \d+ pages \(A4\)/ })).toBeVisible({
+    timeout: 60000,
+  });
+  await expect(page.locator('iframe.pdf')).toBeVisible();
+  const download = page.waitForEvent('download');
+  await page.getByRole('link', { name: 'Download PDF' }).click();
+  expect((await download).suggestedFilename()).toMatch(new RegExp(`report-${run.id}-r\\d+\\.pdf`));
+  await page.screenshot({ path: 'artifacts/test-runs/rlgym-v2-report-pdf.png', fullPage: true });
 });
