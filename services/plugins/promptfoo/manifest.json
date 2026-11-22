@@ -2,7 +2,7 @@
   "schema": "adi.verifier-plugin.v1",
   "id": "promptfoo",
   "name": "Promptfoo model-graded checks",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "image": "<filled at build>",
   "entrypoint": [
     "node",
@@ -14,7 +14,9 @@
     "required": [
       "assertion",
       "rubric",
-      "target"
+      "target",
+      "judge",
+      "threshold"
     ],
     "properties": {
       "assertion": {
@@ -29,26 +31,32 @@
       "rubric": {
         "type": "string",
         "minLength": 10,
-        "title": "Rubric",
-        "description": "The criterion's scoring rule in plain English"
+        "title": "Scoring rule (plain English)",
+        "x-widget": "code"
       },
       "target": {
         "type": "string",
-        "title": "What to grade",
+        "title": "What to judge",
         "x-widget": "collection-field",
-        "description": "An evidence path, usually output.rationale"
+        "default": "output.rationale"
+      },
+      "reference": {
+        "type": "string",
+        "title": "Reference answer (factuality, closed QA)",
+        "x-widget": "slot-or-reference"
+      },
+      "judge": {
+        "type": "string",
+        "title": "Judge model",
+        "x-enum-from": "judge-approvals",
+        "description": "mock-judge, or a model the owner approved for use judge (RL Gym live approvals)"
       },
       "threshold": {
         "type": "number",
         "minimum": 0,
         "maximum": 1,
-        "default": 0.5,
-        "title": "Pass threshold"
-      },
-      "judge": {
-        "type": "string",
-        "title": "Judge model",
-        "description": "A judge model approved by the owner (RL Gym live approvals, use judge); the local mock judge otherwise"
+        "default": 0.7,
+        "title": "Pass at"
       }
     }
   },
@@ -85,8 +93,8 @@
               "assertion": "llm-rubric",
               "rubric": "The rationale names the specific reason for the recommendation, for example the DOB mismatch on a sanctions hit",
               "target": "output.rationale",
-              "threshold": 0.5,
-              "judge": "gemini-3.5-flash"
+              "threshold": 0.7,
+              "judge": "mock-judge"
             }
           }
         ],
@@ -124,8 +132,8 @@
               "assertion": "llm-rubric",
               "rubric": "The rationale names the specific reason for the recommendation, for example the DOB mismatch on a sanctions hit",
               "target": "output.rationale",
-              "threshold": 0.5,
-              "judge": "gemini-3.5-flash"
+              "threshold": 0.7,
+              "judge": "mock-judge"
             }
           }
         ],
@@ -164,8 +172,8 @@
               "assertion": "llm-rubric",
               "rubric": "The rationale names the specific reason for the recommendation, for example the DOB mismatch on a sanctions hit",
               "target": "output.rationale",
-              "threshold": 0.5,
-              "judge": "gemini-3.5-flash"
+              "threshold": 0.7,
+              "judge": "mock-judge"
             }
           }
         ],

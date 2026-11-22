@@ -177,13 +177,36 @@ def get_row(c, plugin_id, version):
     return row
 
 
-def public(row):
+def judge_choices(c, ws):
+    """mock-judge plus every model the owner approved for use `judge` in this workspace (active approvals)."""
+    if c is None or ws is None:
+        return ["mock-judge"]
+    rows = c.execute(
+        """SELECT DISTINCT model_id FROM systems.live_approvals WHERE workspace_id=%s AND 'judge' = ANY(uses)
+             AND revoked_at IS NULL AND expires_at > now() ORDER BY model_id""",
+        (ws,),
+    ).fetchall()
+    return ["mock-judge", *[r["model_id"] for r in rows]]
+
+
+def schema_for(schema, c=None, ws=None):
+    """The settings schema as Studio and validation see it: `x-enum-from: judge-approvals` becomes an enum."""
+    import copy
+
+    out = copy.deepcopy(schema or {})
+    for prop in (out.get("properties") or {}).values():
+        if isinstance(prop, dict) and prop.get("x-enum-from") == "judge-approvals":
+            prop["enum"] = judge_choices(c, ws)
+    return out
+
+
+def public(row, c=None, ws=None):
     m = row["manifest"] or {}
     return {
         "id": row["runtime_id"],
         "version": row["version"],
         "name": m.get("name"),
-        "settings_schema": row["settings_schema"],
+        "settings_schema": schema_for(row["settings_schema"], c, ws),
         "reads": row["reads"],
         "calls_model": row["calls_model"],
         "state": row["state"],
@@ -195,11 +218,14 @@ def public(row):
     }
 
 
-def list_plugins(c, qualified_only=True):
+def list_plugins(c, qualified_only=True, ws=None):
     sql = "SELECT * FROM catalog.framework_versions WHERE manifest IS NOT NULL"
     if qualified_only:
         sql += " AND state='qualified'"
-    return [public(r) for r in c.execute(sql + " ORDER BY runtime_id, created_at DESC").fetchall()]
+    return [
+        public(r, c, ws)
+        for r in c.execute(sql + " ORDER BY runtime_id, created_at DESC").fetchall()
+    ]
 
 
 def resolve(c, plugin):

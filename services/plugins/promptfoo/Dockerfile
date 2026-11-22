@@ -11,5 +11,5 @@ ENV HOME=/tmp PROMPTFOO_DISABLE_TELEMETRY=1 PROMPTFOO_DISABLE_UPDATE=1 NODE_ENV=
 RUN useradd --system --uid 10001 --no-create-home --shell /usr/sbin/nologin verifier
 USER 10001
 ENTRYPOINT ["node", "/app/plugin.mjs"]
-LABEL ai.adi-labs.verifier-plugin.id="promptfoo" ai.adi-labs.verifier-plugin.version="1.0.0" \
+LABEL ai.adi-labs.verifier-plugin.id="promptfoo" ai.adi-labs.verifier-plugin.version="1.1.0" \
       ai.adi-labs.verifier-plugin.upstream="promptfoo@0.125.1"

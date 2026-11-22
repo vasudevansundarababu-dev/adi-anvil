@@ -268,7 +268,7 @@ def plugin_results(c, episode, manifest, vctx, bundle, reference):
         answers = {}
         for b in blocks:
             st = b.get("settings") or {}
-            if st.get("judge") and st.get("rubric"):
+            if st.get("judge") and st.get("judge") != "mock-judge" and st.get("rubric"):
                 # An approved judge model answers outside the sandbox (gateway, approval use `judge`).
                 from anvil.rlgym.live import judge as live_judge
 

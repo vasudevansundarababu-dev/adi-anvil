@@ -27,6 +27,7 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
 | 2.13 Branding | done | ADI Labs Forge lockup on navy with the gradient rule on every v2 screen and the sign-in page; Keycloak login theme (applied to the existing realm with `python3 scripts/local.py keycloak-theme`); titles `<Page> · RL Gym Evaluation · ADI Labs Forge`; PDF full logo on page 1 and running header; Authoring on screen; banned-name unit test (RG-45) |
 
 - **22 Nov 2026, Promptfoo plug-in (RG-51):**
+  - **1.1.0** adopts Studio's settings schema (required judge and threshold, `reference` for factuality, judge choices = `mock-judge` plus models with an active `judge` approval, filled when listed and validated); image `sha256:dae7828baede…`, qualified (3/3). 1.0.0 deprecated as superseded.
   - **Downloads:** promptfoo 0.125.1 and the Node 22 image, approved by the owner.
   - **Build:** the image was built offline as `sha256:b13291f8ed73…`.
   - **Install:** installed and qualified in adi-labs-research; 3 known cases with recorded judge answers pass.

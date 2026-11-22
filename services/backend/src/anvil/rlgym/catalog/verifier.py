@@ -235,9 +235,8 @@ def plugin_reasons(c, blocks, failure_taxonomy, files):
             )
             continue
         settings = b.get("settings") or {}
-        reasons += [
-            f"{bid}: {e}" for e in contract.schema_errors(row["settings_schema"] or {}, settings)
-        ]
+        schema = plugins.schema_for(row["settings_schema"], c, _ws(c))
+        reasons += [f"{bid}: {e}" for e in contract.schema_errors(schema, settings)]
         if b.get("on_fail") not in (failure_taxonomy or []):
             reasons.append(
                 f"{bid}: on_fail {b.get('on_fail')!r} is not in the template's failure_taxonomy"
@@ -257,6 +256,11 @@ def plugin_reasons(c, blocks, failure_taxonomy, files):
         if sha and sha not in (files or {}):
             reasons.append(f"{bid}: rules file {sha[:12]}… is not in the release's verifier_files")
     return reasons
+
+
+def _ws(c):
+    row = c.execute("SELECT infra.current_workspace() AS ws").fetchone()
+    return row and row["ws"]
 
 
 def legacy(blocks):

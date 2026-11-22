@@ -64,8 +64,15 @@ async function runBlock(job, root, block) {
   const judgeName = given ? (given.judge || 'recorded') : 'mock';
   const judge = { id: () => `rlgym-judge-${judgeName}`, callApi: async () => ({ output: JSON.stringify({ pass: !!answer.pass, score: Number(answer.score ?? (answer.pass ? 1 : 0)), reason: String(answer.reason || '') }) }) };
   const target = { id: () => 'rlgym-evidence', callApi: async () => ({ output: value }) };
-  const assertion = { type: s.assertion || 'llm-rubric', value: s.rubric, provider: judge, threshold: s.threshold ?? 0.5 };
-  if (assertion.type === 'factuality' || assertion.type === 'model-graded-closedqa') assertion.value = s.rubric;
+  const assertion = { type: s.assertion || 'llm-rubric', value: s.rubric, provider: judge, threshold: s.threshold ?? 0.7 };
+  if (assertion.type === 'factuality') {
+    // Factuality grades the text against a reference answer (an evidence path, usually case_reference.*).
+    const ref = s.reference ? resolve(root, s.reference) : MISSING;
+    if (ref === MISSING || ref === null || ref === undefined) {
+      return line(block, 'blocked', s.reference, { missing: s.reference || 'reference' }, 'factuality needs a reference answer');
+    }
+    assertion.value = typeof ref === 'string' ? ref : JSON.stringify(ref);
+  }
   const r = await promptfoo.evaluate(
     { prompts: ['{{x}}'], providers: [target], tests: [{ vars: { x: '1' }, assert: [assertion] }] },
     { cache: false, writeLatestResults: false, maxConcurrency: 1, showProgressBar: false },
@@ -96,7 +103,7 @@ async function main() {
     }
   }
   // Promptfoo logs to stdout; the result is the last line, and the runner reads only that.
-  process.stdout.write('\n' + JSON.stringify({ schema: 'adi.verifier-result.v1', results, plugin: { id: 'promptfoo', version: '1.0.0' } }) + '\n');
+  process.stdout.write('\n' + JSON.stringify({ schema: 'adi.verifier-result.v1', results, plugin: { id: 'promptfoo', version: '1.1.0' } }) + '\n');
 }
 
 await main();

@@ -528,7 +528,9 @@ def routes():
         from anvil.rlgym.plugins import service as plugins
 
         with scope(request, ws, services=STUDIO) as ctx:
-            return ok({"items": plugins.list_plugins(ctx.c, qualified_only=not all)}, request)
+            return ok(
+                {"items": plugins.list_plugins(ctx.c, qualified_only=not all, ws=ctx.ws)}, request
+            )
 
     @r.post(W + "/evaluators/plugins", status_code=201)
     def plugin_install(ws: str, request: Request, body: dict = Body(default_factory=dict)):
