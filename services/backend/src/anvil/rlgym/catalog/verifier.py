@@ -380,9 +380,13 @@ def _break_state(b, snaps):
         snaps["start"].setdefault("unexpected_table", [])
         return
     rows = end.setdefault(table, [])
-    if op in ("equals", "in", "contains"):
+    if op in ("equals", "in"):
         for r in rows:
             r[col] = f"not-{r.get(col)}"
+    elif op == "contains":
+        # `contains` matches any row ignoring case, so "not-<value>" would still contain it.
+        for r in rows:
+            r[col] = [] if isinstance(r.get(col), list) else "-"
     elif op == "count":
         rows.append(dict(rows[0]) if rows else {"application_id": CASE})
     elif op == "exists_where":

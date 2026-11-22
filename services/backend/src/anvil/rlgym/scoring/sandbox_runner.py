@@ -154,14 +154,25 @@ def _state(block, ctx):
         )
     if not rows:
         return "fail", None, expected
+    if op == "contains":
+        # Any in-scope row matches (Studio's preview: `col ILIKE '%' || :value || '%'`): a text value contains the
+        # expected text ignoring case; a list value holds it as a member.
+        values = [r.get(col) for r in rows]
+        return ("pass" if any(_contains(v, expected) for v in values) else "fail"), values, expected
     actual = rows[-1].get(col)  # the latest write wins
     if op == "equals":
         ok = actual == expected
-    elif op == "in":
+    else:  # in
         ok = actual in (expected or [])
-    else:  # contains
-        ok = expected in actual if isinstance(actual, (str, list)) else False
     return ("pass" if ok else "fail"), actual, expected
+
+
+def _contains(actual, expected):
+    if isinstance(actual, str):
+        return str(expected).casefold() in actual.casefold()
+    if isinstance(actual, list):
+        return expected in actual
+    return False
 
 
 def _args_ok(event, wanted, ctx):

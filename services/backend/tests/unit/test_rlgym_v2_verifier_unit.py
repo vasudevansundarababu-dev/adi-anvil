@@ -105,6 +105,19 @@ def _end(*rows, **tables):
         (_state("in", {"fixed": ["approve"]}), _end(_rec("escalate")), "fail"),
         (_state("contains", {"fixed": "esc"}), _end(_rec("escalate")), "pass"),
         (
+            _state("contains", {"fixed": "Screening_HIT"}),
+            _end(_rec("Possible screening_hit on PEP list"), _rec("approve")),
+            "pass",
+        ),  # any in-scope row, ignoring case: the match is in the first row, not the latest
+        (_state("contains", {"fixed": "hit"}), _end(_rec("approve"), _rec("clear")), "fail"),
+        (
+            _state("contains", {"fixed": "hit"}),
+            _end(_rec("screening hit", case="other"), _rec("approve")),
+            "fail",
+        ),  # another case's row is out of scope
+        (_state("contains", {"fixed": "pep"}), _end(_rec(["PEP", "sanctions"])), "fail"),
+        (_state("contains", {"fixed": "PEP"}), _end(_rec(["PEP", "sanctions"])), "pass"),
+        (
             _state("exists_where", {"fixed": "escalate"}),
             _end(_rec("approve"), _rec("escalate")),
             "pass",
