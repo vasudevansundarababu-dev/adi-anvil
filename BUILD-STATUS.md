@@ -38,7 +38,13 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
     application_id); `decision.no_other_writes` allows no findings, information_requests or referrals;
     `screening.finding` needs the exact value `screening_hit`.
   - **Agent fixes:** a lower-case rationale keyword; findings only for real problems.
-  - **Blocked:** a third run (to confirm the fix) waits on Studio's registry, which answers 401 to the RL Gym's key.
+  - **Third run (done):** after Studio restarted with the shared key (registry 200), run-0221 on prj_kycstudio03
+    (golden-kyc-openenv@6) scored 120/120 episodes with no CONFLICT; the one-running-episode lease holds. Synthetic
+    mock agents only, not model performance. Means 58.75 / 55.31 / 58.75 (diligent / erratic / skips-screening).
+    `screening.read_first` fails 120/120 (v3 template, fixed by Studio for v4), so skips-screening ties diligent.
+    Thirteen criteria get no signal from the mock agents: 11 blocked and 2 failing on every episode.
+  - **Scorer for real Authoring (c74f38a):** slots and extra State checks read from `private.verifiers`; an extra
+    check without a criterion joins the criteria that read its table. Unit tests: 480 passed.
 - **22 Nov 2026, Promptfoo plug-in (RG-51):**
   - **1.1.0** adopts Studio's settings schema (required judge and threshold, `reference` for factuality, judge choices = `mock-judge` plus models with an active `judge` approval, filled when listed and validated); image `sha256:dae7828baede…`, qualified (3/3). 1.0.0 deprecated as superseded.
   - **Downloads:** promptfoo 0.125.1 and the Node 22 image, approved by the owner.
