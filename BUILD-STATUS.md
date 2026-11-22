@@ -45,6 +45,20 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
     Thirteen criteria get no signal from the mock agents: 11 blocked and 2 failing on every episode.
   - **Scorer for real Authoring (c74f38a):** slots and extra State checks read from `private.verifiers`; an extra
     check without a criterion joins the criteria that read its table. Unit tests: 480 passed.
+- **22 Nov 2026, first live smoke run (RG-49), Claude Haiku 5.5:**
+  - **Authority:** the owner set `ANVIL_LIVE_PROVIDERS_ENABLED=true` and recorded approval `la-f3ecdeb9d9ce` as admin-2
+    (anthropic · `claude-haiku-5-5`, uses agent/probe/key_test, $25 per run, $300 total, prices entered $1 / $1 per
+    Mtok, expires 22 Dec 2026), and added the Anthropic key in Admin → Keys. The run was started by admin-1.
+  - **Checks:** model id confirmed from Anthropic's model list (free); key test valid (lists models, free); probe ok,
+    430 ms, 20 in / 4 out tokens.
+  - **Run:** run-0222 on prj_kycstudio03 (Studio golden-kyc-openenv@6), a 3-case suite, Trust & Safety off, budget $5:
+    3/3 scored, mean 37.5, gate PASSED. Real model calls on synthetic cases (episode note says so).
+  - **Spend (ledger):** 41 agent calls, 684,520 input and 16,925 output tokens, recorded $0.7014 at the entered prices
+    (about $0.077 at the reference $0.10 / $0.50 rates). Approval total so far $0.7015 of $300. No ambiguous or retried
+    calls.
+  - **What the model did:** one case ended after 6 steps without a recommendation; one recommended
+    `specialist_review` (reference `ready_for_approval`) and wrote a finding; one ran 18 steps without recommending.
+    `screening.read_first` fails on all three (v3 template issue, fixed by Studio for v4).
 - **22 Nov 2026, Promptfoo plug-in (RG-51):**
   - **1.1.0** adopts Studio's settings schema (required judge and threshold, `reference` for factuality, judge choices = `mock-judge` plus models with an active `judge` approval, filled when listed and validated); image `sha256:dae7828baede…`, qualified (3/3). 1.0.0 deprecated as superseded.
   - **Downloads:** promptfoo 0.125.1 and the Node 22 image, approved by the owner.
