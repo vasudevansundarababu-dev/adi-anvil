@@ -32,7 +32,7 @@ RISK = [
     ("expired_id", "Expired ID", "account_exceptions", "logged the exception"),
     ("address_mismatch", "Conflicting address", "account_exceptions", "logged the exception"),
 ]
-SME_NOTE = "Not yet sent: SME review batches are work package 2.9."
+SME_NOTE = "Not yet sent: no SME review batch for this run (Run page → SME review)."
 FOOTER = (
     "Automated scores are kept. SME decisions add a reviewed score beside them (work package 2.9). "
     "Controlled mock agents: synthetic results, not model performance."
@@ -110,6 +110,17 @@ class Data:
             ).fetchall()
         }
         self._bundles = {}
+        from anvil.rlgym.results import sme
+
+        self.reviewed = sme.reviewed_for_run(c, run_id)
+        self.sme_items = {
+            r["episode_id"]: r
+            for r in c.execute(
+                """SELECT i.*, b.state batch_state, b.id batch FROM results.sme_review_items i
+                   JOIN results.sme_review_batches b ON b.id=i.batch_id WHERE b.run_id=%s ORDER BY b.created_at""",
+                (run_id,),
+            ).fetchall()
+        }
 
     def name(self, system_id):
         return next((m["name"] for m in self.models if m["system_id"] == system_id), system_id)
@@ -214,7 +225,14 @@ def score_cards(d):
                 "pass_rate": _pct(sum(1 for e in scored if e["passed"]), len(scored)),
                 "gate": "FAILED" if (crit or gate_failures) else "PASSED" if scored else None,
                 "gate_notes": notes,
-                "reviewed": None,
+                "reviewed": (
+                    {
+                        k: d.reviewed[m["system_id"]][k]
+                        for k in ("automated", "reviewed", "excluded", "batch_id")
+                    }
+                    if m["system_id"] in d.reviewed
+                    else None
+                ),
             }
         )
     return cards
@@ -240,7 +258,7 @@ def header(d):
         "manifest_sha256": d.manifest_sha256,
         "pass": {"number": d.pass_row["pass"], "reason": d.pass_row["reason"]},
         "rescored": d.run["rescored"],
-        "reviewed": False,
+        "reviewed": bool(d.reviewed),
         "cohort": (
             f"Matched cohort: {len(m['data_plan']['case_ids'])} cases × {attempts} attempt{'s' if attempts != 1 else ''} · "
             f"same suite ({m['suite']['name']} v{m['suite']['version']}), environment "
@@ -249,6 +267,83 @@ def header(d):
         "models": d.models,
         "note": m["note"],
         "footer": FOOTER,
+    }
+
+
+def _sme_text(item):
+    if not item:
+        return "—"
+    if item["decision"]:
+        return {
+            "agent_failure": "Agent failure confirmed",
+            "task_correction": "Task needs correction",
+            "rubric_correction": "Rubric needs correction",
+            "grader_wrong": "Grader is wrong",
+            "environment_wrong": "Environment is wrong",
+        }[item["decision"]]
+    return "In review" if item["batch_state"] != "building" else "Sending"
+
+
+def review_sample(d):
+    """Stage 1 automated (sealed) and stage 2 SME reviewed, per review item; reviewed = kept or excluded."""
+    if not d.sme_items:
+        return {"items": [], "state": SME_NOTE}
+    rows = []
+    by_id = {e["id"]: e for e in d.episodes}
+    for episode_id, item in d.sme_items.items():
+        e = by_id.get(episode_id)
+        if not e:
+            continue
+        auto = e["score"]
+        reviewed = (
+            None
+            if not item["decision"]
+            else ("excluded" if item["excluded_from_reviewed"] else auto)
+        )
+        rows.append(
+            {
+                "item_id": item["id"],
+                "batch_id": item["batch"],
+                "episode_id": episode_id,
+                "task_id": e["task_id"],
+                "revision": e["task_revision"],
+                "case_id": e["case_id"],
+                "model": d.name(e["system_id"]),
+                "automated": auto,
+                "reviewed": reviewed,
+                "decision": _sme_text(item),
+                "rationale": item["rationale"],
+                "decided_by": item["decided_by"],
+                "rl_engineer": "Diagnosis saved"
+                if episode_id in d.diagnoses
+                else "Awaiting diagnosis",
+            }
+        )
+    decided = sum(1 for r in rows if r["reviewed"] is not None)
+    return {
+        "items": rows,
+        "state": f"{decided} of {len(rows)} decided by SMEs in ADI Forge"
+        + (" · reviewed" if d.reviewed else ""),
+    }
+
+
+def _stage2(d, e):
+    item = d.sme_items.get(e["id"])
+    if not item:
+        return {"state": SME_NOTE}
+    if not item["decision"]:
+        return {
+            "state": "Awaiting SME decision"
+            if item["batch_state"] != "building"
+            else "Sending to ADI Forge"
+        }
+    return {
+        "state": _sme_text(item),
+        "reviewed": "excluded from the reviewed score"
+        if item["excluded_from_reviewed"]
+        else e["score"],
+        "rationale": item["rationale"],
+        "decided_by": item["decided_by"],
     }
 
 
@@ -265,7 +360,7 @@ def overview(d):
     caps = capability_values(d)
     return {
         "cards": score_cards(d),
-        "review_sample": {"items": [], "state": SME_NOTE},
+        "review_sample": review_sample(d),
         "scores_by_task": [
             {
                 "task_id": tid,
@@ -427,14 +522,14 @@ def failures(d):
                 "likely_cause": e["likely_cause"],
                 "likely_cause_source": e["likely_cause_source"],
                 "failed_criteria": e["failed_criteria"] or [],
-                "sme": "—",
+                "sme": _sme_text(d.sme_items.get(e["id"])),
                 "diagnosis": "Diagnosis saved" if e["id"] in d.diagnoses else None,
             }
             for e in sorted(
                 failed, key=lambda x: (x["system_id"], x["task_id"], x["case_id"], x["attempt"])
             )
         ],
-        "review_sample": {"items": [], "state": SME_NOTE},
+        "review_sample": review_sample(d),
     }
 
 
@@ -830,7 +925,7 @@ def review_drill(d, episode_id, actor):
             "blocked": (bundle.get("environment_state") or {}).get("blocked", []),
         },
         "stage1": {"score": e["score"], "passed": e["passed"], "pass": d.pass_row["pass"]},
-        "stage2": {"state": SME_NOTE},
+        "stage2": _stage2(d, e),
         "receipts": [
             {
                 "criterion_id": cid,

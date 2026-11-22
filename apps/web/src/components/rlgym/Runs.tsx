@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { GymApiError, send, short, when, wsBase } from './api';
+import Episode from './Episode';
 import Report from './Report';
+import Sme from './Sme';
 import { Badge, Failure, Hash, Loading, Search, Tabs, useData, useGym } from './ui';
 
 // Runs (SCREENS 3.17-3.21): list, New run with the admission checklist, Compare, and the run page (Overview, Report,
@@ -748,13 +750,9 @@ function RunPage({ id, tab, rest }: { id: string; tab: string; rest: string[] })
               />
               {tab === 'overview' && <Overview r={r} />}
               {tab === 'report' && <Report id={id} rest={rest} />}
-              {tab === 'episodes' && <Episodes id={id} r={r} />}
-              {tab === 'sme' && (
-                <div className="banner" role="status">
-                  <strong>Not built yet (work package 2.9).</strong> SME review batches are sent to
-                  ADI Forge from here; that package also adds the episode viewer.
-                </div>
-              )}
+              {tab === 'episodes' &&
+                (rest[0] ? <Episode runId={id} episodeId={rest[0]} /> : <Episodes id={id} r={r} />)}
+              {tab === 'sme' && <Sme runId={id} />}
             </>
           );
         }}
@@ -1056,7 +1054,7 @@ function Episodes({ id, r }: { id: string; r: any }) {
                   {list.data.items.map((e: any) => (
                     <tr key={e.id}>
                       <td style={{ textAlign: 'left' }}>
-                        {e.id}
+                        <Link href={`/gym/runs/${id}/episodes/${e.id}`}>{e.id}</Link>
                         <small>
                           {e.kind === 'safety' ? `safety · ${e.ts_category}` : 'normal'} · attempt{' '}
                           {e.attempt}

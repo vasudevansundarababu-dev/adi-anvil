@@ -157,7 +157,10 @@ def appendices(d, view):
             "episodes": ", ".join(f"{k} {v}" for k, v in sorted(counts.items())),
             "scoring pass": f"{d.pass_row['pass']} ({d.pass_row['reason']})",
             "evaluator versions sha256": d.pass_row["evaluator_versions_sha256"],
-            "how scores were reviewed": "Automated only; SME review is work package 2.9",
+            "how scores were reviewed": (
+                "Automated scores kept; reviewed scores from SME decisions in ADI Forge: "
+                + view["overview"]["review_sample"]["state"]
+            ),
             "execution": m["note"],
             "limits": "Python evaluator framework only; Promptfoo not installed (local prompt generator and safety oracle); environment built locally from the Studio stub recipe.",
         },

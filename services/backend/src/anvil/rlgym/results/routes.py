@@ -111,3 +111,109 @@ def routes():
         )
 
     return r
+
+
+def sme_routes():
+    """Episode viewer and SME review (SCREENS 3.38-3.39)."""
+    from anvil.rlgym.results import episodes, sme
+
+    r = APIRouter()
+
+    @r.get(W + "/episodes/{episode_id}")
+    def episode(ws: str, episode_id: str, request: Request):
+        with scope(request, ws, services=("studio",)) as ctx:
+            return ok(episodes.view(ctx.c, ctx.ws, ctx.actor, episode_id), request)
+
+    @r.get(W + "/episodes/{episode_id}/compare")
+    def compare(ws: str, episode_id: str, request: Request, other: str):
+        with scope(request, ws) as ctx:
+            return ok(episodes.compare(ctx.c, ctx.ws, ctx.actor, episode_id, other), request)
+
+    @r.put(W + "/episodes/{episode_id}/suspected-cause")
+    def cause(ws: str, episode_id: str, request: Request, body: dict = Body(default_factory=dict)):
+        with scope(request, ws) as ctx:
+            return ok(
+                idempotent(
+                    ctx,
+                    request,
+                    body,
+                    lambda: episodes.set_cause(ctx.c, ctx.ws, ctx.actor, episode_id, body),
+                ),
+                request,
+            )
+
+    @r.get(W + "/runs/{run_id}/sme-review")
+    def run_sme(ws: str, run_id: str, request: Request):
+        with scope(request, ws) as ctx:
+            return ok(sme.run_view(ctx.c, ctx.ws, run_id), request)
+
+    @r.post(W + "/runs/{run_id}/sme-review-batches", status_code=201)
+    def create_batch(
+        ws: str, run_id: str, request: Request, body: dict = Body(default_factory=dict)
+    ):
+        with scope(request, ws) as ctx:
+            return ok(
+                idempotent(
+                    ctx,
+                    request,
+                    body,
+                    lambda: sme.create_batch(ctx.c, ctx.ws, ctx.actor, run_id, body),
+                ),
+                request,
+                201,
+            )
+
+    @r.get(W + "/sme-review-batches/{batch_id}")
+    def batch(ws: str, batch_id: str, request: Request):
+        with scope(request, ws, services=("adi-forge",)) as ctx:
+            return ok(sme.batch_view(ctx.c, ctx.ws, batch_id), request)
+
+    @r.post(W + "/sme-review-batches/{batch_id}/decisions")
+    def decisions(
+        ws: str, batch_id: str, request: Request, body: dict = Body(default_factory=dict)
+    ):
+        # Only ADI Forge sends SME decisions; SMEs have no RL Gym account.
+        with scope(request, ws, services=("adi-forge",), people=False) as ctx:
+            return ok(
+                idempotent(
+                    ctx,
+                    request,
+                    body,
+                    lambda: sme.receive_decisions(ctx.c, ctx.ws, ctx.actor, batch_id, body),
+                ),
+                request,
+            )
+
+    @r.post(W + "/sme-review-items/{item_id}/grader-fix", status_code=201)
+    def grader_fix(
+        ws: str, item_id: str, request: Request, body: dict = Body(default_factory=dict)
+    ):
+        with scope(request, ws) as ctx:
+            return ok(
+                idempotent(
+                    ctx,
+                    request,
+                    body,
+                    lambda: sme.grader_fix(ctx.c, ctx.ws, ctx.actor, item_id, body),
+                ),
+                request,
+                201,
+            )
+
+    @r.post(W + "/sme-review-items/{item_id}/validation-run", status_code=201)
+    def validation(
+        ws: str, item_id: str, request: Request, body: dict = Body(default_factory=dict)
+    ):
+        with scope(request, ws) as ctx:
+            return ok(
+                idempotent(
+                    ctx,
+                    request,
+                    body,
+                    lambda: sme.validation_run(ctx.c, ctx.ws, ctx.actor, item_id),
+                ),
+                request,
+                201,
+            )
+
+    return r

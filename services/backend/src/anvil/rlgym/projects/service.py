@@ -305,6 +305,10 @@ def receive_export(c, ws, actor, project_id, body):
         body.get("reason"),
         receipt,
     )
+    # Corrected revisions after SME review link back to their batch (07.9 step 5).
+    from anvil.rlgym.results import sme
+
+    sme.on_export(c, ws, project_id, [t.get("sme_batch_id") for t in body["tasks"]])
     return receipt
 
 

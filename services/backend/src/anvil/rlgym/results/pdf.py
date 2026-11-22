@@ -115,6 +115,11 @@ def cards(items):
             f'<div class="big">{e(c.get("mean"))}<span class="muted" style="font-size:9px"> /100</span></div>'
             f'<div class="muted">automated · likely range {e(rng[0]) + "–" + e(rng[1]) if rng else "—"} · {e(c.get("scored"))} scored · passed {pct(c.get("pass_rate"))}</div>'
             + (
+                f"<div>reviewed {e(c['reviewed']['reviewed'])} · automated {e(c['reviewed']['automated'])} · {e(c['reviewed']['excluded'])} excluded</div>"
+                if c.get("reviewed")
+                else ""
+            )
+            + (
                 f'<div style="color:#b3261e">{e("; ".join(c["gate_notes"]))}</div>'
                 if c.get("gate_notes")
                 else ""
@@ -150,7 +155,7 @@ def render(view, appendix):
 <tr><th>Environment</th><td>{e(h["environment"])} · seed family {e(h["seed_family"])}</td></tr>
 <tr><th>Evaluators</th><td>{e(h["evaluators"])} configurations · scoring pass {e(h["pass"]["number"])} ({e(h["pass"]["reason"])})</td></tr>
 <tr><th>Manifest</th><td class="mono">{e(h["manifest_sha256"])}</td></tr>
-<tr><th>SME review</th><td>Not reviewed (SME review batches are work package 2.9)</td></tr>
+<tr><th>SME review</th><td>{e(ov["review_sample"]["state"])}</td></tr>
 <tr><th>Report</th><td>revision {e(appendix["revision"])} · view <span class="mono">{e(appendix["view_sha256"])}</span></td></tr>
 </tbody></table>
 <h3>Contents</h3><ol class="toc"><li>Overview</li><li>Task results</li><li>Agent performance</li><li>Failures &amp; evidence</li><li>Trust &amp; Safety</li>
@@ -160,6 +165,31 @@ def render(view, appendix):
     parts.append("<section><h2>1 Overview</h2>" + cards(ov["cards"]))
     parts.append(
         f"<h3>SME review sample</h3><p class='muted'>{e(ov['review_sample']['state'])}</p>"
+        + (
+            table(
+                [
+                    "Review item",
+                    "Model",
+                    "Automated",
+                    "SME reviewed",
+                    "SME decision",
+                    "RL engineer",
+                ],
+                [
+                    [
+                        e(f"{r['task_id']} r{r['revision']} · {r['case_id']}"),
+                        e(r["model"]),
+                        e(r["automated"]),
+                        e(r["reviewed"]),
+                        e(f"{r['decision']} · {r['rationale'] or ''}"),
+                        e(r["rl_engineer"]),
+                    ]
+                    for r in ov["review_sample"]["items"]
+                ],
+            )
+            if ov["review_sample"]["items"]
+            else ""
+        )
     )
     parts.append("<h3>Scores by task</h3>")
     parts.append(

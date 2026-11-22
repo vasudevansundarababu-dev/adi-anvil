@@ -512,7 +512,7 @@ function CaseBody({ id, c, models }: { id: string; c: any; models: Model[] }) {
               {e.failed_criteria.length ? ` · failed ${e.failed_criteria.join(', ')}` : ''}
             </small>
             <div className="row">
-              <Link href={`/gym/runs/${id}/episodes?q=${e.episode_id}&from=report`}>
+              <Link href={`/gym/runs/${id}/episodes/${e.episode_id}?from=report`}>
                 Evidence {e.episode_id}
               </Link>
               {e.verdict === 'failed' && (
@@ -590,7 +590,7 @@ function FailuresView({ id, v, models }: { id: string; v: any; models: Model[] }
         head={['Episode', 'Model', 'Score', 'Likely cause', 'Failed criteria', 'SME', '']}
         rows={rows.slice((page - 1) * 20, page * 20).map((e: any) => [
           <span key="e">
-            <Link href={`/gym/runs/${id}/episodes?q=${e.episode_id}&from=report`}>
+            <Link href={`/gym/runs/${id}/episodes/${e.episode_id}?from=report`}>
               {e.task_id} · {e.case_id} · a{e.attempt}
             </Link>
             <small>
@@ -669,7 +669,7 @@ function TsView({ id, v, models }: { id: string; v: any; models: Model[] }) {
         <ModelTable
           head={['Episode', 'Model', 'Category', 'What happened']}
           rows={v.critical_incidents.map((i: any) => [
-            <Link key="e" href={`/gym/runs/${id}/episodes?q=${i.episode_id}&from=report`}>
+            <Link key="e" href={`/gym/runs/${id}/episodes/${i.episode_id}?from=report`}>
               {i.episode_id}
             </Link>,
             i.model,
@@ -836,7 +836,7 @@ function Drill({ id, kind, keyName }: { id: string; kind: string; keyName: strin
                       {p.outcomes.map((o: any) => (
                         <Link
                           key={o.episode_id}
-                          href={`/gym/runs/${id}/episodes?q=${o.episode_id}&from=report`}
+                          href={`/gym/runs/${id}/episodes/${o.episode_id}?from=report`}
                         >
                           {o.system_id} a{o.attempt}: {(o.outcome ?? '—').replace(/_/g, ' ')}
                           {o.critical ? ' · critical' : ''}
@@ -1099,7 +1099,7 @@ function Review({ id, d }: { id: string; d: any }) {
         ])}
       />
       <div className="row">
-        <Link href={`/gym/runs/${id}/episodes?q=${d.episode_id}&from=report`}>
+        <Link href={`/gym/runs/${id}/episodes/${d.episode_id}?from=report`}>
           Inspect recorded trace
         </Link>
       </div>

@@ -835,3 +835,78 @@ body:has(#gym) {
 #gym .report .grid3 {
   align-items: start;
 }
+
+/* Episode viewer and SME review (2.9) */
+#gym .viewer {
+  display: grid;
+  gap: 12px;
+}
+#gym .graph {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 8px 0;
+}
+#gym .graphrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+#gym .gnode {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 10px;
+  background: var(--panel);
+}
+#gym .gnode[data-s='taken'] {
+  background: var(--wash);
+  border-color: var(--green);
+}
+#gym .gnode[data-s='failed'] {
+  background: light-dark(#fbe3e1, #4b1f1c);
+  border-color: light-dark(#b3261e, #f2a29b);
+  font-weight: 600;
+}
+#gym .gnode[data-s='skipped'] {
+  opacity: 0.45;
+  border-style: dashed;
+}
+#gym .gnode[data-hi='yes'] {
+  outline: 3px solid light-dark(#3a7bd5, #7fb0f0);
+}
+#gym .gedge {
+  color: var(--muted);
+}
+#gym .gedge[data-s='taken'] {
+  color: var(--green);
+  font-weight: 700;
+}
+#gym .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+#gym .chips button {
+  font-size: 0.8rem;
+  padding: 3px 8px;
+}
+#gym tr[data-hi='yes'] td {
+  background: light-dark(#eaf2ff, #1f3550);
+}
+#gym tr[data-diff='yes'] td {
+  background: light-dark(#fff4d6, #4a3d12);
+}
+#gym .steps {
+  margin: 8px 0;
+  padding-inline-start: 20px;
+}
+#gym .steps li {
+  color: var(--muted);
+}
+#gym .steps li[data-done='yes'] {
+  color: var(--green);
+}
+#gym .sme {
+  align-items: start;
+}

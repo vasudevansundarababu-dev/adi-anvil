@@ -151,6 +151,11 @@ def dispatch_once(limit=50):
                 "UPDATE infra.outbox SET published_at=now(), attempts=attempts+1, last_error=NULL WHERE id=%s",
                 (row["id"],),
             )
+            if row["topic"] == "forge.run_review" and row["workspace_id"]:
+                from anvil.rlgym.results import sme
+
+                set_scope(c, row["workspace_id"])
+                sme.sent(c, row["workspace_id"], row["payload"]["data"]["_batch_id"], result)
             if row["topic"] == "inbox_item.send" and row["workspace_id"]:
                 set_scope(c, row["workspace_id"])
                 inbox.accepted(c, row["workspace_id"], row["payload"]["data"]["_item_id"], result)

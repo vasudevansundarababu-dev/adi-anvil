@@ -311,3 +311,55 @@ test('report: five views, drill-downs, diagnosis and PDF export', async ({ brows
   expect((await download).suggestedFilename()).toMatch(new RegExp(`report-${run.id}-r\\d+\\.pdf`));
   await page.screenshot({ path: 'artifacts/test-runs/rlgym-v2-report-pdf.png', fullPage: true });
 });
+
+test('episode viewer and SME review through the ADI Forge stub', async ({ browser }) => {
+  test.setTimeout(240000);
+  const page = await signIn(browser, 'researcher');
+  const runs = await page.request.get('/api/v1/workspaces/adi-labs-research/runs?state=completed');
+  const run = ((await runs.json()).data.items as { id: string; project_id: string }[]).find(
+    (r) => r.project_id === PROJECT,
+  );
+  test.skip(!run, 'needs a completed KYC November run (the new-run test makes one)');
+  await page.goto(`/gym/runs/${run!.id}/episodes`);
+  await page.getByRole('link', { name: new RegExp(`${run!.id}-e0001`) }).click();
+  await expect(page.getByRole('heading', { name: 'Path taken' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Timeline' })).toBeVisible();
+  await page.getByRole('button', { name: /^screening/ }).click();
+  await expect(page.getByText('golden-kyc:screening v')).toBeVisible();
+  await page.screenshot({
+    path: 'artifacts/test-runs/rlgym-v2-episode-viewer.png',
+    fullPage: true,
+  });
+  await page.goto(`/gym/runs/${run!.id}/sme`);
+  await page.getByLabel('Failed only').uncheck();
+  const boxes = page.getByRole('checkbox', { name: /^Include / });
+  await boxes.nth(0).check();
+  await boxes.nth(1).check();
+  await page.getByRole('button', { name: 'Send 2 to SME review' }).click();
+  await expect(page.getByText(/Batch smr-\d+ · 2 items/).first()).toBeVisible();
+  await expect(page.getByText(/ADI Forge rr-\d+/).first()).toBeVisible({ timeout: 30000 });
+  const view = await page.request.get(
+    `/api/v1/workspaces/adi-labs-research/runs/${run!.id}/sme-review`,
+  );
+  const batch = (await view.json()).data.batches[0];
+  const decide = await page.request.post(
+    `http://127.0.0.1:8212/stub/projects/${PROJECT}/sme-decisions/${batch.id}`,
+    {
+      data: {
+        decisions: batch.items.map((i: { id: string }, n: number) => ({
+          item_id: i.id,
+          decision: n === 0 ? 'agent_failure' : 'environment_wrong',
+          rationale: 'Decided in the ADI Forge stub (e2e)',
+          decided_by: 'SME (ADI Forge stub)',
+        })),
+      },
+    },
+  );
+  expect((await decide.json()).status).toBe(200);
+  await page.reload();
+  await expect(page.getByText('Agent failure confirmed').first()).toBeVisible();
+  await expect(page.getByText(/automated → reviewed/).first()).toBeVisible();
+  await page.screenshot({ path: 'artifacts/test-runs/rlgym-v2-sme-review.png', fullPage: true });
+  await page.goto(`/gym/runs/${run!.id}/report`);
+  await expect(page.getByText(/2 of 2 decided by SMEs in ADI Forge/)).toBeVisible();
+});
