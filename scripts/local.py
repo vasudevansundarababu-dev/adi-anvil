@@ -334,16 +334,37 @@ def _node_plugin_build(name, src, manifest):
     lock = (src / "package-lock.json").read_bytes()
     if hashlib.sha256(lock).hexdigest() != up["lockfile_sha256"]:
         raise SystemExit("package-lock.json does not match the manifest's lockfile_sha256")
-    if not (vendor / "node_modules").is_dir() or (vendor / "package-lock.json").read_bytes() != lock:
-        raise SystemExit(f"{vendor} must hold node_modules installed from this lockfile; nothing is downloaded here")
+    if (
+        not (vendor / "node_modules").is_dir()
+        or (vendor / "package-lock.json").read_bytes() != lock
+    ):
+        raise SystemExit(
+            f"{vendor} must hold node_modules installed from this lockfile; nothing is downloaded here"
+        )
     build = LOCAL / "plugins" / f"build-{name}"
     shutil.rmtree(build, ignore_errors=True)
     shutil.copytree(src, build, ignore=shutil.ignore_patterns("manifest.json", "__pycache__"))
     shutil.copytree(vendor / "node_modules", build / "node_modules", symlinks=True)
     tag = f"rlgym-local/verifier-{name}:{manifest['version']}"
-    run(["docker", "build", "--quiet", "--network", "none", "--build-arg", f"BASE_IMAGE={up['base_image']}", "-t", tag, str(build)])
+    run(
+        [
+            "docker",
+            "build",
+            "--quiet",
+            "--network",
+            "none",
+            "--build-arg",
+            f"BASE_IMAGE={up['base_image']}",
+            "-t",
+            tag,
+            str(build),
+        ]
+    )
     image = subprocess.run(
-        ["docker", "image", "inspect", "--format", "{{.Id}}", tag], capture_output=True, text=True, check=True
+        ["docker", "image", "inspect", "--format", "{{.Id}}", tag],
+        capture_output=True,
+        text=True,
+        check=True,
     ).stdout.strip()
     manifest["image"] = image
     out = LOCAL / "plugins" / f"{manifest['id']}-{manifest['version']}.json"
