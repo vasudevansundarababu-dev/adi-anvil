@@ -13,6 +13,29 @@ from anvil.rlgym.common import GymError, all_workspaces, emit, new_id, set_scope
 from anvil.rlgym.integrations import registry_get, studio_url
 
 CONSUMER = "rlgym-catalog"
+IDENTITY = [
+    "id",
+    "contract_id",
+    "version",
+    "spec_sha256",
+    "image_digest",
+    "seed_ref",
+    "seed_sha256",
+    "seed_family",
+]
+
+
+def registry_id():
+    """The registry the mirror currently follows (RLGYM_STUDIO_URL): the local Studio stub or the local Studio."""
+    from anvil.rlgym.integrations import studio_url
+
+    return studio_url()
+
+
+def consumer():
+    return f"{CONSUMER}@{registry_id()}"
+
+
 CHECKS = ["health", "known_fixtures", "write_state", "reset", "state_cleared", "pending_cleared"]
 KNOWN_FIXTURES = ["kyc-individual-001", "kyc-teen-joint-003", "kyc-custodial-005"]
 VERSION_FIELDS = [
@@ -40,14 +63,46 @@ STATE_EVENTS = {
 }
 
 
-def _upsert_version(c, v, seq, state):
+def _identity_conflict(existing, v):
+    return [f for f in IDENTITY if str(existing.get(f)) != str(v.get(f))]
+
+
+def _upsert_version(c, v, seq, state, reg):
+    """Insert a version, or confirm it. A different registry may confirm a mirrored version only with the same
+    identity; anything else is a conflict, recorded and never applied (released versions are final)."""
+    existing = c.execute(
+        "SELECT * FROM catalog.environment_versions WHERE id=%s", (v["id"],)
+    ).fetchone()
+    if not existing:
+        clash = c.execute(
+            "SELECT id FROM catalog.environment_versions WHERE contract_id=%s AND version=%s",
+            (v.get("contract_id"), v.get("version")),
+        ).fetchone()
+        if clash:
+            return [f"id (already released as {clash['id']})"]
+    if existing:
+        diff = _identity_conflict(existing, v)
+        if diff:
+            return diff
+        c.execute(
+            """UPDATE catalog.environment_versions SET state=%s, state_seq=%s, registry=%s,
+                 case_catalog=coalesce(%s, case_catalog), mirrored_at=now()
+               WHERE id=%s AND (registry<>%s OR state_seq < %s)""",
+            (
+                state,
+                seq,
+                reg,
+                Jsonb(v.get("case_catalog")) if v.get("case_catalog") else None,
+                v["id"],
+                reg,
+                seq,
+            ),
+        )
+        return []
     c.execute(
         f"""INSERT INTO catalog.environment_versions({",".join(VERSION_FIELDS)},operations,schema_tables,image_recipe,
-              case_catalog,state,state_seq)
-            VALUES({",".join(["%s"] * len(VERSION_FIELDS))},%s,%s,%s,%s,%s,%s)
-            ON CONFLICT (id) DO UPDATE SET state=EXCLUDED.state, state_seq=EXCLUDED.state_seq,
-              case_catalog=coalesce(EXCLUDED.case_catalog, catalog.environment_versions.case_catalog), mirrored_at=now()
-            WHERE catalog.environment_versions.state_seq < EXCLUDED.state_seq""",
+              case_catalog,state,state_seq,registry)
+            VALUES({",".join(["%s"] * len(VERSION_FIELDS))},%s,%s,%s,%s,%s,%s,%s)""",
         (
             *[v.get(f) for f in VERSION_FIELDS],
             Jsonb(v.get("operations")),
@@ -56,8 +111,22 @@ def _upsert_version(c, v, seq, state):
             Jsonb(v.get("case_catalog")),
             state,
             seq,
+            reg,
         ),
     )
+    return []
+
+
+def _conflict(c, vid, diff, reg, kind):
+    for ws in all_workspaces(c):
+        set_scope(c, ws["id"])
+        emit(
+            c,
+            ws["id"],
+            "registry.identity_conflict",
+            vid,
+            {"version_id": vid, "registry": reg, "fields": diff, "event": kind},
+        )
 
 
 def apply_event(c, ev, via):
@@ -66,24 +135,30 @@ def apply_event(c, ev, via):
 
     data = ev["data"]
     seq = int(data["seq"])
-    if c.execute("SELECT 1 FROM catalog.registry_events WHERE seq=%s", (seq,)).fetchone():
+    reg = registry_id()
+    if c.execute(
+        "SELECT 1 FROM catalog.registry_events WHERE registry=%s AND seq=%s", (reg, seq)
+    ).fetchone():
         return False
     c.execute(
-        "INSERT INTO catalog.registry_events(seq,event_id,type,subject,payload,via) VALUES(%s,%s,%s,%s,%s,%s)",
-        (seq, ev["id"], ev["type"], ev.get("subject", ""), Jsonb(ev), via),
+        "INSERT INTO catalog.registry_events(registry,seq,event_id,type,subject,payload,via) VALUES(%s,%s,%s,%s,%s,%s,%s)",
+        (reg, seq, ev["id"], ev["type"], ev.get("subject", ""), Jsonb(ev), via),
     )
     kind = ev["type"]
     if kind == "version.registered":
-        _upsert_version(c, data["version"], seq, "registered")
+        diff = _upsert_version(c, data["version"], seq, "registered", reg)
+        if diff:
+            _conflict(c, data["version"]["id"], diff, reg, kind)
     elif kind in STATE_EVENTS:
         vid = data["version"]["id"]
-        if not c.execute(
-            "SELECT 1 FROM catalog.environment_versions WHERE id=%s", (vid,)
-        ).fetchone():
-            _upsert_version(c, data["version"], seq - 1 if seq > 1 else 0, "registered")
+        diff = _upsert_version(c, data["version"], seq - 1 if seq > 1 else 0, "registered", reg)
+        if diff:
+            _conflict(c, vid, diff, reg, kind)
+            return True
         c.execute(
-            "UPDATE catalog.environment_versions SET state=%s, state_reason=%s, state_seq=%s, mirrored_at=now() WHERE id=%s AND state_seq < %s",
-            (STATE_EVENTS[kind], data.get("reason"), seq, vid, seq),
+            """UPDATE catalog.environment_versions SET state=%s, state_reason=%s, state_seq=%s, registry=%s, mirrored_at=now()
+               WHERE id=%s AND (registry<>%s OR state_seq < %s)""",
+            (STATE_EVENTS[kind], data.get("reason"), seq, reg, vid, reg, seq),
         )
         for ws in all_workspaces(c):
             set_scope(c, ws["id"])
@@ -114,10 +189,11 @@ def receive(ev, via="webhook"):
     with system_scope() as c:
         c.execute(
             "INSERT INTO catalog.registry_cursor(consumer,last_seq) VALUES(%s,0) ON CONFLICT DO NOTHING",
-            (CONSUMER,),
+            (consumer(),),
         )
         last = c.execute(
-            "SELECT last_seq FROM catalog.registry_cursor WHERE consumer=%s FOR UPDATE", (CONSUMER,)
+            "SELECT last_seq FROM catalog.registry_cursor WHERE consumer=%s FOR UPDATE",
+            (consumer(),),
         ).fetchone()["last_seq"]
         if seq <= last:
             return {"status": "duplicate", "last_seq": last}
@@ -131,14 +207,14 @@ def receive(ev, via="webhook"):
                     top = max(top, int(item["data"]["seq"]))
             c.execute(
                 "UPDATE catalog.registry_cursor SET resynced_at=now() WHERE consumer=%s",
-                (CONSUMER,),
+                (consumer(),),
             )
         else:
             applied += apply_event(c, ev, via)
             top = seq
         c.execute(
             "UPDATE catalog.registry_cursor SET last_seq=%s, updated_at=now() WHERE consumer=%s",
-            (top, CONSUMER),
+            (top, consumer()),
         )
         return {
             "status": "applied" if top >= seq else "gap_unresolved",
@@ -155,10 +231,11 @@ def resync():
     with system_scope() as c:
         c.execute(
             "INSERT INTO catalog.registry_cursor(consumer,last_seq) VALUES(%s,0) ON CONFLICT DO NOTHING",
-            (CONSUMER,),
+            (consumer(),),
         )
         last = c.execute(
-            "SELECT last_seq FROM catalog.registry_cursor WHERE consumer=%s FOR UPDATE", (CONSUMER,)
+            "SELECT last_seq FROM catalog.registry_cursor WHERE consumer=%s FOR UPDATE",
+            (consumer(),),
         ).fetchone()["last_seq"]
         log = registry_get("/events", {"after_seq": last})
         top = last
@@ -167,7 +244,7 @@ def resync():
             top = max(top, int(item["data"]["seq"]))
         c.execute(
             "UPDATE catalog.registry_cursor SET last_seq=%s, resynced_at=now(), updated_at=now() WHERE consumer=%s",
-            (top, CONSUMER),
+            (top, consumer()),
         )
         return {"last_seq": top, "applied": top - last}
 

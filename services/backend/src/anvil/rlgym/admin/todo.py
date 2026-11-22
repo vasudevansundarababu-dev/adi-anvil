@@ -260,6 +260,20 @@ def on_event(c, ws, topic, d, event_id):
         close_items(c, ws, event_id, "evaluator_new_cohort", project_id=p)
         if d.get("batch_id"):
             close_items(c, ws, event_id, "validation_ready", subject=d["batch_id"])
+    elif topic == "registry.identity_conflict":
+        open_item(
+            c,
+            ws,
+            event_id,
+            "registry_conflict",
+            d["version_id"],
+            "bindings",
+            "Registry conflict",
+            f"{d['registry']} sent {d['version_id']} with a different {', '.join(d['fields'])}; the mirrored release was kept (released versions are final)",
+            f"/gym/admin/environments/{d['version_id']}",
+            "View environment",
+            severity="bad",
+        )
     elif topic == "sme_item.fix_qualified":
         open_item(
             c,

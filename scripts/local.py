@@ -169,6 +169,90 @@ def ensure_rlgym_settings():
         print(f"Added {len(missing)} RL Gym v2 local settings to .env (values not printed).")
 
 
+REGISTRIES = {"stub": "http://127.0.0.1:8211", "studio": "http://127.0.0.1:8060"}
+
+
+def rlgym_registry(target):
+    """Check the local Studio's routes the RL Gym needs, or switch which registry the RL Gym follows."""
+    import json
+    import urllib.error
+    import urllib.request
+
+    values = env()
+    if target == "check":
+        base = REGISTRIES["studio"]
+        key = values.get("RLGYM_ANVIL_KEY", "")
+        probes = [
+            ("registry event log", "GET", "/api/v1/registry/events?after_seq=0", {}),
+            ("version record", "GET", "/api/v1/registry/versions/golden-kyc-openenv@v3", {}),
+            (
+                "cases (actor fields)",
+                "GET",
+                "/api/v1/registry/versions/golden-kyc-openenv@v3/cases",
+                {},
+            ),
+            (
+                "image recipe",
+                "GET",
+                "/api/v1/registry/versions/golden-kyc-openenv@v3/image-context",
+                {},
+            ),
+            (
+                "references (scorer only)",
+                "GET",
+                "/api/v1/registry/versions/golden-kyc-openenv@v3/references?ids=kyc-individual-001",
+                {"X-ADI-Audience": "scorer"},
+            ),
+            ("environment simulator", "GET", "/stub/env/golden-kyc-openenv@v3/health", {}),
+        ]
+        ready = True
+        for label, method, path, extra in probes:
+            request = urllib.request.Request(
+                base + path, method=method, headers={"Authorization": f"Bearer {key}", **extra}
+            )
+            try:
+                with urllib.request.urlopen(request, timeout=10) as response:
+                    status = response.status
+                    body = response.read(2000)
+            except urllib.error.HTTPError as exc:
+                status, body = exc.code, b""
+            except OSError as exc:
+                status, body = None, str(exc).encode()
+            ok = status == 200
+            ready &= ok
+            print(f"{'ok ' if ok else 'NO '} {label}: {status} {path}")
+            if ok and label == "references (scorer only)" and b"reference" not in body:
+                print("    references answered without reference answers")
+        print(
+            json.dumps(
+                {
+                    "studio": base,
+                    "ready_for_switch": ready,
+                    "following_now": values.get("RLGYM_STUDIO_URL", REGISTRIES["stub"]),
+                }
+            )
+        )
+        if not ready:
+            raise SystemExit(1)
+        return
+    if target not in REGISTRIES:
+        raise SystemExit("Use: rlgym-registry check | studio | stub")
+    path = ROOT / ".env"
+    lines = path.read_text().splitlines()
+    url = REGISTRIES[target]
+    found = False
+    for i, line in enumerate(lines):
+        if line.startswith("RLGYM_STUDIO_URL="):
+            lines[i], found = f"RLGYM_STUDIO_URL={url}", True
+    if not found:
+        lines.append(f"RLGYM_STUDIO_URL={url}")
+    path.write_text("\n".join(lines) + "\n")
+    print(
+        f"The RL Gym now follows {target} ({url}). Restart with `pnpm stop` then `pnpm dev`. The mirror keeps a "
+        "separate event sequence per registry; Studio's first event is applied from its own seq 1."
+    )
+
+
 def compose(*args):
     run(
         [
@@ -472,6 +556,8 @@ def main():
         if cmd == "e2e":
             run([str(PY), "tests/prepare_journey_fixture.py", "--if-missing"], env=env())
         run(["pnpm", "exec", "playwright", "test", *args], env=env())
+    elif cmd == "rlgym-registry":
+        rlgym_registry(args[0] if args else "check")
     elif cmd == "rlgym-demo":
         ensure_rlgym_settings()
         run([str(PY), "services/stubs/bootstrap.py", *args], env=env())
