@@ -2,6 +2,19 @@
 
 ## Project stopped at user request — 21 November2026 Chicago
 
+Shutdown verified: no task Cloud Builds are queued/running; original task
+observation and diagnosis containers are terminal. Temporary qualifier LOGIN is
+disabled, qualifier membership removed, active connections0 and its temporary
+credential file deleted. QA infrastructure, data, backups and evidence remain.
+All agents are stopped/idle; no further engineering/deployment is running.
+
+Source checkpoint f0d1ccd is saved locally. GitHub push was rejected twice by
+automatic approval review, citing AGENTS.md's no-push rule even after the latest
+explicit user request. No connector or alternate transport was used to bypass
+that rejection. Specific rule-override approval is pending in chat. Verified
+complete-history source bundle .local/adi-forge-stopped-f0d1ccd.bundle is retained.
+Shutdown/blocker email sent to authorized work address, Gmail1a200d5783dbc02c.
+
 User cancelled the project and requested preserving the latest code in GitHub
 and winding down tasks. Stop all engineering/deployment/qualification work.
 No completion or benchmark-readiness claim is made.
