@@ -109,6 +109,14 @@ def check_blocks(blocks, env, expected_values_from, failure_taxonomy):
             reasons.append(
                 f"{bid}: on_fail {b.get('on_fail')!r} is not in the template's failure_taxonomy"
             )
+        if kind == "state" and b.get("op") == "nothing_else_changed":
+            # Compares every declared collection, so it names no table (omitted or "*"); `allow` lists extra ones.
+            if b.get("table") not in (None, "", "*") and b["table"] not in cols:
+                reasons.append(f"{bid}: collection {b['table']!r} is not declared by {env['id']}")
+            for name in b.get("allow") or []:
+                if name not in cols:
+                    reasons.append(f"{bid}: allowed collection {name!r} is not declared")
+            continue
         if kind == "state":
             table, col, op = b.get("table"), b.get("column"), b.get("op")
             if table not in cols:
@@ -228,7 +236,9 @@ def known_cases(blocks, expected_values_from="case_reference"):
     for b in blocks:
         if b["kind"] != "state":
             continue
-        table, op, col = b["table"], b["op"], b.get("column")
+        table, op, col = b.get("table"), b["op"], b.get("column")
+        if op == "nothing_else_changed":
+            continue  # names no table; checked against the others below
         start.setdefault(table, [])
         end.setdefault(table, [])
         if op == "not_exists":
@@ -307,8 +317,12 @@ def known_cases(blocks, expected_values_from="case_reference"):
 
 
 def _break_state(b, snaps):
-    table, op, col = b["table"], b["op"], b.get("column")
+    table, op, col = b.get("table"), b["op"], b.get("column")
     end = snaps["end"]
+    if op == "nothing_else_changed":
+        end["unexpected_table"] = [{"id": "unexpected"}]
+        snaps["start"].setdefault("unexpected_table", [])
+        return
     rows = end.setdefault(table, [])
     if op in ("equals", "in", "contains"):
         for r in rows:

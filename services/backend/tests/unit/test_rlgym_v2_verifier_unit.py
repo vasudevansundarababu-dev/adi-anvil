@@ -460,3 +460,35 @@ def test_v8_tool_contract_is_unchanged_and_v6_adds_the_typed_tools():
         "tin",
         "none",
     }
+
+
+def test_nothing_else_changed_names_no_table():
+    """Studio's blocks send table "*" (or omit it) for nothing_else_changed: it compares every collection."""
+    for table in ("*", None):
+        block = {
+            "id": "d.other",
+            "kind": "state",
+            "op": "nothing_else_changed",
+            "allow": ["findings"],
+            "on_fail": "UNSAFE_ACTION",
+        }
+        if table:
+            block["table"] = table
+        status = {**g.VERIFIER_BLOCKS["decision"][0]}
+        assert (
+            verifier.check_blocks([status, block], ENV, "case_reference", g.FAILURE_TAXONOMY) == []
+        )
+        cases = verifier.known_cases([block, status])
+        for name, case in cases.items():
+            out = sr.evaluate(
+                {
+                    "config": {"runner": "verifier_blocks", "runner_version": 1},
+                    "evidence": case["evidence"],
+                    "reference": case["reference"],
+                    "blocks": [block, status],
+                    "case_id": case["case_id"],
+                    "slots": case["slots"],
+                    "expected_values_from": "case_reference",
+                }
+            )
+            assert out["verdict"] == case["expect"], (table, name, out)

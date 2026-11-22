@@ -279,7 +279,11 @@ def run_blocks(job):
         "final_output": evidence.get("final_output"),
         "rubric_verdicts": job.get("rubric_verdicts") or {},
         "criterion_tables": sorted(
-            {b["table"] for b in blocks if b.get("kind") == "state" and b.get("table")}
+            {
+                b["table"]
+                for b in blocks
+                if b.get("kind") == "state" and b.get("table") not in (None, "", "*")
+            }
         ),
     }
     lines, detail = [], []
