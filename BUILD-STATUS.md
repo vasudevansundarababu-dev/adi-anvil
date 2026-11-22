@@ -45,6 +45,12 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
     Thirteen criteria get no signal from the mock agents: 11 blocked and 2 failing on every episode.
   - **Scorer for real Authoring (c74f38a):** slots and extra State checks read from `private.verifiers`; an extra
     check without a criterion joins the criteria that read its table. Unit tests: 480 passed.
+- **22 Nov 2026, Studio Golden KYC v4 practice run (mock only):** run-0223 on prj_kycstudio04 (tpl_x5rwt6d5eu@4,
+  spec a583d2e7…, golden-kyc-openenv@6), the same three mock agents, 40 cases each: 120/120 scored, no blocked block.
+  Means v3 → v4: diligent 58.75 → 73.44, erratic 55.31 → 65.94, skips-screening 58.75 → 61.56 (now below diligent).
+  `screening.read_first` 0 → 40/40 for each agent; the ZEN `screening.finding` ran as a plug-in on every episode
+  (38 | 32 | 38 of 40); `decision.no_other_writes` 40/40 with the allow list. The v4 project was exported through the
+  Forge stub: `.env` pointed RLGYM_FORGE_URL at the stub for that export only and was restored byte for byte.
 - **22 Nov 2026, first live smoke run (RG-49), Claude Haiku 5.5:**
   - **Authority:** the owner set `ANVIL_LIVE_PROVIDERS_ENABLED=true` and recorded approval `la-f3ecdeb9d9ce` as admin-2
     (anthropic · `claude-haiku-5-5`, uses agent/probe/key_test, $25 per run, $300 total, prices entered $1 / $1 per
