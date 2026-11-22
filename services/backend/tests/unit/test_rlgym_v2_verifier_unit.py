@@ -281,7 +281,7 @@ def test_unknown_runner_version_is_an_error_not_a_pass():
 ENV = {
     "id": "golden-kyc-openenv@v6",
     "schema": g.SCHEMA_V6,
-    "operations": [{"operation_id": t} for t in g.TOOLS],
+    "operations": [{"operation_id": t} for t in g.TOOLS_V6],
 }
 
 
@@ -387,3 +387,76 @@ def test_v10_blocks_sit_inside_the_template_hash():
         if k not in ("forge_template_id", "forge_version", "spec_sha256", "template_sha256")
     }
     assert g.sha(body) != t["spec_sha256"]
+
+
+def test_exists_where_with_a_none_reference_means_no_such_row():
+    """Studio's reference writes "none" when nothing of that kind is expected (design choice A: referrals.specialty,
+    information_requests.type)."""
+    block = {
+        "id": "screening.specialty",
+        "kind": "state",
+        "table": "referrals",
+        "row": "any",
+        "column": "specialty",
+        "op": "exists_where",
+        "value": {"case_reference": "reference_answers.referral"},
+        "on_fail": "POLICY_VIOLATION",
+    }
+    sanctions = {"referral_id": "r-1", "specialty": "sanctions"}
+    unset = {
+        "referral_id": "r-2",
+        "specialty": None,
+    }  # an optional argument left out is stored as null
+    assert (
+        _run([block], end=_end(referrals=[sanctions]), reference={"referral": "sanctions"})[
+            "verdict"
+        ]
+        == "pass"
+    )
+    assert (
+        _run([block], end=_end(referrals=[unset]), reference={"referral": "sanctions"})["verdict"]
+        == "fail"
+    )
+    assert (
+        _run([block], end=_end(referrals=[]), reference={"referral": "none"})["verdict"] == "pass"
+    )
+    assert (
+        _run([block], end=_end(referrals=[unset]), reference={"referral": "none"})["verdict"]
+        == "pass"
+    )
+    wrong = _run([block], end=_end(referrals=[sanctions]), reference={"referral": "none"})
+    assert wrong["verdict"] == "fail" and wrong["block_lines"][0]["actual"] == ["sanctions"]
+
+
+def test_activation_refuses_a_fixed_value_outside_the_fields_enum():
+    block = {
+        "id": "n",
+        "kind": "state",
+        "table": "information_requests",
+        "row": "any",
+        "column": "type",
+        "op": "exists_where",
+        "value": {"fixed": "passport_scan"},
+        "on_fail": "MISSING_PRECONDITION",
+    }
+    reasons = verifier.check_blocks([block], ENV, "case_reference", g.FAILURE_TAXONOMY)
+    assert any("not in information_requests.type's values" in r for r in reasons), reasons
+    ok = {**block, "value": {"fixed": "proof_of_address"}}
+    assert verifier.check_blocks([ok], ENV, "case_reference", g.FAILURE_TAXONOMY) == []
+
+
+def test_v8_tool_contract_is_unchanged_and_v6_adds_the_typed_tools():
+    versions = g.environment_versions()
+    assert versions["golden-kyc-openenv@v3"]["operations"] == g.TOOLS
+    assert "information.request" not in g.TOOLS and "specialist.refer" not in g.TOOLS
+    v6 = versions["golden-kyc-openenv@v6"]
+    assert {o["operation_id"] for o in v6["operations"]} == set(g.TOOLS_V6)
+    refs = [c["reference"] for c in v6["_cases"]]
+    assert {r["referral"] for r in refs} <= {"sanctions", "none"}
+    assert {r["request_type"] for r in refs} <= {
+        "id_document",
+        "proof_of_address",
+        "street_address",
+        "tin",
+        "none",
+    }

@@ -129,6 +129,11 @@ def _state(block, ctx):
     if op == "count":
         return ("pass" if len(rows) == int(expected) else "fail"), len(rows), expected
     if op == "exists_where":
+        if col and expected in (None, "none"):
+            # The reference says nothing of this kind is expected for this case (Studio writes "none"): pass only
+            # when no row has a value in the column.
+            present = [r.get(col) for r in rows if r.get(col) not in (None, "")]
+            return ("pass" if not present else "fail"), present, expected
         ok = bool(rows) if not col else any(r.get(col) == expected for r in rows)
         return (
             ("pass" if ok else "fail"),

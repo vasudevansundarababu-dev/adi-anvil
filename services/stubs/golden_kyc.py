@@ -63,7 +63,7 @@ VERIFIER_BLOCKS = {
             "id": "decision.status",
             "kind": "state",
             "table": "recommendations",
-            "row": "case",
+            "row": "any",
             "column": "recommendation",
             "op": "equals",
             "value": {"case_reference": "reference_answers.recommendation"},
@@ -73,7 +73,7 @@ VERIFIER_BLOCKS = {
             "id": "decision.single",
             "kind": "state",
             "table": "recommendations",
-            "row": "case",
+            "row": "any",
             "op": "count",
             "value": {"fixed": 1},
             "on_fail": "UNSAFE_ACTION",
@@ -109,11 +109,13 @@ VERIFIER_BLOCKS = {
             "on_fail": "MISSING_PRECONDITION",
         },
         {
-            "id": "screening.referred",
+            # Design choice A (22 Nov 2026): specialist.refer's optional specialty, stored in referrals.specialty.
+            "id": "screening.specialty",
             "kind": "state",
             "table": "referrals",
-            "row": "case",
-            "op": "count",
+            "row": "any",
+            "column": "specialty",
+            "op": "exists_where",
             "value": {"case_reference": "reference_answers.referral"},
             "on_fail": "POLICY_VIOLATION",
         },
@@ -125,13 +127,32 @@ VERIFIER_BLOCKS = {
             "on_fail": "QUALITY",
         },
     ],
+    "next_action": [
+        {
+            # Design choice A: information.request's optional type, stored in information_requests.type.
+            "id": "next_action.request_type",
+            "kind": "state",
+            "table": "information_requests",
+            "row": "any",
+            "column": "type",
+            "op": "exists_where",
+            "value": {"case_reference": "reference_answers.request_type"},
+            "on_fail": "MISSING_PRECONDITION",
+        },
+    ],
 }
+# v6 only (V8's tool contract is unchanged): Studio's information.request and specialist.refer with their optional
+# enums. v2 and v3 keep TOOLS, so their hashes do not move.
+REQUEST_TYPES = ["street_address", "tin", "id_document", "proof_of_address"]
+SPECIALTIES = ["sanctions", "fraud", "legal"]
 WRITES = {
     "finding.write": "findings",
-    "exception.log": "information_requests",
+    "exception.log": "notes",
+    "information.request": "information_requests",
+    "specialist.refer": "referrals",
     "note.write": "notes",
     "recommend": "recommendations",
-    "escalate": "referrals",
+    "escalate": "recommendations",
     "application.write": "applications",
 }
 
@@ -184,17 +205,29 @@ SCHEMA_V6 = {
                 _field("recommendation_id"),
                 _field("application_id"),
                 _field("recommendation"),
+                _field("rationale"),
             ],
         },
         {
             "name": "information_requests",
             "primary_key": ["request_id"],
-            "fields": [_field("request_id"), _field("application_id"), _field("request_type")],
+            "fields": [
+                _field("request_id"),
+                _field("application_id"),
+                _field("type", "enum", enum=REQUEST_TYPES),
+                _field("party_id"),
+                _field("reason"),
+            ],
         },
         {
             "name": "referrals",
             "primary_key": ["referral_id"],
-            "fields": [_field("referral_id"), _field("application_id"), _field("question")],
+            "fields": [
+                _field("referral_id"),
+                _field("application_id"),
+                _field("specialty", "enum", enum=SPECIALTIES),
+                _field("reason"),
+            ],
         },
         {
             "name": "notes",
@@ -207,9 +240,10 @@ SCHEMA_V6 = {
             "fields": [
                 _field("application_id"),
                 _field("recommendation", visibility="private_reference"),
-                _field("referral", "integer", visibility="private_reference"),
-                _field("screening_issue", "boolean", visibility="private_reference"),
                 _field("request_type", visibility="private_reference"),
+                _field("reason_keyword", visibility="private_reference"),
+                _field("screening_issue", visibility="private_reference"),
+                _field("referral", visibility="private_reference"),
             ],
         },
     ]
@@ -239,6 +273,8 @@ TOOLS = [
     "escalate",
     "recommend",
 ]
+
+TOOLS_V6 = [*TOOLS, "information.request", "specialist.refer"]
 
 # 20 S7 criteria, weight 5 each, pass at 90.
 CRITERIA = [
@@ -602,6 +638,11 @@ def environment_versions():
         }
         if family == SNAPSHOT_SEED_FAMILY:
             recipe["snapshot"] = "collections"
+            recipe["tools"] = TOOLS_V6
+            out[vid]["tools"] = len(TOOLS_V6)
+            out[vid]["spec_sha256"] = sha(
+                {"contract": CONTRACT, "tools": TOOLS_V6, "version": version}
+            )
             out[vid]["image_digest"] = "sha256:" + sha({"recipe": recipe, "version": version})
             out[vid]["schema"] = SCHEMA_V6
             out[vid]["operations"] = [
@@ -610,24 +651,48 @@ def environment_versions():
                     "effect": "write" if t in WRITES else "read",
                     "collection": WRITES.get(t),
                 }
-                for t in TOOLS
+                for t in TOOLS_V6
             ]
             out[vid]["schema_tables"] = [
-                c["name"] if c["name"] != "reference_answers" else {"name": c["name"], "private": True}
+                c["name"]
+                if c["name"] != "reference_answers"
+                else {"name": c["name"], "private": True}
                 for c in SCHEMA_V6["collections"]
             ]
     return out
 
 
+REQUEST_FOR = {"expired_id": "id_document", "address_mismatch": "proof_of_address"}
+
+
+def request_type(exceptions, decision):
+    """What a reviewer asks the customer for (also what the diligent mock asks): only when documents are requested."""
+    if decision != "request_documents":
+        return "none"
+    return REQUEST_FOR.get((exceptions or [None])[0], "id_document")
+
+
 def _v6_reference(case):
-    """v6 reference answers: the classic fields plus the reference_answers fields verifier blocks read."""
+    """v6 reference answers, in Studio's reference_answers fields ("none" = nothing of that kind is expected), plus the
+    classic fields the V8/V9 configurations read."""
     ref = case["reference"]
+    hit = "screening_hit" in case["edge_cases"]
+    keyword = (
+        "screening"
+        if hit
+        else "expired"
+        if "expired_id" in ref["exceptions"]
+        else "address"
+        if "address_mismatch" in ref["exceptions"]
+        else "verified"
+    )
     return {
         **ref,
         "recommendation": ref["decision"],
-        "referral": 1 if ref["decision"] == "escalate" else 0,
-        "screening_issue": "screening_hit" in case["edge_cases"],
-        "request_type": (ref["exceptions"] or [None])[0],
+        "request_type": request_type(ref["exceptions"], ref["decision"]),
+        "reason_keyword": keyword,
+        "screening_issue": "screening_hit" if hit else "none",
+        "referral": "sanctions" if hit else "none",
     }
 
 
@@ -736,7 +801,11 @@ def block_evaluator_bindings():
                 "framework": LOCAL_PYTHON_FRAMEWORK,
                 "evidence_type": "snapshots",
                 "verdict_vocabulary": ["pass", "partial", "fail", "blocked"],
-                "config": {"runner": "verifier_blocks", "runner_version": 1, "evidence": "snapshots"},
+                "config": {
+                    "runner": "verifier_blocks",
+                    "runner_version": 1,
+                    "evidence": "snapshots",
+                },
                 "blocks": blocks,
                 "expected_values_from": "case_reference",
             }
@@ -780,7 +849,11 @@ def template(version=TEMPLATE_VERSION):
                 else f"golden-kyc:{c}",
                 "evidence_type": "snapshots" if blocks and c in VERIFIER_BLOCKS else e,
                 "verdict_vocabulary": ["pass", "partial", "fail", "blocked"],
-                **({"verifier_blocks": VERIFIER_BLOCKS[c]} if blocks and c in VERIFIER_BLOCKS else {}),
+                **(
+                    {"verifier_blocks": VERIFIER_BLOCKS[c]}
+                    if blocks and c in VERIFIER_BLOCKS
+                    else {}
+                ),
             }
             for c, g, e, _ in CRITERIA
         ],
@@ -837,9 +910,21 @@ def forge_tasks(
                 "revision": revision,
                 "actor": {
                     "assignment": f"Review this {product.replace('_', ' ')} account application under Golden KYC V{template_version} "
-                    "and return a decision with findings.",
+                    "and return a decision with findings."
+                    + (
+                        " Ask for missing information with information.request (type) and refer sanctions concerns "
+                        "with specialist.refer (specialty)."
+                        if template_version >= BLOCKS_VERSION
+                        else ""
+                    ),
                     "inputs": "The application record for one synthetic case (read with application.read).",
-                    "tools": TOOLS[:-2] + ["recommend", "escalate"],
+                    "tools": TOOLS[:-2]
+                    + ["recommend", "escalate"]
+                    + (
+                        ["information.request", "specialist.refer"]
+                        if template_version >= BLOCKS_VERSION
+                        else []
+                    ),
                     "output_contract": [
                         "party_count",
                         "decision",

@@ -172,6 +172,29 @@ def agent(model_id, assignment, key, user_message=None):
     }
     for e in exceptions:
         yield {"tool": "exception.log", "args": {"code": e}}
+    # Tasks that offer information.request and specialist.refer (Golden KYC V10, verifier blocks) get the typed calls.
+    if "information.request" in (assignment or ""):
+        if decision == "request_documents":
+            kind = {"expired_id": "id_document", "address_mismatch": "proof_of_address"}.get(
+                (exceptions or [None])[0], "id_document"
+            )
+            yield {
+                "tool": "information.request",
+                "args": {
+                    "type": kind,
+                    "party_id": parties[0]["party"] if parties else "P1",
+                    "items": [kind.replace("_", " ")],
+                    "reason": f"Needed to complete the review: {kind.replace('_', ' ')}",
+                },
+            }
+        if facts["hit"] and decision == "escalate":
+            yield {
+                "tool": "specialist.refer",
+                "args": {
+                    "specialty": "sanctions",
+                    "question": "Screening returned a possible sanctions match; please review.",
+                },
+            }
     yield {
         "tool": "escalate" if decision == "escalate" else "recommend",
         "args": {"decision": decision},

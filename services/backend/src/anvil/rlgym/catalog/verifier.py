@@ -71,6 +71,16 @@ def collections(env):
     return out, reference
 
 
+def enums(env):
+    """{(collection, field): allowed values} for fields the version declares as enums."""
+    out = {}
+    for col in ((env or {}).get("schema") or {}).get("collections") or []:
+        for f in col.get("fields") or []:
+            if isinstance(f, dict) and f.get("enum"):
+                out[(col["name"], f["name"])] = list(f["enum"])
+    return out
+
+
 def operations(env):
     ops = (env or {}).get("operations") or []
     return {o["operation_id"] if isinstance(o, dict) else o for o in ops}
@@ -79,6 +89,7 @@ def operations(env):
 def check_blocks(blocks, env, expected_values_from, failure_taxonomy):
     """Reasons a criterion's blocks cannot run on `env` (empty when they can)."""
     cols, ref_fields = collections(env)
+    allowed_values = enums(env)
     ops = operations(env)
     reasons = []
     if expected_values_from not in SOURCES:
@@ -108,6 +119,13 @@ def check_blocks(blocks, env, expected_values_from, failure_taxonomy):
                 reasons.append(f"{bid}: unknown op {op!r}")
             elif op in NEEDS_COLUMN and not col:
                 reasons.append(f"{bid}: op {op} needs a column")
+            value = b.get("value")
+            choices = allowed_values.get((table, col))
+            if choices and isinstance(value, dict) and "fixed" in value:
+                fixed = value["fixed"] if isinstance(value["fixed"], list) else [value["fixed"]]
+                wrong = [v for v in fixed if v not in choices and v not in (None, "none")]
+                if wrong:
+                    reasons.append(f"{bid}: {wrong} not in {table}.{col}'s values {choices}")
             if b.get("row", "case") not in ("case", "any"):
                 reasons.append(f"{bid}: row must be case or any")
             elif (

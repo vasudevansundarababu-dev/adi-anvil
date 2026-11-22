@@ -18,6 +18,8 @@ import os
 import sys
 
 SEED_PATH = os.environ.get("GOLDEN_KYC_SEED", "/app/seed/cases.jsonl")
+REQUEST_TYPES = ("street_address", "tin", "id_document", "proof_of_address")
+SPECIALTIES = ("sanctions", "fraud", "legal")
 FORBIDDEN = {"application.write": "forbidden: the reviewer agent cannot write applications"}
 
 
@@ -175,6 +177,15 @@ class Session:
             return self._write("notes", args)
         if tool in ("recommend", "escalate"):
             return self._write("actions", {"tool": tool, **args})
+        # v6 (verifier blocks, design choice A): optional enums, stored as given; left out means null, never a default.
+        if tool == "information.request":
+            if args.get("type") not in (None, *REQUEST_TYPES):
+                return {"ok": False, "error": f"type must be one of {REQUEST_TYPES}"}
+            return self._write("information_requests", args)
+        if tool == "specialist.refer":
+            if args.get("specialty") not in (None, *SPECIALTIES):
+                return {"ok": False, "error": f"specialty must be one of {SPECIALTIES}"}
+            return self._write("referrals", args)
         return {"ok": False, "error": f"unknown tool {tool}"}
 
     def _write(self, table, args):
@@ -226,23 +237,37 @@ class Session:
                     }
                 )
             elif r["table"] == "exceptions":
-                out["information_requests"].append(
-                    {**base, "request_id": r["id"], "request_type": r.get("code")}
-                )
+                out["notes"].append({**base, "note_id": r["id"], "text": r.get("code")})
             elif r["table"] == "notes":
                 out["notes"].append({**base, "note_id": r["id"], "text": r.get("text")})
             elif r["table"] == "actions":
                 out["recommendations"].append(
-                    {**base, "recommendation_id": r["id"], "recommendation": r.get("decision")}
+                    {
+                        **base,
+                        "recommendation_id": r["id"],
+                        "recommendation": r.get("decision"),
+                        "rationale": r.get("reason"),
+                    }
                 )
-                if r.get("tool") == "escalate":
-                    out["referrals"].append(
-                        {
-                            **base,
-                            "referral_id": r["id"],
-                            "question": r.get("reason") or r.get("decision"),
-                        }
-                    )
+            elif r["table"] == "information_requests":
+                out["information_requests"].append(
+                    {
+                        **base,
+                        "request_id": r["id"],
+                        "type": r.get("type"),
+                        "party_id": r.get("party_id"),
+                        "reason": r.get("reason"),
+                    }
+                )
+            elif r["table"] == "referrals":
+                out["referrals"].append(
+                    {
+                        **base,
+                        "referral_id": r["id"],
+                        "specialty": r.get("specialty"),
+                        "reason": r.get("question"),
+                    }
+                )
         return out
 
     def state(self):
