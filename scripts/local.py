@@ -172,6 +172,16 @@ def ensure_rlgym_settings():
 REGISTRIES = {"stub": "http://127.0.0.1:8211", "studio": "http://127.0.0.1:8060"}
 
 
+def refuse_while_linked(suite):
+    """Test suites share the outbox with the running API; while it follows Studio it would deliver test traffic there."""
+    followed = (env().get("RLGYM_STUDIO_URL") or REGISTRIES["stub"]).rstrip("/")
+    if followed != REGISTRIES["stub"]:
+        raise SystemExit(
+            f"The running stack follows {followed}; the {suite} suite would send test traffic there. "
+            "Run `python3 scripts/local.py rlgym-registry stub`, restart `pnpm dev`, then run the suite."
+        )
+
+
 def rlgym_registry(target):
     """Check the local Studio's routes the RL Gym needs, or switch which registry the RL Gym follows."""
     import json
@@ -551,11 +561,13 @@ def main():
         backend("contracts")
     elif cmd in ["unit", "integration"]:
         if cmd == "integration":
+            refuse_while_linked("integration")
             # Workspace tests read a reviewed diagnostic run; rebuild it when missing or stale (needs pnpm dev).
             run([str(PY), "tests/prepare_journey_fixture.py", "--if-missing"], env=env())
         run([str(PY), "-m", "pytest", f"services/backend/tests/{cmd}", "-q"], env=env())
     elif cmd in ["e2e", "smoke"]:
         if cmd == "e2e":
+            refuse_while_linked("e2e")
             run([str(PY), "tests/prepare_journey_fixture.py", "--if-missing"], env=env())
         run(["pnpm", "exec", "playwright", "test", *args], env=env())
     elif cmd == "rlgym-registry":

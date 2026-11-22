@@ -60,6 +60,13 @@ Tests (21 Nov 2026, this worktree, stack running):
       1 failed: `test_evaluator_fix_versions_cohorts_revoke_and_b4` did not find `evaluator.revoked` at the stub. The
       likely cause is the linked-mode race below (the running API's dispatcher delivers to Studio); not rerun in
       stub mode yet. E2E not run in this change (needs stub mode).
+    - **Mistake, corrected:** that integration run was started while the stack followed Studio. The running API
+      delivered some of the tests' messages from disposable `it-…` workspaces to the local Studio (Studio's
+      inb-0004..inb-0006, possibly some evaluator events). Studio was told they are test traffic. `pnpm
+      test:integration`, `pnpm test:e2e` and the integration conftest now refuse to start while `.env` follows a
+      registry other than the stub.
+    - **@4:** Studio released `golden-kyc-openenv@4` from its own image (`sha256:6ff1551a9428…`); the RL Gym mirrored
+      it and qualified it, receipt `qr-d3b4b331ca63`, mode `openenv_http`, 7 of 7 checks pass.
     - Not done: a full Start run on a Studio-released `studio-openenv` version (waits for `golden-kyc-openenv@4`);
       scoring on Studio's operations is B1 (RG-41).
     - **While linked:** switch back to the stub before running the integration or browser suites (runbook). The
