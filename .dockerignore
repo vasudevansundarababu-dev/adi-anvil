@@ -11,6 +11,8 @@
 !integrations/evaluators
 !infra/docker
 !infra/gcp/kyc_binding_observation.py
+!infra/gcp/task_method_qualification.py
+!infra/gcp/task_method_owner_observation.py
 !contracts
 !runtime-checks
 !fixtures
