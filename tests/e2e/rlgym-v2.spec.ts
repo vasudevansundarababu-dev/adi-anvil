@@ -39,7 +39,12 @@ test('entry, projects, project page, tasks and exports', async ({ browser }) => 
     await expect(page.getByRole('link', { name: menu, exact: true })).toBeVisible();
   }
   await expect(page.getByRole('heading', { name: 'Leaderboard' })).toBeVisible();
-  await expect(page.getByText('No completed benchmark results for this Project.')).toBeVisible();
+  // Empty until a run completes; afterwards the latest completed run's cohort is ranked.
+  await expect(
+    page
+      .getByText('No completed benchmark results for this Project.')
+      .or(page.getByRole('cell', { name: '1', exact: true })),
+  ).toBeVisible();
   await page.getByRole('link', { name: 'Projects', exact: true }).click();
   const row = page.getByRole('row', { name: /KYC November/ });
   await expect(row).toContainText('Project ID prj_7f3a91c2');
@@ -61,15 +66,20 @@ test('entry, projects, project page, tasks and exports', async ({ browser }) => 
   await page.screenshot({ path: 'artifacts/test-runs/rlgym-v2-exports.png', fullPage: true });
   // To do: export received and project ready to run, opened by events.
   // "Ready to run" closes when the project's first run is admitted (run.admitted), so it shows only before any run.
-  const runs = await page.request.get('/api/v1/workspaces/adi-labs-research/runs');
+  const runs = await page.request.get(
+    `/api/v1/workspaces/adi-labs-research/runs?project=${PROJECT}`,
+  );
   const neverRun = ((await runs.json()).data.items as { state: string }[]).every(
     (r) => r.state === 'refused',
   );
   await page.getByRole('button', { name: /To do/ }).click();
+  const novemberReady = page
+    .getByRole('dialog', { name: 'To do' })
+    .getByText(/^KYC November\d* ?\d+ ready tasks/);
   if (neverRun) {
     await expect(page.getByRole('dialog', { name: 'To do' })).toContainText('Ready to run');
   } else {
-    await expect(page.getByRole('dialog', { name: 'To do' })).not.toContainText('Ready to run');
+    await expect(novemberReady).toHaveCount(0);
   }
   await expect(page.getByRole('dialog', { name: 'To do' })).toContainText('Import / Export');
   await page.keyboard.press('Escape');
@@ -362,4 +372,32 @@ test('episode viewer and SME review through the ADI Forge stub', async ({ browse
   await page.screenshot({ path: 'artifacts/test-runs/rlgym-v2-sme-review.png', fullPage: true });
   await page.goto(`/gym/runs/${run!.id}/report`);
   await expect(page.getByText(/2 of 2 decided by SMEs in ADI Forge/)).toBeVisible();
+});
+
+test('leaderboard ranks the latest cohort and an admin invites and removes a viewer', async ({
+  browser,
+}) => {
+  const page = await signIn(browser, 'admin-1');
+  await page.goto(`/gym?project=${PROJECT}`);
+  await expect(page.getByRole('heading', { name: 'Leaderboard' })).toBeVisible();
+  const first = page.getByRole('row').nth(1);
+  await expect(first).toContainText('Mock agent · diligent');
+  await expect(first).toContainText('PASSED');
+  await expect(page.getByLabel('Cohort')).toBeVisible();
+  await page.screenshot({ path: 'artifacts/test-runs/rlgym-v2-leaderboard.png', fullPage: true });
+  await page.goto('/gym/admin/users');
+  await page.getByRole('button', { name: 'Invite user' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Invite user' });
+  const username = `e2e-${Date.now().toString(36)}`;
+  await dialog.getByLabel('Username').fill(username);
+  await dialog.getByLabel('Email').fill(`${username}@anvil.invalid`);
+  await dialog.getByLabel('Full name').fill('E2E Invitee');
+  await dialog.getByRole('button', { name: 'Invite', exact: true }).click();
+  await expect(dialog.getByText('Temporary password:')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Done' }).click();
+  const row = page.getByRole('row', { name: new RegExp(`${username}@anvil.invalid`) });
+  await expect(row).toContainText('Viewer');
+  page.once('dialog', (d) => d.accept());
+  await row.getByRole('button', { name: 'Remove access' }).click();
+  await expect(row).toContainText('removed');
 });

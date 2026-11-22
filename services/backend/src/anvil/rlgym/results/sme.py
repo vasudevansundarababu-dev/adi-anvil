@@ -770,7 +770,12 @@ def validation_run(c, ws, actor, item_id):
         ws,
         "run.admitted",
         run_id,
-        {"run_id": run_id, "project_id": original["project_id"], "purpose": "validation"},
+        {
+            "run_id": run_id,
+            "project_id": original["project_id"],
+            "purpose": "validation",
+            "batch_id": b["id"],
+        },
     )
     return {"run_id": run_id, "episodes": len(originals)}
 

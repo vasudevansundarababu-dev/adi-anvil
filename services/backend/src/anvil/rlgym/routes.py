@@ -57,10 +57,13 @@ def routes():
         with scope(request, ws) as ctx:
             board = []
             for p in ctx.c.execute(
-                "SELECT project_id, name, state FROM projects.projects WHERE workspace_id=%s ORDER BY name",
+                """SELECT p.project_id, p.name, p.state,
+                          (SELECT r.id FROM runs.runs r WHERE r.workspace_id=p.workspace_id AND r.project_id=p.project_id
+                           AND r.state='completed' AND r.purpose='benchmark' ORDER BY r.finished_at DESC NULLS LAST LIMIT 1) latest_run
+                   FROM projects.projects p WHERE p.workspace_id=%s ORDER BY p.name""",
                 (ctx.ws,),
             ).fetchall():
-                board.append({**p, "leaderboard": None})
+                board.append({**p, "has_results": p["latest_run"] is not None})
             return ok(
                 {
                     "workspace": ctx.workspace,
@@ -72,19 +75,11 @@ def routes():
             )
 
     @r.get(W + "/projects/{pid}/leaderboard")
-    def leaderboard(ws: str, pid: str, request: Request):
+    def leaderboard(ws: str, pid: str, request: Request, cohort: str | None = None):
+        from anvil.rlgym.results import leaderboard as board
+
         with scope(request, ws) as ctx:
-            projects.get_project_row(ctx.c, ctx.ws, pid)
-            return ok(
-                {
-                    "project_id": pid,
-                    "run": None,
-                    "rows": [],
-                    "empty": "No completed benchmark results for this Project.",
-                    "note": "Runs, scoring and the leaderboard arrive with work packages 2.7-2.10.",
-                },
-                request,
-            )
+            return ok(board.leaderboard(ctx.c, ctx.ws, pid, cohort), request)
 
     @r.get(W + "/todo")
     def todo_list(ws: str, request: Request):
@@ -649,6 +644,26 @@ def routes():
             return ok(
                 idempotent(ctx, request, body, lambda: users.update_user(ctx, uid, body)), request
             )
+
+    @r.post(W + "/users/invitations", status_code=201)
+    def user_invite(ws: str, request: Request, body: dict = Body(default_factory=dict)):
+        with scope(request, ws) as ctx:
+            return ok(
+                idempotent(ctx, request, body, lambda: users.invite_user(ctx, body)), request, 201
+            )
+
+    @r.post(W + "/users/{uid}/remove")
+    def user_remove(ws: str, uid: str, request: Request, body: dict = Body(default_factory=dict)):
+        with scope(request, ws) as ctx:
+            return ok(
+                idempotent(ctx, request, body, lambda: users.remove_access(ctx, uid, body)), request
+            )
+
+    @r.get(W + "/users/{uid}/history")
+    def user_history(ws: str, uid: str, request: Request):
+        with scope(request, ws) as ctx:
+            require(ctx.actor.profile == "admin", "FORBIDDEN", "Admin only")
+            return ok({"items": users.access_history(ctx, uid)}, request)
 
     # --- registry (Studio → RL Gym) ------------------------------------------------------------------------------------
     @r.post("/api/v1/registry-events")

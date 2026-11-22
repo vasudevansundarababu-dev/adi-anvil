@@ -230,3 +230,205 @@ def update_user(ctx, user_id, body):
 def my_workspaces(user_id):
     with psycopg.connect(os.environ["DATABASE_URL"], row_factory=dict_row) as c:
         return c.execute("SELECT * FROM admin.workspaces_of(%s)", (user_id,)).fetchall()
+
+
+# --- invite and remove access (SPEC 07.8) -------------------------------------------------------------------------
+
+LOCAL_ORG = "a0000000-0000-4000-8000-000000000001"
+
+
+def _keycloak_admin():
+    """Admin endpoint of the identity provider. Locally only the loopback Keycloak of this checkout is allowed."""
+    from urllib.parse import urlsplit
+
+    from anvil.config import CLOUD, setting
+
+    issuer = setting("OIDC_ISSUER")
+    parts = urlsplit(issuer)
+    base = os.environ.get("KEYCLOAK_ADMIN_URL") or f"{parts.scheme}://{parts.netloc}"
+    if not CLOUD and urlsplit(base).hostname not in ("127.0.0.1", "localhost", "::1"):
+        raise GymError("VALIDATION_FAILED", "Local invites go only to the local Keycloak")
+    user = os.environ.get("KEYCLOAK_ADMIN_USER") or (
+        "anvil-bootstrap" if not CLOUD else setting("KEYCLOAK_ADMIN_USER")
+    )
+    return (
+        base.rstrip("/"),
+        issuer.rsplit("/realms/", 1)[1],
+        user,
+        setting("ANVIL_OIDC_ADMIN_PASSWORD"),
+    )
+
+
+def _create_identity(username, email, name, transport=None):
+    """Create the person's sign-in with a temporary password changed at first sign-in (UPDATE_PASSWORD). Returns
+    (subject, temporary password or None when the identity already existed with the same email)."""
+    import secrets as _secrets
+
+    import httpx
+
+    base, realm, admin, password = _keycloak_admin()
+    with httpx.Client(timeout=10, transport=transport, trust_env=False) as client:
+        r = client.post(
+            base + "/realms/master/protocol/openid-connect/token",
+            data={
+                "grant_type": "password",
+                "client_id": "admin-cli",
+                "username": admin,
+                "password": password,
+            },
+        )
+        if r.status_code != 200:
+            raise GymError(
+                "VALIDATION_FAILED", "The identity provider refused the administrator sign-in"
+            )
+        headers = {"Authorization": "Bearer " + r.json()["access_token"]}
+        users_url = base + f"/admin/realms/{realm}/users"
+        temporary = _secrets.token_urlsafe(18)
+        first, _, last = name.strip().partition(" ")
+        r = client.post(
+            users_url,
+            headers=headers,
+            json={
+                "username": username,
+                "email": email,
+                "firstName": first,
+                "lastName": last.strip() or "-",
+                "enabled": True,
+                "emailVerified": True,
+                "requiredActions": ["UPDATE_PASSWORD"],
+                "credentials": [{"type": "password", "value": temporary, "temporary": True}],
+            },
+        )
+        if r.status_code == 409:
+            found = client.get(
+                users_url, headers=headers, params={"username": username, "exact": "true"}
+            ).json()
+            match = [u for u in found if (u.get("email") or "").lower() == email.lower()]
+            if not match:
+                raise GymError("CONFLICT", "That username or email belongs to a different person")
+            return match[0]["id"], None
+        if r.status_code >= 300:
+            raise GymError("VALIDATION_FAILED", f"The identity provider answered {r.status_code}")
+        return r.headers["Location"].rsplit("/", 1)[1], temporary
+
+
+def invite_user(ctx, body, transport=None):
+    """Admin only. Creates the sign-in in the identity provider and this workspace's access; the temporary password is
+    returned once (never stored) and must be changed at first sign-in."""
+    import re
+    import uuid as _uuid
+
+    from anvil.config import setting
+
+    ctx.actor.require_person()
+    require(ctx.actor.profile == "admin", "FORBIDDEN", "Only an Admin invites people")
+    username = (body.get("username") or "").strip().lower()
+    email = (body.get("email") or "").strip()
+    name = (body.get("name") or "").strip()
+    profile = body.get("profile", "viewer")
+    approver = bool(body.get("binding_approver", False))
+    require(
+        re.match(r"^[a-z0-9][a-z0-9._-]{2,62}$", username),
+        "VALIDATION_FAILED",
+        "Username: 3-63 lowercase letters, digits, '.', '_' or '-'",
+        field="username",
+    )
+    require(
+        re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email),
+        "VALIDATION_FAILED",
+        "A valid email is required",
+        field="email",
+    )
+    require(name, "VALIDATION_FAILED", "Full name is required", field="name")
+    require(
+        profile in ("admin", "rl_engineer", "viewer"),
+        "VALIDATION_FAILED",
+        "Unknown profile",
+        field="profile",
+    )
+    require(
+        not (approver and profile == "viewer"),
+        "VALIDATION_FAILED",
+        "Binding approvers are Admins or RL Engineers",
+        field="binding_approver",
+    )
+    subject, temporary = _create_identity(username, email, name, transport)
+    user_id = str(_uuid.UUID(subject))
+    with psycopg.connect(setting("MIGRATION_DATABASE_URL"), row_factory=dict_row) as c:
+        c.execute(
+            "INSERT INTO anvil.organizations VALUES(%s,%s) ON CONFLICT DO NOTHING",
+            (LOCAL_ORG, "Anvil local synthetic lab"),
+        )
+        c.execute(
+            "INSERT INTO anvil.users(id,org_id,issuer,subject,name) VALUES(%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
+            (user_id, LOCAL_ORG, setting("OIDC_ISSUER"), subject, name),
+        )
+    existing = ctx.c.execute(
+        "SELECT * FROM admin.users WHERE workspace_id=%s AND id=%s", (ctx.ws, user_id)
+    ).fetchone()
+    if existing and existing["status"] == "active":
+        raise GymError("CONFLICT", "This person already has access to the workspace")
+    if existing:
+        ctx.c.execute(
+            "UPDATE admin.users SET profile=%s, binding_approver=%s, status='active' WHERE workspace_id=%s AND id=%s",
+            (profile, approver, ctx.ws, user_id),
+        )
+    else:
+        ctx.c.execute(
+            "INSERT INTO admin.users(id,workspace_id,email,name,profile,binding_approver,status) VALUES(%s,%s,%s,%s,%s,%s,'active')",
+            (user_id, ctx.ws, email, name, profile, approver),
+        )
+    audit(
+        ctx.c,
+        ctx.ws,
+        ctx.actor,
+        "user.invited",
+        user_id,
+        details={"username": username, "profile": profile, "binding_approver": approver},
+    )
+    emit(ctx.c, ctx.ws, "user.invited", user_id, {"user_id": user_id, "profile": profile})
+    return {
+        "id": user_id,
+        "username": username,
+        "profile": profile,
+        "binding_approver": approver,
+        "temporary_password": temporary,
+        "note": "Shown once: give it to the person privately; they change it at first sign-in."
+        if temporary
+        else "The sign-in already existed; access to this workspace was added.",
+    }
+
+
+def remove_access(ctx, user_id, body):
+    """Removing access keeps the account and its history."""
+    ctx.actor.require_person()
+    require(ctx.actor.profile == "admin", "FORBIDDEN", "Only an Admin removes access")
+    row = ctx.c.execute(
+        "SELECT * FROM admin.users WHERE workspace_id=%s AND id=%s", (ctx.ws, user_id)
+    ).fetchone()
+    if not row:
+        raise GymError("NOT_FOUND", "User not found")
+    require(
+        str(user_id) != str(ctx.actor.id), "VALIDATION_FAILED", "You cannot remove your own access"
+    )
+    if row["profile"] == "admin":
+        admins = ctx.c.execute(
+            "SELECT count(*) n FROM admin.users WHERE workspace_id=%s AND profile='admin' AND status='active'",
+            (ctx.ws,),
+        ).fetchone()["n"]
+        require(admins > 1, "VALIDATION_FAILED", "A workspace keeps at least one Admin")
+    ctx.c.execute(
+        "UPDATE admin.users SET status='removed', binding_approver=false WHERE workspace_id=%s AND id=%s",
+        (ctx.ws, user_id),
+    )
+    audit(ctx.c, ctx.ws, ctx.actor, "user.removed", str(user_id), reason=body.get("reason"))
+    emit(ctx.c, ctx.ws, "user.removed", str(user_id), {"user_id": str(user_id)})
+    return {"id": str(user_id), "status": "removed"}
+
+
+def access_history(ctx, user_id):
+    return ctx.c.execute(
+        """SELECT action, actor, reason, details, at AS created_at FROM admin.audit_events
+           WHERE workspace_id=%s AND (subject=%s OR actor=%s) AND action LIKE 'user.%%' ORDER BY at DESC, id DESC LIMIT 50""",
+        (ctx.ws, str(user_id), str(user_id)),
+    ).fetchall()

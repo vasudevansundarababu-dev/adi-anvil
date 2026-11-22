@@ -1210,49 +1210,179 @@ function Users() {
   const { ws, me, say } = useGym();
   const { data, error, reload } = useData<any>(`${wsBase(ws)}/users`);
   const [failure, setFailure] = useState<GymApiError | null>(null);
+  const [q, setQ] = useState('');
+  const [profile, setProfile] = useState('');
+  const [inviting, setInviting] = useState(false);
+  const [form, setForm] = useState({
+    username: '',
+    email: '',
+    name: '',
+    profile: 'viewer',
+    binding_approver: false,
+  });
+  const [invited, setInvited] = useState<any>(null);
+  const [history, setHistory] = useState<{ id: string; items: any[] } | null>(null);
+  const admin = me.profile === 'admin';
+  async function patch(u: any, body: object, message?: string) {
+    try {
+      await send('PATCH', `${wsBase(ws)}/users/${u.id}`, body);
+      if (message) say(message);
+      reload();
+    } catch (err) {
+      setFailure(err as GymApiError);
+    }
+  }
+  const rows = (data?.items ?? []).filter(
+    (u: any) =>
+      (!q || `${u.name} ${u.email}`.toLowerCase().includes(q.toLowerCase())) &&
+      (!profile || u.profile === profile),
+  );
   return (
     <>
       <small>
-        Members are the local Keycloak identities (distinct people). Profiles are Admin, RL Engineer
-        and Viewer; the binding-approver flag lets a person approve rule overrides. SMEs have no
-        accounts here: SME review happens in ADI Forge. Invites are work package 2.10.
+        Members are distinct people with their own sign-in (local Keycloak). Profiles are Admin, RL
+        Engineer and Viewer; the binding-approver flag lets an Admin or RL Engineer approve rule
+        overrides. SMEs have no accounts here: SME review happens in ADI Forge. Every change is in
+        the audit log.
       </small>
+      <div className="toolbar">
+        <Search value={q} onChange={setQ} placeholder="Search people" />
+        <label>
+          Profile{' '}
+          <select value={profile} onChange={(e) => setProfile(e.target.value)}>
+            <option value="">All</option>
+            <option value="admin">Admin</option>
+            <option value="rl_engineer">RL Engineer</option>
+            <option value="viewer">Viewer</option>
+          </select>
+        </label>
+        {admin && (
+          <button className="primary" onClick={() => (setInviting(true), setInvited(null))}>
+            Invite user
+          </button>
+        )}
+      </div>
+      {inviting && (
+        <section className="card" role="dialog" aria-label="Invite user">
+          <h4>Invite user</h4>
+          {invited ? (
+            <>
+              <p>
+                {invited.username} can now sign in to this workspace as {labelOf(invited.profile)}.
+              </p>
+              {invited.temporary_password && (
+                <p>
+                  Temporary password: <code>{invited.temporary_password}</code>
+                </p>
+              )}
+              <small>{invited.note}</small>
+              <button onClick={() => (setInviting(false), setInvited(null))}>Done</button>
+            </>
+          ) : (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                try {
+                  const out = await send('POST', `${wsBase(ws)}/users/invitations`, form);
+                  setInvited(out);
+                  setFailure(null);
+                  say(`${out.username} invited.`);
+                  reload();
+                } catch (err) {
+                  setFailure(err as GymApiError);
+                }
+              }}
+            >
+              <div className="grid2">
+                <label>
+                  Username
+                  <input
+                    value={form.username}
+                    onChange={(e) => setForm({ ...form, username: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Email
+                  <input
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Full name
+                  <input
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Profile
+                  <select
+                    value={form.profile}
+                    onChange={(e) => setForm({ ...form, profile: e.target.value })}
+                  >
+                    <option value="viewer">Viewer</option>
+                    <option value="rl_engineer">RL Engineer</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </label>
+              </div>
+              <label className="row">
+                <input
+                  type="checkbox"
+                  checked={form.binding_approver}
+                  onChange={(e) => setForm({ ...form, binding_approver: e.target.checked })}
+                />
+                Binding approver
+              </label>
+              <div className="row">
+                <button className="primary" type="submit">
+                  Invite
+                </button>
+                <button type="button" onClick={() => setInviting(false)}>
+                  Cancel
+                </button>
+              </div>
+              <small>
+                Creates the person&apos;s sign-in with a temporary password they change at first
+                sign-in, and their access to this workspace.
+              </small>
+            </form>
+          )}
+        </section>
+      )}
       <Loading data={data} error={error}>
         {() => (
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Profile</th>
+                  <th>Person</th>
+                  <th>Workspace profile</th>
                   <th>Binding approver</th>
-                  <th>Status</th>
-                  <th>Last seen</th>
+                  <th>Access record</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {data.items.map((u: any) => (
+                {rows.map((u: any) => (
                   <tr key={u.id}>
                     <td>
                       {u.name}
                       <small>{u.email}</small>
                     </td>
                     <td>
-                      {me.profile === 'admin' ? (
+                      {admin && u.status === 'active' ? (
                         <select
                           aria-label={`Profile of ${u.name}`}
                           value={u.profile}
-                          onChange={async (e) => {
-                            try {
-                              await send('PATCH', `${wsBase(ws)}/users/${u.id}`, {
-                                profile: e.target.value,
-                              });
-                              say(`${u.name} is now ${labelOf(e.target.value)}.`);
-                              reload();
-                            } catch (err) {
-                              setFailure(err as GymApiError);
-                            }
-                          }}
+                          onChange={(e) =>
+                            patch(
+                              u,
+                              { profile: e.target.value },
+                              `${u.name} is now ${labelOf(e.target.value)}.`,
+                            )
+                          }
                         >
                           <option value="admin">Admin</option>
                           <option value="rl_engineer">RL Engineer</option>
@@ -1267,23 +1397,67 @@ function Users() {
                         type="checkbox"
                         aria-label={`Binding approver: ${u.name}`}
                         checked={u.binding_approver}
-                        disabled={me.profile !== 'admin'}
-                        onChange={async (e) => {
-                          try {
-                            await send('PATCH', `${wsBase(ws)}/users/${u.id}`, {
-                              binding_approver: e.target.checked,
-                            });
-                            reload();
-                          } catch (err) {
-                            setFailure(err as GymApiError);
-                          }
-                        }}
+                        disabled={!admin || u.status !== 'active'}
+                        onChange={(e) => patch(u, { binding_approver: e.target.checked })}
                       />
                     </td>
                     <td>
                       <Badge state={u.status === 'active' ? 'ready' : u.status} label={u.status} />
+                      <small>last seen {when(u.last_seen_at)}</small>
                     </td>
-                    <td>{when(u.last_seen_at)}</td>
+                    <td>
+                      {admin && (
+                        <div className="row">
+                          <button
+                            className="link"
+                            onClick={async () => {
+                              const out = await fetch(`${wsBase(ws)}/users/${u.id}/history`, {
+                                credentials: 'same-origin',
+                              }).then((r) => r.json());
+                              setHistory({ id: u.id, items: out.data?.items ?? [] });
+                            }}
+                          >
+                            Access history
+                          </button>
+                          {u.status === 'active' && u.id !== me.id && (
+                            <button
+                              className="link"
+                              onClick={async () => {
+                                if (
+                                  !window.confirm(
+                                    `Remove ${u.name}'s access to this workspace? Their account and history are kept.`,
+                                  )
+                                )
+                                  return;
+                                try {
+                                  await send('POST', `${wsBase(ws)}/users/${u.id}/remove`, {
+                                    reason: 'removed by an Admin',
+                                  });
+                                  say(`${u.name}'s access removed.`);
+                                  reload();
+                                } catch (err) {
+                                  setFailure(err as GymApiError);
+                                }
+                              }}
+                            >
+                              Remove access
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      {history?.id === u.id && (
+                        <ul>
+                          {history!.items.length === 0 && <li>No recorded changes.</li>}
+                          {history!.items.map((h: any, n: number) => (
+                            <li key={n}>
+                              <small>
+                                {when(h.created_at)} · {h.action} · {JSON.stringify(h.details)}
+                              </small>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

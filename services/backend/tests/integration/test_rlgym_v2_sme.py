@@ -7,7 +7,16 @@ import httpx
 import psycopg
 import pytest
 from psycopg.rows import dict_row
-from test_rlgym_v2 import FORGE, PROJECT, activated, exported, person, post, service, ws  # noqa: F401
+from test_rlgym_v2 import (  # noqa: F401
+    FORGE,
+    PROJECT,
+    activated,
+    exported,
+    person,
+    post,
+    service,
+    ws,
+)
 from test_rlgym_v2_runs import finished, lineup, small_suite  # noqa: F401
 
 from anvil.config import setting

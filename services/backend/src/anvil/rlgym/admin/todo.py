@@ -222,6 +222,25 @@ def on_event(c, ws, topic, d, event_id):
         )
     elif topic == "evaluator.qualified":
         close_items(c, ws, event_id, "evaluator_no_replacement", subject=d["id"])
+        # A fix version the RL Gym made after an SME "grader is wrong" decision: re-score is offered, never automatic.
+        for item in c.execute(
+            """SELECT i.id, b.run_id, b.project_id FROM results.sme_review_items i JOIN results.sme_review_batches b ON b.id=i.batch_id
+               WHERE i.workspace_id=%s AND i.fix_configuration=%s AND i.fix_version=%s""",
+            (ws, d["id"], d["version"]),
+        ).fetchall():
+            open_item(
+                c,
+                ws,
+                event_id,
+                "rescore_ready",
+                f"{item['run_id']}:{d['id']}@{d['version']}",
+                "review",
+                "Fix version qualified",
+                f"{d['id']} v{d['version']} qualified after SME review; re-score {item['run_id']} if you want it graded again (explicit)",
+                f"/gym/runs/{item['run_id']}/sme",
+                "Re-score…",
+                project_id=item["project_id"],
+            )
         for proj in d.get("new_cohort_projects", []):
             open_item(
                 c,
@@ -239,6 +258,65 @@ def on_event(c, ws, topic, d, event_id):
     elif topic == "run.admitted":
         close_items(c, ws, event_id, "project_ready", subject=p)
         close_items(c, ws, event_id, "evaluator_new_cohort", project_id=p)
+        if d.get("batch_id"):
+            close_items(c, ws, event_id, "validation_ready", subject=d["batch_id"])
+    elif topic == "run.completed":
+        run = c.execute(
+            "SELECT purpose, name FROM runs.runs WHERE id=%s", (d["run_id"],)
+        ).fetchone()
+        failed = c.execute(
+            """SELECT count(*) n FROM runs.episodes e JOIN scoring.episode_scores s ON s.episode_id=e.id
+               WHERE e.run_id=%s AND e.kind='case' AND NOT s.passed""",
+            (d["run_id"],),
+        ).fetchone()["n"]
+        if run and run["purpose"] == "benchmark" and failed:
+            open_item(
+                c,
+                ws,
+                event_id,
+                "send_for_sme",
+                d["run_id"],
+                "review",
+                f"{run['name']} ({d['run_id']})",
+                f"{failed} failed episodes with no SME item",
+                f"/gym/runs/{d['run_id']}/sme",
+                "Send for SME review",
+                project_id=p,
+            )
+    elif topic == "sme_batch.sent":
+        close_items(c, ws, event_id, "send_for_sme", subject=d["run_id"])
+        items = c.execute(
+            "SELECT count(*) n FROM results.sme_review_items WHERE batch_id=%s", (d["batch_id"],)
+        ).fetchone()["n"]
+        open_item(
+            c,
+            ws,
+            event_id,
+            "sme_waiting",
+            d["batch_id"],
+            "import_export",
+            "Results sent to ADI Forge",
+            f"{d['batch_id']} ({items} items) · waiting for SME decisions.",
+            f"/gym/runs/{d['run_id']}/sme",
+            None,
+            project_id=p,
+        )
+    elif topic == "sme_batch.decided":
+        close_items(c, ws, event_id, "sme_waiting", subject=d["batch_id"])
+    elif topic == "sme_batch.corrections_imported":
+        open_item(
+            c,
+            ws,
+            event_id,
+            "validation_ready",
+            d["batch_id"],
+            "review",
+            "Corrected tasks arrived",
+            f"{d['batch_id']}: corrected revisions arrived in a re-export; start the validation run",
+            f"/gym/runs/{d['run_id']}/sme",
+            "Start validation run",
+            project_id=p,
+        )
 
 
 def list_open(c, ws, actor):
