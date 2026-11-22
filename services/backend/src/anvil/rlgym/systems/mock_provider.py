@@ -337,11 +337,13 @@ def studio_agent(model_id, key, application_id):
         )
     if erratic and rng.random() < 0.3:
         decision = rng.choice(["ready_for_approval", "request_information", "specialist_review"])
+    found_issue = decision != "ready_for_approval"
     evidence = evidence or [d["document_id"] for d in mine][:2]
-    yield {
-        "tool": "finding.write",
-        "args": {"issue": f"Review: {reason}", "evidence_ids": evidence},
-    }
+    if found_issue:  # a finding records a problem; a clean case gets none
+        yield {
+            "tool": "finding.write",
+            "args": {"issue": f"Review: {reason}", "evidence_ids": evidence},
+        }
     if decision == "request_information" and request:
         yield {
             "tool": "information.request",
@@ -375,7 +377,8 @@ def studio_agent(model_id, key, application_id):
                 }
                 for p in parties
             ][:10],
-            "reason": reason[0].upper() + reason[1:] + ".",
+            "reason": reason
+            + ".",  # keeps the reason keyword as written (verified, name, expired, ...)
             "policy_bundle": POLICY_BUNDLE,
             **({"account_type": app["product"]} if app.get("product") else {}),
         },

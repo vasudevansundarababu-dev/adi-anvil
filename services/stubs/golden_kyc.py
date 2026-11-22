@@ -1162,6 +1162,8 @@ def project_export(
         for task in tasks:
             # Packages are bound to this project and template so they never collide with another project's tasks.
             task["package"]["actor"]["project"] = project_id
+            # The tools are the environment version's own declared operations (Studio's), not the stub's list.
+            task["package"]["actor"].pop("tools", None)
             task["package"]["private"]["template"] = {
                 k: template_ref[k] for k in ("id", "version", "spec_sha256")
             }

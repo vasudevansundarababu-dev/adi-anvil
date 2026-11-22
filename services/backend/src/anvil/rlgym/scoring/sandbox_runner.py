@@ -167,7 +167,10 @@ def _state(block, ctx):
 def _args_ok(event, wanted, ctx):
     args = event.get("args") or {}
     for name, spec in (wanted or {}).items():
-        expected = ctx["case_id"] if spec == "$case" else _resolve(spec, ctx)
+        # "$case" or the evidence path "case.application_id" both mean the episode's case.
+        expected = (
+            ctx["case_id"] if spec in ("$case", "case.application_id") else _resolve(spec, ctx)
+        )
         if expected is MISSING or args.get(name) != expected:
             return False
     return True

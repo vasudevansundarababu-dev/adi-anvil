@@ -172,10 +172,14 @@ def prepare_runs(ws):
 def lease(ws):
     with system_scope(ws) as c:
         e = c.execute(
+            # One running episode per run: a run's instance is one environment (Studio's simulator holds one
+            # episode at a time), so two runner processes must never step it at once. The run row is locked
+            # while an episode is leased; another process skips the run until this lease is visible.
             """SELECT e.* FROM runs.episodes e JOIN runs.runs r ON r.id=e.run_id
                WHERE e.workspace_id=%s AND e.state='queued' AND r.state='running' AND r.cancel_requested_at IS NULL
                  AND (r.execution_mode <> 'live' OR %s)
-               ORDER BY e.queued_at, e.id LIMIT 1 FOR UPDATE OF e SKIP LOCKED""",
+                 AND NOT EXISTS (SELECT 1 FROM runs.episodes x WHERE x.run_id=e.run_id AND x.state='running')
+               ORDER BY e.queued_at, e.id LIMIT 1 FOR UPDATE OF e, r SKIP LOCKED""",
             (ws, _live_ok()),
         ).fetchone()
         if not e:

@@ -26,6 +26,19 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
 | 2.12 Edge cases and slice tags | done (local stub) | migration 051; activation mirrors S4 edge cases and S1 slice lists (validated); default suite counts per edge-case tag at the template minimum; more-data edge cells carry tag, recipe and expected outcome; tasks keep complexity and archetype; report Task results and Failures & evidence sliced by both (tables and filters); new case kind in four parts (Admin template page and episode diagnosis). Stub Golden KYC V11, project KYC Edge Cases (RG-46) |
 | 2.13 Branding | done | ADI Labs Forge lockup on navy with the gradient rule on every v2 screen and the sign-in page; Keycloak login theme (applied to the existing realm with `python3 scripts/local.py keycloak-theme`); titles `<Page> · RL Gym Evaluation · ADI Labs Forge`; PDF full logo on page 1 and running header; Authoring on screen; banned-name unit test (RG-45) |
 
+- **22 Nov 2026, first scored runs on Studio's own Golden KYC v3 (tpl_x5rwt6d5eu@3 on golden-kyc-openenv@6):**
+  - **Project:** KYC via Studio v3 (40 tasks, exported by the RL Gym's ADI Forge stand-in; linked exports now leave
+    out the stub's tool list).
+  - **Runs:** run-0219 and run-0220, three mock agents, 120 episodes each, verifier blocks scored.
+  - **Defect found and fixed:** two runner processes (the dev API thread and a drain) stepped episodes of the same run
+    at once on Studio's single-episode simulator. The generation guard refused the calls (CONFLICT), so nothing
+    crossed between episodes, but those episodes were lost. The lease now locks the run row and allows one running
+    episode per run.
+  - **Template blocks reported to Studio:** `screening.read_first` cannot pass (application.read has no
+    application_id); `decision.no_other_writes` allows no findings, information_requests or referrals;
+    `screening.finding` needs the exact value `screening_hit`.
+  - **Agent fixes:** a lower-case rationale keyword; findings only for real problems.
+  - **Blocked:** a third run (to confirm the fix) waits on Studio's registry, which answers 401 to the RL Gym's key.
 - **22 Nov 2026, Promptfoo plug-in (RG-51):**
   - **1.1.0** adopts Studio's settings schema (required judge and threshold, `reference` for factuality, judge choices = `mock-judge` plus models with an active `judge` approval, filled when listed and validated); image `sha256:dae7828baede…`, qualified (3/3). 1.0.0 deprecated as superseded.
   - **Downloads:** promptfoo 0.125.1 and the Node 22 image, approved by the owner.
