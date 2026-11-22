@@ -32,6 +32,21 @@ CAUSE = {
 # --- exports ---------------------------------------------------------------------------------------------------
 
 
+def template_hash_matches(activation, t):
+    """An export names the activated version by one of its two fingerprints: the RL Gym document's `spec_sha256`, or
+    (real Authoring) the joint template-version hash Studio's release recorded as `forge_template_version_hash`.
+    Authoring sends its hash in `spec_sha256` or in `template_version_hash`. Either identifies this immutable
+    activation; anything else is refused. The project always stores the activation's own `spec_sha256`."""
+    sent = {
+        t.get(k) for k in ("spec_sha256", "template_version_hash", "forge_template_version_hash")
+    } - {
+        None,
+        "",
+    }
+    known = {activation["spec_sha256"], activation.get("forge_template_version_hash")} - {None, ""}
+    return bool(sent & known)
+
+
 def receive_export(c, ws, actor, project_id, body):
     """POST /projects/{project_id}/exports (client adi-forge). Idempotent by export hash; tasks deduplicated by
     package hash. Every package is fetched from the ADI Forge stub and checked against its hash before import."""
@@ -87,10 +102,11 @@ def receive_export(c, ws, actor, project_id, body):
             f"Template {t['id']} v{t['version']} is not active in this workspace",
         )
     require(
-        activation["spec_sha256"] == t.get("spec_sha256"),
+        template_hash_matches(activation, t),
         "HASH_MISMATCH",
         "The export's template fingerprint differs from the activated Studio release",
         activated=activation["spec_sha256"],
+        activated_forge_version_hash=activation.get("forge_template_version_hash"),
         exported=t.get("spec_sha256"),
     )
     project = c.execute(
@@ -114,7 +130,7 @@ def receive_export(c, ws, actor, project_id, body):
                 body["project_name"],
                 t["id"],
                 int(t["version"]),
-                t["spec_sha256"],
+                activation["spec_sha256"],
                 t["forge_template_id"],
                 int(t["forge_version"]),
                 mode,

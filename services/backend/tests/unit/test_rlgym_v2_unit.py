@@ -180,3 +180,22 @@ def test_rule_labels():
     )
     assert selection.rule_label({"kind": "latest"}) == "Latest"
     assert selection.rule_label({"kind": "latest_qualified"}) == "Latest qualified"
+
+
+def test_an_export_names_the_activation_by_either_fingerprint():
+    # Studio Golden KYC v4: the RL Gym document's spec_sha256 and Authoring's joint template-version hash.
+    from anvil.rlgym.projects.service import template_hash_matches
+
+    act = {
+        "spec_sha256": "a583d2e7" + "0" * 56,
+        "forge_template_version_hash": "ecf6a72b" + "0" * 56,
+    }
+    assert template_hash_matches(act, {"spec_sha256": act["spec_sha256"]})
+    assert template_hash_matches(act, {"spec_sha256": act["forge_template_version_hash"]})
+    assert template_hash_matches(act, {"template_version_hash": act["forge_template_version_hash"]})
+    assert not template_hash_matches(act, {"spec_sha256": "f" * 64})
+    assert not template_hash_matches(act, {})
+    # An activation without Authoring's hash accepts only its own spec_sha256.
+    old = {"spec_sha256": act["spec_sha256"], "forge_template_version_hash": None}
+    assert not template_hash_matches(old, {"spec_sha256": act["forge_template_version_hash"]})
+    assert not template_hash_matches(old, {"spec_sha256": None})
