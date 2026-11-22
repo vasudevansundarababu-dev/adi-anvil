@@ -64,3 +64,18 @@ def test_only_v11_task_packages_carry_slice_tags():
     assert "complexity" not in v10[0]["package"]["private"]
     assert {t["package"]["private"]["complexity"] for t in v11} == set(g.SLICE_LISTS["complexity"])
     assert all("archetype" not in t["package"]["actor"] for t in v11)
+
+
+def test_a_structured_recipe_counts_as_a_recipe():
+    """Studio sends recipes as structured conditions; validate accepts them (a missing or empty one is refused)."""
+    doc = g.template(g.EDGES_VERSION)
+    edges = [dict(e) for e in doc["edge_cases"]]
+    edges[0]["recipe"] = [
+        {"collection": "documents", "field": "kind", "op": "equals", "value": "screening_result"}
+    ]
+    edges[1]["recipe"] = []
+    reasons = templates._edge_case_checks({**doc, "edge_cases": edges})[0]["reasons"]
+    assert reasons == ["minor_without_tin: no generator recipe, so its data cannot be asked for"]
+    from anvil.rlgym.suites import service as suites
+
+    assert suites._recipe_text(edges[0]["recipe"]).startswith("Cases matching: [")

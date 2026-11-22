@@ -26,6 +26,15 @@ DEFAULT_PLAN = {
 }
 
 
+def _recipe_text(recipe):
+    """An edge case's recipe as text for a data request description (plain English or structured conditions)."""
+    if not recipe or isinstance(recipe, str):
+        return recipe
+    import json
+
+    return "Cases matching: " + json.dumps(recipe, separators=(",", ":"))[:1500]
+
+
 def _edge_cases(c, ws, pid):
     """The S4 edge cases of the project's activated template (2.12), by tag."""
     row = c.execute(
@@ -1083,7 +1092,7 @@ def send_more_data(c, ws, actor, sv_id, body):
             "request": (s["original_quota"] or s["quota"]) - s["available"],
             "description": (descriptions.get(s["cell_key"]) or "").strip()
             or (
-                edges.get(s["cell_key"].removeprefix("edge:"), {}).get("recipe")
+                _recipe_text(edges.get(s["cell_key"].removeprefix("edge:"), {}).get("recipe"))
                 if s["cell_key"].startswith("edge:")
                 else None
             )

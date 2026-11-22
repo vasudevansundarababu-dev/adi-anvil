@@ -143,7 +143,9 @@ def _edge_case_checks(doc):
         if tag in seen:
             reasons.append(f"{tag}: duplicate edge-case tag")
         seen.add(tag)
-        if not (e.get("recipe") or "").strip():
+        recipe = e.get("recipe")
+        # Plain English, or Studio's structured conditions ([{collection, field, op, value | value_ref}, ...]).
+        if not (recipe.strip() if isinstance(recipe, str) else recipe):
             reasons.append(f"{tag}: no generator recipe, so its data cannot be asked for")
         if not (e.get("expected_outcome") or {}).get("recommendation"):
             reasons.append(f"{tag}: expected outcome needs a recommendation")
