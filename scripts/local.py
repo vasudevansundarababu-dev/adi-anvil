@@ -282,21 +282,37 @@ def plugin_build(name):
     up = manifest["upstream"]
     wheel = LOCAL / "vendor" / name / up["wheel"]
     if not wheel.is_file() or hashlib.sha256(wheel.read_bytes()).hexdigest() != up["sha256"]:
-        raise SystemExit(f"{wheel} is missing or does not match its pinned SHA-256; nothing is downloaded here")
+        raise SystemExit(
+            f"{wheel} is missing or does not match its pinned SHA-256; nothing is downloaded here"
+        )
     build = LOCAL / "plugins" / f"build-{name}"
     shutil.rmtree(build, ignore_errors=True)
-    shutil.copytree(src, build, ignore=shutil.ignore_patterns("manifest.json", "*.jdm.json", "__pycache__"))
+    shutil.copytree(
+        src, build, ignore=shutil.ignore_patterns("manifest.json", "*.jdm.json", "__pycache__")
+    )
     shutil.copy2(wheel, build / up["wheel"])
     tag = f"rlgym-local/verifier-{name}:{manifest['version']}"
     run(
         [
-            "docker", "build", "--quiet", "--network", "none",
-            "--build-arg", f"BASE_IMAGE={PLUGIN_BASE}", "--build-arg", f"ZEN_WHEEL={up['wheel']}",
-            "-t", tag, str(build),
+            "docker",
+            "build",
+            "--quiet",
+            "--network",
+            "none",
+            "--build-arg",
+            f"BASE_IMAGE={PLUGIN_BASE}",
+            "--build-arg",
+            f"ZEN_WHEEL={up['wheel']}",
+            "-t",
+            tag,
+            str(build),
         ]
     )
     image = subprocess.run(
-        ["docker", "image", "inspect", "--format", "{{.Id}}", tag], capture_output=True, text=True, check=True
+        ["docker", "image", "inspect", "--format", "{{.Id}}", tag],
+        capture_output=True,
+        text=True,
+        check=True,
     ).stdout.strip()
     manifest["image"] = image
     out = LOCAL / "plugins" / f"{manifest['id']}-{manifest['version']}.json"
