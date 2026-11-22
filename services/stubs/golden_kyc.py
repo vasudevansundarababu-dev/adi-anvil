@@ -126,6 +126,7 @@ PROJECTS = {
     "prj_d4e9b1a7": {"name": "KYC December", "template_version": 9, "forge_version": 4},
     "prj_b10c4e21": {"name": "KYC Verifier", "template_version": 10, "forge_version": 5},
     "prj_e11a5c07": {"name": "KYC Edge Cases", "template_version": 11, "forge_version": 6},
+    "prj_c12e7f30": {"name": "KYC ZEN", "template_version": 12, "forge_version": 7},
 }
 FAILURE_TAXONOMY = [
     "STATE_MUTATION_ERROR",
@@ -223,6 +224,69 @@ VERIFIER_BLOCKS = {
 # enums. v2 and v3 keep TOOLS, so their hashes do not move.
 REQUEST_TYPES = ["street_address", "tin", "id_document", "proof_of_address"]
 SPECIALTIES = ["sanctions", "fraud", "legal"]
+# Golden KYC V12 (work package 2.14, verifier plug-ins): V11 plus a GoRules ZEN block on `decision` (rule check): S4-R07,
+# a minor without a TIN is escalated. The rules file travels in the release (`verifier_files`, keyed by its SHA-256).
+ZEN_VERSION = 12
+ZEN_RULES = {
+    "nodes": [
+        {"id": "in", "type": "inputNode", "name": "Request", "position": {"x": 0, "y": 0}},
+        {
+            "id": "t",
+            "type": "decisionTableNode",
+            "name": "S4-R07 minor without TIN",
+            "position": {"x": 240, "y": 0},
+            "content": {
+                "hitPolicy": "first",
+                "inputs": [
+                    {"id": "i1", "name": "Minor parties", "field": "minor"},
+                    {"id": "i2", "name": "TIN present", "field": "tin"},
+                    {"id": "i3", "name": "Recommendations", "field": "recommendation"},
+                ],
+                "outputs": [
+                    {"id": "o1", "name": "Pass", "field": "pass"},
+                    {"id": "o2", "name": "Rule", "field": "rule"},
+                ],
+                "rules": [
+                    {
+                        "_id": "r1",
+                        "i1": "some($, # == true)",
+                        "i2": "some($, # == false)",
+                        "i3": "not(contains($, 'escalate'))",
+                        "o1": "false",
+                        "o2": '"S4-R07: a minor without a TIN is escalated"',
+                    },
+                    {"_id": "r2", "i1": "", "i2": "", "i3": "", "o1": "true", "o2": '"S4-R07"'},
+                ],
+            },
+        },
+        {"id": "out", "type": "outputNode", "name": "Response", "position": {"x": 480, "y": 0}},
+    ],
+    "edges": [
+        {"id": "e1", "sourceId": "in", "targetId": "t", "type": "edge"},
+        {"id": "e2", "sourceId": "t", "targetId": "out", "type": "edge"},
+    ],
+}
+ZEN_RULES_SHA256 = hashlib.sha256(
+    json.dumps(ZEN_RULES, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+).hexdigest()  # RFC 8785 for this file (no floats, ASCII keys)
+ZEN_BLOCK = {
+    "id": "decision.minor_tin",
+    "plugin": {"id": "gorules-zen", "version_rule": "latest_qualified"},
+    "settings": {
+        "mode": "rule_check",
+        "rules": {
+            "ref": f"evaluators/zen/{TEMPLATE_ID}/{ZEN_RULES_SHA256}.json",
+            "sha256": ZEN_RULES_SHA256,
+        },
+        "inputs": {
+            "minor": "case.parties[*].minor",
+            "tin": "case.parties[*].tin_present",
+            "recommendation": "state.end.recommendations[*].recommendation",
+        },
+    },
+    "on_fail": "POLICY_VIOLATION",
+}
+
 WRITES = {
     "finding.write": "findings",
     "exception.log": "notes",
@@ -259,6 +323,7 @@ SCHEMA_V6 = {
                 _field("application_id"),
                 _field("role"),
                 _field("minor", "boolean"),
+                _field("tin_present", "boolean"),
             ],
         },
         {
@@ -892,7 +957,7 @@ def block_evaluator_bindings():
 
 
 def template(version=TEMPLATE_VERSION):
-    if version not in (TEMPLATE_VERSION, GATED_VERSION, BLOCKS_VERSION, EDGES_VERSION):
+    if version not in (TEMPLATE_VERSION, GATED_VERSION, BLOCKS_VERSION, EDGES_VERSION, ZEN_VERSION):
         raise ValueError(f"unknown Golden KYC version {version}")
     blocks = version >= BLOCKS_VERSION
     doc = {
@@ -906,7 +971,8 @@ def template(version=TEMPLATE_VERSION):
             TEMPLATE_VERSION: "rel-0412",
             GATED_VERSION: "rel-0455",
             BLOCKS_VERSION: "rel-0461",
-        }.get(version, "rel-0462"),
+            EDGES_VERSION: "rel-0462",
+        }.get(version, "rel-0463"),
         "bindings": [
             {
                 "alias": ALIAS,
@@ -944,9 +1010,12 @@ def template(version=TEMPLATE_VERSION):
             "edge_cases": EDGE_CASES,
         },
         "forge_template_id": FORGE_TEMPLATE_ID,
-        "forge_version": {TEMPLATE_VERSION: FORGE_VERSION, GATED_VERSION: 4, BLOCKS_VERSION: 5}.get(
-            version, 6
-        ),
+        "forge_version": {
+            TEMPLATE_VERSION: FORGE_VERSION,
+            GATED_VERSION: 4,
+            BLOCKS_VERSION: 5,
+            EDGES_VERSION: 6,
+        }.get(version, 7),
     }
     if blocks:
         doc["expected_values_from"] = "case_reference"
@@ -954,6 +1023,10 @@ def template(version=TEMPLATE_VERSION):
     if version >= EDGES_VERSION:
         doc["edge_cases"] = S4_EDGE_CASES
         doc["slice_lists"] = SLICE_LISTS
+    if version >= ZEN_VERSION:
+        decision = next(c for c in doc["criteria"] if c["criterion_id"] == "decision")
+        decision["verifier_blocks"] = [*decision["verifier_blocks"], ZEN_BLOCK]
+        doc["verifier_files"] = {ZEN_RULES_SHA256: ZEN_RULES}
     doc["spec_sha256"] = sha(
         {k: v for k, v in doc.items() if k not in ("forge_template_id", "forge_version")}
     )

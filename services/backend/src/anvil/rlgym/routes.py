@@ -522,6 +522,67 @@ def routes():
                 request,
             )
 
+    @r.get(W + "/evaluators/plugins")
+    def plugin_list(ws: str, request: Request, all: bool = False):
+        """Qualified verifier plug-in versions with their settings schema (Studio draws S7 forms from it)."""
+        from anvil.rlgym.plugins import service as plugins
+
+        with scope(request, ws, services=STUDIO) as ctx:
+            return ok({"items": plugins.list_plugins(ctx.c, qualified_only=not all)}, request)
+
+    @r.post(W + "/evaluators/plugins", status_code=201)
+    def plugin_install(ws: str, request: Request, body: dict = Body(default_factory=dict)):
+        from anvil.rlgym.plugins import service as plugins
+
+        with scope(request, ws) as ctx:
+            manifest = body.get("manifest") or body
+            return ok(
+                idempotent(ctx, request, body, lambda: plugins.install(ctx, manifest)), request, 201
+            )
+
+    @r.post(W + "/evaluators/plugins/{pid}/{version}/test")
+    def plugin_test(
+        ws: str, pid: str, version: str, request: Request, body: dict = Body(default_factory=dict)
+    ):
+        from anvil.rlgym.plugins import service as plugins
+
+        with scope(request, ws) as ctx:
+            return ok(
+                idempotent(ctx, request, body, lambda: plugins.test(ctx, pid, version)), request
+            )
+
+    @r.post(W + "/evaluators/plugins/{pid}/{version}/{target}")
+    def plugin_state(
+        ws: str,
+        pid: str,
+        version: str,
+        target: str,
+        request: Request,
+        body: dict = Body(default_factory=dict),
+    ):
+        """Deprecate or revoke a plug-in version (impact report: GET /frameworks/{framework_version_id}/impact)."""
+        from anvil.rlgym.plugins import service as plugins
+
+        require(target in ("deprecate", "revoke"), "NOT_FOUND", "Unknown action")
+        with scope(request, ws) as ctx:
+            row = plugins.get_row(ctx.c, pid, version)
+            return ok(
+                idempotent(
+                    ctx,
+                    request,
+                    body,
+                    lambda: evaluators.framework_state(
+                        ctx.c,
+                        ctx.ws,
+                        ctx.actor,
+                        row["id"],
+                        "deprecated" if target == "deprecate" else "revoked",
+                        body.get("reason"),
+                    ),
+                ),
+                request,
+            )
+
     @r.get(W + "/catalog/rubrics")
     def rubric_registry(ws: str, request: Request):
         """The rubrics a Rubric verifier block may name (Studio's validate refuses others). Mock judge locally."""

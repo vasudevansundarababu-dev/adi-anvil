@@ -215,6 +215,7 @@ class Session:
                     "application_id": case_id,
                     "role": p["role"],
                     "minor": p["minor"],
+                    "tin_present": p["tin_present"],
                 }
                 for p in actor["applicants"]
             ],

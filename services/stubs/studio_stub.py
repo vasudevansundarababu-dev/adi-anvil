@@ -482,7 +482,13 @@ def bootstrap():
         out["evaluators"].append({"id": d["id"], "version": d["version"], "state": d["state"]})
     # V8 as released, then V9 (screening and the escalation decision are gate criteria; owner decision RG-24).
     out["activations"] = {}
-    for version in (g.TEMPLATE_VERSION, g.GATED_VERSION, g.BLOCKS_VERSION, g.EDGES_VERSION):
+    _, plugins = _gym("GET", "/evaluators/plugins")
+    zen_ready = any(
+        p.get("id") == "gorules-zen" for p in (plugins.get("data") or {}).get("items", [])
+    )
+    versions = (g.TEMPLATE_VERSION, g.GATED_VERSION, g.BLOCKS_VERSION, g.EDGES_VERSION)
+    # V12 uses the GoRules ZEN plug-in; it is released only once an RL Gym Admin has installed and qualified it.
+    for version in versions + ((g.ZEN_VERSION,) if zen_ready else ()):
         template = g.template(version)
         _, validated = _gym("POST", "/templates/validate", template)
         _, kct = _gym(

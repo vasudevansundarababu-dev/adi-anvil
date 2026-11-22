@@ -267,6 +267,43 @@ def rlgym_registry(target):
     )
 
 
+PLUGIN_BASE = "python@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e"
+
+
+def plugin_build(name):
+    """Build a verifier plug-in image offline (pinned local base, verified vendored wheel, --network none) and write
+    its manifest with the built image id to .local/plugins/<id>-<version>.json for Admin → Evaluators → Install."""
+    import hashlib
+    import json
+    import shutil
+
+    src = ROOT / "services/plugins" / name
+    manifest = json.loads((src / "manifest.json").read_text())
+    up = manifest["upstream"]
+    wheel = LOCAL / "vendor" / name / up["wheel"]
+    if not wheel.is_file() or hashlib.sha256(wheel.read_bytes()).hexdigest() != up["sha256"]:
+        raise SystemExit(f"{wheel} is missing or does not match its pinned SHA-256; nothing is downloaded here")
+    build = LOCAL / "plugins" / f"build-{name}"
+    shutil.rmtree(build, ignore_errors=True)
+    shutil.copytree(src, build, ignore=shutil.ignore_patterns("manifest.json", "*.jdm.json", "__pycache__"))
+    shutil.copy2(wheel, build / up["wheel"])
+    tag = f"rlgym-local/verifier-{name}:{manifest['version']}"
+    run(
+        [
+            "docker", "build", "--quiet", "--network", "none",
+            "--build-arg", f"BASE_IMAGE={PLUGIN_BASE}", "--build-arg", f"ZEN_WHEEL={up['wheel']}",
+            "-t", tag, str(build),
+        ]
+    )
+    image = subprocess.run(
+        ["docker", "image", "inspect", "--format", "{{.Id}}", tag], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    manifest["image"] = image
+    out = LOCAL / "plugins" / f"{manifest['id']}-{manifest['version']}.json"
+    out.write_text(json.dumps(manifest, indent=2) + "\n")
+    print(json.dumps({"image": image, "tag": tag, "manifest": str(out.relative_to(ROOT))}))
+
+
 def keycloak_theme():
     """Apply the ADI Labs Forge login theme to an existing local realm: recreate the Keycloak container so the theme is
     mounted (its data volume is kept), then set the realm's loginTheme through the local admin API (loopback only)."""
@@ -620,6 +657,8 @@ def main():
             refuse_while_linked("e2e")
             run([str(PY), "tests/prepare_journey_fixture.py", "--if-missing"], env=env())
         run(["pnpm", "exec", "playwright", "test", *args], env=env())
+    elif cmd == "plugin-build":
+        plugin_build(args[0] if args else "gorules-zen")
     elif cmd == "keycloak-theme":
         keycloak_theme()
     elif cmd == "rlgym-registry":

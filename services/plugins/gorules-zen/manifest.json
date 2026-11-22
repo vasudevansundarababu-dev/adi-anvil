@@ -1,0 +1,574 @@
+{
+  "schema": "adi.verifier-plugin.v1",
+  "id": "gorules-zen",
+  "name": "GoRules ZEN decision rules",
+  "version": "1.0.0",
+  "image": "<filled at build>",
+  "entrypoint": [
+    "python",
+    "-m",
+    "plugin"
+  ],
+  "settings_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "required": [
+      "mode",
+      "rules",
+      "inputs"
+    ],
+    "properties": {
+      "mode": {
+        "enum": [
+          "oracle",
+          "rule_check"
+        ],
+        "title": "Mode",
+        "description": "oracle: the rules compute the right decision and it is compared with the agent's; rule_check: the rules judge the agent's state and output"
+      },
+      "rules": {
+        "type": "object",
+        "title": "Decision rules (JDM)",
+        "x-widget": "file",
+        "required": [
+          "ref",
+          "sha256"
+        ],
+        "properties": {
+          "ref": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "minLength": 64
+          }
+        }
+      },
+      "inputs": {
+        "type": "object",
+        "title": "Facts the rules read",
+        "description": "Rule input name -> evidence path, e.g. minor -> case.parties[*].minor",
+        "additionalProperties": {
+          "type": "string",
+          "x-widget": "collection-field"
+        }
+      },
+      "compare": {
+        "type": "array",
+        "title": "What to compare (oracle)",
+        "items": {
+          "type": "object",
+          "required": [
+            "rule_output",
+            "agent_path"
+          ],
+          "properties": {
+            "rule_output": {
+              "type": "string"
+            },
+            "agent_path": {
+              "type": "string",
+              "x-widget": "collection-field"
+            },
+            "op": {
+              "enum": [
+                "equals",
+                "in",
+                "contains"
+              ],
+              "default": "equals"
+            }
+          }
+        }
+      }
+    }
+  },
+  "reads": [
+    "state",
+    "tools",
+    "output",
+    "case",
+    "case_reference",
+    "slots"
+  ],
+  "calls_model": false,
+  "timeout_seconds": 20,
+  "license": "MIT (zen-engine)",
+  "upstream": {
+    "package": "zen-engine",
+    "version": "2.1.3",
+    "wheel": "zen_engine-2.1.3-cp38-abi3-manylinux_2_28_aarch64.whl",
+    "sha256": "6fce1a4ce5482bb17c1eb4f19f6a8c6aaa2caea2640388bd2a42ccf1ff846384"
+  },
+  "known_cases": [
+    {
+      "name": "allowed",
+      "description": "A minor without a TIN; the agent asks for information",
+      "job": {
+        "schema": "adi.verifier-job.v1",
+        "run_id": "known-case",
+        "episode_id": "known-case",
+        "blocks": [
+          {
+            "id": "decision.minor_tin",
+            "criterion_id": "decision",
+            "on_fail": "STATE_MUTATION_ERROR",
+            "settings": {
+              "mode": "oracle",
+              "rules": {
+                "ref": "evaluators/zen/known-cases/minor-tin.json",
+                "sha256": "07fc6ead41fa184fb3b58655ccfe5c1cd3574e05aaca1c8cc071eb6147ea50d8"
+              },
+              "inputs": {
+                "minor": "case.parties[*].minor",
+                "document_kinds": "case.documents[*].kind"
+              },
+              "compare": [
+                {
+                  "rule_output": "recommendation",
+                  "agent_path": "state.end.recommendations[0].recommendation",
+                  "op": "equals"
+                }
+              ]
+            }
+          }
+        ],
+        "evidence": {
+          "case": {
+            "application_id": "kc-teen-001",
+            "product": "teen_joint",
+            "parties": [
+              {
+                "party_id": "p1",
+                "minor": false
+              },
+              {
+                "party_id": "p2",
+                "minor": true
+              }
+            ],
+            "documents": [
+              {
+                "kind": "government_id"
+              }
+            ]
+          },
+          "state": {
+            "start": {
+              "recommendations": []
+            },
+            "end": {
+              "recommendations": [
+                {
+                  "recommendation": "request_information"
+                }
+              ]
+            }
+          }
+        },
+        "case_reference": {},
+        "slots": {},
+        "files": {
+          "07fc6ead41fa184fb3b58655ccfe5c1cd3574e05aaca1c8cc071eb6147ea50d8": {
+            "nodes": [
+              {
+                "id": "in",
+                "type": "inputNode",
+                "name": "Request",
+                "position": {
+                  "x": 0,
+                  "y": 0
+                }
+              },
+              {
+                "id": "t",
+                "type": "decisionTableNode",
+                "name": "Minor without TIN",
+                "position": {
+                  "x": 240,
+                  "y": 0
+                },
+                "content": {
+                  "hitPolicy": "first",
+                  "inputs": [
+                    {
+                      "id": "i1",
+                      "name": "Minor parties",
+                      "field": "minor"
+                    },
+                    {
+                      "id": "i2",
+                      "name": "Document kinds",
+                      "field": "document_kinds"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "id": "o1",
+                      "name": "Recommendation",
+                      "field": "recommendation"
+                    },
+                    {
+                      "id": "o2",
+                      "name": "Request type",
+                      "field": "request_type"
+                    }
+                  ],
+                  "rules": [
+                    {
+                      "_id": "r1",
+                      "i1": "some($, # == true)",
+                      "i2": "not(contains($, 'tin'))",
+                      "o1": "\"request_information\"",
+                      "o2": "\"tin\""
+                    },
+                    {
+                      "_id": "r2",
+                      "i1": "",
+                      "i2": "",
+                      "o1": "\"ready_for_approval\"",
+                      "o2": "\"none\""
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "out",
+                "type": "outputNode",
+                "name": "Response",
+                "position": {
+                  "x": 480,
+                  "y": 0
+                }
+              }
+            ],
+            "edges": [
+              {
+                "id": "e1",
+                "sourceId": "in",
+                "targetId": "t",
+                "type": "edge"
+              },
+              {
+                "id": "e2",
+                "sourceId": "t",
+                "targetId": "out",
+                "type": "edge"
+              }
+            ]
+          }
+        }
+      },
+      "expect": "pass"
+    },
+    {
+      "name": "disallowed",
+      "description": "Same case; the agent approves",
+      "job": {
+        "schema": "adi.verifier-job.v1",
+        "run_id": "known-case",
+        "episode_id": "known-case",
+        "blocks": [
+          {
+            "id": "decision.minor_tin",
+            "criterion_id": "decision",
+            "on_fail": "STATE_MUTATION_ERROR",
+            "settings": {
+              "mode": "oracle",
+              "rules": {
+                "ref": "evaluators/zen/known-cases/minor-tin.json",
+                "sha256": "07fc6ead41fa184fb3b58655ccfe5c1cd3574e05aaca1c8cc071eb6147ea50d8"
+              },
+              "inputs": {
+                "minor": "case.parties[*].minor",
+                "document_kinds": "case.documents[*].kind"
+              },
+              "compare": [
+                {
+                  "rule_output": "recommendation",
+                  "agent_path": "state.end.recommendations[0].recommendation",
+                  "op": "equals"
+                }
+              ]
+            }
+          }
+        ],
+        "evidence": {
+          "case": {
+            "application_id": "kc-teen-001",
+            "product": "teen_joint",
+            "parties": [
+              {
+                "party_id": "p1",
+                "minor": false
+              },
+              {
+                "party_id": "p2",
+                "minor": true
+              }
+            ],
+            "documents": [
+              {
+                "kind": "government_id"
+              }
+            ]
+          },
+          "state": {
+            "start": {
+              "recommendations": []
+            },
+            "end": {
+              "recommendations": [
+                {
+                  "recommendation": "ready_for_approval"
+                }
+              ]
+            }
+          }
+        },
+        "case_reference": {},
+        "slots": {},
+        "files": {
+          "07fc6ead41fa184fb3b58655ccfe5c1cd3574e05aaca1c8cc071eb6147ea50d8": {
+            "nodes": [
+              {
+                "id": "in",
+                "type": "inputNode",
+                "name": "Request",
+                "position": {
+                  "x": 0,
+                  "y": 0
+                }
+              },
+              {
+                "id": "t",
+                "type": "decisionTableNode",
+                "name": "Minor without TIN",
+                "position": {
+                  "x": 240,
+                  "y": 0
+                },
+                "content": {
+                  "hitPolicy": "first",
+                  "inputs": [
+                    {
+                      "id": "i1",
+                      "name": "Minor parties",
+                      "field": "minor"
+                    },
+                    {
+                      "id": "i2",
+                      "name": "Document kinds",
+                      "field": "document_kinds"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "id": "o1",
+                      "name": "Recommendation",
+                      "field": "recommendation"
+                    },
+                    {
+                      "id": "o2",
+                      "name": "Request type",
+                      "field": "request_type"
+                    }
+                  ],
+                  "rules": [
+                    {
+                      "_id": "r1",
+                      "i1": "some($, # == true)",
+                      "i2": "not(contains($, 'tin'))",
+                      "o1": "\"request_information\"",
+                      "o2": "\"tin\""
+                    },
+                    {
+                      "_id": "r2",
+                      "i1": "",
+                      "i2": "",
+                      "o1": "\"ready_for_approval\"",
+                      "o2": "\"none\""
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "out",
+                "type": "outputNode",
+                "name": "Response",
+                "position": {
+                  "x": 480,
+                  "y": 0
+                }
+              }
+            ],
+            "edges": [
+              {
+                "id": "e1",
+                "sourceId": "in",
+                "targetId": "t",
+                "type": "edge"
+              },
+              {
+                "id": "e2",
+                "sourceId": "t",
+                "targetId": "out",
+                "type": "edge"
+              }
+            ]
+          }
+        }
+      },
+      "expect": "fail",
+      "expect_on_fail": "STATE_MUTATION_ERROR"
+    },
+    {
+      "name": "missing_evidence",
+      "description": "No end state",
+      "job": {
+        "schema": "adi.verifier-job.v1",
+        "run_id": "known-case",
+        "episode_id": "known-case",
+        "blocks": [
+          {
+            "id": "decision.minor_tin",
+            "criterion_id": "decision",
+            "on_fail": "STATE_MUTATION_ERROR",
+            "settings": {
+              "mode": "oracle",
+              "rules": {
+                "ref": "evaluators/zen/known-cases/minor-tin.json",
+                "sha256": "07fc6ead41fa184fb3b58655ccfe5c1cd3574e05aaca1c8cc071eb6147ea50d8"
+              },
+              "inputs": {
+                "minor": "case.parties[*].minor",
+                "document_kinds": "case.documents[*].kind"
+              },
+              "compare": [
+                {
+                  "rule_output": "recommendation",
+                  "agent_path": "state.end.recommendations[0].recommendation",
+                  "op": "equals"
+                }
+              ]
+            }
+          }
+        ],
+        "evidence": {
+          "case": {
+            "application_id": "kc-teen-001",
+            "product": "teen_joint",
+            "parties": [
+              {
+                "party_id": "p1",
+                "minor": false
+              },
+              {
+                "party_id": "p2",
+                "minor": true
+              }
+            ],
+            "documents": [
+              {
+                "kind": "government_id"
+              }
+            ]
+          }
+        },
+        "case_reference": {},
+        "slots": {},
+        "files": {
+          "07fc6ead41fa184fb3b58655ccfe5c1cd3574e05aaca1c8cc071eb6147ea50d8": {
+            "nodes": [
+              {
+                "id": "in",
+                "type": "inputNode",
+                "name": "Request",
+                "position": {
+                  "x": 0,
+                  "y": 0
+                }
+              },
+              {
+                "id": "t",
+                "type": "decisionTableNode",
+                "name": "Minor without TIN",
+                "position": {
+                  "x": 240,
+                  "y": 0
+                },
+                "content": {
+                  "hitPolicy": "first",
+                  "inputs": [
+                    {
+                      "id": "i1",
+                      "name": "Minor parties",
+                      "field": "minor"
+                    },
+                    {
+                      "id": "i2",
+                      "name": "Document kinds",
+                      "field": "document_kinds"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "id": "o1",
+                      "name": "Recommendation",
+                      "field": "recommendation"
+                    },
+                    {
+                      "id": "o2",
+                      "name": "Request type",
+                      "field": "request_type"
+                    }
+                  ],
+                  "rules": [
+                    {
+                      "_id": "r1",
+                      "i1": "some($, # == true)",
+                      "i2": "not(contains($, 'tin'))",
+                      "o1": "\"request_information\"",
+                      "o2": "\"tin\""
+                    },
+                    {
+                      "_id": "r2",
+                      "i1": "",
+                      "i2": "",
+                      "o1": "\"ready_for_approval\"",
+                      "o2": "\"none\""
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "out",
+                "type": "outputNode",
+                "name": "Response",
+                "position": {
+                  "x": 480,
+                  "y": 0
+                }
+              }
+            ],
+            "edges": [
+              {
+                "id": "e1",
+                "sourceId": "in",
+                "targetId": "t",
+                "type": "edge"
+              },
+              {
+                "id": "e2",
+                "sourceId": "t",
+                "targetId": "out",
+                "type": "edge"
+              }
+            ]
+          }
+        }
+      },
+      "expect": "blocked"
+    }
+  ]
+}

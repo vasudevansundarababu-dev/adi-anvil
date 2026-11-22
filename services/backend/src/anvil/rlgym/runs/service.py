@@ -363,6 +363,36 @@ def admission_check(ctx, body):
             "; ".join(bad) or None,
         )
         resolved["evaluator_versions"] = evaluator_versions
+        # Verifier plug-ins (D22): each plug-in block binds a qualified version now; the manifest freezes it.
+        from anvil.rlgym.plugins import service as plugins
+
+        bound_plugins, unbound = {}, []
+        for cr in criteria.values():
+            for b in cr.get("verifier_blocks") or []:
+                if not b.get("plugin"):
+                    continue
+                row = plugins.resolve(ctx.c, b["plugin"])
+                if row:
+                    bound_plugins[b["id"]] = {
+                        "plugin_id": row["runtime_id"],
+                        "version": row["version"],
+                        "framework_version_id": row["id"],
+                        "image": row["image_digest"],
+                        "manifest_sha256": row["manifest_sha256"],
+                    }
+                else:
+                    unbound.append(f"{b['id']}: no qualified {b['plugin'].get('id')}")
+        if bound_plugins or unbound:
+            item(
+                "plugins",
+                not unbound,
+                "Verifier plug-ins qualified",
+                "; ".join(unbound)
+                or ", ".join(
+                    sorted({f"{v['plugin_id']} {v['version']}" for v in bound_plugins.values()})
+                ),
+            )
+        resolved["plugins"] = bound_plugins
         plan = ctx.c.execute(
             "SELECT * FROM suites.data_plans WHERE suite_version_id=%s", (sv["id"],)
         ).fetchone()
@@ -586,6 +616,7 @@ def _manifest(run_id, check):
             "local_image": image and {"tag": image["image_tag"], "id": image["local_image_id"]},
         },
         "evaluators": r["evaluator_versions"],
+        "plugins": r.get("plugins") or {},
         "data_plan": {
             "sample_size": r["plan"]["sample_size"],
             "completeness_quotas": r["plan"]["completeness_quotas"],

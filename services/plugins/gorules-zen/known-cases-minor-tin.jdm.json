@@ -1,0 +1,88 @@
+{
+  "nodes": [
+    {
+      "id": "in",
+      "type": "inputNode",
+      "name": "Request",
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "t",
+      "type": "decisionTableNode",
+      "name": "Minor without TIN",
+      "position": {
+        "x": 240,
+        "y": 0
+      },
+      "content": {
+        "hitPolicy": "first",
+        "inputs": [
+          {
+            "id": "i1",
+            "name": "Minor parties",
+            "field": "minor"
+          },
+          {
+            "id": "i2",
+            "name": "Document kinds",
+            "field": "document_kinds"
+          }
+        ],
+        "outputs": [
+          {
+            "id": "o1",
+            "name": "Recommendation",
+            "field": "recommendation"
+          },
+          {
+            "id": "o2",
+            "name": "Request type",
+            "field": "request_type"
+          }
+        ],
+        "rules": [
+          {
+            "_id": "r1",
+            "i1": "some($, # == true)",
+            "i2": "not(contains($, 'tin'))",
+            "o1": "\"request_information\"",
+            "o2": "\"tin\""
+          },
+          {
+            "_id": "r2",
+            "i1": "",
+            "i2": "",
+            "o1": "\"ready_for_approval\"",
+            "o2": "\"none\""
+          }
+        ]
+      }
+    },
+    {
+      "id": "out",
+      "type": "outputNode",
+      "name": "Response",
+      "position": {
+        "x": 480,
+        "y": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "sourceId": "in",
+      "targetId": "t",
+      "type": "edge"
+    },
+    {
+      "id": "e2",
+      "sourceId": "t",
+      "targetId": "out",
+      "type": "edge"
+    }
+  ]
+}

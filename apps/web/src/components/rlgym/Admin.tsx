@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { EdgeCaseForm, edgeBody, edgeReady, emptyEdge, type EdgeParts } from './EdgeCase';
 import { useState } from 'react';
 import LiveApprovals from './Live';
+import PluginsPanel from './Plugins';
 import { GymApiError, send, short, when, wsBase } from './api';
 import { Keys, Models } from './Models';
 import { labelOf } from './RLGym';
@@ -464,6 +465,7 @@ function Evaluators() {
   );
   return (
     <>
+      <PluginsPanel />
       <small>
         The RL Gym owns framework versions and evaluator configurations (option B). First versions
         arrive from Studio&apos;s S7 bindings through A-06; fix versions are made on a configuration

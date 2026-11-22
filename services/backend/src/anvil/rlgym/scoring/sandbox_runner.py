@@ -288,9 +288,26 @@ def run_blocks(job):
     }
     lines, detail = [], []
     share_total, earned_share = 0.0, 0.0
+    given = None
     for b in blocks:
-        kind = b["kind"]
-        if kind == "state":
+        kind = b.get("kind") or ("plugin" if b.get("plugin") else None)
+        if kind == "plugin":
+            # A verifier plug-in's result line (run outside this sandbox by the generic plug-in runner, D22).
+            given = (job.get("plugin_results") or {}).get(b["id"])
+            if given is None:
+                verdict, actual, expected = "blocked", None, "plug-in did not run"
+            else:
+                verdict, actual, expected = (
+                    given["verdict"],
+                    given.get("actual"),
+                    given.get("expected"),
+                )
+            if b.get("share_percent"):
+                share = float(b["share_percent"])
+                share_total += share
+                if verdict == "pass":
+                    earned_share += share
+        elif kind == "state":
             verdict, actual, expected = _state(b, ctx)
         elif kind == "process":
             verdict, actual, expected = _process(b, ctx)
@@ -302,7 +319,9 @@ def run_blocks(job):
                 earned_share += share
         else:
             raise ValueError(f"unknown block kind {kind}")
-        if verdict == "blocked":
+        if verdict == "blocked" and kind != "plugin":
+            actual, expected = {"missing": expected}, None
+        elif verdict == "blocked" and given is None:
             actual, expected = {"missing": expected}, None
         lines.append(
             {
@@ -318,7 +337,12 @@ def run_blocks(job):
         detail.append(f"{mark} {b['id']}: expected {expected!r}, actual {actual!r}")
     if any(line["verdict"] == "blocked" for line in lines):
         return {"verdict": "blocked", "points": None, "detail": detail, "block_lines": lines}
-    if any(line["verdict"] == "fail" and line["kind"] != "rubric" for line in lines):
+    shared = {
+        b["id"]
+        for b in blocks
+        if b.get("kind") == "rubric" or (b.get("plugin") and b.get("share_percent"))
+    }
+    if any(line["verdict"] == "fail" and line["block_id"] not in shared for line in lines):
         return {"verdict": "fail", "points": 0.0, "detail": detail, "block_lines": lines}
     points = round((100 - share_total + earned_share) / 100, 4) if share_total <= 100 else 0.0
     verdict = "pass" if points >= 1 else "partial"

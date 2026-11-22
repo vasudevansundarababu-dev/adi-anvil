@@ -115,7 +115,7 @@ def verifier_context(c, ws, episode, manifest):
     slot values and extra State checks. All of it stays in the scoring sandbox; none reaches the candidate."""
     t = manifest["template"]
     act = c.execute(
-        "SELECT expected_values_from FROM catalog.template_activations WHERE workspace_id=%s AND template_id=%s AND version=%s",
+        "SELECT expected_values_from, verifier_files FROM catalog.template_activations WHERE workspace_id=%s AND template_id=%s AND version=%s",
         (ws, t["id"], t["version"]),
     ).fetchone()
     blocks = {
@@ -151,7 +151,103 @@ def verifier_context(c, ws, episode, manifest):
         "blocks": blocks,
         "expected_values_from": (act or {}).get("expected_values_from") or "case_reference",
         "slots": task.get("slots") or {},
+        "files": (act or {}).get("verifier_files") or {},
     }
+
+
+PLUGIN_INVOKE = None  # tests replace Docker for the plug-in runner
+
+
+def _public_case(case_id, start):
+    """The case's public seed rows from the start snapshot (never the private reference)."""
+    out = {"application_id": case_id}
+    parties = set()
+    for name, rows in (start or {}).items():
+        mine = []
+        for r in rows or []:
+            if not isinstance(r, dict):
+                continue
+            if (
+                r.get("application_id") == case_id
+                or str(r.get("party_id", "")).startswith(f"{case_id}-")
+                or r.get("party_id") in parties
+            ):
+                mine.append(r)
+                if name == "parties" and r.get("party_id"):
+                    parties.add(r["party_id"])
+        if mine:
+            out[name] = mine
+    app = (out.get("applications") or [{}])[0]
+    for k in ("product", "governing_state", "requested_account"):
+        if k in app:
+            out[k] = app[k]
+    return out
+
+
+def plugin_results(c, episode, manifest, vctx, bundle, reference):
+    """Run each bound plug-in once for this episode with all its blocks (D22). → {block_id: result line}."""
+    from anvil.rlgym.plugins import runner
+
+    bindings = manifest.get("plugins") or {}
+    groups = {}
+    for criterion, blocks in vctx["blocks"].items():
+        for b in blocks:
+            if b.get("plugin"):
+                bound = bindings.get(b["id"])
+                if bound:
+                    groups.setdefault(bound["framework_version_id"], []).append(
+                        {**b, "criterion_id": criterion}
+                    )
+    if not groups:
+        return {}
+    snaps = bundle.get("snapshots") or {}
+    evidence_all = {
+        "state": {"start": snaps.get("start"), "end": snaps.get("end")}
+        if snaps.get("end") is not None
+        else None,
+        "tools": [
+            {
+                "step": t.get("step"),
+                "tool": t["tool"],
+                "args": t.get("args") or {},
+                "status": "ok" if (t.get("observation") or {}).get("ok") else "error",
+                "result": t.get("observation"),
+            }
+            for t in bundle.get("transcript") or []
+            if "tool" in t
+        ],
+        "output": bundle.get("final_output"),
+        "case": _public_case(episode["case_id"], snaps.get("start")),
+    }
+    out = {}
+    for fid, blocks in groups.items():
+        row = c.execute("SELECT * FROM catalog.framework_versions WHERE id=%s", (fid,)).fetchone()
+        m = row["manifest"]
+        reads = set(m["reads"])
+        files = {}
+        for b in blocks:
+            sha = ((b.get("settings") or {}).get("rules") or {}).get("sha256")
+            if sha and sha in vctx["files"]:
+                files[sha] = vctx["files"][sha]
+        job = {
+            "schema": "adi.verifier-job.v1",
+            "run_id": episode["run_id"],
+            "episode_id": episode["id"],
+            "blocks": [
+                {k: b.get(k) for k in ("id", "criterion_id", "settings", "on_fail")} for b in blocks
+            ],
+            "evidence": {k: v for k, v in evidence_all.items() if k in reads and v is not None},
+            **({"case_reference": reference} if "case_reference" in reads else {}),
+            **({"slots": vctx["slots"]} if "slots" in reads else {}),
+            "files": files,
+        }
+        if row["state"] == "revoked":
+            result = runner._blocked(job, f"plug-in {m['id']} {m['version']} is revoked")
+        else:
+            result = runner.run(m, job, invoke=PLUGIN_INVOKE)
+        for line in result["results"]:
+            out[line["block_id"]] = {**line, "plugin": f"{m['id']} {m['version']}"}
+    return out
 
 
 def score_case(c, ws, episode, pass_row, manifest, sealed):
@@ -168,6 +264,9 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
     if bundle.get("final_output") is not None:
         evidence["final_output"] = bundle["final_output"]
     vctx = verifier_context(c, ws, episode, manifest)
+    plugin_lines = (
+        plugin_results(c, episode, manifest, vctx, bundle, ref_row["reference"]) if vctx else {}
+    )
     if vctx and bundle.get("snapshots") and bundle["snapshots"].get("end") is not None:
         evidence["snapshots"] = bundle["snapshots"]
     configs = _configs(c, ws, pass_row["evaluator_versions"])
@@ -195,6 +294,8 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
                 if blocks and row["config"].get("runner") == "verifier_blocks"
                 else {}
             )
+            if extra and plugin_lines:
+                extra["plugin_results"] = plugin_lines
             if extra and row["config"].get("judge"):
                 # A live judge for Rubric blocks (behind an approval); the mock judge stays the default.
                 from anvil.rlgym.live import judge as live_judge

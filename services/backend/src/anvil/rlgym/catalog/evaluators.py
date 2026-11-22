@@ -273,6 +273,25 @@ def run_known_case_tests(c, ws, actor, cid, version, blocks=None, expected_value
     if verifier.is_blocks_config(row["config"]):
         blocks, source, cases = _block_cases(row, blocks, expected_values_from)
         blocks_sha = sha({"blocks": blocks, "expected_values_from": source})
+        if not verifier.legacy(blocks):
+            cases = {}  # only plug-in blocks: each plug-in version is qualified by its own known cases
+        from anvil.rlgym.plugins import service as plugins
+
+        for b in blocks:
+            if b.get("plugin"):
+                bound = plugins.resolve(c, b["plugin"])
+                checks.append(
+                    {
+                        "name": f"plugin:{b['id']}",
+                        "case_id": None,
+                        "expected": "qualified",
+                        "verdict": bound["state"] if bound else "missing",
+                        "result": "pass" if bound else "fail",
+                        "detail": [
+                            f"{b['plugin'].get('id')} {bound['version'] if bound else '(none qualified)'}"
+                        ],
+                    }
+                )
         for name, case in cases.items():
             out = sandbox.run(
                 fw,
@@ -318,7 +337,8 @@ def run_known_case_tests(c, ws, actor, cid, version, blocks=None, expected_value
                 "detail": out.get("detail", []),
             }
         )
-    distinct = len({ch["verdict"] for ch in checks if ch["name"] in KNOWN_CASE_EXPECT}) == 3
+    known = [ch for ch in checks if ch["name"] in KNOWN_CASE_EXPECT]
+    distinct = len({ch["verdict"] for ch in known}) == 3 or (bool(blocks_sha) and not known)
     passed = all(ch["result"] == "pass" for ch in checks) and distinct
     result = "qualified" if passed else "failed"
     receipt_body = {

@@ -98,6 +98,9 @@ def check_blocks(blocks, env, expected_values_from, failure_taxonomy):
     seen = set()
     for b in blocks or []:
         bid = b.get("id") or "?"
+        if b.get("plugin"):
+            seen.add(bid)
+            continue  # checked against the plug-in's settings schema (plugin_reasons)
         if bid in seen:
             reasons.append(f"{bid}: duplicate block id")
         seen.add(bid)
@@ -213,10 +216,59 @@ def _expected(value, source):
     return f"expected-{slot}", "slot", slot
 
 
+def plugin_reasons(c, blocks, failure_taxonomy, files):
+    """Plug-in blocks (D22): a qualified version binds now, the settings are valid against its settings_schema, the
+    evidence paths start with what it reads, on_fail is a template failure code, and a rules file is in the release."""
+    from anvil.rlgym.plugins import contract
+    from anvil.rlgym.plugins import service as plugins
+
+    reasons = []
+    for b in blocks or []:
+        if not b.get("plugin"):
+            continue
+        bid = b.get("id") or "?"
+        p = b["plugin"]
+        row = plugins.resolve(c, p) if isinstance(p, dict) and p.get("id") else None
+        if not row:
+            reasons.append(
+                f"{bid}: no qualified version of plug-in {p.get('id') if isinstance(p, dict) else p!r}"
+            )
+            continue
+        settings = b.get("settings") or {}
+        reasons += [
+            f"{bid}: {e}" for e in contract.schema_errors(row["settings_schema"] or {}, settings)
+        ]
+        if b.get("on_fail") not in (failure_taxonomy or []):
+            reasons.append(
+                f"{bid}: on_fail {b.get('on_fail')!r} is not in the template's failure_taxonomy"
+            )
+        reads = set(row["reads"] or [])
+        paths = list((settings.get("inputs") or {}).values()) + [
+            x.get("agent_path") for x in settings.get("compare") or [] if isinstance(x, dict)
+        ]
+        for path in filter(None, paths):
+            if str(path).split(".", 1)[0].split("[", 1)[0] not in reads:
+                reasons.append(f"{bid}: {path} reads evidence the plug-in does not read")
+        sha = (
+            (settings.get("rules") or {}).get("sha256")
+            if isinstance(settings.get("rules"), dict)
+            else None
+        )
+        if sha and sha not in (files or {}):
+            reasons.append(f"{bid}: rules file {sha[:12]}… is not in the release's verifier_files")
+    return reasons
+
+
+def legacy(blocks):
+    return [b for b in blocks or [] if not b.get("plugin")]
+
+
 def known_cases(blocks, expected_values_from="case_reference"):
     """Allowed (every block holds), disallowed (the first State block, else the first Process block, broken) and
     missing evidence (no snapshot, or no tool log when there is no State block). Each carries the evidence, reference,
-    slots and the block whose on_fail the disallowed case must report."""
+    slots and the block whose on_fail the disallowed case must report. Plug-in blocks are left out: each plug-in
+    version is qualified by its own known cases."""
+    blocks = legacy(blocks)
     reference, slots = {}, {}
     start, end = {}, {}
     rows_by_table = {}

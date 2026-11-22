@@ -78,6 +78,7 @@ def validate(c, ws, doc):
         )
     checks += _verifier_checks(c, ws, doc, bound)
     checks += _edge_case_checks(doc)
+    checks += _file_checks(doc)
     checks.append(
         {
             "check": "runtime_supports_mode",
@@ -111,7 +112,8 @@ def _verifier_checks(c, ws, doc, bound):
             if not (row and row.get("schema")):
                 reasons.append(f"{env['id']} declares no collections (schema.collections)")
                 continue
-            reasons += verifier.check_blocks(blocks, row, source, taxonomy)
+            reasons += verifier.check_blocks(verifier.legacy(blocks), row, source, taxonomy)
+        reasons += verifier.plugin_reasons(c, blocks, taxonomy, doc.get("verifier_files"))
         versions = selection.selectable_configurations(c, ws, cr["configuration_id"])
         if versions and not verifier.is_blocks_config(versions[0]["config"]):
             reasons.append(
@@ -128,6 +130,26 @@ def _verifier_checks(c, ws, doc, bound):
             }
         )
     return out
+
+
+def _file_checks(doc):
+    """`verifier_files` (A-03, item 21): each key is the SHA-256 of its file's RFC 8785 canonical JSON."""
+    files = doc.get("verifier_files")
+    if not files:
+        return []
+    from anvil.rlgym.plugins.contract import jcs_sha256
+
+    bad = [k for k, v in files.items() if jcs_sha256(v) != k]
+    return [
+        {
+            "check": "verifier_files_valid",
+            "ok": not bad,
+            "files": len(files),
+            "reason": f"files whose content does not match their SHA-256: {', '.join(k[:12] for k in bad)}"
+            if bad
+            else None,
+        }
+    ]
 
 
 def _edge_case_checks(doc):
@@ -328,6 +350,9 @@ def activate(c, ws, actor, doc):
         "verifier_blocks_valid": all(
             ch["ok"] for ch in result["checks"] if ch["check"] == "verifier_blocks_valid"
         ),
+        "verifier_files_valid": all(
+            ch["ok"] for ch in result["checks"] if ch["check"] == "verifier_files_valid"
+        ),
         "edge_cases_valid": all(
             ch["ok"] for ch in result["checks"] if ch["check"] == "edge_cases_valid"
         ),
@@ -339,8 +364,8 @@ def activate(c, ws, actor, doc):
     row = c.execute(
         """INSERT INTO catalog.template_activations(workspace_id,template_id,version,template_key,name,mode,spec_sha256,template_sha256,
              forge_template_id,forge_version,studio_release,default_bindings,workflow,case_dimensions,pass_mark,checks,state,state_reason,
-             activated_at,activated_by,forge_template_version_hash,expected_values_from,failure_taxonomy,edge_cases,slice_lists)
-           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),%s,%s,%s,%s,%s,%s) RETURNING *""",
+             activated_at,activated_by,forge_template_version_hash,expected_values_from,failure_taxonomy,edge_cases,slice_lists,verifier_files)
+           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
         (
             ws,
             doc["template_id"],
@@ -366,6 +391,7 @@ def activate(c, ws, actor, doc):
             Jsonb(doc["failure_taxonomy"]) if doc.get("failure_taxonomy") else None,
             Jsonb(doc["edge_cases"]) if doc.get("edge_cases") else None,
             Jsonb(doc["slice_lists"]) if doc.get("slice_lists") else None,
+            Jsonb(doc["verifier_files"]) if doc.get("verifier_files") else None,
         ),
     ).fetchone()
     for cr in doc["criteria"]:
