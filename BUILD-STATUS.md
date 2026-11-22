@@ -1,5 +1,62 @@
 # Build status
 
+## Project stopped at user request — 21 November2026 Chicago
+
+User cancelled the project and requested preserving the latest code in GitHub
+and winding down tasks. Stop all engineering/deployment/qualification work.
+No completion or benchmark-readiness claim is made.
+
+Latest tested local source includes the diagnostic reviewed-custody fix and
+private-key metadata allowlist:45 related unit tests,5 real-role SQL tests and63
+additional related unit regressions passed. These source changes are not deployed.
+The exact task observation remains FAILED/unqualified on serving source11463ac.
+Sanitized original diagnosis identifies PermissionError in original() path
+resolution: the framework root process has all capabilities dropped while the
+parent image's /app/.data is owned by10001/mode0700. No permission/capability
+workaround or further image change was applied. Preserve original failure.
+
+QA currently has framework3151c78/migration136 installed and the three core
+services' deployment identity configured; original core/native image digests
+remain unchanged. Models/Harbor dispatch are OFF. Policy/evaluator/mapping and
+owner-review gates remain incomplete. Protected backups and evidence are retained.
+Dedicated temporary QA qualifier should be disabled during shutdown, with no
+owner decisions or data deletions. No more builds/deployments are authorized.
+
+GitHub preservation requested for the current feature branch. Exclude ignored
+credentials, private data, raw operational logs and .local artifacts. Preserve
+the unrelated apps/web/AGENTS.md edit in place; it is not part of this checkpoint.
+
+## 21 November late evening — diagnostic custody source fix and candid status
+
+Core deployment identity6f94623f4ebf2ed5d263992cb5f833861febcfedf0565fa513787305c39d98f8
+is active on API/worker/business-worker. Images and security profiles are unchanged;
+five other container IDs are preserved. API/database health and exact installed
+component/capture receipt readers passed; capture performed no DB probe. Native
+release consumers remain unconfigured and fail closed. Original current IDs and
+private full-profile readbacks are on QA and in ignored operational metadata.
+
+The actual four-task observation container0e540bca exited1 with no qualification
+granted. Original stdout/stderr/terminal metadata are retained; a separate
+read-only diagnosis emits only exception type/SQLSTATE/source-frame metadata.
+Do not count local53 method/SQL tests as this QA task observation passing.
+
+New local source work fixes diagnostic private-reference custody: completed paid
+captures use the existing disjoint-grader function and frozen reviewed population;
+no legacy fallback. Optional diagnostic references preserve old serialization,
+new references change private review hashes, policy-dependent references need
+exact current subject and unknown private keys cannot leak as public target IDs.
+45 relevant unit tests,5 real-role SQL custody tests and63 additional native/
+service/wiring/workspace unit regressions passed. One existing Authlib warning.
+This source fix is not deployed and changes native source identity; final release
+must rebuild/qualify the affected closure before claiming current readiness.
+
+Remaining engineering includes substantive44 policy-rule target evaluations,
+typed diagnostic selections, explicit mapping/applicability and safety/task
+qualification. Owner20 policy and200-case review decisions remain pending.
+User challenged the repeated vague status; supplied rough1–2 working-day estimate
+with low confidence, not a completion commitment. Blocker email sent only to
+the authorized work address, Gmail1a200c824113fb86. No live calls.
+
 ## 21 November evening continuation — framework136 installed, core identity pending
 
 32 method packet tests and21 isolated real-LOGIN SQL tests passed. Local commits

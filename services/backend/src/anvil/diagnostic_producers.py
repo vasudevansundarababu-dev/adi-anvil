@@ -329,6 +329,60 @@ def register(
     return outputs
 
 
+def kyc_reference(c, project, sealed, captured, task, snapshot):
+    """Real task diagnostics use frozen reviewed custody, never legacy fallback."""
+    trial, generation = captured["trial_id"], captured["generation"]
+    paid = c.execute(
+        "SELECT * FROM banking.paid_agent_bindings WHERE project_id=%s AND trial_id=%s AND generation=%s",
+        (project, trial, generation),
+    ).fetchone()
+    if paid:
+        from anvil.golden_kyc_native_program import frozen_expectation_review
+        from anvil.kyc_expectation_reviews import public_reference, reviewed
+
+        source = c.execute(
+            "SELECT banking.product_policy_grader_binding(%s,%s) AS value", (trial, generation),
+        ).fetchone()
+        source = (source or {}).get("value")
+        if (not source or source["task_id"] != task["task_id"]
+                or source["revision_id"] != task["task_version"]
+                or source["resolved_task_id"] != str(paid["resolved_task_id"])
+                or source["application_id"] != sealed["application_id"]
+                or source["snapshot_sha256"] != snapshot["snapshot_sha256"]):
+            raise ValueError("Exact resolved diagnostic task identity required")
+        capture = c.execute(
+            "SELECT plan_id FROM banking.paid_agent_captures WHERE project_id=%s AND plan_id=%s "
+            "AND trial_id=%s AND generation=%s AND state_sha256=%s",
+            (project, paid["plan_id"], trial, generation, sealed["state_sha256"]),
+        ).fetchone()
+        if not capture:
+            raise ValueError("Exact finalized diagnostic capture required")
+        value = reviewed(c, project, sealed["pack_id"], sealed["application_id"], snapshot["snapshot"],
+                         resolved_task_id=paid["resolved_task_id"],
+                         frozen_reference=frozen_expectation_review(c, project, paid),
+                         trial_id=trial, generation=generation)
+        ready = value.get("independent_expectation_review") == "approved"
+        reference = public_reference(value["expectation_review"]) if ready else None
+        references = (value.get("diagnostic_references") or {}) if ready else {}
+        return references, {"kind": "frozen_reviewed_kyc_expectation_population",
+                            "pack_id": str(sealed["pack_id"]), "case_id": sealed["application_id"],
+                            "sha256": digest(reference) if reference else None,
+                            "review": reference, "status": "reviewed" if ready else "pending",
+                            "policy_qualification": value.get("legal_qualification", "pending"),
+                            "unavailable_policy_targets": value.get("unavailable_policy_diagnostic_targets", []),
+                            "review_issue": value.get("review_issue")}
+    # Existing manufactured software fixtures retain their original legacy
+    # reference path. They do not qualify a real model or bypass paid custody.
+    row = c.execute(
+        "SELECT expectation FROM banking_private.expectations WHERE project_id=%s AND pack_id=%s AND application_id=%s",
+        (project, sealed["pack_id"], sealed["application_id"]),
+    ).fetchone()
+    return ((row["expectation"].get("diagnostic_references") or {}) if row else {},
+            {"kind": "immutable_banking_pack_case", "pack_id": str(sealed["pack_id"]),
+             "case_id": sealed["application_id"], "sha256": digest(row["expectation"]) if row else None,
+             "status": "present" if row else "missing"})
+
+
 def kyc(c, project, run, cell, task, evidence, *, source_resolved=True, preparation=None):
     captured = cell["capture"]
     trial, generation = captured["trial_id"], captured["generation"]
@@ -343,13 +397,12 @@ def kyc(c, project, run, cell, task, evidence, *, source_resolved=True, preparat
         (project, trial, generation),
     ).fetchall()
     snapshot = c.execute(
-        "SELECT snapshot_sha256 FROM banking.applications WHERE project_id=%s AND pack_id=%s AND id=%s",
+        "SELECT snapshot,snapshot_sha256 FROM banking.applications WHERE project_id=%s AND pack_id=%s AND id=%s",
         (project, sealed["pack_id"], sealed["application_id"]),
     ).fetchone()
-    reference = c.execute(
-        "SELECT expectation FROM banking_private.expectations WHERE project_id=%s AND pack_id=%s AND application_id=%s",
-        (project, sealed["pack_id"], sealed["application_id"]),
-    ).fetchone()
+    if not snapshot or digest(snapshot["snapshot"]) != snapshot["snapshot_sha256"]:
+        raise ValueError("Exact immutable diagnostic application snapshot required")
+    references, reference_metadata = kyc_reference(c, project, sealed, captured, task, snapshot)
     context = {
         "task_id": task["task_id"],
         "revision": task["task_version"],
@@ -367,7 +420,6 @@ def kyc(c, project, run, cell, task, evidence, *, source_resolved=True, preparat
         }
     )
     actuals = {}
-    references = (reference["expectation"].get("diagnostic_references") or {}) if reference else {}
     from anvil.diagnostic_projection import SUPPORTED, kyc_role_complete, kyc_sources, normalize
 
     observed_sources = (
@@ -446,13 +498,7 @@ def kyc(c, project, run, cell, task, evidence, *, source_resolved=True, preparat
         evidence,
         actuals,
         references,
-        reference_metadata={
-            "kind": "immutable_banking_pack_case",
-            "pack_id": str(sealed["pack_id"]),
-            "case_id": sealed["application_id"],
-            "sha256": digest(reference["expectation"]) if reference else None,
-            "status": "present" if reference else "missing",
-        },
+        reference_metadata=reference_metadata,
         source_resolved=source_resolved,
         preparation=preparation,
     )

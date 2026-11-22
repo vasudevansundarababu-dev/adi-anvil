@@ -13,10 +13,19 @@ from anvil.golden_kyc_data import DECISIONS
 from anvil.praxis_generic_contract import canonical, load
 
 
+def diagnostic_targets():
+    from anvil.diagnostic_measures import TARGETS
+
+    return frozenset(target for target in TARGETS if target.startswith("K."))
+
+
 class Expected(Model):
     intended_decision: str
     criterion_references: dict = Field(default_factory=dict)
     policy_rule_references: dict = Field(default_factory=dict)
+    # Omission preserves the bytes/hashes of existing reviewed v1 packets.
+    # Newly supplied diagnostics are private and covered by the same PO review.
+    diagnostic_references: dict | None = Field(default=None, exclude_if=lambda value: value is None)
     state_reference: dict | None = None
     notes: str = Field(default="", max_length=2000)
 
@@ -24,6 +33,8 @@ class Expected(Model):
     def decision_supported(self):
         if self.intended_decision not in DECISIONS:
             raise ValueError("Supported expected KYC disposition required")
+        if self.diagnostic_references is not None and not set(self.diagnostic_references) <= diagnostic_targets():
+            raise ValueError("Only registered KYC diagnostic identifiers are permitted")
         from anvil.marketing_native_wire_bounds import bounded_json
 
         bounded_json(self.model_dump(mode="json"), 65536, max_nodes=5000, max_depth=12)
@@ -306,6 +317,28 @@ def policy_references(values, subject_sha256, legal):
     }
 
 
+def diagnostic_references(values, subject_sha256, legal):
+    """Population approval cannot qualify normative policy applicability."""
+    selected, unavailable = {}, []
+    for target, value in values.items():
+        # Never project arbitrary private keys into public gap metadata.
+        if target not in diagnostic_targets():
+            continue
+        if type(value) is not dict:
+            unavailable.append(target)
+            continue
+        normative = (target in {"K.CLAUSE", "K.RULEAPPLY", "K.RISK"}
+                     or any(key in value for key in ("policy_subject_sha256", "policy_id", "policy_rule_id", "state_reference"))
+                     or value.get("policy_dependent") is True)
+        malformed = "policy_dependent" in value and type(value["policy_dependent"]) is not bool
+        if malformed or (normative and (not legal or subject_sha256 is None
+                                       or value.get("policy_subject_sha256") != subject_sha256)):
+            unavailable.append(target)
+        else:
+            selected[target] = value
+    return selected, sorted(unavailable)
+
+
 def reviewed(c, project, pack, application, snapshot, *, resolved_task_id=None, frozen_reference=None, trial_id=None, generation=None):
     """Private grader consumer; approved strings inside a file confer no review."""
     result = current(c, project, pack)
@@ -329,6 +362,10 @@ def reviewed(c, project, pack, application, snapshot, *, resolved_task_id=None, 
     expected["policy_rule_references"] = policy_references(
         expected.get("policy_rule_references", {}), refs[0].policy_subject_sha256, legal
     )
+    if "diagnostic_references" in expected:
+        expected["diagnostic_references"], expected["unavailable_policy_diagnostic_targets"] = diagnostic_references(
+            expected["diagnostic_references"], refs[0].policy_subject_sha256, legal
+        )
     return expected | {"independent_expectation_review": "approved", "legal_qualification": "approved" if legal else "pending",
                        "expectation_review": result}
 

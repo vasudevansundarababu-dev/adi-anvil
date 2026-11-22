@@ -1,5 +1,50 @@
 # QA benchmark exercise — living gap register
 
+## 21 November evening — exact remaining Gym engineering
+
+GYM-HANDOFF-50: installed components and task-specific qualification need
+separate, supported producers. A permit/ledger or successful template import is
+insufficient. Framework136 adds a disjoint enrolled-LOGIN method observer and
+reviewed publisher with exact task/input/runtime identity, original controls,
+project isolation, current binding revalidation and expiry/revocation fences.
+Local32 packet and21 real-LOGIN SQL tests passed. QA framework installation is
+verified; the first actual task observation failed and is retained unqualified.
+Studio must display these distinct stages and the actual failing stage.
+
+GYM-HANDOFF-51: serving core omitted its deployment-identity environment value.
+Release-bound capability records could never match the empty catalogue release.
+An independently reviewed immutable component-set descriptor now identifies the
+existing core/native images, source, receipts and separate framework136. Its SHA
+was configured on the three core services using unchanged images. Actual health,
+full security profiles and installed receipt hashes were checked. Native release
+consumers remain a separately tracked configuration/acceptance step. Studio and
+release preflight must reject missing identity before qualification work starts.
+
+GYM-HANDOFF-52: real-task diagnostics still read legacy expectations while current
+private custody uses versioned, owner-reviewed populations. The source fix uses
+the existing grader-only completed-trial context, exact resolved task/case/hash,
+final capture and frozen review; missing/revoked/newer reviews cannot fall back
+to legacy answers. Optional diagnostic references join the private review hash;
+omission preserves old packet serialization. Policy-dependent references require
+the exact current per-case policy subject. Public metadata contains allowlisted
+target IDs and public review hashes, never reference bodies or arbitrary private
+keys.45 related unit and5 real-role SQL tests passed; this source change is not
+deployed yet. Dataset/expectation preparation belongs to Gym, never Authoring.
+
+GYM-HANDOFF-53: source requirements exist without complete measurement coverage.
+Current readiness includes44 policy-rule targets needing substantive evaluators,
+60 exact diagnostic target bindings, and140 skill-to-step mappings (some checks
+appear twice). These counts are targets, not44 independent programs or311 separate
+code defects. Reusable engines/configurations must have exact source/target and
+measurement-contract coverage; a generic ready flag or arbitrary rubric binding
+does not provide it. Mapping absence or unobservability must remain explicit.
+Template/Environment Studio should compute this coverage before publication and
+return a Gym-owned setup plan/issue per missing capability. Valid Authoring tasks
+must not be described as needing repair for missing Gym evaluator implementation.
+
+No new Authoring export is requested for these gaps. No owner approval, paid
+authority or model-performance result has been created by these software checks.
+
 ## 21 November — deployment and qualification setup gaps
 
 The deployment manifest must distinguish the serving application schema from

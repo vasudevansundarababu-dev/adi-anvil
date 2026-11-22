@@ -75,6 +75,35 @@ def test_grader_policy_context_is_explicit_without_interactive_user(scope):
             c.execute("SELECT banking.product_policy_grader_binding(%s,0)", (uuid4(),))
 
 
+def test_actual_reviewed_diagnostic_custody_filters_unqualified_policy(scope):
+    _, project, user, packet, apps, connection = scope
+    packet.cases[0].expectation.diagnostic_references = {
+        "K.FILE": {"required_documents": ["synthetic-id"]},
+        "K.RULEAPPLY": {"policy_subject_sha256": "a" * 64, "private_synthetic_rule": "never-public"}}
+    with connection("loader") as c:
+        staged = reviews.stage_private(c, project, user, packet)
+    with connection("app") as c:
+        reviews.decide(c, project, user, staged["id"], decision(staged, packet))
+        current = reviews.current(c, project, packet.pack_id)
+        assert "never-public" not in str(current)
+    frozen = reviews.public_reference(current)
+    with connection("grader") as c:
+        value = reviews.reviewed(c, project, packet.pack_id, apps[0]["id"], apps[0]["snapshot"], frozen_reference=frozen)
+        assert value["independent_expectation_review"] == "approved"
+        assert value["legal_qualification"] == "pending"
+        assert value["diagnostic_references"] == {"K.FILE": {"required_documents": ["synthetic-id"]}}
+        assert value["unavailable_policy_diagnostic_targets"] == ["K.RULEAPPLY"]
+        # The same disjoint grader can invoke the narrow completed-trial
+        # function, but cannot turn a missing trial into source authority.
+        assert c.execute("SELECT banking.product_policy_grader_binding(%s,0) AS value", (uuid4(),)).fetchone()["value"] is None
+    with connection("app") as c:
+        reviews.revoke(c, project, user, UUID(current["receipt_id"]), "Revoke manufactured diagnostic population review")
+    with connection("grader") as c:
+        value = reviews.reviewed(c, project, packet.pack_id, apps[0]["id"], apps[0]["snapshot"], frozen_reference=frozen)
+        assert value["independent_expectation_review"] == "pending"
+        assert "diagnostic_references" not in value
+
+
 def test_actual_loader_owner_grader_review_and_revocation(scope):
     _, project, user, packet, apps, connection = scope
     with connection("loader") as c:
