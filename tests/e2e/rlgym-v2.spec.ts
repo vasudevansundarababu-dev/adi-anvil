@@ -133,9 +133,9 @@ test('override needs a second binding approver', async ({ browser }) => {
 test('admin environments, evaluators and templates', async ({ browser }) => {
   const page = await signIn(browser, 'admin-2');
   await page.goto('/gym/admin/environments');
-  await expect(page.getByRole('row', { name: /golden-kyc-openenv.*v3/ })).toContainText(
-    '400 cases',
-  );
+  await expect(
+    page.getByRole('row', { name: /golden-kyc-openenv Studio release rel-0431/ }),
+  ).toContainText('400 cases');
   await expect(page.getByRole('row', { name: /golden-kyc-openenv.*v2/ })).toContainText('20 cases');
   await page.goto('/gym/admin/environments/golden-kyc-openenv@v3');
   await expect(page.getByText('state_cleared')).toBeVisible();

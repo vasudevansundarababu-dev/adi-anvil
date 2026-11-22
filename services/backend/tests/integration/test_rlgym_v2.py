@@ -496,10 +496,21 @@ def test_evaluator_fix_versions_cohorts_revoke_and_b4(exported):
     assert again["configuration"]["state"] == "qualified"
     project = admin.get(ws["base"] + f"/projects/{PROJECT}").json()["data"]
     assert project["state"] == "ready"
-    events = httpx.get(STUDIO + "/stub/state", timeout=10).json()
-    integrations.dispatch_once()
-    events = httpx.get(STUDIO + "/stub/state", timeout=10).json()["rlgym_events"]
-    assert any(e["data"]["type"] == "evaluator.revoked" and e["data"]["id"] == cid for e in events)
+    # Studio (the stub) accepted the revoke event: its outbox row was delivered and not refused. The stub's state view
+    # lists only its last 30 events, which other workspaces' events can push this one out of in a full run.
+    delivered = None
+    for _ in range(40):
+        integrations.dispatch_once()
+        with psycopg.connect(setting("MIGRATION_DATABASE_URL"), row_factory=dict_row) as c:
+            delivered = c.execute(
+                """SELECT published_at, refused, last_error FROM infra.outbox WHERE topic='evaluator.event'
+                   AND workspace_id=%s AND payload->'data'->>'type'='evaluator.revoked' AND payload->'data'->>'id'=%s""",
+                (ws["id"], cid),
+            ).fetchone()
+        if delivered and delivered["published_at"]:
+            break
+        time.sleep(0.5)
+    assert delivered and delivered["published_at"] and not delivered["refused"], delivered
     assert (
         admin.get(ws["base"] + "/inbox-items?kind=evaluator_defect").json()["data"]["items"] == []
     )
