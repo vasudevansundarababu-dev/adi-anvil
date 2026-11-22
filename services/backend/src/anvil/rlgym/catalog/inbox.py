@@ -146,7 +146,7 @@ def status_changed(c, ws, item):
              released_version=coalesce(%s, released_version), decline_reason=coalesce(%s, decline_reason),
              timeline=timeline || jsonb_build_array(jsonb_build_object('state',%s::text,'at',now(),
                'planned_version',%s::text,'released_version',%s::text,'decline_reason',%s::text))
-           WHERE workspace_id=%s AND studio_id=%s RETURNING *""",
+           WHERE workspace_id=%s AND (studio_id=%s OR (studio_id IS NULL AND id=%s)) RETURNING *""",
         (
             state,
             item.get("planned_version"),
@@ -158,8 +158,16 @@ def status_changed(c, ws, item):
             item.get("decline_reason"),
             ws,
             item["id"],
+            # Studio may push "received" inside the request that creates the item, before the RL Gym has stored
+            # Studio's id; the RL Gym's own id (rlgym_item_id) then finds it.
+            item.get("rlgym_item_id"),
         ),
     ).fetchone()
+    if row and not row["studio_id"]:
+        row = c.execute(
+            "UPDATE catalog.inbox_items SET studio_id=%s WHERE id=%s RETURNING *",
+            (item["id"], row["id"]),
+        ).fetchone()
     if row:
         emit(c, ws, "inbox_item.status", row["id"], _status_payload(row))
 
