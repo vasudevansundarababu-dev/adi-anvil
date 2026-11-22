@@ -254,6 +254,47 @@ def _block_cases(row, blocks, expected_values_from):
     return blocks, source, verifier.known_cases(blocks, source)
 
 
+def block_case_checks(fw, config, blocks, cases, source):
+    """The allowed / disallowed / missing-evidence checks of a verifier-blocks configuration. They run on its built-in
+    blocks only: a plug-in block is qualified by its own plug-in version's known cases (the `plugin:<id>` checks), and
+    synthetic evidence has no plug-in results, so including it would block every case."""
+    builtin = verifier.legacy(blocks)
+    checks = []
+    for name, case in cases.items():
+        out = sandbox.run(
+            fw,
+            config,
+            case["evidence"],
+            case["reference"],
+            extra={
+                "blocks": builtin,
+                "case_id": case["case_id"],
+                "slots": case["slots"],
+                "expected_values_from": source,
+            },
+        )
+        ok = out["verdict"] == case["expect"]
+        if ok and case.get("expect_on_fail"):
+            codes = {
+                line["on_fail"]
+                for line in out.get("block_lines") or []
+                if line["verdict"] == "fail" and line["block_id"] == case["expect_block"]
+            }
+            ok = case["expect_on_fail"] in codes
+        checks.append(
+            {
+                "name": name,
+                "case_id": case["case_id"],
+                "expected": case["expect"],
+                "verdict": out["verdict"],
+                "result": "pass" if ok else "fail",
+                "detail": out.get("detail", []),
+                "block_lines": out.get("block_lines") or [],
+            }
+        )
+    return checks
+
+
 def run_known_case_tests(c, ws, actor, cid, version, blocks=None, expected_values_from=None):
     """A-06 POST /evaluators/{id}/test: allowed → pass, disallowed → fail, missing evidence → blocked (all distinct).
     Same configuration, same verdicts: the receipt hash covers inputs and verdicts. A verifier-blocks configuration
@@ -292,38 +333,7 @@ def run_known_case_tests(c, ws, actor, cid, version, blocks=None, expected_value
                         ],
                     }
                 )
-        for name, case in cases.items():
-            out = sandbox.run(
-                fw,
-                row["config"],
-                case["evidence"],
-                case["reference"],
-                extra={
-                    "blocks": blocks,
-                    "case_id": case["case_id"],
-                    "slots": case["slots"],
-                    "expected_values_from": source,
-                },
-            )
-            ok = out["verdict"] == case["expect"]
-            if ok and case.get("expect_on_fail"):
-                codes = {
-                    line["on_fail"]
-                    for line in out.get("block_lines") or []
-                    if line["verdict"] == "fail" and line["block_id"] == case["expect_block"]
-                }
-                ok = case["expect_on_fail"] in codes
-            checks.append(
-                {
-                    "name": name,
-                    "case_id": case["case_id"],
-                    "expected": case["expect"],
-                    "verdict": out["verdict"],
-                    "result": "pass" if ok else "fail",
-                    "detail": out.get("detail", []),
-                    "block_lines": out.get("block_lines") or [],
-                }
-            )
+        checks += block_case_checks(fw, row["config"], blocks, cases, source)
     for name, case in ({} if blocks_sha else row["known_cases"]).items():
         expect = case.get("expect", KNOWN_CASE_EXPECT.get(name))
         out = sandbox.run(fw, row["config"], case["evidence"], case["reference"])

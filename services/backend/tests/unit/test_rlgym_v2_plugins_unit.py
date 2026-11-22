@@ -209,3 +209,54 @@ def test_evidence_paths_in_the_scorer():
     assert _path(root, "state.end.recommendations[1].r") == "b"
     assert _path(root, "state.end.recommendations[*].r") == ["a", "b"]
     assert _path(root, "output.missing") is None
+
+
+def test_a_criterion_mixing_builtin_and_plugin_blocks_tests_its_builtin_blocks(monkeypatch):
+    # Golden KYC v4 screening: process order + read_first, a ZEN rule_check plug-in block, a State referral block.
+    from anvil.rlgym.catalog import evaluators, verifier
+    from anvil.rlgym.scoring import sandbox
+
+    blocks = [
+        {
+            "id": "screening.order",
+            "kind": "process",
+            "must_call": "screening.run",
+            "before": "decision.record",
+            "on_fail": "PROCESS_ERROR",
+        },
+        {
+            "id": "screening.read_first",
+            "kind": "process",
+            "must_call": "identity.check",
+            "on_fail": "PROCESS_ERROR",
+        },
+        {**g.ZEN_BLOCK, "id": "screening.finding"},
+        {
+            "id": "screening.referral",
+            "kind": "state",
+            "table": "referrals",
+            "row": "case",
+            "column": "reason",
+            "op": "contains",
+            "value": {"fixed": "screening"},
+            "on_fail": "STATE_MUTATION_ERROR",
+        },
+    ]
+    seen = []
+
+    def run(fw, config, evidence, reference, timeout=10, extra=None):
+        seen.append(extra["blocks"])
+        return sr.evaluate(
+            {**extra, "config": config, "evidence": evidence, "reference": reference}
+        )
+
+    monkeypatch.setattr(sandbox, "run", run)
+    cases = verifier.known_cases(blocks)
+    config = {"runner": "verifier_blocks", "runner_version": 1}
+    checks = evaluators.block_case_checks(None, config, blocks, cases, "case_reference")
+    assert {c["name"]: (c["verdict"], c["result"]) for c in checks} == {
+        "allowed": ("pass", "pass"),
+        "disallowed": ("fail", "pass"),
+        "missing_evidence": ("blocked", "pass"),
+    }
+    assert all("screening.finding" not in {b["id"] for b in bs} for bs in seen)
