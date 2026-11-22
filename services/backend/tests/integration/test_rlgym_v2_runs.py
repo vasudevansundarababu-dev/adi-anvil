@@ -320,3 +320,22 @@ def test_studio_reads_runs_but_cannot_change_them_and_other_workspaces_see_nothi
             == 0
         )
         assert c.execute("SELECT count(*) n FROM scoring.case_references").fetchone()["n"] == 0
+
+
+def test_stub_versions_keep_working_after_the_rl_gym_follows_studio(small_suite, monkeypatch):
+    """After switching RLGYM_STUDIO_URL to the local Studio, a run on a version the Studio stub released still reads
+    its cases, references and image recipe from the stub (each version's data comes from the registry that released
+    it), so switching registries never breaks existing projects."""
+    base, admin = small_suite["base"], person("admin-1")
+    monkeypatch.setenv("RLGYM_STUDIO_URL", "http://127.0.0.1:8060")
+    check = admin.post(base + "/runs/admission-check", json=body(small_suite)).json()["data"]
+    assert check["passed"], [i for i in check["items"] if not i["ok"]]
+    run = post(admin, base + "/runs", body(small_suite, name="after following Studio"), 201).json()[
+        "data"
+    ]["run"]
+    assert worker.drain(timeout=600)
+    done = admin.get(base + f"/runs/{run['id']}").json()["data"]
+    assert (
+        done["state"] == "completed"
+        and done["manifest"]["environment"]["version_id"] == "golden-kyc-openenv@v3"
+    )

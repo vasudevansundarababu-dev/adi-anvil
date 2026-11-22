@@ -307,7 +307,10 @@ def qualify(version_id, requested_by="registry", attempt=1):
         ).fetchone()
     if not v:
         raise GymError("NOT_FOUND", "Version not in the registry mirror")
-    base = f"{studio_url()}/stub/env/{version_id}"
+    from anvil.rlgym.integrations import loopback
+
+    # The version is checked against the registry that released it (the stub's versions stay on the stub).
+    base = f"{loopback(v['registry']) if v.get('registry') else studio_url()}/stub/env/{version_id}"
     episode = new_id("qep-")
     checks, failure_class = [], None
     try:
@@ -369,7 +372,12 @@ def qualify(version_id, requested_by="registry", attempt=1):
             "INSERT INTO infra.outbox(id,workspace_id,topic,key,payload,destination) VALUES(gen_random_uuid(),NULL,'registry.receipt',%s,%s,'registry')",
             (
                 version_id,
-                Jsonb({"type": "registry.receipt", "data": {"receipt_id": receipt_id, **receipt}}),
+                Jsonb(
+                    {
+                        "type": "registry.receipt",
+                        "data": {"receipt_id": receipt_id, **receipt, "_base": v.get("registry")},
+                    }
+                ),
             ),
         )
         requalification_failed = result == "failed" and (

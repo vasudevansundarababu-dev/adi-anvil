@@ -93,7 +93,9 @@ def build(c, vid):
             "The pinned base image is not present locally; nothing is pulled from the network",
             {"base_image": base},
         )
-    context = integrations.registry_get(f"/versions/{vid}/image-context", timeout=60)
+    context = integrations.registry_get(
+        f"/versions/{vid}/image-context", timeout=60, base=env.get("registry")
+    )
     files = context["files"]
     for name, content in files.items():
         if hashlib.sha256(content.encode()).hexdigest() != context["files_sha256"].get(name):

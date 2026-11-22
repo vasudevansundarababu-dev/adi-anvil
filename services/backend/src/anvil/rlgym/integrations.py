@@ -31,6 +31,14 @@ def studio_url():
     return _base("RLGYM_STUDIO_URL", "http://127.0.0.1:8211")
 
 
+def loopback(url):
+    """A recorded registry URL (where a mirrored version came from); loopback only, like the configured ones."""
+    url = (url or "").rstrip("/")
+    if urlsplit(url).hostname not in LOOPBACK:
+        raise RuntimeError(f"registry {url!r} is not a local (loopback) registry")
+    return url
+
+
 def forge_url():
     return _base("RLGYM_FORGE_URL", "http://127.0.0.1:8212")
 
@@ -39,13 +47,14 @@ def _headers(extra=None):
     return {"Authorization": f"Bearer {os.environ.get('RLGYM_ANVIL_KEY', '')}", **(extra or {})}
 
 
-def registry_get(path, params=None, audience=None, timeout=10):
+def registry_get(path, params=None, audience=None, timeout=10, base=None):
+    """Read from a registry. `base` is the registry a mirrored version came from (its own data is read there, so the
+    stub's versions keep working after the RL Gym switches to Studio); default: the registry followed now."""
     extra = {"X-ADI-Audience": audience} if audience else None
+    root = loopback(base) if base else studio_url()
     try:
         with httpx.Client(timeout=timeout, trust_env=False) as client:
-            r = client.get(
-                studio_url() + "/api/v1/registry" + path, params=params, headers=_headers(extra)
-            )
+            r = client.get(root + "/api/v1/registry" + path, params=params, headers=_headers(extra))
     except httpx.HTTPError as exc:
         raise GymError(
             "REGISTRY_UNAVAILABLE",
@@ -100,7 +109,12 @@ DESTINATIONS = {
 def deliver(row):
     body = row["payload"]["data"]
     dest = row["destination"]
-    base = studio_url() if dest in ("studio", "registry") else forge_url()
+    if body.get("_base"):
+        base = loopback(
+            body["_base"]
+        )  # a receipt goes back to the registry that released the version
+    else:
+        base = studio_url() if dest in ("studio", "registry") else forge_url()
     path = body.get("_path") or DESTINATIONS.get(row["topic"], (None, None))[1]
     if not path:
         raise RuntimeError(f"no route for {row['topic']}")

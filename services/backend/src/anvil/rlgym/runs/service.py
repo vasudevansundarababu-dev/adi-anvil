@@ -318,9 +318,9 @@ def admission_check(ctx, body):
         ).fetchall()
         selected, unmatched, short = [], [], []
         if env and plan:
-            case_list = integrations.registry_get(f"/versions/{env['version']['id']}/cases")[
-                "cases"
-            ]
+            case_list = integrations.registry_get(
+                f"/versions/{env['version']['id']}/cases", base=env["version"].get("registry")
+            )["cases"]
             selected, counts, short = sampling.select_cases(plan, cells, case_list)
             tolerated = plan["missing_policy"] == "use_available" or all(
                 next(cl for cl in cells if cl["cell_key"] == s["cell_key"])["inbox_item_id"]
@@ -574,8 +574,15 @@ def _fetch_references(ctx, vid, case_ids):
     need = [i for i in case_ids if i not in have]
     if not need:
         return
+    origin = ctx.c.execute(
+        "SELECT registry FROM catalog.environment_versions WHERE id=%s", (vid,)
+    ).fetchone()
     got = integrations.registry_get(
-        f"/versions/{vid}/references", params={"ids": ",".join(need)}, audience="scorer", timeout=30
+        f"/versions/{vid}/references",
+        params={"ids": ",".join(need)},
+        audience="scorer",
+        timeout=30,
+        base=origin and origin["registry"],
     )["references"]
     for case_id in need:
         row = got.get(case_id)
