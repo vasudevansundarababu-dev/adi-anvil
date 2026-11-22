@@ -124,6 +124,10 @@ def main():
         migrate()
     elif args.command == "seed":
         seed()
+    elif args.command == "rlgym-seed":
+        from anvil.rlgym.admin.users import seed as rlgym_seed
+
+        rlgym_seed()
     elif args.command == "health":
         health()
     elif args.command == "live":

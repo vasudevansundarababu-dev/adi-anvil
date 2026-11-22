@@ -187,6 +187,34 @@ from anvil.marketing_api import routes as marketing_routes  # noqa: E402
 
 app.include_router(marketing_routes(context, wrap, idempotent))
 
+# RL Gym v2 (new Anvil): additive routes under /api/v1/workspaces/{ws}; the existing workspace is unchanged.
+from anvil.rlgym.common import GymError  # noqa: E402
+from anvil.rlgym.integrations import start_dispatcher  # noqa: E402
+from anvil.rlgym.routes import routes as rlgym_routes  # noqa: E402
+
+app.include_router(rlgym_routes())
+
+
+@app.exception_handler(GymError)
+async def gym_error(request, exc):
+    return JSONResponse(
+        {
+            "error": {
+                "code": exc.code,
+                "message": exc.message,
+                "details": jsonable_encoder(exc.details),
+                "request_id": getattr(request.state, "request_id", None),
+            }
+        },
+        status_code=exc.status,
+    )
+
+
+@app.on_event("startup")
+def rlgym_startup():
+    start_dispatcher()
+
+
 KINDS = {
     "objectives": "objective",
     "cases": "case",

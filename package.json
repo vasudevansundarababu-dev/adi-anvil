@@ -24,7 +24,9 @@
     "demo:walkthrough": "node tests/demo_walkthrough.mjs",
     "graph:rebuild": "python3 scripts/local.py graph-rebuild",
     "backup:local": "python3 scripts/local.py backup",
-    "restore:test": "python3 scripts/local.py restore-test"
+    "restore:test": "python3 scripts/local.py restore-test",
+    "rlgym:seed": "python3 scripts/local.py rlgym-seed",
+    "rlgym:demo": "python3 scripts/local.py rlgym-demo"
   },
   "devDependencies": {
     "@playwright/test": "1.58.2",

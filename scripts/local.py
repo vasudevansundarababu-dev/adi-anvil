@@ -71,6 +71,8 @@ def bootstrap():
     owner, app, worker, oidc, graph, admin = [secrets.token_urlsafe(32) for _ in range(6)]
     values = {
         "ANVIL_ENV": "local",
+        "ANVIL_COMPOSE_PROJECT": os.environ.get("ANVIL_COMPOSE_PROJECT", "adi-anvil"),
+        "RLGYM_V2": os.environ.get("RLGYM_V2", "1"),
         "ANVIL_FIXTURE_MODE": "true",
         "ANVIL_LIVE_PROVIDERS_ENABLED": "false",
         "ANVIL_REAL_EMAIL_ENABLED": "false",
@@ -141,6 +143,32 @@ def bootstrap():
     print("Generated owner-only .env and .local/demo-accounts.md; no secret values printed.")
 
 
+RLGYM_SETTINGS = {
+    "RLGYM_V2": lambda: "1",
+    "RLGYM_STUDIO_URL": lambda: "http://127.0.0.1:8211",
+    "RLGYM_FORGE_URL": lambda: "http://127.0.0.1:8212",
+    "RLGYM_API_URL": lambda: "http://127.0.0.1:8200",
+    "RLGYM_WORKSPACE": lambda: "adi-labs-research",
+    "RLGYM_FORGE_CLIENT_KEY": lambda: secrets.token_urlsafe(32),
+    "RLGYM_STUDIO_CLIENT_KEY": lambda: secrets.token_urlsafe(32),
+    "RLGYM_ANVIL_KEY": lambda: secrets.token_urlsafe(32),
+    "RLGYM_REGISTRY_WEBHOOK_SECRET": lambda: secrets.token_urlsafe(32),
+}
+
+
+def ensure_rlgym_settings():
+    """Append missing RL Gym v2 settings (local stub client keys) to .env; existing values are never replaced."""
+    path = ROOT / ".env"
+    if not path.exists():
+        return
+    present = {line.split("=", 1)[0] for line in path.read_text().splitlines() if "=" in line}
+    missing = [k for k in RLGYM_SETTINGS if k not in present]
+    if missing:
+        with path.open("a") as f:
+            f.write("".join(f"{k}={RLGYM_SETTINGS[k]()}\n" for k in missing))
+        print(f"Added {len(missing)} RL Gym v2 local settings to .env (values not printed).")
+
+
 def compose(*args):
     run(
         [
@@ -151,7 +179,7 @@ def compose(*args):
             "-f",
             "infra/local/compose.yaml",
             "-p",
-            "adi-anvil",
+            env().get("ANVIL_COMPOSE_PROJECT", "adi-anvil"),
             *args,
         ],
         env=env(),
@@ -211,10 +239,11 @@ def stop():
 
 
 def dev():
+    ensure_rlgym_settings()
     backend("health")
     if (LOCAL / "processes.json").exists():
         raise SystemExit("Process registry exists; use pnpm stop before restarting.")
-    for port in (3202, 8200):
+    for port in (3202, 8200, 8211, 8212):
         with socket.socket() as probe:
             try:
                 probe.bind(("127.0.0.1", port))
@@ -240,6 +269,40 @@ def dev():
         ([str(PY), "-m", "anvil.worker"], "anvil.worker"),
         (["pnpm", "--filter", "@anvil/web", "dev"], "pnpm"),
     ]
+    stubs = [
+        (
+            [
+                str(PY),
+                "-m",
+                "uvicorn",
+                "studio_stub:app",
+                "--app-dir",
+                "services/stubs",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                "8211",
+                "--no-access-log",
+            ],
+            "studio_stub:app",
+        ),
+        (
+            [
+                str(PY),
+                "-m",
+                "uvicorn",
+                "forge_stub:app",
+                "--app-dir",
+                "services/stubs",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                "8212",
+                "--no-access-log",
+            ],
+            "forge_stub:app",
+        ),
+    ]
     runtime = env()
     if runtime.get("ANVIL_HARBOR_WORKER_ENABLED") == "synthetic-checks-only":
         if runtime.get("ANVIL_ENV") != "local" or not runtime.get("ANVIL_HARBOR_DOCKER_HOST"):
@@ -249,6 +312,8 @@ def dev():
         if not (LOCAL / "harbor-venv/bin/harbor").is_file():
             raise SystemExit("Pinned local Harbor executable missing; no worker was started")
         commands.append(([str(PY), "-m", "anvil.harbor_worker"], "anvil.harbor_worker"))
+    if runtime.get("RLGYM_V2") == "1":
+        commands = commands + stubs
     procs, handles = [], []
     try:
         for i, (cmd, marker) in enumerate(commands):
@@ -292,6 +357,10 @@ def dev():
     print(
         "Anvil web: http://127.0.0.1:3202 | API: http://127.0.0.1:8200 | logs: .local/process-*.log"
     )
+    if runtime.get("RLGYM_V2") == "1":
+        print(
+            "RL Gym v2: http://127.0.0.1:3202/gym | Studio stub: http://127.0.0.1:8211 | ADI Forge stub: http://127.0.0.1:8212"
+        )
 
 
 def restart_worker():
@@ -333,8 +402,10 @@ def main():
         run(["pnpm", "install", "--frozen-lockfile"], env=env())
         run(["uv", "sync", "--frozen", "--project", "services/backend"], env=env())
         compose("up", "-d", "--wait", "--wait-timeout", "180")
+        ensure_rlgym_settings()
         backend("migrate")
         backend("seed")
+        backend("rlgym-seed")
         backend("health")
     elif cmd == "services-up":
         bootstrap()
@@ -374,7 +445,19 @@ def main():
         run([str(PY), "-m", "pytest", f"services/backend/tests/{cmd}", "-q"], env=env())
     elif cmd in ["e2e", "smoke"]:
         run(["pnpm", "exec", "playwright", "test", *args], env=env())
-    elif cmd in ["migrate", "seed", "live", "demo-new", "graph-rebuild", "backup", "restore-test"]:
+    elif cmd == "rlgym-demo":
+        ensure_rlgym_settings()
+        run([str(PY), "services/stubs/bootstrap.py", *args], env=env())
+    elif cmd in [
+        "migrate",
+        "seed",
+        "rlgym-seed",
+        "live",
+        "demo-new",
+        "graph-rebuild",
+        "backup",
+        "restore-test",
+    ]:
         backend(cmd, *args)
     else:
         raise SystemExit(f"Unknown command: {cmd}")
