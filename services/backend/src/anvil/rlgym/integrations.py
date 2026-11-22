@@ -151,6 +151,7 @@ def deliver(row):
     ts = str(int(time.time()))
     headers = _headers(
         {
+            **(body.get("_headers") or {}),
             "Content-Type": "application/json",
             "Idempotency-Key": str(row["id"]),
             "X-ADI-Timestamp": ts,

@@ -49,6 +49,8 @@ Tests (21 Nov 2026, this worktree, stack running):
     - **Evaluator events.** A deliberately failing fix version `golden-kyc:profile` v2 in disposable workspace
       `it-28a5606e` sent `evaluator.registered` and `evaluator.failed`. Both were accepted by Studio's
       `/rlgym-events` on the first attempt with valid signatures.
+    - **Inbox, Studio → RL Gym:** Studio planned `inb-0003`, and the RL Gym received `inbox_item.status` (seq 4–5);
+      the item reads queued → sent → planned.
     - **While linked:** switch back to the stub before running the integration or browser suites (runbook). The
       running API refuses the stub's events while it follows Studio.
 

@@ -79,3 +79,45 @@ def test_stub_events_are_refused_while_following_another_registry(monkeypatch):
             {"source": "studio-registry-stub", "type": "version.registered", "data": {"seq": 1}}
         )
     assert refused.value.code == "CONFLICT"
+
+
+def test_forge_qualification_record_matches_p03_only_for_forge_published_templates(monkeypatch):
+    from anvil.rlgym.catalog.templates import forge_qualification
+
+    record = {
+        "template_id": "tpl_x",
+        "version": 1,
+        "receipt_id": "tq-1",
+        "event_sha256": "e" * 64,
+        "status": "QUALIFIED",
+    }
+    doc = {
+        "template_id": "tpl_x",
+        "version": 1,
+        "spec_sha256": "s" * 64,
+        "forge_template_id": "uuid-1",
+        "forge_version": 2,
+    }
+    checks = {"known_case_tests_passed": True, "detail": ["dropped"]}
+    monkeypatch.setenv("RLGYM_FORGE_QUALIFICATION_URL", "http://127.0.0.1:8111")
+    monkeypatch.setenv("RLGYM_FORGE_TENANT_ID", "t-1")
+    assert (
+        forge_qualification(doc, record, checks) is record
+    )  # no ADI Forge version hash: the RL Gym's stub path
+    out = forge_qualification({**doc, "forge_template_version_hash": "h" * 64}, record, checks)
+    wire = {k: v for k, v in out.items() if not k.startswith("_")}
+    assert set(wire) == {
+        "template_id",
+        "version",
+        "template_version_hash",
+        "status",
+        "receipt_id",
+        "receipt",
+    }
+    assert (
+        wire["template_id"] == "uuid-1"
+        and wire["version"] == 2
+        and wire["template_version_hash"] == "h" * 64
+    )
+    assert out["_base"] == "http://127.0.0.1:8111" and out["_headers"] == {"X-Tenant-Id": "t-1"}
+    assert "detail" not in wire["receipt"]["checks"]

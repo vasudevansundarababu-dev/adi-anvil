@@ -131,6 +131,37 @@ def known_case_tests(c, ws, actor, body):
     return {"passed": all(r["result"] == "qualified" for r in rows), "criteria": rows}
 
 
+def forge_qualification(doc, record, checks):
+    """The qualification record for ADI Forge. A template whose activation names ADI Forge's own published version
+    (`forge_template_version_hash`, set by Studio's release) goes to ADI Forge's P-03 route in its exact shape — locally
+    Studio's ADI Forge stub (RLGYM_FORGE_QUALIFICATION_URL, tenant RLGYM_FORGE_TENANT_ID). Other templates (the RL Gym's
+    own stub releases) keep going to the RL Gym's ADI Forge stub as before."""
+    import os
+
+    url, tenant = (
+        os.environ.get("RLGYM_FORGE_QUALIFICATION_URL"),
+        os.environ.get("RLGYM_FORGE_TENANT_ID"),
+    )
+    if not (doc.get("forge_template_version_hash") and url and tenant):
+        return record
+    return {
+        "_base": url,
+        "_headers": {"X-Tenant-Id": tenant},
+        "template_id": doc["forge_template_id"],
+        "version": int(doc["forge_version"]),
+        "template_version_hash": doc["forge_template_version_hash"],
+        "status": "QUALIFIED",
+        "receipt_id": record["receipt_id"],
+        "receipt": {
+            "rlgym_template_id": doc["template_id"],
+            "rlgym_template_version": int(doc["version"]),
+            "spec_sha256": doc["spec_sha256"],
+            "checks": {k: v for k, v in checks.items() if k != "detail"},
+            "event_sha256": record["event_sha256"],
+        },
+    }
+
+
 def activate(c, ws, actor, doc):
     """POST /templates/activations: store the exact template hash and its rules; record qualification in ADI Forge."""
     _required(doc)
@@ -138,7 +169,14 @@ def activate(c, ws, actor, doc):
         {
             k: v
             for k, v in doc.items()
-            if k not in ("forge_template_id", "forge_version", "spec_sha256", "template_sha256")
+            if k
+            not in (
+                "forge_template_id",
+                "forge_version",
+                "forge_template_version_hash",
+                "spec_sha256",
+                "template_sha256",
+            )
         }
     )
     require(
@@ -189,8 +227,8 @@ def activate(c, ws, actor, doc):
     row = c.execute(
         """INSERT INTO catalog.template_activations(workspace_id,template_id,version,template_key,name,mode,spec_sha256,template_sha256,
              forge_template_id,forge_version,studio_release,default_bindings,workflow,case_dimensions,pass_mark,checks,state,state_reason,
-             activated_at,activated_by)
-           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),%s) RETURNING *""",
+             activated_at,activated_by,forge_template_version_hash)
+           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),%s,%s) RETURNING *""",
         (
             ws,
             doc["template_id"],
@@ -211,6 +249,7 @@ def activate(c, ws, actor, doc):
             state,
             None if state == "active" else "Activation checks failed",
             actor.id,
+            doc.get("forge_template_version_hash"),
         ),
     ).fetchone()
     for cr in doc["criteria"]:
@@ -259,7 +298,14 @@ def activate(c, ws, actor, doc):
             "receipt_id": receipt_id,
         }
         record["event_sha256"] = sha(record)
-        emit(c, ws, "forge.template_qualification", receipt_id, record, destination="forge")
+        emit(
+            c,
+            ws,
+            "forge.template_qualification",
+            receipt_id,
+            forge_qualification(doc, record, checks),
+            destination="forge",
+        )
     return row, True
 
 
