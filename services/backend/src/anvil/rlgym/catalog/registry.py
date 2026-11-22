@@ -182,9 +182,22 @@ def apply_event(c, ev, via):
     return True
 
 
+STUB_SOURCE = "studio-registry-stub"
+
+
 def receive(ev, via="webhook"):
     """Apply one webhook event in sequence order, resyncing on a gap."""
     from anvil.rlgym.common import system_scope
+    from anvil.rlgym.integrations import STUB_STUDIO
+
+    # Events are filed under the registry the RL Gym follows; the Studio stub's events are refused while it follows
+    # another registry (for example the local Studio), so they can never be mixed into that registry's log.
+    if ev.get("source") == STUB_SOURCE and registry_id() != STUB_STUDIO:
+        raise GymError(
+            "CONFLICT",
+            "The RL Gym follows another registry; the Studio stub's event was not applied",
+            {"following": registry_id()},
+        )
 
     seq = int(ev["data"]["seq"])
     with system_scope() as c:

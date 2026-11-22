@@ -38,6 +38,19 @@ Tests (21 Nov 2026, this worktree, stack running):
   - Studio's client key reads the run, its episodes and single episodes (200).
   - The stub's projects (KYC November, KYC December) keep running on the stub's versions; each version's data comes
     from the registry that released it.
+  - Group 1 (22 Nov 2026):
+    - **Usage reports.** `run-0153` on KYC via Studio sent `rlgym.registry-usage.v1` to Studio's `/registry/usage`,
+      delivered on the first attempt.
+    - **Inbox, RL Gym → Studio.** A `new_case_kind` item (`rgi-485598a6f782`, from a saved diagnosis on
+      `run-0153-e0049`) was first refused (422: evidence must be a list, REGISTRY.md), which surfaced 20 retries in
+      about 30 s. After the fix (evidence list, back-off, no retry of refusals, migration 048) it was resent as a new
+      outbox message, because the first Idempotency-Key was stored with the old body. Studio accepted it as `inb-0003`
+      and the item shows as sent.
+    - **Evaluator events.** A deliberately failing fix version `golden-kyc:profile` v2 in disposable workspace
+      `it-28a5606e` sent `evaluator.registered` and `evaluator.failed`. Both were accepted by Studio's
+      `/rlgym-events` on the first attempt with valid signatures.
+    - **While linked:** switch back to the stub before running the integration or browser suites (runbook). The
+      running API refuses the stub's events while it follows Studio.
 
 - **All four suites pass, 22 Nov 2026 (after repairing the older workspace tests):**
   - `pnpm check` EXIT 0.

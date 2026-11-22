@@ -274,6 +274,20 @@ def on_event(c, ws, topic, d, event_id):
             "View environment",
             severity="bad",
         )
+    elif topic == "delivery.refused":
+        open_item(
+            c,
+            ws,
+            event_id,
+            "delivery_refused",
+            d["key"],
+            "import_export",
+            f"Delivery refused by {d['destination']}",
+            f"{d['topic']} {d['key']}: {d['error'][:200]}",
+            "/gym/admin",
+            None,
+            severity="bad",
+        )
     elif topic == "sme_item.fix_qualified":
         open_item(
             c,

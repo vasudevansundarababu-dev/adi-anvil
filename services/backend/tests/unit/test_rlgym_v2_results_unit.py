@@ -45,3 +45,37 @@ def test_stored_files_are_hash_checked(tmp_path):
         service._read_checked(root, "a.json", "0" * 64)
     with pytest.raises(GymError):
         service._read_checked(root, "../etc/passwd", "0" * 64)
+
+
+def test_inbox_evidence_goes_out_as_a_list():
+    from anvil.rlgym.integrations import wire_payload
+
+    more = wire_payload(
+        "inbox_item.send",
+        {
+            "kind": "more_data",
+            "evidence": {"cells": [{"cell_key": "a"}, {"cell_key": "b"}], "lineage": "same"},
+        },
+    )
+    assert more["evidence"] == [
+        {"type": "cell", "cell_key": "a"},
+        {"type": "cell", "cell_key": "b"},
+        {"type": "plan", "lineage": "same"},
+    ]
+    one = wire_payload(
+        "inbox_item.send", {"kind": "new_case_kind", "evidence": {"run_id": "run-1"}}
+    )
+    assert one["evidence"] == [{"type": "detail", "run_id": "run-1"}]
+    assert wire_payload("inbox_item.send", {"evidence": None})["evidence"] == []
+    assert wire_payload("evaluator.event", {"evidence": {"x": 1}}) == {"evidence": {"x": 1}}
+
+
+def test_stub_events_are_refused_while_following_another_registry(monkeypatch):
+    from anvil.rlgym.catalog import registry
+
+    monkeypatch.setenv("RLGYM_STUDIO_URL", "http://127.0.0.1:8060")
+    with pytest.raises(GymError) as refused:
+        registry.receive(
+            {"source": "studio-registry-stub", "type": "version.registered", "data": {"seq": 1}}
+        )
+    assert refused.value.code == "CONFLICT"

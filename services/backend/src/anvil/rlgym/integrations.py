@@ -27,8 +27,11 @@ def _base(name, default):
     return url
 
 
+STUB_STUDIO = "http://127.0.0.1:8211"
+
+
 def studio_url():
-    return _base("RLGYM_STUDIO_URL", "http://127.0.0.1:8211")
+    return _base("RLGYM_STUDIO_URL", STUB_STUDIO)
 
 
 def loopback(url):
@@ -106,6 +109,27 @@ DESTINATIONS = {
 }
 
 
+class Refused(RuntimeError):
+    """The receiver refused the content (4xx other than 408/429): retrying the same body cannot succeed."""
+
+
+def wire_payload(topic, payload):
+    """The body as the receiver's contract wants it. Inbox items: `evidence[]` is a list (REGISTRY.md: one entry per
+    data-plan cell plus the plan-level fields); the RL Gym keeps the object form internally."""
+    if topic != "inbox_item.send":
+        return payload
+    evidence = payload.get("evidence")
+    if isinstance(evidence, list):
+        return payload
+    evidence = dict(evidence or {})
+    entries = []
+    if isinstance(evidence.get("cells"), list):
+        entries = [{"type": "cell", **cell} for cell in evidence.pop("cells")]
+    if evidence:
+        entries.append({"type": "plan" if entries else "detail", **evidence})
+    return {**payload, "evidence": entries}
+
+
 def deliver(row):
     body = row["payload"]["data"]
     dest = row["destination"]
@@ -118,7 +142,7 @@ def deliver(row):
     path = body.get("_path") or DESTINATIONS.get(row["topic"], (None, None))[1]
     if not path:
         raise RuntimeError(f"no route for {row['topic']}")
-    payload = {k: v for k, v in body.items() if not k.startswith("_")}
+    payload = wire_payload(row["topic"], {k: v for k, v in body.items() if not k.startswith("_")})
     raw = (
         json.dumps({**row["payload"], "data": payload}, sort_keys=True).encode()
         if row["topic"] == "evaluator.event"
@@ -136,6 +160,8 @@ def deliver(row):
     with httpx.Client(timeout=10, trust_env=False) as client:
         r = client.post(base + path, content=raw, headers=headers)
     if r.status_code >= 300:
+        if 400 <= r.status_code < 500 and r.status_code not in (408, 429):
+            raise Refused(f"{dest} refused it ({r.status_code}): {r.text[:300]}")
         raise RuntimeError(f"{dest} answered {r.status_code}: {r.text[:200]}")
     return r.json() if r.content else {}
 
@@ -149,15 +175,44 @@ def dispatch_once(limit=50):
     with system_scope() as c:
         rows = c.execute(
             """SELECT * FROM infra.outbox WHERE published_at IS NULL AND destination <> 'internal' AND attempts < 20
+               AND NOT refused AND (next_attempt_at IS NULL OR next_attempt_at <= now())
                ORDER BY created_at LIMIT %s FOR UPDATE SKIP LOCKED""",
             (limit,),
         ).fetchall()
         for row in rows:
             try:
                 result = deliver(row)
-            except Exception as exc:  # recorded, retried by the next pass
+            except (
+                Refused
+            ) as exc:  # the receiver refused this body: never retried; shown as a To do card
                 c.execute(
-                    "UPDATE infra.outbox SET attempts=attempts+1, last_error=%s WHERE id=%s",
+                    "UPDATE infra.outbox SET attempts=attempts+1, refused=true, last_error=%s WHERE id=%s",
+                    (str(exc)[:500], row["id"]),
+                )
+                if row["workspace_id"]:
+                    from anvil.rlgym.common import emit
+
+                    set_scope(c, row["workspace_id"])
+                    emit(
+                        c,
+                        row["workspace_id"],
+                        "delivery.refused",
+                        str(row["id"]),
+                        {
+                            "topic": row["topic"],
+                            "key": row["key"],
+                            "destination": row["destination"],
+                            "error": str(exc)[:300],
+                        },
+                    )
+                continue
+            except (
+                Exception
+            ) as exc:  # recorded, retried later with growing waits (2 s, 4 s … up to 5 min)
+                c.execute(
+                    """UPDATE infra.outbox SET attempts=attempts+1, last_error=%s,
+                         next_attempt_at=now() + make_interval(secs => least(300, power(2, attempts + 1)))
+                       WHERE id=%s""",
                     (str(exc)[:500], row["id"]),
                 )
                 continue
@@ -170,6 +225,14 @@ def dispatch_once(limit=50):
 
                 set_scope(c, row["workspace_id"])
                 sme.sent(c, row["workspace_id"], row["payload"]["data"]["_batch_id"], result)
+            if row["workspace_id"]:
+                # A later delivery of the same item closes any "Delivery refused" card for it.
+                from anvil.rlgym.admin import todo
+
+                set_scope(c, row["workspace_id"])
+                todo.close_items(
+                    c, row["workspace_id"], None, "delivery_refused", subject=row["key"]
+                )
             if row["topic"] == "inbox_item.send" and row["workspace_id"]:
                 set_scope(c, row["workspace_id"])
                 inbox.accepted(c, row["workspace_id"], row["payload"]["data"]["_item_id"], result)

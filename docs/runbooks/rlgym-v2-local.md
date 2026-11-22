@@ -72,6 +72,11 @@ Checks, in order (with `pnpm dev` running): `pnpm check`, `pnpm test:unit`, `pnp
 ANVIL_HARBOR_DOCKER_HOST=unix:///Users/vasudevansundarababu/.docker/run/docker.sock pnpm test:integration
 ```
 
+While the RL Gym follows the local Studio (`rlgym-registry studio`), switch it back to the stub before running
+`pnpm test:integration` or `pnpm test:e2e` (`python3 scripts/local.py rlgym-registry stub`, `pnpm stop`, `pnpm dev`):
+the tests drive the Studio stub, and the running API would otherwise file the stub's events under Studio's registry
+and deliver test workspaces' inbox items to the real Studio.
+
 The Docker host is an explicit opt-in for the import sandbox's Docker-backed tests (Docker Desktop has no
 /var/run/docker.sock). `pnpm test:e2e` and `pnpm test:integration` rebuild `artifacts/test-runs/journey.json` with
 `tests/prepare_journey_fixture.py` when it is missing or stale.

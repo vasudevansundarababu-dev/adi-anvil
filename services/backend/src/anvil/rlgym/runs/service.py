@@ -734,6 +734,33 @@ def start(ctx, body):
             "episodes": len(r["specs"]),
         },
     )
+    # Usage for the registry's impact reports (ARCHITECTURE 9.4): which released version this run binds. It goes to
+    # the registry that released the version; the registry takes the tenant from the RL Gym's key.
+    env = r["env"]["version"]
+    emit(
+        ctx.c,
+        ctx.ws,
+        "registry.usage",
+        run_id,
+        {
+            "_base": env.get("registry"),
+            "schema": "rlgym.registry-usage.v1",
+            "event": "run.admitted",
+            "environment_version": env["id"],
+            "contract_id": env["contract_id"],
+            "seed_family": env["seed_family"],
+            "template": {
+                "id": manifest["template"]["id"],
+                "version": manifest["template"]["version"],
+            },
+            "project_id": project_id,
+            "run_id": run_id,
+            "episodes": len(r["specs"]),
+            "execution_mode": manifest["execution_mode"],
+            "at": dt.datetime.now(dt.UTC).isoformat(),
+        },
+        destination="registry",
+    )
     return {"run": get_run(ctx, run_id), "refused": False, "check": public_check(check)}
 
 
