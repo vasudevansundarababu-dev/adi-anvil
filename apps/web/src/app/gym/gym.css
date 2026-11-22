@@ -967,6 +967,7 @@ body:has(#gym) {
   font-family: Geist, Inter, system-ui, sans-serif;
 }
 #gym .brand-name {
+  white-space: nowrap;
   font-weight: 700;
   letter-spacing: -0.02em;
   text-transform: uppercase;
