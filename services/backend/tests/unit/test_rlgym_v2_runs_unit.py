@@ -407,3 +407,47 @@ def test_a_task_without_completeness_takes_its_type_at_either_completeness():
     assert _cases_for(cat, forge["case_selector"]) == 5
     assert _cases_for(cat, exact["case_selector"]) == 3
     assert _cases_for(cat, other["case_selector"]) == 0
+
+
+CAT4 = {
+    "dimensions": {
+        "application_type": {
+            "custodial": 130,
+            "individual": 120,
+            "teen_joint": 130,
+            "adult_joint": 120,
+        }
+    },
+    "cells": {},
+}
+
+
+@pytest.mark.parametrize("size", [7, 10, 40])
+@pytest.mark.parametrize("types", [None, {"adult_joint"}, {"adult_joint", "individual"}])
+def test_the_sample_is_spread_over_the_suites_task_types_and_adds_up_exactly(size, types):
+    from anvil.rlgym.suites.service import DEFAULT_PLAN, compute_cells
+
+    cells = compute_cells({**DEFAULT_PLAN, "sample_size": size}, CAT4, types)
+    assert sum(c["quota"] for c in cells) == size  # never 12 for 10
+    covered = {c["dimension_values"]["application_type"] for c in cells}
+    assert covered == (types or set(CAT4["dimensions"]["application_type"]))
+
+
+def test_a_ten_case_plan_for_one_task_gives_ten_cases_of_that_type():
+    from anvil.rlgym.suites.service import DEFAULT_PLAN, compute_cells
+
+    cells = compute_cells({**DEFAULT_PLAN, "sample_size": 10}, CAT4, {"adult_joint"})
+    assert {c["cell_key"]: c["quota"] for c in cells} == {
+        "adult_joint|complete": 7,
+        "adult_joint|incomplete": 3,
+    }
+
+
+def test_d018_template_validate_is_never_replayed():
+    from anvil.rlgym import routes
+
+    src = inspect.getsource(routes)
+    start = src.index('"/templates/validate"')
+    block = src[start : src.index("@r.post", start + 10)]
+    assert "idempotent(" not in block and "templates.validate(" in block
+    assert "IDEMPOTENCY_KEY_REQUIRED" in block  # the header is still required

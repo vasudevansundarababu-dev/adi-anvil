@@ -171,16 +171,29 @@ def validate_plan(plan):
     )
 
 
-def compute_cells(plan, catalog):
+def compute_cells(plan, catalog, task_types=None):
+    """Quota cells. The sample is spread over the application types the suite has tasks for (`task_types`), so every
+    sampled case can become an episode; with no tasks known, over every type in the catalog."""
     types = list((catalog or {}).get("dimensions", {}).get("application_type", {}).keys())
+    if task_types:
+        types = [t for t in types if t in task_types] or types
     cells = []
     if not types:
         return cells
     base, extra = divmod(plan["sample_size"], len(types))
     for i, t in enumerate(types):
         share = base + (1 if i < extra else 0)
+        # Largest remainder, so the completeness quotas of a type add up to its share exactly (rounding each one on its
+        # own could give 12 cases for a sample size of 10).
+        raw = {k: share * pct / 100 for k, pct in plan["completeness_quotas"].items()}
+        split = {k: int(v) for k, v in raw.items()}
+        left = share - sum(split.values()) if sum(raw.values()) else 0
+        for k in sorted(raw, key=lambda k: (-(raw[k] - split[k]), list(raw).index(k)))[
+            : max(left, 0)
+        ]:
+            split[k] += 1
         for completeness, pct in plan["completeness_quotas"].items():
-            quota = round(share * pct / 100)
+            quota = split[completeness]
             cells.append(
                 {
                     "cell_key": f"{t}|{completeness}",
@@ -205,6 +218,19 @@ def compute_cells(plan, catalog):
     return cells
 
 
+def _task_types(c, sv_id):
+    """Application types the suite version's tasks cover (a task with no type selector covers all → None)."""
+    rows = c.execute(
+        """SELECT t.case_selector FROM suites.suite_tasks s JOIN projects.task_imports t ON t.id=s.task_import_id
+           WHERE s.suite_version_id=%s""",
+        (sv_id,),
+    ).fetchall()
+    types = {(r["case_selector"] or {}).get("application_type") for r in rows}
+    if not rows or None in types:
+        return None
+    return types
+
+
 def _write_plan(c, ws, sv_id, plan, catalog, source="manual", ai=None):
     validate_plan(plan)
     c.execute("DELETE FROM suites.data_plan_cells WHERE suite_version_id=%s", (sv_id,))
@@ -225,7 +251,7 @@ def _write_plan(c, ws, sv_id, plan, catalog, source="manual", ai=None):
             Jsonb(ai) if ai else None,
         ),
     )
-    for cell in compute_cells(plan, catalog):
+    for cell in compute_cells(plan, catalog, _task_types(c, sv_id)):
         c.execute(
             """INSERT INTO suites.data_plan_cells(suite_version_id,workspace_id,cell_key,dimension_values,quota_kind,quota_value,quota,available)
                VALUES(%s,%s,%s,%s,%s,%s,%s,%s)""",

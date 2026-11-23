@@ -5,6 +5,7 @@ keys; every POST/PUT carries an Idempotency-Key."""
 import json
 
 from fastapi import APIRouter, Body, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
@@ -658,10 +659,16 @@ def routes():
     @r.post(W + "/templates/validate")
     def template_validate(ws: str, request: Request, body: dict = Body(default_factory=dict)):
         with scope(request, ws, services=STUDIO, people=False) as ctx:
-            return ok(
-                idempotent(ctx, request, body, lambda: templates.validate(ctx.c, ctx.ws, body)),
-                request,
-            )
+            # D-018: validate is a check that writes nothing, and its answer depends on registry state that can change
+            # (a configuration qualified since). It is re-evaluated on every call, never replayed from an earlier
+            # answer under the same Idempotency-Key. The header is still required, as before.
+            key = request.headers.get("idempotency-key")
+            if not key or len(key) > 200:
+                raise GymError(
+                    "IDEMPOTENCY_KEY_REQUIRED",
+                    "Idempotency-Key header required (maximum 200 characters)",
+                )
+            return ok(jsonable_encoder(templates.validate(ctx.c, ctx.ws, body)), request)
 
     @r.post(W + "/templates/known-case-tests")
     def template_kct(ws: str, request: Request, body: dict = Body(default_factory=dict)):

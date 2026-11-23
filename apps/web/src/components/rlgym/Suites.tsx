@@ -490,7 +490,7 @@ function DataPlan({
         <label>
           Stratify by
           <select disabled>
-            <option>application type (equal shares)</option>
+            <option>application type of the suite&rsquo;s tasks (equal shares)</option>
           </select>
         </label>
         <label>
