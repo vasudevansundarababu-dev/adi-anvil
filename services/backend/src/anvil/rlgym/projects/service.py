@@ -32,6 +32,13 @@ CAUSE = {
 # --- exports ---------------------------------------------------------------------------------------------------
 
 
+def package_bytes_match(raw, package_sha256):
+    """ADI Forge serves the stored RFC 8785 (JCS) bytes of a package, so `package_sha256` is checked over exactly the
+    bytes received, never over a re-serialised parse: a parse and re-dump can change decimals (criterion weights such
+    as 0.50 or 1e-7) and so the hash. The local stub serves its own canonical bytes, which hash the same way."""
+    return hashlib.sha256(raw).hexdigest() == package_sha256
+
+
 def template_hash_matches(activation, t):
     """An export names the activated version by one of its two fingerprints: the RL Gym document's `spec_sha256`, or
     (real Authoring) the joint template-version hash Studio's release recorded as `forge_template_version_hash`.
@@ -157,14 +164,9 @@ def receive_export(c, ws, actor, project_id, body):
                 task=task.get("task_id"),
             )
         raw = forge_package(task)
-        package = json.loads(raw)
-        # ADI Forge serves the stored RFC 8785 (JCS) bytes, so the hash is checked over the exact bytes received. The
-        # parsed-content hash (sorted-key compact JSON) is accepted too, for the stub; both bind the content.
-        if (
-            hashlib.sha256(raw).hexdigest() != task["package_sha256"]
-            and sha(package) != task["package_sha256"]
-        ):
+        if not package_bytes_match(raw, task["package_sha256"]):
             mismatched.append(task["task_id"])
+        package = json.loads(raw)
         for part in ("actor", "private"):
             require(
                 isinstance(package.get(part), dict),

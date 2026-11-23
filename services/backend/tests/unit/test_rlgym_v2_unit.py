@@ -199,3 +199,56 @@ def test_an_export_names_the_activation_by_either_fingerprint():
     old = {"spec_sha256": act["spec_sha256"], "forge_template_version_hash": None}
     assert not template_hash_matches(old, {"spec_sha256": act["forge_template_version_hash"]})
     assert not template_hash_matches(old, {"spec_sha256": None})
+
+
+def test_a_package_hash_is_checked_over_the_exact_bytes_adi_forge_served():
+    import hashlib
+    import json
+
+    from anvil.rlgym.projects.service import package_bytes_match
+
+    # RFC 8785 bytes with decimal weights; a parse and re-dump would write 0.5 and 1e-07, a different hash.
+    raw = b'{"actor":{},"criteria":[{"weight":0.50},{"weight":1e-7}],"private":{}}'
+    digest = hashlib.sha256(raw).hexdigest()
+    assert package_bytes_match(raw, digest)
+    redumped = json.dumps(json.loads(raw), sort_keys=True, separators=(",", ":")).encode()
+    assert redumped != raw
+    assert not package_bytes_match(raw, hashlib.sha256(redumped).hexdigest())
+    assert not package_bytes_match(raw + b" ", digest)
+
+
+def test_package_ref_must_be_forge_packages_with_the_same_hash(monkeypatch):
+    import httpx
+
+    from anvil.rlgym import integrations
+    from anvil.rlgym.common import GymError
+
+    seen = []
+
+    class Client:
+        def __init__(self, *a, **k):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def get(self, url, headers=None):
+            seen.append(url)
+            return httpx.Response(200, content=b"{}")
+
+    monkeypatch.setattr(integrations.httpx, "Client", Client)
+    h = "a" * 64
+    assert (
+        integrations.forge_package(
+            {"task_id": "t", "package_sha256": h, "package_ref": f"forge://packages/{h}"}
+        )
+        == b"{}"
+    )
+    assert seen[-1].endswith(f"/api/v1/packages/{h}")
+    for ref in (f"forge://packages/{'b' * 64}", "https://evil.example/p", f"forge://other/{h}", ""):
+        with pytest.raises(GymError):
+            integrations.forge_package({"task_id": "t", "package_sha256": h, "package_ref": ref})
+    assert len(seen) == 1  # a refused reference is never fetched
