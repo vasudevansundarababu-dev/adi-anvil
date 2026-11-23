@@ -52,8 +52,21 @@ async def security_headers(request, call_next):
     try:
         response = await call_next(request)
     except Exception as exc:
+        import traceback
+
+        # Where it failed, for diagnosis: method, path (no query string), error type and the last code frames
+        # (file:line function). No request body, arguments or exception message are logged.
+        frames = " < ".join(
+            f"{f.filename.rsplit('/src/', 1)[-1]}:{f.lineno} {f.name}"
+            for f in reversed(traceback.extract_tb(exc.__traceback__)[-4:])
+        )
         logging.getLogger("anvil.api").error(
-            "request=%s code=%s", request.state.request_id, type(exc).__name__
+            "request=%s code=%s %s %s at %s",
+            request.state.request_id,
+            type(exc).__name__,
+            request.method,
+            request.url.path,
+            frames,
         )
         response = JSONResponse(
             {
