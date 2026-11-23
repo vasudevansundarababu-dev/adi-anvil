@@ -204,7 +204,7 @@ def test_trust_and_safety_generate_review_approve(exported):
     assert (
         sv["ts"]["state"] == "generated"
         and len(sv["ts"]["prompts"]) == 6
-        and "Promptfoo not installed" in sv["ts"]["generator"]
+        and "synthetic prompts" in sv["ts"]["generator"]
     )
     first = sv["ts"]["prompts"][0]["id"]
     post(admin, base + f"/suite-versions/{draft['id']}/ts/review", {"prompts": {first: False}})

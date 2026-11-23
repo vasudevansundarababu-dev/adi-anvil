@@ -750,9 +750,9 @@ function TrustSafety({
       </div>
       <small>
         Domain {ts.domain} · {ts.prompts_per_category} prompts per category · placement{' '}
-        {ts.placement.replace('_', ' ')} · strategies {ts.strategies.join(', ')}. Promptfoo is not
-        installed locally: prompts come from the {ts.generator ?? 'local template generator'} and
-        are synthetic.
+        {ts.placement.replace('_', ' ')} · strategies {ts.strategies.join(', ')}. Prompts come from
+        the RL Gym&rsquo;s local template generator and are synthetic; Promptfoo&rsquo;s red-team
+        generator is not used (Promptfoo runs only as a scoring plug-in).
       </small>
       {draft && ts.enabled && (
         <div className="row">
