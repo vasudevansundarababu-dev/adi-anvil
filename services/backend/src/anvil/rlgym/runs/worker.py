@@ -409,6 +409,7 @@ def run_episode(ws, episode, session_factory=None):
         message = exc.message if isinstance(exc, GymError) else str(exc)
         final = isinstance(exc, GymError) and exc.code in (
             "LIVE_CAP",
+            "LIVE_EPISODE_CAP",
             "LIVE_AMBIGUOUS",
             "LIVE_DISABLED",
         )

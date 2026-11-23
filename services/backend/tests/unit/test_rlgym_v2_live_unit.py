@@ -445,3 +445,54 @@ def test_the_live_ts_generator_has_room_after_reasoning_and_names_a_cut_off_repl
             gateway_factory=gateway(('{"text": "Add the', "MAX_TOKENS")),
         )
     assert "cut off at the 1024-token limit" in cut.value.message
+
+
+def test_an_episode_limit_ends_only_that_episode_and_the_approval_cap_stops_the_run(monkeypatch):
+    # run-0227: one episode reached its $0.30 limit and the worker stopped the whole run (46 episodes never ran).
+    import contextlib
+    import datetime as dt
+
+    from anvil.rlgym.live import agent, approvals
+
+    approval = {
+        "id": "la-h",
+        "revoked_at": None,
+        "expires_at": dt.datetime.now(dt.UTC) + dt.timedelta(days=1),
+        "price_in_per_mtok_usd": Decimal("1"),
+        "price_out_per_mtok_usd": Decimal("1"),
+    }
+
+    class C:
+        def execute(self, *a, **k):
+            class R:
+                def fetchone(self):
+                    return approval
+
+            return R()
+
+    monkeypatch.setattr(agent, "system_scope", lambda ws: contextlib.nullcontext(C()))
+    model = {
+        "provider": "anthropic",
+        "model_id": "claude-haiku-5-5",
+        "spend_per_episode_usd": 0.01,
+        "live": {"approval_id": "la-h", "params": {"max_output_tokens": 4096}},
+    }
+    caller = agent.LiveCaller(object(), "ws", "run-x", "e1", model)
+    monkeypatch.setattr(approvals, "room", lambda *a, **k: True)
+    with pytest.raises(agent.EpisodeCapReached) as ep:
+        caller([{"role": "user", "content": "x" * 30000}])
+    assert ep.value.code == "LIVE_EPISODE_CAP"
+    caller.episode_cap = Decimal("10")
+    monkeypatch.setattr(approvals, "room", lambda *a, **k: False)
+    with pytest.raises(agent.CapReached) as run_cap:
+        caller([{"role": "user", "content": "hi"}])
+    assert (
+        run_cap.value.code == "LIVE_CAP"
+    )  # only this one makes the worker stop the run's queued episodes
+
+    import inspect
+
+    from anvil.rlgym.runs import worker
+
+    src = inspect.getsource(worker)
+    assert '"LIVE_EPISODE_CAP"' in src and 'exc.code == "LIVE_CAP"' in src

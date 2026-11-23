@@ -23,8 +23,18 @@ MAX_OBS_CHARS = 12000
 
 
 class CapReached(GymError):
+    """The approval cannot pay for more: revoked, expired, or its per-run / total cap reached. Stops the run."""
+
     def __init__(self, message):
         super().__init__("LIVE_CAP", message)
+
+
+class EpisodeCapReached(GymError):
+    """This episode's own spend limit (the model version's spend per episode) is reached. Ends this episode only; the
+    run goes on with the next one."""
+
+    def __init__(self, message):
+        super().__init__("LIVE_EPISODE_CAP", message)
 
 
 class LiveCaller:
@@ -58,7 +68,7 @@ class LiveCaller:
             a = self._approval(c)
             worst = approvals.max_cost(a, est_in, self.max_out)
             if self.episode_cap and self.cost + worst > self.episode_cap:
-                raise CapReached(f"episode spend limit ${self.episode_cap} would be crossed")
+                raise EpisodeCapReached(f"episode spend limit ${self.episode_cap} would be crossed")
             if not approvals.room(c, self.ws, a, self.run_id, worst):
                 raise CapReached("the approval's per-run or total cap would be crossed")
         try:
