@@ -1,32 +1,28 @@
 """Policy clauses: applicability, setup coverage and clause receipts (E-002 §3a, §4.3, §9; E-001 §3.6).
 
-PROVISIONAL SHAPES. Studio's contract drafts (fact-catalog.v1, clause-receipt.v1, template S4 `policyBindings`, case-row
-`facts`) had not arrived when this was written (23 Nov 2026). The field names below follow E-002 and are read in one
-place (`task_clauses`, `_fact_value`), so they can be renamed to the approved contract without touching the logic.
+Contracts (Studio drafts d27063d / a957322 / 2f4e9bf, 23 Nov 2026, not yet final):
+- clause-condition.v1: null, or a predicate over logical facts: {all|any|not} and
+  {fact, op: eq|ne|in|not_in|lt|lte|gt|gte|between|present|absent, value, label?}. Three-valued.
+- clause-receipt.v1: the receipt written per episode × clause. It allows no extra properties, so the compiled ZEN
+  expression and the plug-in's replay go to `clause_engine` beside the receipts in the sealed bundle.
+- registry-case.v1: case rows carry `facts` (environment fact id → value); absent means missing.
+- The RL Gym template document's `policy_bindings` (embedded at release): {fact_catalog, facts: [{fact,
+  environment_fact}], clauses: [{clause_id, clause_version?, needs: {tools, evidence, checks: [{criterion_id,
+  block_ids}]}}]}; the template.v1 form with `obligation_checks` is read too.
 
-A task selects clause versions (S4 `policyBindings`, or `policy_clauses` on the actor payload). Each clause:
+A task's selected clauses come from Authoring's export (S4 `policyBindings`, or actor `policy_clauses`); each is
+{clause: {clause_id, version, title?, source: {document_id, document_version, sha256, locator?}},
+ approval: {approval_id, project_id, ...}, condition, exceptions?, text?}. The flat provisional form used before the
+drafts (clause_id, clause_version, approval_id, source_sha256, obligation, criteria, facts) is still read.
 
-    {"clause_id", "clause_version", "approval_id", "binding_revision", "source_sha256", "text",
-     "condition": <predicate> | null,          # null: the clause always applies
-     "exceptions": [<predicate>, ...],         # any exception true: Skipped
-     "obligation": {"tools": [...], "evidence": [...]},   # tools the agent needs; collections a check reads
-     "criteria": [criterion_id, ...],          # the criteria that consume this receipt
-     "facts": {logical_fact: {"source": "case" | "evidence", "path": "..."}}}   # the template's fact binding
-
-A predicate is over logical facts only, never template field names:
-    {"fact": name, "op": eq|ne|in|not_in|lt|lte|gt|gte|exists, "value": v} | {"all": [...]} | {"any": [...]} | {"not": p}
-
-Outcomes per episode × clause (the owner's rule, E-002 §9.2):
-- setup_gap: a tool the obligation needs is not offered, or a collection a check reads is not captured. Found at
-  admission it BLOCKS the run; found in an episode's evidence it is reported, never scored.
+Outcomes (the owner's rule, E-002 §9.2):
+- setup_gap: a tool the obligation needs is not offered, a table a check reads is not captured, or a fact the condition
+  needs has no binding. Found at admission it BLOCKS the run; found after an episode it is reported, never scored.
 - unresolved: the case has no value for a fact the condition needs. Excluded from the score and reported.
-- applies: the condition holds (matched facts recorded); the consuming criteria score normally.
-- skipped: the condition fails or an exception holds (the failed part recorded); the consuming criteria are not scored.
-
-Evaluation is three-valued (true / false / unknown), so a missing fact makes a clause Unresolved only when the answer
-depends on it: `state == "CA" and product == "x"` with product "y" and no state is Skipped, not Unresolved.
-The predicate is also compiled to a GoRules ZEN expression (`zen_expression`), recorded in every receipt, so the same
-decision can be replayed on the qualified ZEN plug-in. Nothing here calls an agent, a model or an external service.
+- applies: the condition holds; the consuming criteria score normally (pass or fail).
+- skipped: the condition fails or an exception holds; the consuming criteria are not scored.
+A decided false wins over a missing fact (three-valued logic). Every decided condition is replayed on the qualified
+GoRules ZEN plug-in; a disagreement becomes a setup gap. Nothing here calls an agent, a model or Studio.
 """
 
 import hashlib
@@ -35,21 +31,34 @@ import re
 
 from anvil.rlgym.common import GymError
 
-SCHEMA = "clause-receipt.v1-draft"
-OPS = ("eq", "ne", "in", "not_in", "lt", "lte", "gt", "gte", "exists")
+SCHEMA = "adi.utility.clause-receipt.v1"
+OPS = ("eq", "ne", "in", "not_in", "lt", "lte", "gt", "gte", "between", "present", "absent")
 OUTCOMES = ("applies", "skipped", "unresolved", "setup_gap")
 _ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}")
 _ZEN_OP = {"eq": "==", "ne": "!=", "lt": "<", "lte": "<=", "gt": ">", "gte": ">="}
+_WORDS = {
+    "eq": "is",
+    "ne": "is not",
+    "in": "is one of",
+    "not_in": "is not one of",
+    "lt": "is below",
+    "lte": "is at most",
+    "gt": "is above",
+    "gte": "is at least",
+    "between": "is between",
+    "present": "is present",
+    "absent": "is absent",
+}
 
 
 # --- predicates ---------------------------------------------------------------------------------------------
 
 
 def validate(pred, where="condition"):
-    """Raise CLAUSE_INVALID for a predicate outside the schema (unknown operator, missing fact, bad shape)."""
+    """Raise CLAUSE_INVALID for a predicate outside clause-condition.v1."""
     if pred is None:
         return
-    if not isinstance(pred, dict) or len(pred) == 0:
+    if not isinstance(pred, dict) or not pred:
         raise GymError("CLAUSE_INVALID", f"{where}: a predicate must be an object")
     if "all" in pred or "any" in pred:
         key = "all" if "all" in pred else "any"
@@ -64,10 +73,13 @@ def validate(pred, where="condition"):
         return
     if not isinstance(pred.get("fact"), str) or not pred["fact"]:
         raise GymError("CLAUSE_INVALID", f"{where}: 'fact' is required")
-    if pred.get("op") not in OPS:
-        raise GymError("CLAUSE_INVALID", f"{where}: unknown operator {pred.get('op')!r}")
-    if pred["op"] in ("in", "not_in") and not isinstance(pred.get("value"), list):
-        raise GymError("CLAUSE_INVALID", f"{where}: '{pred['op']}' needs a list value")
+    op = pred.get("op")
+    if op not in OPS:
+        raise GymError("CLAUSE_INVALID", f"{where}: unknown operator {op!r}")
+    if op in ("in", "not_in") and not isinstance(pred.get("value"), list):
+        raise GymError("CLAUSE_INVALID", f"{where}: '{op}' needs a list value")
+    if op == "between" and not (isinstance(pred.get("value"), list) and len(pred["value"]) == 2):
+        raise GymError("CLAUSE_INVALID", f"{where}: 'between' needs [low, high]")
 
 
 def facts_in(pred):
@@ -78,6 +90,14 @@ def facts_in(pred):
     if "not" in pred:
         return facts_in(pred["not"])
     return {pred["fact"]}
+
+
+def _zen_cmp(f, op, v):
+    lit = json.dumps(v, ensure_ascii=False)
+    if isinstance(v, str) and _ISO_DATE.match(v):
+        # ZEN orders dates, not strings: an ISO date compares as date(...) on both sides.
+        return f"date({f}) {_ZEN_OP[op]} date({lit})"
+    return f"{f} {_ZEN_OP[op]} {lit}"
 
 
 def compile_zen(pred):
@@ -91,24 +111,29 @@ def compile_zen(pred):
     if "not" in pred:
         return f"not ({compile_zen(pred['not'])})"
     f, op, v = pred["fact"], pred["op"], pred.get("value")
-    lit = json.dumps(v, ensure_ascii=False)
-    if op == "exists":
+    if op == "present":
         return f"{f} != null"
+    if op == "absent":
+        return f"{f} == null"
     if op == "in":
-        return f"{f} in {lit}"
+        return f"{f} in {json.dumps(v, ensure_ascii=False)}"
     if op == "not_in":
-        return f"not ({f} in {lit})"
-    if op in ("lt", "lte", "gt", "gte") and isinstance(v, str) and _ISO_DATE.match(v):
-        # ZEN orders dates, not strings: an ISO date (or date-time) compares as date(...) on both sides.
-        return f"date({f}) {_ZEN_OP[op]} date({lit})"
-    return f"{f} {_ZEN_OP[op]} {lit}"
+        return f"not ({f} in {json.dumps(v, ensure_ascii=False)})"
+    if op == "between":
+        return f"({_zen_cmp(f, 'gte', v[0])} and {_zen_cmp(f, 'lte', v[1])})"
+    if op in ("eq", "ne"):
+        return f"{f} {_ZEN_OP[op]} {json.dumps(v, ensure_ascii=False)}"
+    return _zen_cmp(f, op, v)
 
 
 def _leaf(pred, facts):
     f, op, v = pred["fact"], pred["op"], pred.get("value")
-    if op == "exists":
-        return f in facts and facts[f] is not None
-    if f not in facts or facts[f] is None:
+    known = f in facts and facts[f] is not None
+    if op == "present":
+        return known
+    if op == "absent":
+        return not known
+    if not known:
         return None
     x = facts[f]
     try:
@@ -121,9 +146,26 @@ def _leaf(pred, facts):
             "lte": lambda: x <= v,
             "gt": lambda: x > v,
             "gte": lambda: x >= v,
+            "between": lambda: v[0] <= x <= v[1],
         }[op]()
     except TypeError:
         return False  # a value of the wrong type never satisfies an ordering
+
+
+def plain(pred, actual=None):
+    """A comparison in plain language: its label, or 'fact is value', with the case's value when given."""
+    if pred.get("label"):
+        text = pred["label"]
+    else:
+        v = pred.get("value")
+        if pred["op"] == "between":
+            shown = f" {v[0]} and {v[1]}"
+        elif pred["op"] in ("present", "absent"):
+            shown = ""
+        else:
+            shown = " " + (", ".join(map(str, v)) if isinstance(v, list) else str(v))
+        text = f"{pred['fact']} {_WORDS[pred['op']]}{shown}"
+    return text + (f" (it is {actual})" if actual is not None else "")
 
 
 def evaluate(pred, facts):
@@ -148,14 +190,7 @@ def evaluate(pred, facts):
         elif r:
             trace["matched"][p["fact"]] = facts.get(p["fact"])
         else:
-            trace["failed"].append(
-                {
-                    "fact": p["fact"],
-                    "op": p["op"],
-                    "value": p.get("value"),
-                    "actual": facts.get(p["fact"]),
-                }
-            )
+            trace["failed"].append(plain(p, facts.get(p["fact"])))
         return r
 
     out = go(pred)
@@ -163,30 +198,84 @@ def evaluate(pred, facts):
     return out, trace
 
 
-# --- task clauses and facts ---------------------------------------------------------------------------------
+# --- task clauses, bindings and facts -----------------------------------------------------------------------
 
 
 def task_clauses(actor):
     """The clause versions a task selected (empty list: no clauses, the run behaves exactly as before)."""
     actor = actor or {}
-    s4 = (
-        ((actor.get("sections") or {}).get("S4") or {})
-        if isinstance(actor.get("sections"), dict)
-        else {}
-    )
-    found = (s4.get("policyBindings") if isinstance(s4, dict) else None) or actor.get(
-        "policy_clauses"
-    )
+    sections = actor.get("sections") if isinstance(actor.get("sections"), dict) else {}
+    s4 = sections.get("S4") if isinstance(sections.get("S4"), dict) else {}
+    found = s4.get("policyBindings") or actor.get("policy_clauses")
     return [c for c in (found or []) if isinstance(c, dict)]
 
 
-def check_clause(clause):
-    for key in ("clause_id", "clause_version"):
+def normal(cl):
+    """(clause, approval) identities of a selected clause, from the contract form or the provisional flat form."""
+    if isinstance(cl.get("clause"), dict):
+        clause = dict(cl["clause"])
+    else:
+        clause = {
+            "clause_id": cl.get("clause_id"),
+            "version": cl.get("clause_version"),
+            "source": {"sha256": cl.get("source_sha256")},
+        }
+    approval = (
+        dict(cl["approval"])
+        if isinstance(cl.get("approval"), dict)
+        else {"approval_id": cl.get("approval_id")}
+    )
+    return clause, approval
+
+
+def label(cl):
+    clause, _ = normal(cl)
+    return f"{clause.get('clause_id')}@{clause.get('version')}"
+
+
+def check_clause(cl):
+    clause, _ = normal(cl)
+    for key in ("clause_id", "version"):
         if not clause.get(key):
             raise GymError("CLAUSE_INVALID", f"A selected clause has no {key}")
-    validate(clause.get("condition"))
-    for i, e in enumerate(clause.get("exceptions") or []):
+    validate(cl.get("condition"))
+    for i, e in enumerate(cl.get("exceptions") or []):
         validate(e, f"exceptions[{i}]")
+
+
+def needs(cl, bindings):
+    """{tools, evidence, checks}: from the template's embedded policy_bindings, else the provisional clause fields."""
+    clause, _ = normal(cl)
+    for entry in (bindings or {}).get("clauses") or []:
+        if entry.get("clause_id") == clause["clause_id"] and entry.get("clause_version") in (
+            None,
+            clause.get("version"),
+        ):
+            n = entry.get("needs") or {}
+            return {
+                "tools": list(n.get("tools") or []),
+                "evidence": list(n.get("evidence") or []),
+                "checks": list(n.get("checks") or []),
+            }
+    if bindings and bindings.get("obligation_checks") is not None:
+        checks = [
+            {"criterion_id": o["criterion_id"], "block_ids": list(o.get("block_ids") or [])}
+            for o in bindings["obligation_checks"]
+            if o.get("clause_id") == clause["clause_id"]
+        ]
+        return {"tools": [], "evidence": [], "checks": checks}
+    ob = cl.get("obligation") or {}
+    return {
+        "tools": list(ob.get("tools") or []),
+        "evidence": list(ob.get("evidence") or []),
+        "checks": [{"criterion_id": c, "block_ids": []} for c in cl.get("criteria") or []],
+    }
+
+
+def _env_catalog(env):
+    cat = (env or {}).get("facts")
+    items = cat.get("facts") if isinstance(cat, dict) else cat
+    return {f["id"]: f for f in items or [] if isinstance(f, dict) and f.get("id")}
 
 
 def _path(root, path):
@@ -199,148 +288,212 @@ def _path(root, path):
     return cur, True
 
 
-def _fact_value(clause, name, case, evidence):
-    """(value, available). A fact is read through the template's binding; unbound facts are read from the case
-    row's `facts` by their logical name. `evidence` is None before the episode (static facts only)."""
-    binding = (clause.get("facts") or {}).get(name) or {"source": "case", "path": name}
-    if binding.get("source") == "evidence":
+def _fact(cl, name, case, env, bindings, evidence):
+    """(value, available, source). The logical fact is read through the template's binding to the environment's
+    fact: case_data facts from the case row, episode_evidence facts from the sealed evidence (after the episode)."""
+    if bindings and bindings.get("facts") is not None:
+        env_fact = next(
+            (b["environment_fact"] for b in bindings["facts"] if b.get("fact") == name), None
+        )
+        if env_fact is None:
+            return None, False, None  # a binding gap: coverage() reports it as a setup gap
+        spec = _env_catalog(env).get(env_fact) or {}
+        src = spec.get("source") or {}
+        if spec.get("availability") == "episode_evidence":
+            if evidence is None:
+                return None, False, None
+            path = src.get("path") or f"facts.{env_fact}"
+            v, ok = _path(evidence, path)
+            return v, ok and v is not None, path
+        where = (
+            f"case_data:{src['collection']}.{src['field']}"
+            if src.get("collection") and src.get("field")
+            else f"case_data:facts.{env_fact}"
+        )
+        v, ok = _path((case or {}).get("facts") or {}, env_fact)
+        return v, ok and v is not None, where
+    # Provisional binding on the clause, or the logical name itself on the case row.
+    b = (cl.get("facts") or {}).get(name) or {"source": "case", "path": name}
+    if b.get("source") == "evidence":
         if evidence is None:
-            return None, False
-        return _path(evidence, binding["path"])
-    facts = (case or {}).get("facts") or {}
-    v, ok = _path(facts, binding["path"])
-    return (v, ok and v is not None)
+            return None, False, None
+        v, ok = _path(evidence, b["path"])
+        return v, ok and v is not None, b["path"]
+    v, ok = _path((case or {}).get("facts") or {}, b["path"])
+    return v, ok and v is not None, f"case_data:facts.{b['path']}"
 
 
-def coverage(clause, env):
-    """Setup gaps for one clause on the bound environment version: obligation tools it does not offer and evidence
-    collections it does not capture. An empty list means the clause can be evaluated."""
+def _tables(env):
     env = env or {}
-    ops = {o.get("operation_id") if isinstance(o, dict) else o for o in env.get("operations") or []}
-    if isinstance(env.get("tools"), list):
-        ops |= {t.get("name") if isinstance(t, dict) else t for t in env["tools"]}
-    # Declared collections: Studio's schema is {"collections": [{"name": ...}]}; older records list table names.
-    cols = (
-        (env.get("schema") or {}).get("collections")
-        if isinstance(env.get("schema"), dict)
-        else None
-    )
+    schema = env.get("schema") if isinstance(env.get("schema"), dict) else {}
+    cols = schema.get("collections")
     if isinstance(cols, dict):
         tables = set(cols)
     else:
         tables = {c.get("name") if isinstance(c, dict) else c for c in cols or []}
-    tables |= set(env.get("schema_tables") or [])
-    ob = clause.get("obligation") or {}
+    return tables | set(env.get("schema_tables") or [])
+
+
+def coverage(cl, env, bindings=None):
+    """Setup gaps for one clause on the bound environment version, in clause-receipt.v1 form: obligation tools it does
+    not offer, tables it does not capture, and condition facts the template does not bind."""
+    env = env or {}
+    ops = {o.get("operation_id") if isinstance(o, dict) else o for o in env.get("operations") or []}
+    if isinstance(env.get("tools"), list):
+        ops |= {t.get("name") if isinstance(t, dict) else t for t in env["tools"]}
+    n = needs(cl, bindings)
     gaps = [
-        {"kind": "tool", "name": t, "detail": f"The environment offers no operation {t}"}
-        for t in ob.get("tools") or []
+        {"kind": "tool", "ref": t, "message": f"The environment offers no operation {t}"}
+        for t in n["tools"]
         if t not in ops
     ]
+    tables = _tables(env)
     gaps += [
-        {"kind": "evidence", "name": t, "detail": f"The environment does not capture {t}"}
-        for t in ob.get("evidence") or []
+        {"kind": "evidence", "ref": t, "message": f"The environment does not capture {t}"}
+        for t in n["evidence"]
         if t not in tables
     ]
+    if bindings and bindings.get("facts") is not None:
+        bound = {b.get("fact") for b in bindings["facts"]}
+        names = facts_in(cl.get("condition")).union(
+            *(facts_in(e) for e in cl.get("exceptions") or [])
+        )
+        gaps += [
+            {
+                "kind": "fact_binding",
+                "ref": f,
+                "message": f"The template binds no environment fact to {f}",
+            }
+            for f in sorted(names - bound)
+        ]
     return gaps
 
 
-def identity(clause):
+def _scenario(outcome, clause, detail):
+    name = clause.get("title") or clause.get("clause_id")
     return {
-        "clause": {"id": clause.get("clause_id"), "version": clause.get("clause_version")},
-        "approval_id": clause.get("approval_id"),
-        "binding_revision": clause.get("binding_revision"),
-        "source_sha256": clause.get("source_sha256"),
-    }
+        "applies": f"{name} applies ({detail}); its checks are scored.",
+        "skipped": f"{name} does not apply ({detail}); its checks are not scored.",
+        "unresolved": f"{name} cannot be resolved ({detail}); excluded from the score.",
+        "setup_gap": f"{name} cannot be evaluated ({detail}); never scored.",
+    }[outcome]
 
 
-def resolve(clause, case, env, evidence=None):
-    """One receipt for one clause on one case. Before the episode pass evidence=None (static facts only); after the
-    episode pass the sealed evidence, so facts bound to evidence and captured collections are read."""
-    check_clause(clause)
-    cond, exceptions = clause.get("condition"), clause.get("exceptions") or []
-    names = sorted(
-        facts_in(cond).union(*(facts_in(e) for e in exceptions)) if exceptions else facts_in(cond)
-    )
-    facts, unavailable = {}, []
+def _receipt_id(r):
+    body = json.dumps({**r, "receipt_id": ""}, sort_keys=True, default=str).encode()
+    return "cr-" + hashlib.sha256(body).hexdigest()[:16]
+
+
+def resolve(cl, case, env, evidence=None, bindings=None, context=None):
+    """→ (receipt per clause-receipt.v1, engine note). Before the episode pass evidence=None (static facts only);
+    after the episode pass the sealed evidence. `context`: run_id, episode_id, task, binding identity."""
+    check_clause(cl)
+    context = context or {}
+    clause, approval = normal(cl)
+    cond, exceptions = cl.get("condition"), cl.get("exceptions") or []
+    names = sorted(facts_in(cond).union(*(facts_in(e) for e in exceptions)))
+    facts, used, dynamic = {}, [], False
     for n in names:
-        v, ok = _fact_value(clause, n, case, evidence)
+        v, ok, source = _fact(cl, n, case, env, bindings, evidence)
+        if source and not source.startswith("case_data:"):
+            dynamic = True
         if ok:
             facts[n] = v
-        else:
-            unavailable.append(n)
-    receipt = {
-        "schema": SCHEMA,
-        **identity(clause),
-        "case_id": (case or {}).get("case_id"),
-        "condition": cond,
-        "exceptions": exceptions,
-        "zen_expression": compile_zen(cond),
-        "facts_used": facts,
-        "consumed_by": list(clause.get("criteria") or []),
+            used.append(
+                {"fact": n, "value": None if isinstance(v, (dict, list)) else v, "source": source}
+            )
+    binding = {
+        k: v
+        for k, v in {
+            **(context.get("binding") or {}),
+            "fact_catalog": (bindings or {}).get("fact_catalog"),
+            "binding_revision": (bindings or {}).get("binding_revision"),
+        }.items()
+        if v is not None
     }
-    gaps = coverage(clause, env)
+    n = needs(cl, bindings)
+    receipt = {
+        "schema_version": SCHEMA,
+        "receipt_id": "",
+        "run_id": context.get("run_id") or "",
+        "episode_id": context.get("episode_id") or "",
+        "case_id": (case or {}).get("case_id") or "",
+        **({"task": context["task"]} if context.get("task") else {}),
+        "clause": clause,
+        "approval": approval,
+        "binding": binding,
+        "condition": cond,
+        "phase": "dynamic" if dynamic or (evidence is not None and n["evidence"]) else "static",
+        "facts_used": used,
+        "consumed_by": [
+            {"criterion_id": c["criterion_id"], "block_ids": list(c.get("block_ids") or [])}
+            for c in n["checks"]
+        ],
+    }
+    engine = {"zen_expression": compile_zen(cond)}
+
+    def done(outcome, detail, **extra):
+        r = {**receipt, **extra, "outcome": outcome, "scored": outcome == "applies"}
+        r["scenario"] = _scenario(outcome, clause, detail)
+        r["receipt_id"] = _receipt_id(r)
+        return r, engine
+
+    gaps = coverage(cl, env, bindings)
     if gaps:
-        return {**receipt, "outcome": "setup_gap", "setup_gaps": gaps}
+        return done("setup_gap", "; ".join(g["message"] for g in gaps), setup_gaps=gaps)
     ok, trace = evaluate(cond, facts)
     if ok is None:
-        return {**receipt, "outcome": "unresolved", "missing_facts": trace["missing"]}
+        return done(
+            "unresolved",
+            "no value for " + ", ".join(trace["missing"]),
+            missing_facts=trace["missing"],
+        )
     if ok is False:
-        return {**receipt, "outcome": "skipped", "failed": trace["failed"]}
-    for i, e in enumerate(exceptions):
+        return done("skipped", "; ".join(trace["failed"]), failed_conditions=trace["failed"])
+    for e in exceptions:
         hit, etrace = evaluate(e, facts)
         if hit is None:
-            return {**receipt, "outcome": "unresolved", "missing_facts": etrace["missing"]}
+            return done(
+                "unresolved",
+                "no value for " + ", ".join(etrace["missing"]),
+                missing_facts=etrace["missing"],
+            )
         if hit:
-            return {
-                **receipt,
-                "outcome": "skipped",
-                "exception": {"index": i, "matched": etrace["matched"]},
-            }
-    out = {**receipt, "outcome": "applies", "matched": trace["matched"]}
+            text = "exception holds: " + (plain(e) if "fact" in e else compile_zen(e))
+            engine["exception"] = True
+            return done("skipped", text, failed_conditions=[text])
+    matched = ", ".join(f"{k} = {v}" for k, v in trace["matched"].items()) or "no condition"
     if evidence is not None:
-        # A check that reads a collection the episode did not capture cannot tell a failure from missing evidence.
-        missing = [
-            t
-            for t in (clause.get("obligation") or {}).get("evidence") or []
-            if not _path(evidence, f"snapshots.end.{t}")[1]
-        ]
+        # A check that reads a table the episode did not capture cannot tell a failure from missing evidence.
+        missing = [t for t in n["evidence"] if not _path(evidence, f"snapshots.end.{t}")[1]]
         if missing:
-            return {
-                **out,
-                "outcome": "setup_gap",
-                "setup_gaps": [
-                    {
-                        "kind": "evidence",
-                        "name": t,
-                        "detail": f"{t} was not captured in this episode",
-                    }
-                    for t in missing
-                ],
-            }
-    return out
+            gaps = [
+                {"kind": "evidence", "ref": t, "message": f"{t} was not captured in this episode"}
+                for t in missing
+            ]
+            return done("setup_gap", "; ".join(g["message"] for g in gaps), setup_gaps=gaps)
+    return done("applies", matched)
 
 
-def receipts(clauses, case, env, evidence=None, episode_id=None, zen=None, invoke=None):
-    """One receipt per clause; with `zen` (the qualified ZEN plug-in's manifest) each decided condition is replayed on
-    it before the receipts are hashed."""
-    out = [resolve(cl, case, env, evidence) for cl in clauses]
+def receipts(clauses, case, env, evidence=None, bindings=None, context=None, zen=None, invoke=None):
+    """→ (receipts, engine notes). With `zen` (the qualified ZEN plug-in's manifest) each decided condition is
+    replayed on it; receipt ids are computed after that, so a changed outcome changes the id."""
+    pairs = [resolve(cl, case, env, evidence, bindings, context) for cl in clauses]
+    out, notes = [r for r, _ in pairs], [e for _, e in pairs]
     if zen:
-        zen_confirm(out, zen, invoke=invoke)
-    for r in out:
-        if episode_id:
-            r["episode_id"] = episode_id
-        r["receipt_sha256"] = hashlib.sha256(
-            json.dumps(r, sort_keys=True, default=str).encode()
-        ).hexdigest()
-    return out
+        zen_confirm(out, notes, zen, invoke=invoke)
+    for r, note in zip(out, notes, strict=True):
+        r["receipt_id"] = _receipt_id(r)
+        note["receipt_id"] = r["receipt_id"]
+    return out, notes
 
 
 # --- admission and scoring -----------------------------------------------------------------------------------
 
 
-def admission_gaps(tasks, env):
-    """Per task, the clauses whose tools or evidence the bound environment lacks, plus invalid clauses.
-    Any entry blocks the run (E-002 §9.2): a setup gap is fixed before the run, never scored."""
+def admission_gaps(tasks, env, bindings=None):
+    """Per task, invalid clauses and the clauses whose tools, evidence or fact bindings the bound environment and
+    template lack. Any entry blocks the run (E-002 §9.2): a setup gap is fixed before the run, never scored."""
     problems = []
     for t in tasks:
         for cl in task_clauses(t.get("actor")):
@@ -348,27 +501,19 @@ def admission_gaps(tasks, env):
                 check_clause(cl)
             except GymError as exc:
                 problems.append(
-                    {
-                        "task_id": t.get("task_id"),
-                        "clause": cl.get("clause_id"),
-                        "detail": exc.message,
-                    }
+                    {"task_id": t.get("task_id"), "clause": label(cl), "detail": exc.message}
                 )
                 continue
-            for g in coverage(cl, env):
+            for g in coverage(cl, env, bindings):
                 problems.append(
-                    {
-                        "task_id": t.get("task_id"),
-                        "clause": f"{cl['clause_id']}@{cl['clause_version']}",
-                        "detail": g["detail"],
-                    }
+                    {"task_id": t.get("task_id"), "clause": label(cl), "detail": g["message"]}
                 )
     return problems
 
 
 def edge_holds(tasks, case_list, env_id):
     """Tasks focused on an edge case the bound version has no cases for: held, not failed mid-run (E-001 §3.6).
-    Counted from the version's case list (the per-case tags), not its summary."""
+    Counted from the version's case rows (their tags), not its summary."""
     have = {}
     for c in case_list or []:
         for tag in c.get("edge_cases") or []:
@@ -389,13 +534,13 @@ def edge_holds(tasks, case_list, env_id):
 
 def criterion_effects(receipts_):
     """criterion_id → how its clause receipts change scoring:
-    - None: at least one consuming clause applies (or none consumes it) → scored normally;
+    - absent: at least one consuming clause applies (or none consumes it) → scored normally;
     - "not_applicable": every consuming clause was skipped → not scored (not a pass, not a fail);
     - "unresolved" / "setup_gap": excluded from the score and reported."""
     by = {}
     for r in receipts_ or []:
-        for cid in r.get("consumed_by") or []:
-            by.setdefault(cid, []).append(r["outcome"])
+        for c in r.get("consumed_by") or []:
+            by.setdefault(c["criterion_id"], []).append(r["outcome"])
     effects = {}
     for cid, outs in by.items():
         if "applies" in outs:
@@ -436,37 +581,38 @@ def zen_rules(expression):
     }
 
 
-def zen_confirm(receipts_, manifest, invoke=None):
-    """Replay every decided condition (Applies or Skipped on the condition, all its facts known) on the qualified ZEN
-    plug-in and record the engine's answer on the receipt. If the plug-in and the resolver disagree, the clause becomes
-    a Setup gap (never scored) and says so; if the plug-in cannot run, the resolver's answer stands and the receipt
-    says the engine was not run. Receipts without a condition, or Unresolved / Setup gap ones, are left as they are."""
+def zen_confirm(receipts_, notes, manifest, invoke=None):
+    """Replay every decided condition (Applies, or Skipped on the condition) on the qualified ZEN plug-in; the
+    engine's answer goes to the note. A disagreement turns the receipt into a Setup gap (never scored); a plug-in that
+    cannot run leaves the resolver's answer, marked not_run. Unresolved, setup-gap, unconditional and exception-skipped
+    clauses are not sent."""
     from anvil.rlgym.plugins import contract, runner
 
     todo = [
-        r
-        for r in receipts_
+        i
+        for i, r in enumerate(receipts_)
         if r.get("condition")
-        and (r["outcome"] == "applies" or (r["outcome"] == "skipped" and "failed" in r))
+        and r["outcome"] in ("applies", "skipped")
+        and not notes[i].get("exception")
     ]
     if not todo:
-        return receipts_
-    label = f"{manifest.get('id')} {manifest.get('version')}"
-    files, blocks = {}, []
-    for i, r in enumerate(todo):
-        rules = zen_rules(r["zen_expression"])
+        return
+    name = f"{manifest.get('id')} {manifest.get('version')}"
+    files, blocks, facts = {}, [], {}
+    for i in todo:
+        r = receipts_[i]
+        rules = zen_rules(notes[i]["zen_expression"])
         digest = contract.jcs_sha256(rules)
         files[digest] = rules
+        known = {u["fact"]: u["value"] for u in r["facts_used"]}
+        facts[str(i)] = known
         blocks.append(
             {
                 "id": f"clause-{i}",
                 "settings": {
                     "mode": "rule_check",
-                    "rules": {
-                        "ref": f"clause:{r['clause']['id']}@{r['clause']['version']}",
-                        "sha256": digest,
-                    },
-                    "inputs": {name: f"clause_facts.{i}.{name}" for name in r["facts_used"]},
+                    "rules": {"ref": f"clause:{r['clause']['clause_id']}", "sha256": digest},
+                    "inputs": {f: f"clause_facts.{i}.{f}" for f in known},
                 },
             }
         )
@@ -474,7 +620,7 @@ def zen_confirm(receipts_, manifest, invoke=None):
         "schema": contract.JOB,
         "blocks": blocks,
         "files": files,
-        "evidence": {"clause_facts": {str(i): r["facts_used"] for i, r in enumerate(todo)}},
+        "evidence": {"clause_facts": facts},
     }
     lines, why = {}, "no result"
     try:
@@ -482,24 +628,26 @@ def zen_confirm(receipts_, manifest, invoke=None):
         lines = {x["block_id"]: x for x in out["results"]}
     except Exception as exc:  # noqa: BLE001 - the plug-in is a cross-check; its absence never blocks a receipt
         why = type(exc).__name__
-    for i, r in enumerate(todo):
+    for i in todo:
+        r, note = receipts_[i], notes[i]
         line = lines.get(f"clause-{i}")
         if not line or line["verdict"] == "blocked":
-            reason = (line or {}).get("detail") or why
-            r["engine"] = {"plugin": label, "result": "not_run", "detail": str(reason)[:200]}
+            note["engine"] = {
+                "plugin": name,
+                "result": "not_run",
+                "detail": str((line or {}).get("detail") or why)[:200],
+            }
             continue
         zen_applies = line["verdict"] == "pass"
         agrees = zen_applies == (r["outcome"] == "applies")
-        r["engine"] = {"plugin": label, "result": "agrees" if agrees else "disagrees"}
+        note["engine"] = {"plugin": name, "result": "agrees" if agrees else "disagrees"}
         if not agrees:
-            r["outcome_before_engine"] = r["outcome"]
-            r["outcome"] = "setup_gap"
-            r["setup_gaps"] = [
-                {
-                    "kind": "engine",
-                    "name": ZEN_PLUGIN,
-                    "detail": f"The ZEN plug-in says {'applies' if zen_applies else 'does not apply'}; "
-                    f"the resolver said {r['outcome_before_engine']}",
-                }
-            ]
-    return receipts_
+            note["outcome_before_engine"] = r["outcome"]
+            r.pop("failed_conditions", None)
+            r["outcome"], r["scored"] = "setup_gap", False
+            msg = (
+                f"the ZEN plug-in says the clause {'applies' if zen_applies else 'does not apply'}, "
+                f"the resolver said {note['outcome_before_engine']}"
+            )
+            r["setup_gaps"] = [{"kind": "fact_binding", "ref": ZEN_PLUGIN, "message": msg}]
+            r["scenario"] = _scenario("setup_gap", r["clause"], msg)

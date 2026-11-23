@@ -397,17 +397,20 @@ def clause_outcomes(d):
                 why = (
                     "missing facts: " + ", ".join(r.get("missing_facts") or [])
                     if r["outcome"] == "unresolved"
-                    else "; ".join(g["detail"] for g in r.get("setup_gaps") or [])
+                    else "; ".join(g["message"] for g in r.get("setup_gaps") or [])
                 )
                 not_evaluated.append(
                     {
                         "episode_id": e["id"],
                         "case_id": e["case_id"],
                         "task_id": e["task_id"],
-                        "clause": f"{r['clause']['id']}@{r['clause']['version']}",
+                        "clause": f"{r['clause']['clause_id']}@{r['clause']['version']}",
                         "outcome": r["outcome"],
                         "why": why,
-                        "excluded_criteria": r.get("consumed_by") or [],
+                        "scenario": r.get("scenario"),
+                        "excluded_criteria": [
+                            c["criterion_id"] for c in r.get("consumed_by") or []
+                        ],
                     }
                 )
     return {"counts": counts, "not_evaluated": not_evaluated}

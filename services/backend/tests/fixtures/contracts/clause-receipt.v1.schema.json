@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adi-labs:utility:clause-receipt:v1",
+  "title": "Clause receipt v1 (E-002 §3a, §4.3; owner decision 9.2)",
+  "description": "One per episode and selected clause, written by the RL Gym. It keeps all three identities (reusable clause version, project approval, template binding) and says whether the clause applied and why, and which criteria consumed it. Outcomes: applies (its obligation checks are scored pass or fail), skipped (not scored), unresolved (a fact the condition needs has no value on this case: excluded from the score and reported), setup_gap (a tool, evidence source or binding is missing: the run is blocked at admission, so a setup_gap receipt appears only if a gap is first found after the episode).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "receipt_id", "run_id", "episode_id", "case_id", "clause", "approval", "binding", "condition", "outcome", "scored"],
+  "properties": {
+    "schema_version": { "const": "adi.utility.clause-receipt.v1" },
+    "receipt_id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "episode_id": { "type": "string", "minLength": 1 },
+    "case_id": { "type": "string", "minLength": 1 },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "task_id": { "type": "string" }, "task_revision": { "type": "integer", "minimum": 1 } }
+    },
+    "clause": {
+      "description": "The reusable clause version (Authoring).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["clause_id", "version", "source"],
+      "properties": {
+        "clause_id": { "type": "string", "minLength": 1 },
+        "version": { "type": "integer", "minimum": 1 },
+        "title": { "type": "string" },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["document_id", "document_version", "sha256"],
+          "properties": {
+            "document_id": { "type": "string" },
+            "document_version": { "type": "integer", "minimum": 1 },
+            "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            "locator": { "type": "string" }
+          }
+        }
+      }
+    },
+    "approval": {
+      "description": "The project approval that pinned this clause version (Authoring).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approval_id", "project_id"],
+      "properties": {
+        "approval_id": { "type": "string", "minLength": 1 },
+        "project_id": { "type": "string", "minLength": 1 },
+        "approved_by": { "type": "string" },
+        "approved_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "binding": {
+      "description": "The template binding the facts were read through (Studio).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["template_id", "template_version", "environment_version_id"],
+      "properties": {
+        "template_id": { "type": "string" },
+        "template_version": { "type": "integer", "minimum": 1 },
+        "binding_revision": { "type": "integer", "minimum": 1 },
+        "environment_version_id": { "type": "string" },
+        "fact_catalog": { "type": "string", "description": "catalog_id@version of the environment's fact catalog." }
+      }
+    },
+    "condition": { "$ref": "urn:adi-labs:utility:clause-condition:v1" },
+    "phase": {
+      "description": "static: resolved at admission from case data; dynamic: resolved after the episode from sealed evidence.",
+      "enum": ["static", "dynamic"]
+    },
+    "outcome": { "enum": ["applies", "skipped", "unresolved", "setup_gap"] },
+    "facts_used": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["fact", "value", "source"],
+        "properties": {
+          "fact": { "type": "string" },
+          "value": { "type": ["string", "number", "boolean", "null"] },
+          "source": { "type": "string", "description": "case_data:<collection>.<field>, or the evidence path read." }
+        }
+      }
+    },
+    "failed_conditions": {
+      "description": "skipped: each comparison that was false, in plain language.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "missing_facts": { "description": "unresolved: the facts with no value on this case.", "type": "array", "items": { "type": "string" } },
+    "setup_gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "ref"],
+        "properties": {
+          "kind": { "enum": ["tool", "evidence", "fact_binding"] },
+          "ref": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    },
+    "consumed_by": {
+      "description": "The criteria and verifier blocks that scored the obligation (applies only).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["criterion_id", "block_ids"],
+        "properties": {
+          "criterion_id": { "type": "string" },
+          "block_ids": { "type": "array", "items": { "type": "string" } },
+          "verdict": { "enum": ["pass", "partial", "fail", "blocked"] }
+        }
+      }
+    },
+    "scored": { "type": "boolean", "description": "true only for applies." },
+    "scenario": { "type": "string", "description": "Plain-language summary shown in the run report (owner decision 9.2)." }
+  }
+}

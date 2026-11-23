@@ -78,6 +78,7 @@ def validate(c, ws, doc):
         )
     checks += _verifier_checks(c, ws, doc, bound)
     checks += _edge_case_checks(doc)
+    checks += _policy_binding_checks(doc)
     checks += _file_checks(doc)
     checks.append(
         {
@@ -183,6 +184,47 @@ def _edge_case_checks(doc):
             "check": "edge_cases_valid",
             "ok": not reasons,
             "edge_cases": len(edges),
+            "reason": "; ".join(reasons) or None,
+            "reasons": reasons,
+        }
+    ]
+
+
+def _policy_binding_checks(doc):
+    """E-002 (optional): the release's policy_bindings. Every check a clause names must be a criterion of this template
+    and its blocks must be that criterion's verifier blocks, so a clause receipt's consumed_by is always real. No
+    policy_bindings: no check, the template validates as before."""
+    pb = doc.get("policy_bindings")
+    if not pb:
+        return []
+    blocks = {
+        cr["criterion_id"]: {b.get("id") for b in cr.get("verifier_blocks") or []}
+        for cr in doc.get("criteria") or []
+    }
+    reasons = []
+    if not pb.get("fact_catalog"):
+        reasons.append("policy_bindings has no fact_catalog")
+    for f in pb.get("facts") or []:
+        if not (f.get("fact") and f.get("environment_fact")):
+            reasons.append(f"fact binding {f!r} needs fact and environment_fact")
+    entries = [
+        (e.get("clause_id"), c)
+        for e in pb.get("clauses") or []
+        for c in ((e.get("needs") or {}).get("checks") or [])
+    ] + [(o.get("clause_id"), o) for o in pb.get("obligation_checks") or []]
+    for clause_id, chk in entries:
+        cid = chk.get("criterion_id")
+        if cid not in blocks:
+            reasons.append(f"{clause_id}: criterion {cid} is not in this template")
+            continue
+        for b in chk.get("block_ids") or []:
+            if b not in blocks[cid]:
+                reasons.append(f"{clause_id}: block {b} is not a verifier block of {cid}")
+    return [
+        {
+            "check": "policy_bindings_valid",
+            "ok": not reasons,
+            "clauses": len(pb.get("clauses") or []),
             "reason": "; ".join(reasons) or None,
             "reasons": reasons,
         }
@@ -364,8 +406,9 @@ def activate(c, ws, actor, doc):
     row = c.execute(
         """INSERT INTO catalog.template_activations(workspace_id,template_id,version,template_key,name,mode,spec_sha256,template_sha256,
              forge_template_id,forge_version,studio_release,default_bindings,workflow,case_dimensions,pass_mark,checks,state,state_reason,
-             activated_at,activated_by,forge_template_version_hash,expected_values_from,failure_taxonomy,edge_cases,slice_lists,verifier_files)
-           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
+             activated_at,activated_by,forge_template_version_hash,expected_values_from,failure_taxonomy,edge_cases,slice_lists,verifier_files,
+             policy_bindings)
+           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
         (
             ws,
             doc["template_id"],
@@ -392,6 +435,7 @@ def activate(c, ws, actor, doc):
             Jsonb(doc["edge_cases"]) if doc.get("edge_cases") else None,
             Jsonb(doc["slice_lists"]) if doc.get("slice_lists") else None,
             Jsonb(doc["verifier_files"]) if doc.get("verifier_files") else None,
+            Jsonb(doc["policy_bindings"]) if doc.get("policy_bindings") else None,
         ),
     ).fetchone()
     for cr in doc["criteria"]:

@@ -91,15 +91,19 @@ def _section(key, sec):
         if chosen:
             lines.append("These policy clauses apply where their conditions hold:")
             for b in chosen:
+                # clause-receipt.v1 identity ({clause: {clause_id, version, title, source}}) or the flat form.
+                ident = b["clause"] if isinstance(b.get("clause"), dict) else {}
+                cid = ident.get("clause_id") or b.get("clause_id")
+                ver = ident.get("version") or b.get("clause_version")
+                loc = _text((ident.get("source") or {}).get("locator")) or _text(b.get("locator"))
                 body = (
                     _text(b.get("text"))
                     or _text(b.get("quote"))
+                    or _text(ident.get("title"))
                     or "(text available through policy.read)"
                 )
-                where = f" [{_text(b.get('locator'))}]" if _text(b.get("locator")) else ""
-                lines.append(
-                    f"- Clause {b.get('clause_id')} v{b.get('clause_version')}{where}: {body}"
-                )
+                where = f" [{loc}]" if loc else ""
+                lines.append(f"- Clause {cid} v{ver}{where}: {body}")
         return lines + _fields(
             {k: v for k, v in sec.items() if k not in ("statePolicies", "policyBindings")}, ()
         )

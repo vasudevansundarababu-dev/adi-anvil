@@ -290,7 +290,9 @@ def admission_check(ctx, body):
         resolved["env"] = env
         if clause_tasks and env:
             # E-002 §9.2: a tool or evidence source a selected clause needs is a setup gap; it blocks the run here.
-            gaps = clauses.admission_gaps(clause_tasks, env["version"])
+            pb = (resolved.get("activation") or {}).get("policy_bindings")
+            resolved["policy_bindings"] = pb
+            gaps = clauses.admission_gaps(clause_tasks, env["version"], pb)
             item(
                 "policy_clauses",
                 not gaps,
@@ -689,7 +691,11 @@ def _manifest(run_id, check):
                 **(
                     {
                         "clauses": [
-                            {**clauses.identity(cl)["clause"], "approval_id": cl.get("approval_id")}
+                            {
+                                "clause": clauses.normal(cl)[0],
+                                "approval": clauses.normal(cl)[1],
+                                "condition": cl.get("condition"),
+                            }
                             for cl in clauses.task_clauses(t.get("actor"))
                         ]
                     }
@@ -702,6 +708,8 @@ def _manifest(run_id, check):
         **({"case_facts": r["case_facts"]} if r.get("case_facts") else {}),
         # E-002: the qualified ZEN plug-in that replays each clause decision (frozen here, so receipts reproduce).
         **({"clause_engine": r["clause_engine"]} if r.get("clause_engine") else {}),
+        # E-002: the template's policy bindings (fact mapping, needs per clause), frozen with the run.
+        **({"policy_bindings": r["policy_bindings"]} if r.get("policy_bindings") else {}),
         "model_set": r["model_set"],
         "models": [
             {

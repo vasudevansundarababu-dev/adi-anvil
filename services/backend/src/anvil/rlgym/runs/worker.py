@@ -408,12 +408,23 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
             "case_id": episode["case_id"],
             "facts": (m.get("case_facts") or {}).get(episode["case_id"]),
         }
-        bundle["clause_receipts"] = clauses.receipts(
+        tpl, env_id = m.get("template") or {}, m["environment"]["version_id"]
+        bundle["clause_receipts"], bundle["clause_engine"] = clauses.receipts(
             selected,
             case,
             (instance or {}).get("env"),
             evidence={"snapshots": snapshots, "tool_events": events, "final_output": final},
-            episode_id=episode["id"],
+            bindings=m.get("policy_bindings"),
+            context={
+                "run_id": episode["run_id"],
+                "episode_id": episode["id"],
+                "task": {"task_id": episode["task_id"], "task_revision": episode["task_revision"]},
+                "binding": {
+                    "template_id": tpl.get("id"),
+                    "template_version": tpl.get("version"),
+                    "environment_version_id": env_id,
+                },
+            },
             zen=m.get("clause_engine"),
         )
     return bundle

@@ -69,7 +69,12 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
     only by skipped / unresolved / setup-gap clauses (migration 054); the report lists clauses not evaluated per case.
   - **Tests:** `test_rlgym_e002_clauses_unit.py` (35: California, cross-template Marketing / Software Delivery,
     ZEN agree / disagree / not run, hold, report, unchanged behaviour without clauses). Unit suite: 567 passed.
-  - **Not done:** shapes are provisional (Studio's contract drafts had not arrived); no end-to-end run with a clause
+  - **Moved to Studio's drafts (RG-55):** clause-condition.v1 / clause-receipt.v1 / registry-case facts / release
+    policy_bindings with embedded needs (migration 055 stores them on activation, validated against the criteria and
+    blocks). Real ZEN plug-in replay re-checked: California, NY, wrong date, wrong product, Marketing and Software
+    Delivery public/internal, between: all "agrees". Unit suite: 574 passed (42 clause tests, receipts checked against
+    a copy of Studio's receipt schema in tests/fixtures/contracts).
+  - **Not done:** contracts are drafts (not final); no end-to-end run with a clause
     task (none is exported yet); dynamic facts are read only from evidence paths the binding names; no UI for receipts
     beyond the report data.
 - **23 Nov 2026, D-005 follow-up fixes (owner's go relayed by the parent session; no live run, no model call):**
