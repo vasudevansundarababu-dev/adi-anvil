@@ -2,6 +2,26 @@
 
 Local list until the owner logs them in the tracker. Newest first.
 
+## D-016 S5 step follow-ups do not reach the agent (medium)
+
+- **Found:** 23 Nov 2026, requested by the Authoring session. Authoring commits ad483ff7 and 6f6e3aac, on
+  forge-v2-authoring, add optional `followUps` to `sections.S5.steps[i]`: `[{"if"?: text, "tools": [1-2 tool IDs]}]`.
+  Status: **investigated, planned, not fixed** (waits for the parent session's "go").
+- **Checked:** `runs/instructions.py` renders a step's `action`, `tool` and `failureBehaviour` only. `followUps`,
+  and any other key inside a step, is dropped silently. Import is unaffected. The run-0228 tasks have no follow-ups.
+- **Plan:**
+  1. After the step line and before "If this fails", one line per follow-up, in order:
+     - with a condition: `   If <if>: <tool> then <tool>`;
+     - without one (a chain): `   Then: <tool>`.
+  2. Any other unknown key in a step is rendered as `   <key>: <value>` instead of being dropped, so a future field
+     always reaches the agent.
+  3. Packages without follow-ups render exactly as today, with the same text and hash.
+  4. **Tests:**
+     - the conditional follow-up and the chain;
+     - two tools joined with "then";
+     - a step without follow-ups unchanged (hash of the existing fixture unchanged);
+     - an unknown step key kept.
+
 ## D-015 Path summary sent with SME review items contradicts itself (low)
 
 - **Found:** 23 Nov 2026, from the Authoring side, on batch smr-0051 (run-0228). Assigned to the RL Gym. Status:
