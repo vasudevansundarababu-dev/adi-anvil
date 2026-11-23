@@ -387,6 +387,21 @@ def _records(output):
     return (output or {}).get("records") or []
 
 
+def id_argument(bridge, operation_id):
+    """The ID argument a read operation requires, from the environment's own operation list (`GET /operations`):
+    a required property named `*_id`, else None (the read lists its collection with no arguments)."""
+    try:
+        ops = (bridge.call("GET", "/operations").get("body") or {}).get("operations") or []
+    except Exception:  # an environment without the route: keep the listing read
+        return None
+    op = next(
+        (o for o in ops if isinstance(o, dict) and o.get("operation_id") == operation_id), None
+    )
+    schema = (op or {}).get("input_schema") or {}
+    required = [r for r in schema.get("required") or [] if isinstance(r, str) and r.endswith("_id")]
+    return required[0] if required else None
+
+
 def run_checks(bridge, env, rec, readiness_body=None):
     """identity + the six checks. Returns (checks, failure_class). Bridge errors raise (infrastructure)."""
     q = rec["qualification"]
@@ -408,14 +423,34 @@ def run_checks(bridge, env, rec, readiness_body=None):
     if not check("health", health.get("status") == 200, status=health.get("status")):
         return checks, "environment_defect"
     seed_state = bridge.ok("GET", "/state")["seed_state_sha256"]
-    listed = bridge.call(
-        "POST", "/step", {"action": {"operation_id": q["read_operation"], "arguments": {}}}
-    )
-    output = ((listed.get("body") or {}).get("observation") or {}).get("output")
-    ids = {v for r in _records(output) for k, v in r.items() if k.endswith("_id") or k == "id"}
-    found = [f for f in q["fixtures"] if f in ids]
+    key = id_argument(bridge, q["read_operation"])
+    if key:
+        # The read takes an ID (golden-kyc-openenv@7 on): read each fixture by its ID.
+        found = []
+        for f in q["fixtures"]:
+            got = bridge.call(
+                "POST",
+                "/step",
+                {"action": {"operation_id": q["read_operation"], "arguments": {key: f}}},
+            )
+            output = ((got.get("body") or {}).get("observation") or {}).get("output")
+            if f in {
+                v for r in _records(output) for k, v in r.items() if k.endswith("_id") or k == "id"
+            }:
+                found.append(f)
+    else:
+        listed = bridge.call(
+            "POST", "/step", {"action": {"operation_id": q["read_operation"], "arguments": {}}}
+        )
+        output = ((listed.get("body") or {}).get("observation") or {}).get("output")
+        ids = {v for r in _records(output) for k, v in r.items() if k.endswith("_id") or k == "id"}
+        found = [f for f in q["fixtures"] if f in ids]
     if not check(
-        "known_fixtures", found == list(q["fixtures"]), expected=q["fixtures"], found=found
+        "known_fixtures",
+        found == list(q["fixtures"]),
+        expected=q["fixtures"],
+        found=found,
+        read_by=key or "listing",
     ):
         return checks, "environment_defect"
     wrote = bridge.call("POST", "/step", {"action": dict(q["write_call"])})

@@ -258,14 +258,33 @@ def studio_agent(model_id, key, application_id):
     rng = random.Random(f"{model_id}:{key}")
     erratic = model_id == "mock/erratic-v1"
     skips = model_id == "mock/skips-screening-v1"
-    apps = ((yield {"tool": "application.read", "args": {}}).get("output") or {}).get(
-        "records"
-    ) or []
+    # @6 lists every application with no arguments; from golden-kyc-openenv@7 the read needs the application's ID and
+    # the listing is refused. Try the @6 call first (so @6 episodes are unchanged), then read by ID.
+    first = yield {"tool": "application.read", "args": {}}
+    if not first.get("ok", True):
+        first = yield {"tool": "application.read", "args": {"application_id": application_id}}
+    apps = (first.get("output") or {}).get("records") or []
     app = next((a for a in apps if a.get("application_id") == application_id), None) or {}
     revision = int(app.get("revision") or 1)
-    docs = ((yield {"tool": "documents.list", "args": {}}).get("output") or {}).get("records") or []
-    mine = [d for d in docs if str(d.get("party_id", "")).startswith(f"{application_id}-")]
-    parties = sorted({d["party_id"] for d in mine})
+    listed = yield {"tool": "documents.list", "args": {}}
+    if listed.get("ok", True):
+        docs = (listed.get("output") or {}).get("records") or []
+        mine = [d for d in docs if str(d.get("party_id", "")).startswith(f"{application_id}-")]
+        parties = sorted({d["party_id"] for d in mine})
+    else:
+        # @7: parties by application, then each party's documents (documents.list needs party_id).
+        got = yield {"tool": "parties.list", "args": {"application_id": application_id}}
+        parties = sorted(
+            {
+                r["party_id"]
+                for r in (got.get("output") or {}).get("records") or []
+                if r.get("party_id")
+            }
+        )
+        mine = []
+        for party in parties:
+            docs = yield {"tool": "documents.list", "args": {"party_id": party}}
+            mine += (docs.get("output") or {}).get("records") or []
     checks = ["identity.check", "document.check", "address.check"] + (
         [] if skips else ["screening.check"]
     )

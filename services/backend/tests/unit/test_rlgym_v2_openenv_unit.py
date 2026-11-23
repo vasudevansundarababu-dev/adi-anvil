@@ -324,3 +324,121 @@ def test_the_runner_drives_a_mock_episode_through_the_adapter():
         for t in bundle["transcript"]
         if "tool" in t
     )
+
+
+class Sim7(Sim):
+    """golden-kyc-openenv@7 shape: application.read requires application_id and returns that one record; a call
+    without it is refused as SCHEMA_INVALID. GET /operations carries the input schema."""
+
+    def call(self, method, path, body=None):
+        if path == "/operations":
+            return {
+                "status": 200,
+                "body": {
+                    "operations": [
+                        {
+                            "operation_id": "application.read",
+                            "input_schema": {
+                                "type": "object",
+                                "properties": {"application_id": {"type": "string"}},
+                                "required": ["application_id"],
+                            },
+                        }
+                    ]
+                },
+            }
+        if path == "/step" and body["action"]["operation_id"] == "application.read":
+            app_id = body["action"]["arguments"].get("application_id")
+            if not app_id:
+                return {
+                    "status": 422,
+                    "body": {"code": "SCHEMA_INVALID", "message": "application_id required"},
+                }
+            self.calls += 1
+            return {
+                "status": 200,
+                "body": {
+                    "observation": {
+                        "state": "completed",
+                        "output": {
+                            "status": "completed",
+                            "count": 1,
+                            "records": [{"application_id": app_id}],
+                        },
+                        "pending": None,
+                        "sequence": self.calls,
+                    },
+                    "done": False,
+                },
+            }
+        return super().call(method, path, body)
+
+
+def test_qualification_reads_each_fixture_by_id_when_the_read_requires_it():
+    env, rec = _env(), openenv.recipe(_env())
+    checks, failure = openenv.run_checks(_bridge(Sim7()), env, rec)
+    fixtures = next(c for c in checks if c["name"] == "known_fixtures")
+    assert fixtures["result"] == "pass" and fixtures["evidence"]["read_by"] == "application_id"
+    assert fixtures["evidence"]["found"] == ["kyc-individual-001", "kyc-individual-002"]
+    assert failure is None
+
+
+def test_qualification_keeps_the_listing_read_without_an_id_argument():
+    checks, _ = openenv.run_checks(_bridge(Sim()), _env(), openenv.recipe(_env()))
+    fixtures = next(c for c in checks if c["name"] == "known_fixtures")
+    assert fixtures["result"] == "pass" and fixtures["evidence"]["read_by"] == "listing"
+
+
+def test_mock_studio_agent_reads_by_id_on_v7_and_is_unchanged_on_v6():
+    from anvil.rlgym.systems import mock_provider as mp
+
+    app = {"application_id": "kyc-adult-joint-006", "revision": 1, "submitted_at": "2026-11-01"}
+    docs = [
+        {
+            "party_id": "kyc-adult-joint-006-p1",
+            "document_id": "d1",
+            "kind": "government_id",
+            "content": {},
+        },
+        {
+            "party_id": "kyc-adult-joint-006-p1",
+            "document_id": "d2",
+            "kind": "proof_of_address",
+            "content": {},
+        },
+    ]
+
+    def drive(v7):
+        g = mp.studio_agent("mock/diligent-v1", "k", "kyc-adult-joint-006")
+        action, calls = next(g), []
+        for _ in range(60):
+            calls.append((action.get("tool"), action.get("args")))
+            if "final" in action:
+                break
+            tool, args = action["tool"], action.get("args") or {}
+            if tool == "application.read":
+                obs = (
+                    {"ok": False, "error": "SCHEMA_INVALID"}
+                    if v7 and not args
+                    else {"ok": True, "output": {"records": [app]}}
+                )
+            elif tool == "documents.list":
+                if v7 and not args:
+                    obs = {"ok": False, "error": "SCHEMA_INVALID"}
+                else:
+                    obs = {"ok": True, "output": {"records": docs}}
+            elif tool == "parties.list":
+                obs = {"ok": True, "output": {"records": [{"party_id": "kyc-adult-joint-006-p1"}]}}
+            else:
+                obs = {"ok": True, "state": "completed", "output": {"status": "completed"}}
+            action = g.send(obs)
+        return calls
+
+    v6 = drive(False)
+    assert v6[0] == ("application.read", {}) and v6[1] == ("documents.list", {})
+    assert not any(t == "parties.list" for t, _ in v6)
+    v7 = drive(True)
+    assert ("application.read", {"application_id": "kyc-adult-joint-006"}) in v7
+    assert ("parties.list", {"application_id": "kyc-adult-joint-006"}) in v7
+    assert ("documents.list", {"party_id": "kyc-adult-joint-006-p1"}) in v7
+    assert v7[-1][0] is None or "final" in str(v7[-1])
