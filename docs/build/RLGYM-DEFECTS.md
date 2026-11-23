@@ -20,9 +20,9 @@ Local list until the owner logs them in the tracker. Newest first.
   a clipped strip with its cards side by side. Header link and title styles also leaked into the panel (it sits inside
   the navy header).
 - **Fix:** groups use their own class `todo-group`; the panel sets its own link and title colours. Type-check passes.
-  Not yet seen signed in after the fix: the owner to reload and confirm.
+  The owner confirmed the panel looks right after a reload (23 Nov 2026).
 - **Severity:** medium (the to-do list is how people find work waiting on them).
-- **Status:** fixed in code (RL Gym), awaiting the owner's check. Studio and Authoring inboxes not covered.
+- **Status:** fixed in the RL Gym (dd23fc0), confirmed by the owner. Studio and Authoring inboxes not covered.
 
 ## D-001 Safety grader label still says "Promptfoo grader not installed"
 
