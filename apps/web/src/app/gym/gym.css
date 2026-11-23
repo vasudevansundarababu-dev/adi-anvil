@@ -138,15 +138,25 @@ body:has(#gym) {
   grid-template-columns: 1fr;
   gap: 12px;
 }
-#gym .stack {
+/* To do panel groups. Not `.stack`: that class is the Runs episode bar (flex, 14px high, clipped) further down. */
+#gym .todo-group {
   display: grid;
   gap: 8px;
   align-content: start;
 }
-#gym .stack > h4 {
+#gym .todo-group > h4 {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+/* The panel sits inside the navy header: keep header link colours out of it. */
+#gym #notif a {
+  color: var(--green);
+  font-weight: 600;
+}
+#gym #notif strong {
+  font-size: inherit;
+  color: var(--ink);
 }
 #gym .tcard {
   padding: 10px 12px;

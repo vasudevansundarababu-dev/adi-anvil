@@ -15,9 +15,14 @@ Local list until the owner logs them in the tracker. Newest first.
     its count badge and anything anchored to it can be clipped); the panel's outside-click handler; the item links
     (`item.link`) for the 52 items, many of which come from older stub projects.
 - **Studio and Authoring inboxes:** not investigated here (other repositories); to be logged with their sessions.
-- **Next step:** reproduce signed in (screenshot or the owner's description of what happens on click), then fix.
+- **Cause found (RL Gym, from the owner's screenshot):** the panel's groups used the class `stack`, and a later
+  `gym.css` rule makes `.stack` the Runs episode bar (flex, 14 px high, overflow hidden). Each group was squashed into
+  a clipped strip with its cards side by side. Header link and title styles also leaked into the panel (it sits inside
+  the navy header).
+- **Fix:** groups use their own class `todo-group`; the panel sets its own link and title colours. Type-check passes.
+  Not yet seen signed in after the fix: the owner to reload and confirm.
 - **Severity:** medium (the to-do list is how people find work waiting on them).
-- **Status:** open.
+- **Status:** fixed in code (RL Gym), awaiting the owner's check. Studio and Authoring inboxes not covered.
 
 ## D-001 Safety grader label still says "Promptfoo grader not installed"
 

@@ -252,7 +252,7 @@ function TodoPanel({ todo, close }: { todo: any; close: () => void }) {
       </div>
       {!todo?.count && <p>Nothing is waiting on anyone.</p>}
       {todo?.groups?.map((g: any) => (
-        <section className="stack" key={g.key}>
+        <section className="todo-group" key={g.key}>
           <h4>
             {g.label} <small>{g.items.length}</small>
           </h4>
