@@ -73,7 +73,7 @@ review, approval, the prompt-set hash, and how T&S episodes are scored.
 
 ## Work steps
 
-1. Fix first, from today's judge finding: `live/generator.py` caps model output at 300 tokens, and thinking models
+1. Done (see commit below): `live/generator.py` capped model output at 300 tokens, and thinking models
    (Gemini 3.8 Flash, Claude 5.5) can use that up before the answer. Raise it as was done for the judge (1024).
 2. Broker protocol in the plug-in runner: model-request lines out, answers in, the ledger, caps, no retry on an
    unanswered call. Unit tests with a fake container.
