@@ -85,7 +85,24 @@ def _section(key, sec):
                 0,
                 "The project's published policy rules apply (their text is available through the policy operations):",
             )
-        return lines + _fields({k: v for k, v in sec.items() if k != "statePolicies"}, ())
+        # E-002 §4.3.6: selected clause versions, as the agent reads them: the clause text (or quote) and its
+        # identity. Conditions, exceptions and the criteria that test them are for the RL Gym, not the agent.
+        chosen = [b for b in sec.get("policyBindings") or [] if isinstance(b, dict)]
+        if chosen:
+            lines.append("These policy clauses apply where their conditions hold:")
+            for b in chosen:
+                body = (
+                    _text(b.get("text"))
+                    or _text(b.get("quote"))
+                    or "(text available through policy.read)"
+                )
+                where = f" [{_text(b.get('locator'))}]" if _text(b.get("locator")) else ""
+                lines.append(
+                    f"- Clause {b.get('clause_id')} v{b.get('clause_version')}{where}: {body}"
+                )
+        return lines + _fields(
+            {k: v for k, v in sec.items() if k not in ("statePolicies", "policyBindings")}, ()
+        )
     if key == "S5":
         lines = []
         for i, s in enumerate(sec.get("steps") or [], 1):

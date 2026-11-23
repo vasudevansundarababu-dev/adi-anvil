@@ -22,7 +22,7 @@ import uuid
 from psycopg.types.json import Jsonb
 
 from anvil.rlgym.common import GymError, emit, set_scope, system_scope
-from anvil.rlgym.runs import images, instructions, openenv
+from anvil.rlgym.runs import clauses, images, instructions, openenv
 from anvil.rlgym.scoring import service as scoring
 from anvil.rlgym.systems import mock_provider
 
@@ -344,7 +344,7 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         session.close()
     wall_ms = int((time.monotonic() - started) * 1000)
     steps = len(transcript)
-    return {
+    bundle = {
         "schema": "rlgym.sealed-episode.v1",
         # A live model's episode is a real execution (on synthetic cases), labelled apart from mock results.
         "synthetic": not live_caller,
@@ -400,6 +400,23 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         },
         "cost_usd": float(live_caller.cost) if live_caller else 0.0,
     }
+    # E-002: one receipt per selected clause (case episodes only), resolved on the case's facts and this episode's
+    # sealed evidence. A task without clauses gets no key, so its bundle is exactly as before.
+    selected = clauses.task_clauses(actor)
+    if selected and episode["kind"] != "safety":
+        case = {
+            "case_id": episode["case_id"],
+            "facts": (m.get("case_facts") or {}).get(episode["case_id"]),
+        }
+        bundle["clause_receipts"] = clauses.receipts(
+            selected,
+            case,
+            (instance or {}).get("env"),
+            evidence={"snapshots": snapshots, "tool_events": events, "final_output": final},
+            episode_id=episode["id"],
+            zen=m.get("clause_engine"),
+        )
+    return bundle
 
 
 def seal(ws, episode, bundle):

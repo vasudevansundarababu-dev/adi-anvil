@@ -18,7 +18,7 @@ from psycopg.types.json import Jsonb
 from anvil.rlgym import integrations
 from anvil.rlgym.catalog import selection
 from anvil.rlgym.common import GymError, audit, emit, new_id, require, sha
-from anvil.rlgym.runs import images, instructions, openenv, sampling
+from anvil.rlgym.runs import clauses, images, instructions, openenv, sampling
 from anvil.rlgym.scoring import service as scoring
 from anvil.rlgym.suites import service as suites
 from anvil.rlgym.systems import service as systems
@@ -260,6 +260,8 @@ def admission_check(ctx, body):
             detail or None,
         )
         resolved["tasks"] = tasks
+        # E-002: every selected clause must be valid; its setup gaps are checked once the environment is known.
+        clause_tasks = [t for t in tasks if clauses.task_clauses(t["actor"])]
         bindings = ctx.c.execute(
             "SELECT * FROM suites.suite_bindings WHERE suite_version_id=%s ORDER BY alias",
             (sv["id"],),
@@ -286,6 +288,23 @@ def admission_check(ctx, body):
             if pick and env is None:
                 env = {"binding": b, "version": pick, "rule": effective, "rule_label": label}
         resolved["env"] = env
+        if clause_tasks and env:
+            # E-002 §9.2: a tool or evidence source a selected clause needs is a setup gap; it blocks the run here.
+            gaps = clauses.admission_gaps(clause_tasks, env["version"])
+            item(
+                "policy_clauses",
+                not gaps,
+                f"Policy clauses can be evaluated on {selection.short(env['version']['id'])}"
+                if not gaps
+                else "Setup gap: a selected clause cannot be evaluated (fix before the run)",
+                "; ".join(f"{g['task_id']} · {g['clause']}: {g['detail']}" for g in gaps) or None,
+            )
+            zen = ctx.c.execute(
+                """SELECT manifest FROM catalog.framework_versions
+                   WHERE runtime_id=%s AND state='qualified' AND manifest IS NOT NULL ORDER BY created_at DESC LIMIT 1""",
+                (clauses.ZEN_PLUGIN,),
+            ).fetchone()
+            resolved["clause_engine"] = zen and zen["manifest"]
         ok_docker, docker_detail = images.docker_status()
         env_row = (
             ctx.c.execute(
@@ -415,6 +434,15 @@ def admission_check(ctx, body):
                 f"/versions/{env['version']['id']}/cases", base=env["version"].get("registry")
             )["cases"]
             selected, counts, short = sampling.select_cases(plan, cells, case_list)
+            # E-001 §3.6: a task focused on an edge case the bound version has no cases for is held before the run.
+            holds = clauses.edge_holds(resolved.get("tasks") or [], case_list, env["version"]["id"])
+            if holds:
+                item(
+                    "edge_cases",
+                    False,
+                    "Held: a task's edge case has no cases in the bound environment version",
+                    "; ".join(f"{h['task_id']} ({h['edge_case']}): {h['detail']}" for h in holds),
+                )
             tolerated = plan["missing_policy"] == "use_available" or all(
                 next(cl for cl in cells if cl["cell_key"] == s["cell_key"])["inbox_item_id"]
                 for s in short
@@ -449,6 +477,9 @@ def admission_check(ctx, body):
                 None if ts["state"] == "approved" else f"Prompt set is {ts['state']}",
             )
         resolved.update(ts=ts, prompts=prompts)
+        if clause_tasks and selected:
+            # The facts each selected case supplies (Studio's case rows); a missing fact makes a clause Unresolved.
+            resolved["case_facts"] = {c["case_id"]: c.get("facts") or {} for c in selected}
         if resolved.get("tasks") and selected:
             specs, unmatched = sampling.expand(
                 plan,
@@ -654,9 +685,23 @@ def _manifest(run_id, check):
                 "case_selector": t["case_selector"],
                 # D-007: hash of the instructions the agent is given for this task (built from the actor payload).
                 "instructions_sha256": t.get("instructions_sha256"),
+                # E-002: the clause versions this task selected (absent when none, so manifests stay as before).
+                **(
+                    {
+                        "clauses": [
+                            {**clauses.identity(cl)["clause"], "approval_id": cl.get("approval_id")}
+                            for cl in clauses.task_clauses(t.get("actor"))
+                        ]
+                    }
+                    if clauses.task_clauses(t.get("actor"))
+                    else {}
+                ),
             }
             for t in r["tasks"]
         ],
+        **({"case_facts": r["case_facts"]} if r.get("case_facts") else {}),
+        # E-002: the qualified ZEN plug-in that replays each clause decision (frozen here, so receipts reproduce).
+        **({"clause_engine": r["clause_engine"]} if r.get("clause_engine") else {}),
         "model_set": r["model_set"],
         "models": [
             {

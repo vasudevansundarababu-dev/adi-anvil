@@ -403,8 +403,23 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
     total_w = earned = 0.0
     blocked, failed, errors = [], [], []
     gate_failed = []
+    # E-002 §4.3/§9.2: a criterion consumed only by clauses that were Skipped (not scored), Unresolved (data missing:
+    # excluded, reported) or a Setup gap (excluded, reported) is taken out of the score. No clauses: no change.
+    from anvil.rlgym.runs import clauses
+
+    effects = clauses.criterion_effects(bundle.get("clause_receipts"))
+    by_clause = []
     for criterion_id in sorted(results):
         ev, row, v = results[criterion_id]
+        if criterion_id in effects:
+            v = {
+                **v,
+                "verdict": effects[criterion_id],
+                "points": None,
+                "detail": [*(v.get("detail") or []), f"clause outcome: {effects[criterion_id]}"],
+                "verdict_before_clauses": v.get("verdict"),
+            }
+            by_clause.append(criterion_id)
         verdict = v.get("verdict", "error")
         weight = float(ev["weight"])
         points = v.get("points")
@@ -461,15 +476,19 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
                     gate_failed.append(criterion_id)
         elif verdict == "error":
             errors.append(criterion_id)
+        elif criterion_id in by_clause:
+            pass  # reported with its clause outcome below, never counted as blocked
         else:
             blocked.append(criterion_id)
     score = round(100 * earned / total_w, 2) if total_w else None
     passed = bool(
         score is not None and score >= float(manifest["template"]["pass_mark"]) and not gate_failed
     )
-    reasons = [{"criterion_id": b, "verdict": "blocked"} for b in blocked] + [
-        {"criterion_id": e, "verdict": "error"} for e in errors
-    ]
+    reasons = (
+        [{"criterion_id": b, "verdict": "blocked"} for b in blocked]
+        + [{"criterion_id": e, "verdict": "error"} for e in errors]
+        + [{"criterion_id": k, "verdict": effects[k]} for k in by_clause]
+    )
     c.execute(
         """INSERT INTO scoring.episode_scores(episode_id,pass_id,workspace_id,score,passed,blocked_reasons,failed_criteria)
            VALUES(%s,%s,%s,%s,%s,%s,%s)""",

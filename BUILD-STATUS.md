@@ -53,6 +53,25 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
   the attack in all 3 social_engineering_takeover and all 3 structuring_advice prompts (critical). Spend: 735 agent
   calls + 2 unanswered, 10.9M in / 233K out tokens, $11.17 recorded at $1 / $1 (about $1.30 at list prices); 4 judge
   calls $0.004. Haiku approval total $15.58 of $300; Gemini $0.025 of $25.
+- **23 Nov 2026, golden-kyc-openenv@8 and policy clauses (E-002 §4.3, E-001 §3.6; RG-54; no live run, no model call):**
+  - **@8 (Studio D-022):** qualified automatically on release (receipt qr-97de9e8006a3: identity, health, known
+    fixtures by ID, write, reset, cleared state). 540 cases; 40 newly tagged `expired_document` (10 per type).
+    Dry check: "Pinned @7" resolves to @7, "Same data · synthetic-kyc-cases@1.1.0:20261119" to @8; a sample of 10
+    on @8 picks exactly 10 (7 complete, 3 incomplete; with an `expired_document` minimum of 3, 3 of them tagged).
+    No v7 project exists yet, so the override itself was not requested or approved (the owner approves it).
+  - **Open (Studio):** @8's version summary (`case_catalog.dimensions.edge_cases`) is `{}` although the case list
+    carries the tags, so the suite page shows 0 available for edge minimums. The new pre-run hold counts from the
+    case list, so runs are not affected.
+  - **Clauses:** `runs/clauses.py` resolver (applies / skipped / unresolved / setup_gap, three-valued), receipts in
+    the sealed bundle, each decided condition replayed on the qualified GoRules ZEN plug-in (checked by hand on the
+    local image: California applies, NY / product / date skipped, Marketing public applies, internal skipped; all
+    "agrees"); admission blocks on setup gaps and holds edge cases with no cases; scoring excludes criteria consumed
+    only by skipped / unresolved / setup-gap clauses (migration 054); the report lists clauses not evaluated per case.
+  - **Tests:** `test_rlgym_e002_clauses_unit.py` (35: California, cross-template Marketing / Software Delivery,
+    ZEN agree / disagree / not run, hold, report, unchanged behaviour without clauses). Unit suite: 567 passed.
+  - **Not done:** shapes are provisional (Studio's contract drafts had not arrived); no end-to-end run with a clause
+    task (none is exported yet); dynamic facts are read only from evidence paths the binding names; no UI for receipts
+    beyond the report data.
 - **23 Nov 2026, D-005 follow-up fixes (owner's go relayed by the parent session; no live run, no model call):**
   - **D-007 (4689c1a):** the agent's instructions are built from the actor payload: `assignment`, or ADI Forge's S1-S8
     `sections` with the output contract. No fallback: blocked at import, refused at admission, `TASK_NO_INSTRUCTIONS`.

@@ -374,7 +374,43 @@ def overview(d):
         ],
         "capability_profile": [{"capability": k, "per_model": v} for k, v in caps.items()],
         "observations": observations_cut(d),
+        **(
+            {"clauses": clause_outcomes(d)}
+            if any(t.get("clauses") for t in d.manifest["tasks"])
+            else {}
+        ),
     }
+
+
+def clause_outcomes(d):
+    """E-002 §9.2: per case, every selected clause and its outcome; the clauses that could not be evaluated (Unresolved:
+    data missing; Setup gap: tool, evidence or engine) are listed with why, so the owner sees the scenario. Only runs
+    whose tasks selected clauses have this section."""
+    counts = {"applies": 0, "skipped": 0, "unresolved": 0, "setup_gap": 0}
+    not_evaluated = []
+    for e in d.cases:
+        if not e["bundle_ref"]:
+            continue
+        for r in d.bundle(e).get("clause_receipts") or []:
+            counts[r["outcome"]] = counts.get(r["outcome"], 0) + 1
+            if r["outcome"] in ("unresolved", "setup_gap"):
+                why = (
+                    "missing facts: " + ", ".join(r.get("missing_facts") or [])
+                    if r["outcome"] == "unresolved"
+                    else "; ".join(g["detail"] for g in r.get("setup_gaps") or [])
+                )
+                not_evaluated.append(
+                    {
+                        "episode_id": e["id"],
+                        "case_id": e["case_id"],
+                        "task_id": e["task_id"],
+                        "clause": f"{r['clause']['id']}@{r['clause']['version']}",
+                        "outcome": r["outcome"],
+                        "why": why,
+                        "excluded_criteria": r.get("consumed_by") or [],
+                    }
+                )
+    return {"counts": counts, "not_evaluated": not_evaluated}
 
 
 def observations_cut(d):
