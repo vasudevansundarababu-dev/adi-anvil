@@ -2,6 +2,20 @@
 
 Local list until the owner logs them in the tracker. Newest first.
 
+## D-018 Template validate replays a stale answer under the same Idempotency-Key (medium)
+
+- **Found:** 23 Nov 2026 by Studio. Release c92ad618 (Golden KYC v7) failed anvil_validate because two configurations
+  were not yet qualified. On resume Studio re-sent validate under the same step key, `<release_id>:anvil_validate`,
+  and the RL Gym replayed the stored `valid: false`, although the configurations had been qualified since.
+- **Cause:** `/templates/validate` went through the generic `idempotent()` wrapper, which returns the stored response
+  for a repeated key. Validate writes nothing, and its answer depends on registry state that changes.
+- **Fix (5923350, parent's go):** validate is re-evaluated on every call. The Idempotency-Key header is still required.
+  Activation keeps its replay.
+- **Same commit, the owner's 10-record run:** the data plan spreads the sample only over the application types the
+  suite has tasks for, so every sampled case becomes an episode. Completeness quotas now add up exactly (largest
+  remainder); before, sample size 10 over 2 types gave 12. Plans of 40 over 4 types are unchanged.
+- **Status:** fixed.
+
 ## D-016 S5 step follow-ups do not reach the agent (medium)
 
 - **Found:** 23 Nov 2026, requested by the Authoring session. Authoring commits ad483ff7 and 6f6e3aac, on
