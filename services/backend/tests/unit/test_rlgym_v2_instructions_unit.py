@@ -147,3 +147,55 @@ def test_worker_builds_instructions_and_records_them():
     src = inspect.getsource(worker.execute)
     assert "instructions.build(actor)" in src and '"instructions": instr' in src
     assert '.get("assignment"' not in src
+
+
+def test_d016_follow_ups_render_after_the_step_and_before_its_failure_line():
+    steps = {
+        "steps": [
+            {
+                "action": "Screen both joint applicants.",
+                "tool": "screening.check",
+                "failureBehaviour": "Record the gap.",
+                "followUps": [
+                    {
+                        "if": "either has an unresolved match",
+                        "tools": ["finding.write", "specialist.refer"],
+                    }
+                ],
+            },
+            {
+                "action": "List the documents.",
+                "tool": "documents.list",
+                "followUps": [{"tools": ["document.read"]}],
+            },
+            {"action": "Submit the recommendation.", "tool": "recommend", "priority": "last"},
+        ]
+    }
+    t = instructions.build({"sections": {"S5": steps}})["text"]
+    assert (
+        "1. Screen both joint applicants. (record with screening.check)\n"
+        "   If either has an unresolved match: finding.write then specialist.refer\n"
+        "   If this fails: Record the gap.\n"
+        "2. List the documents. (record with documents.list)\n"
+        "   Then: document.read\n"
+        "3. Submit the recommendation. (record with recommend)\n"
+        "   priority: last"
+    ) in t
+
+
+def test_d016_steps_without_follow_ups_render_exactly_as_before():
+    # The text (and so the hash) for steps without followUps is unchanged by D-016.
+    s5 = {
+        "steps": [
+            {
+                "action": "Check identity.",
+                "tool": "identity.check",
+                "failureBehaviour": "Record it.",
+            }
+        ]
+    }
+    t = instructions.build({"sections": {"S5": s5}})["text"]
+    assert (
+        t
+        == "## Steps\n1. Check identity. (record with identity.check)\n   If this fails: Record it."
+    )

@@ -96,8 +96,23 @@ def _section(key, sec):
             if s.get("tool"):
                 line += f" (record with {s['tool']})"
             lines.append(line)
+            # D-016: conditional follow-ups, in order ("If <condition>: a then b"; no condition = a chain, "Then: a").
+            for f in s.get("followUps") or []:
+                if not isinstance(f, dict):
+                    lines.append(f"   Then: {_text(f)}")
+                    continue
+                tools = " then ".join(_text(t) for t in (f.get("tools") or []) if _text(t))
+                cond = _text(f.get("if"))
+                extra = _fields({k: v for k, v in f.items() if k not in ("if", "tools")}, ())
+                lines.append(f"   If {cond}: {tools}" if cond else f"   Then: {tools}")
+                lines += [f"     {x}" for x in extra]
             if _text(s.get("failureBehaviour")):
                 lines.append(f"   If this fails: {_text(s['failureBehaviour'])}")
+            # Any other key in a step reaches the agent too; nothing is dropped silently.
+            known = ("action", "tool", "failureBehaviour", "followUps")
+            lines += [
+                f"   {x}" for x in _fields({k: v for k, v in s.items() if k not in known}, ())
+            ]
         return lines + _fields({k: v for k, v in sec.items() if k != "steps"}, ())
     if key == "S6":
         return _fields(sec, (("outputContract", "Output contract"),))

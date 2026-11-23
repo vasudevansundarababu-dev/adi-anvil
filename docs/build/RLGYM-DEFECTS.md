@@ -6,7 +6,7 @@ Local list until the owner logs them in the tracker. Newest first.
 
 - **Found:** 23 Nov 2026, requested by the Authoring session. Authoring commits ad483ff7 and 6f6e3aac, on
   forge-v2-authoring, add optional `followUps` to `sections.S5.steps[i]`: `[{"if"?: text, "tools": [1-2 tool IDs]}]`.
-  Status: **investigated, planned, not fixed** (waits for the parent session's "go").
+  Status: **fixed** (parent's go, 23 Nov 2026; commit below). The 4 run-0228 tasks' instruction hashes are unchanged.
 - **Checked:** `runs/instructions.py` renders a step's `action`, `tool` and `failureBehaviour` only. `followUps`,
   and any other key inside a step, is dropped silently. Import is unaffected. The run-0228 tasks have no follow-ups.
 - **Plan:**
