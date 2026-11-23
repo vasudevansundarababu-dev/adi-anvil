@@ -55,7 +55,7 @@ Local list until the owner logs them in the tracker. Newest first.
 - **Cause:**
   - `live/agent.py` cuts each observation with `json.dumps(obs)[:MAX_OBS_CHARS]` (12,000). The cut is silent and
     leaves broken JSON. In run-0228, `application.read` returned about 75,600 characters, so the agent never saw its
-    own application in 31 of 40 case episodes. The size itself is D-009 (Studio environment).
+    own application in 27 of 35 scored case episodes (every joint, custodial and teen case). The size itself is D-009 (Studio environment).
   - The live agent keeps its messages and the model's raw text in memory only. The sealed bundle keeps parsed actions
     and full observations; the ledger keeps tokens and cost. The reset response's `user_message` is used but not
     stored.
