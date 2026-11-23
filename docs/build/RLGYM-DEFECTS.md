@@ -2,6 +2,50 @@
 
 Local list until the owner logs them in the tracker. Newest first.
 
+## D-015 Path summary sent with SME review items contradicts itself (low)
+
+- **Found:** 23 Nov 2026, from the Authoring side, on batch smr-0051 (run-0228). Assigned to the RL Gym. Status:
+  **investigated, planned, not fixed** (fix only on "go").
+- **Example as sent** (run-0228-e0031): "Took 3 of 8 steps; failed at account (criterion account_agreements fail); not
+  reached: verify, screen, account, state, act". The path order was `intake, identify, decide`.
+- **Causes** (`results/episodes.py`, the episode viewer, which the SME package copies in `results/sme.py`):
+  1. `failed_node` is the first step of the **first failing criterion by criterion ID**. That is `account_agreements`,
+     alphabetically first, and its step is the one the criterion is *about* (`account`), whether or not the agent
+     reached it. So an unreached step is named "failed at". Episodes that failed for a missing step never show
+     "failed at" a step that ran.
+  2. "Took N of 8 steps" counts entries in the path order, including revisits. e0032's
+     `intake, identify, intake, decide` gives "Took 4 of 8", but only 3 distinct steps were reached.
+  3. The summary lists the same step in both "failed at" and "not reached".
+- **Plan:**
+  1. **"Failed at" is only ever a step that ran:**
+     - Order failing criteria by workflow step order, then criterion ID.
+     - "Failed at X" uses the first failing criterion whose step was reached.
+     - Failing criteria whose steps were never reached are reported as missing steps, not as a failure point.
+     - The current fallbacks stay as they are: the first refused tool call, then the last step on a timeout.
+  2. **New summary shape, each step in exactly one place:** "Reached 3 of 8 steps (intake, identify, decide); failed
+     at decide (criterion decision fail); not reached: verify, screen, account, state, act (needed by failed
+     criteria: identification_verification, screening, account_agreements, state_rule_selection)".
+     - If no failing criterion's step was reached: "Reached 3 of 8 steps (…); stopped before verify; not reached: …".
+     - "Reached" counts distinct steps.
+  3. The package's `path` object keeps its keys (`order`, `failed_node`, `failed_why`, `summary`) and adds
+     `reached` and `missing_for`. Same contract, extra fields only.
+  4. **Already-sent batches stay as they are.** A batch is an immutable, hashed package. New batches and the episode
+     viewer get the new text.
+  5. **Tests:**
+     - failing criterion on an unreached step;
+     - on a reached step;
+     - mixed;
+     - revisits counted once;
+     - refused tool;
+     - timeout;
+     - a step never appears in two places.
+- **Score field:** the package's `score` has always been an object, `{score, passed, failed_criteria}`
+  (`results/sme.py`). No RL Gym spec in this repository defines it as a number. No change planned; Authoring renders
+  the object (D-014).
+- **Related, not this defect:** the template's workflow (from Studio) maps legacy tools (`address.verify`,
+  `tin.validate`, `party.list`). @6 operations such as `documents.list`, `policy.read` and `search` belong to no step,
+  so they don't appear in the path at all. That belongs with D-006.
+
 ## D-007 The live agent never gets the authored task (high)
 
 - **Found:** 23 Nov 2026, from the D-005 evidence pack for run-0228. Global ID from the master log; assigned to the RL
