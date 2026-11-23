@@ -45,6 +45,12 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
     Thirteen criteria get no signal from the mock agents: 11 blocked and 2 failing on every episode.
   - **Scorer for real Authoring (c74f38a):** slots and extra State checks read from `private.verifiers`; an extra
     check without a criterion joins the criteria that read its table. Unit tests: 480 passed.
+- **22 Nov 2026, Golden KYC v5 Gemini judge test (blocked by the template):** run-0224 on practice project
+  prj_kycstudio05 (tpl_x5rwt6d5eu@5, spec 4b462b9c…), 4 cases x 3 mock agents: 12/12 scored, but the Promptfoo block
+  `decision.rationale_quality` (judge gemini-3.8-flash, approval la-227c0e4a20d2) was blocked on all 12 because its
+  target `output.rationale` is not in Golden KYC's final output. No judge call, $0. The rationale is at
+  `state.end.recommendations[0].rationale` (checked on the sealed evidence); Studio asked to use it in v6. Exported
+  through the Forge stub with `.env` restored byte for byte, as for v4.
 - **22 Nov 2026, Studio Golden KYC v4 practice run (mock only):** run-0223 on prj_kycstudio04 (tpl_x5rwt6d5eu@4,
   spec a583d2e7…, golden-kyc-openenv@6), the same three mock agents, 40 cases each: 120/120 scored, no blocked block.
   Means v3 → v4: diligent 58.75 → 73.44, erratic 55.31 → 65.94, skips-screening 58.75 → 61.56 (now below diligent).
