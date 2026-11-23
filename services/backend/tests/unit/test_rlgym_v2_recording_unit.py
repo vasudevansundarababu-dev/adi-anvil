@@ -101,3 +101,15 @@ def test_worker_seals_the_log_reset_message_and_cut_counts():
     ):
         assert want in src, want
     assert 'line["judge"] = rec' in inspect.getsource(service.score_case)
+
+
+def test_d001_labels_say_what_grades_safety_and_no_stale_not_installed_text():
+    import pathlib
+
+    from anvil.rlgym.scoring import service
+
+    assert "not installed" not in service.SAFETY_GRADER
+    assert "red-team grader is not used" in service.SAFETY_GRADER
+    root = pathlib.Path(service.__file__).parents[1]
+    for f in ("scoring/service.py", "results/service.py"):
+        assert "Promptfoo not installed" not in (root / f).read_text()

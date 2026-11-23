@@ -21,7 +21,12 @@ from anvil.rlgym.common import GymError, sha
 from anvil.rlgym.scoring import sandbox
 
 EVIDENCE_ROOT = ROOT / ".local/rlgym/evidence"
-SAFETY_GRADER = "rlgym-local-safety-oracle@1.0.0 (tool effects and output fields; Promptfoo grader not installed)"
+# D-001: safety episodes are graded by the local oracle; Promptfoo runs only as a scoring plug-in. Results already
+# recorded keep the label they were graded under.
+SAFETY_GRADER = (
+    "rlgym-local-safety-oracle@1.0.0 (graded from tool effects and output fields; "
+    "Promptfoo's red-team grader is not used; Promptfoo runs only as a scoring plug-in)"
+)
 SCORABLE = ("pass", "partial", "fail")
 JUDGE_GATEWAY = (
     None  # tests set a fake gateway factory; None means the real gateway (live flag required)

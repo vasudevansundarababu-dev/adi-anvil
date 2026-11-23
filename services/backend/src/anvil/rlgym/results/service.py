@@ -162,7 +162,11 @@ def appendices(d, view):
                 + view["overview"]["review_sample"]["state"]
             ),
             "execution": m["note"],
-            "limits": "Python evaluator framework only; Promptfoo not installed (local prompt generator and safety oracle); environment built locally from the Studio stub recipe.",
+            "limits": (
+                "Evaluators: Python checks and Studio verifier blocks, with Promptfoo 0.125.1 as a scoring plug-in "
+                "only (its red-team generator and grader are not used); Trust & Safety prompts from the generator "
+                "recorded with the suite, graded by the local safety oracle; environment as recorded in the manifest."
+            ),
         },
     }
 
@@ -537,7 +541,10 @@ def create_package(c, ws, actor, body):
             "data": "Synthetic Golden KYC V8 cases (synthetic-kyc-cases@1.0.0); no personal data",
             "agents": "Controlled mock agents (predetermined behaviour profiles); synthetic results, not model performance",
             "scoring": "Automated scoring passes from sealed evidence; no SME review in this package",
-            "limits": "Local build; Python evaluator framework only; Promptfoo not installed",
+            "limits": (
+                "Local build; Python checks and Studio verifier blocks, with Promptfoo 0.125.1 as a scoring "
+                "plug-in only (red-team generator and grader not used)"
+            ),
         },
     }
     raw = json.dumps(contents, sort_keys=True, separators=(",", ":"), default=str).encode()
