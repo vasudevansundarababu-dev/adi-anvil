@@ -18,7 +18,7 @@ from psycopg.types.json import Jsonb
 from anvil.rlgym import integrations
 from anvil.rlgym.catalog import selection
 from anvil.rlgym.common import GymError, audit, emit, new_id, require, sha
-from anvil.rlgym.runs import images, openenv, sampling
+from anvil.rlgym.runs import images, instructions, openenv, sampling
 from anvil.rlgym.scoring import service as scoring
 from anvil.rlgym.suites import service as suites
 from anvil.rlgym.systems import service as systems
@@ -222,7 +222,9 @@ def admission_check(ctx, body):
     resolved.update(project=project, sv=sv, activation=activation, model_set=ms_label, models=lines)
     if sv and project and sv["state"] == "saved":
         tasks = ctx.c.execute(
-            """SELECT t.* FROM suites.suite_tasks s JOIN projects.task_imports t ON t.id=s.task_import_id
+            """SELECT t.*, p.content actor FROM suites.suite_tasks s JOIN projects.task_imports t ON t.id=s.task_import_id
+               LEFT JOIN projects.task_payloads p ON p.workspace_id=t.workspace_id AND p.package_sha256=t.package_sha256
+                 AND p.part='actor'
                WHERE s.suite_version_id=%s ORDER BY t.task_id""",
             (sv["id"],),
         ).fetchall()
@@ -231,6 +233,13 @@ def admission_check(ctx, body):
             for t in tasks
             if t["state"] != "ready"
         ]
+        # D-007: every task must yield agent instructions (assignment or sections); a run never uses a fallback.
+        for t in tasks:
+            why = instructions.problem(t["actor"])
+            if why:
+                not_ready.append(f"{t['task_id']} r{t['revision']}: {why}")
+            else:
+                t["instructions_sha256"] = instructions.build(t["actor"])["sha256"]
         now_ready = {
             r["id"]
             for r in ctx.c.execute(
@@ -643,6 +652,8 @@ def _manifest(run_id, check):
                 "revision": t["revision"],
                 "package_sha256": t["package_sha256"],
                 "case_selector": t["case_selector"],
+                # D-007: hash of the instructions the agent is given for this task (built from the actor payload).
+                "instructions_sha256": t.get("instructions_sha256"),
             }
             for t in r["tasks"]
         ],

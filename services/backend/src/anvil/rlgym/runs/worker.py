@@ -22,7 +22,7 @@ import uuid
 from psycopg.types.json import Jsonb
 
 from anvil.rlgym.common import GymError, emit, set_scope, system_scope
-from anvil.rlgym.runs import images, openenv
+from anvil.rlgym.runs import images, instructions, openenv
 from anvil.rlgym.scoring import service as scoring
 from anvil.rlgym.systems import mock_provider
 
@@ -223,9 +223,11 @@ def _context(ws, episode):
 
 
 def execute(episode, run, manifest, instance, actor, session_factory=None):
-    """Run one episode and return the evidence bundle (not yet sealed). The policy sees the actor assignment and tool
-    results only; the run's reference answers are never loaded here."""
+    """Run one episode and return the evidence bundle (not yet sealed). The policy sees the task's instructions (built
+    from the actor payload only, D-007) and tool results; the run's reference answers are never loaded here."""
     m = manifest["manifest"]
+    # No instructions, no episode: never a generic fallback (raises TASK_NO_INSTRUCTIONS before any container call).
+    instr = instructions.build(actor)
     model = next(x for x in m["models"] if x["system_id"] == episode["system_id"])
     offered = set((actor or {}).get("tools") or [])
     prompt = None
@@ -274,7 +276,7 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
             )
             policy = live_agent(
                 live_caller,
-                (actor or {}).get("assignment", ""),
+                instr["text"],
                 operations or [],
                 application_id=episode["case_id"] if on_openenv else None,
                 user_message=reset.get("user_message"),
@@ -282,7 +284,7 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         else:
             policy = mock_provider.agent(
                 model["model_id"],
-                (actor or {}).get("assignment", ""),
+                instr["text"],
                 # Seeded by what the episode is (not its id), so a repeat run on the same suite is reproducible.
                 f"{episode['case_id']}:{episode['task_id']}:{episode['attempt']}:{episode.get('ts_prompt_id')}",
                 user_message=reset.get("user_message"),
@@ -336,6 +338,8 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         "kind": episode["kind"],
         "task": {"task_id": episode["task_id"], "revision": episode["task_revision"]},
         "case_id": episode["case_id"],
+        # What the agent was told (D-007): the text built from the actor payload, its source and hash.
+        "instructions": instr,
         "system": {
             k: model[k] for k in ("system_id", "version", "model_id", "provider", "config_sha256")
         },
@@ -412,6 +416,7 @@ def run_episode(ws, episode, session_factory=None):
             "LIVE_EPISODE_CAP",
             "LIVE_AMBIGUOUS",
             "LIVE_DISABLED",
+            "TASK_NO_INSTRUCTIONS",
         )
         with system_scope(ws) as c:
             _finish_attempt(c, episode, "errored", message[:500])

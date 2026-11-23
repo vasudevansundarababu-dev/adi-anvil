@@ -1,7 +1,7 @@
 """A live model as the agent (behind an approval). Same protocol as the mock agents: a generator that yields
 {"tool", "args"} or {"final": {...}} and is sent each observation.
 
-The model sees only what a candidate sees: the task's assignment, the application it reviews (Studio's images), the
+The model sees only what a candidate sees: the task's instructions (built from the actor payload, D-007), the application it reviews (Studio's images), the
 declared operations and the observations. It answers with one JSON action per turn. Each model call goes through
 `LiveCaller`, which checks the caps before the call (its maximum cost), records the call with its tokens and cost,
 and stops the episode at a cap or on an ambiguous dispatch (never retried).
@@ -137,7 +137,10 @@ def live_agent(call, assignment, operations, application_id=None, user_message=N
         else {k: o[k] for k in ("operation_id", "input_schema") if k in o}
         for o in operations
     ]
-    task = assignment or "Review the application and return a decision with findings."
+    if not (assignment or "").strip():
+        # D-007: never a generic fallback; the worker refuses a task without instructions before this point.
+        raise GymError("TASK_NO_INSTRUCTIONS", "No task instructions for the live agent")
+    task = assignment
     if application_id:
         task += f"\n\nApplication under review: {application_id}"
     if user_message:

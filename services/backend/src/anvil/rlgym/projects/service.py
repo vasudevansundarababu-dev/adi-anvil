@@ -15,6 +15,7 @@ from anvil.rlgym.catalog import inbox, selection
 from anvil.rlgym.catalog.selection import rule_label, short
 from anvil.rlgym.common import GymError, audit, emit, require, sha
 from anvil.rlgym.integrations import forge_package
+from anvil.rlgym.runs import instructions
 
 CAUSE = {
     "version.revoked": "automatic_revoked",
@@ -219,6 +220,11 @@ def receive_export(c, ws, actor, project_id, body):
                     "alias": bindable["alias"],
                 }
             )
+        # D-007: a task the agent cannot be given (no assignment, no sections) is kept but blocked, never run.
+        no_instructions = instructions.problem(package["actor"])
+        if no_instructions:
+            state, reason = "blocked", f"TASK_NO_INSTRUCTIONS: {no_instructions}"
+            blocked.append({"task_id": task["task_id"], "reason": "TASK_NO_INSTRUCTIONS"})
         c.execute(
             """INSERT INTO projects.task_imports(id,workspace_id,project_id,export_id,task_id,revision,title,package_ref,package_sha256,
                  case_selector,actor_payload,private_payload,state,state_reason,corrects_id,sme_batch_id,complexity,archetype)
@@ -328,7 +334,12 @@ def receive_export(c, ws, actor, project_id, body):
             ws,
             "task.blocked",
             project_id,
-            {"project_id": project_id, "count": len(blocked), "reason": bindable["reason"]},
+            {
+                "project_id": project_id,
+                "count": len(blocked),
+                "reason": bindable["reason"]
+                or "; ".join(sorted({b["reason"] for b in blocked})),
+            },
         )
     audit(
         c,
@@ -675,7 +686,8 @@ def refresh_state(c, ws, pid):
     )
     flipped = c.execute(
         """UPDATE projects.task_imports SET state=%s, state_reason=%s WHERE workspace_id=%s AND project_id=%s
-           AND state IN ('ready','blocked') AND state<>%s RETURNING task_id""",
+           AND state IN ('ready','blocked') AND state<>%s
+           AND coalesce(state_reason,'') NOT LIKE 'TASK_NO_INSTRUCTIONS%%' RETURNING task_id""",
         (task_state, task_reason, ws, pid, task_state),
     ).fetchall()
     if flipped:
