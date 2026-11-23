@@ -45,6 +45,12 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
     Thirteen criteria get no signal from the mock agents: 11 blocked and 2 failing on every episode.
   - **Scorer for real Authoring (c74f38a):** slots and extra State checks read from `private.verifiers`; an extra
     check without a criterion joins the criteria that read its table. Unit tests: 480 passed.
+- **23 Nov 2026, first live run on a real Authoring project (run-0227):** "KYC Customer onboarding for US bank"
+  (prj_f8719e2b…, Golden KYC v6), Claude Haiku 5.5 v4 ($0.30 per episode), started by the owner as admin-1; 40 cases +
+  30 safety prompts. 22 cases scored (mean 41.69), 48 errored: one unanswered call (ConnectTimeout, not retried), one
+  episode reached its $0.30 limit, and the worker then stopped all 46 queued episodes as if the run's cap were reached.
+  Fixed (LIVE_EPISODE_CAP ends only that episode). Spend: 242 agent calls + 1 judge call, $3.71 recorded at the
+  approval's $1 / $1 prices (Haiku approval total $4.41 of $300).
 - **22 Nov 2026, first live judge answers (Golden KYC v6, Gemini 3.8 Flash):** practice project prj_kycstudio06
   (tpl_x5rwt6d5eu@6, spec ea759f63…), 4 cases x 3 mock agents, the judge the only live call (approval la-227c0e4a20d2).
   - run-0225: 6 of 12 judge answers unreadable (reasoning used the 200-token output limit) and scored as fails.
