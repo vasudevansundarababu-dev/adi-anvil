@@ -45,6 +45,14 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
     Thirteen criteria get no signal from the mock agents: 11 blocked and 2 failing on every episode.
   - **Scorer for real Authoring (c74f38a):** slots and extra State checks read from `private.verifiers`; an extra
     check without a criterion joins the criteria that read its table. Unit tests: 480 passed.
+- **22 Nov 2026, first live judge answers (Golden KYC v6, Gemini 3.8 Flash):** practice project prj_kycstudio06
+  (tpl_x5rwt6d5eu@6, spec ea759f63…), 4 cases x 3 mock agents, the judge the only live call (approval la-227c0e4a20d2).
+  - run-0225: 6 of 12 judge answers unreadable (reasoning used the 200-token output limit) and scored as fails.
+    Fixed in de8a833: judge output limit 1024, and an approved judge with no usable verdict blocks the line.
+  - run-0226: 12/12 readable, no blocked line. Live judge: fail (score 0) on all 12 canned rationales ("verified
+    identity, documents and screening."); the mock judge would pass all 12. decision with the 20% share: partial,
+    0.8 on 11 episodes; fail, 0 on one (recommendation also wrong). 12 calls, 1,632 in / 2,245 out tokens, $0.0096;
+    approval total $0.0193 of $25.
 - **22 Nov 2026, Golden KYC v5 Gemini judge test (blocked by the template):** run-0224 on practice project
   prj_kycstudio05 (tpl_x5rwt6d5eu@5, spec 4b462b9c…), 4 cases x 3 mock agents: 12/12 scored, but the Promptfoo block
   `decision.rationale_quality` (judge gemini-3.8-flash, approval la-227c0e4a20d2) was blocked on all 12 because its
