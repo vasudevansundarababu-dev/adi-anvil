@@ -293,3 +293,94 @@ def test_judge_verdicts_replace_the_mock_judge_in_the_sandbox():
     )
     job["rubric_verdicts"] = {"r": {"verdict": "blocked", "reason": "no approval"}}
     assert sr.evaluate(job)["verdict"] == "blocked"  # never silently the mock judge
+
+
+def test_an_unusable_judge_answer_blocks_the_line_never_fails_it(monkeypatch):
+    # Golden KYC v6, run-0225: half the Gemini judge's answers were cut off (reasoning used the 200-token limit) and
+    # were scored as fails. An approved judge that gives no usable verdict now blocks the line.
+    from anvil.rlgym.live import approvals
+    from anvil.rlgym.live import judge as lj
+
+    approval = {
+        "id": "la-x",
+        "provider": "google",
+        "model_id": "gemini-3.8-flash",
+        "price_in_per_mtok_usd": Decimal("0.75"),
+        "price_out_per_mtok_usd": Decimal("3.75"),
+    }
+
+    class Row:
+        def fetchone(self):
+            return approval
+
+    class C:
+        def execute(self, *a, **k):
+            return Row()
+
+    recorded = []
+    monkeypatch.setattr(approvals, "room", lambda *a, **k: True)
+    monkeypatch.setattr(approvals, "record", lambda *a, **k: recorded.append((a[4], k.get("cost"))))
+    sent = []
+
+    def gateway(answer=None, exc=None):
+        class G:
+            def complete(self, provider, model_id, messages, **kw):
+                sent.append(kw["max_output_tokens"])
+                if exc:
+                    raise exc
+                return gw.Completion(
+                    text=answer, tokens_in=100, tokens_out=1024, finish_reason="MAX_TOKENS"
+                )
+
+        return G
+
+    ok = lj.answer_rubric(
+        C(),
+        "ws",
+        "gemini-3.8-flash",
+        "rubric",
+        "text",
+        gateway_factory=gateway('{"verdict": "pass", "reason": "cites the ID"}'),
+    )
+    assert ok["pass"] is True and ok["judge"] == "google:gemini-3.8-flash"
+    assert sent[-1] == lj.MAX_OUT >= 1024  # room for the verdict after a thinking model's reasoning
+    cut = lj.answer_rubric(
+        C(), "ws", "gemini-3.8-flash", "rubric", "text", gateway_factory=gateway('{"verdict": "pa')
+    )
+    assert "unreadable judge answer" in cut["blocked"] and "MAX_TOKENS" in cut["blocked"]
+    err = lj.answer_rubric(
+        C(),
+        "ws",
+        "gemini-3.8-flash",
+        "rubric",
+        "text",
+        gateway_factory=gateway(exc=GymError("LIVE_UNAVAILABLE", "Provider answered 503")),
+    )
+    assert err == {"blocked": "judge error: Provider answered 503"}
+    unanswered = lj.answer_rubric(
+        C(),
+        "ws",
+        "gemini-3.8-flash",
+        "rubric",
+        "text",
+        gateway_factory=gateway(exc=gw.Ambiguous("sent, no answer")),
+    )
+    assert unanswered == {"blocked": "judge call not answered; not retried"}
+    monkeypatch.setattr(approvals, "room", lambda *a, **k: False)
+    assert (
+        "cap"
+        in lj.answer_rubric(
+            C(),
+            "ws",
+            "gemini-3.8-flash",
+            "rubric",
+            "text",
+            gateway_factory=gateway('{"verdict": "pass"}'),
+        )["blocked"]
+    )
+    assert [s for s, _ in recorded] == [
+        "ok",
+        "ok",
+        "error",
+        "ambiguous",
+    ]  # every sent call is on the ledger

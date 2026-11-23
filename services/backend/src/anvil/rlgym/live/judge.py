@@ -13,7 +13,9 @@ from anvil.rlgym.common import GymError
 from anvil.rlgym.live import approvals
 from anvil.rlgym.live.gateway import Ambiguous, live_enabled, parse_json
 
-MAX_OUT = 200
+# Room for the verdict after the model's own reasoning: thinking models (Gemini 3.8 Flash, Claude 5.5) count reasoning
+# tokens against the output limit, and at 200 half of the Gemini judge's answers were cut off before the JSON.
+MAX_OUT = 1024
 JUDGE = (
     "You are a strict grader. Judge only the rubric below against the agent's output. Reply with one JSON object and "
     'nothing else: {"verdict": "pass" or "fail", "reason": "<one sentence>"}.'
@@ -119,8 +121,10 @@ def answer_rubric(
     c, ws, model_id, rubric, text, *, run_id=None, episode_id=None, gateway_factory=None
 ):
     """One judge answer {pass, score, reason, judge} from the model named `model_id`, through the gateway, under an
-    active approval for that model with use `judge`; None when there is none (the plug-in then uses its mock judge
-    and labels the line `mock`)."""
+    active approval for that model with use `judge`. None when live calls are off or no approval names the model (the
+    plug-in then uses its mock judge and labels the line `mock`). When the approved judge was asked but gave no usable
+    verdict (cap, unanswered, provider error, unreadable answer) → {"blocked": reason}: the line is blocked, never a
+    fail and never silently re-judged by the mock."""
     if not live_enabled() and gateway_factory is None:
         return None
     a = c.execute(
@@ -133,12 +137,7 @@ def answer_rubric(
     prompt = f"Rubric: {rubric}\n\nText to grade:\n{str(text)[:8000]}"
     worst = approvals.max_cost(a, len(prompt) // 3 + 100, MAX_OUT)
     if not approvals.room(c, ws, a, run_id, worst):
-        return {
-            "pass": False,
-            "score": 0,
-            "reason": "judge cap would be crossed; not judged",
-            "judge": "none",
-        }
+        return {"blocked": "the judge approval's cap would be crossed; not judged"}
     if gateway_factory is None:
         from anvil.rlgym.live.gateway import Gateway
 
@@ -163,12 +162,12 @@ def answer_rubric(
             episode_id=episode_id,
             note=exc.message,
         )
-        return None
+        return {"blocked": "judge call not answered; not retried"}
     except GymError as exc:
         approvals.record(
             c, ws, a, "judge", "error", run_id=run_id, episode_id=episode_id, note=exc.message
         )
-        return None
+        return {"blocked": f"judge error: {exc.message}"}
     approvals.record(
         c,
         ws,
@@ -182,6 +181,10 @@ def answer_rubric(
     )
     answer = parse_json(done.text) or {}
     verdict = answer.get("verdict")
+    if verdict not in ("pass", "fail"):
+        return {
+            "blocked": f"unreadable judge answer (finish {done.finish_reason}, {done.tokens_out} output tokens)"
+        }
     return {
         "pass": verdict == "pass",
         "score": 1 if verdict == "pass" else 0,

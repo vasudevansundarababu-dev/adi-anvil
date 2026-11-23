@@ -268,7 +268,7 @@ def plugin_results(c, episode, manifest, vctx, bundle, reference):
             **({"slots": vctx["slots"]} if "slots" in reads else {}),
             "files": files,
         }
-        answers = {}
+        answers, judge_blocked = {}, {}
         for b in blocks:
             st = b.get("settings") or {}
             if st.get("judge") and st.get("judge") != "mock-judge" and st.get("rubric"):
@@ -289,7 +289,9 @@ def plugin_results(c, episode, manifest, vctx, bundle, reference):
                         episode_id=episode["id"],
                         gateway_factory=JUDGE_GATEWAY,
                     )
-                    if got:
+                    if got and got.get("blocked"):
+                        judge_blocked[b["id"]] = got["blocked"]
+                    elif got:
                         answers[b["id"]] = got
         if answers:
             job["judge_answers"] = answers
@@ -298,6 +300,16 @@ def plugin_results(c, episode, manifest, vctx, bundle, reference):
         else:
             result = runner.run(m, job, invoke=PLUGIN_INVOKE)
         for line in result["results"]:
+            if line["block_id"] in judge_blocked:
+                # The approved judge gave no usable verdict: blocked, not the mock judge's verdict.
+                why = judge_blocked[line["block_id"]]
+                line = {
+                    **line,
+                    "verdict": "blocked",
+                    "points": None,
+                    "actual": {"missing": why},
+                    "detail": why,
+                }
             out[line["block_id"]] = {**line, "plugin": f"{m['id']} {m['version']}"}
     return out
 
