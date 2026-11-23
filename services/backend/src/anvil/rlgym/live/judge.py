@@ -31,6 +31,23 @@ def _texts(evidence):
     return "\n".join(parts)[:8000]
 
 
+def record(prompt, done=None, note=None):
+    """What the judge was asked and what it answered (D-008): kept with the block line's receipt, so a verdict can be
+    checked against the exact prompt and the raw answer. The prompt holds the rubric and the agent's text only."""
+    out = {"system": JUDGE, "prompt": prompt}
+    if done is not None:
+        out.update(
+            raw=done.text,
+            finish_reason=done.finish_reason,
+            tokens_in=done.tokens_in,
+            tokens_out=done.tokens_out,
+            request_id=done.request_id,
+        )
+    if note:
+        out["note"] = note
+    return out
+
+
 def rubric_verdicts(
     c, ws, judge, blocks, evidence, *, run_id=None, episode_id=None, gateway_factory=None
 ):
@@ -87,13 +104,21 @@ def rubric_verdicts(
                 episode_id=episode_id,
                 note=exc.message,
             )
-            out[b["id"]] = {"verdict": "blocked", "reason": "judge call not answered; not retried"}
+            out[b["id"]] = {
+                "verdict": "blocked",
+                "reason": "judge call not answered; not retried",
+                "record": record(prompt, note="not answered"),
+            }
             continue
         except GymError as exc:
             approvals.record(
                 c, ws, a, "judge", "error", run_id=run_id, episode_id=episode_id, note=exc.message
             )
-            out[b["id"]] = {"verdict": "blocked", "reason": exc.message}
+            out[b["id"]] = {
+                "verdict": "blocked",
+                "reason": exc.message,
+                "record": record(prompt, note=exc.message),
+            }
             continue
         cost = done.cost(a["price_in_per_mtok_usd"], a["price_out_per_mtok_usd"])
         approvals.record(
@@ -113,6 +138,7 @@ def rubric_verdicts(
             "verdict": verdict,
             "reason": str(answer.get("reason") or "unreadable judge answer")[:300],
             "judge": f"{judge['provider']}:{judge['model_id']}",
+            "record": record(prompt, done),
         }
     return out
 
@@ -162,12 +188,18 @@ def answer_rubric(
             episode_id=episode_id,
             note=exc.message,
         )
-        return {"blocked": "judge call not answered; not retried"}
+        return {
+            "blocked": "judge call not answered; not retried",
+            "record": record(prompt, note="not answered"),
+        }
     except GymError as exc:
         approvals.record(
             c, ws, a, "judge", "error", run_id=run_id, episode_id=episode_id, note=exc.message
         )
-        return {"blocked": f"judge error: {exc.message}"}
+        return {
+            "blocked": f"judge error: {exc.message}",
+            "record": record(prompt, note=exc.message),
+        }
     approvals.record(
         c,
         ws,
@@ -183,11 +215,13 @@ def answer_rubric(
     verdict = answer.get("verdict")
     if verdict not in ("pass", "fail"):
         return {
-            "blocked": f"unreadable judge answer (finish {done.finish_reason}, {done.tokens_out} output tokens)"
+            "blocked": f"unreadable judge answer (finish {done.finish_reason}, {done.tokens_out} output tokens)",
+            "record": record(prompt, done),
         }
     return {
         "pass": verdict == "pass",
         "score": 1 if verdict == "pass" else 0,
         "reason": str(answer.get("reason") or "unreadable judge answer")[:300],
         "judge": f"{a['provider']}:{a['model_id']}",
+        "record": record(prompt, done),
     }

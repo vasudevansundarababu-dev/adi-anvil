@@ -373,6 +373,34 @@ def overview(d):
             for (tid, rev), per in sorted(by_task.items())
         ],
         "capability_profile": [{"capability": k, "per_model": v} for k, v in caps.items()],
+        "observations": observations_cut(d),
+    }
+
+
+def observations_cut(d):
+    """D-008: how many tool results were longer than the model was shown. Episodes sealed before this was recorded
+    count as not recorded, never as zero."""
+    rows = d.c.execute(
+        """SELECT se.timings FROM runs.sealed_evidence se JOIN runs.episodes e ON e.id=se.episode_id
+           WHERE e.run_id=%s""",
+        (d.run["id"],),
+    ).fetchall()
+    known = [r["timings"] for r in rows if "observations_cut" in (r["timings"] or {})]
+    if not known:
+        return {"recorded": False, "cut_steps": None, "steps": None, "warning": None}
+    cut = sum(int(t["observations_cut"]) for t in known)
+    steps = sum(int(t.get("steps") or 0) for t in known)
+    return {
+        "recorded": True,
+        "cut_steps": cut,
+        "steps": steps,
+        "not_recorded_episodes": len(rows) - len(known),
+        "warning": (
+            f"Observations cut: {cut} of {steps} steps showed the model only part of a tool result; "
+            "scores may reflect what the agent could not see"
+        )
+        if cut
+        else None,
     }
 
 

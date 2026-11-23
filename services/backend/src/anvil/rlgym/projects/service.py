@@ -337,8 +337,7 @@ def receive_export(c, ws, actor, project_id, body):
             {
                 "project_id": project_id,
                 "count": len(blocked),
-                "reason": bindable["reason"]
-                or "; ".join(sorted({b["reason"] for b in blocked})),
+                "reason": bindable["reason"] or "; ".join(sorted({b["reason"] for b in blocked})),
             },
         )
     audit(

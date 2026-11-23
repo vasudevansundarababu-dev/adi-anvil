@@ -249,6 +249,7 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
     else:
         session = images.EnvSession.docker(instance["container"], deadline)
     transcript, events, final = [], [], None
+    agent_log = {}
     try:
         reset = session.request({"op": "reset", "case_id": episode["case_id"], "inject": inject})
         if not reset.get("ok"):
@@ -274,14 +275,27 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
                 else sorted(offered)
                 or list((instance or {}).get("env", {}).get("operations") or [])
             )
+            from anvil.rlgym.live.agent import MAX_OBS_CHARS
+
+            max_obs = int(
+                (model["live"].get("params") or {}).get("max_observation_chars") or MAX_OBS_CHARS
+            )
+            agent_log = {"kind": "live"}
             policy = live_agent(
                 live_caller,
                 instr["text"],
                 operations or [],
                 application_id=episode["case_id"] if on_openenv else None,
                 user_message=reset.get("user_message"),
+                log=agent_log,
+                max_observation_chars=max_obs,
             )
         else:
+            agent_log = {
+                "kind": "mock",
+                "synthetic": True,
+                "note": "controlled mock policy: no model messages; actions are in the transcript",
+            }
             policy = mock_provider.agent(
                 model["model_id"],
                 instr["text"],
@@ -303,7 +317,13 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
                 obs = {"ok": False, "error": "tool not offered by this task"}
             else:
                 obs = session.request({"op": "call", "tool": tool, "args": args})
-            transcript.append({"step": step, "tool": tool, "args": args, "observation": obs})
+            entry = {"step": step, "tool": tool, "args": args, "observation": obs}
+            if live_caller:
+                # D-008: how much of this observation the model was shown.
+                full = len(json.dumps(obs, default=str))
+                entry["observation_chars"] = full
+                entry["shown_chars"] = min(full, max_obs)
+            transcript.append(entry)
             events.append(
                 {
                     "tool": tool,
@@ -362,7 +382,17 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         "final_output": final,
         "environment_state": state,
         "snapshots": snapshots,
-        "timings": {"wall_ms": wall_ms, "steps": steps},
+        "timings": {
+            "wall_ms": wall_ms,
+            "steps": steps,
+            # D-008: steps whose observation was longer than the model was shown (live only).
+            "observations_cut": sum(
+                1 for t in transcript if t.get("observation_chars", 0) > t.get("shown_chars", 1e18)
+            ),
+        },
+        # D-008: the reset message the agent saw, and the conversation (live) or a mock label.
+        "reset": {"user_message": reset.get("user_message")},
+        "agent_log": agent_log,
         # Live: the provider's reported usage and the approval's prices; mock: a deterministic estimate, no spend.
         "tokens": {
             "in": live_caller.tokens_in if live_caller else steps * mock_provider.STEP_TOKENS[0],

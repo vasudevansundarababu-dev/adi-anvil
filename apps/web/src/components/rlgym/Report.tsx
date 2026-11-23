@@ -287,6 +287,11 @@ function OverviewView({ id, v, models }: { id: string; v: any; models: Model[] }
   return (
     <>
       <ScoreCards cards={v.cards} />
+      {v.observations?.warning && (
+        <p className="badge warn" role="status">
+          {v.observations.warning}
+        </p>
+      )}
       <section className="card">
         <div className="between">
           <h3>SME review sample</h3>

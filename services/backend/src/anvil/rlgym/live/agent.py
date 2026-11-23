@@ -7,7 +7,9 @@ declared operations and the observations. It answers with one JSON action per tu
 and stops the episode at a cap or on an ambiguous dispatch (never retried).
 """
 
+import hashlib
 import json
+import time
 from decimal import Decimal
 
 from anvil.rlgym.common import GymError, system_scope
@@ -19,7 +21,21 @@ PROTOCOL = (
     'object per turn and nothing else: {"tool": "<operation id>", "args": {...}} to call an operation, or '
     '{"final": {...}} when you are done (include "decision" and your findings). Observations come back as JSON.'
 )
-MAX_OBS_CHARS = 12000
+MAX_OBS_CHARS = (
+    12000  # default; a model version may set params.max_observation_chars (part of its config hash)
+)
+
+
+def render_observation(obs, limit=MAX_OBS_CHARS):
+    """The observation text the model is shown and the full length (D-008). A longer observation is cut with an explicit
+    line, never silently mid-JSON."""
+    text = json.dumps(obs, default=str)
+    total = len(text)
+    if total <= limit:
+        return text, total
+    return text[
+        :limit
+    ] + f"\n[cut: showing {limit} of {total} characters; narrow the request]", total
 
 
 class CapReached(GymError):
@@ -129,7 +145,16 @@ class LiveCaller:
         return out
 
 
-def live_agent(call, assignment, operations, application_id=None, user_message=None, max_steps=40):
+def live_agent(
+    call,
+    assignment,
+    operations,
+    application_id=None,
+    user_message=None,
+    max_steps=40,
+    log=None,
+    max_observation_chars=MAX_OBS_CHARS,
+):
     """The model's turns as a policy generator. `operations`: [{"operation_id", "input_schema"?}] or names."""
     ops = [
         {"operation_id": o}
@@ -149,28 +174,55 @@ def live_agent(call, assignment, operations, application_id=None, user_message=N
         {"role": "system", "content": PROTOCOL + "\n\nOperations:\n" + json.dumps(ops)},
         {"role": "user", "content": task},
     ]
+    # D-008: the conversation as sent and received, kept in the sealed bundle. The opening messages once, then each
+    # turn's new messages only (the history is their concatenation), so the record grows linearly.
+    if log is not None:
+        log["messages"] = [dict(m) for m in messages]
+        log["messages_sha256"] = hashlib.sha256(json.dumps(messages).encode()).hexdigest()
+        log["max_observation_chars"] = max_observation_chars
+        log["turns"] = []
     nudged = False
     for _ in range(max_steps):
+        started = time.monotonic()
         out = call(messages)
         action = parse_json(out.text)
         messages.append({"role": "assistant", "content": out.text})
+        turn = None
+        if log is not None:
+            turn = {
+                "turn": len(log["turns"]) + 1,
+                "raw": out.text,
+                "finish_reason": getattr(out, "finish_reason", None),
+                "tokens_in": getattr(out, "tokens_in", None),
+                "tokens_out": getattr(out, "tokens_out", None),
+                "request_id": getattr(out, "request_id", None),
+                "latency_ms": int((time.monotonic() - started) * 1000),
+            }
+            log["turns"].append(turn)
         if not action or not ("final" in action or "tool" in action):
+            if turn is not None:
+                turn["parsed"] = "unreadable"
             if nudged:
                 yield {"final": None}
                 return
             nudged = True
-            messages.append(
-                {"role": "user", "content": "Reply with one JSON object only, as described."}
-            )
+            nudge = "Reply with one JSON object only, as described."
+            messages.append({"role": "user", "content": nudge})
+            if turn is not None:
+                turn["nudge"] = nudge
             continue
         if "final" in action:
+            if turn is not None:
+                turn["parsed"] = "final"
             yield {"final": action["final"]}
             return
+        if turn is not None:
+            turn["parsed"] = "tool"
         obs = yield {"tool": str(action["tool"]), "args": action.get("args") or {}}
-        messages.append(
-            {
-                "role": "user",
-                "content": "Observation: " + json.dumps(obs, default=str)[:MAX_OBS_CHARS],
-            }
-        )
+        shown, total = render_observation(obs, max_observation_chars)
+        messages.append({"role": "user", "content": "Observation: " + shown})
+        if turn is not None:
+            turn["observation_shown"] = "Observation: " + shown
+            turn["observation_chars"] = total
+            turn["observation_cut"] = total > max_observation_chars
     yield {"final": None}

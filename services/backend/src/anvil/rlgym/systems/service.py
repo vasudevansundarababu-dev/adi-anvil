@@ -342,6 +342,8 @@ def _validate(ctx, body):
     _num(params, "temperature", 0)
     _num(params, "max_output_tokens", 1)
     _num(params, "timeout_s", 1)
+    # D-008: how much of one observation the model is shown (default 12,000 characters); part of the config hash.
+    _num(params, "max_observation_chars", 1000)
     _num(limits, "rpm", 0, required=True, exclusive=True)
     _num(limits, "spend_per_episode_usd", 0, required=True, exclusive=True)
     key_id = body.get("key_id")

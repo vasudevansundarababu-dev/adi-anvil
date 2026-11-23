@@ -268,7 +268,7 @@ def plugin_results(c, episode, manifest, vctx, bundle, reference):
             **({"slots": vctx["slots"]} if "slots" in reads else {}),
             "files": files,
         }
-        answers, judge_blocked = {}, {}
+        answers, judge_blocked, judge_records = {}, {}, {}
         for b in blocks:
             st = b.get("settings") or {}
             if st.get("judge") and st.get("judge") != "mock-judge" and st.get("rubric"):
@@ -289,6 +289,8 @@ def plugin_results(c, episode, manifest, vctx, bundle, reference):
                         episode_id=episode["id"],
                         gateway_factory=JUDGE_GATEWAY,
                     )
+                    if got and got.get("record"):
+                        judge_records[b["id"]] = got.pop("record")
                     if got and got.get("blocked"):
                         judge_blocked[b["id"]] = got["blocked"]
                     elif got:
@@ -311,6 +313,8 @@ def plugin_results(c, episode, manifest, vctx, bundle, reference):
                     "detail": why,
                 }
             out[line["block_id"]] = {**line, "plugin": f"{m['id']} {m['version']}"}
+            if line["block_id"] in judge_records:
+                out[line["block_id"]]["judge_record"] = judge_records[line["block_id"]]
     return out
 
 
@@ -338,6 +342,7 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
     for ev, row in configs:
         by_framework.setdefault(row["framework_id"], []).append((ev, row))
     results = {}
+    rubric_records = {}
     for _, group in by_framework.items():
         framework = {
             "id": group[0][1]["framework_id"],
@@ -364,7 +369,7 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
                 # A live judge for Rubric blocks (behind an approval); the mock judge stays the default.
                 from anvil.rlgym.live import judge as live_judge
 
-                extra["rubric_verdicts"] = live_judge.rubric_verdicts(
+                extra["rubric_verdicts"] = rv = live_judge.rubric_verdicts(
                     c,
                     ws,
                     row["config"]["judge"],
@@ -374,6 +379,9 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
                     episode_id=episode["id"],
                     gateway_factory=JUDGE_GATEWAY,
                 )
+                for bid, v in rv.items():
+                    if v.get("record"):
+                        rubric_records[bid] = v.pop("record")
             extras.append(extra)
         try:
             verdicts = sandbox.run_batch(
@@ -398,6 +406,13 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
         section = row["evidence_type"]
         refs = [f"{sealed['bundle_ref']}#{section}"] if section in evidence else []
         lines = v.get("block_lines")
+        # D-008: the judge's exact prompt and raw answer, beside the line it decided.
+        for line in lines or []:
+            rec = (plugin_lines.get(line["block_id"]) or {}).get(
+                "judge_record"
+            ) or rubric_records.get(line["block_id"])
+            if rec:
+                line["judge"] = rec
         receipt = {
             "episode_id": episode["id"],
             "pass_id": str(pass_row["id"]),

@@ -356,7 +356,10 @@ def test_an_unusable_judge_answer_blocks_the_line_never_fails_it(monkeypatch):
         "text",
         gateway_factory=gateway(exc=GymError("LIVE_UNAVAILABLE", "Provider answered 503")),
     )
-    assert err == {"blocked": "judge error: Provider answered 503"}
+    assert err["blocked"] == "judge error: Provider answered 503"
+    assert (
+        err["record"]["note"] == "Provider answered 503"
+    )  # D-008: the prompt is kept even without an answer
     unanswered = lj.answer_rubric(
         C(),
         "ws",
@@ -365,7 +368,8 @@ def test_an_unusable_judge_answer_blocks_the_line_never_fails_it(monkeypatch):
         "text",
         gateway_factory=gateway(exc=gw.Ambiguous("sent, no answer")),
     )
-    assert unanswered == {"blocked": "judge call not answered; not retried"}
+    assert unanswered["blocked"] == "judge call not answered; not retried"
+    assert unanswered["record"]["prompt"].startswith("Rubric: rubric")
     monkeypatch.setattr(approvals, "room", lambda *a, **k: False)
     assert (
         "cap"
