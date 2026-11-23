@@ -129,7 +129,15 @@ def create_batch(c, ws, actor, run_id, body):
                     for cr in v["criteria"]
                 ],
                 "path": {
-                    k: v["path"][k] for k in ("order", "failed_node", "failed_why", "summary")
+                    k: v["path"][k]
+                    for k in (
+                        "order",
+                        "failed_node",
+                        "failed_why",
+                        "summary",
+                        "reached",
+                        "missing_for",
+                    )
                 },
                 "timeline": [
                     {k: t[k] for k in ("step", "tool", "args", "status", "node")}

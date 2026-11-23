@@ -62,6 +62,60 @@ def _node_of(workflow):
     return out
 
 
+def path_facts(wf, criteria, timeline, counts, state, path):
+    """Where an episode failed, said consistently (D-015). "Failed at" only ever names a step the agent reached; failing
+    criteria whose steps were never reached are listed as missing steps; each step appears in one place only; "reached"
+    counts distinct steps, not revisits."""
+    order = [n["id"] for n in wf["nodes"]]
+    rank = {n: i for i, n in enumerate(order)}
+    reached = [n for n in order if n in counts]
+    failing = sorted(
+        (cr for cr in criteria if cr["verdict"] in ("fail", "partial")),
+        key=lambda cr: (
+            min((rank.get(n, len(order)) for n in cr["nodes"]), default=len(order)),
+            cr["criterion_id"],
+        ),
+    )
+    failed_node = failed_why = None
+    for cr in failing:
+        hit = [n for n in sorted(cr["nodes"], key=lambda n: rank.get(n, len(order))) if n in counts]
+        if hit:
+            failed_node, failed_why = hit[0], f"criterion {cr['criterion_id']} {cr['verdict']}"
+            break
+    if not failed_node and any(t["status"] == "denied" for t in timeline):
+        t = next(t for t in timeline if t["status"] == "denied")
+        if t["node"]:
+            failed_node, failed_why = t["node"], f"{t['tool']} was refused"
+    if not failed_node and state == "timed_out" and path:
+        failed_node, failed_why = path[-1], "timed out"
+    not_reached = [n for n in order if n not in counts]
+    missing_for = {}
+    for cr in failing:
+        for n in cr["nodes"]:
+            if n not in counts:
+                missing_for.setdefault(n, []).append(cr["criterion_id"])
+    summary = f"Reached {len(reached)} of {len(order)} steps" + (
+        f" ({', '.join(reached)})" if reached else ""
+    )
+    if failed_node:
+        summary += f"; failed at {failed_node} ({failed_why})"
+    elif missing_for:
+        first = min(missing_for, key=lambda n: rank.get(n, len(order)))
+        summary += f"; stopped before {first}"
+    if not_reached:
+        summary += f"; not reached: {', '.join(not_reached)}"
+        needed = sorted({c for n in not_reached for c in missing_for.get(n, [])})
+        if needed:
+            summary += f" (needed by failed criteria: {', '.join(needed)})"
+    return {
+        "failed_node": failed_node,
+        "failed_why": failed_why,
+        "reached": reached,
+        "missing_for": missing_for,
+        "summary": summary,
+    }
+
+
 def _status(obs):
     if obs.get("blocked"):
         return "denied"
@@ -139,22 +193,12 @@ def view(c, ws, actor, episode_id):
                 "gate": bool(ev.get("is_gate")),
             }
         )
-    failed_node, failed_why = None, None
-    first_fail = next((cr for cr in criteria if cr["verdict"] in ("fail", "partial")), None)
-    if first_fail and first_fail["nodes"]:
-        failed_node, failed_why = (
-            first_fail["nodes"][0],
-            f"criterion {first_fail['criterion_id']} {first_fail['verdict']}",
-        )
-    elif any(t["status"] == "denied" for t in timeline):
-        t = next(t for t in timeline if t["status"] == "denied")
-        failed_node, failed_why = t["node"], f"{t['tool']} was refused"
-    elif e["state"] == "timed_out" and path:
-        failed_node, failed_why = path[-1], "timed out"
     counts = {}
     for t in timeline:
         if t["node"]:
             counts[t["node"]] = counts.get(t["node"], 0) + 1
+    path_info = path_facts(wf, criteria, timeline, counts, e["state"], path)
+    failed_node, failed_why = path_info["failed_node"], path_info["failed_why"]
     taken_edges = sorted({(a, b) for a, b in zip(path, path[1:], strict=False)})
     nodes = [
         {
@@ -256,15 +300,9 @@ def view(c, ws, actor, episode_id):
             "order": path,
             "failed_node": failed_node,
             "failed_why": failed_why,
-            "summary": (
-                f"Took {len(path)} of {len(wf['nodes'])} steps"
-                + (f"; failed at {failed_node} ({failed_why})" if failed_node else "")
-                + (
-                    f"; not reached: {', '.join(n['id'] for n in nodes if not n['taken'])}"
-                    if any(not n["taken"] for n in nodes)
-                    else ""
-                )
-            ),
+            "reached": path_info["reached"],
+            "missing_for": path_info["missing_for"],
+            "summary": path_info["summary"],
         },
         "timeline": timeline,
         "criteria": criteria,
