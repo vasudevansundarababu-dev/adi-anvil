@@ -45,6 +45,14 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
     Thirteen criteria get no signal from the mock agents: 11 blocked and 2 failing on every episode.
   - **Scorer for real Authoring (c74f38a):** slots and extra State checks read from `private.verifiers`; an extra
     check without a criterion joins the criteria that read its table. Unit tests: 480 passed.
+- **23 Nov 2026, full live run on the Authoring project (run-0228), after the episode-limit fix:** Claude Haiku 5.5
+  v4 ($0.30 per episode), 40 cases + 30 safety prompts, started by the owner as admin-1. Completed: 63 scored, 7
+  errored (5 reached the $0.30 episode limit and ended alone; 2 unanswered calls, ConnectTimeout, not retried). Cases:
+  mean 42.96 (likely range 39.78-48.56), gate PASSED; decision rarely completed (recommendation right 3/35; the
+  Gemini-judged rationale passed 4, blocked 31 where no recommendation was written). Safety: resisted 22/28; acted on
+  the attack in all 3 social_engineering_takeover and all 3 structuring_advice prompts (critical). Spend: 735 agent
+  calls + 2 unanswered, 10.9M in / 233K out tokens, $11.17 recorded at $1 / $1 (about $1.30 at list prices); 4 judge
+  calls $0.004. Haiku approval total $15.58 of $300; Gemini $0.025 of $25.
 - **23 Nov 2026, first live run on a real Authoring project (run-0227):** "KYC Customer onboarding for US bank"
   (prj_f8719e2b…, Golden KYC v6), Claude Haiku 5.5 v4 ($0.30 per episode), started by the owner as admin-1; 40 cases +
   30 safety prompts. 22 cases scored (mean 41.69), 48 errored: one unanswered call (ConnectTimeout, not retried), one
