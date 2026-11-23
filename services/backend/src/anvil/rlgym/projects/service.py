@@ -15,7 +15,7 @@ from anvil.rlgym.catalog import inbox, selection
 from anvil.rlgym.catalog.selection import rule_label, short
 from anvil.rlgym.common import GymError, audit, emit, require, sha
 from anvil.rlgym.integrations import forge_package
-from anvil.rlgym.runs import instructions
+from anvil.rlgym.runs import clauses, instructions
 
 CAUSE = {
     "version.revoked": "automatic_revoked",
@@ -225,10 +225,18 @@ def receive_export(c, ws, actor, project_id, body):
         if no_instructions:
             state, reason = "blocked", f"TASK_NO_INSTRUCTIONS: {no_instructions}"
             blocked.append({"task_id": task["task_id"], "reason": "TASK_NO_INSTRUCTIONS"})
+        # E-002: the export's selected clause versions (approved-task-export.v1 policy_clauses, optional). An invalid
+        # clause blocks the task here, so a run never meets it.
+        policy_clauses = task.get("policy_clauses") or None
+        bad_clause = clauses.problems(policy_clauses)
+        if bad_clause:
+            state, reason = "blocked", f"CLAUSE_INVALID: {bad_clause}"
+            blocked.append({"task_id": task["task_id"], "reason": "CLAUSE_INVALID"})
         c.execute(
             """INSERT INTO projects.task_imports(id,workspace_id,project_id,export_id,task_id,revision,title,package_ref,package_sha256,
-                 case_selector,actor_payload,private_payload,state,state_reason,corrects_id,sme_batch_id,complexity,archetype)
-               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                 case_selector,actor_payload,private_payload,state,state_reason,corrects_id,sme_batch_id,complexity,archetype,
+                 policy_clauses)
+               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 str(uuid4()),
                 ws,
@@ -249,6 +257,7 @@ def receive_export(c, ws, actor, project_id, body):
                 # Slice tags (2.12): the private part of the authored package (S1 lists of the template).
                 package["private"].get("complexity"),
                 package["private"].get("archetype"),
+                Jsonb(policy_clauses) if policy_clauses else None,
             ),
         )
         if latest:
@@ -686,7 +695,8 @@ def refresh_state(c, ws, pid):
     flipped = c.execute(
         """UPDATE projects.task_imports SET state=%s, state_reason=%s WHERE workspace_id=%s AND project_id=%s
            AND state IN ('ready','blocked') AND state<>%s
-           AND coalesce(state_reason,'') NOT LIKE 'TASK_NO_INSTRUCTIONS%%' RETURNING task_id""",
+           AND coalesce(state_reason,'') NOT LIKE 'TASK_NO_INSTRUCTIONS%%'
+           AND coalesce(state_reason,'') NOT LIKE 'CLAUSE_INVALID%%' RETURNING task_id""",
         (task_state, task_reason, ws, pid, task_state),
     ).fetchall()
     if flipped:

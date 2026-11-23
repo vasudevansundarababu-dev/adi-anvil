@@ -74,6 +74,9 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
     blocks). Real ZEN plug-in replay re-checked: California, NY, wrong date, wrong product, Marketing and Software
     Delivery public/internal, between: all "agrees". Unit suite: 574 passed (42 clause tests, receipts checked against
     a copy of Studio's receipt schema in tests/fixtures/contracts).
+  - **Export clauses (RG-56):** approved-task-export.v1 `policy_clauses` accepted at import (validated, stored,
+    migration 056), frozen per task in the run manifest, resolved by the worker, and shown to the agent as a "Policy
+    clauses" part. Tasks without clauses: same instructions text and hash. Unit suite: 579 passed.
   - **Not done:** contracts are drafts (not final); no end-to-end run with a clause
     task (none is exported yet); dynamic facts are read only from evidence paths the binding names; no UI for receipts
     beyond the report data.

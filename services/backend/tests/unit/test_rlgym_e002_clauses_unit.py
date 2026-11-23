@@ -453,7 +453,8 @@ def test_worker_scoring_admission_and_activation_are_wired_and_guarded():
     from anvil.rlgym.scoring import service as scoring
 
     w = inspect.getsource(worker.execute)
-    assert "selected = clauses.task_clauses(actor)" in w
+    assert 'selected = frozen.get("clauses") or []' in w
+    assert "instructions.build(actor, selected)" in w
     assert 'bundle["clause_receipts"], bundle["clause_engine"]' in w
     assert 'bindings=m.get("policy_bindings")' in w
     s = inspect.getsource(scoring.score_case)
@@ -619,3 +620,96 @@ def test_s4_instructions_show_clause_text_never_conditions_or_criteria():
         ]
     }
     assert "These policy clauses" not in instructions.build({"sections": {"S4": s4}})["text"]
+
+
+# --- approved-task-export.v1 policy_clauses (Studio ef06119): the shape Authoring exports ------------------------
+
+EXPORTED = {
+    "clause_id": "pol-ca-remote",
+    "version": 3,
+    "title": "California remote accounts",
+    "obligation": "Run one non-documentary check for accounts opened remotely.",
+    "required_actor": "agent",
+    "source": {**SRC, "quote": "Accounts opened remotely require one non-documentary method."},
+    "approval": {"approval_id": "appr-17", "project_id": "prj-kyc", "approved_by": "pm-1"},
+    "condition": CA["condition"],
+    "exceptions": [
+        {
+            "text": "Existing customers with a verified account are exempt.",
+            "condition": {"fact": "existing_customer", "op": "eq", "value": True},
+        },
+        {"text": "Ask compliance when in doubt."},
+    ],
+}
+
+
+PB_EXC = {
+    **KYC_BINDINGS,
+    "facts": [
+        *KYC_BINDINGS["facts"],
+        {"fact": "existing_customer", "environment_fact": "existing_customer"},
+    ],
+}
+
+
+def test_the_exported_clause_shape_resolves_and_keeps_the_quote_out_of_the_receipt():
+    r = outcome(EXPORTED, {**CA_FACTS, "existing_customer": False}, bindings=PB_EXC)
+    assert r["outcome"] == "applies"
+    # The exception's fact is part of the clause: unmapped, it is a setup gap like any condition fact.
+    assert outcome(EXPORTED, CA_FACTS)["setup_gaps"][0]["ref"] == "existing_customer"
+    assert r["clause"] == {
+        "clause_id": "pol-ca-remote",
+        "version": 3,
+        "title": "California remote accounts",
+        "source": SRC,
+    }
+    assert r["approval"]["approved_by"] == "pm-1"
+
+
+def test_an_exception_with_a_condition_is_evaluated_and_a_text_only_one_is_not():
+    assert clauses.exception_conditions(EXPORTED) == [
+        {"fact": "existing_customer", "op": "eq", "value": True}
+    ]
+    r = outcome(EXPORTED, {**CA_FACTS, "existing_customer": True}, bindings=PB_EXC)
+    assert r["outcome"] == "skipped" and r["failed_conditions"][0].startswith("exception holds")
+
+
+def test_task_level_policy_clauses_win_and_invalid_ones_are_reported_for_import():
+    task = {"policy_clauses": [EXPORTED]}
+    assert clauses.task_clauses({"policy_clauses": [BASELINE]}, task) == [EXPORTED]
+    assert clauses.task_clauses({"policy_clauses": [BASELINE]}, {"policy_clauses": None}) == [
+        BASELINE
+    ]
+    assert clauses.problems(None) is None and clauses.problems([EXPORTED]) is None
+    bad = {**EXPORTED, "condition": {"fact": "x", "op": "like"}}
+    assert "unknown operator" in clauses.problems([bad])
+    rows = [{"task_id": "T", "actor": {"assignment": "x"}, "policy_clauses": [bad]}]
+    assert clauses.admission_gaps(rows, ENV, KYC_BINDINGS)
+
+
+def test_instructions_add_the_exported_clauses_and_never_change_without_them():
+    from anvil.rlgym.runs import instructions
+
+    actor = {"assignment": "Review the application."}
+    plain_ = instructions.build(actor)
+    assert instructions.build(actor, []) == plain_ and instructions.build(actor, None) == plain_
+    t = instructions.build(actor, [EXPORTED])["text"]
+    assert t.startswith("Review the application.\n\n## Policy clauses\n")
+    assert (
+        "- Clause pol-ca-remote v3 [§4.2]: Run one non-documentary check for accounts opened remotely."
+        in t
+    )
+    assert "   Exception: Existing customers with a verified account are exempt." in t
+    for hidden in ("governing_state", "existing_customer", "appr-17", "pm-1"):
+        assert hidden not in t, hidden
+    # Already rendered in S4: not repeated.
+    s4_actor = {"sections": {"S4": {"policyBindings": [EXPORTED]}}}
+    assert "## Policy clauses" not in instructions.build(s4_actor, [EXPORTED])["text"]
+
+
+def test_import_stores_and_checks_the_export_clauses():
+    from anvil.rlgym.projects import service as projects
+
+    src = inspect.getsource(projects)
+    assert 'policy_clauses = task.get("policy_clauses") or None' in src
+    assert "clauses.problems(policy_clauses)" in src and "CLAUSE_INVALID%%" in src

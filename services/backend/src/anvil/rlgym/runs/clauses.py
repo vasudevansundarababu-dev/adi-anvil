@@ -10,10 +10,13 @@ Contracts (Studio drafts d27063d / a957322 / 2f4e9bf, 23 Nov 2026, not yet final
   environment_fact}], clauses: [{clause_id, clause_version?, needs: {tools, evidence, checks: [{criterion_id,
   block_ids}]}}]}; the template.v1 form with `obligation_checks` is read too.
 
-A task's selected clauses come from Authoring's export (S4 `policyBindings`, or actor `policy_clauses`); each is
-{clause: {clause_id, version, title?, source: {document_id, document_version, sha256, locator?}},
- approval: {approval_id, project_id, ...}, condition, exceptions?, text?}. The flat provisional form used before the
-drafts (clause_id, clause_version, approval_id, source_sha256, obligation, criteria, facts) is still read.
+A task's selected clauses come from Authoring's export: approved-task-export.v1 `policy_clauses` on the exported
+task (Studio ef06119), stored with the task at import and frozen in the run manifest:
+{clause_id, version, title?, obligation?, required_actor?, source: {document_id, document_version, sha256, locator?,
+ quote?}, approval: {approval_id, project_id, approved_by?, approved_at?}, condition, exceptions?: [{text, condition?}]}.
+Also read: S4 `policyBindings` / actor `policy_clauses` in the same shape, the nested {clause: {...}} form, and the
+flat provisional form used before the drafts (clause_version, approval_id, source_sha256, obligation{tools, evidence},
+criteria, facts). An exception with only text (no condition) is shown to the agent but never evaluated.
 
 Outcomes (the owner's rule, E-002 §9.2):
 - setup_gap: a tool the obligation needs is not offered, a table a check reads is not captured, or a fact the condition
@@ -201,8 +204,11 @@ def evaluate(pred, facts):
 # --- task clauses, bindings and facts -----------------------------------------------------------------------
 
 
-def task_clauses(actor):
-    """The clause versions a task selected (empty list: no clauses, the run behaves exactly as before)."""
+def task_clauses(actor, task=None):
+    """The clause versions a task selected (empty list: no clauses, the run behaves exactly as before). The export's
+    task-level `policy_clauses` win; then S4 policyBindings, then actor policy_clauses."""
+    if task and isinstance(task.get("policy_clauses"), list) and task["policy_clauses"]:
+        return [c for c in task["policy_clauses"] if isinstance(c, dict)]
     actor = actor or {}
     sections = actor.get("sections") if isinstance(actor.get("sections"), dict) else {}
     s4 = sections.get("S4") if isinstance(sections.get("S4"), dict) else {}
@@ -215,10 +221,15 @@ def normal(cl):
     if isinstance(cl.get("clause"), dict):
         clause = dict(cl["clause"])
     else:
+        src = cl.get("source") if isinstance(cl.get("source"), dict) else None
         clause = {
             "clause_id": cl.get("clause_id"),
-            "version": cl.get("clause_version"),
-            "source": {"sha256": cl.get("source_sha256")},
+            "version": cl.get("version") or cl.get("clause_version"),
+            **({"title": cl["title"]} if cl.get("title") else {}),
+            # The receipt's source identity: the document and its hash, never the quoted text.
+            "source": {k: v for k, v in src.items() if k != "quote"}
+            if src
+            else {"sha256": cl.get("source_sha256")},
         }
     approval = (
         dict(cl["approval"])
@@ -226,6 +237,18 @@ def normal(cl):
         else {"approval_id": cl.get("approval_id")}
     )
     return clause, approval
+
+
+def exception_conditions(cl):
+    """The exceptions that can be evaluated: a predicate, or {text, condition} with a condition."""
+    out = []
+    for e in cl.get("exceptions") or []:
+        if isinstance(e, dict) and ("text" in e or "condition" in e):
+            if e.get("condition"):
+                out.append(e["condition"])
+        elif isinstance(e, dict):
+            out.append(e)
+    return out
 
 
 def label(cl):
@@ -239,7 +262,7 @@ def check_clause(cl):
         if not clause.get(key):
             raise GymError("CLAUSE_INVALID", f"A selected clause has no {key}")
     validate(cl.get("condition"))
-    for i, e in enumerate(cl.get("exceptions") or []):
+    for i, e in enumerate(exception_conditions(cl)):
         validate(e, f"exceptions[{i}]")
 
 
@@ -264,7 +287,7 @@ def needs(cl, bindings):
             if o.get("clause_id") == clause["clause_id"]
         ]
         return {"tools": [], "evidence": [], "checks": checks}
-    ob = cl.get("obligation") or {}
+    ob = cl.get("obligation") if isinstance(cl.get("obligation"), dict) else {}
     return {
         "tools": list(ob.get("tools") or []),
         "evidence": list(ob.get("evidence") or []),
@@ -356,7 +379,7 @@ def coverage(cl, env, bindings=None):
     if bindings and bindings.get("facts") is not None:
         bound = {b.get("fact") for b in bindings["facts"]}
         names = facts_in(cl.get("condition")).union(
-            *(facts_in(e) for e in cl.get("exceptions") or [])
+            *(facts_in(e) for e in exception_conditions(cl))
         )
         gaps += [
             {
@@ -390,7 +413,7 @@ def resolve(cl, case, env, evidence=None, bindings=None, context=None):
     check_clause(cl)
     context = context or {}
     clause, approval = normal(cl)
-    cond, exceptions = cl.get("condition"), cl.get("exceptions") or []
+    cond, exceptions = cl.get("condition"), exception_conditions(cl)
     names = sorted(facts_in(cond).union(*(facts_in(e) for e in exceptions)))
     facts, used, dynamic = {}, [], False
     for n in names:
@@ -491,12 +514,24 @@ def receipts(clauses, case, env, evidence=None, bindings=None, context=None, zen
 # --- admission and scoring -----------------------------------------------------------------------------------
 
 
+def problems(selected):
+    """None if every exported clause is valid (or there are none), else the first reason (import check)."""
+    for cl in selected or []:
+        if not isinstance(cl, dict):
+            return "a policy clause must be an object"
+        try:
+            check_clause(cl)
+        except GymError as exc:
+            return f"{label(cl)}: {exc.message}"
+    return None
+
+
 def admission_gaps(tasks, env, bindings=None):
     """Per task, invalid clauses and the clauses whose tools, evidence or fact bindings the bound environment and
     template lack. Any entry blocks the run (E-002 §9.2): a setup gap is fixed before the run, never scored."""
     problems = []
     for t in tasks:
-        for cl in task_clauses(t.get("actor")):
+        for cl in task_clauses(t.get("actor"), t):
             try:
                 check_clause(cl)
             except GymError as exc:

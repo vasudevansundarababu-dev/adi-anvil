@@ -227,7 +227,18 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
     from the actor payload only, D-007) and tool results; the run's reference answers are never loaded here."""
     m = manifest["manifest"]
     # No instructions, no episode: never a generic fallback (raises TASK_NO_INSTRUCTIONS before any container call).
-    instr = instructions.build(actor)
+    # E-002: the task's clause versions as frozen in the run manifest (empty for tasks without clauses).
+    frozen = next(
+        (
+            t
+            for t in m.get("tasks") or []
+            if t.get("task_id") == episode["task_id"]
+            and t.get("revision") == episode["task_revision"]
+        ),
+        {},
+    )
+    selected = frozen.get("clauses") or []
+    instr = instructions.build(actor, selected)
     model = next(x for x in m["models"] if x["system_id"] == episode["system_id"])
     offered = set((actor or {}).get("tools") or [])
     prompt = None
@@ -402,7 +413,6 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
     }
     # E-002: one receipt per selected clause (case episodes only), resolved on the case's facts and this episode's
     # sealed evidence. A task without clauses gets no key, so its bundle is exactly as before.
-    selected = clauses.task_clauses(actor)
     if selected and episode["kind"] != "safety":
         case = {
             "case_id": episode["case_id"],

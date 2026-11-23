@@ -239,7 +239,9 @@ def admission_check(ctx, body):
             if why:
                 not_ready.append(f"{t['task_id']} r{t['revision']}: {why}")
             else:
-                t["instructions_sha256"] = instructions.build(t["actor"])["sha256"]
+                t["instructions_sha256"] = instructions.build(
+                    t["actor"], clauses.task_clauses(t["actor"], t)
+                )["sha256"]
         now_ready = {
             r["id"]
             for r in ctx.c.execute(
@@ -261,7 +263,7 @@ def admission_check(ctx, body):
         )
         resolved["tasks"] = tasks
         # E-002: every selected clause must be valid; its setup gaps are checked once the environment is known.
-        clause_tasks = [t for t in tasks if clauses.task_clauses(t["actor"])]
+        clause_tasks = [t for t in tasks if clauses.task_clauses(t["actor"], t)]
         bindings = ctx.c.execute(
             "SELECT * FROM suites.suite_bindings WHERE suite_version_id=%s ORDER BY alias",
             (sv["id"],),
@@ -687,19 +689,11 @@ def _manifest(run_id, check):
                 "case_selector": t["case_selector"],
                 # D-007: hash of the instructions the agent is given for this task (built from the actor payload).
                 "instructions_sha256": t.get("instructions_sha256"),
-                # E-002: the clause versions this task selected (absent when none, so manifests stay as before).
+                # E-002: the clause versions this task selected, frozen whole (the worker resolves from these, so a
+                # run reproduces from its manifest). Absent when none, so manifests stay as before.
                 **(
-                    {
-                        "clauses": [
-                            {
-                                "clause": clauses.normal(cl)[0],
-                                "approval": clauses.normal(cl)[1],
-                                "condition": cl.get("condition"),
-                            }
-                            for cl in clauses.task_clauses(t.get("actor"))
-                        ]
-                    }
-                    if clauses.task_clauses(t.get("actor"))
+                    {"clauses": clauses.task_clauses(t.get("actor"), t)}
+                    if clauses.task_clauses(t.get("actor"), t)
                     else {}
                 ),
             }

@@ -87,23 +87,7 @@ def _section(key, sec):
             )
         # E-002 §4.3.6: selected clause versions, as the agent reads them: the clause text (or quote) and its
         # identity. Conditions, exceptions and the criteria that test them are for the RL Gym, not the agent.
-        chosen = [b for b in sec.get("policyBindings") or [] if isinstance(b, dict)]
-        if chosen:
-            lines.append("These policy clauses apply where their conditions hold:")
-            for b in chosen:
-                # clause-receipt.v1 identity ({clause: {clause_id, version, title, source}}) or the flat form.
-                ident = b["clause"] if isinstance(b.get("clause"), dict) else {}
-                cid = ident.get("clause_id") or b.get("clause_id")
-                ver = ident.get("version") or b.get("clause_version")
-                loc = _text((ident.get("source") or {}).get("locator")) or _text(b.get("locator"))
-                body = (
-                    _text(b.get("text"))
-                    or _text(b.get("quote"))
-                    or _text(ident.get("title"))
-                    or "(text available through policy.read)"
-                )
-                where = f" [{loc}]" if loc else ""
-                lines.append(f"- Clause {cid} v{ver}{where}: {body}")
+        lines += clause_lines(sec.get("policyBindings"))
         return lines + _fields(
             {k: v for k, v in sec.items() if k not in ("statePolicies", "policyBindings")}, ()
         )
@@ -142,6 +126,37 @@ def _section(key, sec):
     return _fields(sec, ())
 
 
+def clause_lines(selected):
+    """The selected clause versions as the agent reads them: identity, locator, the obligation (or quote, or title)
+    and any exception's text. Conditions and the criteria that test them are for the RL Gym, never the agent."""
+    chosen = [b for b in selected or [] if isinstance(b, dict)]
+    if not chosen:
+        return []
+    lines = ["These policy clauses apply where their conditions hold:"]
+    for b in chosen:
+        # The export form (clause_id, version, source{locator, quote}), {clause: {...}}, or the flat provisional form.
+        ident = b["clause"] if isinstance(b.get("clause"), dict) else b
+        src = ident.get("source") if isinstance(ident.get("source"), dict) else {}
+        cid = ident.get("clause_id")
+        ver = ident.get("version") or b.get("clause_version")
+        loc = _text(src.get("locator")) or _text(b.get("locator"))
+        obligation = b.get("obligation") if isinstance(b.get("obligation"), str) else None
+        body = (
+            _text(b.get("text"))
+            or _text(obligation)
+            or _text(src.get("quote"))
+            or _text(b.get("quote"))
+            or _text(ident.get("title"))
+            or "(text available through policy.read)"
+        )
+        where = f" [{loc}]" if loc else ""
+        lines.append(f"- Clause {cid} v{ver}{where}: {body}")
+        for e in b.get("exceptions") or []:
+            if isinstance(e, dict) and _text(e.get("text")):
+                lines.append(f"   Exception: {_text(e['text'])}")
+    return lines
+
+
 def from_sections(sections):
     parts = []
     keys = [k for k in ORDER if k in sections] + sorted(k for k in sections if k not in ORDER)
@@ -152,8 +167,9 @@ def from_sections(sections):
     return "\n\n".join(parts)
 
 
-def build(actor):
-    """{"text", "sha256", "source"} for the actor payload, or GymError TASK_NO_INSTRUCTIONS."""
+def build(actor, clauses=None):
+    """{"text", "sha256", "source"} for the actor payload, or GymError TASK_NO_INSTRUCTIONS. `clauses`: the export's
+    selected clause versions (E-002), added as a "Policy clauses" part; none → the text and hash are as before."""
     actor = actor or {}
     if isinstance(actor.get("assignment"), str) and actor["assignment"].strip():
         text, source = actor["assignment"].strip(), "assignment"
@@ -166,6 +182,13 @@ def build(actor):
             "TASK_NO_INSTRUCTIONS",
             "The task's actor payload has no assignment and no sections; it cannot be given to an agent",
         )
+    s4 = (
+        (actor.get("sections") or {}).get("S4") if isinstance(actor.get("sections"), dict) else None
+    )
+    already = isinstance(s4, dict) and bool(s4.get("policyBindings"))  # rendered inside S4 already
+    extra = [] if already else clause_lines(clauses)
+    if extra:
+        text += "\n\n## Policy clauses\n" + "\n".join(extra)
     return {"text": text, "sha256": hashlib.sha256(text.encode()).hexdigest(), "source": source}
 
 
