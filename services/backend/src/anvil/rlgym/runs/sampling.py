@@ -70,11 +70,12 @@ def select_cases(plan, cells, cases):
 def match_task(case, tasks, seed):
     """The ready task of this case's class: same application type and completeness; a task focused on an edge tag is
     used only for cases carrying that tag, and preferred for them."""
+    # A task without `completeness` (ADI Forge's exports name only the application type) takes either completeness.
     same = [
         t
         for t in tasks
         if t["case_selector"]["application_type"] == case["application_type"]
-        and t["case_selector"]["completeness"] == case["completeness"]
+        and t["case_selector"].get("completeness") in (None, case["completeness"])
     ]
     focused = [
         t

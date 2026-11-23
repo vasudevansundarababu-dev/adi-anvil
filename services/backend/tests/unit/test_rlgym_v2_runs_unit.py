@@ -370,3 +370,40 @@ def test_package_refs_are_provenance_only(monkeypatch):
     for bad in (f"forge://packages/{'b' * 64}", "https://elsewhere/p.json", "file:///etc/passwd"):
         with pytest.raises(GymError):
             integrations.forge_package({"task_id": "t", "package_ref": bad, "package_sha256": sha})
+
+
+def test_a_task_without_completeness_takes_its_type_at_either_completeness():
+    # ADI Forge exports name only the application type (prj_f8719e2b…, Golden KYC v6); both crashed with KeyError.
+    from anvil.rlgym.runs.sampling import match_task
+    from anvil.rlgym.suites.service import _cases_for
+
+    forge = {
+        "task_id": "t-forge",
+        "case_selector": {"application_type": "custodial", "edge_cases": []},
+    }
+    exact = {
+        "task_id": "t-exact",
+        "case_selector": {
+            "application_type": "custodial",
+            "completeness": "complete",
+            "edge_cases": [],
+        },
+    }
+    other = {
+        "task_id": "t-other",
+        "case_selector": {"application_type": "individual", "edge_cases": []},
+    }
+    incomplete = {
+        "case_id": "c1",
+        "application_type": "custodial",
+        "completeness": "incomplete",
+        "edge_cases": [],
+    }
+    assert match_task(incomplete, [forge, other], 1)["task_id"] == "t-forge"
+    assert match_task(incomplete, [exact, other], 1) is None
+    complete = {**incomplete, "case_id": "c2", "completeness": "complete"}
+    assert match_task(complete, [forge, exact], 1)["task_id"] in ("t-forge", "t-exact")
+    cat = {"cells": {"custodial|complete": 3, "custodial|incomplete": 2, "individual|complete": 0}}
+    assert _cases_for(cat, forge["case_selector"]) == 5
+    assert _cases_for(cat, exact["case_selector"]) == 3
+    assert _cases_for(cat, other["case_selector"]) == 0

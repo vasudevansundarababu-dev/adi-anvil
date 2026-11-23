@@ -105,7 +105,7 @@ def appendices(d, view):
                 "selector": " · ".join(
                     [
                         t["case_selector"]["application_type"],
-                        t["case_selector"]["completeness"],
+                        t["case_selector"].get("completeness") or "any completeness",
                         *(t["case_selector"].get("edge_cases") or []),
                     ]
                 ),

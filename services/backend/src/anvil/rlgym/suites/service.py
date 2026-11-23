@@ -26,6 +26,15 @@ DEFAULT_PLAN = {
 }
 
 
+def _cases_for(cat, sel):
+    """Catalog cases a task's selector can take: its type at its completeness, or at either completeness when the
+    selector names none (ADI Forge's exports name only the application type)."""
+    cells = cat.get("cells", {})
+    if sel.get("completeness"):
+        return cells.get(f"{sel['application_type']}|{sel['completeness']}", 0)
+    return sum(n for k, n in cells.items() if k.split("|", 1)[0] == sel["application_type"])
+
+
 def _recipe_text(recipe):
     """An edge case's recipe as text for a data request description (plain English or structured conditions)."""
     if not recipe or isinstance(recipe, str):
@@ -1310,10 +1319,7 @@ def view(c, ws, sv_id):
         for t in tasks
         if cat
         and (
-            cat.get("cells", {}).get(
-                f"{t['case_selector']['application_type']}|{t['case_selector']['completeness']}", 0
-            )
-            == 0
+            _cases_for(cat, t["case_selector"]) == 0
             or any(
                 cat.get("dimensions", {}).get("edge_cases", {}).get(e, 0) == 0
                 for e in t["case_selector"].get("edge_cases", [])

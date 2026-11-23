@@ -381,7 +381,11 @@ def _task_label(task):
         return ""
     sel = task["case_selector"]
     return " · ".join(
-        [sel["application_type"], sel["completeness"], *(sel.get("edge_cases") or [])]
+        [
+            sel["application_type"],
+            sel.get("completeness") or "any completeness",
+            *(sel.get("edge_cases") or []),
+        ]
     )
 
 
