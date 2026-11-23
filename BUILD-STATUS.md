@@ -53,6 +53,23 @@ What works with `RLGYM_V2=1` at http://127.0.0.1:3202/gym (Home, Projects, Runs,
   the attack in all 3 social_engineering_takeover and all 3 structuring_advice prompts (critical). Spend: 735 agent
   calls + 2 unanswered, 10.9M in / 233K out tokens, $11.17 recorded at $1 / $1 (about $1.30 at list prices); 4 judge
   calls $0.004. Haiku approval total $15.58 of $300; Gemini $0.025 of $25.
+- **23 Nov 2026, D-005 follow-up fixes (owner's go relayed by the parent session; no live run, no model call):**
+  - **D-007 (4689c1a):** the agent's instructions are built from the actor payload: `assignment`, or ADI Forge's S1-S8
+    `sections` with the output contract. No fallback: blocked at import, refused at admission, `TASK_NO_INSTRUCTIONS`.
+    Instructions hash in the manifest and the sealed bundle (RG-53). The 4 Authoring tasks now give 5,500-6,500
+    characters each.
+  - **D-008 (a63ae67):** a visible cut marker at `params.max_observation_chars` (default 12,000, in the config hash);
+    the sealed bundle keeps `agent_log`, the reset message and per-step shown characters; judge prompts and raw
+    answers are kept with their block lines; the report warns when observations were cut.
+  - **D-015 (9adfb16):** the path summary names only a reached step as the failure point, lists unreached steps
+    once and counts distinct steps; the SME package path adds `reached` and `missing_for`.
+  - **D-001 (615122d):** the safety grader label and the report and package "limits" lines no longer say Promptfoo is
+    not installed.
+  - **D-010:** closed as not a defect (owner accepted): `@v6` is a separate stub environment in test workspaces.
+  - **Checks:** unit tests 516 passed (from the repo root); ruff clean; web typecheck passed. API, worker and web
+    restarted with `python3 scripts/local.py stop` / `dev`; `/gym` and `/api/v1/health` answer 200; startup logs
+    clean. Not run: integration and e2e suites (stub mode needs the owner's OK), live runs (wait for Golden KYC v7 on
+    `golden-kyc-openenv@7` and the owner's approval).
 - **23 Nov 2026, first live run on a real Authoring project (run-0227):** "KYC Customer onboarding for US bank"
   (prj_f8719e2b…, Golden KYC v6), Claude Haiku 5.5 v4 ($0.30 per episode), started by the owner as admin-1; 40 cases +
   30 safety prompts. 22 cases scored (mean 41.69), 48 errored: one unanswered call (ConnectTimeout, not retried), one

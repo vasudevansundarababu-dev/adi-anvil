@@ -5,7 +5,7 @@ Local list until the owner logs them in the tracker. Newest first.
 ## D-015 Path summary sent with SME review items contradicts itself (low)
 
 - **Found:** 23 Nov 2026, from the Authoring side, on batch smr-0051 (run-0228). Assigned to the RL Gym. Status:
-  **investigated, planned, not fixed** (fix only on "go").
+  **fixed in 9adfb16** (owner's go, 23 Nov 2026). Batches already sent keep their text.
 - **Example as sent** (run-0228-e0031): "Took 3 of 8 steps; failed at account (criterion account_agreements fail); not
   reached: verify, screen, account, state, act". The path order was `intake, identify, decide`.
 - **Causes** (`results/episodes.py`, the episode viewer, which the SME package copies in `results/sme.py`):
@@ -49,7 +49,7 @@ Local list until the owner logs them in the tracker. Newest first.
 ## D-007 The live agent never gets the authored task (high)
 
 - **Found:** 23 Nov 2026, from the D-005 evidence pack for run-0228. Global ID from the master log; assigned to the RL
-  Gym. Status: **investigated, planned, not fixed** (fix only on "go").
+  Gym. Status: **fixed in 4689c1a** (owner's go, 23 Nov 2026; RG-53). Not yet measured with a live run.
 - **Cause:** `runs/worker.py` passes `actor["assignment"]` to `live_agent` (and to the mock agent). Only the stub and
   fixture exports carry `assignment`; every project except one has it. The real ADI Forge export
   (`prj_f8719e2b67a04d598256dca089437be5`, 4 tasks) sends the task as `sections` S1 to S8 instead, with no
@@ -95,7 +95,8 @@ Local list until the owner logs them in the tracker. Newest first.
 
 ## D-008 Observations cut at 12,000 characters; prompts and raw responses not recorded (high)
 
-- **Found:** 23 Nov 2026, D-005 evidence pack. Assigned to the RL Gym. Status: **investigated, planned, not fixed**.
+- **Found:** 23 Nov 2026, D-005 evidence pack. Assigned to the RL Gym. Status: **fixed in a63ae67** (owner's go,
+  23 Nov 2026). Bundles sealed before the fix stay as they were.
 - **Cause:**
   - `live/agent.py` cuts each observation with `json.dumps(obs)[:MAX_OBS_CHARS]` (12,000). The cut is silent and
     leaves broken JSON. In run-0228, `application.read` returned about 75,600 characters, so the agent never saw its
@@ -141,7 +142,7 @@ Local list until the owner logs them in the tracker. Newest first.
      - report warning.
 - **Effect on past results:** none changes. Past bundles stay as sealed.
 
-## D-010 `golden-kyc-openenv@v6` reference rows (low): proposed to close as not a defect
+## D-010 `golden-kyc-openenv@v6` reference rows (low): closed, not a defect
 
 - **Reported:** 23 Nov 2026 from my D-005 evidence pack, which said stale `@v6` reference rows contradict the @6 case
   data. **That reading was mine and it was wrong.**
@@ -160,7 +161,7 @@ Local list until the owner logs them in the tracker. Newest first.
   - The pack README is corrected.
   - The only real issue is the look-alike version IDs (`@6` real, `@v6` stub). Proposed: the environment list labels
     stub-registry versions "stub registry". That is a UI wording change, if the owner wants it.
-- **Status:** proposed to close (owner's call).
+- **Status:** **closed, not a defect** (owner accepted, 23 Nov 2026). No code change.
 
 ## D-006 note (Studio)
 
@@ -209,4 +210,5 @@ D-006 stays with Studio.
   runs only as a scoring plug-in). New results carry the new label; results already recorded keep theirs, because the
   grader label is part of the record of how an episode was graded.
 - **Severity:** low (wording; scores unaffected).
-- **Status:** open, not fixed.
+- **Status:** **fixed in 615122d** (owner's go, 23 Nov 2026). The report and package "limits" lines had the same
+  stale text and were fixed too. Results already recorded keep their label.
