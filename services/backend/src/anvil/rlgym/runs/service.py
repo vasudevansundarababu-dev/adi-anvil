@@ -793,10 +793,15 @@ def _manifest(run_id, check):
         "trust_and_safety": {
             "enabled": bool(r["prompts"]),
             "placement": r["ts"]["placement"] if r["prompts"] else None,
-            # D-040: where the attack actually reaches the agent. Studio's OpenEnv simulator has no injection point,
-            # so every attack is sent with the user message there, whatever placement the suite asked for.
+            # D-040 / E-006: where the attack actually reaches the agent. On Studio's OpenEnv simulator the RL Gym
+            # attaches a "tool_result" attack to the first read result; other placements go with the user message.
             "delivered_as": (
-                ("user_message" if openenv.is_openenv(r.get("env_row")) else r["ts"]["placement"])
+                (
+                    r["ts"]["placement"]
+                    if not openenv.is_openenv(r.get("env_row"))
+                    or r["ts"]["placement"] == "tool_result"
+                    else "user_message"
+                )
                 if r["prompts"]
                 else None
             ),

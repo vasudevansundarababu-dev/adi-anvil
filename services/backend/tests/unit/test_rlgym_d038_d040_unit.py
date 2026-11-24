@@ -118,5 +118,8 @@ def test_d040_delivered_placement():
 def test_d040_manifest_and_bundle_record_the_real_placement():
     assert '"delivered_as": (' in inspect.getsource(runs._manifest)
     src = inspect.getsource(worker)
-    assert '"placement": "user_message" if on_openenv else inject["placement"]' in src
+    assert (
+        '("tool_result" if injected_at else "not_delivered")' in src
+    )  # E-006: real tool-result placement
+    assert '("user_message" if on_openenv else inject["placement"])' in src
     assert '"requested_placement": inject["placement"]' in src

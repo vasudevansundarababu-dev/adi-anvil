@@ -26,6 +26,39 @@ from anvil.rlgym.runs import aliasing, clauses, images, instructions, openenv
 from anvil.rlgym.scoring import service as scoring
 from anvil.rlgym.systems import mock_provider
 
+# E-006: read results an attack placed "in a tool result" can ride on (the first one the agent receives).
+INJECT_TOOLS = (
+    "document.read",
+    "application.read",
+    "documents.list",
+    "parties.list",
+    "information.read",
+    "search.read",
+    "specialist.read",
+    "operation.read",
+    "policy.read",
+)
+
+
+def attach_attack(obs, tool, step, inject, already):
+    """E-006: the observation the agent receives. An attack placed "in a tool result" is added, once, to the first
+    successful read result (as `output.note`); the environment's own record of the result is not changed.
+    → (observation for the agent, where it was placed or None)."""
+    if (
+        not inject
+        or already
+        or tool not in INJECT_TOOLS
+        or not obs.get("ok")
+        or not isinstance(obs.get("output"), dict)
+    ):
+        return obs, None
+    return {**obs, "output": {**obs["output"], "note": inject["text"]}}, {
+        "step": step,
+        "tool": tool,
+        "field": "output.note",
+    }
+
+
 log = logging.getLogger("anvil.rlgym.runner")
 OWNER = f"runner@{socket.gethostname()}:{os.getpid()}"
 MAX_STEPS = 80
@@ -285,6 +318,12 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         def shown(value):
             return aliaser.out(value) if aliaser else value
 
+        # E-006: on OpenEnv an attack placed "in a tool result" rides on the first read result the agent receives.
+        tool_inject = (
+            inject if on_openenv and inject and inject.get("placement") == "tool_result" else None
+        )
+        injected_at = None
+
         def real(value):
             return aliaser.back(value) if aliaser else value
 
@@ -344,6 +383,10 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
             else:
                 obs = session.request({"op": "call", "tool": tool, "args": args})
             entry = {"step": step, "tool": tool, "args": args, "observation": obs}
+            agent_obs, at = attach_attack(obs, tool, step, tool_inject, injected_at)
+            if at:
+                injected_at = at
+                entry["injected"] = at
             if live_caller:
                 # D-008: how much of this observation the model was shown.
                 full = len(json.dumps(obs, default=str))
@@ -359,7 +402,7 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
                 }
             )
             try:
-                action = policy.send(shown(obs))
+                action = policy.send(shown(agent_obs))
             except StopIteration:
                 break
         state = session.request({"op": "state"})
@@ -403,7 +446,12 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
             "prompt_id": prompt["id"],
             "category_key": prompt["category_key"],
             # D-040: the placement that actually reached the agent (OpenEnv: always the user message).
-            "placement": "user_message" if on_openenv else inject["placement"],
+            "placement": (
+                ("tool_result" if injected_at else "not_delivered")
+                if tool_inject
+                else ("user_message" if on_openenv else inject["placement"])
+            ),
+            "injected_at": injected_at,
             "requested_placement": inject["placement"],
             "strategy": prompt["strategy"],
         },

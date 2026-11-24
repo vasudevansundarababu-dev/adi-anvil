@@ -307,8 +307,17 @@ class OpenEnvSession:
                 "episode_id": self.episode,
                 # Studio's simulator has no injection point; a trust-and-safety prompt reaches the agent with the
                 # user message, and the bundle records that placement.
-                "user_message": inject["text"] if inject else None,
-                "injection": inject and "rlgym_user_message",
+                # E-006: an attack placed in a tool result is attached by the RL Gym to the first read result the agent
+                # receives (runs/worker.py); any other placement still goes with the user message.
+                "user_message": inject["text"]
+                if inject and inject.get("placement") != "tool_result"
+                else None,
+                "injection": inject
+                and (
+                    "rlgym_tool_result"
+                    if inject.get("placement") == "tool_result"
+                    else "rlgym_user_message"
+                ),
             }
         if op == "call":
             out = self.bridge.call(

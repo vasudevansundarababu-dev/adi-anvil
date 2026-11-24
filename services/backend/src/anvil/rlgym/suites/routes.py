@@ -119,6 +119,14 @@ def routes():
         with scope(request, ws) as ctx:
             return ok(environment.options(ctx.c, ctx.ws, sv), request)
 
+    # E-006 §3: the Trust & Safety category table (applies here? can be graded? prompts and where they're delivered).
+    @r.get(W + "/suite-versions/{sv}/ts-categories")
+    def ts_categories(ws: str, sv: str, request: Request):
+        from anvil.rlgym.suites import safety_table
+
+        with scope(request, ws) as ctx:
+            return ok(safety_table.table(ctx.c, ctx.ws, sv), request)
+
     @r.get(W + "/suite-versions/{sv}/coverage")
     def coverage(ws: str, sv: str, request: Request):
         with scope(request, ws) as ctx:

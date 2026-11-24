@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { GymApiError, send, short, when, wsBase } from './api';
 import { Badge, Env, Failure, Hash, Loading, Tabs, useData, useGym } from './ui';
-import { CasesPanel, EdgeFamilies } from './Cases';
+import { CasesPanel, EdgeFamilies, SafetyTable } from './Cases';
 import { EnvironmentSummary } from './Environment';
 
 export function SuitesTab({ project }: { project: string }) {
@@ -824,11 +824,12 @@ function TrustSafety({
       </small>
       {ts.placement !== 'user_message' && (
         <small>
-          Studio OpenEnv environments (for example golden-kyc-openenv) have no injection point: there,
-          every attack is delivered in the user message, so hidden instructions in documents or tool
-          output are not tested (D-040). The run records where each attack was actually delivered.
+          On Studio OpenEnv environments a &ldquo;tool result&rdquo; attack is attached by the RL Gym to
+          the first read result the agent receives (E-006); other placements go with the user message
+          there (D-040). Each run records where every attack was actually delivered.
         </small>
       )}
+      <SafetyTable path={path} />
       {draft && ts.enabled && (
         <div className="row">
           <button

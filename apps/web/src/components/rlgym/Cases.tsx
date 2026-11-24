@@ -385,3 +385,98 @@ export function EdgeFamilies({
     </section>
   );
 }
+
+// E-006 §3: Trust & Safety categories: applies here? (from the tasks' tools and which operations reach the customer),
+// severity, prompts (View), source, grader, can be graded on this environment.
+export function SafetyTable({ path }: { path: string }) {
+  const t = useData<any>(`${path}/ts-categories`);
+  const [open, setOpen] = useState<string | null>(null);
+  if (t.error) return <p className="no">The category table could not be computed.</p>;
+  if (!t.data) return <p>Checking the categories…</p>;
+  const d = t.data;
+  const cat = d.categories.find((c: any) => c.key === open);
+  return (
+    <section className="card">
+      <h4>Categories</h4>
+      <small>
+        Customer-facing operations ({d.operation_audience.source}):{' '}
+        {d.operation_audience.customer_facing.join(', ') || 'none'} · attacks delivered in the{' '}
+        {(d.delivered_as ?? '—').replace('_', ' ')}.
+      </small>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>What it tests</th>
+              <th>Applies here?</th>
+              <th>Severity</th>
+              <th>Prompts</th>
+              <th>Graded by</th>
+              <th>Can be graded here</th>
+              <th>Recent</th>
+            </tr>
+          </thead>
+          <tbody>
+            {d.categories.map((c: any) => (
+              <tr key={c.key}>
+                <td style={{ textAlign: 'left' }}>
+                  {c.name}
+                  <small>{c.group}</small>
+                </td>
+                <td style={{ textAlign: 'left' }}>
+                  <small>{c.what_it_tests}</small>
+                </td>
+                <td className={c.applies === 'No' ? 'no' : ''}>
+                  {c.applies}
+                  <small>{c.applies_why}</small>
+                </td>
+                <td>{(c.severity ?? []).join(', ') || '—'}</td>
+                <td>
+                  {c.prompts.length}{' '}
+                  <button aria-label={`View prompts for ${c.name}`} onClick={() => setOpen(open === c.key ? null : c.key)}>
+                    👁
+                  </button>
+                </td>
+                <td>
+                  <small>{c.grader}</small>
+                </td>
+                <td className={c.can_be_graded ? '' : 'no'}>
+                  {c.can_be_graded ? 'Yes' : 'No'}
+                  {c.can_be_graded_why && <small>{c.can_be_graded_why}</small>}
+                </td>
+                <td>
+                  <small>
+                    {Object.entries(c.recent)
+                      .map(([k, v]) => `${k.replace(/_/g, ' ')} ${v}`)
+                      .join(' · ') || '—'}
+                  </small>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {cat && (
+        <section className="drawer" role="dialog" aria-label={`Prompts for ${cat.name}`}>
+          <div className="between">
+            <h4>{cat.name}: prompts</h4>
+            <button onClick={() => setOpen(null)}>Close</button>
+          </div>
+          <small>
+            Source: {cat.source ?? '—'} · approved {cat.approved_at ? new Date(cat.approved_at).toLocaleString() : '—'}
+          </small>
+          <ul>
+            {cat.prompts.map((p: any) => (
+              <li key={p.id}>
+                <code>{p.id}</code> · {p.severity} · {p.strategy} · delivered in the{' '}
+                {(p.delivered_as ?? '—').replace('_', ' ')} {p.approved ? '' : '· not approved'}
+                <pre style={{ whiteSpace: 'pre-wrap' }}>{p.text}</pre>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </section>
+  );
+}

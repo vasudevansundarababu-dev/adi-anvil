@@ -146,7 +146,7 @@ def test_the_worker_aliases_what_the_agent_sees_and_maps_back_what_it_sends():
     for want in (
         'aliasing.Aliaser(episode["case_id"], (snapshots or {}).get("start"))',
         'real(action.get("args") or {})',
-        "policy.send(shown(obs))",
+        "policy.send(shown(agent_obs))",
         'final = real(action["final"])',
         '"id_aliases": aliaser.record()',
     ):
