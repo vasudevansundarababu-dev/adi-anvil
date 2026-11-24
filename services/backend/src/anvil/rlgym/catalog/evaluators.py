@@ -238,6 +238,10 @@ def get_version(c, ws, cid, version):
     ).fetchone()
     if not row:
         raise GymError("NOT_FOUND", f"{cid} v{version} not found")
+    from anvil.rlgym.catalog import fixes
+
+    # A fix the RL Gym suggests for this configuration (a person creates it with Create fix version).
+    row["suggested_fix"] = fixes.suggested(cid, row["config"])
     return row
 
 
@@ -334,6 +338,13 @@ def run_known_case_tests(c, ws, actor, cid, version, blocks=None, expected_value
                     }
                 )
         checks += block_case_checks(fw, row["config"], blocks, cases, source)
+        # D-041: regression fixtures the configuration carries (e.g. the wrong-party request) run with its blocks.
+        regressions = {
+            rc["name"]: {**rc, "slots": rc.get("slots") or {}}
+            for rc in (row["config"].get("regression_cases") or [])
+        }
+        if regressions:
+            checks += block_case_checks(fw, row["config"], blocks, regressions, source)
     for name, case in ({} if blocks_sha else row["known_cases"]).items():
         expect = case.get("expect", KNOWN_CASE_EXPECT.get(name))
         out = sandbox.run(fw, row["config"], case["evidence"], case["reference"])
@@ -443,7 +454,9 @@ def create_fix_version(c, ws, actor, cid, body):
     )
     config = body.get("config") or base["config"]
     known_cases = {**base["known_cases"], **(body.get("known_cases") or {})}
-    _validate_known_cases(known_cases)
+    if not verifier.is_blocks_config(config):
+        # A verifier-blocks configuration's known cases are built from its blocks (`_blocks`), not stored by name.
+        _validate_known_cases(known_cases)
     fw = c.execute(
         "SELECT * FROM catalog.framework_versions WHERE id=%s",
         (body.get("framework_version_id") or base["framework_version_id"],),
@@ -497,7 +510,20 @@ def create_fix_version(c, ws, actor, cid, body):
     audit(
         c, ws, actor, "evaluator.fix_version", f"{cid}@{row['version']}", reason, {"fix_of": fix_of}
     )
-    _event(c, ws, "registered", row, {"fix_of": fix_of})
+    # Studio is told about every fix version (owner default, 24 Nov 2026: it takes effect in the RL Gym at once and
+    # Studio folds it into the next template version).
+    _event(
+        c,
+        ws,
+        "registered",
+        row,
+        {
+            "fix_of": fix_of,
+            "fix_reason": reason,
+            "fix_source": body.get("source"),
+            "note": "RL Gym fix version: in effect in the RL Gym once qualified; fold into the next template version",
+        },
+    )
     test = run_known_case_tests(c, ws, actor, cid, row["version"])
     return {"configuration": get_version(c, ws, cid, row["version"]), "known_case_test": test}
 

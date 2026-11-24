@@ -767,6 +767,10 @@ function EvaluatorPage({ cid, version }: { cid: string; version: string }) {
         fix_of: Number(version),
         config: config.trim() ? JSON.parse(config) : undefined,
         reason: fixReason,
+        source:
+          data?.suggested_fix && fixReason === data.suggested_fix.reason
+            ? data.suggested_fix.source
+            : undefined,
       });
       say(
         `Fix version v${r.configuration.version} created; known-case tests ${r.known_case_test.result}.`,
@@ -902,6 +906,23 @@ function EvaluatorPage({ cid, version }: { cid: string; version: string }) {
                     known-case tests and starts a new leaderboard cohort for Latest-qualified rules.
                     No Studio inbox item unless the S7 criterion itself must change.
                   </small>
+                  {data.suggested_fix && (
+                    <div className="banner">
+                      The RL Gym suggests a fix ({data.suggested_fix.defect}):{' '}
+                      {data.suggested_fix.reason}.{' '}
+                      <button
+                        onClick={() => {
+                          setConfig(JSON.stringify(data.suggested_fix.config, null, 2));
+                          setFixReason(data.suggested_fix.reason);
+                        }}
+                      >
+                        Use suggested fix
+                      </button>
+                      <small>
+                        Fills the form; nothing is created until you click Create fix version.
+                      </small>
+                    </div>
+                  )}
                   <label>
                     Changed configuration (JSON; leave empty to keep it)
                     <textarea

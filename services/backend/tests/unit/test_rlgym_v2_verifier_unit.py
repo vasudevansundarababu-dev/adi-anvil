@@ -284,7 +284,8 @@ def test_sme_slot_values_are_used_when_the_template_says_sme():
 def test_unknown_runner_version_is_an_error_not_a_pass():
     out = sr._safe(
         {
-            "config": {"runner": "verifier_blocks", "runner_version": 2},
+            # D-041 added runner version 2 (template blocks plus RL Gym extra blocks); 3 is unknown.
+            "config": {"runner": "verifier_blocks", "runner_version": 3},
             "blocks": [_state("count", {"fixed": 1})],
         }
     )

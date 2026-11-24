@@ -16,6 +16,28 @@ Local list until the owner logs them in the tracker. Newest first.
   remainder); before, sample size 10 over 2 types gave 12. Plans of 40 over 4 types are unchanged.
 - **Status:** fixed.
 
+## D-041 next_action never checked whose request it is (high)
+
+- **Found:** 24 Nov 2026 (E-007's KYC.REQUEST_PARTY example). next_action's template block only checks that an
+  information request of the reference type exists, so a minor-without-TIN episode that asks the *adult* for the
+  minor's TIN scored full marks.
+- **Fix (RL Gym, D20 fix version; template unchanged):** runner version 2 runs the template's blocks plus RL Gym checks
+  carried in the configuration (`extra_blocks`). The new `request_party` check reads, from the case's start state, which
+  party lacks the requested item, using the rules of Studio's edge-case recipes (a TIN marked missing on a party's
+  document, else a minor with no TIN; a government ID that expired before submission, else no ID at all; a party whose
+  only documents are passports for proof of address) and fails unless a request of that type names that party. A type
+  with no rule (street_address) is not checked; a start state that names no such party makes the check blocked.
+- **Qualification:** the configuration carries regression fixtures (request to the minor: pass; to the adult: fail with
+  STATE_MUTATION_ERROR; no start state: blocked), which its known-case tests now run beside allowed / disallowed /
+  missing evidence. Dry run on the real v1 configuration, rolled back: all six checks pass, state qualified.
+- **Shipping:** a person creates it: Admin → Evaluators → golden-kyc-blocks:next_action v1 → Create fix version → "Use
+  suggested fix" → Create. On qualifying, projects following "Latest qualified" bind v2 at once (owner default), and
+  Studio receives evaluator.registered with the reason ("fold into the next template version"). Not created yet.
+- **Also fixed:** a fix version of a verifier-blocks configuration was refused (its known cases are generated, so the
+  name-based check didn't fit).
+- **Tests:** `tests/unit/test_rlgym_d041_request_party_unit.py`. **Status:** code on forge-v2-rlgym; version waits for a
+  person.
+
 ## D-036 Scoring uses S7's published points and threshold (owner decision, E-007 §7.1)
 
 - **Was:** pass 1 / fail 0 per criterion, decision's only partial = 0.8 (rationale judge 20%), pass at 90%. Authoring's

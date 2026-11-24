@@ -272,9 +272,124 @@ def _rubric(block, ctx):
     raise ValueError(f"unknown rubric {rid}")
 
 
+# --- RL Gym-owned checks (runner_version 2: the template's blocks plus `config.extra_blocks`) ---------------------
+# D-041: an information request must go to the party whose record lacks the item. Which party lacks it is read from
+# the case's start state, with the rules Studio's generator uses for each edge case (golden-kyc edge-case recipes):
+# a TIN marked missing on a party's document, a government ID that expired before the application was submitted, a
+# party whose only documents are passports (no proof of address). A request type with no rule here is not checked.
+ID_KINDS = ("government_id", "passport", "drivers_licence", "drivers_license", "driver_license")
+
+
+def _case_parties(snapshot, case_id):
+    parties = [
+        p
+        for p in (snapshot or {}).get("parties") or []
+        if isinstance(p, dict) and p.get("application_id") == case_id
+    ]
+    ids = {p.get("party_id") for p in parties}
+    docs = [
+        d
+        for d in (snapshot or {}).get("documents") or []
+        if isinstance(d, dict) and d.get("party_id") in ids
+    ]
+    app = next(
+        (
+            a
+            for a in (snapshot or {}).get("applications") or []
+            if isinstance(a, dict) and a.get("application_id") == case_id
+        ),
+        {},
+    )
+    return parties, docs, app
+
+
+def lacking(request_type, parties, docs, app):
+    """The party ids whose record lacks what `request_type` asks for, or None when no rule covers the type."""
+
+    def content(d):
+        return d.get("content") if isinstance(d.get("content"), dict) else {}
+
+    by_party = {
+        p.get("party_id"): [d for d in docs if d.get("party_id") == p.get("party_id")]
+        for p in parties
+    }
+    if request_type == "tin":
+        marked = {
+            pid
+            for pid, ds in by_party.items()
+            if any(
+                "tin" in content(d) and content(d).get("tin") in (None, "", "missing") for d in ds
+            )
+        }
+        if marked:
+            return marked
+        # No document marks it: the minors with no TIN on any document.
+        return {
+            p.get("party_id")
+            for p in parties
+            if p.get("role") == "minor"
+            and not any(
+                content(d).get("tin") not in (None, "", "missing")
+                for d in by_party[p.get("party_id")]
+            )
+        }
+    if request_type == "id_document":
+        submitted = str(app.get("submitted_at") or "")[:10]
+        expired = {
+            pid
+            for pid, ds in by_party.items()
+            if any(
+                d.get("kind") in ID_KINDS
+                and content(d).get("expires_on")
+                and submitted
+                and str(content(d)["expires_on"])[:10] < submitted
+                for d in ds
+            )
+        }
+        if expired:
+            return expired
+        return {
+            pid for pid, ds in by_party.items() if not any(d.get("kind") in ID_KINDS for d in ds)
+        }
+    if request_type == "proof_of_address":
+        return {
+            pid
+            for pid, ds in by_party.items()
+            if ds and all(d.get("kind") == "passport" for d in ds)
+        }
+    return None
+
+
+def _request_party(block, ctx):
+    ref = ctx["reference"].get("reference_answers") or ctx["reference"]
+    wanted = ref.get("request_type", MISSING)
+    if wanted is MISSING:
+        return "blocked", None, "expected request type missing"
+    if wanted in (None, "", "none"):
+        return "pass", "no request expected", None
+    snaps = ctx["snapshots"]
+    if snaps.get("start") is None or snaps.get("end") is None:
+        return "blocked", None, "no snapshot"
+    parties, docs, app = _case_parties(snaps["start"], ctx["case_id"])
+    should = lacking(wanted, parties, docs, app)
+    if should is None:
+        return "pass", f"no party rule for request type {wanted}", None
+    if not should:
+        return "blocked", None, f"the case's start state shows no party lacking {wanted}"
+    asked = [
+        r.get("party_id")
+        for r in (snaps["end"].get("information_requests") or [])
+        if isinstance(r, dict) and r.get("type") == wanted
+    ]
+    ok = any(pid in should for pid in asked)
+    return ("pass" if ok else "fail"), {"requested_for": asked}, {"party_lacking": sorted(should)}
+
+
 def run_blocks(job):
     evidence = job.get("evidence") or {}
     blocks = job.get("blocks") or []
+    if (job.get("config") or {}).get("runner_version", 1) >= 2:
+        blocks = [*blocks, *((job.get("config") or {}).get("extra_blocks") or [])]
     if not blocks:
         return {
             "verdict": "error",
@@ -325,6 +440,8 @@ def run_blocks(job):
             verdict, actual, expected = _state(b, ctx)
         elif kind == "process":
             verdict, actual, expected = _process(b, ctx)
+        elif kind == "request_party":
+            verdict, actual, expected = _request_party(b, ctx)
         elif kind == "rubric":
             verdict, actual, expected = _rubric(b, ctx)
             share = float(b.get("share_percent") or 0)
@@ -365,7 +482,7 @@ def run_blocks(job):
 
 def evaluate(job):
     if (job.get("config") or {}).get("runner") == "verifier_blocks":
-        if job["config"].get("runner_version", 1) != 1:
+        if job["config"].get("runner_version", 1) not in (1, 2):
             raise ValueError(
                 f"unknown verifier-blocks runner version {job['config'].get('runner_version')}"
             )
