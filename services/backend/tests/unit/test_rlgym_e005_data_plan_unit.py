@@ -165,3 +165,41 @@ def test_request_variant_is_inside_a_family_never_sets_an_outcome_and_is_audited
         sent["proposed_by"]["role"] == "rl_engineer" and sent["proposed_by"]["request_id"] == "k-1"
     )
     assert out == {"inbox_item_id": "ib-1"} and audits == ["edge_variant.requested"]
+
+
+def test_write_recipe_never_touches_the_outcome(monkeypatch):
+    monkeypatch.setattr(cases, "_sv_env", lambda c, ws, sv: ({}, {"id": "golden-kyc-openenv@9"}))
+    monkeypatch.setattr(cases, "_env_key", lambda c, env_id: "golden-kyc-openenv")
+    posted = []
+    monkeypatch.setattr(
+        integrations,
+        "registry_post",
+        lambda path, body, headers=None, timeout=15: (
+            posted.append((path, body)) or {"feasibility": "data_only"}
+        ),
+    )
+    monkeypatch.setattr(cases, "audit", lambda *a, **k: None)
+
+    class Ctx:
+        c, ws = None, "ws"
+
+    ctx = Ctx()
+    ctx.actor = Actor("rl_engineer")
+    recipe = [{"collection": "documents", "field": "kind", "op": "equals", "value": "passport"}]
+    with pytest.raises(GymError):
+        cases.write_recipe(ctx, "sv", "x", {"recipe": recipe, "outcome": {}}, "k")
+    with pytest.raises(GymError):
+        cases.write_recipe(ctx, "sv", "x", {"recipe": []}, "k")
+    out = cases.write_recipe(
+        ctx, "sv", "passport_expires_today", {"recipe": recipe, "expected_revision": 3}, "k"
+    )
+    path, body = posted[0]
+    assert (
+        path == "/environments/golden-kyc-openenv/edge-case-variants/passport_expires_today/recipe"
+    )
+    assert (
+        body["recipe"] == recipe
+        and body["written_by"]["role"] == "rl_engineer"
+        and "outcome" not in body
+    )
+    assert out == {"feasibility": "data_only"}

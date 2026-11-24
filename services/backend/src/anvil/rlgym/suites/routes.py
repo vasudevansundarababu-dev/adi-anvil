@@ -193,6 +193,18 @@ def routes():
                 reference_run.confirm(ctx, tid, body.get("verdict"), body.get("note")), request, 201
             )
 
+    @r.post(W + "/suite-versions/{sv}/edge-variants/{tag}/recipe")
+    def edge_recipe(
+        ws: str, sv: str, tag: str, request: Request, body: dict = Body(default_factory=dict)
+    ):
+        import uuid as _uuid
+
+        from anvil.rlgym.suites import cases
+
+        key = request.headers.get("Idempotency-Key") or f"rlgym-{_uuid.uuid4()}"
+        with scope(request, ws) as ctx:
+            return ok(cases.write_recipe(ctx, sv, tag, body, key), request)
+
     @r.get(W + "/suite-versions/{sv}/coverage")
     def coverage(ws: str, sv: str, request: Request):
         with scope(request, ws) as ctx:

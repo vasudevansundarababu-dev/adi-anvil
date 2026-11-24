@@ -253,3 +253,52 @@ def request_variant(ctx, sv_id, body, idempotency_key):
         {"name": body.get("name"), "kind": body.get("kind"), "studio": got},
     )
     return got
+
+
+def write_recipe(ctx, sv_id, tag, body, idempotency_key):
+    """Studio b5e925e: an SME variant waiting for a recipe gets one from the RL Engineer (the SME's outcome is not
+    touched; Studio runs feasibility at once)."""
+    ctx.actor.require_person()
+    require(
+        ctx.actor.profile in VIEWERS, "FORBIDDEN", "Only an RL Engineer or Admin writes a recipe"
+    )
+    recipe = body.get("recipe")
+    require(
+        isinstance(recipe, list) and recipe,
+        "VALIDATION_FAILED",
+        "A recipe is a list of conditions",
+        field="recipe",
+    )
+    require(
+        "outcome" not in body,
+        "FORBIDDEN",
+        "Expected outcomes are written by SMEs, not in the RL Gym",
+    )
+    _, env = _sv_env(ctx.c, ctx.ws, sv_id)
+    key = _env_key(ctx.c, env["id"])
+    payload = {
+        k: body[k]
+        for k in ("expected_revision", "recipe", "products", "minimum_per_product")
+        if body.get(k) is not None
+    }
+    payload["written_by"] = {
+        "actor_id": str(ctx.actor.id),
+        "name": getattr(ctx.actor, "name", None) or str(ctx.actor.id),
+        "role": ctx.actor.profile,
+        "request_id": idempotency_key,
+    }
+    got = integrations.registry_post(
+        f"/environments/{key}/edge-case-variants/{tag}/recipe",
+        payload,
+        headers={"Idempotency-Key": idempotency_key},
+    )
+    audit(
+        ctx.c,
+        ctx.ws,
+        ctx.actor,
+        "edge_variant.recipe_written",
+        f"{key}:{tag}",
+        None,
+        {"studio": got},
+    )
+    return got

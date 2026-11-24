@@ -190,6 +190,27 @@ export function EdgeFamilies({
   const [form, setForm] = useState<any>(null);
   const [failure, setFailure] = useState<GymApiError | null>(null);
   const [sent, setSent] = useState<any>(null);
+  const [recipeFor, setRecipeFor] = useState<any>(null);
+  async function writeRecipe() {
+    setFailure(null);
+    try {
+      const out = await send('POST', `${path}/edge-variants/${encodeURIComponent(recipeFor.tag)}/recipe`, {
+        recipe: JSON.parse(recipeFor.recipe || '[]'),
+        products: String(recipeFor.products || '').split(',').map((x: string) => x.trim()).filter(Boolean),
+        minimum_per_product: Number(recipeFor.minimum || 10),
+        expected_revision: cat.data?.revision,
+      });
+      setSent(out);
+      setRecipeFor(null);
+      cat.reload();
+    } catch (e) {
+      setFailure(
+        e instanceof SyntaxError
+          ? ({ error: { message: 'The recipe must be JSON (a list of conditions)', code: 'VALIDATION_FAILED' } } as any)
+          : (e as GymApiError),
+      );
+    }
+  }
   const known = new Set((cat.data?.families ?? []).flatMap((f: any) => f.variants.map((v: any) => v.tag)));
   const orphan = extraTags.filter((t) => !known.has(t));
   function required(tag: string) {
@@ -275,9 +296,18 @@ export function EdgeFamilies({
                     </td>
                     <td>
                       <small>
-                        {v.state}
+                        {v.state === 'needs_recipe' ? 'waiting for recipe' : v.state}
                         {v.outcome_status && v.outcome_status !== 'confirmed' ? ' · waiting for SME outcome' : ''}
                       </small>
+                      {v.state === 'needs_recipe' && (
+                        <button
+                          onClick={() =>
+                            setRecipeFor({ tag: v.tag, recipe: '[]', products: (v.products ?? []).join(', '), minimum: v.minimum_per_product ?? 10 })
+                          }
+                        >
+                          Write recipe
+                        </button>
+                      )}
                     </td>
                     <td>{v.available}</td>
                     <td>{v.in_this_version ? required(v.tag) : <small>not in this version</small>}</td>
@@ -297,6 +327,39 @@ export function EdgeFamilies({
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      {recipeFor && (
+        <div className="card">
+          <small>
+            Recipe for <code>{recipeFor.tag}</code>: the conditions Studio&rsquo;s generator uses (for example{' '}
+            <code>[{'{'}&quot;collection&quot;: &quot;documents&quot;, &quot;field&quot;: &quot;kind&quot;, &quot;op&quot;: &quot;equals&quot;, &quot;value&quot;: &quot;passport&quot;{'}'}]</code>).
+            The SME&rsquo;s expected outcome is not changed. Studio checks feasibility at once.
+          </small>
+          <textarea
+            rows={5}
+            value={recipeFor.recipe}
+            onChange={(e) => setRecipeFor({ ...recipeFor, recipe: e.target.value })}
+            aria-label="Recipe (JSON)"
+          />
+          <div className="row">
+            <input
+              value={recipeFor.products}
+              onChange={(e) => setRecipeFor({ ...recipeFor, products: e.target.value })}
+              aria-label="Products"
+            />
+            <input
+              type="number"
+              min={1}
+              value={recipeFor.minimum}
+              onChange={(e) => setRecipeFor({ ...recipeFor, minimum: e.target.value })}
+              aria-label="At least per product"
+            />
+            <button className="primary" onClick={writeRecipe}>
+              Send recipe to Studio
+            </button>
+            <button onClick={() => setRecipeFor(null)}>Cancel</button>
+          </div>
         </div>
       )}
       {sent && (
