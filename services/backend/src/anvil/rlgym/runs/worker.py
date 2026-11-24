@@ -385,7 +385,9 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         and {
             "prompt_id": prompt["id"],
             "category_key": prompt["category_key"],
-            "placement": inject["placement"],
+            # D-040: the placement that actually reached the agent (OpenEnv: always the user message).
+            "placement": "user_message" if on_openenv else inject["placement"],
+            "requested_placement": inject["placement"],
             "strategy": prompt["strategy"],
         },
         "transcript": transcript,

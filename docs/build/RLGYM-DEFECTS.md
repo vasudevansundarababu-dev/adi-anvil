@@ -16,6 +16,29 @@ Local list until the owner logs them in the tracker. Newest first.
   remainder); before, sample size 10 over 2 types gave 12. Plans of 40 over 4 types are unchanged.
 - **Status:** fixed.
 
+## D-040 Attacks reported as "tool result" were delivered in the user message (high; label fix)
+
+- **Found:** 24 Nov 2026 (E-006 planning). Studio's OpenEnv simulator has no injection point, so the RL Gym sends every
+  attack with the user message (`openenv.py`, "rlgym_user_message"), but the manifest, run page, report and suite said
+  "tool result". Past runs overstate resistance to hidden instructions.
+- **Fix (label only):** the manifest records `delivered_as` (user_message on OpenEnv); episode bundles record the
+  delivered `placement` and the `requested_placement`; the report and run page say where attacks were delivered and,
+  when that differs from the suite, that hidden instructions in documents or tool output were not tested. Older runs'
+  reports work it out from the environment version. Real tool-response injection is E-006.
+- **Tests:** `tests/unit/test_rlgym_d038_d040_unit.py`. **Status:** fixed on forge-v2-rlgym (backend needs a restart).
+
+## D-038 Required edge cases list was hard-coded (medium)
+
+- **Found:** 24 Nov 2026. Suites → Data plan offered minor_without_tin, expired_id, screening_hit, address_mismatch
+  whatever the environment; on @8 three of those can never be met and three real tags couldn't be required. The suite
+  page also flagged every edge-focused task "unmatched", because @6-@8's mirrored summaries list no edge cases.
+- **Fix:** the bound environment's edge cases are counted from its case rows (registry, once per immutable version;
+  the summary is used if the registry is down, never cached), filling the catalog used for quota cells, availability
+  and the "unmatched" check. The page lists each tag with its case count and application types; a tag the saved plan
+  requires but the version lacks shows "not in this environment version".
+- **Tests:** same file. **Status:** fixed on forge-v2-rlgym (backend needs a restart; the page falls back to an empty
+  list until then).
+
 ## D-033 Leaderboard counts every completed run (enhancement; small part built)
 
 - **Raised:** 24 Nov 2026 by the owner: the leaderboard should be by domain, not project or cohort, and not every run

@@ -437,6 +437,13 @@ function DataPlan({
   );
   const [seed, setSeed] = useState(String(plan.sampling_seed));
   const [mix, setMix] = useState<any>(null);
+  // D-038: the bound environment's own edge cases, plus any the saved plan still requires (shown as missing).
+  const edgeTags: string[] = Array.from(
+    new Set([
+      ...(data.edge_catalog ?? []).map((e: any) => e.tag),
+      ...Object.keys(plan.required_edges ?? {}),
+    ]),
+  );
   const strata = Array.from(
     new Set(
       data.cells
@@ -557,12 +564,24 @@ function DataPlan({
       </table>
       <section className="card">
         <h4>Required edge cases (at least N each)</h4>
+        <small>
+          The edge cases {short(data.planned_on_env_version)} has, counted from its cases (D-038).
+        </small>
+        {edgeTags.length === 0 && <p>This environment version has no edge-case tags.</p>}
         <div className="grid4">
-          {['minor_without_tin', 'expired_id', 'screening_hit', 'address_mismatch'].map((tag) => {
+          {edgeTags.map((tag: string) => {
             const cell = data.cells.find((x: any) => x.cell_key === `edge:${tag}`);
+            const known = (data.edge_catalog ?? []).find((e: any) => e.tag === tag);
             return (
               <label key={tag}>
                 <code>{tag}</code>
+                <small>
+                  {known
+                    ? `${known.available} cases · ${Object.keys(known.application_types)
+                        .map((t) => t.replace(/_/g, ' '))
+                        .join(', ')}`
+                    : 'not in this environment version'}
+                </small>
                 <input
                   type="number"
                   min={0}
@@ -754,6 +773,13 @@ function TrustSafety({
         the RL Gym&rsquo;s local template generator and are synthetic; Promptfoo&rsquo;s red-team
         generator is not used (Promptfoo runs only as a scoring plug-in).
       </small>
+      {ts.placement !== 'user_message' && (
+        <small>
+          Studio OpenEnv environments (for example golden-kyc-openenv) have no injection point: there,
+          every attack is delivered in the user message, so hidden instructions in documents or tool
+          output are not tested (D-040). The run records where each attack was actually delivered.
+        </small>
+      )}
       {draft && ts.enabled && (
         <div className="row">
           <button

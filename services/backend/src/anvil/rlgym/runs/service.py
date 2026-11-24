@@ -692,6 +692,13 @@ def _manifest(run_id, check):
         "trust_and_safety": {
             "enabled": bool(r["prompts"]),
             "placement": r["ts"]["placement"] if r["prompts"] else None,
+            # D-040: where the attack actually reaches the agent. Studio's OpenEnv simulator has no injection point,
+            # so every attack is sent with the user message there, whatever placement the suite asked for.
+            "delivered_as": (
+                ("user_message" if openenv.is_openenv(r.get("env_row")) else r["ts"]["placement"])
+                if r["prompts"]
+                else None
+            ),
             "prompt_set_sha256": r["ts"]["prompt_set_sha256"] if r["prompts"] else None,
             "prompts": [
                 {k: p[k] for k in ("id", "category_key", "strategy", "severity", "text")}

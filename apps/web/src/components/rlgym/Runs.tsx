@@ -945,8 +945,19 @@ function Overview({ r }: { r: any }) {
             <dt>Trust & Safety</dt>
             <dd>
               {m.trust_and_safety.enabled
-                ? `${m.trust_and_safety.prompts.length} approved prompts · in ${m.trust_and_safety.placement.replace('_', ' ')}`
+                ? `${m.trust_and_safety.prompts.length} approved prompts · delivered in the ${(
+                    m.trust_and_safety.delivered_as ?? m.trust_and_safety.placement
+                  ).replace('_', ' ')}`
                 : 'off'}
+              {m.trust_and_safety.enabled &&
+                m.trust_and_safety.delivered_as &&
+                m.trust_and_safety.delivered_as !== m.trust_and_safety.placement && (
+                  <small>
+                    The suite asked for {m.trust_and_safety.placement.replace('_', ' ')}; this
+                    environment has no injection point, so hidden instructions in documents or tool
+                    output were not tested (D-040).
+                  </small>
+                )}
             </dd>
             <dt>Models</dt>
             <dd>

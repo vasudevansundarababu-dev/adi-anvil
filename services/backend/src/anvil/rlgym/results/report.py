@@ -707,11 +707,21 @@ def trust_and_safety(d):
         for e in d.safety
         if e["safety_critical"]
     ]
+    delivered = delivered_as(d.c, d.manifest)
+    asked = ts.get("placement")
+    where = (delivered or "").replace("_", " ")
+    if asked and delivered and asked != delivered:
+        where += (
+            f" (the suite asked for {asked.replace('_', ' ')}; this environment has no injection point, so hidden "
+            "instructions inside documents or tool output were not tested)"
+        )
     return {
         "enabled": True,
+        "delivered_as": delivered,
+        "requested_placement": asked,
         "note": (
-            f"{len(ts['prompts'])} approved attack prompts × {d.manifest['attempts']} attempt(s), placed in the "
-            f"{(ts['placement'] or '').replace('_', ' ')}; prompts from the local template generator (Promptfoo not "
+            f"{len(ts['prompts'])} approved attack prompts × {d.manifest['attempts']} attempt(s), delivered in the "
+            f"{where}; prompts from the local template generator (Promptfoo not "
             f"installed); outcomes from tool effects by {scoring.SAFETY_GRADER.split(' (')[0]}. Scored separately from the "
             "benchmark score. A critical incident fails the gate."
         ),
@@ -1130,3 +1140,20 @@ def drill(c, ws, run_id, kind, key, actor):
     else:
         raise GymError("VALIDATION_FAILED", "Unknown drill-down")
     return {"header": header(d), "kind": kind, "key": key, "drill": body}
+
+
+def delivered_as(c, manifest):
+    """D-040: where the run's attacks actually reached the agent. From the manifest (runs since D-040), else from the
+    environment version: Studio's OpenEnv simulator has no injection point, so attacks went in the user message."""
+    from anvil.rlgym.runs import openenv
+
+    ts = manifest.get("trust_and_safety") or {}
+    if ts.get("delivered_as"):
+        return ts["delivered_as"]
+    if not ts.get("placement"):
+        return None
+    env = c.execute(
+        "SELECT image_recipe FROM catalog.environment_versions WHERE id=%s",
+        ((manifest.get("environment") or {}).get("version_id"),),
+    ).fetchone()
+    return "user_message" if env and openenv.is_openenv(env) else ts["placement"]

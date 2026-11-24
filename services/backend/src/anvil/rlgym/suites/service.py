@@ -531,7 +531,55 @@ def _catalog_for(c, ws, pid, sv_id):
             "UPDATE suites.suite_versions SET planned_on_env_version=%s WHERE id=%s AND state='draft'",
             (env["id"], sv_id),
         )
-    return env, (env or {}).get("case_catalog")
+    return env, with_edges(env)
+
+
+# D-038: edge-case tags come from the bound environment version's own cases. A version's case rows never change, so
+# the counts are kept per version id once read.
+_EDGE_CACHE = {}
+
+
+def edge_counts(env):
+    """{tag: {"available": n, "application_types": {type: n}}} for an environment version row, or None when unknown.
+    From the mirrored summary when it lists edge cases, else counted from the registry's case rows (a summary is only
+    refreshed on a version event, so @6-@8 carried none)."""
+    if not env:
+        return None
+    if env["id"] in _EDGE_CACHE:
+        return _EDGE_CACHE[env["id"]]
+    from anvil.rlgym import integrations
+
+    try:
+        rows = integrations.registry_get(f"/versions/{env['id']}/cases", base=env.get("registry"))[
+            "cases"
+        ]
+    except GymError:
+        summary = ((env.get("case_catalog") or {}).get("dimensions") or {}).get("edge_cases") or {}
+        return {
+            t: {"available": int(n), "application_types": {}} for t, n in summary.items()
+        } or None
+    out = {}
+    for r in rows:
+        for tag in r.get("edge_cases") or []:
+            e = out.setdefault(tag, {"available": 0, "application_types": {}})
+            e["available"] += 1
+            at = r.get("application_type")
+            e["application_types"][at] = e["application_types"].get(at, 0) + 1
+    _EDGE_CACHE[env["id"]] = out
+    return out
+
+
+def with_edges(env):
+    """The version's case catalog with `dimensions.edge_cases` filled from its cases (D-038)."""
+    cat = (env or {}).get("case_catalog")
+    if not cat:
+        return cat
+    counts = edge_counts(env)
+    if not counts:
+        return cat
+    dims = dict(cat.get("dimensions") or {})
+    dims["edge_cases"] = {t: e["available"] for t, e in sorted(counts.items())}
+    return {**cat, "dimensions": dims}
 
 
 def create_suite(c, ws, actor, pid, name, from_default=True, is_default=False):
@@ -1336,10 +1384,11 @@ def view(c, ws, sv_id):
         (sv_id,),
     ).fetchall()
     env = c.execute(
-        "SELECT case_catalog FROM catalog.environment_versions WHERE id=%s",
+        "SELECT id, case_catalog, registry FROM catalog.environment_versions WHERE id=%s",
         (sv["planned_on_env_version"],),
     ).fetchone()
-    cat = (env or {}).get("case_catalog") or {}
+    cat = with_edges(env) or {}
+    edges = edge_counts(env) or {}
     unmatched = [
         t["task_id"]
         for t in tasks
@@ -1378,6 +1427,11 @@ def view(c, ws, sv_id):
                 for k in sorted({t["case_selector"]["application_type"] for t in tasks})
             },
         },
+        # D-038: the edge cases the planned environment version actually has (tag, cases, application types).
+        "edge_catalog": [
+            {"tag": t, "available": e["available"], "application_types": e["application_types"]}
+            for t, e in sorted(edges.items())
+        ],
         "checklist": checklist(c, ws, sv),
         "inbox_items": [
             i
