@@ -58,13 +58,13 @@ def read_sealed(sealed):
 # --- passes -------------------------------------------------------------------------------------------------------
 
 
-def create_pass(c, ws, run_id, reason, evaluator_versions, requested_by):
+def create_pass(c, ws, run_id, reason, evaluator_versions, requested_by, draft=None):
     n = c.execute(
         "SELECT coalesce(max(pass),0)+1 n FROM scoring.scoring_passes WHERE run_id=%s", (run_id,)
     ).fetchone()["n"]
     return c.execute(
-        """INSERT INTO scoring.scoring_passes(id,workspace_id,run_id,pass,reason,evaluator_versions,evaluator_versions_sha256,requested_by)
-           VALUES(%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
+        """INSERT INTO scoring.scoring_passes(id,workspace_id,run_id,pass,reason,evaluator_versions,evaluator_versions_sha256,requested_by,draft)
+           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
         (
             uuid.uuid4(),
             ws,
@@ -74,14 +74,49 @@ def create_pass(c, ws, run_id, reason, evaluator_versions, requested_by):
             Jsonb(evaluator_versions),
             sha(evaluator_versions),
             requested_by,
+            Jsonb(draft) if draft else None,
         ),
     ).fetchone()
 
 
 def latest_pass(c, run_id):
+    """The run's latest real scoring pass. E-004: a draft re-score is an experiment and never the latest pass (reports,
+    leaderboard, SME review and verification keep reading the real one)."""
     return c.execute(
-        "SELECT * FROM scoring.scoring_passes WHERE run_id=%s ORDER BY pass DESC LIMIT 1", (run_id,)
+        "SELECT * FROM scoring.scoring_passes WHERE run_id=%s AND reason<>'draft' ORDER BY pass DESC LIMIT 1",
+        (run_id,),
     ).fetchone()
+
+
+def apply_overrides(vctx, configs, draft=None):
+    """E-004: the blocks a criterion runs with, after its configuration's `block_overrides` (a promoted grader) and a
+    draft's overrides (a draft re-score): settings merged per block (judge, rubric, threshold...), `share_percent`
+    replaced, and blocks in `disabled_blocks` left out (e.g. the judge turned off)."""
+    if not vctx:
+        return vctx
+    blocks = dict(vctx.get("blocks") or {})
+    layers = {}
+    for ev, row in configs:
+        cfg = row["config"] or {}
+        if cfg.get("block_overrides") or cfg.get("disabled_blocks"):
+            layers.setdefault(ev["criterion_id"], []).append(cfg)
+    for cid, d in (draft or {}).items():
+        layers.setdefault(cid, []).append(d)
+    for cid, items in layers.items():
+        mine = [dict(b) for b in blocks.get(cid) or []]
+        for item in items:
+            off = set(item.get("disabled_blocks") or [])
+            over = item.get("block_overrides") or {}
+            mine = [b for b in mine if b.get("id") not in off]
+            for b in mine:
+                o = over.get(b.get("id"))
+                if o:
+                    if o.get("settings"):
+                        b["settings"] = {**(b.get("settings") or {}), **o["settings"]}
+                    if "share_percent" in o:
+                        b["share_percent"] = o["share_percent"]
+        blocks[cid] = mine
+    return {**vctx, "blocks": blocks}
 
 
 def _configs(c, ws, evaluator_versions):
@@ -340,6 +375,10 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
     if bundle.get("final_output") is not None:
         evidence["final_output"] = bundle["final_output"]
     vctx = verifier_context(c, ws, episode, manifest)
+    # E-004: promoted overrides (in the configuration) and a draft pass's overrides change the blocks this pass runs.
+    vctx = apply_overrides(
+        vctx, _configs(c, ws, pass_row["evaluator_versions"]), pass_row.get("draft")
+    )
     plugin_lines = (
         plugin_results(c, episode, manifest, vctx, bundle, ref_row["reference"]) if vctx else {}
     )

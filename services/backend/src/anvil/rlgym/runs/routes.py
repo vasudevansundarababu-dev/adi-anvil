@@ -53,6 +53,67 @@ def routes():
         with scope(request, ws, services=READERS) as ctx:
             return ok(service.get_run(ctx, run_id), request)
 
+    # E-004: grader workbench (drafts, draft re-score with side by side, propose, second-person decision).
+    @r.get(W + "/projects/{pid}/grader-drafts")
+    def grader_drafts(ws: str, pid: str, request: Request):
+        from anvil.rlgym.scoring import workbench
+
+        with scope(request, ws) as ctx:
+            return ok(workbench.list_drafts(ctx.c, ctx.ws, pid), request)
+
+    @r.post(W + "/projects/{pid}/grader-drafts", status_code=201)
+    def grader_draft_save(
+        ws: str, pid: str, request: Request, body: dict = Body(default_factory=dict)
+    ):
+        from anvil.rlgym.scoring import workbench
+
+        with scope(request, ws) as ctx:
+            return ok(workbench.save_draft(ctx, pid, body), request, 201)
+
+    @r.post(W + "/runs/{run_id}/draft-rescore", status_code=201)
+    def draft_rescore(
+        ws: str, run_id: str, request: Request, body: dict = Body(default_factory=dict)
+    ):
+        from anvil.rlgym.scoring import workbench
+
+        with scope(request, ws) as ctx:
+            return ok(
+                workbench.rescore_with_drafts(ctx, run_id, body.get("draft_ids") or []),
+                request,
+                201,
+            )
+
+    @r.get(W + "/runs/{run_id}/draft-passes/{pass_id}")
+    def draft_compare(ws: str, run_id: str, pass_id: str, request: Request):
+        from anvil.rlgym.scoring import workbench
+
+        with scope(request, ws, services=READERS) as ctx:
+            service._run(ctx, run_id)
+            return ok(workbench.compare(ctx.c, ctx.ws, run_id, pass_id), request)
+
+    @r.post(W + "/grader-drafts/{draft_id}/propose", status_code=201)
+    def grader_propose(
+        ws: str, draft_id: str, request: Request, body: dict = Body(default_factory=dict)
+    ):
+        from anvil.rlgym.scoring import workbench
+
+        with scope(request, ws) as ctx:
+            return ok(workbench.propose(ctx, draft_id, body.get("reason")), request, 201)
+
+    @r.post(W + "/grader-promotions/{promotion_id}/decide")
+    def grader_decide(
+        ws: str, promotion_id: str, request: Request, body: dict = Body(default_factory=dict)
+    ):
+        from anvil.rlgym.scoring import workbench
+
+        with scope(request, ws) as ctx:
+            return ok(
+                workbench.decide(
+                    ctx, promotion_id, body.get("approve") is True, body.get("reason")
+                ),
+                request,
+            )
+
     # E-007 phase 1 (shadow): the run's verification report (reports only; blocks nothing).
     @r.get(W + "/runs/{run_id}/verification")
     def verification_get(ws: str, run_id: str, request: Request):

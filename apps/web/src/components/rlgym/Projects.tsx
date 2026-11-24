@@ -7,6 +7,7 @@ import { GymApiError, send, short, when, wsBase } from './api';
 import { SuiteEditor, SuitesTab } from './Suites';
 import { Badge, Env, Failure, Hash, Loading, Search, Tabs, useData, useGym } from './ui';
 import { HowScored, ScoredBy } from './Scoring';
+import { GraderWorkbench } from './Workbench';
 
 function caseText(sel: any) {
   if (!sel) return '—';
@@ -610,6 +611,7 @@ function SelectionRules({
                 </ul>
               </details>
             )}
+            <GraderWorkbench project={project} criteria={view.data.criteria} />
           </section>
           <section className="card">
             <h4>Overrides</h4>

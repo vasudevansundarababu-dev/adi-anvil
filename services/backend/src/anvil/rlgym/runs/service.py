@@ -1292,10 +1292,12 @@ def get_run(ctx, run_id):
     m = _manifest_row(ctx, run_id)
     counts = _counts(ctx, run_id)
     passes = ctx.c.execute(
-        "SELECT id, pass, reason, requested_by, created_at, finished_at, evaluator_versions_sha256 FROM scoring.scoring_passes WHERE run_id=%s ORDER BY pass",
+        "SELECT id, pass, reason, requested_by, created_at, finished_at, evaluator_versions_sha256, draft IS NOT NULL AS is_draft FROM scoring.scoring_passes WHERE run_id=%s ORDER BY pass",
         (run_id,),
     ).fetchall()
-    latest = passes[-1] if passes else None
+    # E-004: draft re-scores are experiments; the run's latest pass is its latest real one.
+    real = [p for p in passes if p.get("reason") != "draft"]
+    latest = real[-1] if real else None
     stats = (
         scoring.run_statistics(ctx.c, run_id, latest["id"])
         if latest
