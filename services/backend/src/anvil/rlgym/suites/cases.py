@@ -123,3 +123,133 @@ def case_detail(ctx, sv_id, case_id):
         details={"suite_version_id": str(sv_id)},
     )
     return {"environment": env["id"], "read_only": True, **got}
+
+
+# --- E-005 §3.2 / E-001 §6b: edge-case families ------------------------------------------------------------------
+
+
+def _env_key(c, env_id):
+    row = c.execute(
+        "SELECT contract_id FROM catalog.environment_versions WHERE id=%s", (env_id,)
+    ).fetchone()
+    return (row or {}).get("contract_id") or env_id.split("@")[0]
+
+
+def edge_catalog(c, ws, sv_id):
+    """Studio's edge-case catalog for the bound environment, grouped by family, with how many cases of each variant the
+    bound version has (counted from its cases, D-038)."""
+    from anvil.rlgym.suites import service as suites
+
+    _, env = _sv_env(c, ws, sv_id)
+    key = _env_key(c, env["id"])
+    cat = integrations.registry_get(f"/environments/{key}/edge-case-catalog")
+    counts = suites.edge_counts(env) or {}
+    families = []
+    for f in cat.get("families") or []:
+        variants = [
+            {
+                **{
+                    k: v.get(k)
+                    for k in (
+                        "tag",
+                        "kind",
+                        "name",
+                        "state",
+                        "products",
+                        "outcome_status",
+                        "available_in",
+                        "minimum_per_product",
+                        "context",
+                        "twist",
+                    )
+                },
+                "available": (counts.get(v.get("tag")) or {}).get("available", 0),
+                "in_this_version": v.get("tag") in counts,
+            }
+            for v in cat.get("variants") or []
+            if v.get("family_id") == f.get("family_id")
+        ]
+        families.append(
+            {
+                **{k: f.get(k) for k in ("family_id", "name", "description", "state", "products")},
+                "variants": variants,
+            }
+        )
+    return {
+        "environment": env["id"],
+        "environment_key": key,
+        "revision": cat.get("revision"),
+        "families": families,
+    }
+
+
+def request_variant(ctx, sv_id, body, idempotency_key):
+    """An RL Engineer proposes a variant or boundary case inside an existing family (E-001 §6b). Studio checks
+    feasibility and opens the inbox item; the RL Engineer never sets the expected outcome (SMEs do)."""
+    ctx.actor.require_person()
+    require(
+        ctx.actor.profile in VIEWERS,
+        "FORBIDDEN",
+        "Only an RL Engineer or Admin can request an edge-case variant",
+    )
+    require(body.get("family_id"), "VALIDATION_FAILED", "Choose a family", field="family_id")
+    require(
+        body.get("kind") in ("variant", "boundary"),
+        "VALIDATION_FAILED",
+        "Kind is variant or boundary",
+        field="kind",
+    )
+    require(
+        (body.get("name") or "").strip(),
+        "VALIDATION_FAILED",
+        "Give the variant a name",
+        field="name",
+    )
+    require(
+        (body.get("reason") or "").strip(), "VALIDATION_FAILED", "Give a reason", field="reason"
+    )
+    require(
+        "outcome" not in body,
+        "FORBIDDEN",
+        "Expected outcomes are written by SMEs, not in the RL Gym",
+    )
+    _, env = _sv_env(ctx.c, ctx.ws, sv_id)
+    key = _env_key(ctx.c, env["id"])
+    payload = {
+        k: body.get(k)
+        for k in (
+            "family_id",
+            "tag",
+            "kind",
+            "name",
+            "context",
+            "twist",
+            "products",
+            "recipe",
+            "minimum_per_product",
+            "expected_revision",
+            "reason",
+        )
+        if body.get(k) is not None
+    }
+    payload["proposed_by"] = {
+        "actor_id": str(ctx.actor.id),
+        "name": getattr(ctx.actor, "name", None) or str(ctx.actor.id),
+        "role": ctx.actor.profile,
+        "request_id": idempotency_key,
+    }
+    got = integrations.registry_post(
+        f"/environments/{key}/edge-case-variants",
+        payload,
+        headers={"Idempotency-Key": idempotency_key},
+    )
+    audit(
+        ctx.c,
+        ctx.ws,
+        ctx.actor,
+        "edge_variant.requested",
+        f"{key}:{body.get('family_id')}",
+        body.get("reason"),
+        {"name": body.get("name"), "kind": body.get("kind"), "studio": got},
+    )
+    return got

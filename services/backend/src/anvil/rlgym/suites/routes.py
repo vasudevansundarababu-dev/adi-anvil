@@ -93,6 +93,24 @@ def routes():
         with scope(request, ws) as ctx:
             return ok(cases.case_detail(ctx, sv, case_id), request)
 
+    # E-005 §3.2: edge-case families from Studio, and "Request variant" (RL Engineer or Admin; Studio checks it).
+    @r.get(W + "/suite-versions/{sv}/edge-catalog")
+    def edge_catalog(ws: str, sv: str, request: Request):
+        from anvil.rlgym.suites import cases
+
+        with scope(request, ws) as ctx:
+            return ok(cases.edge_catalog(ctx.c, ctx.ws, sv), request)
+
+    @r.post(W + "/suite-versions/{sv}/edge-variants", status_code=201)
+    def edge_variant(ws: str, sv: str, request: Request, body: dict = Body(default_factory=dict)):
+        import uuid as _uuid
+
+        from anvil.rlgym.suites import cases
+
+        key = request.headers.get("Idempotency-Key") or f"rlgym-{_uuid.uuid4()}"
+        with scope(request, ws) as ctx:
+            return ok(cases.request_variant(ctx, sv, body, key), request, 201)
+
     @r.get(W + "/suite-versions/{sv}/coverage")
     def coverage(ws: str, sv: str, request: Request):
         with scope(request, ws) as ctx:

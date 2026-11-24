@@ -122,3 +122,46 @@ def test_only_rl_engineers_and_admins_see_expected_outcomes_and_each_read_is_aud
     headers = sent[0][1]["headers"]
     assert headers["X-ADI-Audience"] == "engineer" and headers["X-ADI-Viewer-Role"] == "rl_engineer"
     assert audits == ["case.expected_outcome_viewed"]
+
+
+def test_request_variant_is_inside_a_family_never_sets_an_outcome_and_is_audited(monkeypatch):
+    monkeypatch.setattr(cases, "_sv_env", lambda c, ws, sv: ({}, {"id": "golden-kyc-openenv@8"}))
+    monkeypatch.setattr(cases, "_env_key", lambda c, env_id: "golden-kyc-openenv")
+    posted, audits = [], []
+    monkeypatch.setattr(
+        integrations,
+        "registry_post",
+        lambda path, body, headers=None, timeout=15: (
+            posted.append((path, body, headers)) or {"inbox_item_id": "ib-1"}
+        ),
+    )
+    monkeypatch.setattr(cases, "audit", lambda *a, **k: audits.append(a[3]))
+
+    class Ctx:
+        c, ws = None, "ws"
+
+    ctx = Ctx()
+    body = {
+        "family_id": "expired_id",
+        "kind": "boundary",
+        "name": "Expires today",
+        "reason": "boundary",
+        "products": ["individual"],
+    }
+    ctx.actor = Actor("viewer")
+    with pytest.raises(GymError):
+        cases.request_variant(ctx, "sv", body, "k-1")
+    ctx.actor = Actor("rl_engineer")
+    with pytest.raises(GymError) as e:
+        cases.request_variant(ctx, "sv", {**body, "outcome": {"recommendation": "x"}}, "k-1")
+    assert e.value.code == "FORBIDDEN"
+    out = cases.request_variant(ctx, "sv", body, "k-1")
+    path, sent, headers = posted[0]
+    assert path == "/environments/golden-kyc-openenv/edge-case-variants" and headers == {
+        "Idempotency-Key": "k-1"
+    }
+    assert sent["family_id"] == "expired_id" and "outcome" not in sent
+    assert (
+        sent["proposed_by"]["role"] == "rl_engineer" and sent["proposed_by"]["request_id"] == "k-1"
+    )
+    assert out == {"inbox_item_id": "ib-1"} and audits == ["edge_variant.requested"]

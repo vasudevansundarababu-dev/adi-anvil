@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { GymApiError, send, short, when, wsBase } from './api';
 import { Badge, Env, Failure, Hash, Loading, Tabs, useData, useGym } from './ui';
-import { CasesPanel } from './Cases';
+import { CasesPanel, EdgeFamilies } from './Cases';
 
 export function SuitesTab({ project }: { project: string }) {
   const { ws, say } = useGym();
@@ -635,43 +635,14 @@ function DataPlan({
         </table>
       )}
       <CasesPanel path={path} plan={plan} prompts={data.ts?.prompts?.length ?? 0} />
-      <section className="card">
-        <h4>Required edge cases (at least N each)</h4>
-        <small>
-          The edge cases {short(data.planned_on_env_version)} has, counted from its cases (D-038).
-        </small>
-        {edgeTags.length === 0 && <p>This environment version has no edge-case tags.</p>}
-        <div className="grid4">
-          {edgeTags.map((tag: string) => {
-            const cell = data.cells.find((x: any) => x.cell_key === `edge:${tag}`);
-            const known = (data.edge_catalog ?? []).find((e: any) => e.tag === tag);
-            return (
-              <label key={tag}>
-                <code>{tag}</code>
-                <small>
-                  {known
-                    ? `${known.available} cases · ${Object.keys(known.application_types)
-                        .map((t) => t.replace(/_/g, ' '))
-                        .join(', ')}`
-                    : 'not in this environment version'}
-                </small>
-                <input
-                  type="number"
-                  min={0}
-                  value={edges[tag] ?? ''}
-                  onChange={(e) => setEdges({ ...edges, [tag]: e.target.value })}
-                  disabled={!draft}
-                />
-                {cell && (
-                  <small className={cell.quota > cell.available ? 'no' : 'ok'}>
-                    {cell.quota} requested / {cell.available} available
-                  </small>
-                )}
-              </label>
-            );
-          })}
-        </div>
-      </section>
+      <EdgeFamilies
+        path={path}
+        draft={draft}
+        edges={edges}
+        setEdges={setEdges}
+        cells={data.cells}
+        extraTags={edgeTags}
+      />
       {draft && (
         <div className="row">
           <button className="primary" disabled={total !== 100} onClick={() => applyPlan()}>

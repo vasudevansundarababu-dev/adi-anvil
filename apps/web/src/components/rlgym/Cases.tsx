@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { GymApiError, get } from './api';
+import { GymApiError, get, send } from './api';
 import { Failure, useData } from './ui';
 
 // E-005 §3.1: the data plan's summary line, the exact case set, every case of the bound environment, and one case's
@@ -165,6 +165,223 @@ export function CasesPanel({ path, plan, prompts }: { path: string; plan: any; p
         </>
       )}
       {open && <CaseDrawer path={path} caseId={open} onClose={() => setOpen(null)} />}
+    </section>
+  );
+}
+
+// E-005 §3.2 / E-001 §6b: the bound environment's edge cases grouped by family, each variant's state and cases, the
+// "at least N" minimum, and "Request variant" (inside an existing family; SMEs write the expected outcome).
+export function EdgeFamilies({
+  path,
+  draft,
+  edges,
+  setEdges,
+  cells,
+  extraTags,
+}: {
+  path: string;
+  draft: boolean;
+  edges: Record<string, string>;
+  setEdges: (e: Record<string, string>) => void;
+  cells: any[];
+  extraTags: string[];
+}) {
+  const cat = useData<any>(`${path}/edge-catalog`);
+  const [form, setForm] = useState<any>(null);
+  const [failure, setFailure] = useState<GymApiError | null>(null);
+  const [sent, setSent] = useState<any>(null);
+  const known = new Set((cat.data?.families ?? []).flatMap((f: any) => f.variants.map((v: any) => v.tag)));
+  const orphan = extraTags.filter((t) => !known.has(t));
+  function required(tag: string) {
+    const cell = cells.find((x: any) => x.cell_key === `edge:${tag}`);
+    return (
+      <>
+        <input
+          type="number"
+          min={0}
+          aria-label={`At least N cases of ${tag}`}
+          value={edges[tag] ?? ''}
+          onChange={(e) => setEdges({ ...edges, [tag]: e.target.value })}
+          disabled={!draft}
+          style={{ width: 70 }}
+        />
+        {cell && (
+          <small className={cell.quota > cell.available ? 'no' : 'ok'}>
+            {cell.quota} / {cell.available}
+          </small>
+        )}
+      </>
+    );
+  }
+  async function submit() {
+    setFailure(null);
+    try {
+      const out = await send('POST', `${path}/edge-variants`, {
+        ...form,
+        products: String(form.products || '')
+          .split(',')
+          .map((x: string) => x.trim())
+          .filter(Boolean),
+        minimum_per_product: Number(form.minimum_per_product || 10),
+        expected_revision: cat.data?.revision,
+      });
+      setSent(out);
+      setForm(null);
+      cat.reload();
+    } catch (e) {
+      setFailure(e as GymApiError);
+    }
+  }
+  return (
+    <section className="card">
+      <div className="between">
+        <h4>Edge cases (at least N each)</h4>
+        <button onClick={() => setForm(form ? null : { kind: 'variant', family_id: '' })}>
+          + Request edge case variant
+        </button>
+      </div>
+      {cat.error && <p className="no">Studio&rsquo;s edge-case catalog could not be read.</p>}
+      {cat.data && (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Family / variant</th>
+                <th>What it means</th>
+                <th>Applies to</th>
+                <th>State</th>
+                <th>Available</th>
+                <th>Required</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cat.data.families.map((f: any) => [
+                <tr key={f.family_id}>
+                  <td style={{ textAlign: 'left' }} colSpan={6}>
+                    <strong>{f.name}</strong> <small>{f.description}</small>
+                  </td>
+                </tr>,
+                ...f.variants.map((v: any) => (
+                  <tr key={f.family_id + v.tag}>
+                    <td style={{ textAlign: 'left' }}>
+                      ↳ {v.name} <code>{v.tag}</code>
+                      {v.kind === 'boundary' && <small>boundary case</small>}
+                    </td>
+                    <td style={{ textAlign: 'left' }}>
+                      <small>{v.twist || v.context || '—'}</small>
+                    </td>
+                    <td>
+                      <small>{(v.products ?? []).join(', ').replace(/_/g, ' ')}</small>
+                    </td>
+                    <td>
+                      <small>
+                        {v.state}
+                        {v.outcome_status && v.outcome_status !== 'confirmed' ? ' · waiting for SME outcome' : ''}
+                      </small>
+                    </td>
+                    <td>{v.available}</td>
+                    <td>{v.in_this_version ? required(v.tag) : <small>not in this version</small>}</td>
+                  </tr>
+                )),
+              ])}
+              {orphan.map((t) => (
+                <tr key={t}>
+                  <td style={{ textAlign: 'left' }}>
+                    <code>{t}</code>
+                  </td>
+                  <td colSpan={4}>
+                    <small className="no">required by the plan but not in this environment version</small>
+                  </td>
+                  <td>{required(t)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {sent && (
+        <p className="ok">
+          Request sent to Studio
+          {sent.feasibility ? ` · feasibility: ${JSON.stringify(sent.feasibility)}` : ''}
+          {sent.inbox_item_id ? ` · inbox item ${sent.inbox_item_id}` : ''}.
+        </p>
+      )}
+      {form && (
+        <div className="card">
+          <small>
+            Propose a variation or a boundary case inside an existing family. Studio checks whether it&rsquo;s data
+            only or needs an environment change; an SME writes its expected outcome.
+          </small>
+          <div className="grid4">
+            <label>
+              Family
+              <select value={form.family_id} onChange={(e) => setForm({ ...form, family_id: e.target.value })}>
+                <option value="">Choose…</option>
+                {(cat.data?.families ?? []).map((f: any) => (
+                  <option key={f.family_id} value={f.family_id}>
+                    {f.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Kind
+              <select value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })}>
+                <option value="variant">Variation</option>
+                <option value="boundary">Boundary case</option>
+              </select>
+            </label>
+            <label>
+              Name
+              <input value={form.name ?? ''} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </label>
+            <label>
+              Tag
+              <input
+                value={form.tag ?? ''}
+                placeholder="e.g. passport_expires_today"
+                onChange={(e) => setForm({ ...form, tag: e.target.value })}
+              />
+            </label>
+            <label>
+              Context
+              <input value={form.context ?? ''} onChange={(e) => setForm({ ...form, context: e.target.value })} />
+            </label>
+            <label>
+              Twist
+              <input value={form.twist ?? ''} onChange={(e) => setForm({ ...form, twist: e.target.value })} />
+            </label>
+            <label>
+              Products (comma-separated)
+              <input value={form.products ?? ''} onChange={(e) => setForm({ ...form, products: e.target.value })} />
+            </label>
+            <label>
+              At least per product
+              <input
+                type="number"
+                min={1}
+                value={form.minimum_per_product ?? 10}
+                onChange={(e) => setForm({ ...form, minimum_per_product: e.target.value })}
+              />
+            </label>
+          </div>
+          <label>
+            Reason
+            <input value={form.reason ?? ''} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
+          </label>
+          <div className="row">
+            <button
+              className="primary"
+              disabled={!form.family_id || !(form.name ?? '').trim() || !(form.reason ?? '').trim()}
+              onClick={submit}
+            >
+              Send request to Studio
+            </button>
+            <button onClick={() => setForm(null)}>Cancel</button>
+          </div>
+        </div>
+      )}
+      <Failure error={failure} />
     </section>
   );
 }
