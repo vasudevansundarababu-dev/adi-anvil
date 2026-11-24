@@ -6,6 +6,7 @@ D-041 wrong-party request scored 25/25 under next_action v1).
 Each assertion returns {"id", "criterion", "outcome": PASS|FAIL|NOT_APPLICABLE, "expected", "observed"}.
 """
 
+ADDRESS_KINDS = ("proof_of_address", "utility_bill", "bank_statement", "lease", "council_tax_bill")
 ID_DOCS = ("government_id", "passport", "drivers_licence", "drivers_license", "driver_license")
 
 
@@ -155,7 +156,7 @@ def party_lacking(request_type, bundle):
             pid
             for pid in ids
             if (mine := [d for d in docs if d.get("party_id") == pid])
-            and all(d.get("kind") == "passport" for d in mine)
+            and not any(d.get("kind") in ADDRESS_KINDS for d in mine)
         }
     return None
 

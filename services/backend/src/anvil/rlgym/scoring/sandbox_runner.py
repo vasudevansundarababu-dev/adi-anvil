@@ -277,6 +277,7 @@ def _rubric(block, ctx):
 # the case's start state, with the rules Studio's generator uses for each edge case (golden-kyc edge-case recipes):
 # a TIN marked missing on a party's document, a government ID that expired before the application was submitted, a
 # party whose only documents are passports (no proof of address). A request type with no rule here is not checked.
+ADDRESS_KINDS = ("proof_of_address", "utility_bill", "bank_statement", "lease", "council_tax_bill")
 ID_KINDS = ("government_id", "passport", "drivers_licence", "drivers_license", "driver_license")
 
 
@@ -355,7 +356,8 @@ def lacking(request_type, parties, docs, app):
         return {
             pid
             for pid, ds in by_party.items()
-            if ds and all(d.get("kind") == "passport" for d in ds)
+            # A party with documents but no proof of address (@8: only a passport; @9: also a screening result).
+            if ds and not any(d.get("kind") in ADDRESS_KINDS for d in ds)
         }
     return None
 
