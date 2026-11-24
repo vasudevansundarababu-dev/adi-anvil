@@ -314,6 +314,7 @@ def admission_check(ctx, body):
             "SELECT * FROM suites.suite_bindings WHERE suite_version_id=%s ORDER BY alias",
             (sv["id"],),
         ).fetchall()
+        resolved["experiment"] = any(b["source"] == "experiment" for b in bindings)
         env = None
         for b in bindings:
             pick, code, reason, effective = suites.resolve_binding(
@@ -714,6 +715,8 @@ def leaderboard_eligibility(resolved, lines):
     bad = [why for cat in cats for ok, why in [safety.can_grade(cat, env_row)] if not ok]
     if bad:
         reasons.append("safety: " + "; ".join(bad))
+    if resolved.get("experiment"):
+        reasons.append("the suite pins an environment version as an experiment (E-005)")
     mocks = [m.get("name", m["system_id"]) for m in lines or [] if not m.get("live")]
     if mocks:
         reasons.append(f"agent model(s) are mocks, not live: {', '.join(mocks)}")

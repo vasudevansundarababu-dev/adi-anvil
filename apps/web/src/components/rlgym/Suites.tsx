@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { GymApiError, send, short, when, wsBase } from './api';
 import { Badge, Env, Failure, Hash, Loading, Tabs, useData, useGym } from './ui';
 import { CasesPanel, EdgeFamilies } from './Cases';
+import { EnvironmentSummary } from './Environment';
 
 export function SuitesTab({ project }: { project: string }) {
   const { ws, say } = useGym();
@@ -253,7 +254,7 @@ export function SuiteEditor({ project, id, step }: { project: string; id: string
               <Tabs
                 current={step}
                 items={[
-                  { key: 'bindings', label: '1 Bindings', href: `${base}/bindings` },
+                  { key: 'bindings', label: '1 Environment & graders', href: `${base}/bindings` },
                   { key: 'data', label: '2 Data plan', href: `${base}/data` },
                   { key: 'ts', label: '3 Trust & Safety', href: `${base}/ts` },
                 ]}
@@ -304,6 +305,9 @@ function Bindings({
   const [suggestions, setSuggestions] = useState<any>(null);
   return (
     <>
+      <EnvironmentSummary data={data} draft={draft} act={act} path={path} />
+      <details>
+        <summary>Advanced: binding rules</summary>
       {data.bindings.map((b: any) => (
         <section className="card" key={b.alias}>
           <div className="between">
@@ -413,6 +417,7 @@ function Bindings({
           ))}
         </div>
       </section>
+      </details>
     </>
   );
 }

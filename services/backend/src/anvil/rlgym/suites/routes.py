@@ -111,6 +111,14 @@ def routes():
         with scope(request, ws) as ctx:
             return ok(cases.request_variant(ctx, sv, body, key), request, 201)
 
+    # E-005 §2.3: environment versions this suite can use without re-authoring (others greyed, with the reason).
+    @r.get(W + "/suite-versions/{sv}/environment-options")
+    def environment_options(ws: str, sv: str, request: Request):
+        from anvil.rlgym.suites import environment
+
+        with scope(request, ws) as ctx:
+            return ok(environment.options(ctx.c, ctx.ws, sv), request)
+
     @r.get(W + "/suite-versions/{sv}/coverage")
     def coverage(ws: str, sv: str, request: Request):
         with scope(request, ws) as ctx:

@@ -974,6 +974,19 @@ def patch(c, ws, actor, sv_id, body):
             )
             source = "project_default" if kind == "project_rule" else b.get("source", "custom")
             require(
+                source in ("project_default", "ai_suggestion", "custom", "experiment"),
+                "VALIDATION_FAILED",
+                "Unknown binding source",
+                field="source",
+            )
+            # E-005 §2.2: an experiment pins one version, with a reason; the suite is then not leaderboard-eligible.
+            require(
+                source != "experiment" or (kind == "pinned" and (b.get("reason") or "").strip()),
+                "VALIDATION_FAILED",
+                "An experiment pins one environment version and needs a reason",
+                field="reason",
+            )
+            require(
                 source != "custom" or (b.get("reason") or "").strip(),
                 "VALIDATION_FAILED",
                 "A custom binding needs a reason",
