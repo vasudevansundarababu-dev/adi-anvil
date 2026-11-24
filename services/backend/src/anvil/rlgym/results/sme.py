@@ -280,6 +280,21 @@ def _inbox_for(c, ws, actor, kind, b, item, key, summary, extra):
     return row["id"]
 
 
+MISSING = object()
+VERDICTS = ("accept", "dispute_task", "dispute_rubric", "dispute_grader", "dispute_environment")
+
+
+def review_verdict(raw):
+    """Authoring's "Accept" / "Dispute grader" (any case, space or underscore) → accept / dispute_grader; None when
+    absent; MISSING when it is something else."""
+    if raw is None:
+        return None
+    if not isinstance(raw, str):
+        return MISSING
+    v = "_".join(raw.strip().lower().replace("-", " ").split())
+    return v if v in VERDICTS else MISSING
+
+
 def receive_decisions(c, ws, actor, batch_id, body):
     require(
         body.get("schema") == "rlgym.sme-decisions.v1",
@@ -341,6 +356,34 @@ def receive_decisions(c, ws, actor, batch_id, body):
                 item=item["id"],
             )
             continue
+        # E-007 (Authoring 7c12b835): what the SME reviewed, stored with the decision so publication can require an
+        # accepted review of the same score pass and evidence. Optional; absent on older decisions.
+        verdict = review_verdict(d.get("verdict"))
+        require(
+            verdict is not MISSING,
+            "VALIDATION_FAILED",
+            "verdict must be Accept or Dispute task|rubric|grader|environment",
+            item=item["id"],
+        )
+        score_pass = d.get("score_pass")
+        require(
+            score_pass is None or (isinstance(score_pass, int) and score_pass >= 1),
+            "VALIDATION_FAILED",
+            "score_pass must be a pass number",
+            item=item["id"],
+        )
+        evidence_sha = d.get("evidence_sha256")
+        require(
+            evidence_sha is None
+            or (
+                isinstance(evidence_sha, str)
+                and len(evidence_sha) == 64
+                and all(ch in "0123456789abcdef" for ch in evidence_sha)
+            ),
+            "VALIDATION_FAILED",
+            "evidence_sha256 must be a SHA-256 hex digest",
+            item=item["id"],
+        )
         criterion = d.get("criterion_id")
         if decision in ("grader_wrong", "rubric_correction"):
             ev = next((x for x in manifest["evaluators"] if x["criterion_id"] == criterion), None)
@@ -352,7 +395,8 @@ def receive_decisions(c, ws, actor, batch_id, body):
             )
         c.execute(
             """UPDATE results.sme_review_items SET decision=%s, rationale=%s, decided_by=%s, decided_at=now(), criterion_id=%s,
-                 evidence_refs=%s, excluded_from_reviewed=%s WHERE id=%s""",
+                 evidence_refs=%s, excluded_from_reviewed=%s, review_verdict=%s, score_pass=%s, evidence_sha256=%s
+               WHERE id=%s""",
             (
                 decision,
                 d["rationale"].strip(),
@@ -360,6 +404,9 @@ def receive_decisions(c, ws, actor, batch_id, body):
                 criterion,
                 Jsonb(d.get("evidence_refs") or []),
                 decision != "agent_failure",
+                verdict,
+                score_pass,
+                evidence_sha,
                 item["id"],
             ),
         )
