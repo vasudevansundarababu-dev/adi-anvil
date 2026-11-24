@@ -337,6 +337,16 @@ def run_known_case_tests(c, ws, actor, cid, version, blocks=None, expected_value
                         ],
                     }
                 )
+        if any(b.get("kind") == "recommended" for b in row["config"].get("extra_blocks") or []):
+            # D-042: with the "agent made a recommendation" check, a valid synthetic episode also recommends (last,
+            # so checks ordered "before recommend" still hold); the missing-evidence case is left as it is.
+            for name in ("allowed", "disallowed"):
+                ev = (cases.get(name) or {}).get("evidence") or {}
+                if isinstance(ev.get("tool_events"), list):
+                    ev["tool_events"] = [
+                        *ev["tool_events"],
+                        {"tool": "recommend", "args": {}, "ok": True},
+                    ]
         checks += block_case_checks(fw, row["config"], blocks, cases, source)
         # D-041: regression fixtures the configuration carries (e.g. the wrong-party request) run with its blocks.
         regressions = {

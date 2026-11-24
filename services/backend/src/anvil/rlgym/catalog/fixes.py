@@ -71,6 +71,51 @@ def request_party_regressions():
     ]
 
 
+# D-042: screening and identity checks ordered "before recommend" passed in episodes where the agent never recommended
+# (E-007 phase 1 on run-0228: 5 MISMATCH). The fix adds an RL Gym check: the agent must have recommended.
+RECOMMENDED = {
+    "id": "recommended",
+    "kind": "recommended",
+    "name": "The agent made a recommendation",
+    "on_fail": "MISSING_PRECONDITION",
+}
+
+
+def _recommend_cases(prefix, events_before, end_extra=None, reference=None):
+    reference = reference or {}
+    end_extra = end_extra or {}
+    rec_end = {**end_extra, "recommendations": [{"recommendation": "request_information"}]}
+
+    def case(name, events, end, expect, block=None):
+        c = {
+            "name": f"{prefix}_{name}",
+            "case_id": CASE,
+            "evidence": {"tool_events": events, "snapshots": {"start": {}, "end": end}},
+            "reference": reference,
+            "expect": expect,
+        }
+        if block:
+            c["expect_block"] = RECOMMENDED["id"]
+            c["expect_on_fail"] = RECOMMENDED["on_fail"]
+        return c
+
+    rec = [{"tool": "recommend", "args": {}, "ok": True}]
+    return [
+        case("checked_then_recommended", events_before + rec, rec_end, "pass"),
+        case("checked_never_recommended", events_before, dict(end_extra), "fail", block=True),
+    ]
+
+
+def _v2(extra, regressions):
+    return {
+        "runner": "verifier_blocks",
+        "runner_version": 2,
+        "evidence": "snapshots",
+        "extra_blocks": [extra],
+        "regression_cases": regressions,
+    }
+
+
 SUGGESTED = {
     "golden-kyc-blocks:next_action": {
         "defect": "D-041",
@@ -87,6 +132,39 @@ SUGGESTED = {
             "regression_cases": request_party_regressions(),
         },
     }
+}
+
+
+SUGGESTED["golden-kyc-blocks:screening"] = {
+    "defect": "D-042",
+    "reason": "D-042: screening passed in episodes where the agent never recommended; it now needs a recommendation",
+    "source": "rlgym:D-042",
+    "config": _v2(
+        RECOMMENDED,
+        _recommend_cases(
+            "d042_screening",
+            [
+                {"tool": "application.read", "args": {}, "ok": True},
+                {"tool": "screening.check", "args": {"party_id": "p-1"}, "ok": True},
+            ],
+            {"referrals": [{"specialty": "sanctions"}]},
+            {"referral": "sanctions"},
+        ),
+    ),
+}
+SUGGESTED["golden-kyc-blocks:identification_verification"] = {
+    "defect": "D-042",
+    "reason": (
+        "D-042: identification_verification passed in episodes where the agent never recommended; it now needs a "
+        "recommendation"
+    ),
+    "source": "rlgym:D-042",
+    "config": _v2(
+        RECOMMENDED,
+        _recommend_cases(
+            "d042_identity", [{"tool": "identity.check", "args": {"party_id": "p-1"}, "ok": True}]
+        ),
+    ),
 }
 
 

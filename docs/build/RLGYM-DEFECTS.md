@@ -16,6 +16,26 @@ Local list until the owner logs them in the tracker. Newest first.
   remainder); before, sample size 10 over 2 types gave 12. Plans of 40 over 4 types are unchanged.
 - **Status:** fixed.
 
+## D-042 Screening and identity passed when the agent never recommended (high)
+
+- **Found:** 24 Nov 2026 by E-007 phase 1 on run-0228 (5 KYC MISMATCHes): process checks ordered "before recommend"
+  pass when there is no recommend at all.
+- **Fix (as D-041):** an RL Gym "recommended" check (a recommend call succeeded or a recommendation is recorded), shipped
+  as suggested fix versions v2 of golden-kyc-blocks:screening and golden-kyc-blocks:identification_verification with
+  regression fixtures (checked then recommended: pass; checked, never recommended: fail). Known-case synthetic
+  episodes recommend last when a configuration carries this check. Dry run on the real v1 configurations, rolled back:
+  both qualify (and next_action's D-041 v2 still does).
+- **Owner's clicks (each):** Admin → Evaluators → the configuration v1 → Create fix version → "Use suggested fix" →
+  Create. Not created yet.
+- **Tests:** `tests/unit/test_rlgym_d042_recommended_unit.py`. **Status:** code on forge-v2-rlgym.
+
+## SME review binding (E-007; Authoring 7c12b835)
+
+- Each Benchmark review decision now stores its verdict (accept / dispute task, rubric, grader or environment), the
+  score pass and the evidence SHA-256 (migration 058: three nullable columns, written with the decision, which stays
+  final). Dump first: `.local/backups/rlgym-20261124-114808-before-migration-058.sql.gz`; task imports, sealed
+  evidence, scores and SME items read back unchanged (counts and digests). "Can't assess" stays in Authoring.
+
 ## E-007 phase 1: verification report (shadow mode; reports only, blocks nothing)
 
 - **Storage:** migration 057 adds `verification.reports` (new schema, append-only, workspace-isolated). Additive only:

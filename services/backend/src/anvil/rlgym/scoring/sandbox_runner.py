@@ -385,6 +385,21 @@ def _request_party(block, ctx):
     return ("pass" if ok else "fail"), {"requested_for": asked}, {"party_lacking": sorted(should)}
 
 
+def _recommended(block, ctx):
+    """D-042: a check ordered "before recommend" must not pass when the agent never recommended. Passes when a
+    recommend call succeeded or the end state holds a recommendation."""
+    events, end = ctx["events"], (ctx["snapshots"] or {}).get("end")
+    if events is None and end is None:
+        return "blocked", None, "no tool log and no end state"
+    called = any(e.get("tool") == "recommend" and e.get("ok", True) for e in events or [])
+    recorded = bool([r for r in (end or {}).get("recommendations") or [] if isinstance(r, dict)])
+    return (
+        ("pass" if called or recorded else "fail"),
+        {"recommend_called": called, "recorded": recorded},
+        "a recommendation",
+    )
+
+
 def run_blocks(job):
     evidence = job.get("evidence") or {}
     blocks = job.get("blocks") or []
@@ -442,6 +457,8 @@ def run_blocks(job):
             verdict, actual, expected = _process(b, ctx)
         elif kind == "request_party":
             verdict, actual, expected = _request_party(b, ctx)
+        elif kind == "recommended":
+            verdict, actual, expected = _recommended(b, ctx)
         elif kind == "rubric":
             verdict, actual, expected = _rubric(b, ctx)
             share = float(b.get("share_percent") or 0)

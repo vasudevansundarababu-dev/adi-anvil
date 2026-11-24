@@ -151,6 +151,13 @@ def _block_check(b, plugin_version, approvals):
             "what": f"{name}: rubric {b.get('rubric_id')}",
             "reads": "final_output",
         }
+    if kind == "recommended":
+        return {
+            "id": b.get("id"),
+            "kind": "recommended",
+            "what": f"{name}: a recommend call succeeded or a recommendation is recorded (RL Gym check, D-042)",
+            "reads": "tool_events",
+        }
     if kind == "request_party":
         return {
             "id": b.get("id"),
@@ -206,6 +213,8 @@ def describe(
             )
         if any(c["kind"] == "request_party" for c in checks):
             parts.append("RL Gym party check")
+        if any(c["kind"] == "recommended" for c in checks):
+            parts.append("RL Gym recommendation check")
         uses_reference = any(_src(b.get("value")) for b in mine) or any(
             c["kind"] in ("plugin", "request_party") for c in checks
         )
