@@ -7,6 +7,7 @@ import { GymApiError, send, short, when, wsBase } from './api';
 import { Badge, Env, Failure, Hash, Loading, Tabs, useData, useGym } from './ui';
 import { CasesPanel, EdgeFamilies, SafetyTable } from './Cases';
 import { EnvironmentSummary } from './Environment';
+import { ReferencePanel } from './Reference';
 
 export function SuitesTab({ project }: { project: string }) {
   const { ws, say } = useGym();
@@ -257,11 +258,13 @@ export function SuiteEditor({ project, id, step }: { project: string; id: string
                   { key: 'bindings', label: '1 Environment & graders', href: `${base}/bindings` },
                   { key: 'data', label: '2 Data plan', href: `${base}/data` },
                   { key: 'ts', label: '3 Trust & Safety', href: `${base}/ts` },
+                  { key: 'reference', label: '4 Reference agent', href: `${base}/reference` },
                 ]}
               />
               {step === 'bindings' && <Bindings data={data} draft={draft} act={act} path={path} />}
               {step === 'data' && <DataPlan data={data} draft={draft} act={act} path={path} />}
               {step === 'ts' && <TrustSafety data={data} draft={draft} act={act} path={path} />}
+              {step === 'reference' && <ReferencePanel path={path} />}
               {moreData && (
                 <MoreDataForm
                   data={data}

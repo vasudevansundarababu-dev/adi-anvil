@@ -706,6 +706,97 @@ def fixture_rows():
     return out
 
 
+def reference_rows(c, ws, run, manifest):
+    """V-04 and V-01 from the latest reference-agent run of this run's suite version (E-007 §7.2)."""
+    from anvil.rlgym.verification import reference_run
+
+    rr = reference_run.latest(c, ws, run["suite_version_id"])
+    if not rr:
+        why = "the reference agent hasn't been run for this suite version (Suite → Reference agent → Run)"
+        return (
+            row("V-04", "Reference-solvable", "INSUFFICIENT_EVIDENCE", why),
+            row("V-01", "Environment replay", "INSUFFICIENT_EVIDENCE", why),
+        )
+    by = {(t["task_id"], t["revision"]): t for t in rr["tasks"]}
+    unconfirmed, failures, missing = [], [], []
+    for mt in manifest.get("tasks") or []:
+        t = by.get((mt["task_id"], mt["revision"]))
+        if not t:
+            missing.append(f"{mt['task_id'][:8]} r{mt['revision']}")
+            continue
+        if not t.get("confirmed") or t["confirmed"].get("verdict") != "confirmed":
+            unconfirmed.append(f"{mt['task_id'][:8]} r{mt['revision']}")
+        for cs in t["cases"]:
+            for f in cs.get("failures") or []:
+                failures.append(f"task {t['task_id'][:8]}: {f['reason']}")
+            if not cs.get("full_marks"):
+                bad = [
+                    k for k, v in (cs.get("verdicts") or {}).items() if v.get("verdict") != "pass"
+                ]
+                failures.append(
+                    f"task {t['task_id'][:8]} on {cs['case_id']}: {cs['points']} ({', '.join(bad)})"
+                )
+    ev = {"reference_run": rr["id"], "at": str(rr.get("created_at")), "judge": rr.get("judge")}
+    if failures:
+        v04 = row(
+            "V-04",
+            "Reference-solvable",
+            "FAIL",
+            "; ".join(failures[:6]),
+            {**ev, "failures": failures},
+        )
+    elif missing:
+        v04 = row(
+            "V-04",
+            "Reference-solvable",
+            "INSUFFICIENT_EVIDENCE",
+            f"the reference run doesn't cover task(s) {', '.join(missing)}: run it again",
+            ev,
+        )
+    elif unconfirmed:
+        v04 = row(
+            "V-04",
+            "Reference-solvable",
+            "INSUFFICIENT_EVIDENCE",
+            f"Not enough evidence: reference approach not confirmed ({', '.join(unconfirmed)})",
+            ev,
+        )
+    else:
+        v04 = row(
+            "V-04",
+            "Reference-solvable",
+            "PASS",
+            "the reference agent scores full marks on every task",
+            ev,
+        )
+    replays = [cs.get("replay") for t in rr["tasks"] for cs in t["cases"]]
+    if not replays or any(r is None for r in replays):
+        v01 = row(
+            "V-01",
+            "Environment replay",
+            "INSUFFICIENT_EVIDENCE",
+            "the reference run had no replay",
+            ev,
+        )
+    else:
+        bad = [
+            r
+            for r in replays
+            if not (r["observations_match"] and r["end_state_match"] and r["verdicts_match"])
+        ]
+        v01 = row(
+            "V-01",
+            "Environment replay",
+            "FAIL" if bad else "PASS",
+            f"{len(bad)} of {len(replays)} replays differ"
+            if bad
+            else f"all {len(replays)} reference episodes replayed identically on a fresh instance "
+            "(observations, end state and verdicts)",
+            ev,
+        )
+    return v04, v01
+
+
 def build(c, ws, run_id, requested_by=None, profile="experiment"):
     run = c.execute(
         "SELECT * FROM runs.runs WHERE workspace_id=%s AND id=%s", (ws, run_id)
@@ -740,24 +831,11 @@ def build(c, ws, run_id, requested_by=None, profile="experiment"):
             refs[e["id"]] = ref["reference"]
     cases = [e for e in episodes if e["kind"] == "case" and e["id"] in bundles]
     rows_ = [roster(manifest, episodes)]
-    rows_.append(
-        row(
-            "V-01",
-            "Environment replay",
-            "INSUFFICIENT_EVIDENCE",
-            "the environment replay harness is not built yet (phase 1); the run is not re-executed",
-        )
-    )
+    v04, v01 = reference_rows(c, ws, run, manifest)
+    rows_.append(v01)
     rows_.append(isolation(cases, bundles))
     rows_.append(tool_errors(episodes, bundles))
-    rows_.append(
-        row(
-            "V-04",
-            "Oracle solvable",
-            "INSUFFICIENT_EVIDENCE",
-            "the reference agent and its SME confirmation are not available yet (E-007 §7.2)",
-        )
-    )
+    rows_.append(v04)
     if pass_row:
         rows_ += shortcuts(c, ws, manifest, pass_row, cases, bundles, refs)
         rows_.append(grader_replay(c, ws, manifest, pass_row, cases, bundles, refs))

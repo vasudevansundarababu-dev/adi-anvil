@@ -127,6 +127,72 @@ def routes():
         with scope(request, ws) as ctx:
             return ok(safety_table.table(ctx.c, ctx.ws, sv), request)
 
+    # E-007 §7.2: the reference agent (V-04 reference-solvable, V-01 replay) and the confirmation of each task's approach.
+    @r.get(W + "/suite-versions/{sv}/reference")
+    def reference_get(ws: str, sv: str, request: Request):
+        from anvil.rlgym.verification import reference, reference_run
+
+        with scope(request, ws) as ctx:
+            tasks = ctx.c.execute(
+                """SELECT t.id, t.task_id, t.revision, t.package_sha256, a.content actor FROM suites.suite_tasks s
+                   JOIN projects.task_imports t ON t.id=s.task_import_id
+                   LEFT JOIN projects.task_payloads a ON a.workspace_id=t.workspace_id AND a.package_sha256=t.package_sha256 AND a.part='actor'
+                   WHERE s.suite_version_id=%s ORDER BY t.task_id""",
+                (sv,),
+            ).fetchall()
+            out = []
+            for t in tasks:
+                summ = reference.summary(t["actor"])
+                conf = ctx.c.execute(
+                    """SELECT verdict, note, decided_by, decided_at FROM verification.reference_confirmations
+                       WHERE workspace_id=%s AND package_sha256=%s AND summary_sha256=%s ORDER BY decided_at DESC LIMIT 1""",
+                    (ctx.ws, t["package_sha256"], summ["sha256"]),
+                ).fetchone()
+                out.append(
+                    {
+                        "task_import_id": str(t["id"]),
+                        "task_id": t["task_id"],
+                        "revision": t["revision"],
+                        "summary": summ,
+                        "confirmation": conf,
+                    }
+                )
+            return ok(
+                {"tasks": out, "latest_run": reference_run.latest(ctx.c, ctx.ws, sv)}, request
+            )
+
+    @r.post(W + "/suite-versions/{sv}/reference-run", status_code=201)
+    def reference_run_now(
+        ws: str, sv: str, request: Request, body: dict = Body(default_factory=dict)
+    ):
+        from anvil.rlgym.verification import reference_run
+
+        with scope(request, ws) as ctx:
+            ctx.actor.require_person()
+            return ok(
+                reference_run.run(
+                    ctx.c,
+                    ctx.ws,
+                    sv,
+                    str(ctx.actor.id),
+                    replay=body.get("replay", True) is not False,
+                    max_cases_per_task=min(int(body.get("cases_per_task") or 3), 10),
+                ),
+                request,
+                201,
+            )
+
+    @r.post(W + "/task-imports/{tid}/reference-confirmation", status_code=201)
+    def reference_confirm(
+        ws: str, tid: str, request: Request, body: dict = Body(default_factory=dict)
+    ):
+        from anvil.rlgym.verification import reference_run
+
+        with scope(request, ws) as ctx:
+            return ok(
+                reference_run.confirm(ctx, tid, body.get("verdict"), body.get("note")), request, 201
+            )
+
     @r.get(W + "/suite-versions/{sv}/coverage")
     def coverage(ws: str, sv: str, request: Request):
         with scope(request, ws) as ctx:
