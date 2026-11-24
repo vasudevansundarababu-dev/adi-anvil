@@ -6,6 +6,7 @@ import { Fragment, useState } from 'react';
 import { GymApiError, send, short, when, wsBase } from './api';
 import { SuiteEditor, SuitesTab } from './Suites';
 import { Badge, Env, Failure, Hash, Loading, Search, Tabs, useData, useGym } from './ui';
+import { HowScored, ScoredBy } from './Scoring';
 
 function caseText(sel: any) {
   if (!sel) return '—';
@@ -561,6 +562,7 @@ function SelectionRules({
                     <th>Criterion</th>
                     <th>Rule</th>
                     <th>Binds now</th>
+                    <th>Scored by</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -582,6 +584,10 @@ function SelectionRules({
                           ok={cr.ok}
                           label={cr.ok ? `v${cr.binds_now} · Qualified` : cr.reason}
                         />
+                      </td>
+                      <td style={{ textAlign: 'left' }}>
+                        <ScoredBy s={cr.scoring} />
+                        <HowScored s={cr.scoring} />
                       </td>
                     </tr>
                   ))}

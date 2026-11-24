@@ -8,6 +8,7 @@ import Episode from './Episode';
 import Report from './Report';
 import Sme from './Sme';
 import { Badge, Failure, Hash, Loading, Search, Tabs, useData, useGym } from './ui';
+import { HowScored, ScoredBy } from './Scoring';
 
 // Runs (SCREENS 3.17-3.21): list, New run with the admission checklist, Compare, and the run page (Overview, Report,
 // Episodes, SME review). Only controlled mock agents run on this machine; every result says it is synthetic.
@@ -441,6 +442,7 @@ function NewRun() {
           <input
             type="checkbox"
             checked={leaderboard}
+            disabled={!leaderboard && check?.leaderboard?.eligible === false}
             onChange={(e) => setLeaderboard(e.target.checked)}
           />
           Count this run on the leaderboard
@@ -449,6 +451,11 @@ function NewRun() {
             leaderboard.
           </small>
         </label>
+        {check?.leaderboard?.eligible === false && (
+          <small className="no">
+            Can&rsquo;t be a leaderboard run: {check.leaderboard.reasons.join('; ')}.
+          </small>
+        )}
         <section className="card">
           <h3>Models</h3>
           {(systems.data?.items ?? []).map((s: any) => {
@@ -936,6 +943,16 @@ function Overview({ r }: { r: any }) {
               <small>
                 {m.evaluators.map((e: any) => `${e.configuration_id} v${e.version}`).join(', ')}
               </small>
+              {Object.keys(r.scoring ?? {}).length > 0 && (
+                <ul>
+                  {Object.entries(r.scoring).map(([cid, s]: [string, any]) => (
+                    <li key={cid}>
+                      <strong>{cid}</strong>: <ScoredBy s={s} />
+                      <HowScored s={s} />
+                    </li>
+                  ))}
+                </ul>
+              )}
             </dd>
             <dt>Data plan</dt>
             <dd>

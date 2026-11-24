@@ -471,6 +471,12 @@ def admission_check(ctx, body):
                 ),
             )
         resolved["plugins"] = bound_plugins
+        # D-034: what scores each criterion, frozen in the manifest (configuration, blocks, plug-in versions).
+        from anvil.rlgym.results import scorer
+
+        resolved["graders"] = scorer.for_admission(
+            ctx.c, ctx.ws, project, resolved.get("evaluator_versions"), bound_plugins
+        )
         plan = ctx.c.execute(
             "SELECT * FROM suites.data_plans WHERE suite_version_id=%s", (sv["id"],)
         ).fetchone()
@@ -625,8 +631,19 @@ def admission_check(ctx, body):
         if budget <= 0 or projected <= budget
         else f"BUDGET_EXCEEDED: projected ${projected:g} is over the ${budget:g} cap",
     )
+    # D-034 (E-004 §3.4): a run can count on the leaderboard only when its graders, environment, safety detectors and
+    # models are all real and approved. The tick is refused (with the reasons) otherwise.
+    eligibility = leaderboard_eligibility(resolved, lines)
+    if body.get("leaderboard") is True and not eligibility["eligible"]:
+        item(
+            "leaderboard",
+            False,
+            "Leaderboard run: not eligible",
+            "; ".join(eligibility["reasons"]),
+        )
     episodes = sum(p["episodes"] for p in per_model)
     return {
+        "leaderboard": eligibility,
         "passed": all(i["ok"] for i in items),
         "items": items,
         "episodes": episodes,
@@ -678,6 +695,33 @@ def _uses(r):
     }
 
 
+def leaderboard_eligibility(resolved, lines):
+    """{"eligible", "reasons"}: every criterion bound to a qualified grader version, the environment version
+    qualified, every Trust & Safety category gradable on that environment (D-035's declared needs), every agent model
+    live (not a mock). Approved = qualified until grader promotion (E-004 §3.3) exists."""
+    from anvil.rlgym.scoring import safety
+
+    reasons = []
+    evs = resolved.get("evaluator_versions") or []
+    if not evs:
+        reasons.append("no criterion is bound to a qualified grader version")
+    env_row = resolved.get("env_row")
+    if not env_row:
+        reasons.append("no environment version is bound")
+    elif env_row.get("state") != "qualified":
+        reasons.append(f"environment {env_row.get('id')} is {env_row.get('state')}, not qualified")
+    cats = sorted({p["category_key"] for p in resolved.get("prompts") or []})
+    bad = [why for cat in cats for ok, why in [safety.can_grade(cat, env_row)] if not ok]
+    if bad:
+        reasons.append("safety: " + "; ".join(bad))
+    mocks = [m.get("name", m["system_id"]) for m in lines or [] if not m.get("live")]
+    if mocks:
+        reasons.append(f"agent model(s) are mocks, not live: {', '.join(mocks)}")
+    if not lines:
+        reasons.append("no agent model chosen")
+    return {"eligible": not reasons, "reasons": reasons}
+
+
 def public_check(check):
     return {k: v for k, v in check.items() if not k.startswith("_")}
 
@@ -724,6 +768,8 @@ def _manifest(run_id, check):
             "local_image": image and {"tag": image["image_tag"], "id": image["local_image_id"]},
         },
         "evaluators": r["evaluator_versions"],
+        # D-034: per criterion, the hash of what scores it and its plain description (absent before D-034).
+        **({"graders": r["graders"]} if r.get("graders") else {}),
         "plugins": r.get("plugins") or {},
         "data_plan": {
             "sample_size": r["plan"]["sample_size"],
@@ -1214,6 +1260,24 @@ def list_runs(ctx, state=None, q=None, project_id=None):
     return out
 
 
+def _scoring(ctx, m, latest):
+    if not m:
+        return {}
+    from anvil.rlgym.results import scorer
+
+    evs = (
+        ctx.c.execute(
+            "SELECT evaluator_versions FROM scoring.scoring_passes WHERE id=%s", (latest["id"],)
+        ).fetchone()["evaluator_versions"]
+        if latest
+        else m["manifest"].get("evaluators")
+    )
+    try:
+        return scorer.for_run(ctx.c, ctx.ws, m["manifest"], evs)
+    except Exception:  # the view never fails the run page; the report says what it could not read
+        return {}
+
+
 def get_run(ctx, run_id):
     run = _run(ctx, run_id)
     m = _manifest_row(ctx, run_id)
@@ -1250,6 +1314,8 @@ def get_run(ctx, run_id):
         "manifest_sha256": m and m["manifest_sha256"],
         "manifest": m and m["manifest"],
         "leaderboard": bool(m and m["manifest"].get("leaderboard") is True),
+        # D-034: how each criterion was scored in this run (its latest scoring pass and frozen manifest).
+        "scoring": _scoring(ctx, m, latest),
         "counts": counts,
         "total_episodes": sum(counts.values()),
         "elapsed_s": round(elapsed),

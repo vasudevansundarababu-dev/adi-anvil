@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { GymApiError, send, wsBase } from './api';
 import { Badge, Failure, Hash, Loading, useData, useGym } from './ui';
+import { HowScored, ScoredBy } from './Scoring';
 
 // The run report (SCREENS 3.22-3.36): five views, drill-downs and the PDF preview. Every view comes from the same
 // report view the PDF prints, identified by view_sha256.
@@ -401,7 +402,14 @@ function TasksView({ id, v, models }: { id: string; v: any; models: Model[] }) {
         </label>
       </div>
       <ModelTable
-        head={['Criterion', 'Capability', ...models.map((m) => m.name), 'Blocked', 'Evaluator']}
+        head={[
+          'Criterion',
+          'Capability',
+          ...models.map((m) => m.name),
+          'Blocked',
+          'Evaluator',
+          'Scored by',
+        ]}
         rows={criteria.slice((page - 1) * 10, page * 10).map((c: any) => [
           c.criterion_id,
           <Link key="c" href={drill(id, 'capability', c.capability)}>
@@ -410,6 +418,10 @@ function TasksView({ id, v, models }: { id: string; v: any; models: Model[] }) {
           ...models.map((m) => pct(c.per_model[m.system_id])),
           c.blocked,
           c.evaluator,
+          <span key="s" style={{ textAlign: 'left' }}>
+            <ScoredBy s={c.scoring} />
+            <HowScored s={c.scoring} />
+          </span>,
         ])}
       />
       <div className="row">

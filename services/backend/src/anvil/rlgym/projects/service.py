@@ -1373,7 +1373,7 @@ def exports(c, ws, pid):
 
 
 def selection_view(c, ws, pid, actor):
-    get_project_row(c, ws, pid)
+    project_row = get_project_row(c, ws, pid)
     aliases = []
     for rule in _current_rules(c, ws, pid):
         pick, code, reason = selection.resolve_environment(c, rule)
@@ -1417,6 +1417,12 @@ def selection_view(c, ws, pid, actor):
                 "last_note": rule["change_note"],
             }
         )
+    # D-034: how each criterion is scored now (Scored by, and the checks behind it).
+    from anvil.rlgym.results import scorer
+
+    scoring_now = scorer.for_project(c, ws, project_row, criteria)
+    for cr in criteria:
+        cr["scoring"] = scoring_now.get(cr["criterion_id"])
     eval_history = c.execute(
         """SELECT criterion_id, kind, pinned_version, resolved_version, change_cause, change_note, valid_from FROM projects.evaluator_selection_rules
            WHERE workspace_id=%s AND project_id=%s AND change_cause<>'initial' ORDER BY valid_from""",

@@ -512,6 +512,9 @@ def task_results(d):
             s = strata.setdefault((dim, value), {})
             s.setdefault(e["system_id"], []).append(bool(e["passed"]))
     criteria = []
+    from anvil.rlgym.results import scorer
+
+    scored = scorer.for_run(d.c, d.ws, d.manifest, list(d.evaluators.values()))
     for cid, ev in sorted(d.evaluators.items()):
         per = {}
         blocked = 0
@@ -535,6 +538,9 @@ def task_results(d):
                 "blocked": blocked,
                 "evaluator": f"{ev['configuration_id']} v{ev['version']}"
                 + (" (re-scored)" if d.pass_row["reason"] == "rescore" else ""),
+                # D-034: Scored by, and the checks behind it, from what this run used.
+                "scored_by": (scored.get(cid) or {}).get("scored_by") or scorer.UNKNOWN,
+                "scoring": scored.get(cid),
             }
         )
     return {

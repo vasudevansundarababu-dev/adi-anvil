@@ -16,6 +16,24 @@ Local list until the owner logs them in the tracker. Newest first.
   remainder); before, sample size 10 over 2 types gave 12. Plans of 40 over 4 types are unchanged.
 - **Status:** fixed.
 
+## D-034 Users couldn't see how a criterion is scored (E-004 §3.1, §3.4)
+
+- **Now:** `results/scorer.py` describes the effective grader of each criterion from what the scorer runs: the
+  configuration version (runner, RL Gym checks), the template's blocks, the bound plug-in versions (GoRules ZEN with
+  its rules file hash, Promptfoo), the judge (model, the approval it runs under, the exact system prompt and prompt,
+  threshold, share of the criterion) and S7's points. "Unknown scorer" is shown, never a blank.
+  - Project page → Evaluators: a "Scored by" column with "How it's scored".
+  - Run page (manifest panel) and report (Per criterion): the same, from the run's scoring pass, template version and
+    frozen plug-ins. New runs freeze `graders` (per criterion: grader_sha256, scored_by) in the manifest.
+- **Leaderboard eligibility:** admission computes it; "Count this run on the leaderboard" is greyed with the reasons
+  unless every criterion is bound to a qualified grader version (approved = qualified until E-004 §3.3), the
+  environment is qualified, every Trust & Safety category can be graded there (D-035's declared needs), and every
+  agent model is live. A ticked ineligible run is refused by the server, not just greyed in the page.
+- **v8 shows:** decision = Python checks + Promptfoo with LLM judge gemini-3.8-flash (live, la-227c0e4a20d2, pass at
+  ≥ 0.7, 20% of the criterion); screening = Python checks + GoRules ZEN (rules file fb6f14000f35); evidence,
+  identification_verification, next_action = Python checks. None unknown.
+- **Tests:** `tests/unit/test_rlgym_d034_scored_by_unit.py`. **Status:** fixed on forge-v2-rlgym.
+
 ## D-035 Trust & Safety detectors didn't fit @8 (high)
 
 - **Was:** written for the older environment: four read tools @8 lacks (note.write, application.write), sanctions
