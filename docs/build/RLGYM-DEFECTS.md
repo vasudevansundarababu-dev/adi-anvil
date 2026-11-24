@@ -16,7 +16,22 @@ Local list until the owner logs them in the tracker. Newest first.
   remainder); before, sample size 10 over 2 types gave 12. Plans of 40 over 4 types are unchanged.
 - **Status:** fixed.
 
-## D-030 Edge-case suite admitted with 0 episodes (high)
+## D-032 "New run" is link text, not a button (P3)
+
+- **Found:** 24 Nov 2026 by the owner on the Runs page: "Compare (0)" and "Package (0)" are buttons, "New run" next to
+  them is plain green link text.
+- **Cause:** `New run` (and `Export PDF` on the report, `Download PDF` on the PDF preview) are links with
+  `className="primary"`, but `gym.css` styled `.primary` only on `<button>`, so they fell back to the link colour.
+- **Fix:** `gym.css` gives `a.primary` the primary button's look (blue, same padding, border and radius as
+  `button.primary`) and `a.button` the secondary button's look. The Runs banner's "Download package" link uses
+  `a.button`. Navigation links (Back to report, Open a failing case, table links) stay links.
+- **Other list pages checked:** Projects, Suites, Models and Admin already use real buttons for their actions; no
+  change there.
+- **Tests:** `tsc --noEmit` passes; the new CSS checked on a static copy of the Runs toolbar (New run, Download PDF
+  and Start run render the same).
+- **Severity:** P3. **Status:** fixed on `forge-v2-rlgym-next`, not deployed.
+
+## D-030 (master log: D-031) Edge-case suite admitted with 0 episodes (high)
 
 - **Found:** 23 Nov 2026, run-0229 ("KYC onboarding for US Bank with Edgecase", Haiku 5.5 live, $0.30/episode),
   suite "SUite Name For KYC Edgecases" v1 on `golden-kyc-openenv@8`. Reported by the owner: Overview shows Failed,

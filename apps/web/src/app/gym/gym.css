@@ -223,6 +223,30 @@ body:has(#gym) {
   opacity: 0.55;
   cursor: not-allowed;
 }
+/* D-032: a link that is an action (New run, Export PDF, Download …) looks and sits like a button. */
+#gym a.primary,
+#gym a.button {
+  display: inline-block;
+  font: inherit;
+  line-height: normal;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 11px;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#gym a.primary {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+#gym a.primary:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
 #gym nav {
   padding: 0 20px;
   display: flex;

@@ -93,7 +93,11 @@ function RunsList() {
         <div className="banner" role="status">
           Package {packaged.id} · {packaged.run_ids.join(', ')} ·{' '}
           <Hash value={packaged.package_sha256} />{' '}
-          <a href={`${wsBase(ws)}/packages/${packaged.id}/download`} download={packaged.file_name}>
+          <a
+            className="button"
+            href={`${wsBase(ws)}/packages/${packaged.id}/download`}
+            download={packaged.file_name}
+          >
             Download package
           </a>
         </div>
