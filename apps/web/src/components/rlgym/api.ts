@@ -104,3 +104,10 @@ export function age(value?: string | null) {
 export function at(versionId?: string | null) {
   return versionId ? `@${versionId.split('@').pop()}` : '—';
 }
+
+// Environment versions the owner has said not to bind (24 Nov 2026: "Don't bind any project or suite to it [@9]").
+// Pickers show them greyed out with this reason; nothing here changes what the RL Gym will bind by rule.
+export const HELD_VERSIONS: Record<string, string> = {
+  'golden-kyc-openenv@9':
+    "Held by the owner (24 Nov 2026): don't bind any project or suite to @9. Its leak fix is partial (D-039: the passport_only shape remains).",
+};

@@ -1131,19 +1131,25 @@ body:has(#gym) {
   margin: 0;
   padding: 7px 11px;
   border-radius: 8px;
-  background: light-dark(#eff6ff, #1e2b3d);
+  border: 1px solid var(--line);
+  background: var(--wash);
+  color: var(--ink);
 }
-/* D-047: Trust & Safety column headers never break mid-word. */
-#gym table.ts-table th {
+/* D-047 / D-048: tables never break words. Cards set overflow-wrap: anywhere, which lets a table column shrink to one
+   character whenever another column holds long text (the environment picker's "needs re-authoring" reasons):
+   "golden / -kyc- / openenv", "5 / 4 / 0", "SE VE RIT Y". Inside tables, wrap only between words; headers,
+   version names and counts stay on one line. */
+#gym table {
+  overflow-wrap: break-word;
+}
+#gym th,
+#gym .nowrap {
   white-space: nowrap;
-  word-break: keep-all;
-  hyphens: none;
 }
-#gym table.ts-table th:nth-child(1) { min-width: 150px; }
-#gym table.ts-table th:nth-child(2) { min-width: 200px; }
-#gym table.ts-table th:nth-child(3) { min-width: 120px; }
-#gym table.ts-table th:nth-child(4) { min-width: 90px; }
-#gym table.ts-table th:nth-child(5) { min-width: 220px; }
-#gym table.ts-table th:nth-child(6) { min-width: 120px; }
-#gym table.ts-table th:nth-child(7) { min-width: 150px; }
-#gym table.ts-table th:nth-child(8) { min-width: 100px; }
+#gym table.ts-table td:nth-child(1) {
+  min-width: 140px;
+}
+#gym table.ts-table td:nth-child(2),
+#gym table.ts-table td:nth-child(5) {
+  min-width: 200px;
+}

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Fragment, useState } from 'react';
-import { GymApiError, at, send, short, when, wsBase } from './api';
+import { GymApiError, HELD_VERSIONS, at, send, short, when, wsBase } from './api';
 import { SuiteEditor, SuitesTab } from './Suites';
 import { Badge, Env, Failure, Hash, Loading, Search, Tabs, useData, useGym } from './ui';
 import { HowScored, ScoredBy } from './Scoring';
@@ -172,7 +172,7 @@ export function ProjectPage({ id, tab, rest }: { id: string; tab: string; rest: 
           <div className="work wide">
             <main>
               {/* E-008: the project's facts in a header strip on top, tabs underneath. */}
-              <header className="pagehead">
+              <section className="pagehead">
                 <Link href="/gym/projects">← Back to projects</Link>
                 <div className="between">
                   <div className="row">
@@ -217,7 +217,7 @@ export function ProjectPage({ id, tab, rest }: { id: string; tab: string; rest: 
                     </code>
                   </span>
                 </div>
-              </header>
+              </section>
               <Tabs
                 current={tab}
                 items={[
@@ -780,8 +780,14 @@ function SelectionRules({
                   )
                     .filter((o: any) => !o.current)
                     .map((o: any) => (
-                      <option key={ruleOptionValue(o)} value={ruleOptionValue(o)}>
+                      <option
+                        key={ruleOptionValue(o)}
+                        value={ruleOptionValue(o)}
+                        disabled={!!HELD_VERSIONS[o.selects]}
+                        title={HELD_VERSIONS[o.selects]}
+                      >
                         {o.label} (selects {short(o.selects)}, {o.cases} cases)
+                        {HELD_VERSIONS[o.selects] ? ' · held by the owner' : ''}
                       </option>
                     ))}
                 </select>

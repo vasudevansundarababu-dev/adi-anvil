@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { short } from './api';
+import { HELD_VERSIONS, at, short } from './api';
 import { Badge, useData } from './ui';
 
 // E-005 §2: the suite's environment in one plain line, what scores each criterion (D-034, on the project page), and a
@@ -66,7 +66,15 @@ export function EnvironmentSummary({
                     </tr>
                   </thead>
                   <tbody>
-                    {(o?.versions ?? []).map((v: any) => (
+                    {(o?.versions ?? []).map((raw: any) => {
+                      const held = HELD_VERSIONS[raw.version_id];
+                      const v = held
+                        ? { ...raw, selectable: false, reasons: [held, ...raw.reasons] }
+                        : raw;
+                      const ruleNow = (data.header?.environment ?? []).find(
+                        (e: any) => e.alias === b.alias,
+                      );
+                      return (
                       <tr key={v.version_id} className={v.selectable ? '' : 'muted'}>
                         <td style={{ textAlign: 'left' }}>
                           <label className="row">
@@ -77,10 +85,19 @@ export function EnvironmentSummary({
                               checked={pick[b.alias] === v.version_id}
                               onChange={() => setPick({ ...pick, [b.alias]: v.version_id })}
                             />
-                            {short(v.version_id)} {v.current && <small>(current)</small>}
+                            <span className="nowrap">{at(v.version_id)}</span>
+                            {v.version_id === b.binds_now && (
+                              <small>
+                                (this suite
+                                {ruleNow && !ruleNow.follows_project_rule ? ': pinned' : ''})
+                              </small>
+                            )}
+                            {ruleNow?.project_binds_now === v.version_id && (
+                              <small>(project rule)</small>
+                            )}
                           </label>
                         </td>
-                        <td>{v.cases ?? '—'}</td>
+                        <td className="nowrap">{v.cases ?? '—'}</td>
                         <td style={{ textAlign: 'left' }}>
                           {v.selectable ? 'Yes' : <small className="no">{v.reasons.join('; ')}</small>}
                           {v.warnings.map((w: string) => (
@@ -88,7 +105,8 @@ export function EnvironmentSummary({
                           ))}
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

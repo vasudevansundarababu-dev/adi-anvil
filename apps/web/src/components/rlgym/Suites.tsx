@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { GymApiError, at, send, short, when, wsBase } from './api';
+import { GymApiError, HELD_VERSIONS, at, send, short, when, wsBase } from './api';
 import { Badge, Env, Failure, Hash, Loading, Tabs, useData, useGym } from './ui';
 import { CasesPanel, EdgeFamilies, SafetyTable } from './Cases';
 import { EnvironmentSummary } from './Environment';
@@ -220,6 +220,7 @@ export function SuiteEditor({ project, id, step }: { project: string; id: string
               act={act}
               setMoreData={setMoreData}
               failure={failure}
+              reload={reload}
             />
             <main>
               <Tabs
@@ -269,7 +270,9 @@ function SuiteHeader({
   act,
   setMoreData,
   failure,
+  reload,
 }: {
+  reload: () => void;
   data: any;
   draft: boolean;
   project: string;
@@ -281,6 +284,25 @@ function SuiteHeader({
   const { ws, say } = useGym();
   const router = useRouter();
   const h = data.header ?? {};
+  // D-048: the switch reports its own progress and any refusal right next to the button (and to the dev log).
+  const [switching, setSwitching] = useState<string | null>(null);
+  const [switchError, setSwitchError] = useState<string | null>(null);
+  async function switchToProjectRule(alias: string) {
+    setSwitching(alias);
+    setSwitchError(null);
+    try {
+      await send('PATCH', path, { bindings: [{ alias, rule_kind: 'project_rule' }] });
+      say('This draft now follows the project rule.');
+      reload();
+    } catch (err) {
+      const g = err as GymApiError;
+      const text = g?.error?.message ?? g?.message ?? String(err);
+      console.error('[rlgym] Use the project rule failed:', g?.error?.code ?? '', text);
+      setSwitchError(`Not switched: ${text}${g?.error?.code ? ` (${g.error.code})` : ''}`);
+    } finally {
+      setSwitching(null);
+    }
+  }
   const versions: any[] = h.versions ?? [];
   const lastSaved = versions.find((v: any) => v.state === 'saved');
   const label = (v: any) =>
@@ -300,7 +322,7 @@ function SuiteHeader({
     }
   }
   return (
-    <header className="pagehead">
+    <section className="pagehead">
       <Link href={`/gym/projects/${project}/suites`}>← Back to project</Link>
       <div className="between">
         <div className="row">
@@ -372,26 +394,27 @@ function SuiteHeader({
               {e.differs && (
                 <small className="no">
                   This suite {e.follows_project_rule ? 'binds' : 'is pinned to'} {at(e.binds_now)}; the project
-                  rule now selects {at(e.project_binds_now)}.{' '}
-                  {draft ? (
-                    <button
-                      className="link"
-                      onClick={() =>
-                        act(
-                          'PATCH',
-                          path,
-                          { bindings: [{ alias: e.alias, rule_kind: 'project_rule' }] },
-                          'This draft now follows the project rule.',
-                        )
-                      }
-                    >
-                      Use the project rule
-                    </button>
-                  ) : (
-                    'To use the project rule, open a draft and choose “Use the project rule”.'
-                  )}
+                  rule now selects {at(e.project_binds_now)}.
                 </small>
               )}
+              {e.differs &&
+                (draft ? (
+                  <span className="row">
+                    <button
+                      type="button"
+                      disabled={switching === e.alias}
+                      onClick={() => switchToProjectRule(e.alias)}
+                    >
+                      {switching === e.alias ? 'Switching…' : `Use the project rule (${at(e.project_binds_now)})`}
+                    </button>
+                    {switchError && <span className="error">{switchError}</span>}
+                  </span>
+                ) : (
+                  <small>
+                    A saved version can&rsquo;t change. To use the project rule, click New draft, then
+                    &ldquo;Use the project rule&rdquo;.
+                  </small>
+                ))}
               {!e.binds_now && <small className="no">Doesn&rsquo;t bind: {e.unbound_reason}</small>}
             </span>
           ))}
@@ -481,7 +504,7 @@ function SuiteHeader({
         </small>
       ))}
       <Failure error={failure} />
-    </header>
+    </section>
   );
 }
 
@@ -539,8 +562,14 @@ function Bindings({
                 >
                   <option value="">Follow project rule</option>
                   {b.options.map((o: any) => (
-                    <option key={o.pinned_version_id} value={o.pinned_version_id}>
+                    <option
+                      key={o.pinned_version_id}
+                      value={o.pinned_version_id}
+                      disabled={!!HELD_VERSIONS[o.pinned_version_id]}
+                      title={HELD_VERSIONS[o.pinned_version_id]}
+                    >
                       {o.label} ({o.cases} cases)
+                      {HELD_VERSIONS[o.pinned_version_id] ? ' · held by the owner' : ''}
                     </option>
                   ))}
                 </select>
