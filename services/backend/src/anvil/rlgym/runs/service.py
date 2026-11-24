@@ -437,7 +437,9 @@ def admission_check(ctx, body):
             case_list = integrations.registry_get(
                 f"/versions/{env['version']['id']}/cases", base=env["version"].get("registry")
             )["cases"]
-            selected, counts, short = sampling.select_cases(plan, cells, case_list)
+            selected, counts, short = sampling.select_cases(
+                plan, cells, case_list, resolved.get("tasks") or None
+            )
             # E-001 §3.6: a task focused on an edge case the bound version has no cases for is held before the run.
             holds = clauses.edge_holds(resolved.get("tasks") or [], case_list, env["version"]["id"])
             if holds:
@@ -494,6 +496,16 @@ def admission_check(ctx, body):
                 attempts or 1,
             )
             resolved["specs"] = specs
+            # A sampled case no task takes never becomes an episode; a run with none would admit and do nothing.
+            item(
+                "task_match",
+                len(unmatched) < len(selected),
+                f"Sampled cases match a task ({len(selected) - len(unmatched)} of {len(selected)})",
+                None
+                if not unmatched
+                else f"No task takes {len(unmatched)} sampled case(s): {', '.join(unmatched[:5])}"
+                + (" …" if len(unmatched) > 5 else ""),
+            )
         resolved["unmatched"] = unmatched
     item(
         "models",
@@ -513,8 +525,10 @@ def admission_check(ctx, body):
             or None
         ),
     )
-    cases_n = len(resolved.get("selected") or [])
-    prompts_n = len(resolved.get("prompts") or [])
+    # Only cases matched to a task become episodes (and safety prompts need at least one), so the count and the
+    # spend projection are of the episodes the run will actually create.
+    cases_n = len(resolved.get("selected") or []) - len(resolved.get("unmatched") or [])
+    prompts_n = len(resolved.get("prompts") or []) if cases_n else 0
     per_model = [
         {
             "system_id": m["system_id"],

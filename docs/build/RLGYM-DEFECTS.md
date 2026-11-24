@@ -16,6 +16,35 @@ Local list until the owner logs them in the tracker. Newest first.
   remainder); before, sample size 10 over 2 types gave 12. Plans of 40 over 4 types are unchanged.
 - **Status:** fixed.
 
+## D-030 Edge-case suite admitted with 0 episodes (high)
+
+- **Found:** 23 Nov 2026, run-0229 ("KYC onboarding for US Bank with Edgecase", Haiku 5.5 live, $0.30/episode),
+  suite "SUite Name For KYC Edgecases" v1 on `golden-kyc-openenv@8`. Reported by the owner: Overview shows Failed,
+  "No episodes (refused)".
+- **What happened:** admission passed and the manifest said 53 episodes ($15.90 projected), but the `run.admitted`
+  event had 0 episodes and no episode rows were created; the worker started the environment and marked the run failed
+  3 seconds later. No model calls were made and nothing was spent (`systems.live_calls` empty, instance cost $0).
+- **Cause 1 (sampling):** all four tasks are edge-focused (individual + passport_only, custodial +
+  sanctions_dob_mismatch, adult_joint + expired_document, teen_joint + minor_without_tin). An edge-focused task takes
+  only cases with its tag (`sampling.match_task`). The data plan (no edge minimums) sampled 20 cases by application
+  type × completeness without regard to the tasks, so all 20 were cases no task takes. @8 has 10–20 cases for each
+  task's type and tag, so the data was never the problem.
+- **Cause 2 (admission):** the episode count and spend projection came from the sample size, not from the cases that
+  matched a task, and no check failed when none matched.
+- **Fix:** `sampling.select_cases` takes the suite's tasks and samples only cases one of them takes (no tasks given:
+  unchanged; suites whose tasks take every case of their type pick exactly the same cases as before). Admission counts
+  only matched cases (and safety prompts only when at least one case matched) and adds a `task_match` check that blocks
+  when no sampled case matches a task and lists unmatched cases otherwise.
+- **Replay of run-0229's inputs (offline):** before, 20 sampled, 20 unmatched; after, 8 sampled, 0 unmatched. Only 8
+  because on @8 every edge-tagged case is "incomplete", so the plan's four "complete" cells (3 each) can't be filled;
+  with `use_available` the run goes ahead on the 8 and admission shows the shortfall. Setting the plan's completeness
+  quotas to 100 % incomplete would give 20.
+- **Tests:** `test_d030_*` in `tests/unit/test_rlgym_v2_runs_unit.py`: edge-only suite samples only
+  cases its tasks take; plain tasks sample exactly as before; admission blocks when none match. Unit suite 582 passed.
+- **Not done:** the data plan editor's "available" counts are still per application type, not per task; run-0229
+  stays failed (a new run is needed; the owner starts live runs).
+- **Severity:** high (an edge-case suite could not run). **Status:** fixed on forge-v2-rlgym, not pushed.
+
 ## D-016 S5 step follow-ups do not reach the agent (medium)
 
 - **Found:** 23 Nov 2026, requested by the Authoring session. Authoring commits ad483ff7 and 6f6e3aac, on

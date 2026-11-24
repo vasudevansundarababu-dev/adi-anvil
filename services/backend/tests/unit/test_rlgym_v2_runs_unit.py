@@ -451,3 +451,84 @@ def test_d018_template_validate_is_never_replayed():
     block = src[start : src.index("@r.post", start + 10)]
     assert "idempotent(" not in block and "templates.validate(" in block
     assert "IDEMPOTENCY_KEY_REQUIRED" in block  # the header is still required
+
+
+def _case(i, app, completeness, edges):
+    return {
+        "case_id": f"c-{app}-{i:03d}",
+        "application_type": app,
+        "completeness": completeness,
+        "edge_cases": edges,
+    }
+
+
+def test_d030_edge_only_suite_samples_only_cases_its_tasks_take():
+    """run-0229: every task is edge-focused (type + one tag); a type-only sample picked cases no task takes, so the
+    run admitted with 0 episodes. With the tasks given, only cases a task takes are sampled."""
+    from anvil.rlgym.suites.service import compute_cells
+
+    focus = {
+        "individual": "passport_only",
+        "custodial": "sanctions_dob_mismatch",
+        "adult_joint": "expired_document",
+        "teen_joint": "minor_without_tin",
+    }
+    tags = sorted(set(focus.values()))
+    rows = [
+        _case(i, app, ("complete", "incomplete")[i % 2], [tags[i % len(tags)]] if i % 3 else [])
+        for app in focus
+        for i in range(40)
+    ]
+    tasks = [
+        {
+            "task_id": f"t-{app}",
+            "case_selector": {"application_type": app, "edge_cases": [tag]},
+        }
+        for app, tag in focus.items()
+    ]
+    plan = {
+        "sample_size": 20,
+        "completeness_quotas": {"complete": 50, "incomplete": 50},
+        "required_edges": {},
+        "sampling_seed": 20261121,
+    }
+    catalog = {"dimensions": {"application_type": {a: 40 for a in focus}}}
+    cells = compute_cells(plan, catalog, set(focus))
+    untargeted, _, _ = sampling.select_cases(plan, cells, rows)
+    _, missed = sampling.expand(plan, untargeted, tasks, [], [("m", 1)], 1)
+    assert missed  # the old behaviour: sampled cases no task takes
+    picked, _, short = sampling.select_cases(plan, cells, rows, tasks)
+    specs, unmatched = sampling.expand(plan, picked, tasks, [], [("m", 1)], 1)
+    assert picked and not unmatched and len(specs) == len(picked)
+    for c in picked:
+        assert focus[c["application_type"]] in c["edge_cases"]
+    again, _, _ = sampling.select_cases(plan, cells, rows, tasks)
+    assert [c["case_id"] for c in again] == [c["case_id"] for c in picked]
+
+
+def test_d030_plain_tasks_sample_exactly_as_before():
+    # A suite whose tasks take every case of their type: the same cases as without the tasks (existing suites unchanged).
+    rows = g.cases(5)
+    tasks = [
+        {"task_id": t["task_id"], "case_selector": t["case_selector"]}
+        for t in g.forge_tasks("x")
+        if not t["case_selector"].get("edge_cases")
+    ]
+    plan = {
+        "sample_size": 16,
+        "completeness_quotas": {"complete": 50, "incomplete": 50},
+        "required_edges": {},
+        "sampling_seed": 7,
+    }
+    cells = _cells(plan, rows)
+    a, _, _ = sampling.select_cases(plan, cells, rows)
+    b, _, _ = sampling.select_cases(plan, cells, rows, tasks)
+    assert [c["case_id"] for c in a] == [c["case_id"] for c in b]
+
+
+def test_d030_admission_blocks_when_no_sampled_case_matches_a_task():
+    src = inspect.getsource(__import__("anvil.rlgym.runs.service", fromlist=["x"]).admission_check)
+    assert '"task_match"' in src and "len(unmatched) < len(selected)" in src
+    assert (
+        'len(resolved.get("unmatched") or [])' in src
+    )  # episodes and spend count matched cases only

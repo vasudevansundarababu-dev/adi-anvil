@@ -13,11 +13,15 @@ def _key(seed, *parts):
     return hashlib.sha256(":".join([str(seed), *map(str, parts)]).encode()).hexdigest()
 
 
-def select_cases(plan, cells, cases):
+def select_cases(plan, cells, cases, tasks=None):
     """Pick cases for every cell of the plan. Edge-case minimums are filled first (they count toward their stratum
     cell); then each stratum × completeness cell up to its (possibly lowered) quota, never more than exists.
+    `tasks`: the suite's tasks; when given, only cases one of them takes are sampled (an edge-focused task takes only
+    cases with its tag, so a type-only sample could pick cases no task runs). Without tasks, every case is eligible.
     Returns (selected cases in a stable order, per-cell picks, short cells)."""
     seed = plan["sampling_seed"]
+    if tasks:
+        cases = [c for c in cases if match_task(c, tasks, seed) is not None]
     picked, used = [], set()
     by_cell = {}
     for case in cases:
