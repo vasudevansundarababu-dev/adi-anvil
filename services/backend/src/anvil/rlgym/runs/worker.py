@@ -22,7 +22,7 @@ import uuid
 from psycopg.types.json import Jsonb
 
 from anvil.rlgym.common import GymError, emit, set_scope, system_scope
-from anvil.rlgym.runs import clauses, images, instructions, openenv
+from anvil.rlgym.runs import aliasing, clauses, images, instructions, openenv
 from anvil.rlgym.scoring import service as scoring
 from anvil.rlgym.systems import mock_provider
 
@@ -261,6 +261,7 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         session = images.EnvSession.docker(instance["container"], deadline)
     transcript, events, final = [], [], None
     agent_log = {}
+    aliaser = None
     try:
         reset = session.request({"op": "reset", "case_id": episode["case_id"], "inject": inject})
         if not reset.get("ok"):
@@ -273,6 +274,20 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
                 "start": session.request({"op": "snapshot"}).get("collections"),
                 "end": None,
             }
+        # Owner decision 24 Nov 2026 (D-039): on Studio's OpenEnv images the agent sees opaque IDs, never the case,
+        # application, party or document IDs (they name the edge case). Arguments are mapped back before the call.
+        aliaser = (
+            aliasing.Aliaser(episode["case_id"], (snapshots or {}).get("start"))
+            if on_openenv and m.get("ids_aliased")
+            else None
+        )
+
+        def shown(value):
+            return aliaser.out(value) if aliaser else value
+
+        def real(value):
+            return aliaser.back(value) if aliaser else value
+
         live_caller = None
         if model.get("live"):
             from anvil.rlgym.live.agent import LiveCaller, live_agent
@@ -296,8 +311,8 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
                 live_caller,
                 instr["text"],
                 operations or [],
-                application_id=episode["case_id"] if on_openenv else None,
-                user_message=reset.get("user_message"),
+                application_id=shown(episode["case_id"]) if on_openenv else None,
+                user_message=shown(reset.get("user_message")),
                 log=agent_log,
                 max_observation_chars=max_obs,
             )
@@ -312,18 +327,18 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
                 instr["text"],
                 # Seeded by what the episode is (not its id), so a repeat run on the same suite is reproducible.
                 f"{episode['case_id']}:{episode['task_id']}:{episode['attempt']}:{episode.get('ts_prompt_id')}",
-                user_message=reset.get("user_message"),
+                user_message=shown(reset.get("user_message")),
                 # On Studio's own image the task names the application under review (OpenEnv B1).
                 world=openenv.KIND if on_openenv else "stub",
-                application_id=episode["case_id"] if on_openenv else None,
+                application_id=shown(episode["case_id"]) if on_openenv else None,
             )
         action = next(policy)
         for step in range(1, MAX_STEPS + 1):
             if "final" in action:
-                final = action["final"]
+                final = real(action["final"])
                 transcript.append({"step": step, "final_output": final})
                 break
-            tool, args = action["tool"], action.get("args") or {}
+            tool, args = action["tool"], real(action.get("args") or {})
             if offered and tool not in offered:
                 obs = {"ok": False, "error": "tool not offered by this task"}
             else:
@@ -344,7 +359,7 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
                 }
             )
             try:
-                action = policy.send(obs)
+                action = policy.send(shown(obs))
             except StopIteration:
                 break
         state = session.request({"op": "state"})
@@ -371,6 +386,8 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         "case_id": episode["case_id"],
         # What the agent was told (D-007): the text built from the actor payload, its source and hash.
         "instructions": instr,
+        # The agent saw opaque IDs: the table (real → alias) reconstructs its view; everything else here is real.
+        **({"id_aliases": aliaser.record()} if aliaser else {}),
         "system": {
             k: model[k] for k in ("system_id", "version", "model_id", "provider", "config_sha256")
         },

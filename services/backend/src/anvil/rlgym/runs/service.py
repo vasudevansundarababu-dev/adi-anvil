@@ -18,7 +18,7 @@ from psycopg.types.json import Jsonb
 from anvil.rlgym import integrations
 from anvil.rlgym.catalog import selection
 from anvil.rlgym.common import GymError, audit, emit, new_id, require, sha
-from anvil.rlgym.runs import clauses, images, instructions, openenv, sampling
+from anvil.rlgym.runs import aliasing, clauses, images, instructions, openenv, sampling
 from anvil.rlgym.scoring import s7
 from anvil.rlgym.scoring import service as scoring
 from anvil.rlgym.suites import service as suites
@@ -739,6 +739,12 @@ def _manifest(run_id, check):
         "run_id": run_id,
         "execution_mode": "live" if any(m.get("live") for m in r["models"]) else "controlled_mock",
         "synthetic": True,
+        # Owner decision 24 Nov 2026 (D-039): on Studio's OpenEnv images the agent sees opaque IDs.
+        **(
+            {"ids_aliased": True, "id_aliasing": aliasing.VERSION}
+            if openenv.is_openenv(r.get("env_row"))
+            else {}
+        ),
         # D-033: frozen with the run (inside manifest_sha256), so it cannot change after admission.
         "leaderboard": bool(s.get("leaderboard")),
         "note": LIVE_NOTE if any(m.get("live") for m in r["models"]) else MOCK_NOTE,

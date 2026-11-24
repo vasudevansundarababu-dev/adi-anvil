@@ -126,7 +126,9 @@ def test_the_d041_fix_is_described_and_changes_the_grader_hash():
 
 
 def _lines(*live):
-    return [{"system_id": f"m{i}", "name": f"m{i}", "live": lv or None} for i, lv in enumerate(live)]
+    return [
+        {"system_id": f"m{i}", "name": f"m{i}", "live": lv or None} for i, lv in enumerate(live)
+    ]
 
 
 ENV8 = {

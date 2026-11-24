@@ -16,6 +16,27 @@ Local list until the owner logs them in the tracker. Newest first.
   remainder); before, sample size 10 over 2 types gave 12. Plans of 40 over 4 types are unchanged.
 - **Status:** fixed.
 
+## ID aliasing: the agent sees opaque IDs (owner decision 24 Nov 2026; Studio's D-039 audit)
+
+- **Why:** on golden-kyc-openenv @6-@8 every edge case's IDs name it (kyc-teen-joint-minor-without-tin-001, and the
+  party and document IDs built on it), so an agent could read the answer off an ID.
+- **Now (`runs/aliasing.py`, rlgym-id-alias@1):** on Studio OpenEnv images, every application, party and document ID
+  in the environment (all 540 applications on @8: a list call can return other cases' records) and any token built on
+  the case ID is replaced, in everything the agent receives (observations, the user message, "Application under
+  review"), with an opaque per-episode alias (APP-/PTY-/DOC-/ID- + 8 hex; random per episode, stable within it; whole
+  IDs only, also inside file names). The agent's arguments and final answer are mapped back before the environment or
+  a grader sees them, so graders, the trace, the report and SME review use real IDs; @8's data is unchanged. The
+  sealed bundle keeps the alias table; the manifest records `ids_aliased` and the version; the run page and report
+  say "Case IDs hidden from the agent" and list the known data leaks still on @6-@8 (`tin: "missing"`, the
+  sanctions-hit document shape) until @9.
+- **Mock agent:** on @6 it found its documents by ID prefix; with aliases it now falls back to reading parties by
+  application, as on @7/@8.
+- **Evidence:** `scripts/checks/rlgym_id_alias_probe.py` on the real @8 image (one instance, read-only, no model):
+  140 edge cases, 971 tool calls, 0 with a tag phrase or real ID visible. Unit tests
+  (`tests/unit/test_rlgym_id_aliasing_unit.py`): round trip, per-episode aliases, identical grader verdicts with
+  aliasing on and off, and the D-041 party check on aliased actions.
+- **Status:** on forge-v2-rlgym; applies to runs admitted from now on.
+
 ## D-034 Users couldn't see how a criterion is scored (E-004 §3.1, §3.4)
 
 - **Now:** `results/scorer.py` describes the effective grader of each criterion from what the scorer runs: the

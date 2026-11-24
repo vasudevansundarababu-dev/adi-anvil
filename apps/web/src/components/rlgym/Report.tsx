@@ -52,6 +52,12 @@ function Frame({
         <p>
           {header.cohort} · manifest <Hash value={header.manifest_sha256} />{' '}
           {header.scoring && <small>{header.scoring}</small>}
+          {header.agent_view && <small>{header.agent_view.note}</small>}
+          {header.agent_view?.known_leaks?.length > 0 && (
+            <small className="no">
+              Known data leaks on {header.environment}: {header.agent_view.known_leaks.join('; ')}.
+            </small>
+          )}
           {header.rescored && (
             <Badge state="draft" label={`Re-scored · pass ${header.pass.number}`} />
           )}

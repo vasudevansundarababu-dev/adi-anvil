@@ -267,11 +267,12 @@ def studio_agent(model_id, key, application_id):
     app = next((a for a in apps if a.get("application_id") == application_id), None) or {}
     revision = int(app.get("revision") or 1)
     listed = yield {"tool": "documents.list", "args": {}}
-    if listed.get("ok", True):
-        docs = (listed.get("output") or {}).get("records") or []
-        mine = [d for d in docs if str(d.get("party_id", "")).startswith(f"{application_id}-")]
-        parties = sorted({d["party_id"] for d in mine})
-    else:
+    docs = (listed.get("output") or {}).get("records") or [] if listed.get("ok", True) else []
+    # @6 lists every document; its party IDs start with the application's ID. With opaque IDs (D-039 aliasing) that
+    # prefix is gone, so the parties are then read by application as on @7 and later.
+    mine = [d for d in docs if str(d.get("party_id", "")).startswith(f"{application_id}-")]
+    parties = sorted({d["party_id"] for d in mine})
+    if not mine:
         # @7: parties by application, then each party's documents (documents.list needs party_id).
         got = yield {"tool": "parties.list", "args": {"application_id": application_id}}
         parties = sorted(

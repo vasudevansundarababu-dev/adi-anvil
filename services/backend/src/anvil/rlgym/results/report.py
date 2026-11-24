@@ -252,6 +252,8 @@ def header(d):
         "template": m["template"],
         # D-036: how episodes were scored (S7 as published, or the RL Gym's scale for runs and tasks without S7).
         "scoring": scoring_note(m),
+        # Owner decision 24 Nov 2026 (D-039): IDs hidden from the agent; data leaks still in this version's cases.
+        "agent_view": agent_view(m),
         "suite": m["suite"],
         "environment": m["environment"]["version_id"],
         "seed_family": m["environment"]["seed_family"],
@@ -1194,3 +1196,27 @@ def scoring_note(m):
             else ""
         )
     )
+
+
+# Studio's D-039 audit: leaks in golden-kyc-openenv @6-@8 data that ID aliasing doesn't remove (fixed from @9).
+KNOWN_LEAKS = {
+    "golden-kyc-openenv": [
+        'a minor without a TIN has documents.content.tin = "missing" (clean minors have no tin key)',
+        "a sanctions-hit case has a screening_result document whose shape differs from clean cases",
+    ]
+}
+
+
+def agent_view(m):
+    env = (m.get("environment") or {}).get("version_id") or ""
+    contract, _, version = env.partition("@")
+    leaks = KNOWN_LEAKS.get(contract, []) if version.lstrip("v") in ("6", "7", "8") else []
+    return {
+        "ids_hidden": bool(m.get("ids_aliased")),
+        "note": (
+            "Case IDs hidden from the agent (opaque per-episode aliases; graders and this report use real IDs)"
+            if m.get("ids_aliased")
+            else "Case IDs shown to the agent as they are (runs before ID aliasing)"
+        ),
+        "known_leaks": leaks,
+    }

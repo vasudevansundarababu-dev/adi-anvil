@@ -959,6 +959,12 @@ function Overview({ r }: { r: any }) {
               {m.data_plan.case_ids.length} cases (plan {m.data_plan.sample_size}) · seed{' '}
               {m.data_plan.sampling_seed}
             </dd>
+            <dt>Agent view</dt>
+            <dd>
+              {m.ids_aliased
+                ? 'Case IDs hidden from the agent (opaque per-episode aliases)'
+                : 'Case IDs shown to the agent as they are'}
+            </dd>
             <dt>Trust & Safety</dt>
             <dd>
               {m.trust_and_safety.enabled
