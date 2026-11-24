@@ -16,6 +16,16 @@ Local list until the owner logs them in the tracker. Newest first.
   remainder); before, sample size 10 over 2 types gave 12. Plans of 40 over 4 types are unchanged.
 - **Status:** fixed.
 
+## D-037 The judge's threshold had no effect (low)
+
+- **Was:** the live judge answered pass/fail, read as score 1 or 0, so decision's rationale threshold (0.7) changed
+  nothing.
+- **Now:** the judge is asked for a score from 0 to 1 with one reason; the RL Gym passes the line when the score is at
+  or above the block's threshold (default 0.7) and sends the same score to Promptfoo, which applies the same threshold.
+  Old-style pass/fail answers still read as 1 or 0; an answer with no usable score blocks the line (never a fail). The
+  rubric-judge path (`config.judge`) uses the same rule. Records keep the score and the threshold.
+- **Tests:** `tests/unit/test_rlgym_d037_judge_score_unit.py`. **Status:** fixed on forge-v2-rlgym.
+
 ## D-041 next_action never checked whose request it is (high)
 
 - **Found:** 24 Nov 2026 (E-007's KYC.REQUEST_PARTY example). next_action's template block only checks that an

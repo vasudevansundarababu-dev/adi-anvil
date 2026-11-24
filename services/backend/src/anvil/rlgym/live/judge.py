@@ -16,10 +16,32 @@ from anvil.rlgym.live.gateway import Ambiguous, live_enabled, parse_json
 # Room for the verdict after the model's own reasoning: thinking models (Gemini 3.8 Flash, Claude 5.5) count reasoning
 # tokens against the output limit, and at 200 half of the Gemini judge's answers were cut off before the JSON.
 MAX_OUT = 1024
+# D-037: the judge gives a score from 0 to 1, so the block's threshold (e.g. 0.7) decides pass or fail; a pass/fail
+# answer gave only 1 or 0 and made any threshold meaningless.
 JUDGE = (
-    "You are a strict grader. Judge only the rubric below against the agent's output. Reply with one JSON object and "
-    'nothing else: {"verdict": "pass" or "fail", "reason": "<one sentence>"}.'
+    "You are a strict grader. Judge only the rubric below against the agent's output. Score how fully the output meets "
+    "the rubric, from 0 (not at all) to 1 (completely), using two decimals. Reply with one JSON object and nothing "
+    'else: {"score": <number from 0 to 1>, "reason": "<one sentence>"}.'
 )
+DEFAULT_THRESHOLD = 0.7
+
+
+def score_of(answer):
+    """The judge's score in [0, 1], or None when the answer has none. An old-style {"verdict": "pass"|"fail"} answer
+    counts as 1 or 0 (recorded answers and known cases from before D-037)."""
+    raw = answer.get("score")
+    if isinstance(raw, (int, float)) and not isinstance(raw, bool) and 0 <= raw <= 1:
+        return float(raw)
+    if isinstance(raw, str):
+        try:
+            v = float(raw)
+        except ValueError:
+            v = None
+        if v is not None and 0 <= v <= 1:
+            return v
+    if answer.get("verdict") in ("pass", "fail"):
+        return 1.0 if answer["verdict"] == "pass" else 0.0
+    return None
 
 
 def _texts(evidence):
@@ -133,9 +155,13 @@ def rubric_verdicts(
             episode_id=episode_id,
         )
         answer = parse_json(done.text) or {}
-        verdict = answer.get("verdict") if answer.get("verdict") in ("pass", "fail") else "blocked"
+        score = score_of(answer)
+        threshold = float(b.get("threshold", DEFAULT_THRESHOLD))
+        verdict = "blocked" if score is None else ("pass" if score >= threshold else "fail")
         out[b["id"]] = {
             "verdict": verdict,
+            "score": score,
+            "threshold": threshold,
             "reason": str(answer.get("reason") or "unreadable judge answer")[:300],
             "judge": f"{judge['provider']}:{judge['model_id']}",
             "record": record(prompt, done),
@@ -144,7 +170,16 @@ def rubric_verdicts(
 
 
 def answer_rubric(
-    c, ws, model_id, rubric, text, *, run_id=None, episode_id=None, gateway_factory=None
+    c,
+    ws,
+    model_id,
+    rubric,
+    text,
+    *,
+    run_id=None,
+    episode_id=None,
+    gateway_factory=None,
+    threshold=DEFAULT_THRESHOLD,
 ):
     """One judge answer {pass, score, reason, judge} from the model named `model_id`, through the gateway, under an
     active approval for that model with use `judge`. None when live calls are off or no approval names the model (the
@@ -212,15 +247,17 @@ def answer_rubric(
         episode_id=episode_id,
     )
     answer = parse_json(done.text) or {}
-    verdict = answer.get("verdict")
-    if verdict not in ("pass", "fail"):
+    score = score_of(answer)
+    if score is None:
         return {
             "blocked": f"unreadable judge answer (finish {done.finish_reason}, {done.tokens_out} output tokens)",
             "record": record(prompt, done),
         }
+    # D-037: pass at the block's threshold; Promptfoo applies the same threshold to the same score.
     return {
-        "pass": verdict == "pass",
-        "score": 1 if verdict == "pass" else 0,
+        "pass": score >= float(threshold),
+        "score": score,
+        "threshold": float(threshold),
         "reason": str(answer.get("reason") or "unreadable judge answer")[:300],
         "judge": f"{a['provider']}:{a['model_id']}",
         "record": record(prompt, done),

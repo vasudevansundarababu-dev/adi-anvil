@@ -293,6 +293,7 @@ def plugin_results(c, episode, manifest, vctx, bundle, reference):
                         run_id=episode["run_id"],
                         episode_id=episode["id"],
                         gateway_factory=JUDGE_GATEWAY,
+                        threshold=float(st.get("threshold", live_judge.DEFAULT_THRESHOLD)),
                     )
                     if got and got.get("record"):
                         judge_records[b["id"]] = got.pop("record")
