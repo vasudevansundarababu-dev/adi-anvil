@@ -132,6 +132,8 @@ def agent(actor, reference, application_id, failures, operations=None):
     request_type = reference.get("request_type")
     referral = reference.get("referral")
     issue = reference.get("screening_issue")
+    # Does S5 read pending checks itself (an operation.read step after the checks)?
+    reads_later = any(x["tool"] == "operation.read" for x in plan)
     for st in plan:
         tool = st["tool"]
         if tool in CONDITIONAL:
@@ -206,10 +208,13 @@ def agent(actor, reference, application_id, failures, operations=None):
                     "idempotency_key": f"ref:{tool}:{p['party_id']}",
                 }
                 obs = yield {"tool": tool, "args": args}
-                # A check can answer "pending": the environment completes it when the same call is made again.
+                if obs.get("state") == "pending" and reads_later:
+                    # S5 reads pending checks in a later step (operation.read): leave it to that step, as written.
+                    pending.append(((obs.get("pending") or {}).get("pending_id"), tool, args))
+                    continue
+                # Otherwise a pending check completes when the same call is made again.
                 tries = 0
                 while obs.get("state") == "pending" and tries < 3:
-                    pending.append((obs.get("pending") or {}).get("pending_id"))
                     obs = yield {"tool": tool, "args": args}
                     tries += 1
                 if obs.get("state") == "pending":
@@ -217,19 +222,24 @@ def agent(actor, reference, application_id, failures, operations=None):
                 elif not obs.get("ok"):
                     fail(st, f"{tool} for a party was refused: {obs.get('error')}")
         elif tool == "operation.read":
-            # S5 asks to read each pending check's status by its id (operation.read can itself answer "pending").
-            for pid in [x for x in pending if x][:3]:
+            # S5: read each pending check's status by its id (operation.read is itself pending once).
+            for pid, ctool, cargs in list(pending):
                 obs = yield {"tool": tool, "args": {"id": pid}}
-                if obs.get("state") == "pending":
+                tries = 0
+                while obs.get("state") == "pending" and tries < 3:
                     obs = yield {"tool": tool, "args": {"id": pid}}
+                    tries += 1
                 out = obs.get("output") or {}
-                if out.get("status") == "denied" or not obs.get("ok", True):
+                if out.get("status") != "completed":
                     fail(
                         st,
-                        f"S5 step {st['n']} operation.read can't read a pending check's id ({out.get('reason') or obs.get('error')}); "
-                        "on this environment a pending check completes when the same check is called again",
+                        f"S5 step {st['n']} operation.read can't read a pending check's id "
+                        f"({out.get('reason') or out.get('status') or obs.get('error')}); the check was called again instead",
                     )
-                    break
+                    again = yield {"tool": ctool, "args": cargs}
+                    while again.get("state") == "pending" and tries < 6:
+                        again = yield {"tool": ctool, "args": cargs}
+                        tries += 1
             pending.clear()
         elif tool == "operation.lookup":
             yield {"tool": tool, "args": {"idempotency_key": "ref:lookup"}}
