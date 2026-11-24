@@ -39,6 +39,39 @@ def grader_reference_fields(blocks_by_criterion):
     return set(REF.findall(json.dumps(blocks_by_criterion or {})))
 
 
+_RECORDS = {}
+
+
+def record(env):
+    """Studio's version record (operation_contracts with each tool's argument signature, document_kinds with counts),
+    read once per version (a released version never changes). {} when the registry can't say."""
+    vid = env["id"]
+    if vid not in _RECORDS:
+        from anvil.rlgym import integrations
+
+        try:
+            _RECORDS[vid] = integrations.registry_get(f"/versions/{vid}", base=env.get("registry"))
+        except Exception:
+            return {}
+    return _RECORDS[vid]
+
+
+def signatures(env):
+    return {
+        o["operation_id"]: o
+        for o in record(env).get("operation_contracts") or []
+        if o.get("operation_id")
+    }
+
+
+def cited_kinds(actors, kinds):
+    """Document kinds the tasks mention (as written, or with spaces for underscores)."""
+    import json
+
+    text = json.dumps(actors).lower()
+    return {k for k in kinds if k.lower() in text or k.lower().replace("_", " ") in text}
+
+
 def _image_here(env):
     from anvil.rlgym.runs import openenv
 
@@ -78,6 +111,13 @@ def options(c, ws, sv_id):
     bindings = c.execute(
         "SELECT * FROM suites.suite_bindings WHERE suite_version_id=%s ORDER BY alias", (sv_id,)
     ).fetchall()
+    current = c.execute(
+        "SELECT id, registry FROM catalog.environment_versions WHERE id=%s",
+        (sv["planned_on_env_version"],),
+    ).fetchone()
+    base_sigs = signatures(current) if current else {}
+    base_kinds = record(current).get("document_kinds") or {} if current else {}
+    kinds_needed = cited_kinds([t["actor"] for t in tasks], set(base_kinds))
     out = []
     for b in bindings:
         contract = c.execute(
@@ -113,6 +153,24 @@ def options(c, ws, sv_id):
                     reasons.append(
                         f"graders read reference field(s) {', '.join(gone)}, which {v['id']} doesn't have (grader change: E-004)"
                     )
+            sigs = signatures(v)
+            if base_sigs and sigs:
+                for tool in sorted(all_tools):
+                    a, z = base_sigs.get(tool), sigs.get(tool)
+                    if a and z and a.get("signature_sha256") != z.get("signature_sha256"):
+                        was = sorted(i["name"] for i in a.get("inputs") or [])
+                        now = sorted(i["name"] for i in z.get("inputs") or [])
+                        reasons.append(
+                            f"needs re-authoring: {tool} takes different arguments on {v['id']} "
+                            f"({', '.join(now) or 'none'} instead of {', '.join(was) or 'none'})"
+                        )
+            kinds = record(v).get("document_kinds")
+            if kinds is not None and kinds_needed:
+                gone = sorted(k for k in kinds_needed if not kinds.get(k))
+                if gone:
+                    reasons.append(
+                        f"the tasks rely on document type(s) {', '.join(gone)}, which {v['id']}'s data doesn't have"
+                    )
             if not _image_here(v):
                 reasons.append(f"{v['id']} isn't built on this machine")
             extra = sorted(t for t in ops if all_tools and t not in all_tools)
@@ -141,7 +199,10 @@ def options(c, ws, sv_id):
                 "experiment": b["source"] == "experiment",
                 "legacy_pin": b["rule_kind"] == "pinned" and b["source"] != "experiment",
                 "versions": versions,
-                "not_checked": "tool arguments and document types (the registry record lists operation ids only)",
+                "checked": "tools the tasks name, their arguments (Studio's operation signatures), document types the tasks rely on, grader reference fields, image built here",
+                "not_checked": ""
+                if base_sigs
+                else "tool arguments (no operation contracts in the current version's record)",
             }
         )
     return {"bindings": out}
