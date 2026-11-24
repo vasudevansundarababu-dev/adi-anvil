@@ -166,7 +166,7 @@ def render(view, appendix):
     # Cover
     parts.append(
         f"""<section class="cover"><div class="brand"><img src="{_logo_uri()}" alt="{BRAND_FAMILY}"><div class="product">{BRAND_PRODUCT} · run report</div></div><h1>{e(h["name"])}</h1>
-<p>{e(h["run_id"])} · project {e(h["project"]["name"])} ({e(h["project"]["id"])}) · template {e(h["template"]["name"])} v{e(h["template"]["version"])} · pass mark {e(h["template"]["pass_mark"])}</p>
+<p>{e(h["run_id"])} · project {e(h["project"]["name"])} ({e(h["project"]["id"])}) · template {e(h["template"]["name"])} v{e(h["template"]["version"])} · {e(h.get("scoring") or ("pass mark " + str(h["template"]["pass_mark"])))}</p>
 <div class="note">{e(h["note"])}</div>{cards(ov["cards"])}
 <p>{e(h["cohort"])}</p>
 <table><tbody>

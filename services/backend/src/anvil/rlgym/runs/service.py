@@ -19,6 +19,7 @@ from anvil.rlgym import integrations
 from anvil.rlgym.catalog import selection
 from anvil.rlgym.common import GymError, audit, emit, new_id, require, sha
 from anvil.rlgym.runs import clauses, images, instructions, openenv, sampling
+from anvil.rlgym.scoring import s7
 from anvil.rlgym.scoring import service as scoring
 from anvil.rlgym.suites import service as suites
 from anvil.rlgym.systems import service as systems
@@ -261,6 +262,51 @@ def admission_check(ctx, body):
             f"Tasks ready ({len(tasks)} — all ready tasks of the project)",
             detail or None,
         )
+        # D-036 (E-007 §7.1): each task is scored with its published S7 (anchors, weights, threshold, critical
+        # criteria). The profile is read from the task's private part now and frozen in the manifest. A task whose S7
+        # can't be read as points (e.g. v6's 100-point allocation) keeps the RL Gym's scale, and admission and the
+        # report say so by task; tasks without an S7 (fixtures, stub exports) keep it too.
+        unreadable = []
+        for t in tasks:
+            private = ctx.c.execute(
+                "SELECT content FROM projects.task_payloads WHERE workspace_id=%s AND package_sha256=%s AND part='private'",
+                (ctx.ws, t["package_sha256"]),
+            ).fetchone()
+            s7_section = (
+                (((private or {}).get("content") or {}).get("authored") or {}).get("sections") or {}
+            ).get("S7")
+            if s7_section is None:
+                continue
+            prof, why = s7.profile(s7_section)
+            if prof:
+                t["scoring"] = prof
+            else:
+                t["scoring_unreadable"] = why
+                unreadable.append(f"{t['task_id'][:8]} r{t['revision']}: {why}")
+        if any(t.get("scoring") for t in tasks) or unreadable:
+            first = next((t["scoring"] for t in tasks if t.get("scoring")), None)
+            item(
+                "scoring_rule",
+                True,
+                (
+                    "Scored with each task's S7"
+                    + (
+                        f" ({first['anchors']['pass']:g}/{first['anchors']['partial']:g}/{first['anchors']['fail']:g}"
+                        f" points, pass at {first['threshold_points']:g} of {first['max_points']:g})"
+                        if first
+                        else ""
+                    )
+                )
+                if not unreadable
+                else f"S7 read for {sum(1 for t in tasks if t.get('scoring'))} of {len(tasks)} tasks",
+                (
+                    "RL Gym scale (pass 1, fail 0, pass mark "
+                    f"{float(activation['pass_mark']) if activation else 90:g}%) for: "
+                    + "; ".join(unreadable[:5])
+                )
+                if unreadable
+                else None,
+            )
         resolved["tasks"] = tasks
         # E-002: every selected clause must be valid; its setup gaps are checked once the environment is known.
         clause_tasks = [t for t in tasks if clauses.task_clauses(t["actor"], t)]
@@ -714,6 +760,13 @@ def _manifest(run_id, check):
                 "case_selector": t["case_selector"],
                 # D-007: hash of the instructions the agent is given for this task (built from the actor payload).
                 "instructions_sha256": t.get("instructions_sha256"),
+                # D-036: the task's S7 scoring profile (numbers and the rule's hash; never the private text).
+                **({"scoring": t["scoring"]} if t.get("scoring") else {}),
+                **(
+                    {"scoring_unreadable": t["scoring_unreadable"]}
+                    if t.get("scoring_unreadable")
+                    else {}
+                ),
                 # E-002: the clause versions this task selected, frozen whole (the worker resolves from these, so a
                 # run reproduces from its manifest). Absent when none, so manifests stay as before.
                 **(

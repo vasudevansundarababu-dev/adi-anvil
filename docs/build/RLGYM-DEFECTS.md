@@ -16,6 +16,23 @@ Local list until the owner logs them in the tracker. Newest first.
   remainder); before, sample size 10 over 2 types gave 12. Plans of 40 over 4 types are unchanged.
 - **Status:** fixed.
 
+## D-036 Scoring uses S7's published points and threshold (owner decision, E-007 §7.1)
+
+- **Was:** pass 1 / fail 0 per criterion, decision's only partial = 0.8 (rationale judge 20%), pass at 90%. Authoring's
+  S7 asks SMEs for 5/2/0 points with a pass threshold (22.5 of 25 on the v8 tasks) and marks identity, screening and
+  decision critical; none of that was used. Under the old scale 24/25 passed; under S7 the next score below 25 is 22.
+- **Now:** at admission each task's S7 (private part, as published; no template change) is read into a profile:
+  anchors, maximum, threshold, weights, critical criteria and the rule text's hash (never the text). The profile is
+  frozen per task in the manifest. Scoring gives each criterion its anchor (pass 5, partial 2, fail 0 of 5), passes at
+  the threshold (the same share of the points that count; a blocked criterion earns 0 for the pass decision; a
+  clause-excluded criterion lowers the maximum and threshold in proportion), and a fail on a critical criterion fails
+  the task. The report header and PDF state the scale used.
+- **S7 not in points:** v6's tasks allocate 100 points across dimensions with no 5/2/0 anchors. Those tasks keep the
+  RL Gym scale, and admission ("S7 read for N of M tasks") and the report say which (default; the owner may change it).
+  Tasks without S7 (fixtures, stub exports) are unchanged; runs admitted before D-036 are unchanged (no profile).
+- **Checked:** the four 23 Nov v8 tasks all read as 5/2/0, 22.5 of 25, critical identity/screening/decision.
+- **Tests:** `tests/unit/test_rlgym_d036_s7_unit.py`. **Status:** fixed on forge-v2-rlgym.
+
 ## D-040 Attacks reported as "tool result" were delivered in the user message (high; label fix)
 
 - **Found:** 24 Nov 2026 (E-006 planning). Studio's OpenEnv simulator has no injection point, so the RL Gym sends every

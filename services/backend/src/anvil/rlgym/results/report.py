@@ -250,6 +250,8 @@ def header(d):
         "ready": d.run["state"] == "completed",
         "project": m["project"],
         "template": m["template"],
+        # D-036: how episodes were scored (S7 as published, or the RL Gym's scale for runs and tasks without S7).
+        "scoring": scoring_note(m),
         "suite": m["suite"],
         "environment": m["environment"]["version_id"],
         "seed_family": m["environment"]["seed_family"],
@@ -1157,3 +1159,32 @@ def delivered_as(c, manifest):
         ((manifest.get("environment") or {}).get("version_id"),),
     ).fetchone()
     return "user_message" if env and openenv.is_openenv(env) else ts["placement"]
+
+
+def scoring_note(m):
+    """One line on the scale the run used. D-036: S7's points and threshold when its tasks carry a profile."""
+    profs = [t["scoring"] for t in m.get("tasks") or [] if t.get("scoring")]
+    unread = [t for t in m.get("tasks") or [] if t.get("scoring_unreadable")]
+    if not profs:
+        return (
+            f"RL Gym scale: pass 1, fail 0 per criterion; pass mark {m['template']['pass_mark']:g}%"
+            + (f" (S7 couldn't be read as points for {len(unread)} task(s))" if unread else "")
+        )
+    p = profs[0]
+    a = p["anchors"]
+    crit = ", ".join(p["critical"]) or "none"
+    same = all(
+        (q["anchors"], q["max_points"], q["threshold_points"])
+        == (a, p["max_points"], p["threshold_points"])
+        for q in profs
+    )
+    return (
+        f"S7 as published: {a['pass']:g}/{a['partial']:g}/{a['fail']:g} points for pass/partial/fail, pass at "
+        f"{p['threshold_points']:g} of {p['max_points']:g}; a fail on a critical criterion ({crit}) fails the task"
+        + ("" if same else " (tasks differ; see each task)")
+        + (
+            f"; {len(m['tasks']) - len(profs)} task(s) without S7 use the RL Gym scale"
+            if len(profs) < len(m["tasks"])
+            else ""
+        )
+    )

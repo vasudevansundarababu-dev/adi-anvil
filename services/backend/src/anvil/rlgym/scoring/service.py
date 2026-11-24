@@ -18,7 +18,7 @@ from psycopg.types.json import Jsonb
 
 from anvil.config import ROOT
 from anvil.rlgym.common import GymError, sha
-from anvil.rlgym.scoring import sandbox
+from anvil.rlgym.scoring import s7, sandbox
 
 EVIDENCE_ROOT = ROOT / ".local/rlgym/evidence"
 # D-001: safety episodes are graded by the local oracle; Promptfoo runs only as a scoring plug-in. Results already
@@ -409,6 +409,17 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
 
     effects = clauses.criterion_effects(bundle.get("clause_receipts"))
     by_clause = []
+    # D-036: the episode's task's frozen S7 profile, if it has one (runs before D-036 and fixture tasks: None).
+    prof = next(
+        (
+            t.get("scoring")
+            for t in manifest.get("tasks") or []
+            if t.get("task_id") == episode.get("task_id")
+            and t.get("revision") == episode.get("task_revision")
+        ),
+        None,
+    )
+    counted = {}
     for criterion_id in sorted(results):
         ev, row, v = results[criterion_id]
         if criterion_id in effects:
@@ -423,6 +434,22 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
         verdict = v.get("verdict", "error")
         weight = float(ev["weight"])
         points = v.get("points")
+        if prof and verdict in SCORABLE:
+            # S7 anchors: pass = full weight, partial = e.g. 2 of 5, fail = 0 (replaces the runner's own partial).
+            if v.get("points") is not None and verdict == "partial":
+                v = {**v, "runner_points": v.get("points")}
+            points = s7.fraction(prof, verdict)
+            weight = float(prof["weights"].get(criterion_id, weight))
+            v = {
+                **v,
+                "detail": [
+                    *(v.get("detail") or []),
+                    f"S7: {verdict} = {round(points * weight, 4):g} of {weight:g} points"
+                    + (" (critical criterion)" if criterion_id in prof["critical"] else ""),
+                ],
+            }
+        if prof and (verdict in SCORABLE or verdict == "blocked"):
+            counted[criterion_id] = verdict
         section = row["evidence_type"]
         refs = [f"{sealed['bundle_ref']}#{section}"] if section in evidence else []
         lines = v.get("block_lines")
@@ -481,9 +508,18 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
         else:
             blocked.append(criterion_id)
     score = round(100 * earned / total_w, 2) if total_w else None
-    passed = bool(
-        score is not None and score >= float(manifest["template"]["pass_mark"]) and not gate_failed
-    )
+    if prof:
+        # D-036: pass at S7's threshold (the same share of the points that count; a blocked criterion earns 0 for the
+        # pass decision), and a fail on a critical criterion fails the task whatever the total.
+        verdict_of = {k: v for k, v in counted.items()}
+        result = s7.outcome(prof, verdict_of, prof["weights"])
+        passed = result["passed"] and not gate_failed
+    else:
+        passed = bool(
+            score is not None
+            and score >= float(manifest["template"]["pass_mark"])
+            and not gate_failed
+        )
     reasons = (
         [{"criterion_id": b, "verdict": "blocked"} for b in blocked]
         + [{"criterion_id": e, "verdict": "error"} for e in errors]

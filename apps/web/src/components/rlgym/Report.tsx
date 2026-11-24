@@ -50,6 +50,7 @@ function Frame({
       <div className="between">
         <p>
           {header.cohort} · manifest <Hash value={header.manifest_sha256} />{' '}
+          {header.scoring && <small>{header.scoring}</small>}
           {header.rescored && (
             <Badge state="draft" label={`Re-scored · pass ${header.pass.number}`} />
           )}
