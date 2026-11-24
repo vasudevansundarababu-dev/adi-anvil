@@ -55,6 +55,44 @@ def routes():
         with scope(request, ws) as ctx:
             return ok(service.view(ctx.c, ctx.ws, sv), request)
 
+    # E-005 §3.1: the plan's exact case set, browse all cases, and one case with its read-only expected outcome.
+    @r.get(W + "/suite-versions/{sv}/case-set")
+    def case_set(ws: str, sv: str, request: Request):
+        from anvil.rlgym.suites import cases
+
+        with scope(request, ws) as ctx:
+            return ok(cases.case_set(ctx.c, ctx.ws, sv), request)
+
+    @r.get(W + "/suite-versions/{sv}/cases")
+    def browse_cases(
+        ws: str,
+        sv: str,
+        request: Request,
+        application_type: str | None = None,
+        completeness: str | None = None,
+        edge_case: str | None = None,
+        family: str | None = None,
+        offset: int = 0,
+        limit: int = 50,
+    ):
+        from anvil.rlgym.suites import cases
+
+        filters = {
+            "application_type": application_type,
+            "completeness": completeness,
+            "edge_case": edge_case,
+            "family": family,
+        }
+        with scope(request, ws) as ctx:
+            return ok(cases.browse(ctx.c, ctx.ws, sv, filters, offset, limit), request)
+
+    @r.get(W + "/suite-versions/{sv}/cases/{case_id}")
+    def case_detail(ws: str, sv: str, case_id: str, request: Request):
+        from anvil.rlgym.suites import cases
+
+        with scope(request, ws) as ctx:
+            return ok(cases.case_detail(ctx, sv, case_id), request)
+
     @r.get(W + "/suite-versions/{sv}/coverage")
     def coverage(ws: str, sv: str, request: Request):
         with scope(request, ws) as ctx:

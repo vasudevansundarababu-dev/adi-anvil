@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { GymApiError, send, short, when, wsBase } from './api';
 import { Badge, Env, Failure, Hash, Loading, Tabs, useData, useGym } from './ui';
+import { CasesPanel } from './Cases';
 
 export function SuitesTab({ project }: { project: string }) {
   const { ws, say } = useGym();
@@ -416,6 +417,15 @@ function Bindings({
   );
 }
 
+// E-005 §3: the properties a sample can be split by.
+const SPLITS: Record<string, string> = {
+  application_type: 'application type',
+  completeness: 'complete or incomplete',
+  edge_case: 'edge case',
+  edge_family: 'edge-case family',
+  product: 'product',
+};
+
 function DataPlan({
   data,
   draft,
@@ -437,6 +447,10 @@ function DataPlan({
   );
   const [seed, setSeed] = useState(String(plan.sampling_seed));
   const [mix, setMix] = useState<any>(null);
+  // E-005 §3: split by one or two properties; the seed is a named case set.
+  const [split1, setSplit1] = useState<string>((plan.stratify_by ?? ['application_type'])[0]);
+  const [split2, setSplit2] = useState<string>((plan.stratify_by ?? [])[1] ?? '');
+  const [setName, setSetName] = useState<string>(plan.case_set_name ?? '');
   // D-038: the bound environment's own edge cases, plus any the saved plan still requires (shown as missing).
   const edgeTags: string[] = Array.from(
     new Set([
@@ -465,6 +479,8 @@ function DataPlan({
           .map(([k, v]) => [k, Number(v)]),
       ),
       sampling_seed: Number(seed),
+      stratify_by: [split1, ...(split2 && split2 !== split1 ? [split2] : [])],
+      case_set_name: setName.trim() || null,
     };
     return act(
       'PATCH',
@@ -495,24 +511,58 @@ function DataPlan({
           />
         </label>
         <label>
-          Stratify by
-          <select disabled>
-            <option>application type of the suite&rsquo;s tasks (equal shares)</option>
+          Split the sample by
+          <select value={split1} onChange={(e) => setSplit1(e.target.value)} disabled={!draft}>
+            {Object.entries(SPLITS).map(([k, label]) => (
+              <option key={k} value={k}>
+                {label}
+              </option>
+            ))}
           </select>
+          <select value={split2} onChange={(e) => setSplit2(e.target.value)} disabled={!draft}>
+            <option value="">and nothing else</option>
+            {Object.entries(SPLITS)
+              .filter(([k]) => k !== split1)
+              .map(([k, label]) => (
+                <option key={k} value={k}>
+                  and {label}
+                </option>
+              ))}
+          </select>
+          <small>
+            Equal shares over each combination the cases have
+            {split1 !== 'completeness' && split2 !== 'completeness'
+              ? ', each split by the completeness percentages below'
+              : ''}
+            .
+          </small>
         </label>
         <label>
-          Sampling seed
+          Case set
           <input
-            type="number"
-            value={seed}
-            onChange={(e) => setSeed(e.target.value)}
+            value={setName}
+            placeholder="e.g. KYC set A"
+            onChange={(e) => setSetName(e.target.value)}
             disabled={!draft}
           />
+          <small>
+            seed {seed}{' '}
+            {draft && (
+              <button
+                type="button"
+                onClick={() => setSeed(String(Math.floor(Math.random() * 90_000_000) + 10_000_000))}
+                title="Pick a different set of cases (a new seed)"
+              >
+                New set
+              </button>
+            )}{' '}
+            The same set always picks the same cases.
+          </small>
         </label>
         <div className="stat">
-          <small>Missing policy</small>
+          <small>If the data has fewer cases than asked</small>
           <strong style={{ fontSize: 15 }}>
-            {plan.missing_policy === 'use_available' ? 'Use what is available' : 'Block'}
+            {plan.missing_policy === 'use_available' ? 'Run with fewer cases' : 'Stop the run'}
           </strong>
         </div>
       </div>
@@ -562,6 +612,29 @@ function DataPlan({
           ))}
         </tbody>
       </table>
+      {(plan.stratify_by ?? ['application_type']).join() !== 'application_type' && (
+        <table>
+          <thead>
+            <tr>
+              <th>Cell ({(plan.stratify_by ?? []).map((k: string) => SPLITS[k] ?? k).join(' × ')})</th>
+              <th>Requested / available</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.cells
+              .filter((c: any) => !c.cell_key.startsWith('edge:'))
+              .map((c: any) => (
+                <tr key={c.cell_key}>
+                  <td style={{ textAlign: 'left' }}>{c.cell_key.replace(/\|/g, ' · ')}</td>
+                  <td className={c.quota > c.available ? 'no' : ''}>
+                    {c.quota} / {c.available}
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      )}
+      <CasesPanel path={path} plan={plan} prompts={data.ts?.prompts?.length ?? 0} />
       <section className="card">
         <h4>Required edge cases (at least N each)</h4>
         <small>

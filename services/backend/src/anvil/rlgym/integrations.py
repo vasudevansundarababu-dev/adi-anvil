@@ -50,10 +50,11 @@ def _headers(extra=None):
     return {"Authorization": f"Bearer {os.environ.get('RLGYM_ANVIL_KEY', '')}", **(extra or {})}
 
 
-def registry_get(path, params=None, audience=None, timeout=10, base=None):
+def registry_get(path, params=None, audience=None, timeout=10, base=None, headers=None):
     """Read from a registry. `base` is the registry a mirrored version came from (its own data is read there, so the
-    stub's versions keep working after the RL Gym switches to Studio); default: the registry followed now."""
-    extra = {"X-ADI-Audience": audience} if audience else None
+    stub's versions keep working after the RL Gym switches to Studio); default: the registry followed now. `headers`:
+    extra request headers (E-005: the viewer of an engineer-only case read)."""
+    extra = {**({"X-ADI-Audience": audience} if audience else {}), **(headers or {})} or None
     root = loopback(base) if base else studio_url()
     try:
         with httpx.Client(timeout=timeout, trust_env=False) as client:
@@ -66,8 +67,40 @@ def registry_get(path, params=None, audience=None, timeout=10, base=None):
         ) from None
     if r.status_code == 404:
         raise GymError("NOT_FOUND", "Not in the registry")
+    if r.status_code == 403:
+        raise GymError("FORBIDDEN", "Studio's registry refused this read")
     if r.status_code >= 400:
         raise GymError("REGISTRY_UNAVAILABLE", f"Registry answered {r.status_code}")
+    return r.json()
+
+
+def registry_post(path, body, headers=None, timeout=15):
+    """Write to Studio's registry (E-005 "Request variant"). Studio's own refusals (e.g. 422 FAMILY_REQUIRED, 403
+    OUTCOME_SME_ONLY) come back as a GymError with Studio's code and message."""
+    try:
+        with httpx.Client(timeout=timeout, trust_env=False) as client:
+            r = client.post(
+                studio_url() + "/api/v1/registry" + path, json=body, headers=_headers(headers)
+            )
+    except httpx.HTTPError as exc:
+        raise GymError(
+            "REGISTRY_UNAVAILABLE",
+            "Studio's registry is not answering; try again",
+            {"cause": type(exc).__name__},
+        ) from None
+    if r.status_code >= 400:
+        try:
+            err = r.json()
+        except ValueError:
+            err = {}
+        code = err.get("code") or ("FORBIDDEN" if r.status_code == 403 else "VALIDATION_FAILED")
+        raise GymError(
+            code
+            if code in ("FORBIDDEN", "VALIDATION_FAILED", "CONFLICT", "NOT_FOUND")
+            else "VALIDATION_FAILED",
+            err.get("message") or f"Studio answered {r.status_code}",
+            {"studio_code": err.get("code"), "issues": err.get("issues") or []},
+        )
     return r.json()
 
 

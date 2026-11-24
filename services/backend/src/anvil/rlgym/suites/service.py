@@ -23,7 +23,11 @@ DEFAULT_PLAN = {
     "required_edges": {},
     "sampling_seed": 20261121,
     "missing_policy": "block",
+    "case_set_name": None,
 }
+# E-005 §3: the properties a sample can be split by (one or two). application_type is the default and keeps the
+# original cells; the others are read from the bound environment's case rows.
+STRATA = ("application_type", "completeness", "edge_case", "edge_family", "product")
 
 
 def _cases_for(cat, sel):
@@ -163,17 +167,109 @@ def validate_plan(plan):
         "VALIDATION_FAILED",
         "Unknown missing policy",
     )
+    by = plan.get("stratify_by") or ["application_type"]
     require(
-        plan.get("stratify_by", ["application_type"]) == ["application_type"],
+        isinstance(by, list)
+        and 1 <= len(by) <= 2
+        and len(set(by)) == len(by)
+        and all(p in STRATA for p in by),
         "VALIDATION_FAILED",
-        "Stratify by application type (the only dimension the template defines for strata)",
+        f"Split the sample by one or two of: {', '.join(STRATA)}",
         field="stratify_by",
     )
+    name = plan.get("case_set_name")
+    require(
+        name is None or (isinstance(name, str) and 1 <= len(name.strip()) <= 80),
+        "VALIDATION_FAILED",
+        "A case set name has 1 to 80 characters",
+        field="case_set_name",
+    )
+
+
+def case_value(case, prop):
+    """A case's value for a split property (E-005): its own field, its first edge-case tag or family ("none" when it
+    has none), or a fact (product)."""
+    if prop in ("application_type", "completeness"):
+        return case.get(prop)
+    if prop == "edge_case":
+        return (case.get("edge_cases") or ["none"])[0]
+    if prop == "edge_family":
+        return (case.get("edge_families") or ["none"])[0]
+    return (case.get("facts") or {}).get(prop) or "unknown"
+
+
+def _split_cells(plan, rows, task_types):
+    """Cells for a split other than the default: equal shares over the value combinations the cases have (only the
+    application types the suite has tasks for), each split by the completeness quotas unless completeness is itself
+    a split property. Keys are the values joined by "|"."""
+    by = plan["stratify_by"]
+    rows = [r for r in rows if not task_types or r.get("application_type") in task_types]
+    combos = {}
+    for r in rows:
+        combos.setdefault(tuple(case_value(r, p) for p in by), []).append(r)
+    cells = []
+    if not combos:
+        return cells
+    keys = sorted(combos)
+    base, extra = divmod(plan["sample_size"], len(keys))
+    split_completeness = "completeness" not in by
+    for i, combo in enumerate(keys):
+        share = base + (1 if i < extra else 0)
+        dims = dict(zip(by, combo, strict=True))
+        if not split_completeness:
+            cells.append(
+                {
+                    "cell_key": "|".join(map(str, combo)),
+                    "dimension_values": dims,
+                    "quota_kind": "share",
+                    "quota_value": share,
+                    "quota": share,
+                    "available": len(combos[combo]),
+                }
+            )
+            continue
+        raw = {k: share * pct / 100 for k, pct in plan["completeness_quotas"].items()}
+        split = {k: int(v) for k, v in raw.items()}
+        left = share - sum(split.values()) if sum(raw.values()) else 0
+        for k in sorted(raw, key=lambda k: (-(raw[k] - split[k]), list(raw).index(k)))[
+            : max(left, 0)
+        ]:
+            split[k] += 1
+        for completeness, pct in plan["completeness_quotas"].items():
+            have = sum(1 for r in combos[combo] if r.get("completeness") == completeness)
+            cells.append(
+                {
+                    "cell_key": "|".join(map(str, (*combo, completeness))),
+                    "dimension_values": {**dims, "completeness": completeness},
+                    "quota_kind": "percent",
+                    "quota_value": pct,
+                    "quota": split[completeness],
+                    "available": have,
+                }
+            )
+    return cells
 
 
 def compute_cells(plan, catalog, task_types=None):
     """Quota cells. The sample is spread over the application types the suite has tasks for (`task_types`), so every
-    sampled case can become an episode; with no tasks known, over every type in the catalog."""
+    sampled case can become an episode; with no tasks known, over every type in the catalog. E-005: a split by other
+    properties builds its cells from the environment's case rows (`catalog["_rows"]`)."""
+    if (plan.get("stratify_by") or ["application_type"]) != ["application_type"]:
+        cells = _split_cells(plan, (catalog or {}).get("_rows") or [], task_types)
+        for tag, n in (plan.get("required_edges") or {}).items():
+            cells.append(
+                {
+                    "cell_key": f"edge:{tag}",
+                    "dimension_values": {"edge_case": tag},
+                    "quota_kind": "count",
+                    "quota_value": n,
+                    "quota": n,
+                    "available": int(
+                        (catalog or {}).get("dimensions", {}).get("edge_cases", {}).get(tag, 0)
+                    ),
+                }
+            )
+        return cells
     types = list((catalog or {}).get("dimensions", {}).get("application_type", {}).keys())
     if task_types:
         types = [t for t in types if t in task_types] or types
@@ -237,18 +333,19 @@ def _write_plan(c, ws, sv_id, plan, catalog, source="manual", ai=None):
     c.execute("DELETE FROM suites.data_plans WHERE suite_version_id=%s", (sv_id,))
     c.execute(
         """INSERT INTO suites.data_plans(suite_version_id,workspace_id,sample_size,stratify_by,completeness_quotas,required_edges,sampling_seed,
-             missing_policy,source,ai_suggested) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+             missing_policy,source,ai_suggested,case_set_name) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
         (
             sv_id,
             ws,
             plan["sample_size"],
-            ["application_type"],
+            plan.get("stratify_by") or ["application_type"],
             Jsonb(plan["completeness_quotas"]),
             Jsonb(plan.get("required_edges") or {}),
             int(plan.get("sampling_seed", 20261121)),
             plan.get("missing_policy", "block"),
             source,
             Jsonb(ai) if ai else None,
+            (plan.get("case_set_name") or "").strip() or None,
         ),
     )
     for cell in compute_cells(plan, catalog, _task_types(c, sv_id)):
@@ -273,12 +370,18 @@ def _refresh_availability(c, ws, sv_id, catalog):
         "SELECT * FROM suites.data_plan_cells WHERE suite_version_id=%s", (sv_id,)
     ).fetchall():
         dv = cell["dimension_values"]
-        if "edge_case" in dv:
+        if cell["cell_key"].startswith("edge:"):
             have = int(
                 (catalog or {}).get("dimensions", {}).get("edge_cases", {}).get(dv["edge_case"], 0)
             )
-        else:
+        elif set(dv) == {"application_type", "completeness"}:
             have = int((catalog or {}).get("cells", {}).get(cell["cell_key"], 0))
+        else:  # E-005 split: counted from the environment's case rows
+            have = sum(
+                1
+                for r in (catalog or {}).get("_rows") or []
+                if all(case_value(r, k) == v for k, v in dv.items())
+            )
         if have != cell["available"]:
             c.execute(
                 "UPDATE suites.data_plan_cells SET available=%s WHERE suite_version_id=%s AND cell_key=%s",
@@ -537,6 +640,7 @@ def _catalog_for(c, ws, pid, sv_id):
 # D-038: edge-case tags come from the bound environment version's own cases. A version's case rows never change, so
 # the counts are kept per version id once read.
 _EDGE_CACHE = {}
+_ROWS = {}
 
 
 def edge_counts(env):
@@ -558,6 +662,7 @@ def edge_counts(env):
         return {
             t: {"available": int(n), "application_types": {}} for t, n in summary.items()
         } or None
+    _ROWS[env["id"]] = rows
     out = {}
     for r in rows:
         for tag in r.get("edge_cases") or []:
@@ -579,7 +684,8 @@ def with_edges(env):
         return cat
     dims = dict(cat.get("dimensions") or {})
     dims["edge_cases"] = {t: e["available"] for t, e in sorted(counts.items())}
-    return {**cat, "dimensions": dims}
+    # E-005: the case rows themselves, for splits by other properties (in memory only; never stored).
+    return {**cat, "dimensions": dims, "_rows": _ROWS.get(env["id"]) or []}
 
 
 def create_suite(c, ws, actor, pid, name, from_default=True, is_default=False):

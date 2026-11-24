@@ -22,10 +22,23 @@ def select_cases(plan, cells, cases, tasks=None):
     seed = plan["sampling_seed"]
     if tasks:
         cases = [c for c in cases if match_task(c, tasks, seed) is not None]
+    from anvil.rlgym.suites.service import case_value
+
+    strata = [cl for cl in cells if not cl["cell_key"].startswith("edge:")]
+
+    def stratum_of(case):
+        # The stratum cell whose dimension values the case has (default: "<application_type>|<completeness>").
+        for cl in strata:
+            if all(case_value(case, k) == v for k, v in (cl["dimension_values"] or {}).items()):
+                return cl["cell_key"]
+        return None
+
     picked, used = [], set()
     by_cell = {}
     for case in cases:
-        by_cell.setdefault(f"{case['application_type']}|{case['completeness']}", []).append(case)
+        key = stratum_of(case)
+        if key:
+            by_cell.setdefault(key, []).append(case)
     quotas = {cl["cell_key"]: cl["quota"] for cl in cells}
     counts = {k: 0 for k in quotas}
     short = []
@@ -41,8 +54,8 @@ def select_cases(plan, cells, cases, tasks=None):
         for case in pool:
             if have >= cell["quota"]:
                 break
-            stratum = f"{case['application_type']}|{case['completeness']}"
-            if counts.get(stratum, 0) >= quotas.get(stratum, 0):
+            stratum = stratum_of(case)
+            if stratum is None or counts.get(stratum, 0) >= quotas.get(stratum, 0):
                 continue
             picked.append(case)
             used.add(case["case_id"])
@@ -51,9 +64,7 @@ def select_cases(plan, cells, cases, tasks=None):
         counts[cell["cell_key"]] = have
         if have < cell["quota"]:
             short.append({"cell_key": cell["cell_key"], "quota": cell["quota"], "picked": have})
-    for cell in sorted(
-        (cl for cl in cells if not cl["cell_key"].startswith("edge:")), key=lambda c: c["cell_key"]
-    ):
+    for cell in sorted(strata, key=lambda c: c["cell_key"]):
         key = cell["cell_key"]
         pool = sorted(
             (c for c in by_cell.get(key, []) if c["case_id"] not in used),
