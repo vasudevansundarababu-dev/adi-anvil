@@ -28,7 +28,8 @@ export default function Home() {
         <div>
           <h2>Leaderboard</h2>
           <small>
-            Only systems in the same frozen cohort (suite, environment and evaluator versions) are
+            Only runs ticked &ldquo;Count this run on the leaderboard&rdquo; at New run are ranked, and
+            only systems in the same frozen cohort (suite, environment and evaluator versions) are
             ranked together.
           </small>
         </div>
@@ -75,7 +76,7 @@ export default function Home() {
       </div>
       {b?.run && (
         <p>
-          Latest completed run{' '}
+          Latest leaderboard run{' '}
           <Link href={`/gym/runs/${b.run.id}`}>
             {b.run.id} · {b.run.name}
           </Link>{' '}

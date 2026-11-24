@@ -296,7 +296,7 @@ def test_qualified_grader_fix_starts_a_new_cohort(finished):
     second = post(
         admin,
         base + "/runs",
-        body(finished, name="after the grader fix", suite_version_id=saved["id"]),
+        body(finished, name="after the grader fix", suite_version_id=saved["id"], leaderboard=True),
         201,
     ).json()["data"]["run"]
     assert worker.drain(timeout=600)

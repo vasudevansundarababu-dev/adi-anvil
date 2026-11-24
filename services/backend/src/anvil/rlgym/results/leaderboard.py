@@ -2,11 +2,15 @@
 cohort. A cohort is the suite version plus the environment version and the evaluator versions its latest scoring pass
 used, so a custom suite, a new data plan, a new environment or a new evaluator version (or a re-score) starts its own
 group; runs of different cohorts are never ranked together. Validation runs are not on the leaderboard.
+D-033: only runs whose person ticked "Count this run on the leaderboard" at New run (frozen in the manifest) count.
 """
 
 from anvil.rlgym.common import GymError, sha
 from anvil.rlgym.results import report, sme
 from anvil.rlgym.scoring import service as scoring
+
+# Runs admitted before D-033 have no flag in their manifest, so they are not counted (no backfill).
+ON_BOARD = "(m.manifest->'leaderboard')::boolean IS TRUE"
 
 
 def _cohort(c, run, manifest):
@@ -51,6 +55,9 @@ def leaderboard(c, ws, pid, cohort_key=None):
     runs = c.execute(
         """SELECT r.*, m.manifest FROM runs.runs r JOIN runs.run_manifests m ON m.run_id=r.id
            WHERE r.workspace_id=%s AND r.project_id=%s AND r.state='completed' AND r.purpose='benchmark'
+             AND """
+        + ON_BOARD
+        + """
            ORDER BY r.finished_at DESC NULLS LAST, r.created_at DESC""",
         (ws, pid),
     ).fetchall()
@@ -60,7 +67,7 @@ def leaderboard(c, ws, pid, cohort_key=None):
         "run": None,
         "rows": [],
         "cohorts": [],
-        "empty": "No completed benchmark results for this Project.",
+        "empty": "No leaderboard runs yet. Tick 'Count this run on the leaderboard' when you start a run.",
     }
     if not runs:
         return empty

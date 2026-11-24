@@ -111,8 +111,11 @@ def body(ctx, **extra):
 @pytest.fixture(scope="module")
 def finished(small_suite):
     admin = person("admin-1")
-    r = post(admin, small_suite["base"] + "/runs", body(small_suite), 201).json()["data"]
-    assert not r["refused"] and r["run"]["state"] == "admitted"
+    # D-033: a leaderboard run (ticked at New run), so the home tests can rank it.
+    r = post(admin, small_suite["base"] + "/runs", body(small_suite, leaderboard=True), 201).json()[
+        "data"
+    ]
+    assert not r["refused"] and r["run"]["state"] == "admitted" and r["run"]["leaderboard"]
     assert worker.drain(timeout=600)
     run = admin.get(small_suite["base"] + f"/runs/{r['run']['id']}").json()["data"]
     return {**small_suite, "run": run}

@@ -16,6 +16,27 @@ Local list until the owner logs them in the tracker. Newest first.
   remainder); before, sample size 10 over 2 types gave 12. Plans of 40 over 4 types are unchanged.
 - **Status:** fixed.
 
+## D-033 Leaderboard counts every completed run (enhancement; small part built)
+
+- **Raised:** 24 Nov 2026 by the owner: the leaderboard should be by domain, not project or cohort, and not every run
+  should count; the person starting a run chooses. Domain leaderboard is E-003 (design repo), later. Built now: the
+  opt-in tick.
+- **New run:** checkbox "Count this run on the leaderboard", unticked by default. The request field `leaderboard`
+  counts only when it is JSON `true`.
+- **Frozen:** the value is written into the run manifest (`"leaderboard": true|false`), so it is inside
+  `manifest_sha256` and cannot change after admission. No database column, no migration.
+- **Leaderboard and Home:** only completed benchmark runs whose manifest says `true` are ranked; Project and Cohort
+  pickers unchanged. Runs admitted before D-033 have no flag and are not counted (no backfill), so the leaderboard is
+  empty until a ticked run completes: "No leaderboard runs yet. Tick 'Count this run on the leaderboard' when you
+  start a run."
+- **Markers:** "Leaderboard run" badge on the Runs list and the run page; the run page shows "View on leaderboard" only
+  for leaderboard runs. Runs list and run API gain a read-only `leaderboard` field.
+- **Tests:** `tests/unit/test_rlgym_d033_leaderboard_unit.py` (3); unit suite 585 passed; web `tsc --noEmit` passes.
+  The integration runs that expect a ranked leaderboard now start with `leaderboard: true`
+  (`test_rlgym_v2_runs.py` `finished`, `test_rlgym_v2_sme.py`); integration suites not run (they need the services
+  restarted on this code).
+- **Status:** built on `forge-v2-rlgym-next`, not deployed.
+
 ## D-032 "New run" is link text, not a button (P3)
 
 - **Found:** 24 Nov 2026 by the owner on the Runs page: "Compare (0)" and "Package (0)" are buttons, "New run" next to

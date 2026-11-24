@@ -59,8 +59,11 @@ def routes():
             board = []
             for p in ctx.c.execute(
                 """SELECT p.project_id, p.name, p.state,
-                          (SELECT r.id FROM runs.runs r WHERE r.workspace_id=p.workspace_id AND r.project_id=p.project_id
-                           AND r.state='completed' AND r.purpose='benchmark' ORDER BY r.finished_at DESC NULLS LAST LIMIT 1) latest_run
+                          (SELECT r.id FROM runs.runs r JOIN runs.run_manifests m ON m.run_id=r.id
+                           WHERE r.workspace_id=p.workspace_id AND r.project_id=p.project_id
+                           AND r.state='completed' AND r.purpose='benchmark'
+                           AND (m.manifest->'leaderboard')::boolean IS TRUE
+                           ORDER BY r.finished_at DESC NULLS LAST LIMIT 1) latest_run
                    FROM projects.projects p WHERE p.workspace_id=%s ORDER BY p.name""",
                 (ctx.ws,),
             ).fetchall():

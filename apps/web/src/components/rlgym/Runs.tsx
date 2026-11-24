@@ -157,6 +157,7 @@ function RunsList() {
                     </td>
                     <td style={{ textAlign: 'left' }}>
                       <Link href={`/gym/runs/${r.id}`}>{r.name}</Link>
+                      {r.leaderboard && <Badge state="ready" label="Leaderboard run" />}
                       <small>
                         {r.id} · {when(r.created_at)} ·{' '}
                         {r.manifest_sha256 ? <Hash value={r.manifest_sha256} /> : '—'}
@@ -222,6 +223,8 @@ function NewRun() {
   const [timeout, setTimeoutMin] = useState(10);
   const [retries, setRetries] = useState(2);
   const [budget, setBudget] = useState(5);
+  // D-033: unticked by default; only runs ticked here are counted on the leaderboard (frozen in the manifest).
+  const [leaderboard, setLeaderboard] = useState(false);
   const [check, setCheck] = useState<any>(null);
   const [failure, setFailure] = useState<GymApiError | null>(null);
   const [starting, setStarting] = useState(false);
@@ -270,6 +273,7 @@ function NewRun() {
     episode_timeout_min: timeout,
     infra_retries: retries,
     budget_usd: budget,
+    leaderboard,
   };
   const key = JSON.stringify(body);
   useEffect(() => {
@@ -433,6 +437,18 @@ function NewRun() {
             />
           </label>
         </div>
+        <label className="row">
+          <input
+            type="checkbox"
+            checked={leaderboard}
+            onChange={(e) => setLeaderboard(e.target.checked)}
+          />
+          Count this run on the leaderboard
+          <small>
+            Off by default. Fixed when the run starts; only ticked runs are ranked on the
+            leaderboard.
+          </small>
+        </label>
         <section className="card">
           <h3>Models</h3>
           {(systems.data?.items ?? []).map((s: any) => {
@@ -699,6 +715,7 @@ function RunPage({ id, tab, rest }: { id: string; tab: string; rest: string[] })
                 <h2>
                   {r.name} <RunBadge state={r.state} />
                   {r.rescored && <Badge state="draft" label="Re-scored" />}
+                  {r.leaderboard && <Badge state="ready" label="Leaderboard run" />}
                 </h2>
                 <div className="row">
                   {live && canAct && (
@@ -712,7 +729,9 @@ function RunPage({ id, tab, rest }: { id: string; tab: string; rest: string[] })
                       Cancel run
                     </button>
                   )}
-                  <Link href={`/gym?project=${r.project_id}`}>View on leaderboard</Link>
+                  {r.leaderboard && (
+                    <Link href={`/gym?project=${r.project_id}`}>View on leaderboard</Link>
+                  )}
                   {r.state === 'completed' && canAct && (
                     <button
                       title="Grades the recorded episodes again with the current qualified evaluator versions; no model is called"

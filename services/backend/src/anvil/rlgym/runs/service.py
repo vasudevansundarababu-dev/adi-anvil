@@ -597,6 +597,8 @@ def admission_check(ctx, body):
             "retries": retries,
             "budget": budget,
             "name": name,
+            # D-033: counted on the leaderboard only when the person starting the run ticks it (default: not).
+            "leaderboard": body.get("leaderboard") is True,
         },
     }
 
@@ -647,6 +649,8 @@ def _manifest(run_id, check):
         "run_id": run_id,
         "execution_mode": "live" if any(m.get("live") for m in r["models"]) else "controlled_mock",
         "synthetic": True,
+        # D-033: frozen with the run (inside manifest_sha256), so it cannot change after admission.
+        "leaderboard": bool(s.get("leaderboard")),
         "note": LIVE_NOTE if any(m.get("live") for m in r["models"]) else MOCK_NOTE,
         "project": {"id": r["project"]["project_id"], "name": r["project"]["name"]},
         "template": {
@@ -1103,7 +1107,7 @@ def _counts(ctx, run_id):
 
 def list_runs(ctx, state=None, q=None, project_id=None):
     rows = ctx.c.execute(
-        """SELECT r.*, m.manifest_sha256, m.manifest->'models' models, p.name project_name, sv.suite_id, sv.version suite_version,
+        """SELECT r.*, m.manifest_sha256, m.manifest->'models' models, (m.manifest->'leaderboard')::boolean leaderboard, p.name project_name, sv.suite_id, sv.version suite_version,
                   sv.name suite_name, (SELECT count(*) FROM runs.episodes e WHERE e.run_id=r.id) episodes
            FROM runs.runs r JOIN projects.projects p USING (workspace_id, project_id)
            JOIN suites.suite_versions sv ON sv.id=r.suite_version_id
@@ -1142,6 +1146,7 @@ def list_runs(ctx, state=None, q=None, project_id=None):
                 },
                 "models": [m["name"] for m in (r["models"] or [])],
                 "episodes": r["episodes"],
+                "leaderboard": r["leaderboard"] is True,
                 "refusal_reasons": r["refusal_reasons"],
                 "report_available": r["state"] == "completed",
             }
@@ -1184,6 +1189,7 @@ def get_run(ctx, run_id):
         **run,
         "manifest_sha256": m and m["manifest_sha256"],
         "manifest": m and m["manifest"],
+        "leaderboard": bool(m and m["manifest"].get("leaderboard") is True),
         "counts": counts,
         "total_episodes": sum(counts.values()),
         "elapsed_s": round(elapsed),
