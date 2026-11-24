@@ -592,6 +592,7 @@ def run_episode(ws, episode, session_factory=None):
 
 
 def finish_runs(ws):
+    finished = []
     with system_scope(ws) as c:
         for run in c.execute(
             """SELECT r.* FROM runs.runs r WHERE r.workspace_id=%s AND r.state='running'
@@ -632,6 +633,8 @@ def finish_runs(ws):
                 run["id"],
                 {"run_id": run["id"], "project_id": run["project_id"], "episodes": counts},
             )
+            if state == "completed":
+                finished.append(run["id"])
         # A cancelled run whose last running episode just sealed.
         for run in c.execute(
             """SELECT r.* FROM runs.runs r WHERE r.workspace_id=%s AND r.state='admitted' AND r.cancel_requested_at IS NOT NULL""",
@@ -649,6 +652,18 @@ def finish_runs(ws):
         ).fetchall():
             images.stop_instance(inst["container"])
             c.execute("UPDATE runs.instances SET stopped_at=now() WHERE id=%s", (inst["id"],))
+    # E-007 phase 1 (shadow): a verification report for each run that just completed, in its own transaction after
+    # the run is final. It reports only; any error is logged and never touches the run.
+    for run_id in finished:
+        try:
+            from anvil.rlgym.verification import service as verification
+
+            with system_scope(ws) as c:
+                verification.build(c, ws, run_id, requested_by="rlgym:after-run")
+        except Exception:
+            log.exception(
+                "verification report for %s failed (shadow mode; the run is unaffected)", run_id
+            )
 
 
 def tick():

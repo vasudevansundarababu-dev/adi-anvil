@@ -9,6 +9,7 @@ import Report from './Report';
 import Sme from './Sme';
 import { Badge, Failure, Hash, Loading, Search, Tabs, useData, useGym } from './ui';
 import { HowScored, ScoredBy } from './Scoring';
+import { Verification } from './Verification';
 
 // Runs (SCREENS 3.17-3.21): list, New run with the admission checklist, Compare, and the run page (Overview, Report,
 // Episodes, SME review). Only controlled mock agents run on this machine; every result says it is synthetic.
@@ -776,6 +777,11 @@ function RunPage({ id, tab, rest }: { id: string; tab: string; rest: string[] })
                   { key: 'report', label: 'Report', href: `/gym/runs/${id}/report` },
                   { key: 'episodes', label: 'Episodes', href: `/gym/runs/${id}/episodes` },
                   { key: 'sme', label: 'SME review', href: `/gym/runs/${id}/sme` },
+                  {
+                    key: 'verification',
+                    label: 'Verification',
+                    href: `/gym/runs/${id}/verification`,
+                  },
                 ]}
               />
               {tab === 'overview' && <Overview r={r} />}
@@ -783,6 +789,7 @@ function RunPage({ id, tab, rest }: { id: string; tab: string; rest: string[] })
               {tab === 'episodes' &&
                 (rest[0] ? <Episode runId={id} episodeId={rest[0]} /> : <Episodes id={id} r={r} />)}
               {tab === 'sme' && <Sme runId={id} />}
+              {tab === 'verification' && <Verification runId={id} />}
             </>
           );
         }}

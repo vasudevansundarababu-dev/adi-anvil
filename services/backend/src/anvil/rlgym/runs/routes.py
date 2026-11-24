@@ -53,6 +53,27 @@ def routes():
         with scope(request, ws, services=READERS) as ctx:
             return ok(service.get_run(ctx, run_id), request)
 
+    # E-007 phase 1 (shadow): the run's verification report (reports only; blocks nothing).
+    @r.get(W + "/runs/{run_id}/verification")
+    def verification_get(ws: str, run_id: str, request: Request):
+        from anvil.rlgym.verification import service as verification
+
+        with scope(request, ws, services=READERS) as ctx:
+            service._run(ctx, run_id)  # the same access check as the run page
+            return ok({"report": verification.latest(ctx.c, ctx.ws, run_id)}, request)
+
+    @r.post(W + "/runs/{run_id}/verification")
+    def verification_build(ws: str, run_id: str, request: Request):
+        from anvil.rlgym.verification import service as verification
+
+        with scope(request, ws) as ctx:
+            ctx.actor.require_person()
+            service._run(ctx, run_id)
+            return ok(
+                {"report": verification.build(ctx.c, ctx.ws, run_id, requested_by=ctx.actor.id)},
+                request,
+            )
+
     @r.get(W + "/runs/{run_id}/episodes")
     def episodes(
         ws: str,

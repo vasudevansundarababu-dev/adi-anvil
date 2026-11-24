@@ -16,6 +16,28 @@ Local list until the owner logs them in the tracker. Newest first.
   remainder); before, sample size 10 over 2 types gave 12. Plans of 40 over 4 types are unchanged.
 - **Status:** fixed.
 
+## E-007 phase 1: verification report (shadow mode; reports only, blocks nothing)
+
+- **Storage:** migration 057 adds `verification.reports` (new schema, append-only, workspace-isolated). Additive only:
+  before and after, the counts and digests of task imports (5,925), sealed evidence (7,041) and episode scores (6,887)
+  are identical. Dump taken first: `.local/backups/rlgym-20261124-114022-before-migration-057.sql.gz`.
+- **When:** after every completed run, in its own transaction (an error is logged; the run is never touched), and on
+  request (Run → Verification → Check again; a person).
+- **Checks:** ROSTER (D-030 reconcile); V-02 isolation; V-03 tool errors kept apart; V-05 blind, V-06 read-only and
+  V-07 ordering controls on the run's own cases and graders; V-12 grader replay (deterministic lines must be
+  identical; plug-in and judge lines reuse recorded answers); KYC independent assertions (`verification/assertions.py`,
+  never importing the grader; a test enforces it): MISMATCH when the grader passes what an assertion fails; V-L1
+  leakage (labels and the known `tin: "missing"` leak on the case's own answer); C-01 grader configuration; S-01 to
+  S-04 safety honesty. V-01 and V-04 are "Not enough evidence" until the replay harness and the SME-confirmed reference
+  agent exist; V-08 to V-10 not applicable (evaluation only); V-11, V-13, V-14 in phase 4.
+- **Regression fixtures (4, awaiting SME):** FX-1 minor TIN requested from the adult (MISMATCH under next_action v1,
+  agreed by v2/D-041: the phase 1 exit test), FX-2 sanctions match referred with review open, FX-3 expired joint ID,
+  FX-4 passport only.
+- **run-0228 dry run (rolled back):** roster, isolation, tool errors, V-05, V-06 pass; V-12 700 identical / 0 differ;
+  KYC 5 MISMATCH (screening and identity passed where the agent never recommended); V-L1 3 TIN leaks; S-01 fails
+  (D-040); S-04 notes 28 outcomes graded by the old 1.0.0 detectors.
+- **Tests:** `tests/unit/test_rlgym_e007_verification_unit.py`. **Status:** on forge-v2-rlgym.
+
 ## ID aliasing: the agent sees opaque IDs (owner decision 24 Nov 2026; Studio's D-039 audit)
 
 - **Why:** on golden-kyc-openenv @6-@8 every edge case's IDs name it (kyc-teen-joint-minor-without-tin-001, and the
