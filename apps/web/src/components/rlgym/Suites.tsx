@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { GymApiError, send, short, when, wsBase } from './api';
+import { GymApiError, at, send, short, when, wsBase } from './api';
 import { Badge, Env, Failure, Hash, Loading, Tabs, useData, useGym } from './ui';
 import { CasesPanel, EdgeFamilies, SafetyTable } from './Cases';
 import { EnvironmentSummary } from './Environment';
@@ -39,59 +39,119 @@ export function SuitesTab({ project }: { project: string }) {
               <thead>
                 <tr>
                   <th>Suite</th>
-                  <th>Versions</th>
+                  <th>Latest saved</th>
+                  <th>Draft</th>
+                  <th>Environment</th>
+                  <th>Run size</th>
+                  <th>Leaderboard</th>
                   <th>Runs</th>
-                  <th>Actions</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
                 {data.items.length === 0 && (
                   <tr>
-                    <td colSpan={4} style={{ textAlign: 'left' }}>
+                    <td colSpan={8} style={{ textAlign: 'left' }}>
                       No suites yet: the default suite is created by the next export.
                     </td>
                   </tr>
                 )}
-                {data.items.map((s: any) => (
-                  <tr key={s.suite_id}>
-                    <td>
-                      <strong>{s.name}</strong>
-                      <small>
-                        {s.suite_id}
-                        {s.is_default ? ' · default (all ready tasks after the latest export)' : ''}
-                      </small>
-                    </td>
-                    <td>
-                      {s.versions.map((v: any) => (
-                        <div key={v.id}>
-                          <Link href={`/gym/projects/${project}/suites/${v.id}`}>
-                            {v.state === 'draft' ? 'Draft' : `v${v.version}`}
-                          </Link>{' '}
-                          <small>
-                            {v.state === 'saved' ? (
-                              <>
-                                <Hash value={v.suite_sha256} /> · planned on{' '}
-                                {short(v.planned_on_env_version)} · {when(v.saved_at)}
-                              </>
-                            ) : (
-                              'not saved'
-                            )}
-                          </small>
-                        </div>
-                      ))}
-                    </td>
-                    <td>
-                      <small>{s.runs_note}</small>
-                    </td>
-                    <td>
-                      <button onClick={() => draft(s.suite_id)}>
-                        {s.versions.some((v: any) => v.state === 'draft')
-                          ? 'Open draft'
-                          : 'New suite version'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {data.items.map((s: any) => {
+                  const saved = s.versions.find((v: any) => v.state === 'saved');
+                  const draftV = s.versions.find((v: any) => v.state === 'draft');
+                  const shown = draftV ?? saved;
+                  const lb = (saved ?? draftV)?.leaderboard;
+                  return (
+                    <tr key={s.suite_id}>
+                      <td>
+                        <strong>{s.name}</strong>
+                        <small>
+                          {s.suite_id}
+                          {s.is_default ? ' · default (all ready tasks after the latest export)' : ''}
+                        </small>
+                      </td>
+                      <td>
+                        {saved ? (
+                          <>
+                            <Link href={`/gym/projects/${project}/suites/${saved.id}`}>
+                              v{saved.version}
+                            </Link>
+                            <small>
+                              <Hash value={saved.suite_sha256} /> · {when(saved.saved_at)}
+                            </small>
+                          </>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td>
+                        {draftV ? (
+                          <>
+                            <Link href={`/gym/projects/${project}/suites/${draftV.id}`}>
+                              Draft v{(saved?.version ?? 0) + 1}
+                            </Link>
+                            <small>unsaved changes</small>
+                          </>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'left' }}>
+                        {s.versions
+                          .filter((v: any) => v === saved || v === draftV)
+                          .map((v: any) => (
+                            <div key={v.id}>
+                              <small>
+                                {v.state === 'draft'
+                                  ? `v${(saved?.version ?? 0) + 1} (draft)`
+                                  : `v${v.version}`}
+                                : {(v.environment ?? []).map((e: any) => e.label).join(', ')}
+                              </small>
+                            </div>
+                          ))}
+                      </td>
+                      <td>
+                        {shown?.run_size ? (
+                          <>
+                            {shown.run_size.episodes_per_model_attempt} episodes
+                            <small>
+                              {shown.run_size.cases} cases + {shown.run_size.safety_prompts} safety,
+                              per model and attempt
+                            </small>
+                          </>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td>
+                        {lb ? (
+                          <span title={[...lb.reasons, lb.note].join(' · ')}>
+                            {lb.eligible ? 'Eligible' : 'Not eligible'}
+                            {lb.reasons.length > 0 && <small>{lb.reasons.join('; ')}</small>}
+                          </span>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td>
+                        <small>{s.runs_note}</small>
+                      </td>
+                      <td>
+                        {shown ? (
+                          <Link
+                            className="button"
+                            href={`/gym/projects/${project}/suites/${shown.id}`}
+                          >
+                            Open
+                          </Link>
+                        ) : null}
+                        {!draftV && (
+                          <button onClick={() => draft(s.suite_id)}>New suite version</button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -117,7 +177,7 @@ export function SuitesTab({ project }: { project: string }) {
                 }
               }}
             >
-              New suite
+              + New suite
             </button>
           </div>
           <Failure error={failure} />
@@ -151,106 +211,16 @@ export function SuiteEditor({ project, id, step }: { project: string; id: string
       {() => {
         const draft = data.state === 'draft';
         return (
-          <div className="work">
-            <aside>
-              <Link href={`/gym/projects/${project}/suites`}>← Back to project</Link>
-              <h3>{data.name}</h3>
-              <div className="row">
-                <Badge
-                  state={draft ? 'draft' : 'ready'}
-                  label={draft ? 'Draft' : `Saved · v${data.version}`}
-                />
-                {data.suite_sha256 && <Hash value={data.suite_sha256} />}
-              </div>
-              <small>Planned on {short(data.planned_on_env_version)}</small>
-              <h4>Can this suite run?</h4>
-              {data.checklist.items.map((i: any) => (
-                <div className="check" key={i.key}>
-                  <i className={i.ok ? 'ok' : 'no'}>{i.ok ? '✓' : '✕'}</i>
-                  <span>
-                    {i.label}
-                    {i.detail && <small>{i.detail}</small>}
-                    {draft && i.short && !i.ok && (
-                      <button
-                        className="link"
-                        onClick={() =>
-                          act('PATCH', path, { lower: i.cell_key }, 'Quota lowered to what exists.')
-                        }
-                      >
-                        Lower to what exists
-                      </button>
-                    )}
-                  </span>
-                </div>
-              ))}
-              {draft && data.checklist.items.some((i: any) => i.short && !i.ok) && (
-                <div className="row">
-                  <button
-                    onClick={() =>
-                      act('PATCH', path, { lower_all: true }, 'All short quotas lowered.')
-                    }
-                  >
-                    Lower all of them to what exists
-                  </button>
-                  <button
-                    onClick={() =>
-                      act(
-                        'PATCH',
-                        path,
-                        { missing_policy: 'use_available' },
-                        'The suite uses what is available.',
-                      )
-                    }
-                  >
-                    Use what is available
-                  </button>
-                  <button onClick={() => setMoreData(true)}>
-                    Send to Studio inbox (more data)
-                  </button>
-                </div>
-              )}
-              {draft && (
-                <div className="row">
-                  <button
-                    className="primary"
-                    disabled={!data.checklist.can_run}
-                    onClick={async () => {
-                      const r = await act('POST', `${path}/save`, {});
-                      if (r) say(`Saved as ${r.label}.`);
-                    }}
-                  >
-                    Save suite version
-                  </button>
-                  <button
-                    onClick={async () => {
-                      await fetch(path, {
-                        method: 'DELETE',
-                        credentials: 'same-origin',
-                        headers: { 'X-CSRF-Token': csrfCookie() },
-                      });
-                      router.push(`/gym/projects/${project}/suites`);
-                    }}
-                  >
-                    Discard draft
-                  </button>
-                </div>
-              )}
-              {!draft && data.checklist.can_run && (
-                <Link
-                  className="primary"
-                  href={`/gym/runs/new?project=${project}&suite=${data.id}`}
-                >
-                  Run benchmark
-                </Link>
-              )}
-              {data.inbox_items.map((item: any) => (
-                <small key={item.id}>
-                  Studio inbox {item.studio_id ?? item.id} · more data · {item.state}
-                  {item.released_version ? ` · released ${item.released_version}` : ''}
-                </small>
-              ))}
-              <Failure error={failure} />
-            </aside>
+          <div className="work wide">
+            <SuiteHeader
+              data={data}
+              draft={draft}
+              project={project}
+              path={path}
+              act={act}
+              setMoreData={setMoreData}
+              failure={failure}
+            />
             <main>
               <Tabs
                 current={step}
@@ -262,7 +232,15 @@ export function SuiteEditor({ project, id, step }: { project: string; id: string
                 ]}
               />
               {step === 'bindings' && <Bindings data={data} draft={draft} act={act} path={path} />}
-              {step === 'data' && <DataPlan data={data} draft={draft} act={act} path={path} />}
+              {step === 'data' && (
+                <DataPlan
+                  key={`${data.plan?.sampling_seed}-${data.plan?.case_set_name}`}
+                  data={data}
+                  draft={draft}
+                  act={act}
+                  path={path}
+                />
+              )}
               {step === 'ts' && <TrustSafety data={data} draft={draft} act={act} path={path} />}
               {step === 'reference' && <ReferencePanel path={path} />}
               {moreData && (
@@ -278,6 +256,232 @@ export function SuiteEditor({ project, id, step }: { project: string; id: string
         );
       }}
     </Loading>
+  );
+}
+
+// E-008 / D-047: the suite's header: which version is shown (with a switcher), its environment against the project
+// rule's and why, run size, cost, leaderboard eligibility, what a draft changes from the saved version, and the actions.
+function SuiteHeader({
+  data,
+  draft,
+  project,
+  path,
+  act,
+  setMoreData,
+  failure,
+}: {
+  data: any;
+  draft: boolean;
+  project: string;
+  path: string;
+  act: Act;
+  setMoreData: (v: boolean) => void;
+  failure: GymApiError | null;
+}) {
+  const { ws, say } = useGym();
+  const router = useRouter();
+  const h = data.header ?? {};
+  const versions: any[] = h.versions ?? [];
+  const lastSaved = versions.find((v: any) => v.state === 'saved');
+  const label = (v: any) =>
+    v.state === 'draft' ? `Draft v${(lastSaved?.version ?? 0) + 1} (unsaved changes)` : `Saved v${v.version}`;
+  const items = data.checklist.items;
+  const failing = items.filter((i: any) => !i.ok).length;
+  const rs = h.run_size;
+  const lb = h.leaderboard;
+  async function newDraft() {
+    try {
+      const sv = await send('POST', `${wsBase(ws)}/suites/${data.suite_id}/drafts`, {
+        project_id: project,
+      });
+      router.push(`/gym/projects/${project}/suites/${sv.id}`);
+    } catch (e) {
+      say((e as GymApiError).message ?? 'Could not open a draft.');
+    }
+  }
+  return (
+    <header className="pagehead">
+      <Link href={`/gym/projects/${project}/suites`}>← Back to project</Link>
+      <div className="between">
+        <div className="row">
+          <h3>{data.name}</h3>
+          <select
+            aria-label="Suite version"
+            value={data.id}
+            onChange={(e) => router.push(`/gym/projects/${project}/suites/${e.target.value}`)}
+          >
+            {versions.map((v: any) => (
+              <option key={v.id} value={v.id}>
+                {label(v)}
+              </option>
+            ))}
+          </select>
+          <Badge state={draft ? 'draft' : 'ready'} label={draft ? 'Draft' : 'Saved'} />
+          {data.suite_sha256 && <Hash value={data.suite_sha256} />}
+        </div>
+        <div className="row">
+          {draft && (
+            <button
+              onClick={async () => {
+                await fetch(path, {
+                  method: 'DELETE',
+                  credentials: 'same-origin',
+                  headers: { 'X-CSRF-Token': csrfCookie() },
+                });
+                router.push(`/gym/projects/${project}/suites`);
+              }}
+            >
+              Discard draft
+            </button>
+          )}
+          {draft && (
+            <button
+              className="primary"
+              disabled={!data.checklist.can_run}
+              title={data.checklist.can_run ? '' : 'See "Can this suite run?" below'}
+              onClick={async () => {
+                const r = await act('POST', `${path}/save`, {});
+                if (r) say(`Saved as ${r.label}.`);
+              }}
+            >
+              Save suite version
+            </button>
+          )}
+          {!draft && !versions.some((v: any) => v.state === 'draft') && (
+            <button onClick={newDraft}>New draft</button>
+          )}
+          {!draft && data.checklist.can_run && (
+            <Link className="primary" href={`/gym/runs/new?project=${project}&suite=${data.id}`}>
+              Run this version
+            </Link>
+          )}
+        </div>
+      </div>
+      <div className="facts">
+        <span>
+          <small>Environment</small>
+          {(h.environment ?? []).map((e: any) => (
+            <span key={e.alias}>
+              This suite: <strong>{at(e.binds_now)}</strong> ({e.why})
+              {e.project_binds_now && (
+                <>
+                  {' '}
+                  · Project rule: {at(e.project_binds_now)}
+                </>
+              )}
+              {e.differs && (
+                <small className="no">
+                  This suite {e.follows_project_rule ? 'binds' : 'is pinned to'} {at(e.binds_now)}; the project
+                  rule now selects {at(e.project_binds_now)}.{' '}
+                  {draft ? (
+                    <button
+                      className="link"
+                      onClick={() =>
+                        act(
+                          'PATCH',
+                          path,
+                          { bindings: [{ alias: e.alias, rule_kind: 'project_rule' }] },
+                          'This draft now follows the project rule.',
+                        )
+                      }
+                    >
+                      Use the project rule
+                    </button>
+                  ) : (
+                    'To use the project rule, open a draft and choose “Use the project rule”.'
+                  )}
+                </small>
+              )}
+              {!e.binds_now && <small className="no">Doesn&rsquo;t bind: {e.unbound_reason}</small>}
+            </span>
+          ))}
+        </span>
+        <span>
+          <small>Run size</small>
+          {rs ? (
+            <>
+              {rs.episodes_per_model_attempt} episodes
+              <small>
+                {rs.cases} cases + {rs.safety_prompts} safety prompts, per model and attempt
+              </small>
+            </>
+          ) : (
+            '—'
+          )}
+        </span>
+        <span>
+          <small>Projected cost</small>
+          Set at New run
+          <small>{rs?.cost_note}</small>
+        </span>
+        <span>
+          <small>Leaderboard</small>
+          {lb ? (lb.eligible ? 'Eligible' : 'Not eligible') : '—'}
+          {lb?.reasons?.length ? <small>{lb.reasons.join('; ')}</small> : null}
+          {lb?.note && <small>{lb.note}</small>}
+        </span>
+      </div>
+      {h.changed && (
+        <p className="changed">
+          <strong>
+            {h.changed.from_version ? `Changed from saved v${h.changed.from_version}:` : 'Changes:'}
+          </strong>{' '}
+          {h.changed.changes.length ? h.changed.changes.join(' · ') : 'nothing yet'}
+        </p>
+      )}
+      <details open={failing > 0}>
+        <summary>
+          Can this suite run?{' '}
+          {failing ? `${failing} of ${items.length} checks need attention` : `all ${items.length} checks pass`}
+        </summary>
+        {items.map((i: any) => (
+          <div className="check" key={i.key}>
+            <i className={i.ok ? 'ok' : 'no'}>{i.ok ? '✓' : '✕'}</i>
+            <span>
+              {i.label}
+              {i.detail && <small>{i.detail}</small>}
+              {draft && i.short && !i.ok && (
+                <button
+                  className="link"
+                  onClick={() =>
+                    act('PATCH', path, { lower: i.cell_key }, 'Quota lowered to what exists.')
+                  }
+                >
+                  Lower to what exists
+                </button>
+              )}
+            </span>
+          </div>
+        ))}
+        {draft && items.some((i: any) => i.short && !i.ok) && (
+          <div className="row">
+            <button onClick={() => act('PATCH', path, { lower_all: true }, 'All short quotas lowered.')}>
+              Lower all of them to what exists
+            </button>
+            <button
+              onClick={() =>
+                act(
+                  'PATCH',
+                  path,
+                  { missing_policy: 'use_available' },
+                  'The suite uses what is available.',
+                )
+              }
+            >
+              Use what is available
+            </button>
+            <button onClick={() => setMoreData(true)}>Send to Studio inbox (more data)</button>
+          </div>
+        )}
+      </details>
+      {data.inbox_items.map((item: any) => (
+        <small key={item.id}>
+          Studio inbox {item.studio_id ?? item.id} · more data · {item.state}
+          {item.released_version ? ` · released ${item.released_version}` : ''}
+        </small>
+      ))}
+      <Failure error={failure} />
+    </header>
   );
 }
 
@@ -458,7 +662,9 @@ function DataPlan({
   // E-005 §3: split by one or two properties; the seed is a named case set.
   const [split1, setSplit1] = useState<string>((plan.stratify_by ?? ['application_type'])[0]);
   const [split2, setSplit2] = useState<string>((plan.stratify_by ?? [])[1] ?? '');
-  const [setName, setSetName] = useState<string>(plan.case_set_name ?? '');
+  // D-047: an unnamed set is "Set A", "Set B"... (per seed, in the order this suite first used it).
+  const autoName: string = data.header?.case_set?.name ?? '';
+  const [setName, setSetName] = useState<string>(plan.case_set_name ?? autoName);
   // D-038: the bound environment's own edge cases, plus any the saved plan still requires (shown as missing).
   const edgeTags: string[] = Array.from(
     new Set([
@@ -499,9 +705,19 @@ function DataPlan({
   }
   return (
     <>
+      <p>
+        <strong>
+          Data plan of{' '}
+          {draft
+            ? `Draft v${((data.header?.versions ?? []).find((v: any) => v.state === 'saved')?.version ?? 0) + 1}`
+            : `Saved v${data.version}`}
+        </strong>{' '}
+        · cases come from <strong>{at(data.planned_on_env_version)}</strong>{' '}
+        <small>({data.planned_on_env_version})</small>
+      </p>
       <small>
-        A run never creates input data: it selects cases from {short(data.planned_on_env_version)}
-        &apos;s case catalog. {data.tasks.count} ready tasks
+        A run never creates input data: it selects cases from this environment version&apos;s case
+        catalog. {data.tasks.count} ready tasks
         {data.tasks.unmatched.length
           ? ` · unmatched: ${data.tasks.unmatched.join(', ')}`
           : ' · every task matches cases'}
@@ -549,7 +765,7 @@ function DataPlan({
           Case set
           <input
             value={setName}
-            placeholder="e.g. KYC set A"
+            placeholder={autoName || 'Set A'}
             onChange={(e) => setSetName(e.target.value)}
             disabled={!draft}
           />
@@ -558,7 +774,11 @@ function DataPlan({
             {draft && (
               <button
                 type="button"
-                onClick={() => setSeed(String(Math.floor(Math.random() * 90_000_000) + 10_000_000))}
+                onClick={() => {
+                  setSeed(String(Math.floor(Math.random() * 90_000_000) + 10_000_000));
+                  if (!plan.case_set_name || setName === plan.case_set_name || setName === autoName)
+                    setSetName(data.header?.case_set?.next_name ?? '');
+                }}
                 title="Pick a different set of cases (a new seed)"
               >
                 New set

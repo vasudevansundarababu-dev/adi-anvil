@@ -480,3 +480,15 @@ D-006 stays with Studio.
 - **Severity:** low (wording; scores unaffected).
 - **Status:** **fixed in 615122d** (owner's go, 23 Nov 2026). The report and package "limits" lines had the same
   stale text and were fixed too. Results already recorded keep their label.
+
+## E-008 / D-047 — project and suite layout (24 Nov 2026, built 14:30–14:50 CST)
+
+Owner approved: "Approved. You can build it now. I assume its only UI changes".
+
+- **Project page:** the left panel is now a header strip (name, status, Run benchmark, Mode, Environment rule "rule → @N · Qualified", Project ID, Template ID). Tabs: Tasks · Selection rules · Suites · Runs · Exports. Runs is new (the project's runs, from the existing `/runs?project=`). The "SME review is work package 2.9" line is removed (D-047.4).
+- **Suites tab:** suite, latest saved, draft (unsaved changes), environment per version ("v1: @8 pinned · v2 (draft): @11 (project rule)"), run size, leaderboard, runs, Open; "+ New suite".
+- **Suite page:** header with a version picker (Draft vN (unsaved changes) / Saved vN), Draft/Saved badge, Discard draft, Save suite version, Run this version (saved) or New draft. Four facts: environment ("This suite: @8 (pinned: reason) · Project rule: @11", with "Use the project rule" on a draft when they differ, D-047.5), run size, projected cost (set at New run: it depends on the models chosen), leaderboard (suite side). "Changed from saved vN" lists environment, data plan, Trust & Safety and task-count differences. "Can this suite run?" moves into the header as a collapsible list. Tabs 1–4 unchanged.
+- **Data plan** names the version it shows and its source environment (D-047.3). An unnamed case set is "Set A", "Set B"… per sampling seed, in the order the suite first used it; "New set" moves to the next letter (D-047.2). The case-set browser shows the same name instead of "seed N".
+- **Trust & Safety table:** headers nowrap with minimum column widths (D-047.1).
+- **Backend (minimal, read-only):** `suites/header.py` derives the header facts from existing rows; `view` gains `header`, `list_suites` versions gain `environment`, `run_size`, `leaderboard`; `cases.case_set` uses the default name. No migration, no writes, no change to admission or scoring. Leaderboard here is the suite side only; models are still judged at New run.
+- Tests: unit 696 passed (2 new); web `tsc --noEmit` exit 0. Backend restarted 14:42–14:44 with no run executing. The pages were not checked signed in (browser needs a person's sign-in).

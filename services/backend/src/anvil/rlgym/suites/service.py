@@ -13,7 +13,7 @@ from psycopg.types.json import Jsonb
 
 from anvil.rlgym.catalog import inbox, selection
 from anvil.rlgym.common import GymError, audit, emit, require, sha
-from anvil.rlgym.suites import trust_safety
+from anvil.rlgym.suites import header, trust_safety
 
 SLUG = re.compile(r"[^a-z0-9-]+")
 DEFAULT_PLAN = {
@@ -1561,6 +1561,8 @@ def view(c, ws, sv_id):
         "label": f"{sv['suite_id']}-v{sv['version']}"
         if sv["version"]
         else f"{sv['suite_id']} (draft)",
+        # E-008 / D-047: read-only header facts (version picker, environment and why, run size, leaderboard, changes).
+        "header": header.header(c, ws, sv),
     }
 
 
@@ -1583,6 +1585,10 @@ def list_suites(c, ws, pid):
                WHERE r.workspace_id=%s AND v.project_id=%s AND v.suite_id=%s ORDER BY r.created_at DESC""",
             (ws, pid, s["suite_id"]),
         ).fetchall()
+        versions = [
+            {**v, **header.table_row(c, ws, {**v, "project_id": pid, "suite_id": s["suite_id"]})}
+            for v in versions
+        ]
         out.append(
             {
                 **s,

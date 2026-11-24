@@ -1097,3 +1097,53 @@ body:has(#gym) {
   max-height: 240px;
   overflow: auto;
 }
+/* E-008: a page's facts in a header strip on top (project and suite pages), tabs underneath. */
+#gym .pagehead {
+  display: grid;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+#gym .pagehead h3 {
+  margin: 0;
+}
+#gym .pagehead .between {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+#gym .facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px 18px;
+}
+#gym .facts > span {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  min-width: 0;
+}
+#gym .facts > span > small:first-child {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+#gym .changed {
+  margin: 0;
+  padding: 7px 11px;
+  border-radius: 8px;
+  background: light-dark(#eff6ff, #1e2b3d);
+}
+/* D-047: Trust & Safety column headers never break mid-word. */
+#gym table.ts-table th {
+  white-space: nowrap;
+  word-break: keep-all;
+  hyphens: none;
+}
+#gym table.ts-table th:nth-child(1) { min-width: 150px; }
+#gym table.ts-table th:nth-child(2) { min-width: 200px; }
+#gym table.ts-table th:nth-child(3) { min-width: 120px; }
+#gym table.ts-table th:nth-child(4) { min-width: 90px; }
+#gym table.ts-table th:nth-child(5) { min-width: 220px; }
+#gym table.ts-table th:nth-child(6) { min-width: 120px; }
+#gym table.ts-table th:nth-child(7) { min-width: 150px; }
+#gym table.ts-table th:nth-child(8) { min-width: 100px; }

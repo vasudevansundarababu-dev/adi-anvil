@@ -467,7 +467,7 @@ export function SafetyTable({ path }: { path: string }) {
         {(d.delivered_as ?? '—').replace('_', ' ')}.
       </small>
       <div className="table-wrap">
-        <table>
+        <table className="ts-table">
           <thead>
             <tr>
               <th>Category</th>

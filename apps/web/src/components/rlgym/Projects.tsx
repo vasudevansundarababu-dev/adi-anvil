@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Fragment, useState } from 'react';
-import { GymApiError, send, short, when, wsBase } from './api';
+import { GymApiError, at, send, short, when, wsBase } from './api';
 import { SuiteEditor, SuitesTab } from './Suites';
 import { Badge, Env, Failure, Hash, Loading, Search, Tabs, useData, useGym } from './ui';
 import { HowScored, ScoredBy } from './Scoring';
@@ -169,50 +169,55 @@ export function ProjectPage({ id, tab, rest }: { id: string; tab: string; rest: 
       {() => {
         const p = project.data;
         return (
-          <div className="work">
-            <aside>
-              <Link href="/gym/projects">← Back to projects</Link>
-              <small>Project · from Authoring</small>
-              <h3>{p.name}</h3>
-              <Badge state={p.state} />
-              {p.state_reason ? <small>{p.state_reason}</small> : null}
-              <dl className="kv">
-                <dt>Mode</dt>
-                <dd>{p.mode === 'single_agent' ? 'Single agent' : 'Multi agent'}</dd>
-                <dt>Environment</dt>
-                <dd>
-                  {p.environments.map((e: any) => (
-                    <div key={e.alias}>
-                      <Env ok={e.ok} label={e.label} />
-                    </div>
-                  ))}
-                </dd>
-                <dt>Project ID</dt>
-                <dd>
-                  <code>{p.project_id}</code> (Authoring)
-                </dd>
-                <dt>Template ID</dt>
-                <dd>
-                  <code>
-                    {p.template_id} V{p.template_version}
-                  </code>{' '}
-                  (Studio)
-                </dd>
-              </dl>
-              <Link
-                href={p.state === 'ready' ? `/gym/runs/new?project=${p.project_id}` : '#'}
-                aria-disabled={p.state !== 'ready'}
-                title={p.state === 'ready' ? 'Run benchmark' : `Project is ${p.state}`}
-                style={p.state === 'ready' ? {} : { pointerEvents: 'none', opacity: 0.55 }}
-              >
-                Run benchmark
-              </Link>
-              <small>
-                Results for SME review are sent to this Authoring project (SME review is work
-                package 2.9).
-              </small>
-            </aside>
+          <div className="work wide">
             <main>
+              {/* E-008: the project's facts in a header strip on top, tabs underneath. */}
+              <header className="pagehead">
+                <Link href="/gym/projects">← Back to projects</Link>
+                <div className="between">
+                  <div className="row">
+                    <h3>{p.name}</h3>
+                    <Badge state={p.state} />
+                    <small>Project · from Authoring</small>
+                  </div>
+                  <Link
+                    className="button primary"
+                    href={p.state === 'ready' ? `/gym/runs/new?project=${p.project_id}` : '#'}
+                    aria-disabled={p.state !== 'ready'}
+                    title={p.state === 'ready' ? 'Run benchmark' : `Project is ${p.state}`}
+                    style={p.state === 'ready' ? {} : { pointerEvents: 'none', opacity: 0.55 }}
+                  >
+                    Run benchmark
+                  </Link>
+                </div>
+                {p.state_reason ? <small>{p.state_reason}</small> : null}
+                <div className="facts">
+                  <span>
+                    <small>Mode</small>
+                    {p.mode === 'single_agent' ? 'Single agent' : 'Multi agent'}
+                  </span>
+                  <span>
+                    <small>Environment rule</small>
+                    {p.environments.map((e: any) => (
+                      <Env
+                        key={e.alias}
+                        ok={e.ok}
+                        label={`${e.rule} → ${at(e.version_id)}${e.ok ? ' · Qualified' : ` · ${e.code}: ${e.reason}`}`}
+                      />
+                    ))}
+                  </span>
+                  <span>
+                    <small>Project ID</small>
+                    <code>{p.project_id}</code>
+                  </span>
+                  <span>
+                    <small>Template ID</small>
+                    <code>
+                      {p.template_id} V{p.template_version}
+                    </code>
+                  </span>
+                </div>
+              </header>
               <Tabs
                 current={tab}
                 items={[
@@ -223,8 +228,9 @@ export function ProjectPage({ id, tab, rest }: { id: string; tab: string; rest: 
                     href: `${base}/selection-rules`,
                     badge: p.overrides_waiting,
                   },
+                  { key: 'suites', label: 'Suites', href: `${base}/suites` },
+                  { key: 'runs', label: 'Runs', href: `${base}/runs` },
                   { key: 'exports', label: 'Exports', href: `${base}/exports` },
-                  { key: 'suites', label: 'Suites and runs', href: `${base}/suites` },
                 ]}
               />
               {tab === 'tasks' && <TasksTab project={id} />}
@@ -233,6 +239,7 @@ export function ProjectPage({ id, tab, rest }: { id: string; tab: string; rest: 
               )}
               {tab === 'exports' && <ExportsTab project={id} />}
               {tab === 'suites' && <SuitesTab project={id} />}
+              {tab === 'runs' && <RunsTab project={id} />}
             </main>
           </div>
         );
@@ -386,6 +393,60 @@ function TaskDetail({ project, taskId }: { project: string; taskId: string }) {
               <small>{data.runs_note}</small>
             </section>
           </main>
+        </div>
+      )}
+    </Loading>
+  );
+}
+
+function RunsTab({ project }: { project: string }) {
+  const { ws } = useGym();
+  const { data, error } = useData<any>(`${wsBase(ws)}/runs?project=${encodeURIComponent(project)}`);
+  return (
+    <Loading data={data} error={error}>
+      {() => (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Run</th>
+                <th>Suite</th>
+                <th>Models</th>
+                <th>State</th>
+                <th>Leaderboard</th>
+                <th>Started</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.items.length === 0 && (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'left' }}>
+                    No runs of this project yet.
+                  </td>
+                </tr>
+              )}
+              {data.items.map((r: any) => (
+                <tr key={r.id}>
+                  <td>
+                    <Link className="link" href={`/gym/runs/${r.id}`}>
+                      {r.id}
+                    </Link>
+                    <small>{r.name}</small>
+                  </td>
+                  <td>
+                    {r.suite?.name ?? r.suite?.id}
+                    <small>{r.suite?.version ? `v${r.suite.version}` : ''}</small>
+                  </td>
+                  <td>{(r.models ?? []).join(', ') || '—'}</td>
+                  <td>
+                    <Badge state={r.state} />
+                  </td>
+                  <td>{r.leaderboard ? 'On' : 'Off'}</td>
+                  <td>{when(r.created_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </Loading>

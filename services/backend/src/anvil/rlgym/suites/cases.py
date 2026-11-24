@@ -11,6 +11,7 @@
 
 from anvil.rlgym import integrations
 from anvil.rlgym.common import GymError, audit, require
+from anvil.rlgym.suites import header
 
 VIEWERS = ("rl_engineer", "admin")
 
@@ -74,7 +75,9 @@ def case_set(c, ws, sv_id):
         )
     return {
         "environment": env["id"],
-        "case_set": plan.get("case_set_name") or f"seed {plan['sampling_seed']}",
+        # D-047: an unnamed set gets "Set A", "Set B"... per seed, in the order this suite first used it.
+        "case_set": plan.get("case_set_name")
+        or header.default_case_set_name(c, ws, sv, plan["sampling_seed"]),
         "sampling_seed": plan["sampling_seed"],
         "cases": out,
         "short": short,

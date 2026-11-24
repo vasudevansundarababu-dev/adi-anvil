@@ -99,3 +99,8 @@ export function age(value?: string | null) {
   const hours = Math.round(minutes / 60);
   return hours < 48 ? `${hours} h` : `${Math.round(hours / 24)} days`;
 }
+
+// "golden-kyc-openenv@11" → "@11" (the contract is named once, in the rule).
+export function at(versionId?: string | null) {
+  return versionId ? `@${versionId.split('@').pop()}` : '—';
+}
