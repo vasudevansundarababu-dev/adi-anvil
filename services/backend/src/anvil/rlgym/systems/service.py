@@ -339,6 +339,8 @@ def _validate(ctx, body):
         "VALIDATION_FAILED",
         "params and limits are objects",
     )
+    # D-052: an empty setting (null) is the same as leaving it out: not sent to the model, one config hash either way.
+    params = {k: v for k, v in params.items() if v is not None}
     _num(params, "temperature", 0)
     _num(params, "max_output_tokens", 1)
     _num(params, "timeout_s", 1)

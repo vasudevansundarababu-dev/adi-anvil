@@ -199,17 +199,21 @@ function ModelForm({
   const [name, setName] = useState(initial.name ?? '');
   const [modelId, setModelId] = useState(initial.model_id ?? '');
   const [revision, setRevision] = useState(initial.hf_revision ?? '');
-  const [temperature, setTemperature] = useState(String(initial.params?.temperature ?? 0));
+  const [temperature, setTemperature] = useState(
+    initial.params?.temperature == null ? '' : String(initial.params.temperature),
+  );
   const [maxTokens, setMaxTokens] = useState(String(initial.params?.max_output_tokens ?? 4096));
   const [timeout, setTimeoutS] = useState(String(initial.params?.timeout_s ?? 120));
   const [rpm, setRpm] = useState(String(initial.limits?.rpm ?? 60));
   const [spend, setSpend] = useState(String(initial.limits?.spend_per_episode_usd ?? 0.4));
   const [note, setNote] = useState('');
   const [failure, setFailure] = useState<GymApiError | null>(null);
+  const [saving, setSaving] = useState(false);
   const keys = useData<any>(`${wsBase(ws)}/keys?provider=${provider}`);
   const key = keys.data?.items?.find((k: any) => k.is_default && k.status !== 'revoked');
   async function save() {
     setFailure(null);
+    setSaving(true);
     const body = {
       kind,
       provider,
@@ -217,7 +221,8 @@ function ModelForm({
       model_id: modelId,
       hf_revision: kind === 'open_weight' && provider === 'huggingface' ? revision : undefined,
       params: {
-        temperature: Number(temperature),
+        // Empty: no temperature is sent (some models, e.g. Haiku 5.5, reject sampling parameters).
+        temperature: temperature.trim() === '' ? undefined : Number(temperature),
         max_output_tokens: Number(maxTokens),
         timeout_s: Number(timeout),
       },
@@ -228,17 +233,38 @@ function ModelForm({
       const r = initial.edit
         ? await send('POST', `${wsBase(ws)}/systems/${initial.system_id}/versions`, body)
         : await send('POST', `${wsBase(ws)}/systems`, body);
+      if (initial.edit && !r.created) {
+        // D-052: settings identical to an existing version make no new one. Say so here, never silently.
+        setFailure(
+          new GymApiError({
+            code: 'NO_NEW_VERSION',
+            status: 200,
+            message: `Not saved as a new version: these settings are exactly version ${r.version}'s. Change a setting to make a new version, or use version ${r.version}.`,
+          }),
+        );
+        done();
+        return;
+      }
       say(
         initial.edit
-          ? r.created
-            ? `Saved as version ${r.version}.`
-            : 'No change: same settings as an existing version.'
+          ? `Saved as version ${r.version}${r.probe?.result ? ` · test: ${r.probe.result}` : ''}.`
           : `Model ${r.system.name} saved and tested.`,
       );
       done();
       close();
     } catch (e) {
-      setFailure(e as GymApiError);
+      console.error('[rlgym] model save failed:', e);
+      setFailure(
+        e instanceof GymApiError
+          ? e
+          : new GymApiError({
+              code: 'SAVE_FAILED',
+              status: 0,
+              message: `Save failed: ${String(e)}`,
+            }),
+      );
+    } finally {
+      setSaving(false);
     }
   }
   return (
@@ -321,8 +347,10 @@ function ModelForm({
               min={0}
               step={0.1}
               value={temperature}
+              placeholder="not sent"
               onChange={(e) => setTemperature(e.target.value)}
             />
+            <small>Leave empty to send no temperature.</small>
           </label>
           <label>
             Max output tokens
@@ -364,8 +392,8 @@ function ModelForm({
           </label>
         )}
         <div className="row">
-          <button className="primary" disabled={!key || !modelId.trim()} onClick={save}>
-            Save and test
+          <button className="primary" disabled={saving || !key || !modelId.trim()} onClick={save}>
+            {saving ? 'Saving…' : 'Save and test'}
           </button>
           <button onClick={close}>Close</button>
         </div>
@@ -461,7 +489,7 @@ function ModelPage({ id }: { id: string }) {
               )}
               <dt>Parameters</dt>
               <dd>
-                temperature {data.latest.params.temperature} · max output{' '}
+                temperature {data.latest.params.temperature ?? 'not sent'} · max output{' '}
                 {data.latest.params.max_output_tokens} · timeout {data.latest.params.timeout_s} s
               </dd>
               <dt>Limits</dt>

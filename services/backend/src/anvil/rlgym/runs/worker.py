@@ -295,6 +295,7 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
     transcript, events, final = [], [], None
     agent_log = {}
     aliaser = None
+    live_caller = None
     try:
         reset = session.request({"op": "reset", "case_id": episode["case_id"], "inject": inject})
         if not reset.get("ok"):
@@ -327,7 +328,6 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         def real(value):
             return aliaser.back(value) if aliaser else value
 
-        live_caller = None
         if model.get("live"):
             from anvil.rlgym.live.agent import LiveCaller, live_agent
 
@@ -409,6 +409,23 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         end = state.pop("collections", None)  # kept only as the end snapshot, never twice
         if snapshots is not None:
             snapshots["end"] = end
+    except Exception as exc:
+        # D-050: an episode that stops with an error keeps what it did so far (kept apart from sealed evidence).
+        exc.partial = {
+            "transcript": transcript,
+            "tool_events": events,
+            "agent_log": agent_log,
+            **({"id_aliases": aliaser.record()} if aliaser else {}),
+            "live": bool(live_caller),
+            "tokens": {
+                "in": live_caller.tokens_in if live_caller else 0,
+                "out": live_caller.tokens_out if live_caller else 0,
+            },
+            "cost_usd": float(live_caller.cost) if live_caller else 0.0,
+            "steps": len(transcript),
+            "wall_ms": int((time.monotonic() - started) * 1000),
+        }
+        raise
     finally:
         session.close()
     wall_ms = int((time.monotonic() - started) * 1000)
@@ -519,6 +536,62 @@ def seal(ws, episode, bundle):
     return f"local-evidence://{rel}", digest
 
 
+def keep_trajectory(ws, episode, exc, outcome, message):
+    """D-050: write an errored or timed-out episode's trajectory so far, read-only, next to its sealed evidence.
+    It is not sealed evidence: never scored, never counted, labelled with the error. A failure to write it never hides
+    the episode's own error. → (ref, sha256) or None."""
+    partial = getattr(exc, "partial", None)
+    if not partial:
+        return None
+    bundle = {
+        "schema": "rlgym.errored-episode.v1",
+        "sealed": False,
+        "scored": False,
+        "outcome": outcome,
+        "error": {"code": getattr(exc, "code", None), "message": message[:500]},
+        "run_id": episode["run_id"],
+        "episode_id": episode["id"],
+        "kind": episode["kind"],
+        "task": {"task_id": episode["task_id"], "revision": episode["task_revision"]},
+        "case_id": episode["case_id"],
+        "attempt": episode["attempt"],
+        "try": episode["tries"],
+        "system": {"system_id": episode["system_id"]},
+        "synthetic": not partial.get("live"),
+        **partial,
+    }
+    try:
+        raw = json.dumps(
+            bundle, sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str
+        ).encode()
+        rel = f"{ws}/{episode['run_id']}/{episode['id']}-t{episode['tries']}.errored.json"
+        path = scoring.EVIDENCE_ROOT / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "xb") as handle:  # never overwrite
+            handle.write(raw)
+        os.chmod(path, 0o444)
+    except (OSError, TypeError, ValueError):
+        return None
+    return f"local-evidence://{rel}", hashlib.sha256(raw).hexdigest()
+
+
+def _kept_event(c, ws, episode, kept):
+    if kept:
+        emit(
+            c,
+            ws,
+            "episode.trajectory_kept",
+            episode["id"],
+            {
+                "episode_id": episode["id"],
+                "run_id": episode["run_id"],
+                "try": episode["tries"],
+                "ref": kept[0],
+                "sha256": kept[1],
+            },
+        )
+
+
 def _finish_attempt(c, episode, outcome, note=None):
     c.execute(
         "UPDATE runs.episode_attempts SET ended_at=now(), outcome=%s, note=%s WHERE episode_id=%s AND try=%s",
@@ -534,8 +607,10 @@ def run_episode(ws, episode, session_factory=None):
         ):
             raise RuntimeError("environment instance is not running")
         bundle = execute(episode, run, manifest, instance, actor, session_factory)
-    except TimeoutError:
+    except TimeoutError as exc:
+        kept = keep_trajectory(ws, episode, exc, "timed_out", "episode timeout")
         with system_scope(ws) as c:
+            _kept_event(c, ws, episode, kept)
             _finish_attempt(
                 c, episode, "timed_out", f"no result within {run['episode_timeout_s']} s"
             )
@@ -553,7 +628,9 @@ def run_episode(ws, episode, session_factory=None):
             "LIVE_DISABLED",
             "TASK_NO_INSTRUCTIONS",
         )
+        kept = keep_trajectory(ws, episode, exc, "errored", message)
         with system_scope(ws) as c:
+            _kept_event(c, ws, episode, kept)
             _finish_attempt(c, episode, "errored", message[:500])
             # A live call that may have been delivered, a cap, or a disabled gateway is never retried automatically.
             again = not final and episode["tries"] <= run["infra_retries"]
