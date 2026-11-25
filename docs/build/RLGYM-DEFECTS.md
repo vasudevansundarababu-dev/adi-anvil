@@ -565,3 +565,10 @@ Authoring re-exports the same task revisions and packages, now with `policy_id_m
   - after discarding draft 626b0500, a new draft has 4 tasks with a map, 8 cases and T&S off, and saves as v6;
   - v6 admission has 8 episodes, $8, no failures and 4 captured maps.
 - **Tests:** 11 new unit tests (`test_rlgym_d056_attach_unit.py`, written first), and the D-056 import/manifest test updated. Unit 747 passed; ruff clean; web `tsc --noEmit` exit 0.
+- **Deployed 25 Nov 2026 09:18 CST with no run or episode active:**
+  - backup `.local/backups/rlgym-20261125-091747-before-migration-065.sql.gz` (23.7 MB, .sha256 checked, complete dump);
+  - migration 065, then the API, worker and web restarted at 09:18:07;
+  - digests identical before and after: task imports, suite tasks and versions, runs, manifests, sealed evidence, scores, receipts, exports;
+  - health: API and database ready, /gym 200;
+  - suite v5 admission (rolled back): 8 episodes, $8, no failures;
+  - 0 maps attached so far.
