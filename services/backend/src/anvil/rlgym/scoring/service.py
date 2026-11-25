@@ -253,6 +253,49 @@ def _public_case(case_id, start):
     return out
 
 
+def judgment_results(manifest, episode, bundle, reference, vctx, configs):
+    """{block_id: line} for every KYC Judgment check of this episode's criteria (template blocks and RL Gym extra
+    blocks of kind "judgment"), or {} when there are none (every other template: no change)."""
+    blocks = [
+        b
+        for _, bs in ((vctx or {}).get("blocks") or {}).items()
+        for b in bs or []
+        if b.get("kind") == "judgment"
+    ] + [
+        b
+        for _, row in configs
+        for b in (row["config"].get("extra_blocks") or [])
+        if b.get("kind") == "judgment"
+    ]
+    if not blocks:
+        return {}
+    from anvil.rlgym.scoring import judgment
+
+    jm = manifest.get("judgment") or {}
+    case = (jm.get("cases") or {}).get(episode["case_id"])
+    if case is not None and not case.get("submitted_at"):
+        start = (bundle.get("snapshots") or {}).get("start") or {}
+        app = next(
+            (
+                a
+                for a in start.get("applications") or []
+                if a.get("application_id") == episode["case_id"]
+            ),
+            {},
+        )
+        case = {**case, "submitted_at": app.get("submitted_at")}
+    x = {
+        "library": jm.get("library"),
+        "case": case,
+        "fired": ((bundle.get("scenario_events") or {}).get("fired")) or [],
+        "transcript": bundle.get("transcript"),
+        "aliases": (bundle.get("id_aliases") or {}).get("aliases"),
+        "final": bundle.get("final_output"),
+        "reference": reference,
+    }
+    return {b["id"]: judgment.evaluate(b["check"], x) for b in blocks}
+
+
 def plugin_results(c, episode, manifest, vctx, bundle, reference):
     """Run each bound plug-in once for this episode with all its blocks (D22). → {block_id: result line}."""
     from anvil.rlgym.plugins import runner
@@ -385,6 +428,11 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
     if vctx and bundle.get("snapshots") and bundle["snapshots"].get("end") is not None:
         evidence["snapshots"] = bundle["snapshots"]
     configs = _configs(c, ws, pass_row["evaluator_versions"])
+    # KYC Judgment v1 (G2): judgment lines are computed here, outside the sandbox (they need the pinned policy library
+    # frozen in the manifest), and handed to the runner like plug-in results.
+    judgment_lines = judgment_results(
+        manifest, episode, bundle, ref_row["reference"], vctx, configs
+    )
     by_framework = {}
     for ev, row in configs:
         by_framework.setdefault(row["framework_id"], []).append((ev, row))
@@ -407,11 +455,14 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
                     "slots": vctx["slots"],
                     "expected_values_from": vctx["expected_values_from"],
                 }
-                if blocks and row["config"].get("runner") == "verifier_blocks"
+                if (blocks or row["config"].get("extra_blocks"))
+                and row["config"].get("runner") == "verifier_blocks"
                 else {}
             )
             if extra and plugin_lines:
                 extra["plugin_results"] = plugin_lines
+            if extra and judgment_lines:
+                extra["judgment_results"] = judgment_lines
             if extra and row["config"].get("judge"):
                 # A live judge for Rubric blocks (behind an approval); the mock judge stays the default.
                 from anvil.rlgym.live import judge as live_judge
@@ -443,7 +494,7 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
         for (ev, row), verdict in zip(group, verdicts, strict=True):
             results[ev["criterion_id"]] = (ev, row, verdict)
     total_w = earned = 0.0
-    blocked, failed, errors = [], [], []
+    blocked, failed, errors, not_applicable = [], [], [], []
     gate_failed = []
     # E-002 §4.3/§9.2: a criterion consumed only by clauses that were Skipped (not scored), Unresolved (data missing:
     # excluded, reported) or a Setup gap (excluded, reported) is taken out of the score. No clauses: no change.
@@ -492,6 +543,9 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
             }
         if prof and (verdict in SCORABLE or verdict == "blocked"):
             counted[criterion_id] = verdict
+        if v.get("critical"):
+            # §15.4: invented evidence fails the task whatever its total.
+            gate_failed.append(criterion_id)
         section = row["evidence_type"]
         refs = [f"{sealed['bundle_ref']}#{section}"] if section in evidence else []
         lines = v.get("block_lines")
@@ -545,6 +599,9 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
                     gate_failed.append(criterion_id)
         elif verdict == "error":
             errors.append(criterion_id)
+        elif verdict == "not_applicable":
+            # Spec §16: a check that doesn't apply to this case: out of both the points and the maximum, never blocked.
+            not_applicable.append(criterion_id)
         elif criterion_id in by_clause:
             pass  # reported with its clause outcome below, never counted as blocked
         else:

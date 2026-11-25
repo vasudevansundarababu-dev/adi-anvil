@@ -299,3 +299,184 @@ def test_the_clock_is_the_runtime_sequence_on_the_observation():
         {"step": 2, "tool": "recommend", "observation": {"ok": True, "sequence": 9}},
     ]
     assert judgment.recommend_sequence(real) == 9
+
+
+# --- judgment.evaluate: one check per verifier line (computed outside the sandbox, like plug-ins) -----------------------
+
+REF_V2 = {
+    "recommendation": "request_information",
+    "officer_verification": False,
+    "risk_rating": {"required": True, "level": "low"},
+    "parties": [
+        {"party_id": "p1", "outcome": "clear", "requests": [], "referral": None},
+        {"party_id": "p2", "outcome": "request_information", "requests": ["tin"], "referral": None},
+    ],
+    "rules_applied": [
+        {
+            "rule_id": "FED-ID",
+            "version": 1,
+            "governs": False,
+            "overlaps_with": [{"rule_id": "CA-ID", "version": 1}],
+        },
+        {
+            "rule_id": "CA-ID",
+            "version": 1,
+            "governs": True,
+            "overlaps_with": [{"rule_id": "FED-ID", "version": 1}],
+        },
+        {"rule_id": "GB-03", "version": 2},
+    ],
+}
+FINAL = {
+    "recommendation": "request_information",
+    "officer_verification": False,
+    "risk_rating": {"level": "low"},
+    "rules_applied": [
+        {"rule_id": "FED-ID", "version": 1, "governs": False},
+        {"rule_id": "CA-ID", "version": 1, "governs": True},
+        {"rule_id": "GB-03", "version": 2},
+    ],
+    "assessments": [
+        {"party_id": "PTY-1", "outcome": "clear", "issues": []},
+        {"party_id": "PTY-2", "outcome": "request_information", "issues": [], "requests": ["tin"]},
+    ],
+    "notices_considered": ["bulletin-0001"],
+    "audit_trail": [entry(data_seen=["APP-1", "DOC-1"], rules_applied=[])],
+}
+ALIASES2 = {**ALIASES, "p1": "PTY-1", "p2": "PTY-2"}
+FIRED2 = [{**FIRED[0], "notice_id": "bulletin-0001"}]
+
+
+def inputs(**over):
+    base = {
+        "library": LIB,
+        "case": CASE,
+        "fired": FIRED2,
+        "transcript": TRANSCRIPT + OBS,
+        "aliases": ALIASES2,
+        "final": FINAL,
+        "reference": REF_V2,
+    }
+    base.update(over)
+    return base
+
+
+def check(name, **over):
+    return judgment.evaluate(name, inputs(**over))
+
+
+def test_all_checks_pass_on_a_right_episode():
+    for name in ("rules_applied", "rule_in_force", "audit_faithfulness", "risk_rating", "decision"):
+        out = check(name)
+        assert out["verdict"] == "pass", (name, out)
+        assert out["critical"] is False
+
+
+def test_a_missed_bulletin_fails_the_rule_in_force():
+    missed = {
+        **FINAL,
+        "notices_considered": [],
+        "rules_applied": [*FINAL["rules_applied"][:2], {"rule_id": "GB-03", "version": 1}],
+    }
+    out = check("rule_in_force", final=missed)
+    assert out["verdict"] == "fail"
+    assert out["actual"]["notices_missed"] == ["bulletin-0001"]
+    assert out["actual"]["stale"] == [{"rule_id": "GB-03", "cited": 1, "in_force": 2}]
+
+
+def test_no_bulletin_in_the_case_is_not_applicable():
+    out = check("rule_in_force", fired=[])
+    assert out["verdict"] == "not_applicable"
+
+
+def test_invented_evidence_is_a_critical_fail():
+    out = check(
+        "audit_faithfulness",
+        final={**FINAL, "audit_trail": [entry(data_seen=["DOC-999"], rules_applied=[])]},
+    )
+    assert out["verdict"] == "fail" and out["critical"] is True
+    assert (
+        check("audit_faithfulness", final={k: v for k, v in FINAL.items() if k != "audit_trail"})[
+            "verdict"
+        ]
+        == "fail"
+    )
+
+
+def test_risk_rating_not_required_is_not_applicable_unless_done_needlessly():
+    ref = {**REF_V2, "risk_rating": {"required": False}}
+    assert (
+        check(
+            "risk_rating",
+            reference=ref,
+            final={k: v for k, v in FINAL.items() if k != "risk_rating"},
+        )["verdict"]
+        == "not_applicable"
+    )
+    assert check("risk_rating", reference=ref)["verdict"] == "fail"
+
+
+def test_risk_rating_consequences_medium_and_high():
+    medium = {**REF_V2, "risk_rating": {"required": True, "level": "medium"}}
+    ok = {
+        **FINAL,
+        "risk_rating": {"level": "medium"},
+        "recommendation": "ready_for_approval",
+        "officer_verification": True,
+    }
+    assert check("risk_rating", reference=medium, final=ok)["verdict"] == "pass"
+    assert (
+        check("risk_rating", reference=medium, final={**ok, "officer_verification": False})[
+            "verdict"
+        ]
+        == "fail"
+    )
+    high = {**REF_V2, "risk_rating": {"required": True, "level": "high"}}
+    edd = {
+        **FINAL,
+        "risk_rating": {"level": "high"},
+        "recommendation": "specialist_review",
+        "assessments": [
+            {"party_id": "PTY-1", "outcome": "specialist_review", "issues": [], "referral": "edd"}
+        ],
+    }
+    assert check("risk_rating", reference=high, final=edd)["verdict"] == "pass"
+    assert (
+        check("risk_rating", reference=high, final={**edd, "recommendation": "ready_for_approval"})[
+            "verdict"
+        ]
+        == "fail"
+    )
+
+
+def test_decision_per_party_with_aliases_mapped_back():
+    assert check("decision")["verdict"] == "pass"
+    wrong_party = {
+        **FINAL,
+        "assessments": [
+            {
+                "party_id": "PTY-1",
+                "outcome": "request_information",
+                "issues": [],
+                "requests": ["tin"],
+            },
+            {"party_id": "PTY-2", "outcome": "clear", "issues": []},
+        ],
+    }
+    assert check("decision", final=wrong_party)["verdict"] == "fail"
+    one_off = {**FINAL, "officer_verification": True}
+    assert check("decision", final=one_off)["verdict"] == "partial"
+    assert (
+        check("decision", final={**FINAL, "recommendation": "ready_for_approval"})["verdict"]
+        == "fail"
+    )
+
+
+def test_cases_awaiting_the_sme_are_not_graded():
+    out = check("rules_applied", reference={**REF_V2, "awaiting_sme": True})
+    assert out["verdict"] == "not_applicable" and "awaiting" in out["expected"]
+
+
+def test_missing_reference_or_library_is_blocked_never_a_pass():
+    assert check("rules_applied", library=None)["verdict"] == "blocked"
+    assert check("decision", reference=None)["verdict"] == "blocked"

@@ -476,6 +476,7 @@ def run_blocks(job):
     lines, detail = [], []
     share_total, earned_share = 0.0, 0.0
     given = None
+    critical = False
     for b in blocks:
         kind = b.get("kind") or ("plugin" if b.get("plugin") else None)
         if kind == "plugin":
@@ -502,6 +503,16 @@ def run_blocks(job):
             verdict, actual, expected = _request_party(b, ctx)
         elif kind == "recommended":
             verdict, actual, expected = _recommended(b, ctx)
+        elif kind == "judgment":
+            # KYC Judgment v1 (G2): computed by the scoring service outside the sandbox (it needs the pinned policy
+            # library), like a plug-in; a line that didn't run is blocked, never a pass.
+            got = (job.get("judgment_results") or {}).get(b["id"])
+            if got is None:
+                verdict, actual, expected = "blocked", None, "judgment check did not run"
+            else:
+                verdict, actual, expected = got["verdict"], got.get("actual"), got.get("expected")
+                if got.get("critical") and verdict == "fail":
+                    critical = True
         elif kind == "rubric":
             verdict, actual, expected = _rubric(b, ctx)
             share = float(b.get("share_percent") or 0)
@@ -524,10 +535,25 @@ def run_blocks(job):
                 "on_fail": b.get("on_fail"),
             }
         )
-        mark = {"pass": "✓", "fail": "✕", "blocked": "…"}[verdict]
+        mark = {"pass": "✓", "fail": "✕", "blocked": "…", "partial": "~", "not_applicable": "–"}[
+            verdict
+        ]
         detail.append(f"{mark} {b['id']}: expected {expected!r}, actual {actual!r}")
+    # Spec §16: a line that doesn't apply to this case never decides; a criterion none of whose lines apply is
+    # not applicable (excluded from both the points and the maximum).
+    if lines and all(line["verdict"] == "not_applicable" for line in lines):
+        return {"verdict": "not_applicable", "points": None, "detail": detail, "block_lines": lines}
     if any(line["verdict"] == "blocked" for line in lines):
         return {"verdict": "blocked", "points": None, "detail": detail, "block_lines": lines}
+    if critical:
+        detail.append("critical: invented evidence fails the task (§15.4)")
+        return {
+            "verdict": "fail",
+            "points": 0.0,
+            "critical": True,
+            "detail": detail,
+            "block_lines": lines,
+        }
     shared = {
         b["id"]
         for b in blocks
@@ -535,6 +561,8 @@ def run_blocks(job):
     }
     if any(line["verdict"] == "fail" and line["block_id"] not in shared for line in lines):
         return {"verdict": "fail", "points": 0.0, "detail": detail, "block_lines": lines}
+    if any(line["verdict"] == "partial" for line in lines):
+        return {"verdict": "partial", "points": None, "detail": detail, "block_lines": lines}
     points = round((100 - share_total + earned_share) / 100, 4) if share_total <= 100 else 0.0
     verdict = "pass" if points >= 1 else "partial"
     return {"verdict": verdict, "points": points, "detail": detail, "block_lines": lines}

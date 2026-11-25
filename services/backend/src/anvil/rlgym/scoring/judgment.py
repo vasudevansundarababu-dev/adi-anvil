@@ -148,3 +148,152 @@ def audit_faithfulness(trail, transcript, aliases, expected):
                 )
     out["critical"] = bool(out["invented"])
     return out
+
+
+# --- one check per verifier line (computed by the scoring service outside the sandbox, like a plug-in) -----------------
+
+
+def _line(verdict, actual=None, expected=None, critical=False):
+    return {"verdict": verdict, "actual": actual, "expected": expected, "critical": critical}
+
+
+def _real(aliases, value):
+    back = {alias: real for real, alias in (aliases or {}).items()}
+    return back.get(value, value)
+
+
+def evaluate(check, x):
+    """One KYC Judgment check. x: {library, case, fired, transcript, aliases, final, reference (v2)}. Verdicts: pass,
+    partial, fail, not_applicable (excluded from points and maximum), blocked (evidence or truth missing; never a
+    pass). `critical`: invented evidence fails the task whatever its total (§15.4)."""
+    ref, final = x.get("reference"), x.get("final") or {}
+    if ref is None:
+        return _line("blocked", expected="the case's reference answers (reference.v2)")
+    if ref.get("awaiting_sme"):
+        return _line("not_applicable", expected="awaiting the SME's outcome: not graded")
+    fired = [
+        f
+        for f in x.get("fired") or []
+        if (f.get("published_at_sequence") or 0) < recommend_sequence(x.get("transcript"))
+    ]
+    if check == "rules_applied":
+        if not x.get("library") or not x.get("case"):
+            return _line("blocked", expected="the pinned policy library and the case's facts")
+        exp = expected_rules(x["library"], x["case"], x.get("fired"), x.get("transcript"))
+        truth = [r for r in ref.get("rules_applied") or [] if "governs" in r]
+        out = rules_applied(
+            exp,
+            final.get("rules_applied"),
+            truth or None,
+            final.get("recommendation") == ref.get("recommendation"),
+        )
+        return _line(
+            out["verdict"],
+            {k: out[k] for k in ("missing", "extra", "stale", "governs_wrong")},
+            [{"rule_id": e["rule_id"], "version": e["version"]} for e in exp],
+        )
+    if check == "rule_in_force":
+        if not fired:
+            return _line("not_applicable", expected="no bulletin was published in this episode")
+        cited = {
+            g.get("rule_id"): int(g.get("version") or 0)
+            for g in final.get("rules_applied") or []
+            if isinstance(g, dict)
+        }
+        stale = [
+            {"rule_id": f["rule_id"], "cited": cited[f["rule_id"]], "in_force": f["to_version"]}
+            for f in fired
+            if f["rule_id"] in cited and cited[f["rule_id"]] != f["to_version"]
+        ]
+        considered = set(final.get("notices_considered") or [])
+        missed = [
+            f["notice_id"] for f in fired if f.get("notice_id") and f["notice_id"] not in considered
+        ]
+        ok = not stale and not missed
+        return _line(
+            "pass" if ok else "fail",
+            {"stale": stale, "notices_missed": missed},
+            {
+                "in_force": {f["rule_id"]: f["to_version"] for f in fired},
+                "notices": [f.get("notice_id") for f in fired],
+            },
+        )
+    if check == "audit_faithfulness":
+        trail = final.get("audit_trail")
+        if not isinstance(trail, list) or not trail:
+            return _line("fail", {"audit_trail": None}, "an audit trail, one entry per SOP step")
+        exp = (
+            expected_rules(x["library"], x["case"], x.get("fired"), x.get("transcript"))
+            if x.get("library") and x.get("case")
+            else []
+        )
+        out = audit_faithfulness(trail, x.get("transcript"), x.get("aliases"), exp)
+        bad = out["invented"] or out["fact_mismatches"] or out["rules_not_read"]
+        return _line(
+            "fail" if bad else "pass",
+            {k: v for k, v in out.items() if k != "critical" and v},
+            "every id seen, every fact as recorded, every rule read",
+            critical=out["critical"],
+        )
+    if check == "risk_rating":
+        rr = ref.get("risk_rating")
+        if rr is None:
+            return _line("blocked", expected="the reference's risk rating")
+        given = final.get("risk_rating") if isinstance(final.get("risk_rating"), dict) else None
+        if not rr.get("required"):
+            if given and given.get("level"):
+                return _line(
+                    "fail", {"risk_rating": given}, "no risk rating (not required for this account)"
+                )
+            return _line("not_applicable", expected="no risk rating required for this account")
+        level = (given or {}).get("level")
+        problems = []
+        if level != rr.get("level"):
+            problems.append(f"level {level!r}, expected {rr.get('level')!r}")
+        if rr.get("level") == "medium" and not (
+            final.get("recommendation") == "ready_for_approval"
+            and final.get("officer_verification") is True
+        ):
+            problems.append("medium risk: ready_for_approval with the officer verification flag")
+        if rr.get("level") == "high":
+            referrals = {
+                a.get("referral") for a in final.get("assessments") or [] if isinstance(a, dict)
+            }
+            if final.get("recommendation") != "specialist_review" or "edd" not in referrals:
+                problems.append("high risk: an edd referral and specialist_review, no approval")
+        return _line(
+            "fail" if problems else "pass", {"risk_rating": given, "problems": problems}, rr
+        )
+    if check == "decision":
+        if final.get("recommendation") != ref.get("recommendation"):
+            return _line(
+                "fail",
+                {"recommendation": final.get("recommendation")},
+                {"recommendation": ref.get("recommendation")},
+            )
+        got = {
+            _real(x.get("aliases"), a.get("party_id")): a
+            for a in final.get("assessments") or []
+            if isinstance(a, dict)
+        }
+        off = []
+        if bool(final.get("officer_verification")) != bool(ref.get("officer_verification")):
+            off.append("officer_verification")
+        for p in ref.get("parties") or []:
+            a = got.get(p["party_id"]) or {}
+            if a.get("outcome") != p.get("outcome"):
+                off.append(f"{p['party_id']}: outcome")
+            if set(a.get("requests") or []) != set(p.get("requests") or []):
+                off.append(f"{p['party_id']}: requests")
+            if (a.get("referral") or None) != (p.get("referral") or None):
+                off.append(f"{p['party_id']}: referral")
+        verdict = "pass" if not off else "partial" if len(off) == 1 else "fail"
+        return _line(
+            verdict,
+            {"off": off},
+            {
+                "parties": ref.get("parties"),
+                "officer_verification": ref.get("officer_verification"),
+            },
+        )
+    raise ValueError(f"unknown judgment check {check}")
