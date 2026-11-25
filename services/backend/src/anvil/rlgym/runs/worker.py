@@ -112,6 +112,14 @@ def recover_leases(ws):
             )
 
 
+def _offered_operations(session):
+    """The environment's offered operations, or None when it doesn't serve them (older images)."""
+    try:
+        return session.request({"op": "operations"}).get("operations")
+    except RuntimeError:
+        return None
+
+
 def startable(env, manifest):
     """None when the run may start this environment version, else why not. The same versions selection allows: a
     qualified one, or, for a run whose frozen manifest is test_only, a Studio test-channel version that isn't revoked,
@@ -404,6 +412,10 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
                 # On Studio's own image the task names the application under review (OpenEnv B1).
                 world=openenv.KIND if on_openenv else "stub",
                 application_id=shown(episode["case_id"]) if on_openenv else None,
+                # The offered operations (schemas), as a model is given them: recommend's policy_bundle const.
+                operations=_offered_operations(session)
+                if on_openenv and str(model["model_id"]).startswith("mock/judgment-")
+                else None,
             )
         action = next(policy)
         for step in range(1, MAX_STEPS + 1):

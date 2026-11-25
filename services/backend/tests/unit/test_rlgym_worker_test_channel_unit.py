@@ -35,3 +35,10 @@ def test_an_unqualified_real_version_never_starts():
 
 def test_the_worker_uses_it():
     assert 'startable(env, run["manifest"])' in inspect.getsource(worker.prepare_runs)
+
+
+def test_a_mock_on_studios_image_gets_the_offered_operations():
+    """The Judgment mocks take recommend's policy_bundle from the offered schema (run-0238: refused otherwise)."""
+    src = inspect.getsource(worker)
+    i = src.index("policy = mock_provider.agent(")
+    assert "operations=" in src[i : i + 900]

@@ -127,3 +127,22 @@ def test_a_not_eligible_reference_is_recorded_as_not_eligible():
     assert next(e for e in events if e["tool"] == "recommend")["args"]["decision"] == "not_eligible"
     assert "not_eligible" in final["rationale"]
     assert judgment.evaluate("decision", {"reference": r, "final": final})["verdict"] == "pass"
+
+
+def test_the_recommend_call_carries_the_offered_policy_bundle():
+    """test@3 fixes policy_bundle to kyc-judgment.library@1; the reference agent reads it from the offered schema."""
+    ops = [
+        {
+            "operation_id": "recommend",
+            "input_schema": {"properties": {"policy_bundle": {"const": "kyc-judgment.library@1"}}},
+        }
+    ]
+    gen = reference.agent(ACTOR, AFTER, "app-1", [], operations=ops)
+    action, obs = (
+        next(gen),
+        {"ok": True, "output": {"records": [{"party_id": "p1", "revision": 1}]}},
+    )
+    while "final" not in action:
+        if action["tool"] == "recommend":
+            assert action["args"]["policy_bundle"] == "kyc-judgment.library@1"
+        action = gen.send(obs)

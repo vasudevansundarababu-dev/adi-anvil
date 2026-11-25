@@ -8,13 +8,44 @@ The rule in force at the recommend call is graded from these records (scoring/ju
 no events, so other bundles keep their shape.
 """
 
-COLLECTION = "scenario_events_fired"  # Studio runtime cc7af5a
+COLLECTION = "scenario_events_fired"  # Studio runtime cc7af5a (generator up to 2.3.0)
+
+
+def _fired_270(end):
+    """Studio generator 2.7.0: what was published sits in `notices` (with published_at_sequence, rule_id, version);
+    `scenario_events` holds the case's definitions (supersedes = the version replaced). → (fired, published)."""
+    published = [
+        n
+        for n in end.get("notices") or []
+        if isinstance(n, dict) and n.get("published_at_sequence") is not None
+    ]
+    defs = {d.get("notice_id"): d for d in end.get("scenario_events") or [] if isinstance(d, dict)}
+    fired = []
+    for n in published:
+        d = defs.get(n.get("notice_id")) or {}
+        fired.append(
+            {
+                "event_id": d.get("event_id"),
+                "notice_id": n.get("notice_id"),
+                "rule_id": n.get("rule_id") or d.get("rule_id"),
+                "from_version": d.get("supersedes"),
+                "to_version": n.get("version")
+                if n.get("version") is not None
+                else d.get("version"),
+                "published_at_sequence": n["published_at_sequence"],
+                "text_sha256": n.get("text_sha256"),
+            }
+        )
+    return fired, published
 
 
 def scenario_events(snapshots, transcript):
     end = (snapshots or {}).get("end") or {}
-    fired = [r for r in end.get(COLLECTION) or [] if isinstance(r, dict)]
-    published = [r for r in end.get("notices_published") or [] if isinstance(r, dict)]
+    if COLLECTION in end or "notices_published" in end:
+        fired = [r for r in end.get(COLLECTION) or [] if isinstance(r, dict)]
+        published = [r for r in end.get("notices_published") or [] if isinstance(r, dict)]
+    else:
+        fired, published = _fired_270(end)
     read, shown = [], []
     for t in transcript or []:
         obs = t.get("observation") or {}

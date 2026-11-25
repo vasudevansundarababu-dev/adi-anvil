@@ -174,7 +174,8 @@ def test_session_reads_are_bounded_by_the_episode_deadline(seed):
 
 def test_the_mock_agent_never_receives_a_reference():
     params = inspect.signature(mock_provider.agent).parameters
-    # world picks the tool set; application_id is what the task names (actor-visible), never a reference.
+    # world picks the tool set; application_id is what the task names (actor-visible), never a reference;
+    # operations are the offered tool schemas, exactly what a live model is given.
     assert list(params) == [
         "model_id",
         "assignment",
@@ -182,6 +183,7 @@ def test_the_mock_agent_never_receives_a_reference():
         "user_message",
         "world",
         "application_id",
+        "operations",
     ]
     body = inspect.getsource(worker.execute).split('"""')[2]  # the code after the docstring
     assert "reference" not in body and "scoring" not in body

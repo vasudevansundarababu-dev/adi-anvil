@@ -268,3 +268,90 @@ def test_the_reference_agent_uses_the_identity_method_the_reference_names():
     assert [t["args"]["specialty"] for t in env.transcript if t["tool"] == "specialist.refer"] == [
         "edd"
     ]
+
+
+# --- run-0238 (test@3, generator 2.7.0): recommend was refused (policy_bundle is the const kyc-judgment.library@1),
+# the rationale named no decision, and the audit trail had one step ------------------------------------------------
+
+OPS = [
+    {
+        "operation_id": "recommend",
+        "input_schema": {
+            "properties": {"policy_bundle": {"type": "string", "const": "kyc-judgment.library@1"}}
+        },
+    }
+]
+STEPS = (
+    "## Steps\n1. Read the assigned application. (record with application.read)\n"
+    "2. List the parties of the application. (record with parties.list)\n"
+    "3. Read the published policy library. (record with policy.read)\n"
+    "4. Read any policy notices. (record with notices.read)\n"
+    "5. List the documents. (record with documents.list)\n"
+    "11. Screen every party. (record with screening.check)\n"
+    "15. Record the recommendation. (record with recommend)\n"
+)
+
+
+def drive_with_ops(model):
+    env = Env()
+    gen = mock_provider.agent(
+        model, STEPS, "k", world="studio-openenv", application_id=APP, operations=OPS
+    )
+    action, calls = next(gen), []
+    for _ in range(300):
+        if "final" in action:
+            return action["final"], calls
+        calls.append(action)
+        action = gen.send(env.call(action["tool"], action.get("args") or {}))
+    raise AssertionError("no final")
+
+
+def test_recommend_uses_the_offered_policy_bundle():
+    _, calls = drive_with_ops("mock/judgment-diligent-v1")
+    rec = next(a for a in calls if a["tool"] == "recommend")
+    assert rec["args"]["policy_bundle"] == "kyc-judgment.library@1"
+
+
+def test_without_a_schema_the_old_bundle_stays():
+    final, env = drive(
+        mock_provider.agent(
+            "mock/judgment-diligent-v1", None, "k", world="studio-openenv", application_id=APP
+        )
+    )
+    rec = next(t for t in env.transcript if t["tool"] == "recommend")
+    assert rec["args"]["policy_bundle"] == mock_provider.POLICY_BUNDLE
+
+
+def test_the_rationale_names_the_decision_and_a_rule():
+    final, _ = drive_with_ops("mock/judgment-diligent-v1")
+    x = {"final": final, "reference": {"status": "complete", "gradable": True}}
+    assert judgment.evaluate("rationale", x)["verdict"] == "pass"
+
+
+def test_the_audit_trail_numbers_the_task_steps_it_performed():
+    final, calls = drive_with_ops("mock/judgment-diligent-v1")
+    steps = [e["sop_step"] for e in final["audit_trail"]]
+    assert steps[:5] == ["1", "2", "3", "4", "5"] and "11" in steps and steps[-1] == "15"
+    assert {e["status"] for e in final["audit_trail"]} == {"done"}
+    # ignores-bulletins never read notices: no step 4.
+    final, _ = drive_with_ops("mock/judgment-ignores-bulletins-v1")
+    assert "4" not in [e["sop_step"] for e in final["audit_trail"]]
+
+
+def test_the_trail_stays_faithful_and_invents_evidence_still_is_caught():
+    final, calls = drive_with_ops("mock/judgment-diligent-v1")
+    env = Env()
+    for a in calls:
+        env.call(a["tool"], a.get("args") or {})
+    assert (
+        judgment.audit_faithfulness(final["audit_trail"], env.transcript, {}, [])["critical"]
+        is False
+    )
+    final, calls = drive_with_ops("mock/judgment-invents-evidence-v1")
+    env = Env()
+    for a in calls:
+        env.call(a["tool"], a.get("args") or {})
+    assert (
+        judgment.audit_faithfulness(final["audit_trail"], env.transcript, {}, [])["critical"]
+        is True
+    )

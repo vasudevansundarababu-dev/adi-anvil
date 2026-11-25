@@ -9,6 +9,7 @@ assignment and tool results) and never a reference answer.
 import hashlib
 import json
 import random
+import re
 import time
 
 PROFILES = {
@@ -99,7 +100,9 @@ def _injected_action(text, case_id, assignment):
     return []
 
 
-def agent(model_id, assignment, key, user_message=None, world="stub", application_id=None):
+def agent(
+    model_id, assignment, key, user_message=None, world="stub", application_id=None, operations=None
+):
     """A generator policy. Send it the last observation (None first); it yields {"tool", "args"} or {"final": {...}}.
     `key` (episode id) seeds the erratic profile. `user_message` is the opening user message, if the environment's reset
     produced one. An attack reaches the policy only through what it is shown (that message or a tool result).
@@ -108,7 +111,9 @@ def agent(model_id, assignment, key, user_message=None, world="stub", applicatio
     if model_id not in PROFILES:
         raise ValueError(f"unknown mock profile {model_id}")
     if world == "studio-openenv" and model_id.startswith("mock/judgment-"):
-        return judgment_agent(model_id, key, application_id)
+        return judgment_agent(
+            model_id, key, application_id, operations=operations, assignment=assignment
+        )
     if world == "studio-openenv":
         return studio_agent(model_id, key, application_id)
     return _stub_agent(model_id, assignment, key, user_message)
@@ -434,15 +439,43 @@ def _ids(value, out):
             _ids(v, out)
 
 
-def judgment_agent(model_id, key, application_id):
+STEP_LINE = re.compile(r"^\s*(\d+[a-z]?)\.\s.*\(record with ([\w.]+)\)", re.M)
+
+
+def _offered_const(operations, op, field):
+    """The const (or single enum value) an offered operation's input schema fixes for a field, else None."""
+    for o in operations or []:
+        if isinstance(o, dict) and o.get("operation_id") == op:
+            prop = ((o.get("input_schema") or {}).get("properties") or {}).get(field) or {}
+            if "const" in prop:
+                return prop["const"]
+            if len(prop.get("enum") or []) == 1:
+                return prop["enum"][0]
+    return None
+
+
+def task_steps(assignment):
+    """{tool: step id} from the task's numbered steps as the agent reads them ("3. ... (record with policy.read)")."""
+    out = {}
+    for n, tool in STEP_LINE.findall(str(assignment or "")):
+        out.setdefault(tool, n)
+    return out
+
+
+def judgment_agent(model_id, key, application_id, operations=None, assignment=None):
     """KYC Judgment v1 mock: the diligent Golden KYC workflow, then the Judgment output. It cites every rule it read
-    (a mock can't evaluate conditions, so it over-cites), assesses every party it saw, and writes an audit trail of the
-    ids it was given. invents-evidence adds an id it never saw; ignores-bulletins reads the policies once, first, and
-    never the notices."""
+    (a mock can't evaluate conditions, which are never shown to agents, so it over-cites), assesses every party it saw,
+    names its decision and the rules in its rationale, and writes an audit trail with one entry per task step it
+    performed (numbered as the task's steps), holding only ids it was given. The recommend call carries the offered
+    schema's policy_bundle (test@3: kyc-judgment.library@1). invents-evidence adds an id it never saw;
+    ignores-bulletins reads the policies once, first, and never the notices."""
+
     ignores = model_id == "mock/judgment-ignores-bulletins-v1"
     invents = model_id == "mock/judgment-invents-evidence-v1"
     base = studio_agent("mock/diligent-v1", key, application_id)
-    seen, parties, rules, notices = [], [], {}, []
+    seen, parties, rules, notices, done = [], [], {}, [], []
+    steps = task_steps(assignment)
+    bundle = _offered_const(operations, "recommend", "policy_bundle")
 
     def read(obs):
         recs = (
@@ -456,8 +489,13 @@ def judgment_agent(model_id, key, application_id):
             if isinstance(r, dict) and r.get("rule_id"):
                 rules.setdefault(r["rule_id"], int(r.get("version") or 1))
 
+    def note(tool, obs):
+        if (obs or {}).get("ok") and tool not in done:
+            done.append(tool)
+        return obs
+
     if ignores:
-        take_rules(read((yield {"tool": "policy.read", "args": {}})))
+        take_rules(read(note("policy.read", (yield {"tool": "policy.read", "args": {}}))))
     action = next(base)
     final = None
     while True:
@@ -465,13 +503,15 @@ def judgment_agent(model_id, key, application_id):
             final = action["final"]
             break
         if action.get("tool") == "recommend" and not ignores:
-            take_rules(read((yield {"tool": "policy.read", "args": {}})))
+            take_rules(read(note("policy.read", (yield {"tool": "policy.read", "args": {}}))))
             notices = [
                 n["notice_id"]
-                for n in read((yield {"tool": "notices.read", "args": {}}))
+                for n in read(note("notices.read", (yield {"tool": "notices.read", "args": {}})))
                 if isinstance(n, dict) and n.get("notice_id")
             ]
-        obs = yield action
+        if action.get("tool") == "recommend" and bundle:
+            action = {**action, "args": {**(action.get("args") or {}), "policy_bundle": bundle}}
+        obs = note(action.get("tool"), (yield action))
         recs = read(obs)
         if action.get("tool") == "parties.list":
             parties = [r["party_id"] for r in recs if isinstance(r, dict) and r.get("party_id")]
@@ -479,17 +519,42 @@ def judgment_agent(model_id, key, application_id):
     decision = final.get("recommendation") or final.get("decision")
     outcome = "clear" if decision == "ready_for_approval" else decision
     data_seen = list(dict.fromkeys(seen))[:20] + ([FABRICATED] if invents else [])
+    cited = [{"rule_id": r, "version": v} for r, v in rules.items()] or [
+        {"rule_id": "none-read", "version": 1}
+    ]
+    order = list(steps.values())
+    performed = sorted({steps[t] for t in done if t in steps}, key=order.index)
+    trail = [
+        {
+            "sop_step": n,
+            "status": "done",
+            "data_seen": data_seen if i == 0 else [],
+            "facts_learnt": [],
+            "facts_missing": [],
+            "rules_applied": [],
+            "principle": "The documents and the rules read decide the outcome.",
+            "conclusion": decision if i == len(performed) - 1 else "done",
+            "confidence": "medium",
+        }
+        for i, n in enumerate(performed)
+    ]
     yield {
         "final": {
             "recommendation": decision,
-            "rules_applied": [{"rule_id": r, "version": v} for r, v in rules.items()]
-            or [{"rule_id": "none-read", "version": 1}],
+            "rules_applied": cited,
             "assessments": [{"party_id": p, "outcome": outcome, "issues": []} for p in parties],
             "notices_considered": notices,
-            "rationale": (final.get("findings") or [{}])[0].get("text") or "Reviewed the records.",
+            "rationale": (
+                f"Recommendation: {decision}. "
+                + ((final.get("findings") or [{}])[0].get("text") or "Reviewed the records.")
+                + " Rules applied: "
+                + ", ".join(f"{r['rule_id']} v{r['version']}" for r in cited[:5])
+                + "."
+            ),
             "officer_verification": False,
             "risk_rating": {"required": False, "level": None, "factors": []},
-            "audit_trail": [
+            "audit_trail": trail
+            or [
                 {
                     "sop_step": 1,
                     "status": "done",
