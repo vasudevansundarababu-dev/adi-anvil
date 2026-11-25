@@ -77,7 +77,56 @@ def _golden_kyc(case_id, snap):
     return out("none", "ready_for_approval", why="KYC-04: all checks clear")
 
 
-LOOKUPS = {"golden-kyc-openenv": _golden_kyc}
+def _judgment_v2(case_id, snap):
+    """KYC Judgment v1 (reference.v2 shape): the same literal table, first match wins, its one outcome given to the
+    first party (or every party clear). It never reads a rule's conditions, a bulletin, citizenship or a risk factor:
+    what a fixed lookup over one field would do."""
+    d = _golden_kyc(case_id, snap)
+    parties = [p for p in snap.get("parties") or [] if p.get("application_id") == case_id]
+    outcome = "clear" if d["recommendation"] == "ready_for_approval" else d["recommendation"]
+    target = parties[0]["party_id"] if parties else None
+    return {
+        "recommendation": d["recommendation"],
+        "officer_verification": False,
+        "risk_rating": {"required": False},
+        "parties": [
+            {
+                "party_id": p["party_id"],
+                "outcome": outcome if p["party_id"] == target else "clear",
+                "requests": [d["request_type"]]
+                if d["request_type"] != "none" and p["party_id"] == target
+                else [],
+                "referral": d["referral"]
+                if d["referral"] != "none" and p["party_id"] == target
+                else None,
+            }
+            for p in parties
+        ],
+        "rules_applied": [],
+    }
+
+
+LOOKUPS = {"golden-kyc-openenv": _golden_kyc, "kyc-judgment-openenv": _judgment_v2}
+KEYS_V1 = ("request_type", "recommendation", "referral")
+
+
+def _decision(d):
+    """The comparable decision: v1 keys, or (reference.v2) the recommendation and each party's outcome, requests and
+    referral."""
+    if isinstance(d.get("parties"), list):
+        return {
+            "recommendation": d.get("recommendation"),
+            "parties": sorted(
+                [
+                    p.get("party_id"),
+                    p.get("outcome"),
+                    sorted(p.get("requests") or []),
+                    p.get("referral") or None,
+                ]
+                for p in d["parties"]
+            ),
+        }
+    return {k: d.get(k) for k in KEYS_V1}
 
 
 def lookup_for(environment_version_id):
@@ -161,20 +210,14 @@ def run(c, ws, sv_id, requested_by, body=None):
                 # The lookup's decision drives the procedure; the score is always against the true reference.
                 ep = reference_run._episode(session, t["actor"], {**truth, **said}, cid, snapshot)
                 score = reference_run._score(c, ws, project, evaluators, t, ep, truth)
+                lookup_d, truth_d = _decision(said), _decision(truth)
                 rows.append(
                     {
                         "case_id": cid,
                         "task_id": t["task_id"],
-                        "lookup": {
-                            k: said[k] for k in ("request_type", "recommendation", "referral")
-                        },
-                        "truth": {
-                            k: truth.get(k) for k in ("request_type", "recommendation", "referral")
-                        },
-                        "decision_right": all(
-                            said[k] == truth.get(k)
-                            for k in ("request_type", "recommendation", "referral")
-                        ),
+                        "lookup": lookup_d,
+                        "truth": truth_d,
+                        "decision_right": lookup_d == truth_d,
                         "points": score["points"],
                         "full_marks": score["full_marks"],
                         "not_passed": sorted(

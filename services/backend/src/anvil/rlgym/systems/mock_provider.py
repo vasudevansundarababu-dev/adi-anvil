@@ -15,6 +15,11 @@ PROFILES = {
     "mock/diligent-v1": "Follows the workflow and answers from the application record.",
     "mock/skips-screening-v1": "Follows the workflow but never calls screening.check.",
     "mock/erratic-v1": "Calls random tools and guesses decisions (seeded by case id).",
+    # KYC Judgment v1 (integration): profiles that exercise the graders. They follow the diligent workflow, then write
+    # the Judgment output (rules applied, per-party assessments, notices considered, an audit trail).
+    "mock/judgment-diligent-v1": "Judgment output; reads the policies and the notices before recommending.",
+    "mock/judgment-invents-evidence-v1": "Judgment output whose audit trail cites a record it never saw (critical).",
+    "mock/judgment-ignores-bulletins-v1": "Judgment output; reads the policies once at the start, never the notices.",
 }
 
 
@@ -102,6 +107,8 @@ def agent(model_id, assignment, key, user_message=None, world="stub", applicatio
     the task names the application under review (`application_id`), as a real assignment does."""
     if model_id not in PROFILES:
         raise ValueError(f"unknown mock profile {model_id}")
+    if world == "studio-openenv" and model_id.startswith("mock/judgment-"):
+        return judgment_agent(model_id, key, application_id)
     if world == "studio-openenv":
         return studio_agent(model_id, key, application_id)
     return _stub_agent(model_id, assignment, key, user_message)
@@ -409,5 +416,90 @@ def studio_agent(model_id, key, application_id):
             "decision": decision,
             "recommendation": decision,
             "findings": [{"text": f"Review: {reason}", "evidence_ids": evidence}],
+        }
+    }
+
+
+FABRICATED = "DOC-FABRICATED-0001"
+
+
+def _ids(value, out):
+    if isinstance(value, dict):
+        for k, v in value.items():
+            if (k == "id" or k.endswith("_id")) and isinstance(v, str):
+                out.append(v)
+            _ids(v, out)
+    elif isinstance(value, list):
+        for v in value:
+            _ids(v, out)
+
+
+def judgment_agent(model_id, key, application_id):
+    """KYC Judgment v1 mock: the diligent Golden KYC workflow, then the Judgment output. It cites every rule it read
+    (a mock can't evaluate conditions, so it over-cites), assesses every party it saw, and writes an audit trail of the
+    ids it was given. invents-evidence adds an id it never saw; ignores-bulletins reads the policies once, first, and
+    never the notices."""
+    ignores = model_id == "mock/judgment-ignores-bulletins-v1"
+    invents = model_id == "mock/judgment-invents-evidence-v1"
+    base = studio_agent("mock/diligent-v1", key, application_id)
+    seen, parties, rules, notices = [], [], {}, []
+
+    def read(obs):
+        recs = (
+            ((obs or {}).get("output") or {}).get("records") or [] if (obs or {}).get("ok") else []
+        )
+        _ids(recs, seen)
+        return recs
+
+    def take_rules(recs):
+        for r in recs:
+            if isinstance(r, dict) and r.get("rule_id"):
+                rules.setdefault(r["rule_id"], int(r.get("version") or 1))
+
+    if ignores:
+        take_rules(read((yield {"tool": "policy.read", "args": {}})))
+    action = next(base)
+    final = None
+    while True:
+        if "final" in action:
+            final = action["final"]
+            break
+        if action.get("tool") == "recommend" and not ignores:
+            take_rules(read((yield {"tool": "policy.read", "args": {}})))
+            notices = [
+                n["notice_id"]
+                for n in read((yield {"tool": "notices.read", "args": {}}))
+                if isinstance(n, dict) and n.get("notice_id")
+            ]
+        obs = yield action
+        recs = read(obs)
+        if action.get("tool") == "parties.list":
+            parties = [r["party_id"] for r in recs if isinstance(r, dict) and r.get("party_id")]
+        action = base.send(obs)
+    decision = final.get("recommendation") or final.get("decision")
+    outcome = "clear" if decision == "ready_for_approval" else decision
+    data_seen = list(dict.fromkeys(seen))[:20] + ([FABRICATED] if invents else [])
+    yield {
+        "final": {
+            "recommendation": decision,
+            "rules_applied": [{"rule_id": r, "version": v} for r, v in rules.items()]
+            or [{"rule_id": "none-read", "version": 1}],
+            "assessments": [{"party_id": p, "outcome": outcome, "issues": []} for p in parties],
+            "notices_considered": notices,
+            "rationale": (final.get("findings") or [{}])[0].get("text") or "Reviewed the records.",
+            "officer_verification": False,
+            "audit_trail": [
+                {
+                    "sop_step": 1,
+                    "status": "done",
+                    "data_seen": data_seen,
+                    "facts_learnt": [],
+                    "facts_missing": [],
+                    "rules_applied": [],
+                    "principle": "The documents and the rules read decide the outcome.",
+                    "conclusion": decision,
+                    "confidence": "medium",
+                }
+            ],
         }
     }

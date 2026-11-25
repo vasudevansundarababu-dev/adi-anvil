@@ -102,6 +102,127 @@ def _const(operations, op, field, default):
 
 
 def agent(actor, reference, application_id, failures, operations=None):
+    """The reference agent: golden KYC (reference v1) or KYC Judgment v1 (reference.v2, with `parties`)."""
+    if isinstance((reference or {}).get("parties"), list):
+        return _judgment(actor, reference, application_id, failures, operations)
+    return _agent_v1(actor, reference, application_id, failures, operations)
+
+
+def _ids_in(value, out):
+    if isinstance(value, dict):
+        for k, v in value.items():
+            if (k == "id" or k.endswith("_id")) and isinstance(v, str):
+                out.append(v)
+            _ids_in(v, out)
+    elif isinstance(value, list):
+        for v in value:
+            _ids_in(v, out)
+
+
+def _judgment(actor, ref, application_id, failures, operations):
+    """KYC Judgment v1: the S5 procedure as written (decisions from reference.v2), then, before the recommendation,
+    the notices (if offered), each party's requests and referral; the final output is the Judgment contract: rules
+    applied (with governs) as the reference states them, one assessment per party, the notices considered, the risk
+    rating and officer flag, and an audit trail of only the ids the environment returned."""
+    have = offered(actor)
+    base = _agent_v1(
+        actor, {**ref, "request_type": None, "referral": None}, application_id, failures, operations
+    )
+    seen, notices = [], []
+
+    def note(obs):
+        if (obs or {}).get("ok"):
+            _ids_in(((obs or {}).get("output") or {}).get("records") or [], seen)
+        return obs
+
+    action = next(base)
+    while "final" not in action:
+        if action.get("tool") == "recommend":
+            if "notices.read" in have:
+                obs = note((yield {"tool": "notices.read", "args": {}}))
+                notices = [
+                    n["notice_id"]
+                    for n in ((obs or {}).get("output") or {}).get("records") or []
+                    if isinstance(n, dict) and n.get("notice_id")
+                ]
+            for p in ref.get("parties") or []:
+                for item in p.get("requests") or []:
+                    if "information.request" in have:
+                        note(
+                            (
+                                yield {
+                                    "tool": "information.request",
+                                    "args": {
+                                        "party_id": p["party_id"],
+                                        "type": item,
+                                        "items": [item],
+                                        "reason": f"{item}: please provide it",
+                                    },
+                                }
+                            )
+                        )
+                if p.get("referral") and "specialist.refer" in have:
+                    note(
+                        (
+                            yield {
+                                "tool": "specialist.refer",
+                                "args": {
+                                    "specialty": p["referral"],
+                                    "question": f"Please review party {p['party_id']}",
+                                    "evidence_ids": [],
+                                },
+                            }
+                        )
+                    )
+        obs = note((yield action))
+        try:
+            action = base.send(obs)
+        except StopIteration:
+            break
+    rr = ref.get("risk_rating") or {}
+    yield {
+        "final": {
+            "recommendation": ref.get("recommendation"),
+            "officer_verification": bool(ref.get("officer_verification")),
+            **({"risk_rating": {"level": rr.get("level")}} if rr.get("required") else {}),
+            "rules_applied": [
+                {
+                    k: r[k]
+                    for k in ("rule_id", "version", "party_ids", "governs", "overlaps_with")
+                    if k in r
+                }
+                for r in ref.get("rules_applied") or []
+            ],
+            "assessments": [
+                {
+                    "party_id": p["party_id"],
+                    "outcome": p.get("outcome"),
+                    "issues": [],
+                    "requests": p.get("requests") or [],
+                    **({"referral": p["referral"]} if p.get("referral") else {}),
+                }
+                for p in ref.get("parties") or []
+            ],
+            "notices_considered": notices,
+            "rationale": "Reference approach: the procedure as written, decisions from the reference answers.",
+            "audit_trail": [
+                {
+                    "sop_step": 1,
+                    "status": "done",
+                    "data_seen": list(dict.fromkeys(seen)),
+                    "facts_learnt": [],
+                    "facts_missing": [],
+                    "rules_applied": [],
+                    "principle": "Reference approach.",
+                    "conclusion": ref.get("recommendation"),
+                    "confidence": "high",
+                }
+            ],
+        }
+    }
+
+
+def _agent_v1(actor, reference, application_id, failures, operations=None):
     """The generator. `application_id` is what the agent was told (an alias when IDs are hidden). `failures` collects
     {"step", "tool", "reason"} wherever the task can't be followed as written."""
     from anvil.rlgym.verification import assertions

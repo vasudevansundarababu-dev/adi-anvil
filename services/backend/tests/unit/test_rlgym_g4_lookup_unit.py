@@ -84,7 +84,7 @@ def test_the_kyc_lookup_is_the_published_decision_table():
 
 def test_a_lookup_is_chosen_by_environment_and_none_means_not_measured():
     assert lookup.lookup_for("golden-kyc-openenv@12") is lookup.LOOKUPS["golden-kyc-openenv"]
-    assert lookup.lookup_for("kyc-judgment-openenv@1") is None
+    assert lookup.lookup_for("unknown-openenv@1") is None
 
 
 def test_the_gate_threshold_defaults_to_60_and_is_validated():
@@ -114,7 +114,7 @@ def test_the_verification_row():
     none = verification.lookup_row(None, "golden-kyc-openenv@12")
     assert none["id"] == "G-01" and none["outcome"] == "INSUFFICIENT_EVIDENCE"
     assert "Run lookup baseline" in none["detail"]
-    na = verification.lookup_row(None, "kyc-judgment-openenv@1")
+    na = verification.lookup_row(None, "unknown-openenv@1")
     assert na["outcome"] == "INSUFFICIENT_EVIDENCE" and "no lookup" in na["detail"]
     high = {
         "id": "lb-1",
@@ -152,3 +152,13 @@ def test_the_run_plays_the_lookup_through_the_procedure_and_scores_against_the_t
     from anvil.rlgym.suites import routes
 
     assert "lookup-run" in inspect.getsource(routes)
+
+
+def test_the_judgment_lookup_gives_a_reference_v2_decision_and_never_reads_rules():
+    d = lookup.LOOKUPS["kyc-judgment-openenv"](CASE, snap(documents=with_content(2, tin="missing")))
+    assert d["recommendation"] == "request_information" and d["risk_rating"] == {"required": False}
+    assert [p["party_id"] for p in d["parties"]] == ["p1", "p2"]
+    assert lookup._decision(d) != lookup._decision({**d, "recommendation": "specialist_review"})
+    assert lookup.lookup_for("kyc-judgment-openenv@1") is lookup.LOOKUPS["kyc-judgment-openenv"]
+    src = inspect.getsource(lookup._judgment_v2)
+    assert "condition" not in src.split('"""', 2)[2] and "citizenship" not in src.split('"""', 2)[2]

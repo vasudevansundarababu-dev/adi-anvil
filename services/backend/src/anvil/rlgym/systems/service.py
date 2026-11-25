@@ -814,6 +814,21 @@ MOCK_LINEUP = [
     ("mock-diligent", "Mock agent · diligent (synthetic)", "mock/diligent-v1"),
     ("mock-skips-screening", "Mock agent · skips screening (synthetic)", "mock/skips-screening-v1"),
     ("mock-erratic", "Mock agent · erratic (synthetic)", "mock/erratic-v1"),
+    (
+        "mock-judgment-diligent",
+        "Mock agent · Judgment diligent (synthetic)",
+        "mock/judgment-diligent-v1",
+    ),
+    (
+        "mock-judgment-invents-evidence",
+        "Mock agent · Judgment invents evidence (synthetic)",
+        "mock/judgment-invents-evidence-v1",
+    ),
+    (
+        "mock-judgment-ignores-bulletins",
+        "Mock agent · Judgment ignores bulletins (synthetic)",
+        "mock/judgment-ignores-bulletins-v1",
+    ),
 ]
 
 
