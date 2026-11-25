@@ -431,7 +431,7 @@ def evaluate(check, x):
             "every id seen, every fact as recorded, every rule read",
             critical=out["critical"],
         )
-    if check == "risk_rating":
+    if check in ("risk_rating", "risk_rating_5e"):
         rr = ref.get("risk_rating")
         if rr is None:
             return _line("blocked", expected="the reference's risk rating")
@@ -449,7 +449,19 @@ def evaluate(check, x):
         # Spec §13: an ineligible account is not opened, so the approval / referral path a risk level asks for doesn't
         # apply when the reference and the agent both say not_eligible (the level itself is still graded).
         ineligible = final.get("recommendation") == ref.get("recommendation") == NOT_ELIGIBLE
-        if (
+        assessed = [a for a in final.get("assessments") or [] if isinstance(a, dict)]
+        referrals = {a.get("referral") for a in assessed}
+        # BANK-OPERATING-RULES-DRAFT §5e.2/5e.4 (fix version 3, "rule": "5e"): missing information takes precedence:
+        # with a request outstanding the recommendation is request_information (an EDD referral is still made).
+        asking = check == "risk_rating_5e" and any(
+            a.get("outcome") == "request_information" or a.get("requests") for a in assessed
+        )
+        if asking and not ineligible:
+            if final.get("recommendation") != "request_information":
+                problems.append("a request is outstanding: request_information comes first (§5e)")
+            if rr.get("level") == "high" and "edd" not in referrals:
+                problems.append("high risk: the edd referral is made (§5e.4)")
+        elif (
             not ineligible
             and rr.get("level") == "medium"
             and not (
@@ -458,10 +470,7 @@ def evaluate(check, x):
             )
         ):
             problems.append("medium risk: ready_for_approval with the officer verification flag")
-        if not ineligible and rr.get("level") == "high":
-            referrals = {
-                a.get("referral") for a in final.get("assessments") or [] if isinstance(a, dict)
-            }
+        if not ineligible and not asking and rr.get("level") == "high":
             if final.get("recommendation") != "specialist_review" or "edd" not in referrals:
                 problems.append("high risk: an edd referral and specialist_review, no approval")
         return _line(

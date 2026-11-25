@@ -50,6 +50,7 @@ JUDGMENT_CHECKS = {
     "consistency_5e": "the recommendation follows from the party assessments and risk (§5e: missing information first)",
     "decision": "the recommendation and each party's outcome, requests and referral match the reference",
     "risk_rating": "the risk rating and what its level requires",
+    "risk_rating_5e": "the risk rating and what its level requires (§5e: missing information first; EDD still referred)",
     "rules_applied": "the rules cited are the ones that apply, at the version in force",
     "rule_in_force": "after a bulletin, the new rule version is cited",
     "tool_calls": "every required check, request and referral was made; nothing wrong was",

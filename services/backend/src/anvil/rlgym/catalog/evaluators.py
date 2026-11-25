@@ -525,8 +525,11 @@ def fix_known_cases(config, base, sent):
     from anvil.rlgym.catalog import judgment_configs
 
     rule = {}
-    if judgment_configs.grader_of(config) == "consistency" and (config or {}).get("rule") == "5e":
-        rule = judgment_configs.CONSISTENCY_5E_KNOWN_CASES
+    if (config or {}).get("rule") == "5e":
+        rule = {
+            "consistency": judgment_configs.CONSISTENCY_5E_KNOWN_CASES,
+            "decision_next_action": judgment_configs.DECISION_5E_KNOWN_CASES,
+        }.get(judgment_configs.grader_of(config), {})
     return {**(base or {}), **rule, **sent}
 
 

@@ -98,8 +98,9 @@ def checks_for(criterion, config):
     """The judgment checks a bridge grader runs. consistency follows BANK-OPERATING-RULES-DRAFT §5e only when its
     configuration says so (`"rule": "5e"`, evaluator version 2+), so version 1's verdicts keep their meaning."""
     checks = list(GRADERS[criterion])
-    if criterion == "consistency" and (config or {}).get("rule") == "5e":
-        checks = ["consistency_5e" if c == "consistency" else c for c in checks]
+    if (config or {}).get("rule") == "5e":
+        five_e = {"consistency": "consistency_5e", "risk_rating": "risk_rating_5e"}
+        checks = [five_e.get(c, c) for c in checks]
     return checks
 
 
@@ -138,6 +139,46 @@ CONSISTENCY_5E_KNOWN_CASES = {
         "evidence": {"final_output": _kc_final("request_information", "clear", [], "sanctions")},
         "reference": _KC_REF,
     },
+}
+
+
+def _kc_decision(rec, parties, level="high"):
+    rr = {"required": True, "level": level, "factors": ["custodian_not_parent_or_guardian"]}
+    final = {
+        "recommendation": rec,
+        "officer_verification": False,
+        "risk_rating": rr,
+        "assessments": parties,
+    }
+    ref = {
+        **_KC_REF,
+        "recommendation": rec,
+        "officer_verification": False,
+        "risk_rating": rr,
+        "parties": [{**p, "referral": p.get("referral")} for p in parties],
+    }
+    return {"evidence": {"final_output": final}, "reference": ref}
+
+
+_EDD = {"party_id": "kc-5e-p1", "outcome": "specialist_review", "requests": [], "referral": "edd"}
+_ASK = {
+    "party_id": "kc-5e-p2",
+    "outcome": "request_information",
+    "requests": ["relationship_proof"],
+}
+# decision_next_action fix version 3 (§5e): high risk with a request outstanding → request_information, EDD still
+# referred (pass); high risk with nothing outstanding → specialist_review with EDD (pass); the same but approved
+# (fail).
+DECISION_5E_KNOWN_CASES = {
+    "high_risk_with_request": {
+        "expect": "pass",
+        **_kc_decision("request_information", [_EDD, _ASK]),
+    },
+    "high_risk_specialist_review": {
+        "expect": "pass",
+        **_kc_decision("specialist_review", [_EDD]),
+    },
+    "high_risk_approved": {"expect": "fail", **_kc_decision("ready_for_approval", [_EDD])},
 }
 
 
