@@ -825,6 +825,8 @@ def _manifest(run_id, check):
             **({"channel": "test"} if act.get("channel") == "test" else {}),
             # KYC Judgment C4: the output schema the agent is shown (absent for templates without one, e.g. v8).
             **({"output_schema": act["output_schema"]} if act.get("output_schema") else {}),
+            # KYC Judgment: the Bank SOP shown to the agent (absent when the activation has none).
+            **({"sop": act["sop"]} if act.get("sop") else {}),
         },
         "suite": {
             "id": str(sv["id"]),

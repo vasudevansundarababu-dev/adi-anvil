@@ -381,6 +381,13 @@ def check_existing(existing, doc, channel):
     return True
 
 
+def sop_fill(current, sent):
+    """The SOP to store on an activation that has none yet (from the same verified document), else None."""
+    if current is None and isinstance(sent, dict) and isinstance(sent.get("steps"), list):
+        return sent
+    return None
+
+
 def activate(c, ws, actor, doc):
     """POST /templates/activations: store the exact template hash and its rules; record qualification in ADI Forge."""
     _required(doc)
@@ -406,6 +413,26 @@ def activate(c, ws, actor, doc):
     ).fetchone()
     if existing:
         check_existing(existing, doc, channel)
+        # The same verified document (spec_sha256 covers `sop`) may complete a SOP the activation didn't keep yet;
+        # never replaced.
+        filled = sop_fill(existing.get("sop"), doc.get("sop"))
+        if filled:
+            existing = (
+                c.execute(
+                    """UPDATE catalog.template_activations SET sop=%s WHERE workspace_id=%s AND template_id=%s AND version=%s
+                   AND sop IS NULL RETURNING *""",
+                    (Jsonb(filled), ws, doc["template_id"], int(doc["version"])),
+                ).fetchone()
+                or existing
+            )
+            audit(
+                c,
+                ws,
+                actor,
+                "template.sop_filled",
+                f"{doc['template_id']}@{doc['version']}",
+                details={"sop_id": filled.get("sop_id"), "version": filled.get("version")},
+            )
         return existing, False
     result = validate(c, ws, doc, allow_test=channel == "test")
     kct = known_case_tests(
@@ -452,8 +479,8 @@ def activate(c, ws, actor, doc):
         """INSERT INTO catalog.template_activations(workspace_id,template_id,version,template_key,name,mode,spec_sha256,template_sha256,
              forge_template_id,forge_version,studio_release,default_bindings,workflow,case_dimensions,pass_mark,checks,state,state_reason,
              activated_at,activated_by,forge_template_version_hash,expected_values_from,failure_taxonomy,edge_cases,slice_lists,verifier_files,
-             policy_bindings,output_schema,channel)
-           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
+             policy_bindings,output_schema,channel,sop)
+           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
         (
             ws,
             doc["template_id"],
@@ -484,6 +511,8 @@ def activate(c, ws, actor, doc):
             # KYC Judgment C4: the template's execution.output_schema, shown to the agent as "Output fields".
             Jsonb(doc["output_schema"]) if doc.get("output_schema") else None,
             channel,
+            # KYC Judgment: the Bank SOP the agent's audit trail is numbered by (sop_step).
+            Jsonb(doc.get("sop")) if isinstance(doc.get("sop"), dict) else None,
         ),
     ).fetchone()
     for cr in doc["criteria"]:

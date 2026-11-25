@@ -454,6 +454,19 @@ def _offered_const(operations, op, field):
     return None
 
 
+SOP_LINE = re.compile(r"^- (\d+[a-z]?)\. .*?tools: ([\w., ]+)\)\s*$", re.M)
+
+
+def sop_steps(assignment):
+    """{tool: Bank SOP step id} from the "Bank SOP" lines the agent is shown (first step that names the tool)."""
+    out = {}
+    for n, tools in SOP_LINE.findall(str(assignment or "")):
+        for t in (x.strip() for x in tools.split(",")):
+            if t:
+                out.setdefault(t, n)
+    return out
+
+
 def task_steps(assignment):
     """{tool: step id} from the task's numbered steps as the agent reads them ("3. ... (record with policy.read)")."""
     out = {}
@@ -474,7 +487,8 @@ def judgment_agent(model_id, key, application_id, operations=None, assignment=No
     invents = model_id == "mock/judgment-invents-evidence-v1"
     base = studio_agent("mock/diligent-v1", key, application_id)
     seen, parties, rules, notices, done = [], [], {}, [], []
-    steps = task_steps(assignment)
+    # The audit trail is numbered by the Bank SOP when the agent is shown one, else by the task's steps.
+    steps = sop_steps(assignment) or task_steps(assignment)
     bundle = _offered_const(operations, "recommend", "policy_bundle")
 
     def read(obs):

@@ -234,7 +234,26 @@ def output_fields(schema):
     return lines
 
 
-def build(actor, clauses=None, output_schema=None):
+def sop_lines(sop):
+    """The Bank SOP as the agent reads it: one line per step id (incl. "8a"), its title, when it is required, tools."""
+    out = [
+        f"SOP {sop.get('sop_id')} version {sop.get('version')}"
+        + (f": {sop['title']}" if sop.get("title") else ""),
+        "Number each audit_trail entry's sop_step with these step ids.",
+    ]
+    for st in sop.get("steps") or []:
+        if not isinstance(st, dict) or not st.get("step"):
+            continue
+        tools = ", ".join(st.get("tools") or [])
+        out.append(
+            f"- {st['step']}. {st.get('title') or ''} (required: {st.get('required_when') or 'always'}"
+            + (f"; tools: {tools}" if tools else "")
+            + ")"
+        )
+    return out
+
+
+def build(actor, clauses=None, output_schema=None, sop=None):
     """{"text", "sha256", "source"} for the actor payload, or GymError TASK_NO_INSTRUCTIONS. `clauses`: the export's
     selected clause versions (E-002), added as a "Policy clauses" part; none → the text and hash are as before.
     `output_schema`: the template's (KYC Judgment C4), added as "Output fields"; none → as before."""
@@ -257,6 +276,8 @@ def build(actor, clauses=None, output_schema=None):
     extra = [] if already else clause_lines(clauses)
     if extra:
         text += "\n\n## Policy clauses\n" + "\n".join(extra)
+    if isinstance(sop, dict) and sop.get("steps"):
+        text += "\n\n## Bank SOP\n" + "\n".join(sop_lines(sop))
     fields = output_fields(output_schema) if isinstance(output_schema, dict) else []
     if fields:
         text += "\n\n## Output fields\n" + "\n".join(fields)
