@@ -23,6 +23,14 @@ def routes():
         with scope(request, ws) as ctx:
             return ok(report.drill(ctx.c, ctx.ws, run_id, kind, key, ctx.actor), request)
 
+    @r.get(W + "/runs/{run_id}/skill-compare")
+    def skill_compare(ws: str, run_id: str, request: Request, other: str):
+        """G5: two runs (e.g. golden KYC v8 and KYC Judgment v1, same models) compared skill by skill. Read-only."""
+        from anvil.rlgym.results import skills
+
+        with scope(request, ws) as ctx:
+            return ok(skills.compare_runs(ctx.c, ctx.ws, run_id, other), request)
+
     @r.post(W + "/runs/{run_id}/report/pdf", status_code=201)
     def render(ws: str, run_id: str, request: Request, body: dict = Body(default_factory=dict)):
         with scope(request, ws) as ctx:

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { EdgeCaseForm, edgeBody, edgeReady, emptyEdge, type EdgeParts } from './EdgeCase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { GymApiError, send, wsBase } from './api';
+import { GymApiError, get, send, wsBase } from './api';
 import { PolicyMapSummary } from './PolicyMap';
 import { Badge, Failure, Hash, Loading, useData, useGym } from './ui';
 import { HowScored, ScoredBy } from './Scoring';
@@ -457,6 +457,7 @@ function AgentView({ id, v, models }: { id: string; v: any; models: Model[] }) {
             <h3>Capability comparison</h3>
             <Link href={drill(id, 'axes')}>Inspect axes, weights and coverage</Link>
             <Link href={drill(id, 'tool_calling')}>Tool calling</Link>
+            <Link href={drill(id, 'skills')}>Skills</Link>
           </div>
           {v.capabilities.map((a: any) => (
             <div key={a.capability}>
@@ -859,6 +860,7 @@ function Drill({ id, kind, keyName }: { id: string; kind: string; keyName: strin
     policy: 'Policy findings and document evidence',
     risk: 'Risk and escalation summary',
     tool_calling: 'Tool calling (from the trajectories)',
+    skills: 'Skill profile',
   };
   return (
     <Loading data={data.data} error={data.error}>
@@ -894,6 +896,7 @@ function Drill({ id, kind, keyName }: { id: string; kind: string; keyName: strin
                 ])}
               />
             )}
+            {kind === 'skills' && <SkillsView id={id} d={d} />}
             {kind === 'tool_calling' && (
               <>
                 <p>{d.note}</p>
@@ -1349,5 +1352,110 @@ function PdfPreview({ id }: { id: string }) {
         </>
       )}
     </section>
+  );
+}
+
+const SKILL_NAMES: Record<string, string> = {
+  tool_calling: 'Tool calling',
+  instruction_following: 'Instruction following',
+  reasoning: 'Reasoning',
+  decisioning: 'Decisioning',
+  safety: 'Safety',
+};
+
+function skillCell(x: any) {
+  if (!x) return '—';
+  if (!x.measured) return <small title={x.note}>not measured ({x.n})</small>;
+  return `${x.value}% (n ${x.n})`;
+}
+
+// G3 / G5 (E-011): the skill profile per model, and the same models on another run (e.g. golden KYC v8 vs KYC
+// Judgment v1) compared skill by skill. Read-only.
+function SkillsView({ id, d }: { id: string; d: any }) {
+  const { ws } = useGym();
+  const [other, setOther] = useState('');
+  const [cmp, setCmp] = useState<any>(null);
+  const [failure, setFailure] = useState<GymApiError | null>(null);
+  const models = Object.keys(d.profile ?? {});
+  const skills = Object.keys(SKILL_NAMES).filter((k) => models.some((m) => d.profile[m][k]));
+  async function compare() {
+    setFailure(null);
+    try {
+      setCmp(
+        await get(
+          `${wsBase(ws)}/runs/${id}/skill-compare?other=${encodeURIComponent(other.trim())}`,
+        ),
+      );
+    } catch (e) {
+      setFailure(e as GymApiError);
+    }
+  }
+  return (
+    <>
+      <p>{d.note}</p>
+      <p>
+        <small>
+          {d.template} ·{' '}
+          {d.lookup_run
+            ? `lookup run ${d.lookup_run}: ${d.discriminating_cases} discriminating cases`
+            : 'no lookup baseline run for this suite version'}
+        </small>
+      </p>
+      <ModelTable
+        head={['Model', ...skills.map((k) => SKILL_NAMES[k])]}
+        rows={models.map((m) => [
+          d.models[m] ?? m,
+          ...skills.map((k) => skillCell(d.profile[m][k])),
+        ])}
+      />
+      <ModelTable
+        head={['Criterion', 'Skill', 'From']}
+        rows={Object.entries(d.criteria ?? {}).map(([c, v]: [string, any]) => [
+          c,
+          SKILL_NAMES[v.skill] ?? v.skill,
+          v.source,
+        ])}
+      />
+      <div className="row">
+        <input
+          placeholder="Compare with run (e.g. run-0240)"
+          value={other}
+          onChange={(e) => setOther(e.target.value)}
+        />
+        <button onClick={compare} disabled={!other.trim()}>
+          Compare by skill
+        </button>
+      </div>
+      <Failure error={failure} />
+      {cmp && (
+        <>
+          <p>
+            <small>
+              {cmp.first.template} ({cmp.first.run_id}) vs {cmp.second.template} (
+              {cmp.second.run_id})
+              {cmp.only_in_first.length
+                ? ` · only in the first: ${cmp.only_in_first.join(', ')}`
+                : ''}
+              {cmp.only_in_second.length
+                ? ` · only in the second: ${cmp.only_in_second.join(', ')}`
+                : ''}
+            </small>
+          </p>
+          {cmp.models.length === 0 && <p>No model ran in both runs.</p>}
+          {cmp.models.map((m: string) => (
+            <ModelTable
+              key={m}
+              head={[cmp.first.models[m] ?? m, cmp.first.run_id, cmp.second.run_id, 'Change']}
+              rows={Object.entries(cmp.by_model[m]).map(([k, v]: [string, any]) => [
+                SKILL_NAMES[k] ?? k,
+                skillCell(v.first),
+                skillCell(v.second),
+                v.delta === null ? '—' : `${v.delta > 0 ? '+' : ''}${v.delta}`,
+              ])}
+            />
+          ))}
+        </>
+      )}
+    </>
   );
 }

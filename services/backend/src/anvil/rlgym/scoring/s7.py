@@ -63,6 +63,12 @@ def profile(s7):
         "weights": weights,
         "critical": sorted(c["id"] for c in criteria if c.get("critical") is True),
         "rule_sha256": hashlib.sha256(rule.encode()).hexdigest(),
+        # E-011 / C4: each criterion's skill, only when the task tags them (v8 profiles are unchanged).
+        **(
+            {"skills": {c["id"]: c["skill"] for c in criteria if c.get("skill")}}
+            if any(c.get("skill") for c in criteria)
+            else {}
+        ),
     }, None
 
 
