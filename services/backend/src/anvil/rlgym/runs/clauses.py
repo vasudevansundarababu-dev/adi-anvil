@@ -132,13 +132,29 @@ def compile_zen(pred):
 def _leaf(pred, facts):
     f, op, v = pred["fact"], pred["op"], pred.get("value")
     known = f in facts and facts[f] is not None
+    x = facts.get(f)
+    if isinstance(x, list):
+        # KYC Judgment C1 §8: a multi-valued fact (citizenship, document_kinds). eq/in hold when any value matches,
+        # ne/not_in when none does; [] is a decided "none" (present is false), never a missing value.
+        if op == "present":
+            return bool(x)
+        if op == "absent":
+            return not x
+        if op == "eq":
+            return v in x
+        if op == "ne":
+            return v not in x
+        if op == "in":
+            return any(i in v for i in x)
+        if op == "not_in":
+            return not any(i in v for i in x)
+        return False  # an ordering over a set of values never holds
     if op == "present":
         return known
     if op == "absent":
         return not known
     if not known:
         return None
-    x = facts[f]
     try:
         return {
             "eq": lambda: x == v,
