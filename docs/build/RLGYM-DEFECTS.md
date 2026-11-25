@@ -738,3 +738,10 @@ All four tasks are edge-focused, so no task took the 80 clean complete or the 32
   - Shown on the episode view.
   - Absent when there are none, so other bundles keep their shape.
 - **Tests:** library 8, G2 11, G1 6, G3/G5 6, G6 4 (all written first). Unit 833 passed; ruff and tsc clean.
+- **Deployed 25 Nov 2026 13:12 CST with no run or episode active.**
+  - Backup: `.local/backups/rlgym-20261125-131232-before-migration-068.sql.gz` (23.7 MB, .sha256 checked, complete dump).
+  - Migration 068 applied: the 160 activations and 3,170 criteria all read NULL.
+  - Digests identical before and after.
+  - API /api/v1/health 200, /gym 200.
+  - 29 saved suite hashes unchanged; v6 admission: 8 episodes, $6.40, no failures.
+  - v6's four instruction hashes recompute to the values frozen in run-0235's manifest.
