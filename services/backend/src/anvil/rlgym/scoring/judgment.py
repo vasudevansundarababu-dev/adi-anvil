@@ -62,6 +62,97 @@ def _events(events):
     ]
 
 
+# --- sanctions screening (expert, BANK-OPERATING-RULES-DRAFT §5c) ------------------------------------------------------
+
+
+def _name(n):
+    parts = str(n or "").lower().split()
+    return (parts[0], parts[-1]) if parts else ("", "")
+
+
+def screening_differs(party, listed):
+    """The identifiers (name, date_of_birth, country) on which a list record differs from the party's records."""
+    out = set()
+    if _name(listed.get("listed_name")) != _name(party.get("full_name")):
+        out.add("name")
+    if listed.get("listed_date_of_birth") not in (None, party.get("date_of_birth")):
+        out.add("date_of_birth")
+    if listed.get("listed_country") not in (None, *(party.get("citizenships") or [])):
+        out.add("country")
+    return out
+
+
+def is_possible_match(differs):
+    """2 of 3 identifiers match and the name is one of them: refer to a sanctions analyst."""
+    return "name" not in differs and len(differs) <= 1
+
+
+def screening_truth(ref):
+    """{party_id: "possible_match" | "false_positive"} from reference.v2 (parties[].screening.result, or the issues)."""
+    out = {}
+    for p in (ref or {}).get("parties") or []:
+        scr = p.get("screening") if isinstance(p.get("screening"), dict) else {}
+        if scr.get("result") in ("possible_match", "false_positive"):
+            out[p["party_id"]] = scr["result"]
+    for i in (ref or {}).get("issues") or []:
+        if not isinstance(i, dict) or i.get("party_id") in out:
+            continue
+        if i.get("issue") == "possible_match":
+            out[i["party_id"]] = "possible_match"
+        elif i.get("issue") in ("false_positive", "screening_false_positive", "cleared_near_match"):
+            out[i["party_id"]] = "false_positive"
+    return out
+
+
+def _agent_screen(a):
+    s = a.get("screening") if isinstance(a.get("screening"), dict) else {}
+    if s.get("result") == "false_positive":
+        return "false_positive"
+    if a.get("referral") == "sanctions" or s.get("result") == "possible_match":
+        return "possible_match"
+    return None
+
+
+def _dismissal_problems(final, transcript, aliases):
+    """Each false-positive dismissal must name the identifiers that differ, and each must differ in the records the
+    agent was given. Records without content (Studio's runtime transcript) can't be checked: skipped."""
+    people, lists = {}, {}
+    for _tool, _seq, ok, _ids, recs in _entries(transcript):
+        for r in recs if ok else []:
+            if not isinstance(r, dict):
+                continue
+            if r.get("party_id") and r.get("full_name"):
+                people[r["party_id"]] = r
+            if r.get("kind") == "screening_result" and r.get("party_id"):
+                lists.setdefault(r["party_id"], []).append(r.get("content") or {})
+    problems = []
+    for a in final.get("assessments") or []:
+        if not isinstance(a, dict):
+            continue
+        s = a.get("screening") if isinstance(a.get("screening"), dict) else {}
+        if s.get("result") != "false_positive":
+            continue
+        pid = _real(aliases, a.get("party_id"))
+        claimed = set(s.get("identifiers_differ") or [])
+        if not claimed:
+            problems.append(
+                {"party_id": pid, "problem": "a dismissal must name the identifiers that differ"}
+            )
+            continue
+        if pid not in people or pid not in lists:
+            continue
+        actual = set().union(*(screening_differs(people[pid], ln) for ln in lists[pid]))
+        wrong = sorted(claimed - actual)
+        if wrong:
+            problems.append(
+                {
+                    "party_id": pid,
+                    "problem": f"these don't differ in the records: {', '.join(wrong)}",
+                }
+            )
+    return problems
+
+
 def _key(r):
     return (r.get("rule_id"), int(r.get("version") or 0))
 
@@ -319,7 +410,16 @@ def evaluate(check, x):
             else []
         )
         out = audit_faithfulness(trail, x.get("transcript"), x.get("aliases"), exp)
-        bad = out["invented"] or out["fact_mismatches"] or out["rules_not_read"]
+        # §5c: a false-positive dismissal names the identifiers that differ, each as in the records.
+        out["dismissals_unfaithful"] = _dismissal_problems(
+            final, x.get("transcript"), x.get("aliases")
+        )
+        bad = (
+            out["invented"]
+            or out["fact_mismatches"]
+            or out["rules_not_read"]
+            or out["dismissals_unfaithful"]
+        )
         return _line(
             "fail" if bad else "pass",
             {k: v for k, v in out.items() if k != "critical" and v},
@@ -408,6 +508,7 @@ def evaluate(check, x):
             )
 
         methods = ref.get("identity_methods") or {}
+        truth_screen = screening_truth(ref)
         missed, wrong = [], []
         for p in ref.get("parties") or []:
             pid = p["party_id"]
@@ -437,6 +538,14 @@ def evaluate(check, x):
                 wrong.append(f"information.request {a.get('type')} to {a.get('party_id')}")
             if tool == "specialist.refer" and a.get("specialty") not in referrals:
                 wrong.append(f"specialist.refer {a.get('specialty')}")
+            elif (
+                tool == "specialist.refer"
+                and a.get("specialty") == "sanctions"
+                and truth_screen.get(_real(x.get("aliases"), a.get("party_id"))) == "false_positive"
+            ):
+                wrong.append(
+                    f"specialist.refer sanctions on a false positive ({a.get('party_id')})"
+                )
         wrong += ["a second recommend"] * max(0, sum(1 for t, _a in ran if t == "recommend") - 1)
         # Rubric: every required check for every party is a pass condition, so a missed required call fails; one
         # wrong or unneeded call (nothing missed) is partial.
@@ -480,7 +589,18 @@ def evaluate(check, x):
                 off.append(
                     f"{p['party_id']}: {'issue not found' if should else 'issue on a clear party'}"
                 )
-        return _line("pass" if not off else "partial" if len(off) == 1 else "fail", {"off": off})
+        # §5c: a near miss read as a match, or a match read as a false positive, fails outright.
+        misread = []
+        for pid, truth in screening_truth(ref).items():
+            got = _agent_screen(parties.get(pid) or {})
+            if (truth == "possible_match") != (got == "possible_match"):
+                misread.append(
+                    f"{pid}: {truth.replace('_', ' ')} read as {(got or 'nothing').replace('_', ' ')}"
+                )
+        verdict = (
+            "fail" if misread else "pass" if not off else "partial" if len(off) == 1 else "fail"
+        )
+        return _line(verdict, {"off": off, "screening_misread": misread})
     if check == "consistency":
         outcomes = [a.get("outcome") for a in parties.values()]
         rated_high = ((final.get("risk_rating") or {}).get("level")) == "high"

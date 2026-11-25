@@ -385,3 +385,232 @@ def test_evidence_judgment_reads_attribution_from_outcomes_and_requests_too():
         ],
     }
     assert verdict("evidence_judgment", final=swapped) == "fail"
+
+
+# --- sanctions screening (expert, BANK-OPERATING-RULES-DRAFT §5c) ------------------------------------------------------
+# A possible match = 2 of 3 identifiers (name, date of birth, country) with the name matching: refer to a sanctions
+# analyst. Otherwise a false positive, which the agent may dismiss with the identifiers that differ.
+
+SREF = {
+    **REF,
+    "recommendation": "specialist_review",
+    "parties": [
+        {
+            "party_id": "p1",
+            "outcome": "clear",
+            "requests": [],
+            "referral": None,
+            "screening": {"result": "false_positive"},
+        },
+        {
+            "party_id": "p2",
+            "outcome": "specialist_review",
+            "requests": [],
+            "referral": "sanctions",
+            "screening": {"result": "possible_match"},
+        },
+    ],
+}
+SCREEN_TRANSCRIPT = [
+    {
+        "step": 1,
+        "tool": "parties.list",
+        "observation": {
+            "ok": True,
+            "sequence": 1,
+            "output": {
+                "records": [
+                    {
+                        "party_id": "p1",
+                        "full_name": "Ana Ruiz",
+                        "date_of_birth": "1980-01-01",
+                        "citizenships": ["MX"],
+                    },
+                    {
+                        "party_id": "p2",
+                        "full_name": "Bo Lee",
+                        "date_of_birth": "1990-02-02",
+                        "citizenships": ["US"],
+                    },
+                ]
+            },
+        },
+    },
+    {
+        "step": 2,
+        "tool": "documents.list",
+        "observation": {
+            "ok": True,
+            "sequence": 2,
+            "output": {
+                "records": [
+                    {
+                        "document_id": "s1",
+                        "party_id": "p1",
+                        "kind": "screening_result",
+                        "content": {
+                            "listed_name": "Ana Ruiz",
+                            "listed_date_of_birth": "1955-05-05",
+                            "listed_country": "VE",
+                        },
+                    },
+                    {
+                        "document_id": "s2",
+                        "party_id": "p2",
+                        "kind": "screening_result",
+                        "content": {
+                            "listed_name": "Bo Lee",
+                            "listed_date_of_birth": "1990-02-02",
+                            "listed_country": "CN",
+                        },
+                    },
+                ]
+            },
+        },
+    },
+]
+SFINAL = {
+    **GOOD,
+    "recommendation": "specialist_review",
+    "rules_applied": [{"rule_id": "R-1", "version": 2}],
+    "assessments": [
+        {
+            "party_id": "p1",
+            "outcome": "clear",
+            "issues": [],
+            "screening": {
+                "result": "false_positive",
+                "identifiers_differ": ["date_of_birth", "country"],
+            },
+        },
+        {
+            "party_id": "p2",
+            "outcome": "specialist_review",
+            "referral": "sanctions",
+            "issues": [{"issue": "Possible sanctions match", "evidence_ids": ["s2"]}],
+        },
+    ],
+    "audit_trail": [
+        {
+            "sop_step": 1,
+            "status": "done",
+            "data_seen": ["s1", "s2"],
+            "facts_learnt": [],
+            "rules_applied": [],
+        }
+    ],
+}
+SEVENTS = [
+    *[
+        {"tool": t, "args": {"party_id": p}, "ok": True}
+        for t in ("identity.check", "screening.check")
+        for p in ("p1", "p2")
+    ],
+    {"tool": "specialist.refer", "args": {"specialty": "sanctions", "party_id": "p2"}, "ok": True},
+    {"tool": "recommend", "args": {}, "ok": True},
+]
+
+
+def sx(**over):
+    base = {"final": SFINAL, "events": SEVENTS, "ref": SREF, "transcript": SCREEN_TRANSCRIPT}
+    base.update(over)
+    return x(**base)
+
+
+def test_a_right_screening_reading_passes():
+    for c in ("tool_calls", "evidence_judgment", "evidence_faithfulness"):
+        assert judgment.grade(c, sx())["verdict"] == "pass", (c, judgment.grade(c, sx()))
+
+
+def test_a_referral_on_a_false_positive_is_a_wrong_call():
+    ev = SEVENTS[:-1] + [
+        {
+            "tool": "specialist.refer",
+            "args": {"specialty": "sanctions", "party_id": "p1"},
+            "ok": True,
+        },
+        SEVENTS[-1],
+    ]
+    out = judgment.grade("tool_calls", sx(events=ev))
+    assert out["verdict"] == "partial"
+    assert any(
+        "false positive" in w for w in out["lines"]["tool_calls.tool_calls"]["actual"]["wrong"]
+    )
+
+
+def test_a_near_miss_read_as_a_match_fails_evidence_judgment():
+    final = {
+        **SFINAL,
+        "assessments": [
+            {
+                "party_id": "p1",
+                "outcome": "specialist_review",
+                "referral": "sanctions",
+                "issues": [],
+            },
+            SFINAL["assessments"][1],
+        ],
+    }
+    assert judgment.grade("evidence_judgment", sx(final=final))["verdict"] == "fail"
+
+
+def test_a_match_read_as_a_false_positive_fails_evidence_judgment():
+    final = {
+        **SFINAL,
+        "assessments": [
+            SFINAL["assessments"][0],
+            {
+                "party_id": "p2",
+                "outcome": "clear",
+                "issues": [],
+                "screening": {"result": "false_positive", "identifiers_differ": ["country"]},
+            },
+        ],
+    }
+    assert judgment.grade("evidence_judgment", sx(final=final))["verdict"] == "fail"
+
+
+def test_a_dismissal_must_name_identifiers_that_really_differ():
+    wrong_claim = {
+        **SFINAL,
+        "assessments": [
+            {
+                **SFINAL["assessments"][0],
+                "screening": {"result": "false_positive", "identifiers_differ": ["name"]},
+            },
+            SFINAL["assessments"][1],
+        ],
+    }
+    out = judgment.grade("evidence_faithfulness", sx(final=wrong_claim))
+    assert out["verdict"] == "fail"
+    assert out["lines"]["evidence_faithfulness.audit_faithfulness"]["actual"][
+        "dismissals_unfaithful"
+    ]
+    no_reason = {
+        **SFINAL,
+        "assessments": [
+            {**SFINAL["assessments"][0], "screening": {"result": "false_positive"}},
+            SFINAL["assessments"][1],
+        ],
+    }
+    assert judgment.grade("evidence_faithfulness", sx(final=no_reason))["verdict"] == "fail"
+
+
+def test_the_expert_rule():
+    party = {"full_name": "Ana Ruiz", "date_of_birth": "1980-01-01", "citizenships": ["MX"]}
+    hit = lambda **k: judgment.screening_differs(
+        party,
+        {
+            "listed_name": "Ana Ruiz",
+            "listed_date_of_birth": "1980-01-01",
+            "listed_country": "MX",
+            **k,
+        },
+    )  # noqa: E731
+    assert hit() == set()
+    assert hit(listed_date_of_birth="1955-05-05") == {"date_of_birth"}
+    assert (
+        judgment.is_possible_match(hit(listed_date_of_birth="1955-05-05")) is True
+    )  # name + country: 2 of 3
+    assert judgment.is_possible_match({"date_of_birth", "country"}) is False
+    assert judgment.is_possible_match({"name"}) is False  # the name must match
