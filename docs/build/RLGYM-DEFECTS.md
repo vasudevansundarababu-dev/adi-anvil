@@ -777,3 +777,21 @@ All four tasks are edge-focused, so no task took the 80 clean complete or the 32
 - **Owner Option A (US person = US citizenship only)** is pinned by a test.
 - **Tests:** unit 875 passed; ruff and tsc clean.
 - **Deployed 13:24 CST with no run active.** Restart only (no migration). Digests identical, 29 saved suite hashes unchanged, v6 admission unchanged, v6 instruction hashes equal run-0235's.
+
+## Authoring's test-only marker (25 Nov 2026)
+
+- **The field:** the top-level export field `test_only` (from Project.testOnly). A non-boolean value is refused.
+- **Storage:** `true` sets `projects.projects.test_only` (migration 069, additive, default false). It is sticky: a later export can't silently unlabel the project. It is audited.
+- **Runs:**
+  - frozen in the run manifest as `test_only: true`;
+  - leaderboard eligibility refuses it ("the project is test-only (TEST)");
+  - the leaderboard and home queries exclude test runs.
+- **Home board:** test-only projects are listed apart as TEST, never ranked.
+- **Labels:** TEST badges on the project list and page, the suite page, the run list and the report header.
+- **Comparison:** the explicit run-vs-run comparison still works and labels each side (`test_only`).
+- **Tests:** `test_rlgym_test_only_unit.py`. The D-033 test was updated for the extended leaderboard condition. Unit 881 passed; ruff and tsc clean.
+- **Deployed 13:34 CST with no run active.**
+  - Backup: `.local/backups/rlgym-20261125-133349-before-migration-069.sql.gz` (.sha256 checked, complete dump).
+  - Migration 069 applied: 149 projects, none test-only yet.
+  - Digests identical; 29 saved suite hashes unchanged; v6 admission unchanged.
+  - API and /gym 200.
