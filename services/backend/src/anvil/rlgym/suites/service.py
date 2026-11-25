@@ -115,8 +115,28 @@ def resolve_binding(c, ws, pid, b):
             "pinned_version_id": b.get("pinned_version_id"),
             "seed_family": b.get("seed_family"),
         }
-    pick, code, reason = selection.resolve_environment(c, effective)
+    project = c.execute(
+        "SELECT test_only FROM projects.projects WHERE workspace_id=%s AND project_id=%s",
+        (ws, pid),
+    ).fetchone()
+    # A test-only project may also select Studio's test-channel candidates; a real project never sees them.
+    pick, code, reason = selection.resolve_environment(
+        c, effective, allow_test=bool((project or {}).get("test_only"))
+    )
+    if pick:
+        why = test_channel_problem(pick, project)
+        if why:
+            return None, "TEST_CHANNEL", why, effective
     return pick, code, reason, effective
+
+
+def test_channel_problem(version, project):
+    """Studio's test channel: a version recorded with channel "test" binds only to a test-only project."""
+    if (version or {}).get("channel") == "test" and not (project or {}).get("test_only"):
+        return (
+            f"{version.get('id')} is a test-channel version: only a test-only project may bind it"
+        )
+    return None
 
 
 def resolve_criterion(c, ws, pid, b):

@@ -6,22 +6,32 @@ not fail (a failed re-qualification stops selection at once, before the registry
 """
 
 
-def selectable_environments(c, contract_id):
+def selectable_environments(c, contract_id, allow_test=False):
+    """Qualified versions of the contract. `allow_test` (a test-only project only): also Studio's test-channel
+    candidates (registry channel "test", never qualified) under the contract's key or its `-test` key."""
+    test_part = (
+        """ OR (v.channel='test' AND v.contract_id IN (%s, %s)
+                AND v.state NOT IN ('revoked','deleted','failed'))"""
+        if allow_test
+        else ""
+    )
     return c.execute(
         """SELECT v.*, r.result AS last_qualification, r.failure_class AS last_failure_class, r.receipt_id AS last_receipt_id
            FROM catalog.environment_versions v
            LEFT JOIN LATERAL (SELECT result, failure_class, receipt_id FROM catalog.qualification_receipts q
                               WHERE q.subject_kind='environment_version' AND q.subject_id=v.id
                               ORDER BY issued_at DESC LIMIT 1) r ON true
-           WHERE v.contract_id=%s AND v.state='qualified' AND coalesce(r.result,'qualified')='qualified'
+           WHERE ((v.contract_id=%s AND v.state='qualified' AND coalesce(r.result,'qualified')='qualified')"""
+        + test_part
+        + """)
            ORDER BY v.version DESC, v.mirrored_at DESC""",
-        (contract_id,),
+        (contract_id, contract_id, f"{contract_id}-test") if allow_test else (contract_id,),
     ).fetchall()
 
 
-def resolve_environment(c, rule):
-    """→ (version row or None, condition code or None, reason)."""
-    versions = selectable_environments(c, rule["contract_id"])
+def resolve_environment(c, rule, allow_test=False):
+    """→ (version row or None, condition code or None, reason). `allow_test`: a test-only project's rule."""
+    versions = selectable_environments(c, rule["contract_id"], allow_test)
     if not versions:
         return None, "B2", f"No qualified version of {rule['contract_id']}"
     kind = rule["kind"]

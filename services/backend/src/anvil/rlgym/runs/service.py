@@ -795,6 +795,10 @@ def leaderboard_eligibility(resolved, lines):
         reasons.append("no agent model chosen")
     if (resolved.get("project") or {}).get("test_only"):
         reasons.append("the project is test-only (TEST): never on the leaderboard")
+    if (env_row or {}).get("channel") == "test":
+        reasons.append(
+            "the environment version is on Studio's test channel (TEST): never on the leaderboard"
+        )
     return {"eligible": not reasons, "reasons": reasons}
 
 
@@ -848,6 +852,8 @@ def _manifest(run_id, check):
         "environment": {
             "alias": env["binding"]["alias"],
             "version_id": env["version"]["id"],
+            # Studio's test channel (TEST label; absent for releases).
+            **({"channel": "test"} if (r.get("env_row") or {}).get("channel") == "test" else {}),
             "registry_image_digest": env["version"]["image_digest"],
             "seed_family": env["version"]["seed_family"],
             "seed_sha256": env["version"]["seed_sha256"],

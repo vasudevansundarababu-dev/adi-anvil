@@ -51,8 +51,11 @@ function Frame({
     <section className="report">
       <div className="between">
         <p>
-          {header.test_only && <Badge state="draft" label="TEST" />}{' '}
-          {header.placeholder_note && <strong className="no">{header.placeholder_note}</strong>}{' '}
+          {(header.test_only || header.test_channel) && <Badge state="draft" label="TEST" />}{' '}
+          {header.test_channel && <small>Environment on Studio&rsquo;s test channel. </small>}
+          {header.placeholder_note && (
+            <strong className="no">{header.placeholder_note}</strong>
+          )}{' '}
           {header.cohort} · manifest <Hash value={header.manifest_sha256} />{' '}
           {header.scoring && <small>{header.scoring}</small>}
           {header.agent_view && <small>{header.agent_view.note}</small>}

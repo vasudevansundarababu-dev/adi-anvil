@@ -88,13 +88,14 @@ def _upsert_version(c, v, seq, state, reg):
             return diff
         c.execute(
             """UPDATE catalog.environment_versions SET state=%s, state_seq=%s, registry=%s,
-                 case_catalog=coalesce(%s, case_catalog), mirrored_at=now()
+                 case_catalog=coalesce(%s, case_catalog), channel=coalesce(%s, channel), mirrored_at=now()
                WHERE id=%s AND (registry<>%s OR state_seq < %s)""",
             (
                 state,
                 seq,
                 reg,
                 Jsonb(v.get("case_catalog")) if v.get("case_catalog") else None,
+                v.get("channel"),
                 v["id"],
                 reg,
                 seq,
@@ -103,8 +104,8 @@ def _upsert_version(c, v, seq, state, reg):
         return []
     c.execute(
         f"""INSERT INTO catalog.environment_versions({",".join(VERSION_FIELDS)},operations,schema_tables,image_recipe,
-              case_catalog,state,state_seq,registry,schema)
-            VALUES({",".join(["%s"] * len(VERSION_FIELDS))},%s,%s,%s,%s,%s,%s,%s,%s)""",
+              case_catalog,state,state_seq,registry,schema,channel)
+            VALUES({",".join(["%s"] * len(VERSION_FIELDS))},%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
         (
             *[v.get(f) for f in VERSION_FIELDS],
             Jsonb(v.get("operations")),
@@ -115,6 +116,8 @@ def _upsert_version(c, v, seq, state, reg):
             seq,
             reg,
             Jsonb(v.get("schema")) if v.get("schema") else None,
+            # Studio's test channel (records of test candidates carry channel "test"); NULL for releases.
+            v.get("channel"),
         ),
     )
     return []
