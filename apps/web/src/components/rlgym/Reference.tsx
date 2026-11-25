@@ -143,6 +143,7 @@ export function ReferencePanel({ path }: { path: string }) {
       })}
       <LookupBaseline path={path} />
       <BulletinBlind path={path} />
+      <ProbeInvents path={path} />
     </section>
   );
 }
@@ -299,6 +300,58 @@ function BulletinBlind({ path }: { path: string }) {
           />{' '}
           <small>
             {last.summary.points_percent}% of points · {when(last.created_at)}
+            {last.placeholder_graded ? ' · TEST — graded on placeholder rules, not valid as a result' : ''}
+          </small>
+        </p>
+      )}
+    </section>
+  );
+}
+
+// Grader probe (verification only, never a run or a model): the reference agent's episode plus one audit-trail id the
+// environment never returned. evidence_faithfulness must fail as CRITICAL on every gradable case.
+function ProbeInvents({ path }: { path: string }) {
+  const { say } = useGym();
+  const data = useData<any>(`${path}/probe-invents-run`);
+  const [busy, setBusy] = useState(false);
+  const [failure, setFailure] = useState<GymApiError | null>(null);
+  const last = data.data?.latest_run;
+  async function run() {
+    setBusy(true);
+    setFailure(null);
+    try {
+      await send('POST', `${path}/probe-invents-run`, {});
+      say('Probe: invents evidence finished.');
+      data.reload();
+    } catch (e) {
+      setFailure(e as GymApiError);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <section className="card">
+      <div className="between">
+        <div>
+          <h3>Probe: invents evidence</h3>
+          <small>
+            A grader check, not a model: the reference approach with one audit-trail id the environment never
+            returned. Evidence faithfulness must fail as critical on every case.
+          </small>
+        </div>
+        <button className="primary" onClick={run} disabled={busy}>
+          {busy ? 'Running…' : 'Run probe: invents evidence'}
+        </button>
+      </div>
+      <Failure error={failure} />
+      {last && (
+        <p>
+          <Badge
+            state={last.summary.passed ? 'ready' : 'failed'}
+            label={`caught as critical on ${last.summary.caught} of ${last.summary.cases} cases`}
+          />{' '}
+          <small>
+            {when(last.created_at)}
             {last.placeholder_graded ? ' · TEST — graded on placeholder rules, not valid as a result' : ''}
           </small>
         </p>

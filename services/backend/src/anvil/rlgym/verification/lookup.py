@@ -276,10 +276,11 @@ def run(c, ws, sv_id, requested_by, body=None):
 
 
 def latest(c, ws, sv_id):
-    # G-02's bulletin_blind runs share the table; G-01 reads only the lookup's own.
+    # G-02's bulletin_blind runs and the grader probes share the table; G-01 reads only the lookup's own.
     r = c.execute(
         """SELECT * FROM verification.lookup_runs WHERE workspace_id=%s AND suite_version_id=%s
-           AND coalesce(report->>'kind', 'lookup') <> 'bulletin_blind' ORDER BY created_at DESC LIMIT 1""",
+           AND coalesce(report->>'kind', 'lookup') NOT IN ('bulletin_blind', 'probe_invents_evidence')
+           ORDER BY created_at DESC LIMIT 1""",
         (ws, sv_id),
     ).fetchone()
     return r and {"id": r["id"], "created_at": r["created_at"], **r["report"]}
