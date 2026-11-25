@@ -174,6 +174,11 @@ def _judgment(actor, ref, application_id, failures, operations):
                             }
                         )
                     )
+        if action.get("tool") == "identity.check" and (ref.get("identity_methods") or {}):
+            # KYC Judgment: documentary or non_documentary per party (reference.v2 `identity_methods`, requested).
+            method = ref["identity_methods"].get((action.get("args") or {}).get("party_id"))
+            if method:
+                action = {**action, "args": {**action["args"], "method": method}}
         obs = note((yield action))
         try:
             action = base.send(obs)

@@ -1,5 +1,5 @@
 """G6 (KYC Judgment v1 C3): scenario events in the sealed evidence. The runtime appends each fired record to the
-episode state (collection `scenario_events`, pending Studio's name: RL Gym review); RL Gym keeps them, and the notices
+episode state (collection `scenario_events_fired`, Studio cc7af5a); RL Gym keeps them, and the notices
 the agent actually read through notices.read, in the bundle. Episodes without events keep today's bundle shape."""
 
 import inspect
@@ -22,7 +22,7 @@ FIRED = {
 
 
 def test_fired_records_and_notices_read_are_kept():
-    snaps = {"start": {"scenario_events": []}, "end": {"scenario_events": [FIRED]}}
+    snaps = {"start": {"scenario_events_fired": []}, "end": {"scenario_events_fired": [FIRED]}}
     transcript = [
         {"step": 1, "tool": "screening.check", "observation": {"ok": True, "sequence": 7}},
         {
@@ -53,7 +53,7 @@ def test_fired_records_and_notices_read_are_kept():
 
 
 def test_a_fired_notice_the_agent_never_read_is_listed():
-    out = events.scenario_events({"end": {"scenario_events": [FIRED]}}, [])
+    out = events.scenario_events({"end": {"scenario_events_fired": [FIRED]}}, [])
     assert out["unread"] == ["bulletin-0001"]
 
 
@@ -71,3 +71,32 @@ def test_the_worker_adds_them_only_when_present():
     src = inspect.getsource(worker.execute)
     assert "scenario_log.scenario_events(snapshots, transcript)" in src
     assert '{"scenario_events": scenario}' in src
+
+
+def test_studio_collection_name_and_notices_shown_on_the_next_observation():
+    assert events.COLLECTION == "scenario_events_fired"
+    transcript = [
+        {"step": 1, "tool": "screening.check", "observation": {"ok": True, "sequence": 7}},
+        {
+            "step": 2,
+            "tool": "document.read",
+            "observation": {
+                "ok": True,
+                "sequence": 8,
+                "notices": [
+                    {"notice_id": "bulletin-0001", "summary": "Rule GB-03 has a new version (2)."}
+                ],
+            },
+        },
+    ]
+    out = events.scenario_events({"end": {"scenario_events_fired": [FIRED]}}, transcript)
+    assert out["notices_shown"] == [
+        {
+            "notice_id": "bulletin-0001",
+            "shown_at_sequence": 8,
+            "text": "Rule GB-03 has a new version (2).",
+        }
+    ]
+    assert out["unread"] == [
+        "bulletin-0001"
+    ]  # shown is not read: notices_considered is still graded

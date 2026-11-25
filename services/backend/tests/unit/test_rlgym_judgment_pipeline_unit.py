@@ -93,7 +93,7 @@ class JudgmentEnv(Env):
                 }
             ]
         )
-        return {"scenario_events": fired}
+        return {"scenario_events_fired": fired}
 
 
 def episode(gen, bulletin=True):

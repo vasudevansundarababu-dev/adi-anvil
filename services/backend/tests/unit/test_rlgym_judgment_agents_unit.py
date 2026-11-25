@@ -225,3 +225,46 @@ def test_the_reference_agent_produces_the_judgment_output_from_reference_v2():
     }
     for name in ("decision", "risk_rating", "rule_in_force", "audit_faithfulness"):
         assert judgment.evaluate(name, x)["verdict"] == "pass", name
+
+
+def test_the_reference_agent_uses_the_identity_method_the_reference_names():
+    actor = {
+        "sections": {
+            **ACTOR["sections"],
+            "S5": {
+                "steps": [
+                    {"tool": t}
+                    for t in ("application.read", "documents.list", "identity.check", "recommend")
+                ]
+            },
+        }
+    }
+    actor["sections"]["S3"] = {"tools": [*ACTOR["sections"]["S3"]["tools"], "identity.check"]}
+    ref = {**REF, "identity_methods": {"kj-1-p1": "non_documentary"}}
+    final, env = drive(reference.agent(actor, ref, APP, []))
+    calls = {
+        t["args"]["party_id"]: t["args"].get("method")
+        for t in env.transcript
+        if t["tool"] == "identity.check"
+    }
+    assert calls == {"kj-1-p1": "non_documentary", "kj-1-p2": None}
+    # The new request type and referral specialty pass through as the reference names them.
+    ref2 = {
+        **REF,
+        "parties": [
+            {
+                "party_id": "kj-1-p1",
+                "outcome": "specialist_review",
+                "requests": ["identification_number"],
+                "referral": "edd",
+            },
+            {"party_id": "kj-1-p2", "outcome": "clear", "requests": [], "referral": None},
+        ],
+    }
+    final, env = drive(reference.agent(ACTOR, ref2, APP, []))
+    assert [t["args"]["type"] for t in env.transcript if t["tool"] == "information.request"] == [
+        "identification_number"
+    ]
+    assert [t["args"]["specialty"] for t in env.transcript if t["tool"] == "specialist.refer"] == [
+        "edd"
+    ]
