@@ -672,3 +672,24 @@ All four tasks are edge-focused, so no task took the 80 clean complete or the 32
   | run-0228 | | 6% | | | the D-042 run where the agent never recommended |
 
 - **Tests:** `test_rlgym_g3_tool_metrics_unit.py` (8 tests, written first). Web `tsc` is clean.
+
+## G4 — the no-AI lookup baseline as a verification check (25 Nov 2026; KYC Judgment v1 build go, §10a.1, E-011 §3)
+
+- **What it is:** `verification/lookup.py`. A fixed decision table over each case's records (no model) decides the case.
+  - The reference agent plays that decision through the task's own steps on a fresh local instance (identity-checked image; nothing built or pulled; no spend).
+  - The project's graders score it against the case's true reference answers.
+- **Lookups:**
+  - one per environment (`LOOKUPS`);
+  - Golden KYC's is the literal table of @12's seven published rules (KYC-01/02/03/04, GB-02/03/05), first match wins;
+  - an environment without one is "not measured", never a pass. Judgment v1's lookup comes with Studio's lookup data (S5).
+- **Gate:** the person sets it per lookup run (default 60%), and it is stored with the run.
+- **Where it shows:**
+  - Suite → Reference agent → **Lookup baseline (G-01)** → Gate (%) → **Run lookup baseline**;
+  - each run's Verification tab has a new row, **G-01 "Lookup baseline can't solve the cases"**: PASS at or below the gate, FAIL above it, not enough evidence until it is run. Shadow mode: it reports and blocks nothing.
+- **Storage:** migration 067 adds `verification.lookup_runs` (append-only, RLS, select/insert grant). It is one new table; nothing else changes.
+- **Dry run on the real database (rolled back):**
+  - suite v6: the lookup scores **100%** of points, with full marks and the right decision on all 8 cases;
+  - G-01 on run-0235 reads FAIL ("a lookup solves it"), as expected for v8's pilot cases;
+  - on the T1 40-case sample the same table scored 97.0%.
+  - The D-063 fix also saved a completeness split on the real database: count cells 4/4, and 2/2/1/1/1/1 with families.
+- **Tests:** `test_rlgym_g4_lookup_unit.py` (7 tests, written first). Unit 798 passed; ruff clean; web `tsc` clean.

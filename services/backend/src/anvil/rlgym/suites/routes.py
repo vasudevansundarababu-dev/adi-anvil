@@ -182,6 +182,28 @@ def routes():
                 201,
             )
 
+    @r.post(W + "/suite-versions/{sv}/lookup-run", status_code=201)
+    def lookup_run_now(ws: str, sv: str, request: Request, body: dict = Body(default_factory=dict)):
+        """G4: the no-AI lookup baseline on the suite's case set (local instance; no model; no spend)."""
+        from anvil.rlgym.verification import lookup
+
+        with scope(request, ws) as ctx:
+            ctx.actor.require_person()
+            return ok(lookup.run(ctx.c, ctx.ws, sv, str(ctx.actor.id), body), request, 201)
+
+    @r.get(W + "/suite-versions/{sv}/lookup-run")
+    def lookup_latest(ws: str, sv: str, request: Request):
+        from anvil.rlgym.verification import lookup
+
+        with scope(request, ws) as ctx:
+            return ok(
+                {
+                    "latest_run": lookup.latest(ctx.c, ctx.ws, sv),
+                    "default_threshold_percent": lookup.DEFAULT_THRESHOLD,
+                },
+                request,
+            )
+
     @r.post(W + "/task-imports/{tid}/reference-confirmation", status_code=201)
     def reference_confirm(
         ws: str, tid: str, request: Request, body: dict = Body(default_factory=dict)

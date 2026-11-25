@@ -15,6 +15,8 @@ Checks in this phase:
 - V-01 environment replay and V-04 oracle: INSUFFICIENT_EVIDENCE until the replay harness and the SME-confirmed
   reference agent exist (phase 1 states it; never a pass).
 - V-L1 leakage, C-01 grader configuration, S-01 to S-04 safety honesty.
+- G-01 lookup baseline (G4, E-011 §3): the suite version's latest no-AI lookup run must score at or below its gate
+  (default 60%); above it, the cases don't need reasoning.
 """
 
 import statistics
@@ -797,6 +799,41 @@ def reference_rows(c, ws, run, manifest):
     return v04, v01
 
 
+def lookup_row(latest_run, environment_version_id):
+    """G-01 from the suite version's latest lookup run (verification/lookup.py)."""
+    from anvil.rlgym.verification import lookup
+
+    name = "Lookup baseline can't solve the cases"
+    if not latest_run:
+        if not lookup.lookup_for(environment_version_id):
+            return row(
+                "G-01",
+                name,
+                "INSUFFICIENT_EVIDENCE",
+                f"no lookup for {environment_version_id} yet (it comes with the environment's lookup data)",
+            )
+        return row(
+            "G-01",
+            name,
+            "INSUFFICIENT_EVIDENCE",
+            "the lookup baseline hasn't been run for this suite version (Suite → Reference agent → Run lookup "
+            "baseline)",
+        )
+    s = latest_run["summary"]
+    gate = s["gate"]["threshold_percent"]
+    detail = (
+        f"the no-AI lookup scores {s['points_percent']:g}% of points (gate {gate:g}%), full marks on "
+        f"{s['full_marks']} of {s['cases']} cases, the right decision on {s['decisions_right']}"
+    )
+    return row(
+        "G-01",
+        name,
+        "PASS" if s["gate"]["passed"] else "FAIL",
+        detail,
+        {"lookup_run": latest_run["id"], **s},
+    )
+
+
 def build(c, ws, run_id, requested_by=None, profile="experiment"):
     run = c.execute(
         "SELECT * FROM runs.runs WHERE workspace_id=%s AND id=%s", (ws, run_id)
@@ -836,6 +873,14 @@ def build(c, ws, run_id, requested_by=None, profile="experiment"):
     rows_.append(isolation(cases, bundles))
     rows_.append(tool_errors(episodes, bundles))
     rows_.append(v04)
+    from anvil.rlgym.verification import lookup
+
+    rows_.append(
+        lookup_row(
+            lookup.latest(c, ws, run["suite_version_id"]),
+            manifest["environment"]["version_id"],
+        )
+    )
     if pass_row:
         rows_ += shortcuts(c, ws, manifest, pass_row, cases, bundles, refs)
         rows_.append(grader_replay(c, ws, manifest, pass_row, cases, bundles, refs))

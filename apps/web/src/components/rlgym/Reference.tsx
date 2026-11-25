@@ -132,6 +132,107 @@ export function ReferencePanel({ path }: { path: string }) {
           </div>
         );
       })}
+      <LookupBaseline path={path} />
+    </section>
+  );
+}
+
+// G4 (E-011 §3): the no-AI lookup baseline. A fixed decision table over the case's records is played through each
+// task's procedure and scored against the true references. Above the gate, the cases don't need reasoning (G-01).
+function LookupBaseline({ path }: { path: string }) {
+  const { say } = useGym();
+  const data = useData<any>(`${path}/lookup-run`);
+  const [gate, setGate] = useState<string>('');
+  const [busy, setBusy] = useState(false);
+  const [failure, setFailure] = useState<GymApiError | null>(null);
+  const d = data.data;
+  const last = d?.latest_run;
+  const value = gate === '' ? String(d?.default_threshold_percent ?? 60) : gate;
+  async function run() {
+    setBusy(true);
+    setFailure(null);
+    try {
+      await send('POST', `${path}/lookup-run`, { threshold_percent: Number(value) });
+      say('Lookup baseline finished.');
+      data.reload();
+    } catch (e) {
+      setFailure(e as GymApiError);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <section className="card">
+      <div className="between">
+        <div>
+          <h3>Lookup baseline (G-01)</h3>
+          <small>
+            A fixed decision table over each case&rsquo;s records, with no model, played through the task&rsquo;s steps
+            and scored against the true references. If it scores above the gate, the cases don&rsquo;t need
+            reasoning. Shown on each run&rsquo;s Verification tab.
+          </small>
+        </div>
+        <div className="row">
+          <label>
+            Gate (%)
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={value}
+              onChange={(e) => setGate(e.target.value)}
+              style={{ width: 70 }}
+            />
+          </label>
+          <button className="primary" onClick={run} disabled={busy}>
+            {busy ? 'Running…' : 'Run lookup baseline'}
+          </button>
+        </div>
+      </div>
+      <Failure error={failure} />
+      {last && (
+        <>
+          <p>
+            <Badge
+              state={last.summary.gate.passed ? 'ready' : 'failed'}
+              label={`${last.summary.points_percent}% of points · gate ${last.summary.gate.threshold_percent}% · ${
+                last.summary.gate.passed ? 'needs reasoning' : 'a lookup solves it'
+              }`}
+            />{' '}
+            <small>
+              Full marks on {last.summary.full_marks} of {last.summary.cases} cases · right decision on{' '}
+              {last.summary.decisions_right} · {when(last.created_at)} · {last.lookup}
+            </small>
+          </p>
+          <details>
+            <summary>Cases</summary>
+            <table>
+              <thead>
+                <tr>
+                  <th>Case</th>
+                  <th>Lookup decided</th>
+                  <th>Reference</th>
+                  <th>Points</th>
+                </tr>
+              </thead>
+              <tbody>
+                {last.cases
+                  .filter((cs: any) => !cs.skipped)
+                  .map((cs: any) => (
+                    <tr key={`${cs.task_id}:${cs.case_id}`}>
+                      <td>
+                        <code>{cs.case_id}</code>
+                      </td>
+                      <td>{Object.values(cs.lookup).join(' · ')}</td>
+                      <td>{Object.values(cs.truth).join(' · ')}</td>
+                      <td className={cs.full_marks ? 'ok' : 'no'}>{cs.points}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </details>
+        </>
+      )}
     </section>
   );
 }
