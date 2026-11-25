@@ -22,7 +22,7 @@ import uuid
 from psycopg.types.json import Jsonb
 
 from anvil.rlgym.common import GymError, emit, set_scope, system_scope
-from anvil.rlgym.runs import aliasing, clauses, images, instructions, openenv
+from anvil.rlgym.runs import aliasing, clauses, images, instructions, openenv, policy_ids
 from anvil.rlgym.scoring import service as scoring
 from anvil.rlgym.systems import mock_provider
 
@@ -296,6 +296,7 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
     agent_log = {}
     aliaser = None
     live_caller = None
+    policy_map = None
     try:
         reset = session.request({"op": "reset", "case_id": episode["case_id"], "inject": inject})
         if not reset.get("ok"):
@@ -308,6 +309,22 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
                 "start": session.request({"op": "snapshot"}).get("collections"),
                 "end": None,
             }
+        # D-056: Authoring's policy_id_map (frozen with the task) shows the agent the environment's policy ids in S4,
+        # only if its environment version and policy hashes match this environment's policies at reset. The frozen
+        # payload is never edited; the record keeps the original ids. A task without a map is untouched.
+        if frozen.get("policy_id_map") is not None:
+            # The environment's policies as the start snapshot read them (none without a declared schema → warning).
+            env_policies = ((snapshots or {}).get("start") or {}).get("policies")
+            shown_actor, policy_map = policy_ids.apply(
+                actor, frozen["policy_id_map"], m["environment"]["version_id"], env_policies
+            )
+            if policy_map["applied"]:
+                original_sha = instr["sha256"]
+                instr = instructions.build(shown_actor, selected)
+                policy_map["instructions_sha256"] = {
+                    "original": original_sha,
+                    "shown": instr["sha256"],
+                }
         # Owner decision 24 Nov 2026 (D-039): on Studio's OpenEnv images the agent sees opaque IDs, never the case,
         # application, party or document IDs (they name the edge case). Arguments are mapped back before the call.
         aliaser = (
@@ -416,6 +433,7 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
             "tool_events": events,
             "agent_log": agent_log,
             **({"id_aliases": aliaser.record()} if aliaser else {}),
+            **({"policy_id_map": policy_map} if policy_map else {}),
             "live": bool(live_caller),
             "tokens": {
                 "in": live_caller.tokens_in if live_caller else 0,
@@ -488,6 +506,8 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         # D-008: the reset message the agent saw, and the conversation (live) or a mock label.
         "reset": {"user_message": reset.get("user_message")},
         "agent_log": agent_log,
+        # D-056: how the policy ids were shown (absent for a task without a map, so its bundle is as before).
+        **({"policy_id_map": policy_map} if policy_map else {}),
         # D-054: the provider ended the episode with refusals (a flagged, non-model outcome; excluded from scores).
         **(
             {"provider_refused": agent_log["provider_refused"]}

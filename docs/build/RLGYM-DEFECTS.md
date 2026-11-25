@@ -534,3 +534,16 @@ Owner approval, relayed by the coordinator: "1.Yes. 2. Yes. ... r. Yes".
 - Also fixed: the D-054 statistics test asserted an exact source string that the formatter had split; the source now keeps `+= 1` on one line.
 - Tests: 14 new unit tests (`test_rlgym_d055_d056_unit.py`); unit 724 passed; ruff clean.
 - Deploy (not done): restart the API and worker (agent and gateway changes). No migration. Then run the relabel with `--apply`.
+
+## D-056 — the agent sees the environment's policy ids in S4 (24 Nov 2026; owner-approved; built, not deployed)
+
+Authoring's S4 names its own rule ids (for example rule-set document `54e00852-…`). The environment's `policies` collection uses KYC-01 to KYC-04 and GB-02/03/05 (Studio's note: @12 rows have `rule_id, title, text, source`, no hash field). The agent therefore could not cite the ids the environment uses.
+
+- **Input (Authoring's new exports; the frozen packages don't change):** an optional `policy_id_map` on each task entry:
+  `{"environment_version": "golden-kyc-openenv@12", "map": {"<S4 ruleId>": ["KYC-01", …]}, "policies": {"KYC-01": {"content_sha256": "…"}, …}}`. `policies` can also be a list of `{policy_id, content_sha256}`. `content_sha256` is the sha256 of the policy's UTF-8 text (Studio's `text_sha256`) or the RL Gym's canonical row hash. The bare `{"<id>": [...]}` form has nothing to verify against, so it is never applied.
+- **Import:** kept as sent in the new nullable `projects.task_imports.policy_id_map` (migration 064, additive). It is never checked at import, so it can't block a task. Admission freezes it with the task in the run manifest.
+- **Reset:** applied only when the map's environment version equals the run's, and every policy id it names is in that environment's start-snapshot `policies` with a matching hash. Then the agent's copy of S4 shows `Rule KYC-01, KYC-02 (…)` instead of the original id. Rules the map doesn't name stay as they are. On any mismatch (another version, changed text, a missing policy, no hashes, unreadable policies), S4 is left as authored and the reason is recorded as a warning.
+- **Evidence:** the bundle (and an errored episode's kept trajectory) gets `policy_id_map`: applied, warning, environment versions, each rule's original and shown ids, unmapped rules, and the instructions hash original vs shown. The frozen payload is never edited. A task without a map has no key, so its instructions, hash and bundle are as before.
+- Migration check (rolled back on the real database): 5,926 task imports, digest of every existing column identical before and after, 0 maps set, run/episode/evidence/score/suite/payload counts unchanged.
+- Tests: 12 new unit tests (`test_rlgym_d056_policy_id_map_unit.py`, written first); unit 736 passed.
+- Deploy (not done): `pg_dump` first, `python3 scripts/local.py migrate` (064), restart the API and worker.

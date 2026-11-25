@@ -834,6 +834,12 @@ def _manifest(run_id, check):
                     if clauses.task_clauses(t.get("actor"), t)
                     else {}
                 ),
+                # D-056: Authoring's policy_id_map, frozen whole (applied at reset against the environment run).
+                **(
+                    {"policy_id_map": t["policy_id_map"]}
+                    if t.get("policy_id_map") is not None
+                    else {}
+                ),
             }
             for t in r["tasks"]
         ],

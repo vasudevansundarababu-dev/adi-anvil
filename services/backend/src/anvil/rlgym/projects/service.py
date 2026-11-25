@@ -235,8 +235,8 @@ def receive_export(c, ws, actor, project_id, body):
         c.execute(
             """INSERT INTO projects.task_imports(id,workspace_id,project_id,export_id,task_id,revision,title,package_ref,package_sha256,
                  case_selector,actor_payload,private_payload,state,state_reason,corrects_id,sme_batch_id,complexity,archetype,
-                 policy_clauses)
-               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                 policy_clauses,policy_id_map)
+               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 str(uuid4()),
                 ws,
@@ -258,6 +258,9 @@ def receive_export(c, ws, actor, project_id, body):
                 package["private"].get("complexity"),
                 package["private"].get("archetype"),
                 Jsonb(policy_clauses) if policy_clauses else None,
+                # D-056: Authoring's map from its S4 rule ids to the environment's policy ids (optional, kept as sent;
+                # checked against the environment at reset, never at import, so it can't block a task).
+                Jsonb(task.get("policy_id_map")) if task.get("policy_id_map") is not None else None,
             ),
         )
         if latest:
