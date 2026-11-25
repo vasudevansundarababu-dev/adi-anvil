@@ -56,6 +56,12 @@ def in_force(lib, rule_id, case, fired=None, as_of_sequence=None, submitted_at=N
     return current
 
 
+def facts_in_definition(lib, derived_id):
+    """The catalog facts a derived fact's definition reads (owner Option A: us_person reads citizenship only)."""
+    d = next((x for x in lib.get("derived_facts") or [] if x.get("id") == derived_id), None)
+    return clauses.facts_in(d.get("definition")) if d else set()
+
+
 def _derived(lib, facts, case, fired, as_of_sequence, submitted_at):
     out = {}
     for d in lib.get("derived_facts") or []:

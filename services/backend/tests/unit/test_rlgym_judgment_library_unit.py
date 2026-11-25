@@ -181,3 +181,27 @@ def test_registry_case_v1_rows_still_work_as_case_facts_only():
     v1 = {"case_id": "c", "facts": {"process": "account_opening", "opening_channel": "branch"}}
     got = ids(library.applicable(LIB, v1))
     assert ("R-REMOTE-NON-DOC", 1) not in got and ("GB-STRICTER-APPLIES", 1) in got
+
+
+def test_owner_option_a_a_green_card_holder_is_a_non_us_person():
+    """Owner, 25 Nov (Option A, CIP): us_person is US citizenship only. A lawful permanent resident (residency US,
+    no US citizenship) is a non-US person: the non-US identification rule applies (passport, alien ID or TIN), and the
+    US-person rule (the SSN) never does."""
+    case = {
+        **CASE,
+        "parties": [
+            {
+                "party_id": "lpr",
+                "facts": {"party_role": "primary", "citizenship": ["IN"], "residency": "US"},
+            },
+            {
+                "party_id": "citizen",
+                "facts": {"party_role": "joint", "citizenship": ["US"], "residency": "CA"},
+            },
+        ],
+    }
+    got = ids(library.applicable(LIB, case))
+    assert got[("R-NON-US-ID-NUMBER", 1)] == ["lpr"]
+    assert got[("R-US-ID-NUMBER", 1)] == ["citizen"]
+    # The definition reads citizenship alone; residency never makes a US person.
+    assert library.facts_in_definition(LIB, "us_person") == {"citizenship"}
