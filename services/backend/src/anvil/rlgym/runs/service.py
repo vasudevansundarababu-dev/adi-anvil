@@ -558,29 +558,7 @@ def admission_check(ctx, body):
         if env and selected:
             # KYC Judgment v1: the pinned library and the cases' facts, frozen for grading (v8: nothing, no call).
             try:
-                vid, base = env["version"]["id"], env["version"].get("registry")
-
-                def scenarios_for(ids):
-                    out = {"scenarios": {}}
-                    for i in range(0, len(ids), 50):
-                        got = integrations.registry_get(
-                            f"/versions/{vid}/scenarios",
-                            params={"ids": ",".join(ids[i : i + 50])},
-                            audience="scorer",
-                            timeout=30,
-                            base=base,
-                        )
-                        out["scenarios"].update(got.get("scenarios") or {})
-                    return out
-
-                resolved["judgment"] = judgment_part(
-                    selected,
-                    lambda: integrations.registry_get(
-                        f"/versions/{vid}/policy-library", audience="scorer", timeout=30, base=base
-                    ),
-                    scenarios_for,
-                    pinned=env["version"].get("scorer_content") or _scorer_pins(vid, base),
-                )
+                resolved["judgment"] = env_judgment_part(env["version"], selected)
             except GymError as exc:
                 item(
                     "policy_library",
@@ -1007,6 +985,34 @@ def placeholder_graded(project):
     """Integration test only (Studio ab1f684): a test-only project's runs grade references that rest on placeholder
     rules as if they were approved. Never a real project."""
     return bool((project or {}).get("test_only"))
+
+
+def env_judgment_part(version, selected):
+    """judgment_part for an environment version ({id, registry, scorer_content?}) read from its registry's scorer
+    endpoints. Runs freeze it in the manifest; the reference / lookup / bulletin-blind runs grade with it."""
+    vid, base = version["id"], version.get("registry")
+
+    def scenarios_for(ids):
+        out = {"scenarios": {}}
+        for i in range(0, len(ids), 50):
+            got = integrations.registry_get(
+                f"/versions/{vid}/scenarios",
+                params={"ids": ",".join(ids[i : i + 50])},
+                audience="scorer",
+                timeout=30,
+                base=base,
+            )
+            out["scenarios"].update(got.get("scenarios") or {})
+        return out
+
+    return judgment_part(
+        selected,
+        lambda: integrations.registry_get(
+            f"/versions/{vid}/policy-library", audience="scorer", timeout=30, base=base
+        ),
+        scenarios_for,
+        pinned=version.get("scorer_content") or _scorer_pins(vid, base),
+    )
 
 
 def judgment_part(selected, fetch_library, fetch_scenarios=None, pinned=None):

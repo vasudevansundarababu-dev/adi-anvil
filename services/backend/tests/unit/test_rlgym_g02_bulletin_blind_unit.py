@@ -86,8 +86,7 @@ def test_g01_and_g02_runs_are_kept_apart():
     assert '"kind": "bulletin_blind"' in inspect.getsource(bb.run)
     src = inspect.getsource(bb.run)
     assert (
-        "blind_actor(" in src
-        and "reference_run._score(c, ws, project, evaluators, t, ep, truth)" in src
+        "blind_actor(" in src and "c, ws, project, evaluators, t, ep, truth, judgment=jctx" in src
     )
     from anvil.rlgym.suites import routes
 

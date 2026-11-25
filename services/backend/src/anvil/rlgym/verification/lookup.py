@@ -129,8 +129,18 @@ def _decision(d):
     return {k: d.get(k) for k in KEYS_V1}
 
 
+def played(truth, said):
+    """What the reference agent is driven with: the lookup's decision over the truth's other fields, without the
+    rule-change alternative (the agent would otherwise swap the lookup's decision for the starting rules' answer)."""
+    return {**{k: v for k, v in truth.items() if k != "reference_if_not_fired"}, **said}
+
+
 def lookup_for(environment_version_id):
-    return LOOKUPS.get(str(environment_version_id or "").split("@")[0])
+    """The contract's lookup; a Studio test-channel version (key ending -test) uses its contract's."""
+    key = str(environment_version_id or "").split("@")[0]
+    return LOOKUPS.get(key) or (
+        LOOKUPS.get(key[: -len("-test")]) if key.endswith("-test") else None
+    )
 
 
 def threshold(body):
@@ -179,6 +189,7 @@ def run(c, ws, sv_id, requested_by, body=None):
     evaluators = reference_run._evaluators(c, ws, project)
     chosen = reference_run._cases(c, ws, sv_id, env, tasks)
     ids = sorted({cid for v in chosen.values() for cid in v})
+    jctx = reference_run.judgment_context(env, ids)
     refs = {}
     for i in range(0, len(ids), 50):
         refs.update(
@@ -213,8 +224,10 @@ def run(c, ws, sv_id, requested_by, body=None):
                 session.request({"op": "reset", "case_id": cid, "inject": None})
                 said = decide(cid, snapshot())
                 # The lookup's decision drives the procedure; the score is always against the true reference.
-                ep = reference_run._episode(session, t["actor"], {**truth, **said}, cid, snapshot)
-                score = reference_run._score(c, ws, project, evaluators, t, ep, truth)
+                ep = reference_run._episode(session, t["actor"], played(truth, said), cid, snapshot)
+                score = reference_run._score(
+                    c, ws, project, evaluators, t, ep, truth, judgment=jctx
+                )
                 lookup_d, truth_d = _decision(said), _decision(truth)
                 rows.append(
                     {

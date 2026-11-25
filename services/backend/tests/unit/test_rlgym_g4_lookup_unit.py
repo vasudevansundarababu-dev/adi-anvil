@@ -148,7 +148,7 @@ def test_the_run_plays_the_lookup_through_the_procedure_and_scores_against_the_t
     src = inspect.getsource(lookup.run)
     assert "reference_run._episode" in src and "reference_run._score" in src
     # The lookup's decision drives the episode; the score is always against the true reference.
-    assert "_score(c, ws, project, evaluators, t, ep, truth)" in src
+    assert "c, ws, project, evaluators, t, ep, truth, judgment=jctx" in src
     from anvil.rlgym.suites import routes
 
     assert "lookup-run" in inspect.getsource(routes)

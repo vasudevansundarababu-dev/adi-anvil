@@ -308,6 +308,19 @@ def judgment_results(manifest, episode, bundle, reference, vctx, configs):
     return {b["id"]: judgment.evaluate(b["check"], x) for b in blocks}
 
 
+def judgment_extra(config, criterion, extra, judgment_lines):
+    """A criterion's runner input with its KYC Judgment lines: verifier blocks get them beside their blocks; the
+    activation bridge's graders (config.grader kyc-judgment.g2.*) get only them, and the runner combines this
+    criterion's lines. Shared by runs and the reference / lookup / bulletin-blind runs."""
+    if not judgment_lines:
+        return extra
+    if str(config.get("grader") or "").startswith("kyc-judgment.g2."):
+        return {"judgment_results": judgment_lines, "criterion": criterion}
+    if extra:
+        return {**extra, "judgment_results": judgment_lines}
+    return extra
+
+
 def plugin_results(c, episode, manifest, vctx, bundle, reference):
     """Run each bound plug-in once for this episode with all its blocks (D22). → {block_id: result line}."""
     from anvil.rlgym.plugins import runner
@@ -473,13 +486,7 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
             )
             if extra and plugin_lines:
                 extra["plugin_results"] = plugin_lines
-            if extra and judgment_lines:
-                extra["judgment_results"] = judgment_lines
-            if judgment_lines and str(row["config"].get("grader") or "").startswith(
-                "kyc-judgment.g2."
-            ):
-                # The activation bridge's graders: the runner combines this criterion's lines.
-                extra = {"judgment_results": judgment_lines, "criterion": ev["criterion_id"]}
+            extra = judgment_extra(row["config"], ev["criterion_id"], extra, judgment_lines)
             if extra and row["config"].get("judge"):
                 # A live judge for Rubric blocks (behind an approval); the mock judge stays the default.
                 from anvil.rlgym.live import judge as live_judge

@@ -74,4 +74,5 @@ def test_real_projects_never_select_test_versions():
 def test_admission_checks_the_libraries_hash_the_version_pins():
     from anvil.rlgym.runs import service as runs
 
-    assert "_scorer_pins(vid, base)" in inspect.getsource(runs.admission_check)
+    assert "env_judgment_part(" in inspect.getsource(runs.admission_check)
+    assert "_scorer_pins(vid, base)" in inspect.getsource(runs.env_judgment_part)

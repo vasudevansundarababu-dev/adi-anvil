@@ -111,7 +111,8 @@ def _episode(session, actor, ref, case_id, start_snapshot_fn, alias=True):
     al = aliasing.Aliaser(case_id, start) if alias else None
     shown = (lambda v: al.out(v)) if al else (lambda v: v)
     real = (lambda v: al.back(v)) if al else (lambda v: v)
-    failures, events, trace = [], [], []
+    # transcript: real-ID observations for grading only (audit faithfulness, notices read); never stored.
+    failures, events, trace, transcript = [], [], [], []
     ops = session.request({"op": "operations"}).get("operations")
     gen = reference.agent(actor, ref, shown(case_id), failures, operations=ops)
     action = next(gen)
@@ -131,6 +132,7 @@ def _episode(session, actor, ref, case_id, start_snapshot_fn, alias=True):
             }
         )
         trace.append({"step": step, "tool": tool, "obs_sha256": reference.digest(obs)})
+        transcript.append({"step": step, "tool": tool, "args": args, "observation": obs})
         try:
             action = gen.send(shown(obs))
         except StopIteration:
@@ -141,21 +143,38 @@ def _episode(session, actor, ref, case_id, start_snapshot_fn, alias=True):
         "tool_events": events,
         "final_output": final,
         "snapshots": {"start": start, "end": end},
+        "transcript": transcript,
         "failures": failures,
         "trace": trace,
         "end_sha256": reference.digest(end),
     }
 
 
-def _score(c, ws, project, evaluators, task, ep, ref):
-    """Graders on the reference episode (real IDs), judge blocks on the mock judge; S7 points when the task has them."""
+def judgment_context(env, case_ids):
+    """KYC Judgment v1: the part a run freezes in its manifest (policy library, scenarios, case facts) for these
+    cases of the environment; None for any other environment (v8: no call)."""
+    from anvil.rlgym.runs import service as runs
+    from anvil.rlgym.suites import cases as suite_cases
+
+    ids = set(case_ids)
+    selected = [r for r in suite_cases._rows(env) if r["case_id"] in ids]
+    return runs.env_judgment_part(env, selected)
+
+
+def _score(c, ws, project, evaluators, task, ep, ref, judgment=None):
+    """Graders on the reference episode (real IDs), judge blocks on the mock judge; S7 points when the task has them.
+    KYC Judgment criteria are graded as in a run: `judgment` is judgment_context's part, and a test-only project
+    grades placeholder references (never awaiting_sme)."""
     from anvil.rlgym.plugins import service as plugins
+    from anvil.rlgym.runs import events as scenario_log
     from anvil.rlgym.scoring import s7, sandbox
     from anvil.rlgym.scoring import service as scoring
 
     manifest = {
         "template": {"id": project["template_id"], "version": project["template_version"]},
         "plugins": {},
+        "placeholder_graded": bool(project.get("test_only")),
+        "judgment": judgment,
     }
     episode = {
         "id": f"ref-{task['task_id'][:8]}-{ep['case_id']}",
@@ -196,13 +215,18 @@ def _score(c, ws, project, evaluators, task, ep, ref):
         "tool_events": ep["tool_events"],
         "final_output": ep["final_output"],
         "snapshots": ep["snapshots"],
+        "transcript": ep.get("transcript"),
     }
+    scenario = scenario_log.scenario_events(ep["snapshots"], ep.get("transcript"))
+    if scenario:
+        bundle["scenario_events"] = scenario
     plugin_lines = scoring.plugin_results(c, episode, manifest, vctx, bundle, ref) if vctx else {}
     evidence = {
         "tool_events": ep["tool_events"],
         "final_output": ep["final_output"],
         "snapshots": ep["snapshots"],
     }
+    judgment_lines = scoring.judgment_results(manifest, episode, bundle, ref, vctx, configs)
     verdicts = {}
     by_fw = {}
     for ev, row in configs:
@@ -217,7 +241,7 @@ def _score(c, ws, project, evaluators, task, ep, ref):
         extras = []
         for ev, row in group:
             blocks = (vctx or {}).get("blocks", {}).get(ev["criterion_id"])
-            extras.append(
+            extra = (
                 {
                     "blocks": blocks,
                     "case_id": ep["case_id"],
@@ -227,6 +251,9 @@ def _score(c, ws, project, evaluators, task, ep, ref):
                 }
                 if blocks and row["config"].get("runner") == "verifier_blocks"
                 else {}
+            )
+            extras.append(
+                scoring.judgment_extra(row["config"], ev["criterion_id"], extra, judgment_lines)
             )
         out = sandbox.run_batch(
             fw, [row["config"] for _, row in group], evidence, ref, extras=extras
@@ -315,6 +342,14 @@ def run(c, ws, sv_id, requested_by, replay=True, max_cases_per_task=3):
             images.stop_instance(container)
         return out
 
+    graded = sorted(
+        {
+            cid
+            for t in tasks
+            for cid in chosen.get((t["task_id"], t["revision"]), [])[:max_cases_per_task]
+        }
+    )
+    jctx = judgment_context(env, graded)
     first = one_pass()
     second = one_pass() if replay else None
     results = []
@@ -339,7 +374,7 @@ def run(c, ws, sv_id, requested_by, replay=True, max_cases_per_task=3):
                 )
                 continue
             ep = first[(t["task_id"], cid)]
-            score = _score(c, ws, project, evaluators, t, ep, ref)
+            score = _score(c, ws, project, evaluators, t, ep, ref, judgment=jctx)
             row = {
                 "case_id": cid,
                 "failures": ep["failures"],
@@ -350,7 +385,7 @@ def run(c, ws, sv_id, requested_by, replay=True, max_cases_per_task=3):
             }
             if second is not None:
                 ep2 = second[(t["task_id"], cid)]
-                score2 = _score(c, ws, project, evaluators, t, ep2, ref)
+                score2 = _score(c, ws, project, evaluators, t, ep2, ref, judgment=jctx)
                 diffs = [
                     a["step"] for a, b in zip(ep["trace"], ep2["trace"], strict=False) if a != b
                 ]

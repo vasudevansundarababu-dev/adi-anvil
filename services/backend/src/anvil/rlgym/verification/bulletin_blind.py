@@ -83,6 +83,7 @@ def run(c, ws, sv_id, requested_by, body=None):
     evaluators = reference_run._evaluators(c, ws, project)
     chosen = reference_run._cases(c, ws, sv_id, env, tasks)
     ids = sorted({cid for v in chosen.values() for cid in v})
+    jctx = reference_run.judgment_context(env, ids)
     refs = {}
     for i in range(0, len(ids), 50):
         refs.update(
@@ -120,7 +121,9 @@ def run(c, ws, sv_id, requested_by, body=None):
                 said = blind_reference(truth)
                 # The starting rules drive the procedure; no notices are read; the score is against the truth.
                 ep = reference_run._episode(session, blind_actor(t["actor"]), said, cid, snapshot)
-                score = reference_run._score(c, ws, project, evaluators, t, ep, truth)
+                score = reference_run._score(
+                    c, ws, project, evaluators, t, ep, truth, judgment=jctx
+                )
                 blind_d, truth_d = _decision(said), _decision(truth)
                 rows.append(
                     {

@@ -120,15 +120,22 @@ def _ids_in(value, out):
 
 
 def _judgment(actor, ref, application_id, failures, operations):
-    """KYC Judgment v1: the S5 procedure as written (decisions from reference.v2), then, before the recommendation,
-    the notices (if offered), each party's requests and referral; the final output is the Judgment contract: rules
-    applied (with governs) as the reference states them, one assessment per party, the notices considered, the risk
-    rating and officer flag, and an audit trail of only the ids the environment returned."""
+    """KYC Judgment v1: the S5 procedure as written, then, before the recommendation, the notices (if offered), a
+    screening check per party, each party's requests and referral; the final output is the Judgment contract.
+
+    Decisions come from reference.v2. On a rule-change case the answer depends on the bulletin, exactly as the grader
+    decides it: no notice read before the recommendation → `reference_if_not_fired` (the starting rules). The final
+    output: rules applied (with governs) as the reference states them, one assessment per party, the notices
+    considered, the risk rating and officer flag, a rationale naming the recommendation and its rules, and an audit
+    trail marking each mandatory SOP step done in order (with the reference's missing facts) and only the ids the
+    environment returned."""
     have = offered(actor)
     base = _agent_v1(
         actor, {**ref, "request_type": None, "referral": None}, application_id, failures, operations
     )
     seen, notices = [], []
+    active = ref
+    screened = set()
 
     def note(obs):
         if (obs or {}).get("ok"):
@@ -137,6 +144,8 @@ def _judgment(actor, ref, application_id, failures, operations):
 
     action = next(base)
     while "final" not in action:
+        if action.get("tool") == "screening.check":
+            screened.add((action.get("args") or {}).get("party_id"))
         if action.get("tool") == "recommend":
             if "notices.read" in have:
                 obs = note((yield {"tool": "notices.read", "args": {}}))
@@ -145,7 +154,20 @@ def _judgment(actor, ref, application_id, failures, operations):
                     for n in ((obs or {}).get("output") or {}).get("records") or []
                     if isinstance(n, dict) and n.get("notice_id")
                 ]
-            for p in ref.get("parties") or []:
+            if not notices and isinstance(ref.get("reference_if_not_fired"), dict):
+                active = {**ref, **ref["reference_if_not_fired"]}
+            for p in active.get("parties") or []:
+                if "screening.check" in have and p["party_id"] not in screened:
+                    args = {
+                        "party_id": p["party_id"],
+                        "idempotency_key": f"ref:screening.check:{p['party_id']}",
+                    }
+                    obs = note((yield {"tool": "screening.check", "args": args}))
+                    tries = 0
+                    while (obs or {}).get("state") == "pending" and tries < 3:
+                        obs = note((yield {"tool": "screening.check", "args": args}))
+                        tries += 1
+                    screened.add(p["party_id"])
                 for item in p.get("requests") or []:
                     if "information.request" in have:
                         note(
@@ -174,6 +196,15 @@ def _judgment(actor, ref, application_id, failures, operations):
                             }
                         )
                     )
+            rec = active.get("recommendation")
+            action = {
+                **action,
+                "args": {
+                    **(action.get("args") or {}),
+                    "decision": rec,
+                    "reason": f"Recommendation {str(rec).replace('_', ' ')} under the rules applied",
+                },
+            }
         if action.get("tool") == "identity.check" and (ref.get("identity_methods") or {}):
             # KYC Judgment: documentary or non_documentary per party (reference.v2 `identity_methods`, requested).
             method = ref["identity_methods"].get((action.get("args") or {}).get("party_id"))
@@ -184,25 +215,25 @@ def _judgment(actor, ref, application_id, failures, operations):
             action = base.send(obs)
         except StopIteration:
             break
-    rr = ref.get("risk_rating") or {}
+    rr = active.get("risk_rating") or {}
+    rules = [
+        {k: r[k] for k in ("rule_id", "version", "party_ids", "governs", "overlaps_with") if k in r}
+        for r in active.get("rules_applied") or []
+    ]
+    rec = active.get("recommendation")
+    missing = [m for m in active.get("facts_missing") or [] if isinstance(m, dict)]
+    steps_done = [str(s) for s in active.get("mandatory_steps") or []] or ["1"]
     yield {
         "final": {
-            "recommendation": ref.get("recommendation"),
-            "officer_verification": bool(ref.get("officer_verification")),
+            "recommendation": rec,
+            "officer_verification": bool(active.get("officer_verification")),
             # B3: {required, level, factors}.
             "risk_rating": {
                 "required": bool(rr.get("required")),
                 "level": rr.get("level"),
                 "factors": rr.get("factors") or [],
             },
-            "rules_applied": [
-                {
-                    k: r[k]
-                    for k in ("rule_id", "version", "party_ids", "governs", "overlaps_with")
-                    if k in r
-                }
-                for r in ref.get("rules_applied") or []
-            ],
+            "rules_applied": rules,
             "assessments": [
                 {
                     "party_id": p["party_id"],
@@ -211,22 +242,27 @@ def _judgment(actor, ref, application_id, failures, operations):
                     "requests": p.get("requests") or [],
                     **({"referral": p["referral"]} if p.get("referral") else {}),
                 }
-                for p in ref.get("parties") or []
+                for p in active.get("parties") or []
             ],
             "notices_considered": notices,
-            "rationale": "Reference approach: the procedure as written, decisions from the reference answers.",
+            "rationale": (
+                f"Recommendation: {rec}. Rules applied: "
+                + (", ".join(f"{r['rule_id']} v{r.get('version')}" for r in rules) or "none")
+                + "."
+            ),
             "audit_trail": [
                 {
-                    "sop_step": 1,
+                    "sop_step": step,
                     "status": "done",
-                    "data_seen": list(dict.fromkeys(seen)),
+                    "data_seen": list(dict.fromkeys(seen)) if i == 0 else [],
                     "facts_learnt": [],
-                    "facts_missing": [],
+                    "facts_missing": missing if i == len(steps_done) - 1 else [],
                     "rules_applied": [],
                     "principle": "Reference approach.",
-                    "conclusion": ref.get("recommendation"),
+                    "conclusion": rec if i == len(steps_done) - 1 else "done",
                     "confidence": "high",
                 }
+                for i, step in enumerate(steps_done)
             ],
         }
     }
