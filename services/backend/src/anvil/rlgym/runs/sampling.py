@@ -138,6 +138,15 @@ def takeable_counts(cells, cases, tasks, seed):
     return out
 
 
+def selector_types(sel):
+    """The application types a task's case_selector names: one (golden KYC v8) or a list (KYC Judgment v1, spec §16:
+    one task covers all four account types)."""
+    v = (sel or {}).get("application_type")
+    if isinstance(v, list):
+        return {x for x in v if x}
+    return {v} if v else set()
+
+
 def match_task(case, tasks, seed, untagged=False):
     """The ready task of this case's class: same application type and completeness; a task focused on an edge tag is
     used only for cases carrying that tag, and preferred for them. `untagged` (the plan's D-059 option): an untagged
@@ -146,7 +155,7 @@ def match_task(case, tasks, seed, untagged=False):
     same = [
         t
         for t in tasks
-        if t["case_selector"]["application_type"] == case["application_type"]
+        if case["application_type"] in selector_types(t["case_selector"])
         and t["case_selector"].get("completeness") in (None, case["completeness"])
     ]
     focused = [
@@ -161,7 +170,7 @@ def match_task(case, tasks, seed, untagged=False):
         focused = [
             t
             for t in tasks
-            if t["case_selector"]["application_type"] == case["application_type"]
+            if case["application_type"] in selector_types(t["case_selector"])
             and t["case_selector"].get("edge_cases")
             and set(t["case_selector"]["edge_cases"]) <= set(case["edge_cases"])
         ]
@@ -170,7 +179,7 @@ def match_task(case, tasks, seed, untagged=False):
         pool = [
             t
             for t in tasks
-            if t["case_selector"]["application_type"] == case["application_type"]
+            if case["application_type"] in selector_types(t["case_selector"])
             and t["case_selector"].get("completeness") in (None, case["completeness"])
         ]
     if not pool:

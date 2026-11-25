@@ -38,7 +38,12 @@ def _cases_for(cat, sel):
     cells = cat.get("cells", {})
     if sel.get("completeness"):
         return cells.get(f"{sel['application_type']}|{sel['completeness']}", 0)
-    return sum(n for k, n in cells.items() if k.split("|", 1)[0] == sel["application_type"])
+    from anvil.rlgym.runs.sampling import selector_types
+
+    types = selector_types(sel)
+    if sel.get("completeness"):
+        return sum(cells.get(f"{t}|{sel['completeness']}", 0) for t in types)
+    return sum(n for k, n in cells.items() if k.split("|", 1)[0] in types)
 
 
 def _recipe_text(recipe):
@@ -330,10 +335,12 @@ def _task_types(c, sv_id):
            WHERE s.suite_version_id=%s""",
         (sv_id,),
     ).fetchall()
-    types = {(r["case_selector"] or {}).get("application_type") for r in rows}
-    if not rows or None in types:
+    from anvil.rlgym.runs.sampling import selector_types
+
+    sets = [selector_types(r["case_selector"]) for r in rows]
+    if not rows or any(not s for s in sets):
         return None
-    return types
+    return set().union(*sets)
 
 
 def _write_plan(c, ws, sv_id, plan, catalog, source="manual", ai=None):
@@ -1581,8 +1588,8 @@ def view(c, ws, sv_id):
             "policy_maps": sum(1 for t in tasks if t["policy_map_id"]),
             "unmatched": unmatched,
             "by_application_type": {
-                k: sum(1 for t in tasks if t["case_selector"]["application_type"] == k)
-                for k in sorted({t["case_selector"]["application_type"] for t in tasks})
+                k: sum(1 for t in tasks if k in _sel_types(t["case_selector"]))
+                for k in sorted(set().union(*(_sel_types(t["case_selector"]) for t in tasks)))
             },
         },
         # D-038: the edge cases the planned environment version actually has (tag, cases, application types).
@@ -1609,6 +1616,21 @@ def sampling_counts(cells, rows, tasks, seed):
     from anvil.rlgym.runs import sampling
 
     return sampling.takeable_counts(cells, rows, tasks, seed)
+
+
+def _sel_types(sel):
+    from anvil.rlgym.runs.sampling import selector_types
+
+    return selector_types(sel)
+
+
+def selector_label(sel):
+    """A task's selector in words: its application type(s), completeness and edge cases."""
+    types = (sel or {}).get("application_type")
+    first = ", ".join(types) if isinstance(types, list) else str(types)
+    return " · ".join(
+        [first, sel.get("completeness") or "any completeness", *(sel.get("edge_cases") or [])]
+    )
 
 
 def list_suites(c, ws, pid):

@@ -68,6 +68,8 @@ def _read_checked(root, ref, digest):
 
 
 def appendices(d, view):
+    from anvil.rlgym.suites.service import selector_label
+
     c, ws, m = d.c, d.ws, d.manifest
     task_scores = {t["task_id"]: t["per_model"] for t in view["tasks"]["tasks"]}
     env = c.execute(
@@ -102,13 +104,7 @@ def appendices(d, view):
             {
                 "task_id": t["task_id"],
                 "revision": t["revision"],
-                "selector": " · ".join(
-                    [
-                        t["case_selector"]["application_type"],
-                        t["case_selector"].get("completeness") or "any completeness",
-                        *(t["case_selector"].get("edge_cases") or []),
-                    ]
-                ),
+                "selector": selector_label(t["case_selector"]),
                 "package_sha256": t["package_sha256"],
                 "per_model": {
                     s: v.get("mean") for s, v in (task_scores.get(t["task_id"]) or {}).items()

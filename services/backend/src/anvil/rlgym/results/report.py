@@ -465,14 +465,9 @@ def observations_cut(d):
 def _task_label(task):
     if not task:
         return ""
-    sel = task["case_selector"]
-    return " · ".join(
-        [
-            sel["application_type"],
-            sel.get("completeness") or "any completeness",
-            *(sel.get("edge_cases") or []),
-        ]
-    )
+    from anvil.rlgym.suites.service import selector_label
+
+    return selector_label(task["case_selector"])
 
 
 def slices(d):
