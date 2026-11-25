@@ -39,9 +39,14 @@ def _fired_270(end):
     return fired, published
 
 
-def scenario_events(snapshots, transcript):
+def scenario_events(snapshots, transcript, studio=None):
+    """`studio`: Studio's sealed evidence for the episode (GET /evidence/{generation}: scenario_events_fired,
+    notices_published), the source of record; else the end snapshot's older collections; else 2.7.0's notices."""
     end = (snapshots or {}).get("end") or {}
-    if COLLECTION in end or "notices_published" in end:
+    if isinstance(studio, dict) and isinstance(studio.get(COLLECTION), list):
+        fired = [r for r in studio[COLLECTION] if isinstance(r, dict)]
+        published = [r for r in studio.get("notices_published") or [] if isinstance(r, dict)]
+    elif COLLECTION in end or "notices_published" in end:
         fired = [r for r in end.get(COLLECTION) or [] if isinstance(r, dict)]
         published = [r for r in end.get("notices_published") or [] if isinstance(r, dict)]
     else:

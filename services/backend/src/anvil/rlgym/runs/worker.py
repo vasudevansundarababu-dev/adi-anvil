@@ -453,6 +453,7 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
                 break
         state = session.request({"op": "state"})
         end = state.pop("collections", None)  # kept only as the end snapshot, never twice
+        studio_evidence = state.pop("studio_evidence", None)
         if snapshots is not None:
             snapshots["end"] = end
     except Exception as exc:
@@ -477,7 +478,7 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         session.close()
     wall_ms = int((time.monotonic() - started) * 1000)
     steps = len(transcript)
-    scenario = scenario_log.scenario_events(snapshots, transcript)
+    scenario = scenario_log.scenario_events(snapshots, transcript, studio=studio_evidence)
     bundle = {
         "schema": "rlgym.sealed-episode.v1",
         # A live model's episode is a real execution (on synthetic cases), labelled apart from mock results.

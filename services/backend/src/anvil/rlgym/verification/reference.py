@@ -123,8 +123,8 @@ def _judgment(actor, ref, application_id, failures, operations):
     """KYC Judgment v1: the S5 procedure as written, then, before the recommendation, the notices (if offered), a
     screening check per party, each party's requests and referral; the final output is the Judgment contract.
 
-    Decisions come from reference.v2. On a rule-change case the answer depends on the bulletin, exactly as the grader
-    decides it: no notice read before the recommendation → `reference_if_not_fired` (the starting rules). The final
+    Decisions come from reference.v2: on a rule-change case, always the post-bulletin truth (owner, 25 Nov 2026; the
+    bulletin fires at the first documents.list, which the procedure reaches). The final
     output: rules applied (with governs) as the reference states them, one assessment per party, the notices
     considered, the risk rating and officer flag, a rationale naming the recommendation and its rules, and an audit
     trail marking each mandatory SOP step done in order (with the reference's missing facts) and only the ids the
@@ -154,8 +154,6 @@ def _judgment(actor, ref, application_id, failures, operations):
                     for n in ((obs or {}).get("output") or {}).get("records") or []
                     if isinstance(n, dict) and n.get("notice_id")
                 ]
-            if not notices and isinstance(ref.get("reference_if_not_fired"), dict):
-                active = {**ref, **ref["reference_if_not_fired"]}
             for p in active.get("parties") or []:
                 if "screening.check" in have and p["party_id"] not in screened:
                     args = {

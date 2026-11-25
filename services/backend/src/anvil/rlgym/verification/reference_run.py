@@ -138,12 +138,18 @@ def _episode(session, actor, ref, case_id, start_snapshot_fn, alias=True):
         except StopIteration:
             break
     end = session.request({"op": "snapshot"})["collections"]
+    try:
+        # Seals the episode on Studio's side and reads its evidence (fired scenario events, notices published).
+        studio_evidence = session.request({"op": "state"}).get("studio_evidence")
+    except (RuntimeError, ValueError, KeyError):
+        studio_evidence = None
     return {
         "case_id": case_id,
         "tool_events": events,
         "final_output": final,
         "snapshots": {"start": start, "end": end},
         "transcript": transcript,
+        "studio_evidence": studio_evidence,
         "failures": failures,
         "trace": trace,
         "end_sha256": reference.digest(end),
@@ -217,7 +223,9 @@ def _score(c, ws, project, evaluators, task, ep, ref, judgment=None):
         "snapshots": ep["snapshots"],
         "transcript": ep.get("transcript"),
     }
-    scenario = scenario_log.scenario_events(ep["snapshots"], ep.get("transcript"))
+    scenario = scenario_log.scenario_events(
+        ep["snapshots"], ep.get("transcript"), studio=ep.get("studio_evidence")
+    )
     if scenario:
         bundle["scenario_events"] = scenario
     plugin_lines = scoring.plugin_results(c, episode, manifest, vctx, bundle, ref) if vctx else {}

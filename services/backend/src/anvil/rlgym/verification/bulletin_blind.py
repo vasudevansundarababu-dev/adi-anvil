@@ -51,9 +51,12 @@ def bulletin_fired(ep):
     from anvil.rlgym.runs import events as scenario_log
     from anvil.rlgym.scoring import judgment
 
-    fired = (scenario_log.scenario_events(ep.get("snapshots"), ep.get("transcript")) or {}).get(
-        "fired"
-    ) or []
+    fired = (
+        scenario_log.scenario_events(
+            ep.get("snapshots"), ep.get("transcript"), studio=ep.get("studio_evidence")
+        )
+        or {}
+    ).get("fired") or []
     cut = judgment.recommend_sequence(ep.get("transcript"))
     return any(
         (f.get("published_at_sequence") or 0) < cut for f in fired if f.get("published_at_sequence")

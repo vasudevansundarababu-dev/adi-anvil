@@ -355,9 +355,9 @@ def evaluate(check, x):
         for f in x.get("fired") or []
         if (f.get("published_at_sequence") or 0) < recommend_sequence(x.get("transcript"))
     ]
-    if not fired and isinstance(ref.get("reference_if_not_fired"), dict):
-        # A rule-change case whose bulletin never fired before the decision: the answer without the change.
-        ref = ref["reference_if_not_fired"]
+    # Owner, 25 Nov 2026: a rule-change case is always graded against its fired (post-bulletin) truth; the trigger is
+    # the first documents.list, so an agent that never reaches it has failed the work. reference_if_not_fired is
+    # diagnostics only (G-02).
     if check == "rules_applied":
         if ref.get("rules_applied") is not None:
             # Studio's reference (computed from the same conditions, with the bulletin's version when it fired).

@@ -1,8 +1,9 @@
 """Studio 21c0af7 (B1-B3) wired into RL Gym's grading.
 - B1: the library and the cases' scenarios come from the scorer endpoints, and each hash is checked with common.sha
   (sorted-key compact JSON, UTF-8), before both are frozen in the manifest.
-- B2: reference.v2. `status: awaiting_sme` is not graded; `governs: null` is not graded; a rule-change case is graded
-  against `reference_if_not_fired` when no bulletin fired before the recommend call.
+- B2: reference.v2. `status: awaiting_sme` is not graded; `governs: null` is not graded; a rule-change case is always
+  graded against its fired (post-bulletin) truth (owner, 25 Nov 2026: the trigger is the first documents.list, so an
+  agent that never reaches it has failed the work); `reference_if_not_fired` is diagnostics only (G-02).
 - The clock is the observation's `sequence`: calls rejected before running (no sequence) never count.
 - B3: the output's risk_rating is {required, level, factors}."""
 
@@ -128,7 +129,7 @@ def test_null_governs_is_not_graded():
     assert out["verdict"] == "pass"
 
 
-def test_a_rule_change_case_without_the_bulletin_uses_reference_if_not_fired():
+def test_a_rule_change_case_is_always_graded_against_the_fired_truth():
     not_fired = {
         **REF,
         "recommendation": "ready_for_approval",
@@ -140,7 +141,9 @@ def test_a_rule_change_case_without_the_bulletin_uses_reference_if_not_fired():
         "recommendation": "ready_for_approval",
         "assessments": [{"party_id": "p1", "outcome": "clear", "issues": []}],
     }
-    assert judgment.evaluate("decision", x(reference=ref, final=clean))["verdict"] == "pass"
+    # The starting rules' answer is wrong even when the bulletin never fired.
+    assert judgment.evaluate("decision", x(reference=ref, final=clean))["verdict"] == "fail"
+    assert judgment.evaluate("decision", x(reference=ref, final=FINAL))["verdict"] == "pass"
     fired = [{"rule_id": "R", "to_version": 1, "published_at_sequence": 0, "notice_id": "n"}]
     assert (
         judgment.evaluate("decision", x(reference=ref, final=FINAL, fired=fired))["verdict"]

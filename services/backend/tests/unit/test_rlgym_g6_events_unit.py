@@ -69,7 +69,7 @@ def test_no_events_means_nothing_added():
 
 def test_the_worker_adds_them_only_when_present():
     src = inspect.getsource(worker.execute)
-    assert "scenario_log.scenario_events(snapshots, transcript)" in src
+    assert "scenario_log.scenario_events(snapshots, transcript, studio=studio_evidence)" in src
     assert '{"scenario_events": scenario}' in src
 
 

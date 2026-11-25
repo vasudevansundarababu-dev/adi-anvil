@@ -82,14 +82,13 @@ def grade(ref, fired, events, transcript, final):
     }
 
 
-def test_a_bulletin_it_never_saw_means_the_starting_rules():
+def test_the_reference_agent_always_records_the_post_bulletin_truth():
+    """Owner, 25 Nov 2026: a rule-change case's truth is the post-bulletin answer, whatever the agent saw."""
     events, transcript, final = drive(REF, [])
-    assert final["recommendation"] == "request_information"
-    assert ("information.request", "p1", "tin") in {
-        (e["tool"], e["args"].get("party_id"), e["args"].get("type")) for e in events
-    }
+    assert final["recommendation"] == "ready_for_approval"
+    assert not any(e["tool"] == "information.request" for e in events)
     rec = next(e for e in events if e["tool"] == "recommend")
-    assert rec["args"]["decision"] == "request_information"
+    assert rec["args"]["decision"] == "ready_for_approval"
     assert set(grade(REF, [], events, transcript, final).values()) == {"pass"}
 
 
@@ -109,11 +108,16 @@ def test_every_party_is_screened_before_the_recommendation():
 
 
 def test_the_audit_trail_and_rationale():
-    _, _, final = drive(REF, [])
+    r = {
+        **AFTER,
+        "mandatory_steps": ["1", "3"],
+        "facts_missing": [{"party_id": "p1", "fact": "tin"}],
+    }
+    _, _, final = drive(r, [])
     trail = final["audit_trail"]
     assert [e["sop_step"] for e in trail] == ["1", "3"] and {e["status"] for e in trail} == {"done"}
     assert {"party_id": "p1", "fact": "tin"} in [m for e in trail for m in e["facts_missing"]]
-    assert "request_information" in final["rationale"] and "R-A" in final["rationale"]
+    assert "ready_for_approval" in final["rationale"] and "R-A" in final["rationale"]
 
 
 def test_a_not_eligible_reference_is_recorded_as_not_eligible():

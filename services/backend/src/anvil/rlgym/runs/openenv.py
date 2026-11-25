@@ -372,8 +372,21 @@ class OpenEnvSession:
                     "sealed_sha256": sealed.get("sealed_sha256"),
                     "tool_events": sealed.get("sealed_tool_events"),
                 },
+                "studio_evidence": self._evidence(sealed.get("sealed_generation")),
             }
         raise ValueError(f"unknown session op {op}")
+
+    def _evidence(self, generation):
+        """Studio's sealed evidence for the episode just sealed (GET /evidence/{generation}): the scenario events that
+        fired and the notices published, the source of record for bulletins. None when the image doesn't serve it."""
+        if generation is None:
+            return None
+        try:
+            body = self.bridge.ok("GET", f"/evidence/{generation}")
+        except RuntimeError:
+            return None
+        src = body.get("evidence") if isinstance(body.get("evidence"), dict) else body
+        return {k: src.get(k) for k in ("scenario_events_fired", "notices_published") if k in src}
 
     def close(self):
         self.bridge.close()
