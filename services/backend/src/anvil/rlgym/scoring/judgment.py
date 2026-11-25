@@ -189,6 +189,10 @@ def evaluate(check, x):
     ref, final = x.get("reference"), x.get("final") or {}
     if ref is None:
         return _line("blocked", expected="the case's reference answers (reference.v2)")
+    if check == "tool_calls" and x.get("tool_events") is None:
+        return _line("blocked", expected="the episode's tool calls")
+    if check != "tool_calls" and x.get("final") is None:
+        return _line("blocked", expected="the agent's final output")
     wait = awaiting(ref)
     if wait:
         return _line("not_applicable", expected={wait[0]: wait[1]})
@@ -201,9 +205,13 @@ def evaluate(check, x):
         # A rule-change case whose bulletin never fired before the decision: the answer without the change.
         ref = ref["reference_if_not_fired"]
     if check == "rules_applied":
-        if not x.get("library") or not x.get("case"):
-            return _line("blocked", expected="the pinned policy library and the case's facts")
-        exp = expected_rules(x["library"], x["case"], x.get("fired"), x.get("transcript"))
+        if ref.get("rules_applied") is not None:
+            # Studio's reference (computed from the same conditions, with the bulletin's version when it fired).
+            exp = [r for r in ref["rules_applied"] if isinstance(r, dict)]
+        elif x.get("library") and x.get("case"):
+            exp = expected_rules(x["library"], x["case"], x.get("fired"), x.get("transcript"))
+        else:
+            return _line("blocked", expected="the reference's rules or the pinned policy library")
         # governs comes only from the SME's outcome; null (no overlap decided yet) is not graded.
         truth = [r for r in ref.get("rules_applied") or [] if r.get("governs") is not None]
         out = rules_applied(
@@ -321,4 +329,184 @@ def evaluate(check, x):
                 "officer_verification": ref.get("officer_verification"),
             },
         )
+    parties = {
+        _real(x.get("aliases"), a.get("party_id")): a
+        for a in final.get("assessments") or []
+        if isinstance(a, dict)
+    }
+    if check == "tool_calls":
+        events = [e for e in x["tool_events"] if isinstance(e, dict)]
+        ok = [e for e in events if e.get("ok", True) and not e.get("blocked")]
+        rec_i = next((i for i, e in enumerate(ok) if e.get("tool") == "recommend"), None)
+        before = ok if rec_i is None else ok[:rec_i]
+
+        def made(tool, **want):
+            return any(
+                e.get("tool") == tool
+                and all(
+                    _real(x.get("aliases"), (e.get("args") or {}).get(k)) == v
+                    for k, v in want.items()
+                )
+                for e in before
+            )
+
+        methods = ref.get("identity_methods") or {}
+        missed, wrong = [], []
+        for p in ref.get("parties") or []:
+            pid = p["party_id"]
+            want = {"party_id": pid, **({"method": methods[pid]} if methods.get(pid) else {})}
+            if not made("identity.check", **want):
+                missed.append(
+                    f"identity.check {pid}" + (f" ({methods[pid]})" if methods.get(pid) else "")
+                )
+            if not made("screening.check", party_id=pid):
+                missed.append(f"screening.check {pid}")
+            for item in p.get("requests") or []:
+                if not made("information.request", party_id=pid, type=item):
+                    missed.append(f"information.request {item} to {pid}")
+            if p.get("referral") and not made("specialist.refer", specialty=p["referral"]):
+                missed.append(f"specialist.refer {p['referral']}")
+        if rec_i is None:
+            missed.append("recommend")
+        asked = {
+            (p["party_id"], r) for p in ref.get("parties") or [] for r in p.get("requests") or []
+        }
+        referrals = {p.get("referral") for p in ref.get("parties") or [] if p.get("referral")}
+        for e in ok:
+            a = e.get("args") or {}
+            if (
+                e.get("tool") == "information.request"
+                and (_real(x.get("aliases"), a.get("party_id")), a.get("type")) not in asked
+            ):
+                wrong.append(f"information.request {a.get('type')} to {a.get('party_id')}")
+            if e.get("tool") == "specialist.refer" and a.get("specialty") not in referrals:
+                wrong.append(f"specialist.refer {a.get('specialty')}")
+        wrong += ["a second recommend"] * max(
+            0, sum(1 for e in ok if e.get("tool") == "recommend") - 1
+        )
+        n = len(missed) + len(wrong)
+        return _line(
+            "pass" if n == 0 else "partial" if n == 1 else "fail",
+            {"missed": missed, "wrong": wrong},
+        )
+    if check == "procedure_output":
+        problems = []
+        if final.get("recommendation") not in (
+            "ready_for_approval",
+            "request_information",
+            "specialist_review",
+        ):
+            problems.append("recommendation is not one of the three decision values")
+        if not (isinstance(final.get("rules_applied"), list) and final["rules_applied"]):
+            problems.append("rules_applied is empty")
+        missing_parties = [
+            p["party_id"] for p in ref.get("parties") or [] if p["party_id"] not in parties
+        ]
+        if missing_parties:
+            problems.append(f"no assessment for {', '.join(missing_parties)}")
+        for key, kind in (
+            ("notices_considered", list),
+            ("audit_trail", list),
+            ("officer_verification", bool),
+            ("risk_rating", dict),
+            ("rationale", str),
+        ):
+            if not isinstance(final.get(key), kind):
+                problems.append(f"{key} is missing")
+        return _line("fail" if problems else "pass", {"problems": problems}, "the output contract")
+    if check == "evidence_judgment":
+        off = []
+        for p in ref.get("parties") or []:
+            has = bool((parties.get(p["party_id"]) or {}).get("issues"))
+            should = p.get("outcome") != "clear"
+            if has != should:
+                off.append(
+                    f"{p['party_id']}: {'issue not found' if should else 'issue on a clear party'}"
+                )
+        return _line("pass" if not off else "partial" if len(off) == 1 else "fail", {"off": off})
+    if check == "consistency":
+        outcomes = [a.get("outcome") for a in parties.values()]
+        rated_high = ((final.get("risk_rating") or {}).get("level")) == "high"
+        if (
+            "specialist_review" in outcomes
+            or any(a.get("referral") for a in parties.values())
+            or rated_high
+        ):
+            implied = "specialist_review"
+        elif "request_information" in outcomes or any(a.get("requests") for a in parties.values()):
+            implied = "request_information"
+        else:
+            implied = "ready_for_approval"
+        ok = final.get("recommendation") == implied
+        return _line(
+            "pass" if ok else "fail",
+            {"recommendation": final.get("recommendation")},
+            {"implied_by_assessments": implied},
+        )
+    if check == "rationale":
+        text = str(final.get("rationale") or "")
+        rec = str(final.get("recommendation") or "")
+        names = bool(rec) and (rec in text or rec.replace("_", " ") in text.lower())
+        cites = any(
+            str(r.get("rule_id")) in text
+            for r in final.get("rules_applied") or []
+            if isinstance(r, dict)
+        )
+        n = int(names) + int(cites)
+        return _line(
+            "pass" if n == 2 else "partial" if n == 1 else "fail",
+            {
+                "names_the_recommendation": names,
+                "cites_a_rule": cites,
+                "judge": "deterministic local judge (no model)",
+            },
+        )
+    if check == "process_adherence":
+        return _line(
+            "not_applicable",
+            expected="no approved SOP on the template yet: process adherence can't be graded",
+        )
+    if check == "missing_facts":
+        truth = ref.get("facts_missing")
+        if truth is None:
+            return _line(
+                "not_applicable", expected="the reference doesn't list the case's missing facts yet"
+            )
+        stated = {
+            (_real(x.get("aliases"), m.get("party") or m.get("party_id")), m.get("fact"))
+            for e in final.get("audit_trail") or []
+            if isinstance(e, dict)
+            for m in e.get("facts_missing") or []
+            if isinstance(m, dict)
+        }
+        want = {(m.get("party_id"), m.get("fact")) for m in truth}
+        lacking = sorted(want - stated)
+        return _line("fail" if lacking else "pass", {"not_stated": lacking}, sorted(want))
     raise ValueError(f"unknown judgment check {check}")
+
+
+def combine(lines):
+    """A criterion's verdict from its lines (the runner applies the same rule): all not applicable → not applicable;
+    any blocked → blocked; a critical fail → fail (critical); any fail → fail; any partial → partial; else pass."""
+    vs = [ln["verdict"] for ln in lines.values()]
+    critical = any(ln.get("critical") and ln["verdict"] == "fail" for ln in lines.values())
+    if vs and all(v == "not_applicable" for v in vs):
+        verdict = "not_applicable"
+    elif "blocked" in vs:
+        verdict = "blocked"
+    elif "fail" in vs:
+        verdict = "fail"
+    elif "partial" in vs:
+        verdict = "partial"
+    else:
+        verdict = "pass"
+    return {"verdict": verdict, "critical": critical, "lines": lines}
+
+
+def grade(criterion, x):
+    """One rubric criterion of the activation bridge (grader kyc-judgment.g2.<criterion>)."""
+    from anvil.rlgym.catalog import judgment_configs
+
+    return combine(
+        {f"{criterion}.{c}": evaluate(c, x) for c in judgment_configs.GRADERS[criterion]}
+    )

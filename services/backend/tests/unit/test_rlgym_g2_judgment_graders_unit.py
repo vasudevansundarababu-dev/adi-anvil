@@ -478,5 +478,7 @@ def test_cases_awaiting_the_sme_are_not_graded():
 
 
 def test_missing_reference_or_library_is_blocked_never_a_pass():
-    assert check("rules_applied", library=None)["verdict"] == "blocked"
+    # The reference's own rules_applied is the truth; without it and without the library: blocked.
+    no_rules = {k: v for k, v in REF_V2.items() if k != "rules_applied"}
+    assert check("rules_applied", library=None, reference=no_rules)["verdict"] == "blocked"
     assert check("decision", reference=None)["verdict"] == "blocked"

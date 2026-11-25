@@ -267,6 +267,15 @@ def judgment_results(manifest, episode, bundle, reference, vctx, configs):
         for b in (row["config"].get("extra_blocks") or [])
         if b.get("kind") == "judgment"
     ]
+    from anvil.rlgym.catalog import judgment_configs
+
+    for ev, row in configs:
+        crit = judgment_configs.grader_of(row["config"])
+        if crit:
+            blocks += [
+                {"id": f"{crit}.{c}", "kind": "judgment", "check": c}
+                for c in judgment_configs.GRADERS[crit]
+            ]
     if not blocks:
         return {}
     from anvil.rlgym.scoring import judgment
@@ -291,6 +300,7 @@ def judgment_results(manifest, episode, bundle, reference, vctx, configs):
         "transcript": bundle.get("transcript"),
         "aliases": (bundle.get("id_aliases") or {}).get("aliases"),
         "final": bundle.get("final_output"),
+        "tool_events": bundle.get("tool_events"),
         "reference": reference,
     }
     return {b["id"]: judgment.evaluate(b["check"], x) for b in blocks}
@@ -463,6 +473,11 @@ def score_case(c, ws, episode, pass_row, manifest, sealed):
                 extra["plugin_results"] = plugin_lines
             if extra and judgment_lines:
                 extra["judgment_results"] = judgment_lines
+            if judgment_lines and str(row["config"].get("grader") or "").startswith(
+                "kyc-judgment.g2."
+            ):
+                # The activation bridge's graders: the runner combines this criterion's lines.
+                extra = {"judgment_results": judgment_lines, "criterion": ev["criterion_id"]}
             if extra and row["config"].get("judge"):
                 # A live judge for Rubric blocks (behind an approval); the mock judge stays the default.
                 from anvil.rlgym.live import judge as live_judge

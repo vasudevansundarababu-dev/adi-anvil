@@ -76,3 +76,49 @@ def config_for(criterion, studio_config):
         "extra_blocks": [_block(criterion, c) for c in CHECKS[criterion]],
         "regression_cases": regressions(criterion),
     }
+
+
+# --- the activation bridge (Studio 6779e3f): one evaluator per rubric criterion, config.grader names RL Gym's grader --
+PREFIX = "kyc-judgment.g2."
+GRADERS = {
+    "tool_calls": ["tool_calls"],
+    "procedure_output": ["procedure_output"],
+    "rules_applied": ["rules_applied", "rule_in_force"],
+    "evidence_judgment": ["evidence_judgment"],
+    "decision_next_action": ["decision", "risk_rating"],
+    "rationale": ["rationale"],
+    "process_adherence": ["process_adherence"],
+    "evidence_faithfulness": ["audit_faithfulness"],
+    "missing_facts": ["missing_facts"],
+    "consistency": ["consistency"],
+}
+
+
+def grader_of(config):
+    """The rubric criterion a configuration's `grader` names, or None for any other configuration."""
+    g = (config or {}).get("grader") or ""
+    name = g[len(PREFIX) :] if g.startswith(PREFIX) else None
+    return name if name in GRADERS else None
+
+
+def inputs_from(evidence, reference, judgment_part=None, case=None):
+    """The judgment inputs from an episode's (or a known case's) evidence."""
+    evidence = evidence or {}
+    return {
+        "final": evidence.get("final_output"),
+        "tool_events": evidence.get("tool_events"),
+        "transcript": evidence.get("transcript") or [],
+        "aliases": evidence.get("aliases") or {},
+        "fired": evidence.get("scenario_events_fired") or [],
+        "reference": reference,
+        "library": (judgment_part or {}).get("library"),
+        "case": case,
+    }
+
+
+def known_case_lines(criterion, case):
+    """Known-case tests: the criterion's judgment lines computed from the known case itself."""
+    from anvil.rlgym.scoring import judgment
+
+    x = inputs_from(case.get("evidence"), case.get("reference"))
+    return {f"{criterion}.{c}": judgment.evaluate(c, x) for c in GRADERS[criterion]}

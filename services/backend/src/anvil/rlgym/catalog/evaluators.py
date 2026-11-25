@@ -61,7 +61,7 @@ def _validate_known_cases(known_cases):
     for name, case in known_cases.items():
         require(
             case.get("expect", KNOWN_CASE_EXPECT.get(name))
-            in ("pass", "partial", "fail", "blocked"),
+            in ("pass", "partial", "fail", "blocked", "not_applicable"),
             "VALIDATION_FAILED",
             f"known case '{name}' needs an expected verdict",
             field=f"known_cases.{name}.expect",
@@ -109,6 +109,25 @@ def create_from_studio(c, ws, actor, body):
         "schema must be rlgym.evaluator-create.v1",
     )
     blocks_config = verifier.is_blocks_config(body.get("config"))
+    from anvil.rlgym.catalog import judgment_configs
+
+    if judgment_configs.grader_of(body.get("config")) and isinstance(body.get("known_cases"), dict):
+        # KYC Judgment activation bridge: RL Gym adds the missing-evidence case (no final output → blocked) when
+        # Studio sends only allowed and disallowed, and a judgment grader may be not applicable to a case.
+        known = dict(body["known_cases"])
+        allowed = known.get("allowed") or {}
+        if "missing_evidence" not in known and allowed:
+            known["missing_evidence"] = {
+                "case_id": allowed.get("case_id"),
+                "evidence": {},
+                "reference": allowed.get("reference"),
+            }
+        vocab = list(body.get("verdict_vocabulary") or ["pass", "partial", "fail", "blocked"])
+        body = {
+            **body,
+            "known_cases": known,
+            "verdict_vocabulary": vocab + ([] if "not_applicable" in vocab else ["not_applicable"]),
+        }
     if blocks_config:
         # The code that runs a template's verifier blocks (D21). Its known cases are built from the blocks it is
         # tested with (A-06 test call or template known-case tests), so none are required here.
@@ -378,9 +397,23 @@ def run_known_case_tests(c, ws, actor, cid, version, blocks=None, expected_value
         }
         if regressions:
             checks += block_case_checks(fw, row["config"], blocks, regressions, source)
+    from anvil.rlgym.catalog import judgment_configs
+
+    graded = judgment_configs.grader_of(row["config"])
     for name, case in ({} if blocks_sha else row["known_cases"]).items():
         expect = case.get("expect", KNOWN_CASE_EXPECT.get(name))
-        out = sandbox.run(fw, row["config"], case["evidence"], case["reference"])
+        out = sandbox.run(
+            fw,
+            row["config"],
+            case["evidence"],
+            case["reference"],
+            extra={
+                "judgment_results": judgment_configs.known_case_lines(graded, case),
+                "criterion": graded,
+            }
+            if graded
+            else None,
+        )
         checks.append(
             {
                 "name": name,
@@ -392,7 +425,13 @@ def run_known_case_tests(c, ws, actor, cid, version, blocks=None, expected_value
             }
         )
     known = [ch for ch in checks if ch["name"] in KNOWN_CASE_EXPECT]
-    distinct = len({ch["verdict"] for ch in known}) == 3 or (bool(blocks_sha) and not known)
+    distinct = (
+        len({ch["verdict"] for ch in known}) == 3
+        or (bool(blocks_sha) and not known)
+        # The activation bridge's graders: every known case meets its own expectation (a not-applicable grader's cases
+        # expect not_applicable).
+        or (bool(graded) and bool(known))
+    )
     passed = all(ch["result"] == "pass" for ch in checks) and distinct
     result = "qualified" if passed else "failed"
     receipt_body = {

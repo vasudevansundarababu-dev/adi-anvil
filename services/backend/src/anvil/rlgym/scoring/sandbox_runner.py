@@ -568,7 +568,55 @@ def run_blocks(job):
     return {"verdict": verdict, "points": points, "detail": detail, "block_lines": lines}
 
 
+def _grader(job):
+    """KYC Judgment v1 bridge: config.grader `kyc-judgment.g2.<criterion>`. Its lines are computed by RL Gym outside the
+    sandbox (they need the pinned library) and combined here; none → blocked, never a pass."""
+    lines = job.get("judgment_results") or {}
+    crit = job.get("criterion") or job["config"]["grader"].rsplit(".", 1)[-1]
+    mine = {k: v for k, v in lines.items() if k.split(".", 1)[0] == crit}
+    if not mine:
+        return {"verdict": "blocked", "points": None, "detail": ["judgment lines did not run"]}
+    vs = [v["verdict"] for v in mine.values()]
+    critical = any(v.get("critical") and v["verdict"] == "fail" for v in mine.values())
+    if all(v == "not_applicable" for v in vs):
+        verdict = "not_applicable"
+    elif "blocked" in vs:
+        verdict = "blocked"
+    elif "fail" in vs:
+        verdict = "fail"
+    elif "partial" in vs:
+        verdict = "partial"
+    else:
+        verdict = "pass"
+    detail = [f"{k}: {v['verdict']}" for k, v in sorted(mine.items())]
+    lines_out = [
+        {
+            "block_id": k,
+            "kind": "judgment",
+            "expected": v.get("expected"),
+            "actual": v.get("actual"),
+            "verdict": v["verdict"],
+            "on_fail": "CRITICAL" if v.get("critical") else None,
+        }
+        for k, v in sorted(mine.items())
+    ]
+    out = {
+        "verdict": verdict,
+        "points": None
+        if verdict in ("not_applicable", "blocked")
+        else (1.0 if verdict == "pass" else 0.0 if verdict == "fail" else None),
+        "detail": detail,
+        "block_lines": lines_out,
+    }
+    if critical:
+        out["critical"] = True
+        out["detail"].append("critical: invented evidence fails the task (§15.4)")
+    return out
+
+
 def evaluate(job):
+    if str((job.get("config") or {}).get("grader") or "").startswith("kyc-judgment.g2."):
+        return _grader(job)
     if (job.get("config") or {}).get("runner") == "verifier_blocks":
         if job["config"].get("runner_version", 1) not in (1, 2):
             raise ValueError(
