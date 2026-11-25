@@ -21,7 +21,8 @@ def selectable_environments(c, contract_id, allow_test=False):
            LEFT JOIN LATERAL (SELECT result, failure_class, receipt_id FROM catalog.qualification_receipts q
                               WHERE q.subject_kind='environment_version' AND q.subject_id=v.id
                               ORDER BY issued_at DESC LIMIT 1) r ON true
-           WHERE ((v.contract_id=%s AND v.state='qualified' AND coalesce(r.result,'qualified')='qualified')"""
+           WHERE ((v.contract_id=%s AND v.state='qualified' AND coalesce(r.result,'qualified')='qualified'
+                   AND v.channel IS NULL AND v.contract_id NOT LIKE '%%-test')"""
         + test_part
         + """)
            ORDER BY v.version DESC, v.mirrored_at DESC""",

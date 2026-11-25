@@ -579,7 +579,7 @@ def admission_check(ctx, body):
                         f"/versions/{vid}/policy-library", audience="scorer", timeout=30, base=base
                     ),
                     scenarios_for,
-                    pinned=(env["version"].get("scorer_content") or {}),
+                    pinned=env["version"].get("scorer_content") or _scorer_pins(vid, base),
                 )
             except GymError as exc:
                 item(
@@ -981,6 +981,20 @@ def _manifest(run_id, check):
         "episode_formula": "(cases + safety prompts) × models × attempts",
         "projected_usd": check["projected_usd"],
     }
+
+
+def _scorer_pins(vid, base):
+    """The hashes the version record pins (scorer_content); the mirror doesn't keep them, so read the live record.
+    {} when it can't be read (the library's own hash is still checked)."""
+    try:
+        return (
+            integrations.registry_get(f"/versions/{vid}", timeout=10, base=base).get(
+                "scorer_content"
+            )
+            or {}
+        )
+    except GymError:
+        return {}
 
 
 def placeholder_graded(project):

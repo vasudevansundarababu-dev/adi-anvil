@@ -598,15 +598,15 @@ def test_a_dismissal_must_name_identifiers_that_really_differ():
 
 def test_the_expert_rule():
     party = {"full_name": "Ana Ruiz", "date_of_birth": "1980-01-01", "citizenships": ["MX"]}
-    hit = lambda **k: judgment.screening_differs(
-        party,
-        {
+    def hit(**k):
+        listed = {
             "listed_name": "Ana Ruiz",
             "listed_date_of_birth": "1980-01-01",
             "listed_country": "MX",
             **k,
-        },
-    )  # noqa: E731
+        }
+        return judgment.screening_differs(party, listed)
+
     assert hit() == set()
     assert hit(listed_date_of_birth="1955-05-05") == {"date_of_birth"}
     assert (

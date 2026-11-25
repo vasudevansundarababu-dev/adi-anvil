@@ -145,6 +145,52 @@ def fill_schema(c, vid):
     return record.get("schema")
 
 
+def resolve_channel(v, fetch_record):
+    """(channel, problem). A version under a -test key is always Studio's test channel: when its event carries no
+    channel (Studio seq 34), the live record decides; anything but "test", or an unreadable record, is refused (never
+    mirrored as a release). Other versions keep the channel their event carries (none for a release)."""
+    key = str(v.get("contract_id") or str(v.get("id", "")).split("@")[0])
+    ch = v.get("channel")
+    if not key.endswith("-test"):
+        return ch, None
+    if ch is None:
+        try:
+            ch = (fetch_record(v["id"]) or {}).get("channel")
+        except Exception as exc:  # noqa: BLE001 - any failure refuses; nothing is guessed
+            return (
+                None,
+                f"{v['id']}: couldn't read the live record for its channel ({exc}); not mirrored",
+            )
+    if ch != "test":
+        return None, f"{v['id']} has a -test key but its channel is {ch!r}: not mirrored"
+    return "test", None
+
+
+def _live_record(reg):
+    return lambda vid: registry_get(f"/versions/{vid}", timeout=10, base=reg)
+
+
+def backfill_test_channels(c, fetch_record=None):
+    """Mirrored -test versions whose channel is missing (an event before Studio af0449d): the live record decides.
+    → {version_id: "test" | problem}."""
+    out = {}
+    for row in c.execute(
+        "SELECT id, contract_id, registry FROM catalog.environment_versions WHERE channel IS NULL AND contract_id LIKE %s",
+        ("%-test",),
+    ).fetchall():
+        ch, problem = resolve_channel(
+            {"id": row["id"], "contract_id": row["contract_id"]},
+            fetch_record or _live_record(row["registry"]),
+        )
+        if ch == "test":
+            c.execute(
+                "UPDATE catalog.environment_versions SET channel='test' WHERE id=%s AND channel IS NULL",
+                (row["id"],),
+            )
+        out[row["id"]] = ch or problem
+    return out
+
+
 def _conflict(c, vid, diff, reg, kind):
     for ws in all_workspaces(c):
         set_scope(c, ws["id"])
@@ -173,6 +219,14 @@ def apply_event(c, ev, via):
         (reg, seq, ev["id"], ev["type"], ev.get("subject", ""), Jsonb(ev), via),
     )
     kind = ev["type"]
+    if kind == "version.registered" or kind in STATE_EVENTS:
+        # Studio's test channel: never trust a missing channel on a -test key (seq 34 went out without it).
+        ch, problem = resolve_channel(data["version"], _live_record(reg))
+        if problem:
+            _conflict(c, data["version"]["id"], [problem], reg, kind)
+            return True
+        if ch:
+            data = {**data, "version": {**data["version"], "channel": ch}}
     if kind == "version.registered":
         diff = _upsert_version(c, data["version"], seq, "registered", reg)
         if diff:

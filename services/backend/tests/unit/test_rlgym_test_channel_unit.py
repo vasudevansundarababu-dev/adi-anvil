@@ -63,7 +63,7 @@ def test_a_test_only_project_can_select_test_candidates_and_a_real_one_cannot():
     c = FakeC()
     selection.selectable_environments(c, "kyc-judgment-openenv")
     sql, params = c.sql[-1]
-    assert "channel" not in sql and params == ("kyc-judgment-openenv",)
+    assert "v.channel='test'" not in sql and params == ("kyc-judgment-openenv",)
     selection.selectable_environments(c, "kyc-judgment-openenv", allow_test=True)
     sql, params = c.sql[-1]
     assert "v.channel='test'" in sql and "kyc-judgment-openenv-test" in params
