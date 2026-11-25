@@ -139,18 +139,25 @@ def party_lacking(request_type, bundle):
             }
         return out
     if request_type == "id_document":
-        out = {
-            d.get("party_id")
-            for d in docs
-            if d.get("kind") in ID_DOCS
-            and submitted
-            and str(content(d).get("expires_on") or "9999")[:10] < submitted
-        }
-        return out or {
-            pid
-            for pid in ids
-            if not any(d.get("kind") in ID_DOCS for d in docs if d.get("party_id") == pid)
-        }
+        # D-062: @12 KYC-01 / GB-02: a name that differs from the identity document, an identity document that expired
+        # before submission, or no identity document at all.
+        names = {p.get("party_id"): p.get("full_name") for p in parties}
+        out = set()
+        for pid in ids:
+            mine = [d for d in docs if d.get("party_id") == pid and d.get("kind") in ID_DOCS]
+            if not mine:
+                out.add(pid)
+            for d in mine:
+                c = content(d)
+                if submitted and str(c.get("expires_on") or "9999")[:10] < submitted:
+                    out.add(pid)
+                if (
+                    c.get("name_on_document")
+                    and names.get(pid)
+                    and c["name_on_document"] != names[pid]
+                ):
+                    out.add(pid)
+        return out
     if request_type == "proof_of_address":
         return {
             pid
@@ -183,12 +190,16 @@ def request_party(bundle, ref):
             [r.get("type") for r in asked],
         )
     got = [r.get("party_id") for r in asked if r.get("type") == want]
+    # D-062: every party lacking an ID or a TIN is asked; proof of address is per application (one is enough); a
+    # request to a party who has the item is wrong.
+    wrong = [p for p in got if p not in should]
+    covered = any(p in should for p in got) if want == "proof_of_address" else should <= set(got)
     return _result(
         "KYC.REQUEST_PARTY",
         "next_action",
-        any(p in should for p in got),
+        covered and not wrong,
         {"type": want, "party_lacking": sorted(x for x in should if x)},
-        {"requested_for": got},
+        {"requested_for": got, **({"wrong_party": wrong} if wrong else {})},
         applicable=bool(should),
     )
 

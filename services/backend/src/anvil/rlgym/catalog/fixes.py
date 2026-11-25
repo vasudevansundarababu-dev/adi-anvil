@@ -10,12 +10,16 @@ the party whose start-state record lacks the item.
 
 CASE = "kc-case-001"
 
-REQUEST_PARTY = {
+# D-041 as written (party rules 1): kept for reference; never created as a version.
+REQUEST_PARTY_V1 = {
     "id": "next_action.request_party",
     "kind": "request_party",
     "name": "Request goes to the party missing the item",
     "on_fail": "STATE_MUTATION_ERROR",
 }
+# D-062 (party rules 2): an ID document with a different name counts (@12 KYC-01), every party lacking an ID or a TIN
+# is asked, a request to a party who has the item is a wrong call, and a party the records can't show is never guessed.
+REQUEST_PARTY = {**REQUEST_PARTY_V1, "party_rules": 2}
 
 
 def _start(minor_tin="missing"):
@@ -61,6 +65,56 @@ def _case(name, request_party, expect, *, start=True, block=None):
     return case
 
 
+def _d062(name, requests, expect, *, mismatch=True, block=None):
+    parties = [
+        {
+            "party_id": "p-1",
+            "application_id": CASE,
+            "role": "primary",
+            "full_name": "Emerson Juniper",
+        },
+        {"party_id": "p-2", "application_id": CASE, "role": "joint", "full_name": "Rowan Juniper"},
+    ]
+    docs = [
+        {
+            "document_id": f"d-{p['party_id']}",
+            "party_id": p["party_id"],
+            "kind": "government_id",
+            "content": {
+                "expires_on": "2030-01-01",
+                "name_on_document": "Rowan Lindqvist"
+                if mismatch and p["party_id"] == "p-2"
+                else p["full_name"],
+            },
+        }
+        for p in parties
+    ]
+    start = {
+        "applications": [{"application_id": CASE, "submitted_at": "2026-10-15T14:00:00Z"}],
+        "parties": parties,
+        "documents": docs,
+        "information_requests": [],
+    }
+    end = {
+        **start,
+        "information_requests": [
+            {"request_id": f"r-{i}", "type": "id_document", "party_id": pid}
+            for i, pid in enumerate(requests)
+        ],
+    }
+    case = {
+        "name": name,
+        "case_id": CASE,
+        "evidence": {"snapshots": {"start": start, "end": end}},
+        "reference": {"request_type": "id_document"},
+        "expect": expect,
+    }
+    if block:
+        case["expect_block"] = block
+        case["expect_on_fail"] = REQUEST_PARTY["on_fail"]
+    return case
+
+
 def request_party_regressions():
     """The D-041 regression fixtures: a minor without a TIN, the request sent to the right party, to the wrong party
     (the adult: the bug), and with no start state to tell them apart."""
@@ -68,6 +122,21 @@ def request_party_regressions():
         _case("d041_minor_tin_requested_from_minor", "p-minor", "pass"),
         _case("d041_minor_tin_requested_from_adult", "p-adult", "fail", block=REQUEST_PARTY["id"]),
         _case("d041_no_start_state", "p-minor", "blocked", start=False),
+        # D-062: the name on p-2's identity document differs (KYC-01).
+        _d062("d062_name_mismatch_requested_from_that_party", ["p-2"], "pass"),
+        _d062(
+            "d062_name_mismatch_requested_from_the_other_party",
+            ["p-1"],
+            "fail",
+            block=REQUEST_PARTY["id"],
+        ),
+        _d062(
+            "d062_extra_request_to_a_party_with_a_valid_id",
+            ["p-2", "p-1"],
+            "fail",
+            block=REQUEST_PARTY["id"],
+        ),
+        _d062("d062_party_not_determinable", ["p-1"], "pass", mismatch=False),
     ]
 
 
@@ -118,12 +187,14 @@ def _v2(extra, regressions):
 
 SUGGESTED = {
     "golden-kyc-blocks:next_action": {
-        "defect": "D-041",
+        "defect": "D-041, D-062",
         "reason": (
-            "D-041: next_action checked only the request type, never whose request it is; the request must go to the "
-            "party whose record lacks the item (E-007 KYC.REQUEST_PARTY)"
+            "D-041/D-062: next_action checked only the request type, never whose request it is. The request must go "
+            "to every party whose record lacks the item (an identity document with a different name or expired, or "
+            "none; a minor's missing TIN; a party with no proof of address), never to a party who has it; a party "
+            "the records can't show is not guessed (E-007 KYC.REQUEST_PARTY)"
         ),
-        "source": "rlgym:D-041",
+        "source": "rlgym:D-041+D-062",
         "config": {
             "runner": "verifier_blocks",
             "runner_version": 2,

@@ -41,14 +41,16 @@ def _run(case):
 
 
 def test_the_wrong_party_now_fails_and_the_right_party_passes():
-    right, wrong, nostart = fixes.request_party_regressions()
+    right, wrong, nostart = fixes.request_party_regressions()[:3]
     assert _run(right)["verdict"] == "pass"
     out = _run(wrong)
     assert out["verdict"] == "fail"
     line = next(ln for ln in out["block_lines"] if ln["block_id"] == "next_action.request_party")
-    assert line["actual"] == {"requested_for": ["p-adult"]} and line["expected"] == {
-        "party_lacking": ["p-minor"]
-    }
+    # D-062 (party rules 2) also names the wrong party.
+    assert line["actual"] == {
+        "requested_for": ["p-adult"],
+        "wrong_party": ["p-adult"],
+    } and line["expected"] == {"party_lacking": ["p-minor"]}
     # Before the fix (runner 1, template block only) the wrong-party request scored a pass: the bug.
     old = runner.run_blocks(
         {
@@ -121,6 +123,6 @@ def test_known_case_tests_run_regressions_and_studio_is_told():
     assert '"fix_reason": reason' in fix and "fold into the next template version" in fix
     assert (
         fixes.suggested("golden-kyc-blocks:next_action", {"runner": "verifier_blocks"})["defect"]
-        == "D-041"
+        == "D-041, D-062"
     )
     assert fixes.suggested("golden-kyc-blocks:next_action", FIX) is None  # already the fix

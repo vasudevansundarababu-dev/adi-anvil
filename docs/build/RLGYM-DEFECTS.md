@@ -622,3 +622,31 @@ All four tasks are edge-focused, so no task took the 80 clean complete or the 32
   - the first start found port 3202 still held by the shutting-down web, so nothing started. The second start was healthy: API /api/v1/health 200, /gym 200;
   - 29 saved suite hashes unchanged;
   - v6 admission (rolled back): 8 episodes, $6.40, no failures.
+
+## D-063 (G7) — a data plan split by Completeness couldn't be saved (25 Nov 2026; KYC Judgment v1 build go)
+
+- **Cause:** equal-share cells were written with `quota_kind` 'share'. The `suites.data_plan_cells` CHECK allows only count and percent.
+- **Fix:** they are now 'count' cells, since an equal share is a fixed number of cases. Nothing reads 'share'. No migration was needed, and no saved data is affected, because such plans could never be saved.
+- **Tests:** `test_rlgym_d063_share_cells_unit.py` (written first), which reads the constraint from migration 041.
+
+## D-062 (G2, part) — the party check went blind on untagged missing-ID cases (25 Nov 2026; KYC Judgment v1 build go)
+
+- **Found:** on the T1 40-case sample, the reference agent couldn't tell whose ID document was missing on 7 untagged cases.
+- **Cause:** across all 340 @12 cases that ask for an item, D-041's party rules read "id_document" only as "an expired ID, else no ID". But @12's own KYC-01 says "If a party's name does not match their identity document, or the document has expired". 77 untagged cases are exactly a name mismatch.
+- **Fix:** a new evaluator version when a person creates it. D-041's v2 was never created, and nothing already scored changes. It applies party rules 2 in the suggested `golden-kyc-blocks:next_action` fix:
+  - id_document: every party whose identity document shows a different name or expired before submission, or who has none;
+  - tin and proof of address as before;
+  - every party lacking an ID or a TIN must be asked. Proof of address is per application, so one lacking party is enough;
+  - a request of that type to a party who has the item is a wrong call and fails;
+  - where the start records show no such party, the line says "party not determinable … (type checked only)", the type block decides, and nothing is guessed. Before, the whole criterion was blocked;
+  - D-041's block is kept as party rules 1, so its behaviour is unchanged.
+- **Same rules elsewhere:**
+  - E-007's independent assertions (its own copy, never an import of the grader);
+  - the reference agent, which now asks every party the records show.
+- **On real data:**
+  - party rules 2 decide 333 of 340 cases; rules 1 decided 256. The grader and the assertions agree on all 340.
+  - 7 cases show no defect in the start records. In 4 an ID expires 4–11 days after submission (kyc-adult-joint-033, kyc-adult-joint-063, kyc-teen-joint-098, kyc-custodial-073). 3 show nothing (kyc-individual-072, kyc-adult-joint-082, kyc-custodial-057). These are reference questions for Studio.
+  - Reference agent on the 40-case sample plus 3 of those cases (local container, rolled back): 25/25 on all; no procedure notes on 39 of 43; the suggested version passes all 43.
+  - Read-only on the 15 sealed v8-template episodes of run-0234 and run-0235: no verdict changes (13 pass, 2 fail under both).
+- **Owner's clicks:** Admin → Evaluators → golden-kyc-blocks:next_action v1 → Create fix version → "Use suggested fix" → Create. It qualifies on its known cases and 7 regression fixtures. Projects on "Latest qualified" then bind it for new runs and passes, and Studio is told.
+- **Tests:** `test_rlgym_d062_party_unit.py` (17 tests, written first). The D-041 tests were updated for the longer fixture list and the wrong-party field.

@@ -304,8 +304,10 @@ def _case_parties(snapshot, case_id):
     return parties, docs, app
 
 
-def lacking(request_type, parties, docs, app):
-    """The party ids whose record lacks what `request_type` asks for, or None when no rule covers the type."""
+def lacking(request_type, parties, docs, app, rules=1):
+    """The party ids whose record lacks what `request_type` asks for, or None when no rule covers the type.
+    `rules` 2 (D-062) reads id_document as @12's KYC-01 and GB-02 state it: a party whose identity document shows a
+    different name or expired before submission, or who has no identity document. Rules 1 is D-041 as written."""
 
     def content(d):
         return d.get("content") if isinstance(d.get("content"), dict) else {}
@@ -334,6 +336,27 @@ def lacking(request_type, parties, docs, app):
                 for d in by_party[p.get("party_id")]
             )
         }
+    if request_type == "id_document" and rules >= 2:
+        submitted = str(app.get("submitted_at") or "")[:10]
+        names = {p.get("party_id"): p.get("full_name") for p in parties}
+        out = set()
+        for pid, ds in by_party.items():
+            ids_ = [d for d in ds if d.get("kind") in ID_KINDS]
+            if not ids_:
+                out.add(pid)
+            for d in ids_:
+                c = content(d)
+                expired = bool(
+                    c.get("expires_on") and submitted and str(c["expires_on"])[:10] < submitted
+                )
+                other_name = bool(
+                    c.get("name_on_document")
+                    and names.get(pid)
+                    and c["name_on_document"] != names[pid]
+                )
+                if expired or other_name:
+                    out.add(pid)
+        return out
     if request_type == "id_document":
         submitted = str(app.get("submitted_at") or "")[:10]
         expired = {
@@ -373,16 +396,34 @@ def _request_party(block, ctx):
     if snaps.get("start") is None or snaps.get("end") is None:
         return "blocked", None, "no snapshot"
     parties, docs, app = _case_parties(snaps["start"], ctx["case_id"])
-    should = lacking(wanted, parties, docs, app)
+    rules = int(block.get("party_rules") or 1)
+    should = lacking(wanted, parties, docs, app, rules)
     if should is None:
         return "pass", f"no party rule for request type {wanted}", None
-    if not should:
-        return "blocked", None, f"the case's start state shows no party lacking {wanted}"
     asked = [
         r.get("party_id")
         for r in (snaps["end"].get("information_requests") or [])
         if isinstance(r, dict) and r.get("type") == wanted
     ]
+    if not should:
+        if rules >= 2:
+            # D-062: the records don't show whose item it is; the party is never guessed, the type check decides.
+            return (
+                "pass",
+                {"requested_for": asked},
+                f"party not determinable from the start records for {wanted} (type checked only)",
+            )
+        return "blocked", None, f"the case's start state shows no party lacking {wanted}"
+    if rules >= 2:
+        # D-062: every party lacking an ID or a TIN is asked (per-party rules); proof of address is per application,
+        # so one lacking party is enough. A request of that type to a party who has the item is a wrong call.
+        wrong = sorted({p for p in asked if p not in should})
+        if wanted == "proof_of_address":
+            ok = any(p in should for p in asked)
+        else:
+            ok = should <= set(asked)
+        actual = {"requested_for": asked, **({"wrong_party": wrong} if wrong else {})}
+        return ("pass" if ok and not wrong else "fail"), actual, {"party_lacking": sorted(should)}
     ok = any(pid in should for pid in asked)
     return ("pass" if ok else "fail"), {"requested_for": asked}, {"party_lacking": sorted(should)}
 

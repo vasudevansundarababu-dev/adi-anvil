@@ -253,24 +253,30 @@ def agent(actor, reference, application_id, failures, operations=None):
             who = assertions.party_lacking(
                 request_type, {"case_id": application_id, "snapshots": {"start": start}}
             )
-            party = sorted(who)[0] if who else (parties[0]["party_id"] if parties else None)
-            if not party:
+            # D-062: every party lacking an ID or a TIN is asked; proof of address is per application (one party).
+            targets = sorted(who) if who else []
+            if targets and request_type == "proof_of_address":
+                targets = targets[:1]
+            if not targets:
+                targets = [parties[0]["party_id"]] if parties else []
+                if targets and who is not None:
+                    fail(st, f"the documents read don't show which party lacks {request_type}")
+            if not targets:
                 fail(
                     st,
                     f"S5 step {st['n']} information.request needs the party who lacks {request_type}; none is known",
                 )
                 continue
-            if who is not None and not who:
-                fail(st, f"the documents read don't show which party lacks {request_type}")
-            yield {
-                "tool": tool,
-                "args": {
-                    "party_id": party,
-                    "type": request_type,
-                    "items": [request_type],
-                    "reason": f"{reference.get('reason_keyword') or request_type}: please provide it",
-                },
-            }
+            for party in targets:
+                yield {
+                    "tool": tool,
+                    "args": {
+                        "party_id": party,
+                        "type": request_type,
+                        "items": [request_type],
+                        "reason": f"{reference.get('reason_keyword') or request_type}: please provide it",
+                    },
+                }
         elif tool == "finding.write":
             # In plain words, as a reviewer writes it: a screening hit is named as such; other findings are not.
             if issue not in (None, "", "none"):
