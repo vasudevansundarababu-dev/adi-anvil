@@ -615,3 +615,10 @@ All four tasks are edge-focused, so no task took the 80 clean complete or the 32
   - 8 cases, Complete 25%, one per edge tag: 4 clean, 4 tagged;
   - 8 cases, Complete 0%, one per edge tag: 4 problem, 4 tagged.
 - **Found in passing, not fixed:** a split by Completeness can't be saved. Its cells use `quota_kind` 'share', which the `data_plan_cells` CHECK constraint rejects.
+- **Deployed 25 Nov 2026 12:16 CST with no run or episode active:**
+  - backup `.local/backups/rlgym-20261125-120946-before-migration-066.sql.gz` (23.7 MB, .sha256 checked, complete dump);
+  - migration 066 applied: 305 plans, all with `untagged_cases` false;
+  - digests identical before and after: task imports, suite tasks and versions, runs, manifests, sealed evidence, scores, receipts, exports;
+  - the first start found port 3202 still held by the shutting-down web, so nothing started. The second start was healthy: API /api/v1/health 200, /gym 200;
+  - 29 saved suite hashes unchanged;
+  - v6 admission (rolled back): 8 episodes, $6.40, no failures.
