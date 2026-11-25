@@ -4,7 +4,8 @@
 The model sees only what a candidate sees: the task's instructions (built from the actor payload, D-007), the application it reviews (Studio's images), the
 declared operations and the observations. It answers with one JSON action per turn. Each model call goes through
 `LiveCaller`, which checks the caps before the call (its maximum cost), records the call with its tokens and cost,
-and stops the episode at a cap or on an ambiguous dispatch (never retried).
+and stops the episode at a cap or on an ambiguous dispatch (never retried; D-056: a connect timeout, where nothing
+was sent, is retried once).
 """
 
 import hashlib
@@ -20,6 +21,8 @@ PROTOCOL = (
     "You are the agent under evaluation. Work only through the operations listed below. Reply with exactly one JSON "
     'object per turn and nothing else: {"tool": "<operation id>", "args": {...}} to call an operation, or '
     '{"final": {...}} when you are done (include "decision" and your findings). Observations come back as JSON.'
+    # D-055 (owner-approved): a check operation's observation is the records it covers, not a pass/fail verdict.
+    " Checks return the records they cover, not a verdict; decide from those records."
 )
 MAX_OBS_CHARS = (
     12000  # default; a model version may set params.max_observation_chars (part of its config hash)
@@ -78,6 +81,21 @@ class LiveCaller:
             raise CapReached(f"approval {self.live['approval_id']} expired")
         return a
 
+    def _record_retries(self, c, a, retries):
+        """D-056: each connect-timeout retry is in the call ledger, at its cost (none: no request bytes were sent)."""
+        for r in retries or ():
+            approvals.record(
+                c,
+                self.ws,
+                a,
+                self.use,
+                "error",
+                cost=Decimal(str(r.get("cost_usd") or 0)),
+                run_id=self.run_id,
+                episode_id=self.episode_id,
+                note=f"D-056 connect retry: {r.get('reason')}, {r.get('detail')}",
+            )
+
     def __call__(self, messages):
         est_in = sum(len(m["content"]) for m in messages) // 3 + 50  # conservative token estimate
         with system_scope(self.ws) as c:
@@ -100,6 +118,7 @@ class LiveCaller:
             )
         except Ambiguous as exc:
             with system_scope(self.ws) as c:
+                self._record_retries(c, a, (exc.details or {}).get("retries"))
                 approvals.record(
                     c,
                     self.ws,
@@ -128,6 +147,7 @@ class LiveCaller:
             raise
         cost = out.cost(a["price_in_per_mtok_usd"], a["price_out_per_mtok_usd"])
         with system_scope(self.ws) as c:
+            self._record_retries(c, a, getattr(out, "retries", ()))
             approvals.record(
                 c,
                 self.ws,
@@ -202,6 +222,10 @@ def live_agent(
                 "request_id": getattr(out, "request_id", None),
                 "latency_ms": int((time.monotonic() - started) * 1000),
             }
+            if getattr(out, "retries", ()):
+                # D-056: the connection never opened on the first try; retried once before this answer.
+                turn["retries"] = list(out.retries)
+                log["connect_retries"] = log.get("connect_retries", 0) + len(out.retries)
             log["turns"].append(turn)
         if refused:
             # D-054: the provider stopped this reply (stop reason "refusal"). The first one gets a retry turn of its

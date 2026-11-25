@@ -810,9 +810,8 @@ def run_statistics(c, run_id, pass_id):
         if e["state"] == "timed_out":
             s["timed_out"] += 1
         if e["id"] in refused:
-            s["provider_refused"] += (
-                1  # D-054: flagged, not a model result; it has no score in this pass
-            )
+            # D-054: flagged, not a model result; it has no score in this pass
+            s["provider_refused"] += 1
             continue
         if e["kind"] == "case" and e["score"] is not None:
             s["scored"] += 1

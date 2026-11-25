@@ -1207,6 +1207,59 @@ def rescore(ctx, run_id, body):
     return get_run(ctx, run_id)
 
 
+def relabel(c, ws, run_id, requested_by, reason, label):
+    """D-054 relabel of a run scored before D-054: a new, append-only re-score pass with exactly the evaluator versions
+    of the run's latest real pass, so the only change is that provider-refused case episodes are flagged and left out
+    of the score (scoring.refused_episodes). No model is called; earlier passes and their receipts are never touched.
+    `requested_by` is the person who approved it; `label` names who carried it out (an audit actor)."""
+    run = c.execute(
+        "SELECT * FROM runs.runs WHERE workspace_id=%s AND id=%s", (ws, run_id)
+    ).fetchone()
+    require(run, "NOT_FOUND", "Run not found")
+    require(
+        run["state"] in ("completed", "cancelled"),
+        "CONFLICT",
+        "Only a finished run can be relabelled",
+    )
+    base = scoring.latest_pass(c, run_id)
+    require(base and base["finished_at"], "CONFLICT", "The run has no finished scoring pass")
+    manifest = c.execute(
+        "SELECT manifest FROM runs.run_manifests WHERE run_id=%s", (run_id,)
+    ).fetchone()["manifest"]
+    pass_row = scoring.create_pass(
+        c, ws, run_id, "rescore", base["evaluator_versions"], requested_by
+    )
+    episodes = c.execute(
+        """SELECT e.* FROM runs.episodes e JOIN runs.sealed_evidence s ON s.episode_id=e.id WHERE e.run_id=%s ORDER BY e.id""",
+        (run_id,),
+    ).fetchall()
+    refused = []
+    for e in episodes:
+        if scoring.score_episode(c, ws, e, pass_row, manifest).get("provider_refused"):
+            refused.append(e["id"])
+    c.execute("UPDATE scoring.scoring_passes SET finished_at=now() WHERE id=%s", (pass_row["id"],))
+    c.execute("UPDATE runs.runs SET rescored=true WHERE id=%s", (run_id,))
+    details = {
+        "pass": pass_row["pass"],
+        "from_pass": base["pass"],
+        "applies": "D-054",
+        "evaluator_versions_sha256": pass_row["evaluator_versions_sha256"],
+        "same_evaluator_versions": pass_row["evaluator_versions_sha256"]
+        == base["evaluator_versions_sha256"],
+        "provider_refused": refused,
+        "requested_by": str(requested_by),
+    }
+    audit(c, ws, label, "run.relabelled", run_id, reason=reason, details=details)
+    emit(
+        c,
+        ws,
+        "run.rescored",
+        run_id,
+        {"run_id": run_id, "pass": pass_row["pass"], "episodes": len(episodes)},
+    )
+    return {**details, "pass_id": str(pass_row["id"]), "episodes": len(episodes)}
+
+
 # --- views --------------------------------------------------------------------------------------------------------
 
 

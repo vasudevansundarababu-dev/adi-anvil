@@ -12,14 +12,16 @@ Rules:
   (`approvals.require`). Without the flag the gateway refuses before reading a key. Tests pass a fake transport.
 - **No retries:** SDK-style retries are off. A request that was sent but not answered (timeout after sending, dropped
   connection) is `ambiguous`: counted at its maximum cost and never retried automatically. A refused connection was
-  never sent and is an ordinary error.
+  never sent and is an ordinary error. D-056 (owner-approved): the one exception is a connect timeout, where the
+  connection never opened (TCP/TLS not established), so no request bytes reached the provider: it is retried once,
+  and the retry is recorded (`Completion.retries`; `Ambiguous.details["retries"]` if the second try fails too).
 - **Network:** no proxy from the environment, no redirects followed, a bounded timeout.
 """
 
 import json
 import os
 import stat
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from decimal import Decimal
 
 import httpx
@@ -47,8 +49,8 @@ def live_enabled():
 class Ambiguous(GymError):
     """Sent, not answered: never retried automatically."""
 
-    def __init__(self, message):
-        super().__init__("LIVE_AMBIGUOUS", message)
+    def __init__(self, message, details=None):
+        super().__init__("LIVE_AMBIGUOUS", message, details)
 
 
 @dataclass(frozen=True)
@@ -60,6 +62,7 @@ class Completion:
     request_id: str | None = None
     finish_reason: str | None = None
     raw_usage: dict = field(default_factory=dict)
+    retries: tuple = ()  # D-056: connect-timeout retries before this answer (nothing was sent on those)
 
     def cost(self, price_in, price_out):
         """USD from the approval's verified prices (per million tokens)."""
@@ -162,15 +165,39 @@ class Gateway:
             timeout=httpx.Timeout(timeout, connect=min(10, timeout)),
         )
 
-    def _post(self, client, url, headers, body):
-        try:
-            r = client.post(url, headers=headers, json=body)
-        except httpx.ConnectError as exc:
-            raise GymError(
-                "LIVE_UNAVAILABLE", f"Provider not reachable: {type(exc).__name__}"
-            ) from None
-        except (httpx.TimeoutException, httpx.RemoteProtocolError, httpx.ReadError) as exc:
-            raise Ambiguous(f"Sent, no answer ({type(exc).__name__}); not retried") from None
+    def _postr(self, retries, client, url, headers, body):
+        return self._post(client, url, headers, body, retries)
+
+    def _post(self, client, url, headers, body, retries=None):
+        retries = [] if retries is None else retries
+        while True:
+            try:
+                r = client.post(url, headers=headers, json=body)
+                break
+            except httpx.ConnectTimeout:
+                # D-056: the connection never opened, so no request bytes reached the provider. One retry, recorded.
+                if not retries:
+                    retries.append(
+                        {
+                            "reason": "ConnectTimeout",
+                            "detail": "connection never opened; no request bytes sent",
+                            "cost_usd": 0,
+                        }
+                    )
+                    continue
+                raise Ambiguous(
+                    "Connection never opened (ConnectTimeout), again after one retry; not retried further",
+                    {"retries": list(retries)},
+                ) from None
+            except httpx.ConnectError as exc:
+                raise GymError(
+                    "LIVE_UNAVAILABLE", f"Provider not reachable: {type(exc).__name__}"
+                ) from None
+            except (httpx.TimeoutException, httpx.RemoteProtocolError, httpx.ReadError) as exc:
+                raise Ambiguous(
+                    f"Sent, no answer ({type(exc).__name__}); not retried",
+                    {"retries": list(retries)} if retries else None,
+                ) from None
         if r.status_code >= 400:
             detail = r.text[:300]
             raise GymError("LIVE_REFUSED", f"Provider answered {r.status_code}", {"detail": detail})
@@ -189,6 +216,33 @@ class Gateway:
         hf_revision=None,
     ):
         """messages: [{"role": "system"|"user"|"assistant", "content": str}]."""
+        retries = []
+        out = self._complete(
+            provider,
+            model_id,
+            messages,
+            retries,
+            max_output_tokens=max_output_tokens,
+            temperature=temperature,
+            timeout_s=timeout_s,
+            serving=serving,
+            hf_revision=hf_revision,
+        )
+        return replace(out, retries=tuple(retries)) if retries else out
+
+    def _complete(
+        self,
+        provider,
+        model_id,
+        messages,
+        retries,
+        *,
+        max_output_tokens,
+        temperature,
+        timeout_s,
+        serving,
+        hf_revision,
+    ):
         if provider not in PROVIDERS:
             raise GymError("VALIDATION_FAILED", f"Unknown live provider {provider}")
         system = "\n\n".join(m["content"] for m in messages if m["role"] == "system")
@@ -197,7 +251,8 @@ class Gateway:
         with self._client(timeout_s) as client:
             if provider == "anthropic":
                 return _anthropic(
-                    self._post(
+                    self._postr(
+                        retries,
                         client,
                         "https://api.anthropic.com/v1/messages",
                         {
@@ -217,7 +272,8 @@ class Gateway:
                 if temperature is not None:
                     body["temperature"] = temperature
                 return _openai(
-                    self._post(
+                    self._postr(
+                        retries,
                         client,
                         "https://api.openai.com/v1/chat/completions",
                         {"Authorization": f"Bearer {key.get_secret_value()}"},
@@ -226,7 +282,8 @@ class Gateway:
                 )
             if provider == "google":
                 return _gemini(
-                    self._post(
+                    self._postr(
+                        retries,
                         client,
                         f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent",
                         {"x-goog-api-key": key.get_secret_value()},
@@ -242,12 +299,17 @@ class Gateway:
                     body.pop("model")
                     body["anthropic_version"] = VERTEX_ANTHROPIC_VERSION
                     return _anthropic(
-                        self._post(
-                            client, f"{base}/anthropic/models/{model_id}:rawPredict", auth, body
+                        self._postr(
+                            retries,
+                            client,
+                            f"{base}/anthropic/models/{model_id}:rawPredict",
+                            auth,
+                            body,
                         )
                     )
                 return _gemini(
-                    self._post(
+                    self._postr(
+                        retries,
                         client,
                         f"{base}/google/models/{model_id}:generateContent",
                         auth,
@@ -281,7 +343,9 @@ class Gateway:
             }
             if temperature is not None:
                 body["temperature"] = temperature
-            return _openai(self._post(client, f"{endpoint}/v1/chat/completions", auth, body))
+            return _openai(
+                self._postr(retries, client, f"{endpoint}/v1/chat/completions", auth, body)
+            )
 
 
 CHECK_URLS = {
