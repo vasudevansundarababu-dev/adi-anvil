@@ -182,11 +182,15 @@ def live_agent(
         log["max_observation_chars"] = max_observation_chars
         log["turns"] = []
     nudged = False
+    refusals = 0
     for _ in range(max_steps):
         started = time.monotonic()
         out = call(messages)
-        action = parse_json(out.text)
-        messages.append({"role": "assistant", "content": out.text})
+        refused = getattr(out, "finish_reason", None) == "refusal"
+        # D-054: a refusal's partial text is not an action; an empty reply is never kept in the history.
+        action = None if refused else parse_json(out.text)
+        if not refused and (out.text or "").strip():
+            messages.append({"role": "assistant", "content": out.text})
         turn = None
         if log is not None:
             turn = {
@@ -199,6 +203,26 @@ def live_agent(
                 "latency_ms": int((time.monotonic() - started) * 1000),
             }
             log["turns"].append(turn)
+        if refused:
+            # D-054: the provider stopped this reply (stop reason "refusal"). The first one gets a retry turn of its
+            # own (not the format nudge); a second ends the episode as "provider refused", excluded from the score.
+            refusals += 1
+            if turn is not None:
+                turn["parsed"] = "refusal"
+            if log is not None:
+                log["refusals"] = refusals
+            if refusals >= 2:
+                if log is not None:
+                    log["provider_refused"] = {
+                        "refusals": refusals,
+                        "turns": [t["turn"] for t in log["turns"] if t.get("parsed") == "refusal"],
+                        "reason": "the provider ended two replies with stop reason refusal",
+                    }
+                yield {"final": None}
+                return
+            if turn is not None:
+                turn["retry"] = "refusal: same conversation sent again"
+            continue
         if not action or not ("final" in action or "tool" in action):
             if turn is not None:
                 turn["parsed"] = "unreadable"
@@ -211,6 +235,7 @@ def live_agent(
             if turn is not None:
                 turn["nudge"] = nudge
             continue
+        nudged = False  # D-054: a readable turn restores the format nudge
         if "final" in action:
             if turn is not None:
                 turn["parsed"] = "final"

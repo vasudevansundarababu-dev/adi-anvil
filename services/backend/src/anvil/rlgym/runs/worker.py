@@ -488,6 +488,12 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         # D-008: the reset message the agent saw, and the conversation (live) or a mock label.
         "reset": {"user_message": reset.get("user_message")},
         "agent_log": agent_log,
+        # D-054: the provider ended the episode with refusals (a flagged, non-model outcome; excluded from scores).
+        **(
+            {"provider_refused": agent_log["provider_refused"]}
+            if isinstance(agent_log, dict) and agent_log.get("provider_refused")
+            else {}
+        ),
         # Live: the provider's reported usage and the approval's prices; mock: a deterministic estimate, no spend.
         "tokens": {
             "in": live_caller.tokens_in if live_caller else steps * mock_provider.STEP_TOKENS[0],

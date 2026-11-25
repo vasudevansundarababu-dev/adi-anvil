@@ -1398,13 +1398,14 @@ def episodes(
         """SELECT e.id, e.kind, e.task_id, e.task_revision, e.case_id, e.application_type, e.completeness, e.edge_cases,
                   e.ts_prompt_id, e.ts_category, e.system_id, e.system_version, e.attempt, e.state, e.tries, e.last_error,
                   e.likely_cause, e.likely_cause_source, s.score, s.passed, s.failed_criteria, o.outcome safety_outcome,
-                  o.critical safety_critical, x.sealed_sha256, x.cost_usd
+                  o.critical safety_critical, x.sealed_sha256, x.cost_usd, (f.episode_id IS NOT NULL) provider_refused
            FROM runs.episodes e
            LEFT JOIN scoring.episode_scores s ON s.episode_id=e.id AND s.pass_id=%s
            LEFT JOIN scoring.safety_outcomes o ON o.episode_id=e.id AND o.pass_id=%s
+           LEFT JOIN scoring.refused_episodes f ON f.episode_id=e.id AND f.pass_id=%s
            LEFT JOIN runs.sealed_evidence x ON x.episode_id=e.id
            WHERE e.run_id=%s ORDER BY e.id""",
-        (latest and latest["id"], latest and latest["id"], run_id),
+        (latest and latest["id"], latest and latest["id"], latest and latest["id"], run_id),
     ).fetchall()
 
     def keep(e):

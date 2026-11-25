@@ -218,6 +218,11 @@ def view(c, ws, actor, episode_id):
         "SELECT * FROM scoring.safety_outcomes WHERE episode_id=%s AND pass_id=%s",
         (episode_id, latest["id"]),
     ).fetchone()
+    # D-054: a provider-refused episode has no score in this pass; what the graders said is kept, read-only.
+    refused = c.execute(
+        "SELECT refusal, would_score, would_pass, failed_criteria, receipts FROM scoring.refused_episodes WHERE episode_id=%s AND pass_id=%s",
+        (episode_id, latest["id"]),
+    ).fetchone()
     ref = c.execute(
         "SELECT reference FROM scoring.case_references WHERE workspace_id=%s AND environment_version_id=%s AND case_id=%s",
         (ws, m["environment"]["version_id"], e["case_id"]),
@@ -279,6 +284,17 @@ def view(c, ws, actor, episode_id):
             "score": score["score"],
             "passed": score["passed"],
             "failed_criteria": score["failed_criteria"],
+        },
+        "provider_refused": refused
+        and {
+            "refusal": refused["refusal"],
+            "would_score": None
+            if refused["would_score"] is None
+            else float(refused["would_score"]),
+            "would_pass": refused["would_pass"],
+            "failed_criteria": refused["failed_criteria"],
+            "receipts": refused["receipts"],
+            "note": "Provider refused: excluded from the model's score, pass rate and leaderboard.",
         },
         "safety": safety
         and {

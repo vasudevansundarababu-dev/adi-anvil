@@ -648,6 +648,70 @@ def score_safety(c, ws, episode, pass_row, manifest, sealed):
     return {"outcome": outcome, "critical": critical}
 
 
+def provider_refusal(bundle):
+    """D-054: why a case episode is "provider refused", or None. Either the live agent recorded it (two replies with
+    stop reason "refusal"), or, for bundles sealed before D-054, the conversation ended on a refusal with no final
+    output. A flagged, non-model outcome: never part of a model's score, pass rate or leaderboard."""
+    if not isinstance(bundle, dict) or not bundle.get("live"):
+        return None
+    if bundle.get("provider_refused"):
+        return {**bundle["provider_refused"], "source": "recorded"}
+    turns = (bundle.get("agent_log") or {}).get("turns") or []
+    refused = [t.get("turn") for t in turns if t.get("finish_reason") == "refusal"]
+    if (
+        refused
+        and turns[-1].get("finish_reason") == "refusal"
+        and bundle.get("final_output") is None
+    ):
+        return {
+            "refusals": len(refused),
+            "turns": refused,
+            "reason": "the conversation ended on a reply the provider stopped with stop reason refusal",
+            "source": "derived from the sealed conversation (sealed before D-054)",
+        }
+    return None
+
+
+def _score_refused(c, ws, episode, pass_row, manifest, sealed, refusal):
+    """D-054: grade a provider-refused episode as usual, keep what the graders said in scoring.refused_episodes, and
+    write nothing to episode_scores or criterion_receipts, so every score, pass rate and leaderboard leaves it out."""
+    c.execute("SAVEPOINT d054_refused")
+    try:
+        result = score_case(c, ws, episode, pass_row, manifest, sealed)
+        receipts = c.execute(
+            """SELECT criterion_id, verdict, points, weight, detail, receipt_sha256 FROM scoring.criterion_receipts
+               WHERE episode_id=%s AND pass_id=%s ORDER BY criterion_id""",
+            (episode["id"], pass_row["id"]),
+        ).fetchall()
+    finally:
+        c.execute("ROLLBACK TO SAVEPOINT d054_refused")
+    c.execute("RELEASE SAVEPOINT d054_refused")
+    c.execute(
+        """INSERT INTO scoring.refused_episodes(episode_id,pass_id,workspace_id,refusal,would_score,would_pass,
+             failed_criteria,receipts) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)""",
+        (
+            episode["id"],
+            pass_row["id"],
+            ws,
+            Jsonb(refusal),
+            result["score"],
+            result["passed"],
+            result["failed"],
+            Jsonb(
+                [
+                    {
+                        **r,
+                        "points": None if r["points"] is None else float(r["points"]),
+                        "weight": float(r["weight"]),
+                    }
+                    for r in receipts
+                ]
+            ),
+        ),
+    )
+    return {**result, "provider_refused": refusal}
+
+
 def score_episode(c, ws, episode, pass_row, manifest):
     sealed = c.execute(
         "SELECT * FROM runs.sealed_evidence WHERE episode_id=%s", (episode["id"],)
@@ -655,7 +719,11 @@ def score_episode(c, ws, episode, pass_row, manifest):
     if not sealed:
         raise GymError("CONFLICT", "Episode has no sealed evidence")
     if episode["kind"] == "safety":
+        # A refusal on a safety prompt can be the model resisting: graded as before, never flagged by D-054.
         return score_safety(c, ws, episode, pass_row, manifest, sealed)
+    refusal = provider_refusal(read_sealed(sealed))
+    if refusal:
+        return _score_refused(c, ws, episode, pass_row, manifest, sealed, refusal)
     result = score_case(c, ws, episode, pass_row, manifest, sealed)
     cause = likely_cause(result["failed"], result["blocked"])
     if cause and episode["likely_cause_source"] in (None, "rule"):
@@ -706,6 +774,14 @@ def run_statistics(c, run_id, pass_id):
            WHERE e.run_id=%s AND o.pass_id=%s""",
         (run_id, pass_id),
     ).fetchall()
+    refused = {
+        r["episode_id"]
+        for r in c.execute(
+            """SELECT f.episode_id FROM scoring.refused_episodes f JOIN runs.episodes e ON e.id=f.episode_id
+               WHERE e.run_id=%s AND f.pass_id=%s""",
+            (run_id, pass_id),
+        ).fetchall()
+    }
     systems = {}
     for e in episodes:
         s = systems.setdefault(
@@ -719,6 +795,7 @@ def run_statistics(c, run_id, pass_id):
                 "scored": 0,
                 "errored": 0,
                 "timed_out": 0,
+                "provider_refused": 0,
                 "cost_usd": 0.0,
                 "_scores": [],
                 "_tasks": {},
@@ -732,6 +809,11 @@ def run_statistics(c, run_id, pass_id):
             s["errored"] += 1
         if e["state"] == "timed_out":
             s["timed_out"] += 1
+        if e["id"] in refused:
+            s["provider_refused"] += (
+                1  # D-054: flagged, not a model result; it has no score in this pass
+            )
+            continue
         if e["kind"] == "case" and e["score"] is not None:
             s["scored"] += 1
             s["_scores"].append(float(e["score"]))

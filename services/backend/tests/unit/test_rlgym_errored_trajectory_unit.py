@@ -74,9 +74,7 @@ def test_a_failing_episode_carries_its_trajectory_so_far():
     assert session.closed
     partial = exc.partial
     assert partial["steps"] == 2 and len(partial["transcript"]) == 2
-    assert [e["tool"] for e in partial["tool_events"]] == [
-        t["tool"] for t in partial["transcript"]
-    ]
+    assert [e["tool"] for e in partial["tool_events"]] == [t["tool"] for t in partial["transcript"]]
     assert partial["live"] is False and partial["cost_usd"] == 0.0
 
 
@@ -101,7 +99,9 @@ def test_kept_trajectory_is_read_only_labelled_and_never_overwritten(tmp_path, m
 
 def test_an_error_without_a_trajectory_keeps_nothing(tmp_path, monkeypatch):
     monkeypatch.setattr(worker.scoring, "EVIDENCE_ROOT", tmp_path)
-    assert worker.keep_trajectory("ws", EPISODE, RuntimeError("before reset"), "errored", "x") is None
+    assert (
+        worker.keep_trajectory("ws", EPISODE, RuntimeError("before reset"), "errored", "x") is None
+    )
     assert not any(tmp_path.iterdir())
 
 

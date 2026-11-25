@@ -67,6 +67,7 @@ export default function Episode({ runId, episodeId }: { runId: string; episodeId
                     {v.score.score} / 100 · {v.score.passed ? 'passed' : 'failed'}
                   </span>
                 )}
+                {v.provider_refused && <Badge state="failed" label="provider refused" />}
                 {v.safety && (
                   <span>
                     {' '}
@@ -80,6 +81,25 @@ export default function Episode({ runId, episodeId }: { runId: string; episodeId
               </span>
             </div>
             <small>{v.note}</small>
+            {v.provider_refused && (
+              <section className="card">
+                <h4>Provider refused: excluded from score</h4>
+                <p>
+                  The provider ended {v.provider_refused.refusal.refusals} replies with stop reason
+                  &ldquo;refusal&rdquo; (turns {v.provider_refused.refusal.turns.join(', ')}). This
+                  is not a model result: it is left out of the model&rsquo;s score, pass rate and
+                  leaderboard.
+                </p>
+                <small>
+                  {v.provider_refused.refusal.source}. What the graders said is kept, read-only:
+                  would have scored {v.provider_refused.would_score ?? '—'} / 100
+                  {v.provider_refused.failed_criteria.length
+                    ? ` · failed ${v.provider_refused.failed_criteria.join(', ')}`
+                    : ''}
+                  .
+                </small>
+              </section>
+            )}
             <section className="card">
               <h4>Path taken</h4>
               <div className="graph" role="img" aria-label="Path over the workflow">

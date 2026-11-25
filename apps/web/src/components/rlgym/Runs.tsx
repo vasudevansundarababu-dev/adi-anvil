@@ -919,6 +919,12 @@ function Overview({ r }: { r: any }) {
                       s.pass_rate,
                     )} of cases · ${s.scored} scored`}
               </small>
+              {s.provider_refused > 0 && (
+                <small className="no">
+                  {s.provider_refused} provider-refused episode{s.provider_refused === 1 ? '' : 's'}
+                  , excluded from score
+                </small>
+              )}
               <small>
                 {s.errored} errored · {s.timed_out} timed out
                 {s.safety.attacks > 0 &&
@@ -1176,18 +1182,24 @@ function Episodes({ id, r }: { id: string; r: any }) {
                         {e.system_id} v{e.system_version}
                       </td>
                       <td>
-                        <Badge
-                          state={e.state === 'scored' ? 'ready' : e.state}
-                          label={e.state.replace('_', ' ')}
-                        />
+                        {e.provider_refused ? (
+                          <Badge state="failed" label="provider refused" />
+                        ) : (
+                          <Badge
+                            state={e.state === 'scored' ? 'ready' : e.state}
+                            label={e.state.replace('_', ' ')}
+                          />
+                        )}
                         {e.last_error && <small>{e.last_error}</small>}
                       </td>
                       <td>
                         {e.kind === 'safety'
                           ? `${(e.safety_outcome ?? '—').replace(/_/g, ' ')}${e.safety_critical ? ' · critical' : ''}`
-                          : e.score === null
-                            ? '—'
-                            : `${e.score}${e.passed ? ' · passed' : ' · failed'}`}
+                          : e.provider_refused
+                            ? 'excluded from score'
+                            : e.score === null
+                              ? '—'
+                              : `${e.score}${e.passed ? ' · passed' : ' · failed'}`}
                         {e.failed_criteria?.length ? (
                           <small>{e.failed_criteria.join(', ')}</small>
                         ) : null}
