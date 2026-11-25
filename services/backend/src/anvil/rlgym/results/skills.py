@@ -165,6 +165,7 @@ def run_profile(d):
     )
     return {
         "run_id": d.run["id"],
+        "test_only": bool(d.manifest.get("test_only")),
         "template": d.manifest.get("template", {}).get("name"),
         "models": {f"{m['system_id']}@{m['version']}": m.get("name") for m in d.models},
         "criteria": sources,

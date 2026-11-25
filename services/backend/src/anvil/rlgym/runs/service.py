@@ -779,6 +779,8 @@ def leaderboard_eligibility(resolved, lines):
         reasons.append(f"agent model(s) are mocks, not live: {', '.join(mocks)}")
     if not lines:
         reasons.append("no agent model chosen")
+    if (resolved.get("project") or {}).get("test_only"):
+        reasons.append("the project is test-only (TEST): never on the leaderboard")
     return {"eligible": not reasons, "reasons": reasons}
 
 
@@ -807,6 +809,8 @@ def _manifest(run_id, check):
         ),
         # D-033: frozen with the run (inside manifest_sha256), so it cannot change after admission.
         "leaderboard": bool(s.get("leaderboard")),
+        # Authoring's test-only marker, frozen with the run (absent for every other run).
+        **({"test_only": True} if (r.get("project") or {}).get("test_only") else {}),
         "note": LIVE_NOTE if any(m.get("live") for m in r["models"]) else MOCK_NOTE,
         "project": {"id": r["project"]["project_id"], "name": r["project"]["name"]},
         "template": {
@@ -1394,7 +1398,8 @@ def _counts(ctx, run_id):
 
 def list_runs(ctx, state=None, q=None, project_id=None):
     rows = ctx.c.execute(
-        """SELECT r.*, m.manifest_sha256, m.manifest->'models' models, (m.manifest->'leaderboard')::boolean leaderboard, p.name project_name, sv.suite_id, sv.version suite_version,
+        """SELECT r.*, m.manifest_sha256, m.manifest->'models' models, (m.manifest->'leaderboard')::boolean leaderboard, p.name project_name,
+                  p.test_only, sv.suite_id, sv.version suite_version,
                   sv.name suite_name, (SELECT count(*) FROM runs.episodes e WHERE e.run_id=r.id) episodes
            FROM runs.runs r JOIN projects.projects p USING (workspace_id, project_id)
            JOIN suites.suite_versions sv ON sv.id=r.suite_version_id

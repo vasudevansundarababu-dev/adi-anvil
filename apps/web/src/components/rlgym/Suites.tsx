@@ -223,6 +223,11 @@ export function SuiteEditor({ project, id, step }: { project: string; id: string
               reload={reload}
             />
             <main>
+              {data.test_only && (
+                <p>
+                  <Badge state="draft" label="TEST" /> <small>Test-only project: never on the leaderboard.</small>
+                </p>
+              )}
               <Tabs
                 current={step}
                 items={[

@@ -168,7 +168,7 @@ function RunsList() {
                       </small>
                     </td>
                     <td style={{ textAlign: 'left' }}>
-                      {r.project_name}
+                      {r.project_name} {r.test_only && <Badge state="draft" label="TEST" />}
                       <small>
                         {r.suite.name} v{r.suite.version}
                       </small>

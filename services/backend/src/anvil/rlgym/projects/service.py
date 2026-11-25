@@ -94,6 +94,13 @@ def receive_export(c, ws, actor, project_id, body):
         "project_id in body and path differ",
         field="project_id",
     )
+    # Authoring's test-only marker (Project.testOnly → export `test_only`).
+    require(
+        body.get("test_only") in (None, True, False),
+        "VALIDATION_FAILED",
+        "test_only must be true or false",
+        field="test_only",
+    )
     for field in ("project_name", "template", "export_id", "tasks", "export_sha256"):
         require(
             body.get(field) not in (None, ""),
@@ -171,6 +178,21 @@ def receive_export(c, ws, actor, project_id, body):
             ),
         )
         _initial_rules(c, ws, project_id, activation)
+    if body.get("test_only") is True:
+        # Sticky: a test-only project stays labelled TEST (a later export can't silently unlabel it).
+        marked = c.execute(
+            "UPDATE projects.projects SET test_only=true WHERE workspace_id=%s AND project_id=%s AND NOT test_only RETURNING project_id",
+            (ws, project_id),
+        ).fetchone()
+        if marked:
+            audit(
+                c,
+                ws,
+                actor,
+                "project.test_only",
+                project_id,
+                "Authoring marked the project test-only",
+            )
         audit(
             c,
             ws,

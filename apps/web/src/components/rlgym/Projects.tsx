@@ -99,7 +99,8 @@ export function ProjectsList() {
                     <td>
                       <Link className="link" href={`/gym/projects/${p.project_id}`}>
                         {p.name}
-                      </Link>
+                      </Link>{' '}
+                      {p.test_only && <Badge state="draft" label="TEST" />}
                       <small>Project ID {p.project_id}</small>
                     </td>
                     <td>
@@ -181,6 +182,7 @@ export function ProjectPage({ id, tab, rest }: { id: string; tab: string; rest: 
                   <div className="row">
                     <h3>{p.name}</h3>
                     <Badge state={p.state} />
+                    {p.test_only && <Badge state="draft" label="TEST" />}
                     <small>Project · from Authoring</small>
                   </div>
                   <Link

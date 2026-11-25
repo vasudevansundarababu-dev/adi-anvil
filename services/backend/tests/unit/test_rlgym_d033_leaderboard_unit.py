@@ -30,7 +30,8 @@ def test_leaderboard_reads_only_ticked_runs_and_says_how_to_add_one():
     c = FakeConn([{"project_id": "prj_1", "name": "KYC"}, []])
     out = leaderboard.leaderboard(c, "ws", "prj_1")
     assert leaderboard.ON_BOARD in c.sql[1]
-    assert leaderboard.ON_BOARD == "(m.manifest->'leaderboard')::boolean IS TRUE"
+    assert leaderboard.ON_BOARD.startswith("(m.manifest->'leaderboard')::boolean IS TRUE")
+    assert "(m.manifest->'test_only') IS NULL" in leaderboard.ON_BOARD  # test-only runs never count
     assert out["rows"] == [] and out["run"] is None
     assert out["empty"] == (
         "No leaderboard runs yet. Tick 'Count this run on the leaderboard' when you start a run."

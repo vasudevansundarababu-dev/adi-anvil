@@ -249,6 +249,8 @@ def header(d):
         "state": d.run["state"],
         "ready": d.run["state"] == "completed",
         "project": m["project"],
+        # Authoring's test-only marker: the report is labelled TEST.
+        "test_only": bool(m.get("test_only")),
         "template": m["template"],
         # D-036: how episodes were scored (S7 as published, or the RL Gym's scale for runs and tasks without S7).
         "scoring": scoring_note(m),

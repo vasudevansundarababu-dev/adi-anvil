@@ -54,6 +54,12 @@ export default function Home() {
                   ))}
                 </select>
               </label>
+              {(home.data.test_projects ?? []).length > 0 && (
+                <small>
+                  <Badge state="draft" label="TEST" /> Test-only projects, never ranked:{' '}
+                  {home.data.test_projects.map((p: any) => p.name).join(', ')}
+                </small>
+              )}
               {b?.cohorts?.length > 0 && (
                 <label>
                   <small>Cohort</small>

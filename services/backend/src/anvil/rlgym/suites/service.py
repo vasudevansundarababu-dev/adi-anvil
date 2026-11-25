@@ -1564,8 +1564,18 @@ def view(c, ws, sv_id):
         if rows and tasks and plan
         else {}
     )
+    test_only = bool(
+        (
+            c.execute(
+                "SELECT test_only FROM projects.projects WHERE workspace_id=%s AND project_id=%s",
+                (ws, pid),
+            ).fetchone()
+            or {}
+        ).get("test_only")
+    )
     return {
         **sv,
+        "test_only": test_only,
         "bindings": bindings,
         "criteria": criteria,
         "plan": plan,

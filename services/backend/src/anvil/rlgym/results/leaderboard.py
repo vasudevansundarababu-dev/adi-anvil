@@ -10,7 +10,8 @@ from anvil.rlgym.results import report, sme
 from anvil.rlgym.scoring import service as scoring
 
 # Runs admitted before D-033 have no flag in their manifest, so they are not counted (no backfill).
-ON_BOARD = "(m.manifest->'leaderboard')::boolean IS TRUE"
+# Test-only runs (Authoring's marker, frozen in the manifest) never count.
+ON_BOARD = "(m.manifest->'leaderboard')::boolean IS TRUE AND (m.manifest->'test_only') IS NULL"
 
 
 def _cohort(c, run, manifest):

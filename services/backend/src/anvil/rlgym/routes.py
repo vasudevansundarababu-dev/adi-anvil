@@ -58,22 +58,26 @@ def routes():
         with scope(request, ws) as ctx:
             board = []
             for p in ctx.c.execute(
-                """SELECT p.project_id, p.name, p.state,
+                """SELECT p.project_id, p.name, p.state, p.test_only,
                           (SELECT r.id FROM runs.runs r JOIN runs.run_manifests m ON m.run_id=r.id
                            WHERE r.workspace_id=p.workspace_id AND r.project_id=p.project_id
                            AND r.state='completed' AND r.purpose='benchmark'
-                           AND (m.manifest->'leaderboard')::boolean IS TRUE
+                           AND (m.manifest->'leaderboard')::boolean IS TRUE AND (m.manifest->'test_only') IS NULL
                            ORDER BY r.finished_at DESC NULLS LAST LIMIT 1) latest_run
                    FROM projects.projects p WHERE p.workspace_id=%s ORDER BY p.name""",
                 (ctx.ws,),
             ).fetchall():
                 board.append({**p, "has_results": p["latest_run"] is not None})
+            # Test-only projects (Authoring's marker) are kept off the cross-project board, listed apart as TEST.
+            test_projects = [p for p in board if p["test_only"]]
+            board = [p for p in board if not p["test_only"]]
             return ok(
                 {
                     "workspace": ctx.workspace,
                     "me": ctx.actor.__dict__,
                     "todo_count": todo.list_open(ctx.c, ctx.ws, ctx.actor)["count"],
                     "projects": board,
+                    "test_projects": test_projects,
                 },
                 request,
             )
