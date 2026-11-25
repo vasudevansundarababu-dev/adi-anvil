@@ -204,6 +204,30 @@ def routes():
                 request,
             )
 
+    @r.post(W + "/suite-versions/{sv}/bulletin-blind-run", status_code=201)
+    def bulletin_blind_run_now(
+        ws: str, sv: str, request: Request, body: dict = Body(default_factory=dict)
+    ):
+        """G-02: the bulletin-blind baseline on the suite's rule-change cases (local instance; no model; no spend)."""
+        from anvil.rlgym.verification import bulletin_blind
+
+        with scope(request, ws) as ctx:
+            ctx.actor.require_person()
+            return ok(bulletin_blind.run(ctx.c, ctx.ws, sv, str(ctx.actor.id), body), request, 201)
+
+    @r.get(W + "/suite-versions/{sv}/bulletin-blind-run")
+    def bulletin_blind_latest(ws: str, sv: str, request: Request):
+        from anvil.rlgym.verification import bulletin_blind
+
+        with scope(request, ws) as ctx:
+            return ok(
+                {
+                    "latest_run": bulletin_blind.latest(ctx.c, ctx.ws, sv),
+                    "default_threshold_percent": bulletin_blind.DEFAULT_THRESHOLD,
+                },
+                request,
+            )
+
     @r.post(W + "/task-imports/{tid}/reference-confirmation", status_code=201)
     def reference_confirm(
         ws: str, tid: str, request: Request, body: dict = Body(default_factory=dict)

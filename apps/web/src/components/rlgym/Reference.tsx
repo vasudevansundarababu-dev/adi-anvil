@@ -142,6 +142,7 @@ export function ReferencePanel({ path }: { path: string }) {
         );
       })}
       <LookupBaseline path={path} />
+      <BulletinBlind path={path} />
     </section>
   );
 }
@@ -241,6 +242,66 @@ function LookupBaseline({ path }: { path: string }) {
             </table>
           </details>
         </>
+      )}
+    </section>
+  );
+}
+
+// G-02 (Studio generator 2.1.0): on rule-change cases the honest baseline applies the starting rules correctly and never
+// reads the bulletin. The cases need the bulletin only if it gets few of them right (default gate 40%).
+function BulletinBlind({ path }: { path: string }) {
+  const { say } = useGym();
+  const data = useData<any>(`${path}/bulletin-blind-run`);
+  const [gate, setGate] = useState<string>('');
+  const [busy, setBusy] = useState(false);
+  const [failure, setFailure] = useState<GymApiError | null>(null);
+  const last = data.data?.latest_run;
+  const value = gate === '' ? String(data.data?.default_threshold_percent ?? 40) : gate;
+  async function run() {
+    setBusy(true);
+    setFailure(null);
+    try {
+      await send('POST', `${path}/bulletin-blind-run`, { threshold_percent: Number(value) });
+      say('Bulletin-blind baseline finished.');
+      data.reload();
+    } catch (e) {
+      setFailure(e as GymApiError);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <section className="card">
+      <div className="between">
+        <div>
+          <h3>Bulletin-blind baseline (G-02)</h3>
+          <small>
+            The reference approach on the starting rules, never reading the bulletin, on the rule-change cases only;
+            scored against the answer with the bulletin. Above the gate, the cases don&rsquo;t need the bulletin.
+          </small>
+        </div>
+        <div className="row">
+          <label>
+            Gate (%)
+            <input type="number" min={0} max={100} value={value} onChange={(e) => setGate(e.target.value)} style={{ width: 70 }} />
+          </label>
+          <button className="primary" onClick={run} disabled={busy}>
+            {busy ? 'Running…' : 'Run bulletin-blind baseline'}
+          </button>
+        </div>
+      </div>
+      <Failure error={failure} />
+      {last && (
+        <p>
+          <Badge
+            state={last.summary.gate.passed ? 'ready' : 'failed'}
+            label={`${last.summary.right_percent}% right on ${last.summary.cases} rule-change cases · gate ${last.summary.gate.threshold_percent}%`}
+          />{' '}
+          <small>
+            {last.summary.points_percent}% of points · {when(last.created_at)}
+            {last.placeholder_graded ? ' · TEST — graded on placeholder rules, not valid as a result' : ''}
+          </small>
+        </p>
       )}
     </section>
   );

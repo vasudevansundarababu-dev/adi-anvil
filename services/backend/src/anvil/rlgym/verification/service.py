@@ -836,6 +836,32 @@ def lookup_row(latest_run, environment_version_id):
     )
 
 
+def blind_row(latest_run):
+    """G-02 from the suite version's latest bulletin-blind run (verification/bulletin_blind.py)."""
+    name = "Bulletin-blind agent can't solve the rule-change cases"
+    if not latest_run:
+        return row(
+            "G-02",
+            name,
+            "INSUFFICIENT_EVIDENCE",
+            "the bulletin-blind baseline hasn't been run for this suite version (Suite → Reference agent → Run "
+            "bulletin-blind baseline), or the suite has no rule-change cases",
+        )
+    s = latest_run["summary"]
+    gate = s["gate"]["threshold_percent"]
+    detail = (
+        f"the agent that never reads the bulletin decides {s['right_percent']:g}% of {s['cases']} rule-change "
+        f"cases right (gate {gate:g}%), {s['points_percent']}% of points"
+    )
+    return row(
+        "G-02",
+        name,
+        "PASS" if s["gate"]["passed"] else "FAIL",
+        detail,
+        {"bulletin_blind_run": latest_run["id"], **s},
+    )
+
+
 def build(c, ws, run_id, requested_by=None, profile="experiment"):
     run = c.execute(
         "SELECT * FROM runs.runs WHERE workspace_id=%s AND id=%s", (ws, run_id)
@@ -883,6 +909,9 @@ def build(c, ws, run_id, requested_by=None, profile="experiment"):
             manifest["environment"]["version_id"],
         )
     )
+    from anvil.rlgym.verification import bulletin_blind
+
+    rows_.append(blind_row(bulletin_blind.latest(c, ws, run["suite_version_id"])))
     if pass_row:
         rows_ += shortcuts(c, ws, manifest, pass_row, cases, bundles, refs)
         rows_.append(grader_replay(c, ws, manifest, pass_row, cases, bundles, refs))

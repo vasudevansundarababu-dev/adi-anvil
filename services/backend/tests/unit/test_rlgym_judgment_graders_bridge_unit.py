@@ -598,6 +598,7 @@ def test_a_dismissal_must_name_identifiers_that_really_differ():
 
 def test_the_expert_rule():
     party = {"full_name": "Ana Ruiz", "date_of_birth": "1980-01-01", "citizenships": ["MX"]}
+
     def hit(**k):
         listed = {
             "listed_name": "Ana Ruiz",
