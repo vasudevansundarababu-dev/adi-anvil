@@ -264,6 +264,8 @@ def _score(c, ws, project, evaluators, task, ep, ref):
 
 def run(c, ws, sv_id, requested_by, replay=True, max_cases_per_task=3):
     sv, project, env, tasks = _context(c, ws, sv_id)
+    # Integration test only: a test-only project grades placeholder references (never awaiting_sme).
+    placeholder = bool(project.get("test_only"))
     rec = openenv.recipe(env)
     image = openenv.check_image(
         env, rec
@@ -299,7 +301,7 @@ def run(c, ws, sv_id, requested_by, replay=True, max_cases_per_task=3):
             for t in tasks:
                 for cid in chosen.get((t["task_id"], t["revision"]), [])[:max_cases_per_task]:
                     ref = (refs.get(cid) or {}).get("reference") or {}
-                    if judgment.awaiting(ref):
+                    if judgment.awaiting(ref, placeholder_ok=placeholder):
                         continue  # reference.v2: not graded until the SME / PM answers
                     out[(t["task_id"], cid)] = _episode(
                         session,
@@ -322,7 +324,7 @@ def run(c, ws, sv_id, requested_by, replay=True, max_cases_per_task=3):
         rows = []
         for cid in chosen.get((t["task_id"], t["revision"]), [])[:max_cases_per_task]:
             ref = (refs.get(cid) or {}).get("reference") or {}
-            wait = judgment.awaiting(ref)
+            wait = judgment.awaiting(ref, placeholder_ok=placeholder)
             if wait:
                 rows.append(
                     {
@@ -371,6 +373,7 @@ def run(c, ws, sv_id, requested_by, replay=True, max_cases_per_task=3):
             }
         )
     report = {
+        **({"placeholder_graded": True} if placeholder else {}),
         "suite_version_id": str(sv_id),
         "environment": env["id"],
         "judge": f"{MOCK_JUDGE} (no live call in V-04/V-01)",

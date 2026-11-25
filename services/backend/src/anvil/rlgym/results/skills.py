@@ -96,13 +96,13 @@ def criteria_outcomes(receipts):
     return out
 
 
-def awaiting_counts(references):
+def awaiting_counts(references, placeholder_ok=False):
     """How many of the run's cases aren't graded yet, by reason (reference.v2 status)."""
     from anvil.rlgym.scoring import judgment
 
     out = {s: 0 for s in judgment.AWAITING}
     for r in references:
-        w = judgment.awaiting(r)
+        w = judgment.awaiting(r, placeholder_ok)
         if w:
             out[w[0]] += 1
     return out
@@ -192,7 +192,10 @@ def run_profile(d):
         "lookup_run": lk and lk["id"],
         "discriminating_cases": None if discriminating is None else len(discriminating),
         # reference.v2: cases not graded yet (the SME or the PM decides), counted apart.
-        "not_graded": awaiting_counts(refs),
+        "not_graded": awaiting_counts(
+            refs, placeholder_ok=bool(d.manifest.get("placeholder_graded"))
+        ),
+        "placeholder_graded": bool(d.manifest.get("placeholder_graded")),
         "profile": profile(rows, discriminating),
         "by_account_type": profile_by_type(rows, discriminating),
         "criteria_outcomes": criteria_outcomes(

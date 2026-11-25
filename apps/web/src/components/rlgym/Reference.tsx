@@ -62,6 +62,11 @@ export function ReferencePanel({ path }: { path: string }) {
           Last run {when(d.latest_run.created_at)} on {d.latest_run.environment} · {d.latest_run.judge}
         </small>
       )}
+      {d?.latest_run?.placeholder_graded && (
+        <p>
+          <strong className="no">TEST — graded on placeholder rules, not valid as a result</strong>
+        </p>
+      )}
       {(d?.tasks ?? []).map((t: any) => {
         const r = results[`${t.task_id}:${t.revision}`];
         return (

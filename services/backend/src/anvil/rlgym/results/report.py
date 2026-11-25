@@ -240,6 +240,9 @@ def score_cards(d):
     return cards
 
 
+PLACEHOLDER_NOTE = "TEST — graded on placeholder rules, not valid as a result"
+
+
 def header(d):
     m = d.manifest
     attempts = m["attempts"]
@@ -251,6 +254,7 @@ def header(d):
         "project": m["project"],
         # Authoring's test-only marker: the report is labelled TEST.
         "test_only": bool(m.get("test_only")),
+        **({"placeholder_note": PLACEHOLDER_NOTE} if m.get("placeholder_graded") else {}),
         "template": m["template"],
         # D-036: how episodes were scored (S7 as published, or the RL Gym's scale for runs and tasks without S7).
         "scoring": scoring_note(m),

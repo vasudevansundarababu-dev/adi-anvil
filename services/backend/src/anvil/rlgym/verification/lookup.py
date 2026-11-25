@@ -206,7 +206,7 @@ def run(c, ws, sv_id, requested_by, body=None):
                         {"case_id": cid, "task_id": t["task_id"], "skipped": "no reference"}
                     )
                     continue
-                wait = judgment.awaiting(truth)
+                wait = judgment.awaiting(truth, placeholder_ok=bool(project.get("test_only")))
                 if wait:
                     rows.append({"case_id": cid, "task_id": t["task_id"], "skipped": wait[0]})
                     continue

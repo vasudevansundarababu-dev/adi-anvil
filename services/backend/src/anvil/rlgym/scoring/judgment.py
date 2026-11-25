@@ -163,13 +163,23 @@ def audit_faithfulness(trail, transcript, aliases, expected):
 AWAITING = ("awaiting_sme", "awaiting_pm")
 
 
-def awaiting(ref):
-    """(status, reasons) when the reference isn't gradable yet, else None."""
+def awaiting(ref, placeholder_ok=False):
+    """(status, reasons) when the reference isn't gradable, else None. Studio ab1f684: a reference with gradable=false
+    (its rules' conditions aren't PM-approved) is never graded in a real project. `placeholder_ok` (a test-only
+    project's run, manifest placeholder_graded) grades it as if the placeholders were approved; awaiting_sme never is."""
     ref = ref or {}
+    sme = ref.get("status") == "awaiting_sme" or ref.get("awaiting_sme") is True
+    if sme:
+        reasons = ref.get("awaiting_sme") if isinstance(ref.get("awaiting_sme"), list) else []
+        return "awaiting_sme", reasons or ["awaiting sme"]
+    if placeholder_ok:
+        return None
     for status in AWAITING:
         if ref.get("status") == status or ref.get(status) is True:
             reasons = ref.get(status) if isinstance(ref.get(status), list) else []
             return status, reasons or [status.replace("_", " ")]
+    if ref.get("gradable") is False:
+        return "awaiting_pm", ["the rules' conditions aren't PM-approved yet (gradable: false)"]
     return None
 
 
@@ -193,7 +203,7 @@ def evaluate(check, x):
         return _line("blocked", expected="the episode's tool calls")
     if check != "tool_calls" and x.get("final") is None:
         return _line("blocked", expected="the agent's final output")
-    wait = awaiting(ref)
+    wait = awaiting(ref, x.get("placeholder_ok"))
     if wait:
         return _line("not_applicable", expected={wait[0]: wait[1]})
     fired = [

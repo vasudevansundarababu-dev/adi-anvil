@@ -825,6 +825,8 @@ def _manifest(run_id, check):
         "leaderboard": bool(s.get("leaderboard")),
         # Authoring's test-only marker, frozen with the run (absent for every other run).
         **({"test_only": True} if (r.get("project") or {}).get("test_only") else {}),
+        # Graded on placeholder rules (test-only projects only): never valid as a result.
+        **({"placeholder_graded": True} if placeholder_graded(r.get("project")) else {}),
         "note": LIVE_NOTE if any(m.get("live") for m in r["models"]) else MOCK_NOTE,
         "project": {"id": r["project"]["project_id"], "name": r["project"]["name"]},
         "template": {
@@ -973,6 +975,12 @@ def _manifest(run_id, check):
         "episode_formula": "(cases + safety prompts) × models × attempts",
         "projected_usd": check["projected_usd"],
     }
+
+
+def placeholder_graded(project):
+    """Integration test only (Studio ab1f684): a test-only project's runs grade references that rest on placeholder
+    rules as if they were approved. Never a real project."""
+    return bool((project or {}).get("test_only"))
 
 
 def judgment_part(selected, fetch_library, fetch_scenarios=None, pinned=None):

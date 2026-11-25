@@ -302,6 +302,8 @@ def judgment_results(manifest, episode, bundle, reference, vctx, configs):
         "final": bundle.get("final_output"),
         "tool_events": bundle.get("tool_events"),
         "reference": reference,
+        # Test-only projects only: placeholder references graded as if approved (frozen in the manifest).
+        "placeholder_ok": bool(manifest.get("placeholder_graded")),
     }
     return {b["id"]: judgment.evaluate(b["check"], x) for b in blocks}
 

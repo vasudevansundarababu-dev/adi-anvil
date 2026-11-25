@@ -120,5 +120,7 @@ def known_case_lines(criterion, case):
     """Known-case tests: the criterion's judgment lines computed from the known case itself."""
     from anvil.rlgym.scoring import judgment
 
-    x = inputs_from(case.get("evidence"), case.get("reference"))
+    # Known cases test the grader's logic, not a result: a reference resting on placeholder rules is graded (an
+    # awaiting_sme reference still isn't).
+    x = {**inputs_from(case.get("evidence"), case.get("reference")), "placeholder_ok": True}
     return {f"{criterion}.{c}": judgment.evaluate(c, x) for c in GRADERS[criterion]}
