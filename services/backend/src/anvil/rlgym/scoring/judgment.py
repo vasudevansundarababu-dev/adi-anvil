@@ -23,7 +23,9 @@ def recommend_sequence(transcript):
     """The sequence of the first successful recommend call, else one past the last call."""
     last = 0
     for t in transcript or []:
-        seq = int(t.get("sequence") or 0)
+        # The runtime's call sequence (C3's episode clock) is on the observation; older entries carry step only.
+        obs = t.get("observation") or {}
+        seq = int(obs.get("sequence") or t.get("sequence") or t.get("step") or 0)
         last = max(last, seq)
         if t.get("tool") == "recommend" and (t.get("observation") or {}).get("ok"):
             return seq

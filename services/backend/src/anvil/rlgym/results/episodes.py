@@ -281,6 +281,8 @@ def view(c, ws, actor, episode_id):
         "manifest_sha256": e["manifest_sha256"],
         # D-056: what the policy_id_map did at reset (applied, or the warning), from the sealed evidence.
         "policy_map": (bundle or {}).get("policy_id_map"),
+        # G6 / C3: fired scenario events and the notices read (absent for episodes without events).
+        "scenario_events": (bundle or {}).get("scenario_events"),
         "score": score
         and {
             "score": score["score"],

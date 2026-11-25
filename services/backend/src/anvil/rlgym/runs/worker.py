@@ -23,6 +23,7 @@ from psycopg.types.json import Jsonb
 
 from anvil.rlgym.common import GymError, emit, set_scope, system_scope
 from anvil.rlgym.runs import aliasing, clauses, images, instructions, openenv, policy_ids
+from anvil.rlgym.runs import events as scenario_log
 from anvil.rlgym.scoring import service as scoring
 from anvil.rlgym.systems import mock_provider
 
@@ -449,6 +450,7 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         session.close()
     wall_ms = int((time.monotonic() - started) * 1000)
     steps = len(transcript)
+    scenario = scenario_log.scenario_events(snapshots, transcript)
     bundle = {
         "schema": "rlgym.sealed-episode.v1",
         # A live model's episode is a real execution (on synthetic cases), labelled apart from mock results.
@@ -509,6 +511,8 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         "agent_log": agent_log,
         # D-056: how the policy ids were shown (absent for a task without a map, so its bundle is as before).
         **({"policy_id_map": policy_map} if policy_map else {}),
+        # G6 / C3: fired scenario events and the notices the agent read (absent when there were none).
+        **({"scenario_events": scenario} if scenario else {}),
         # D-054: the provider ended the episode with refusals (a flagged, non-model outcome; excluded from scores).
         **(
             {"provider_refused": agent_log["provider_refused"]}

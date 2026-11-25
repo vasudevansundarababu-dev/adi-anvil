@@ -291,3 +291,11 @@ def test_a_cited_rule_must_have_been_read_and_apply():
         {"sop_step": 2, "rule_id": "R-CTR", "version": 1},
     ]
     assert out["rules_not_applicable"] == [{"sop_step": 2, "rule_id": "R-CTR", "version": 1}]
+
+
+def test_the_clock_is_the_runtime_sequence_on_the_observation():
+    real = [
+        {"step": 1, "tool": "application.read", "observation": {"ok": True, "sequence": 5}},
+        {"step": 2, "tool": "recommend", "observation": {"ok": True, "sequence": 9}},
+    ]
+    assert judgment.recommend_sequence(real) == 9

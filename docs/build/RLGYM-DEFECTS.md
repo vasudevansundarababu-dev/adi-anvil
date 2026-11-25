@@ -700,3 +700,41 @@ All four tasks are edge-focused, so no task took the 80 clean complete or the 32
   - API /api/v1/health 200, /gym 200.
   - 29 saved suite hashes unchanged; v6 admission (rolled back): 8 episodes, $6.40, no failures.
   - The D-062 next_action version is not created yet. It waits for a person (Admin → Evaluators → golden-kyc-blocks:next_action v1 → Create fix version → "Use suggested fix" → Create).
+
+## KYC Judgment v1: RL Gym's part after Studio's C1–C4 (25 Nov 2026; contracts at Studio 1ba841d)
+
+- **Review** (`side-session-notes/…/rlgym-review-c1-c4.md`):
+  - Yes to registry-case v2, per-party conditions and multi-valued facts.
+  - Blockers for wiring the G2 graders, sent to Studio:
+    - B1: no scorer channel for the pinned policy library and the per-case scenarios;
+    - B2: no kyc-judgment reference shape (per-party outcomes and requests, risk rating, officer flag, which rule governs, precedence);
+    - B3: the audit trail and officer flag aren't in C4's output schema.
+- **Condition compiler:**
+  - `clauses._leaf` handles multi-valued facts: eq/in when any value matches, ne/not_in when none does, and [] is a decided "none". Scalars are unchanged.
+  - `runs/library.py` works out:
+    - the version in force: by submission date, or after a scenario publication before the decision's sequence;
+    - per-party rules: evaluated over party plus case facts;
+    - `us_person` derived from the definition in force;
+    - withdrawn versions, which apply nothing;
+    - Unresolved for a missing fact, never a guess.
+  - Checked on Studio's fixtures: hashes are OK, the dual national is derived as a US person, and the other-process distractor doesn't apply.
+- **G2 (pure, not wired until B1–B3):** `scoring/judgment.py` grades:
+  - rules applied: exact passes; one off, or one wrong governs mark, with the decision right is partial; otherwise fail. Stale versions after a bulletin are named.
+  - the rule in force at the recommend call, on the runtime's sequence;
+  - audit-trail faithfulness against RL Gym's own sealed transcript: invented evidence is critical; facts must match the record; cited rules must have been read and must apply.
+- **G1 (migration 068 adds `template_activations.output_schema` and `template_criteria.skill`):**
+  - S4 with `policyLibrary` renders only the library documents, never expectedRules or notes;
+  - S5 `decisionRights` renders as a table;
+  - the template's output schema renders as "Output fields", from admission and the worker, and is frozen in the manifest;
+  - v8 text and hashes are byte-identical (tested).
+- **G3:**
+  - `s7.profile` carries skills when the task tags them, and the manifest's evaluator list carries template skills when present.
+  - Report → Agent → Skills is read-only.
+  - Reasoning and decisioning count only on cases the G4 lookup got wrong, and need 10 per model, else "not measured". v8 criteria use E-011 §4's mapping, labelled provisional.
+  - run-0235: tool calling and instruction following are 100% on 8 cases. Reasoning and decisioning are not measured: there is no lookup run, and v8's lookup solves every case anyway.
+- **G5:** `GET runs/{id}/skill-compare?other=` and the Skills view compare two runs' models skill by skill. run-0235 vs run-0234 share no model (Haiku v7 vs v6).
+- **G6:**
+  - Fired scenario records (end-snapshot collection `scenario_events`, pending Studio's name) and the notices the agent read go into the sealed bundle, with any unread notice listed.
+  - Shown on the episode view.
+  - Absent when there are none, so other bundles keep their shape.
+- **Tests:** library 8, G2 11, G1 6, G3/G5 6, G6 4 (all written first). Unit 833 passed; ruff and tsc clean.
