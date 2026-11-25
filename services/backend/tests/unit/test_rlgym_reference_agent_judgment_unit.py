@@ -114,3 +114,16 @@ def test_the_audit_trail_and_rationale():
     assert [e["sop_step"] for e in trail] == ["1", "3"] and {e["status"] for e in trail} == {"done"}
     assert {"party_id": "p1", "fact": "tin"} in [m for e in trail for m in e["facts_missing"]]
     assert "request_information" in final["rationale"] and "R-A" in final["rationale"]
+
+
+def test_a_not_eligible_reference_is_recorded_as_not_eligible():
+    r = {
+        **AFTER,
+        "recommendation": "not_eligible",
+        "parties": [{"party_id": "p1", "outcome": "not_eligible", "requests": []}],
+    }
+    events, transcript, final = drive(r, [])
+    assert final["recommendation"] == "not_eligible"
+    assert next(e for e in events if e["tool"] == "recommend")["args"]["decision"] == "not_eligible"
+    assert "not_eligible" in final["rationale"]
+    assert judgment.evaluate("decision", {"reference": r, "final": final})["verdict"] == "pass"

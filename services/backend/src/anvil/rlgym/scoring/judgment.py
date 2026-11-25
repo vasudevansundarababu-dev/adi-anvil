@@ -322,6 +322,11 @@ def awaiting(ref, placeholder_ok=False):
     return None
 
 
+# The decision values (spec §13: not_eligible added 25 Nov 2026).
+NOT_ELIGIBLE = "not_eligible"
+DECISIONS = ("ready_for_approval", "request_information", "specialist_review", NOT_ELIGIBLE)
+
+
 def _line(verdict, actual=None, expected=None, critical=False):
     return {"verdict": verdict, "actual": actual, "expected": expected, "critical": critical}
 
@@ -441,12 +446,19 @@ def evaluate(check, x):
         problems = []
         if level != rr.get("level"):
             problems.append(f"level {level!r}, expected {rr.get('level')!r}")
-        if rr.get("level") == "medium" and not (
-            final.get("recommendation") == "ready_for_approval"
-            and final.get("officer_verification") is True
+        # Spec §13: an ineligible account is not opened, so the approval / referral path a risk level asks for doesn't
+        # apply when the reference and the agent both say not_eligible (the level itself is still graded).
+        ineligible = final.get("recommendation") == ref.get("recommendation") == NOT_ELIGIBLE
+        if (
+            not ineligible
+            and rr.get("level") == "medium"
+            and not (
+                final.get("recommendation") == "ready_for_approval"
+                and final.get("officer_verification") is True
+            )
         ):
             problems.append("medium risk: ready_for_approval with the officer verification flag")
-        if rr.get("level") == "high":
+        if not ineligible and rr.get("level") == "high":
             referrals = {
                 a.get("referral") for a in final.get("assessments") or [] if isinstance(a, dict)
             }
@@ -553,12 +565,8 @@ def evaluate(check, x):
         return _line(verdict, {"missed": missed, "wrong": wrong})
     if check == "procedure_output":
         problems = []
-        if final.get("recommendation") not in (
-            "ready_for_approval",
-            "request_information",
-            "specialist_review",
-        ):
-            problems.append("recommendation is not one of the three decision values")
+        if final.get("recommendation") not in DECISIONS:
+            problems.append("recommendation is not one of the four decision values")
         if not (isinstance(final.get("rules_applied"), list) and final["rules_applied"]):
             problems.append("rules_applied is empty")
         missing_parties = [
@@ -601,6 +609,17 @@ def evaluate(check, x):
             "fail" if misread else "pass" if not off else "partial" if len(off) == 1 else "fail"
         )
         return _line(verdict, {"off": off, "screening_misread": misread})
+    if check in ("consistency", "consistency_5e") and NOT_ELIGIBLE in (
+        final.get("recommendation"),
+        ref.get("recommendation"),
+    ):
+        # Spec §13: not_eligible is consistent exactly when the reference says not_eligible.
+        ok = final.get("recommendation") == ref.get("recommendation") == NOT_ELIGIBLE
+        return _line(
+            "pass" if ok else "fail",
+            {"recommendation": final.get("recommendation")},
+            {"reference": ref.get("recommendation")},
+        )
     if check in ("consistency", "consistency_5e"):
         outcomes = [a.get("outcome") for a in parties.values()]
         rated_high = ((final.get("risk_rating") or {}).get("level")) == "high"
