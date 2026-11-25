@@ -693,3 +693,10 @@ All four tasks are edge-focused, so no task took the 80 clean complete or the 32
   - on the T1 40-case sample the same table scored 97.0%.
   - The D-063 fix also saved a completeness split on the real database: count cells 4/4, and 2/2/1/1/1/1 with families.
 - **Tests:** `test_rlgym_g4_lookup_unit.py` (7 tests, written first). Unit 798 passed; ruff clean; web `tsc` clean.
+- **Deployed 25 Nov 2026 12:48 CST with no run or episode active.** This deploy covers G7/D-063, D-062, G3 and G4.
+  - Backup: `.local/backups/rlgym-20261125-124840-before-migration-067.sql.gz` (23.7 MB, .sha256 checked, complete dump).
+  - Migration 067 applied, and the restart was clean.
+  - Digests identical before and after: task imports, suite tasks and versions, data plans, runs, manifests, sealed evidence, scores, receipts, exports.
+  - API /api/v1/health 200, /gym 200.
+  - 29 saved suite hashes unchanged; v6 admission (rolled back): 8 episodes, $6.40, no failures.
+  - The D-062 next_action version is not created yet. It waits for a person (Admin → Evaluators → golden-kyc-blocks:next_action v1 → Create fix version → "Use suggested fix" → Create).
