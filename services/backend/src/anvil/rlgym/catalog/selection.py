@@ -30,8 +30,22 @@ def selectable_environments(c, contract_id, allow_test=False):
     ).fetchall()
 
 
-def resolve_environment(c, rule, allow_test=False):
-    """→ (version row or None, condition code or None, reason). `allow_test`: a test-only project's rule."""
+def project_allows_test(c, rule):
+    """A project's selection rule may bind Studio's test channel only when its project is test_only."""
+    if not (rule.get("project_id") and rule.get("workspace_id")):
+        return False
+    row = c.execute(
+        "SELECT test_only FROM projects.projects WHERE workspace_id=%s AND project_id=%s",
+        (rule["workspace_id"], rule["project_id"]),
+    ).fetchone()
+    return bool(row and row["test_only"])
+
+
+def resolve_environment(c, rule, allow_test=None):
+    """→ (version row or None, condition code or None, reason). `allow_test`: a test-only project's rule; when not
+    given, a project's rule follows its project's test_only flag (import binding, reselection, project state)."""
+    if allow_test is None:
+        allow_test = project_allows_test(c, rule)
     versions = selectable_environments(c, rule["contract_id"], allow_test)
     if not versions:
         return None, "B2", f"No qualified version of {rule['contract_id']}"

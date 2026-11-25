@@ -68,3 +68,73 @@ def test_a_test_only_project_can_select_test_candidates_and_a_real_one_cannot():
     sql, params = c.sql[-1]
     assert "v.channel='test'" in sql and "kyc-judgment-openenv-test" in params
     assert "allow_test=" in inspect.getsource(suites.resolve_binding)
+
+
+class ProjectC(FakeC):
+    """Answers the project lookup with a test_only flag; every other query returns nothing."""
+
+    def __init__(self, test_only):
+        super().__init__()
+        self.test_only = test_only
+
+    def execute(self, sql, params=None):
+        self.sql.append((sql, params))
+        flag = self.test_only
+
+        class R:
+            def fetchall(self_inner):
+                return []
+
+            def fetchone(self_inner):
+                return {"test_only": flag} if "FROM projects.projects" in sql else None
+
+        return R()
+
+
+RULE = {
+    "workspace_id": "ws",
+    "project_id": "prj_t",
+    "alias": "kyc",
+    "contract_id": "kyc-judgment-openenv",
+    "kind": "latest",
+}
+
+
+def test_a_project_rule_follows_its_projects_test_only_flag():
+    """The import binding, reselection and project state all resolve a test-only project's rules with the test
+    channel; a real project's rules never see it."""
+    from anvil.rlgym.catalog import selection
+
+    c = ProjectC(True)
+    selection.resolve_environment(c, RULE)
+    assert "v.channel='test'" in c.sql[-1][0]
+    c = ProjectC(False)
+    selection.resolve_environment(c, RULE)
+    assert "v.channel='test'" not in c.sql[-1][0]
+    c = ProjectC(True)  # an explicit flag wins and no project lookup is made
+    selection.resolve_environment(c, RULE, allow_test=False)
+    assert len(c.sql) == 1 and "v.channel='test'" not in c.sql[-1][0]
+    c = ProjectC(
+        True
+    )  # a rule without a project (e.g. a template default) never sees the test channel
+    selection.resolve_environment(c, {k: v for k, v in RULE.items() if k != "project_id"})
+    assert len(c.sql) == 1 and "v.channel='test'" not in c.sql[-1][0]
+
+
+def test_a_new_project_is_marked_test_only_before_its_first_rules_resolve():
+    from anvil.rlgym.projects import service as projects
+
+    src = inspect.getsource(projects.receive_export)
+    assert src.index("SET test_only=true") < src.index(
+        "_initial_rules(c, ws, project_id, activation)"
+    )
+    initial = inspect.getsource(projects._initial_rules)
+    assert '"project_id": project_id' in initial and '"workspace_id": ws' in initial
+
+
+def test_project_created_is_audited_once_for_every_new_project():
+    from anvil.rlgym.projects import service as projects
+
+    src = inspect.getsource(projects.receive_export)
+    created = src.index('"project.created"')
+    assert src.rindex("if not project:", 0, created) > src.index('"project.test_only"')

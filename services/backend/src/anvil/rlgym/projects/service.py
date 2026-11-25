@@ -187,7 +187,6 @@ def receive_export(c, ws, actor, project_id, body):
                 Jsonb(body.get("project_config") or {}),
             ),
         )
-        _initial_rules(c, ws, project_id, activation)
     if body.get("test_only") is True:
         # Sticky: a test-only project stays labelled TEST (a later export can't silently unlabel it).
         marked = c.execute(
@@ -203,6 +202,9 @@ def receive_export(c, ws, actor, project_id, body):
                 project_id,
                 "Authoring marked the project test-only",
             )
+    if not project:
+        # After the test_only mark, so a test-only project's first rules can resolve Studio's test channel.
+        _initial_rules(c, ws, project_id, activation)
         audit(
             c,
             ws,
@@ -438,6 +440,8 @@ def _initial_rules(c, ws, project_id, activation):
     for b in activation["default_bindings"]:
         r = b["rule"]
         rule = {
+            "workspace_id": ws,
+            "project_id": project_id,
             "contract_id": b["contract_id"],
             "kind": r["kind"],
             "pinned_version_id": r.get("pinned_version_id"),
