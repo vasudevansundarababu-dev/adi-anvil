@@ -163,6 +163,7 @@ def summarize(rows, gate):
 
 
 def run(c, ws, sv_id, requested_by, body=None):
+    from anvil.rlgym.scoring import judgment
     from anvil.rlgym.verification import reference_run
 
     gate = threshold(body)
@@ -205,10 +206,9 @@ def run(c, ws, sv_id, requested_by, body=None):
                         {"case_id": cid, "task_id": t["task_id"], "skipped": "no reference"}
                     )
                     continue
-                if truth.get("status") == "awaiting_sme":
-                    rows.append(
-                        {"case_id": cid, "task_id": t["task_id"], "skipped": "awaiting the SME"}
-                    )
+                wait = judgment.awaiting(truth)
+                if wait:
+                    rows.append({"case_id": cid, "task_id": t["task_id"], "skipped": wait[0]})
                     continue
                 session.request({"op": "reset", "case_id": cid, "inject": None})
                 said = decide(cid, snapshot())

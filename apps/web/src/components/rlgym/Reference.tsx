@@ -113,7 +113,11 @@ export function ReferencePanel({ path }: { path: string }) {
                       <td>
                         <code>{cs.case_id}</code>
                       </td>
-                      <td className={cs.full_marks ? 'ok' : 'no'}>{cs.points}</td>
+                      <td className={cs.full_marks ? 'ok' : cs.awaiting ? '' : 'no'}>
+                        {cs.awaiting
+                          ? `not graded: ${cs.awaiting.status.replace('_', ' ')} (${cs.awaiting.reasons.join('; ')})`
+                          : cs.points}
+                      </td>
                       <td>
                         {cs.replay
                           ? cs.replay.observations_match && cs.replay.end_state_match && cs.replay.verdicts_match

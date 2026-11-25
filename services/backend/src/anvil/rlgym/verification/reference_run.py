@@ -19,6 +19,7 @@ from psycopg.types.json import Jsonb
 from anvil.rlgym import integrations
 from anvil.rlgym.common import GymError, require, sha
 from anvil.rlgym.runs import aliasing, images, openenv, sampling
+from anvil.rlgym.scoring import judgment
 from anvil.rlgym.verification import reference
 
 MOCK_JUDGE = "mock-judge"
@@ -298,8 +299,8 @@ def run(c, ws, sv_id, requested_by, replay=True, max_cases_per_task=3):
             for t in tasks:
                 for cid in chosen.get((t["task_id"], t["revision"]), [])[:max_cases_per_task]:
                     ref = (refs.get(cid) or {}).get("reference") or {}
-                    if ref.get("status") == "awaiting_sme":
-                        continue  # reference.v2: not graded until the SME answers
+                    if judgment.awaiting(ref):
+                        continue  # reference.v2: not graded until the SME / PM answers
                     out[(t["task_id"], cid)] = _episode(
                         session,
                         t["actor"],
@@ -321,11 +322,12 @@ def run(c, ws, sv_id, requested_by, replay=True, max_cases_per_task=3):
         rows = []
         for cid in chosen.get((t["task_id"], t["revision"]), [])[:max_cases_per_task]:
             ref = (refs.get(cid) or {}).get("reference") or {}
-            if ref.get("status") == "awaiting_sme":
+            wait = judgment.awaiting(ref)
+            if wait:
                 rows.append(
                     {
                         "case_id": cid,
-                        "awaiting_sme": ref.get("awaiting_sme") or [],
+                        "awaiting": {"status": wait[0], "reasons": wait[1]},
                         "failures": [],
                         "points": None,
                         "full_marks": None,

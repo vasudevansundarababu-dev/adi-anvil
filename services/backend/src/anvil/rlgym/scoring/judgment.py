@@ -158,6 +158,21 @@ def audit_faithfulness(trail, transcript, aliases, expected):
 # --- one check per verifier line (computed by the scoring service outside the sandbox, like a plug-in) -----------------
 
 
+# reference.v2 statuses that mean "not graded yet": the SME decides, or the reference rests on a placeholder rule the PM
+# hasn't approved.
+AWAITING = ("awaiting_sme", "awaiting_pm")
+
+
+def awaiting(ref):
+    """(status, reasons) when the reference isn't gradable yet, else None."""
+    ref = ref or {}
+    for status in AWAITING:
+        if ref.get("status") == status or ref.get(status) is True:
+            reasons = ref.get(status) if isinstance(ref.get(status), list) else []
+            return status, reasons or [status.replace("_", " ")]
+    return None
+
+
 def _line(verdict, actual=None, expected=None, critical=False):
     return {"verdict": verdict, "actual": actual, "expected": expected, "critical": critical}
 
@@ -174,9 +189,9 @@ def evaluate(check, x):
     ref, final = x.get("reference"), x.get("final") or {}
     if ref is None:
         return _line("blocked", expected="the case's reference answers (reference.v2)")
-    if ref.get("status") == "awaiting_sme" or ref.get("awaiting_sme") is True:
-        reasons = ref.get("awaiting_sme") if isinstance(ref.get("awaiting_sme"), list) else []
-        return _line("not_applicable", expected={"awaiting_sme": reasons or ["awaiting the SME"]})
+    wait = awaiting(ref)
+    if wait:
+        return _line("not_applicable", expected={wait[0]: wait[1]})
     fired = [
         f
         for f in x.get("fired") or []

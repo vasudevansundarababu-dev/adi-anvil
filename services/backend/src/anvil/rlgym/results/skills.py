@@ -96,6 +96,18 @@ def criteria_outcomes(receipts):
     return out
 
 
+def awaiting_counts(references):
+    """How many of the run's cases aren't graded yet, by reason (reference.v2 status)."""
+    from anvil.rlgym.scoring import judgment
+
+    out = {s: 0 for s in judgment.AWAITING}
+    for r in references:
+        w = judgment.awaiting(r)
+        if w:
+            out[w[0]] += 1
+    return out
+
+
 def compare_by_type(first, second):
     """Two runs' by-type profiles: per account type in both, the models in both, skill by skill (v8's per-type tasks
     against Judgment v1's one task)."""
@@ -157,6 +169,14 @@ def run_profile(d):
                 "fraction": float(r["points"]) if r["points"] is not None else None,
             }
         )
+    env = (d.manifest.get("environment") or {}).get("version_id")
+    refs = [
+        r["reference"]
+        for r in d.c.execute(
+            "SELECT reference FROM scoring.case_references WHERE workspace_id=%s AND environment_version_id=%s AND case_id = ANY(%s)",
+            (d.ws, env, sorted({e["case_id"] for e in d.cases})),
+        ).fetchall()
+    ]
     lk = lookup.latest(d.c, d.ws, d.run["suite_version_id"])
     discriminating = (
         {x["case_id"] for x in lk.get("cases") or [] if x.get("decision_right") is False}
@@ -171,6 +191,8 @@ def run_profile(d):
         "criteria": sources,
         "lookup_run": lk and lk["id"],
         "discriminating_cases": None if discriminating is None else len(discriminating),
+        # reference.v2: cases not graded yet (the SME or the PM decides), counted apart.
+        "not_graded": awaiting_counts(refs),
         "profile": profile(rows, discriminating),
         "by_account_type": profile_by_type(rows, discriminating),
         "criteria_outcomes": criteria_outcomes(

@@ -1400,6 +1400,8 @@ function SkillsView({ id, d }: { id: string; d: any }) {
           {d.lookup_run
             ? `lookup run ${d.lookup_run}: ${d.discriminating_cases} discriminating cases`
             : 'no lookup baseline run for this suite version'}
+          {d.not_graded &&
+            ` · not graded yet: ${d.not_graded.awaiting_sme ?? 0} awaiting the SME, ${d.not_graded.awaiting_pm ?? 0} awaiting the PM`}
         </small>
       </p>
       <ModelTable

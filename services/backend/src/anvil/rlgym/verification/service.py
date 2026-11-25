@@ -729,8 +729,8 @@ def reference_rows(c, ws, run, manifest):
         if not t.get("confirmed") or t["confirmed"].get("verdict") != "confirmed":
             unconfirmed.append(f"{mt['task_id'][:8]} r{mt['revision']}")
         for cs in t["cases"]:
-            if cs.get("awaiting_sme") is not None:
-                continue  # reference.v2 awaiting the SME: not graded, not a failure
+            if cs.get("awaiting"):
+                continue  # reference.v2 awaiting the SME or PM: not graded, not a failure
             for f in cs.get("failures") or []:
                 failures.append(f"task {t['task_id'][:8]}: {f['reason']}")
             if not cs.get("full_marks"):
@@ -773,9 +773,7 @@ def reference_rows(c, ws, run, manifest):
             "the reference agent scores full marks on every task",
             ev,
         )
-    replays = [
-        cs.get("replay") for t in rr["tasks"] for cs in t["cases"] if cs.get("awaiting_sme") is None
-    ]
+    replays = [cs.get("replay") for t in rr["tasks"] for cs in t["cases"] if not cs.get("awaiting")]
     if not replays or any(r is None for r in replays):
         v01 = row(
             "V-01",
