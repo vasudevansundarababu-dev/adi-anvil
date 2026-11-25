@@ -84,3 +84,13 @@ def test_labels_name_every_type():
         "individual, adult_joint, custodial, teen_joint"
     )
     assert suites.selector_label(V8["case_selector"]) == "custodial · any completeness · x"
+
+
+def test_authorings_application_types_key():
+    """Authoring's one-task export sends case_selector.application_types (a list) from coveredApplicationTypes."""
+    sel = {"application_types": ["individual", "adult_joint"], "edge_cases": []}
+    assert sampling.selector_types(sel) == {"individual", "adult_joint"}
+    task = {"task_id": "t", "revision": 1, "case_selector": sel}
+    assert sampling.match_task(case("c1", "adult_joint"), [task], 1)["task_id"] == "t"
+    assert sampling.match_task(case("c2", "custodial"), [task], 1) is None
+    assert suites.selector_label(sel).startswith("individual, adult_joint")

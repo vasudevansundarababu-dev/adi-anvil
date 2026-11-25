@@ -141,7 +141,13 @@ def takeable_counts(cells, cases, tasks, seed):
 def selector_types(sel):
     """The application types a task's case_selector names: one (golden KYC v8) or a list (KYC Judgment v1, spec §16:
     one task covers all four account types)."""
-    v = (sel or {}).get("application_type")
+    sel = sel or {}
+    # Authoring's one-task export: `application_types` (a list, from coveredApplicationTypes).
+    v = (
+        sel.get("application_types")
+        if sel.get("application_types")
+        else sel.get("application_type")
+    )
     if isinstance(v, list):
         return {x for x in v if x}
     return {v} if v else set()

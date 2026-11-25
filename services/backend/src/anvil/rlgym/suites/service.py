@@ -1656,7 +1656,8 @@ def _sel_types(sel):
 
 def selector_label(sel):
     """A task's selector in words: its application type(s), completeness and edge cases."""
-    types = (sel or {}).get("application_type")
+    sel = sel or {}
+    types = sel.get("application_types") or sel.get("application_type")
     first = ", ".join(types) if isinstance(types, list) else str(types)
     return " · ".join(
         [first, sel.get("completeness") or "any completeness", *(sel.get("edge_cases") or [])]
