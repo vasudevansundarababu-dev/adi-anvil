@@ -76,3 +76,8 @@ def test_never_leaderboard_and_labelled():
         "template" in r and "test channel" in r for r in out["reasons"]
     )
     assert 'act.get("channel")' in inspect.getsource(runs._manifest)
+
+
+def test_validate_reads_the_documents_channel_like_activation():
+    src = inspect.getsource(templates.validate)
+    assert "allow_test is None" in src and "activation_channel(doc)" in src

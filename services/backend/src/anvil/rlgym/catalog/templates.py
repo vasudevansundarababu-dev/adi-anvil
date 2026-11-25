@@ -40,9 +40,12 @@ def _required(doc):
     )
 
 
-def validate(c, ws, doc, allow_test=False):
-    """`allow_test`: a test-channel activation may bind Studio's test-channel environment versions."""
+def validate(c, ws, doc, allow_test=None):
+    """`allow_test`: a test-channel activation may bind Studio's test-channel environment versions. By default it
+    follows the document's own `channel`, so POST /templates/validate answers as the activation will."""
     _required(doc)
+    if allow_test is None:
+        allow_test = activation_channel(doc) == "test"
     checks = []
     bound = []
     for b in doc["bindings"]:
