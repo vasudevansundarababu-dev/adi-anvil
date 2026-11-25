@@ -687,6 +687,8 @@ function DataPlan({
     Object.fromEntries(Object.entries(plan.required_edges).map(([k, v]) => [k, String(v)])),
   );
   const [seed, setSeed] = useState(String(plan.sampling_seed));
+  // D-059: each task also takes the untagged cases of its application type (off by default).
+  const [untagged, setUntagged] = useState<boolean>(Boolean(plan.untagged_cases));
   const [mix, setMix] = useState<any>(null);
   // E-005 §3: split by one or two properties; the seed is a named case set.
   const [split1, setSplit1] = useState<string>((plan.stratify_by ?? ['application_type'])[0]);
@@ -724,6 +726,7 @@ function DataPlan({
       sampling_seed: Number(seed),
       stratify_by: [split1, ...(split2 && split2 !== split1 ? [split2] : [])],
       case_set_name: setName.trim() || null,
+      untagged_cases: untagged,
     };
     return act(
       'PATCH',
@@ -840,6 +843,21 @@ function DataPlan({
         ))}
         <div className={total === 100 ? 'ok' : 'no'}>Total {total}%</div>
       </div>
+      <label>
+        <input
+          type="checkbox"
+          checked={untagged}
+          onChange={(e) => setUntagged(e.target.checked)}
+          disabled={!draft}
+        />{' '}
+        Also use each task for untagged cases of its application type
+        <small>
+          {' '}
+          Off: a task takes only cases with its own edge-case tag. On: it also takes the untagged
+          (clean and problem) cases of its application type, never another task&apos;s tags; each
+          needs a reference answer, and one without is left out. Apply the plan to save the change.
+        </small>
+      </label>
       <table>
         <thead>
           <tr>
@@ -859,6 +877,13 @@ function DataPlan({
                 return (
                   <td key={c} className={shortCell ? 'no' : ''}>
                     {cell?.quota} / {cell?.available}
+                    {cell?.takeable && (
+                      <small>
+                        {' '}
+                        tasks take {cell.takeable.tagged} tagged · {cell.takeable.untagged} untagged
+                        {plan.untagged_cases ? '' : ' (with the option on)'}
+                      </small>
+                    )}
                     {cell?.original_quota != null && (
                       <small>lowered from {cell.original_quota}</small>
                     )}

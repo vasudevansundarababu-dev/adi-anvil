@@ -43,6 +43,44 @@ def _rows(env):
     return rows
 
 
+def reference_checker(c, ws, env_id, registry=None):
+    """D-059: ids -> the ones with a reference answer from Studio's scorer whose hash matches (already stored ones
+    count). Only presence is checked here; nothing is stored and nothing reaches an agent."""
+    from anvil.rlgym.common import sha
+
+    def check(ids):
+        ids = list(ids)
+        stored = {
+            r["case_id"]
+            for r in c.execute(
+                "SELECT case_id FROM scoring.case_references WHERE workspace_id=%s AND environment_version_id=%s AND case_id = ANY(%s)",
+                (ws, env_id, ids),
+            ).fetchall()
+        }
+        need = [i for i in ids if i not in stored]
+        got = {}
+        for i in range(0, len(need), 50):
+            got.update(
+                integrations.registry_get(
+                    f"/versions/{env_id}/references",
+                    params={"ids": ",".join(need[i : i + 50])},
+                    audience="scorer",
+                    timeout=30,
+                    base=registry,
+                ).get("references")
+                or {}
+            )
+        return stored | {
+            i
+            for i in need
+            if isinstance(got.get(i), dict)
+            and got[i].get("reference") is not None
+            and sha(got[i]["reference"]) == got[i].get("reference_sha256")
+        }
+
+    return check
+
+
 def case_set(c, ws, sv_id):
     from anvil.rlgym.runs import sampling
 
@@ -59,10 +97,18 @@ def case_set(c, ws, sv_id):
            JOIN projects.task_imports t ON t.id=s.task_import_id WHERE s.suite_version_id=%s ORDER BY t.task_id""",
         (sv_id,),
     ).fetchall()
-    selected, counts, short = sampling.select_cases(plan, cells, _rows(env), tasks or None)
+    # The same checked selection admission makes (D-059: untagged cases need a reference answer).
+    selected, counts, short, excluded = sampling.select_checked(
+        plan,
+        cells,
+        _rows(env),
+        tasks or None,
+        reference_checker(c, ws, env["id"], env.get("registry")),
+    )
+    untagged = bool(plan.get("untagged_cases"))
     out = []
     for case in selected:
-        task = sampling.match_task(case, tasks, plan["sampling_seed"]) if tasks else None
+        task = sampling.match_task(case, tasks, plan["sampling_seed"], untagged) if tasks else None
         out.append(
             {
                 "case_id": case["case_id"],
@@ -81,6 +127,7 @@ def case_set(c, ws, sv_id):
         "sampling_seed": plan["sampling_seed"],
         "cases": out,
         "short": short,
+        **({"untagged_cases": True, "untagged_without_reference": excluded} if untagged else {}),
         "every_case_matches_a_task": bool(out) and all(x["task"] for x in out),
     }
 

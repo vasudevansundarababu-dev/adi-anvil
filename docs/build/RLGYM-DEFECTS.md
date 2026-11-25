@@ -572,3 +572,46 @@ Authoring re-exports the same task revisions and packages, now with `policy_id_m
   - health: API and database ready, /gym 200;
   - suite v5 admission (rolled back): 8 episodes, $8, no failures;
   - 0 maps attached so far.
+
+## D-059 (T1) — "Also use each task for untagged cases of its application type" (25 Nov 2026; owner-approved "Yes t1 and T2 first", via the coordinator)
+
+All four tasks are edge-focused, so no task took the 80 clean complete or the 320 untagged incomplete cases of @12, and the Complete quota could never fill.
+
+- **Option:** a suite data plan option, `untagged_cases`, off by default (migration 066: one boolean column, `false` for every existing plan).
+- **When on:**
+  - `match_task` lets an edge-focused task also take the untagged cases (clean or problem) of its application type;
+  - a plain task, if one exists, still comes first;
+  - a task never takes another task's tags, or a tag no task has.
+- **When off:** sampling, matching and expansion are exactly as before.
+- **References:** each selected untagged case is checked for a reference answer from Studio's scorer, with a hash check (`sampling.select_checked` with `suites.cases.reference_checker`). One without is excluded, counted, and the selection is made again. Nothing is guessed. Tagged cases keep the existing check at start. Admission and the case-set preview make the same checked selection. Graders are unchanged.
+- **Hash and manifest:**
+  - the suite hash includes `untagged_cases: true` only when on (`plan_content`), so all 29 saved suite hashes recompute unchanged;
+  - when on, the manifest's `data_plan` records `untagged_cases`, `untagged_case_ids` and `untagged_without_reference`;
+  - admission shows "Untagged cases with a reference answer: N", and the run's data-plan line says "untagged cases on (N taken, M excluded…)".
+- **Web:**
+  - the data plan has the checkbox;
+  - each application type × completeness cell shows "tasks take X tagged · Y untagged", with "(with the option on)" while it is off.
+- **Tests:** 18 new unit tests (`test_rlgym_d059_untagged_unit.py`, written first). Unit 764 passed (run from the repo root); ruff clean; web `tsc --noEmit` exit 0.
+- **Dry run on the real database (rolled back):**
+  - migration 066: digests identical for task imports, suite tasks, suite versions, data plans (old columns), cells, runs, manifests, sealed evidence, scores, receipts, exports and policy maps;
+  - 29 saved suite hashes unchanged;
+  - v6 admission unchanged: 8 episodes, $6.40.
+- **40-case sample (rolled back):** new draft, sample 40, Complete 30%, option on.
+  - Every cell is filled, and each cell's 80 untagged cases are takeable.
+  - It picks 12 clean, 24 untagged-problem and 4 tagged cases. 36 untagged cases were checked and all have references; none were excluded.
+  - The draft saves as v7 with the option in the hash. Admission: 40 episodes, $32 (above the $25 cap), so it can't run as is.
+- **Baselines on that sample (local @12 container, no model, rolled back):**
+
+  | | All 40 | Clean | Untagged problem | Tagged |
+  |---|---|---|---|---|
+  | Reference agent | 100% of points, 25/25 on every case | 12 | 24 | 4 |
+  | No-LLM lookup baseline (literal decision table, rule A) | 97.0% of points; full marks on 37/40 | 12/12 | 21/24 | 4/4 |
+  | Lookup variant B (literal GB-03) | 85.5%; full marks on 27/40 | | | |
+
+  - The lookup baseline misses 3 cases: 2 proof-of-address and 1 id-document, where the literal table finds nothing and says ready.
+  - On 7 untagged id_document cases, the reference agent can't tell from the documents which party lacks the ID document. It requests it from the first party and still gets 25/25.
+- **8-case pilot:** exactly 2 clean / 2 problem / 4 tagged is not reachable. The split by application type gives every type the same completeness share, so clean is 0 or 4. Closest (dry run):
+  - 12 cases, Complete 34%, one per edge tag: 4 clean, 4 problem, 4 tagged;
+  - 8 cases, Complete 25%, one per edge tag: 4 clean, 4 tagged;
+  - 8 cases, Complete 0%, one per edge tag: 4 problem, 4 tagged.
+- **Found in passing, not fixed:** a split by Completeness can't be saved. Its cells use `quota_kind` 'share', which the `data_plan_cells` CHECK constraint rejects.

@@ -24,6 +24,8 @@ DEFAULT_PLAN = {
     "sampling_seed": 20261121,
     "missing_policy": "block",
     "case_set_name": None,
+    # D-059: each task also takes the untagged cases of its application type. Off by default.
+    "untagged_cases": False,
 }
 # E-005 §3: the properties a sample can be split by (one or two). application_type is the default and keeps the
 # original cells; the others are read from the bound environment's case rows.
@@ -176,6 +178,12 @@ def validate_plan(plan):
         "VALIDATION_FAILED",
         f"Split the sample by one or two of: {', '.join(STRATA)}",
         field="stratify_by",
+    )
+    require(
+        isinstance(plan.get("untagged_cases", False), bool),
+        "VALIDATION_FAILED",
+        "Untagged cases is on or off",
+        field="untagged_cases",
     )
     name = plan.get("case_set_name")
     require(
@@ -333,7 +341,7 @@ def _write_plan(c, ws, sv_id, plan, catalog, source="manual", ai=None):
     c.execute("DELETE FROM suites.data_plans WHERE suite_version_id=%s", (sv_id,))
     c.execute(
         """INSERT INTO suites.data_plans(suite_version_id,workspace_id,sample_size,stratify_by,completeness_quotas,required_edges,sampling_seed,
-             missing_policy,source,ai_suggested,case_set_name) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+             missing_policy,source,ai_suggested,case_set_name,untagged_cases) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
         (
             sv_id,
             ws,
@@ -346,6 +354,7 @@ def _write_plan(c, ws, sv_id, plan, catalog, source="manual", ai=None):
             source,
             Jsonb(ai) if ai else None,
             (plan.get("case_set_name") or "").strip() or None,
+            bool(plan.get("untagged_cases")),
         ),
     )
     for cell in compute_cells(plan, catalog, _task_types(c, sv_id)):
@@ -845,6 +854,25 @@ def new_draft(c, ws, actor, pid, suite_id):
     return sv_id
 
 
+def plan_content(plan):
+    """The data plan's part of the suite hash. D-059: `untagged_cases` is hashed in only when on, so every suite saved
+    without it keeps the hash it had."""
+    out = {
+        k: plan[k]
+        for k in (
+            "sample_size",
+            "stratify_by",
+            "completeness_quotas",
+            "required_edges",
+            "sampling_seed",
+            "missing_policy",
+        )
+    }
+    if plan.get("untagged_cases"):
+        out["untagged_cases"] = True
+    return out
+
+
 def _content(c, sv_id):
     """Everything that defines what a run uses; hashed into suite_sha256."""
     plan = c.execute(
@@ -875,18 +903,7 @@ def _content(c, sv_id):
                 (sv_id,),
             ).fetchall()
         ],
-        "plan": plan
-        and {
-            k: plan[k]
-            for k in (
-                "sample_size",
-                "stratify_by",
-                "completeness_quotas",
-                "required_edges",
-                "sampling_seed",
-                "missing_policy",
-            )
-        },
+        "plan": plan and plan_content(plan),
         "cells": c.execute(
             "SELECT cell_key, quota FROM suites.data_plan_cells WHERE suite_version_id=%s ORDER BY cell_key",
             (sv_id,),
@@ -1532,12 +1549,19 @@ def view(c, ws, sv_id):
             )
         )
     ]
+    # D-059: per cell, the tagged cases a task takes and the untagged ones it would take with the option on.
+    rows = _ROWS.get(env["id"]) if env else None
+    takeable = (
+        sampling_counts(cells, rows, tasks, plan["sampling_seed"])
+        if rows and tasks and plan
+        else {}
+    )
     return {
         **sv,
         "bindings": bindings,
         "criteria": criteria,
         "plan": plan,
-        "cells": cells,
+        "cells": [{**cl, "takeable": takeable.get(cl["cell_key"])} for cl in cells],
         "ts": ts
         and {
             **ts,
@@ -1578,6 +1602,12 @@ def view(c, ws, sv_id):
         # E-008 / D-047: read-only header facts (version picker, environment and why, run size, leaderboard, changes).
         "header": header.header(c, ws, sv),
     }
+
+
+def sampling_counts(cells, rows, tasks, seed):
+    from anvil.rlgym.runs import sampling
+
+    return sampling.takeable_counts(cells, rows, tasks, seed)
 
 
 def list_suites(c, ws, pid):

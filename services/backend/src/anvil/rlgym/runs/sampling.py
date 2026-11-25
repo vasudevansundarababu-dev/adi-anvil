@@ -4,6 +4,10 @@ A run never creates data: it selects cases from the bound environment version's 
 only) with the suite's data plan and sampling seed, so the same plan on the same catalog always picks the same cases.
 Episodes = (cases + approved safety prompts) × models × attempts. Each case is matched to a ready task of its case
 class; a safety prompt is played on one of the selected cases.
+
+D-059: the plan's `untagged_cases` option (off by default) lets an edge-focused task also take the untagged cases of
+its application type (clean or problem), never another task's tags. Each untagged case then needs a reference answer
+from Studio's scorer (`select_checked`); one without is excluded and counted, never guessed.
 """
 
 import hashlib
@@ -20,18 +24,13 @@ def select_cases(plan, cells, cases, tasks=None):
     cases with its tag, so a type-only sample could pick cases no task runs). Without tasks, every case is eligible.
     Returns (selected cases in a stable order, per-cell picks, short cells)."""
     seed = plan["sampling_seed"]
+    untagged = bool(plan.get("untagged_cases"))
     if tasks:
-        cases = [c for c in cases if match_task(c, tasks, seed) is not None]
-    from anvil.rlgym.suites.service import case_value
-
+        cases = [c for c in cases if match_task(c, tasks, seed, untagged) is not None]
     strata = [cl for cl in cells if not cl["cell_key"].startswith("edge:")]
 
     def stratum_of(case):
-        # The stratum cell whose dimension values the case has (default: "<application_type>|<completeness>").
-        for cl in strata:
-            if all(case_value(case, k) == v for k, v in (cl["dimension_values"] or {}).items()):
-                return cl["cell_key"]
-        return None
+        return _stratum(case, strata)
 
     picked, used = [], set()
     by_cell = {}
@@ -82,9 +81,67 @@ def select_cases(plan, cells, cases, tasks=None):
     return picked, counts, short
 
 
-def match_task(case, tasks, seed):
+def _stratum(case, strata):
+    """The stratum cell whose dimension values the case has (default: "<application_type>|<completeness>")."""
+    from anvil.rlgym.suites.service import case_value
+
+    for cl in strata:
+        if all(case_value(case, k) == v for k, v in (cl["dimension_values"] or {}).items()):
+            return cl["cell_key"]
+    return None
+
+
+def select_checked(plan, cells, cases, tasks, references_for):
+    """`select_cases`, then, with the plan's `untagged_cases` on, a reference check of every selected untagged case:
+    `references_for(ids)` returns the ids Studio's scorer has a (hash-valid) reference for. A case without one is
+    excluded and the selection made again without it, until every selected untagged case has one. Each case is asked
+    about once. Returns (selected, per-cell picks, short cells, excluded case ids in the order found)."""
+    excluded, checked = [], set()
+    pool = cases
+    while True:
+        selected, counts, short = select_cases(plan, cells, pool, tasks)
+        if not plan.get("untagged_cases"):
+            return selected, counts, short, excluded
+        need = [
+            c["case_id"]
+            for c in selected
+            if not c.get("edge_cases") and c["case_id"] not in checked
+        ]
+        if not need:
+            return selected, counts, short, excluded
+        have = set(references_for(need))
+        checked |= set(need)
+        missing = [i for i in need if i not in have]
+        if not missing:
+            return selected, counts, short, excluded
+        excluded += missing
+        gone = set(excluded)
+        pool = [c for c in cases if c["case_id"] not in gone]
+
+
+def takeable_counts(cells, cases, tasks, seed):
+    """{cell_key: {"tagged": n, "untagged": m}}: per cell, the tagged cases a suite task takes and the untagged cases a
+    task would take with the `untagged_cases` option on (the data plan table shows both)."""
+    strata = [cl for cl in cells if not cl["cell_key"].startswith("edge:")]
+    out = {cl["cell_key"]: {"tagged": 0, "untagged": 0} for cl in cells}
+    for case in cases:
+        tagged = bool(case.get("edge_cases"))
+        if match_task(case, tasks, seed, untagged=not tagged) is None:
+            continue
+        kind = "tagged" if tagged else "untagged"
+        key = _stratum(case, strata)
+        if key:
+            out[key][kind] += 1
+        for tag in case.get("edge_cases") or []:
+            if f"edge:{tag}" in out:
+                out[f"edge:{tag}"][kind] += 1
+    return out
+
+
+def match_task(case, tasks, seed, untagged=False):
     """The ready task of this case's class: same application type and completeness; a task focused on an edge tag is
-    used only for cases carrying that tag, and preferred for them."""
+    used only for cases carrying that tag, and preferred for them. `untagged` (the plan's D-059 option): an untagged
+    case no plain task takes goes to an edge-focused task of its application type."""
     # A task without `completeness` (ADI Forge's exports name only the application type) takes either completeness.
     same = [
         t
@@ -109,6 +166,13 @@ def match_task(case, tasks, seed):
             and set(t["case_selector"]["edge_cases"]) <= set(case["edge_cases"])
         ]
     pool = focused or plain
+    if not pool and untagged and not case.get("edge_cases"):
+        pool = [
+            t
+            for t in tasks
+            if t["case_selector"]["application_type"] == case["application_type"]
+            and t["case_selector"].get("completeness") in (None, case["completeness"])
+        ]
     if not pool:
         return None
     pool = sorted(pool, key=lambda t: t["task_id"])
@@ -118,9 +182,10 @@ def match_task(case, tasks, seed):
 def expand(plan, selected, tasks, prompts, members, attempts):
     """Episode specs in a stable order. `members` are (system_id, system_version); `prompts` approved safety prompts."""
     seed = plan["sampling_seed"]
+    untagged = bool(plan.get("untagged_cases"))
     matched, unmatched = [], []
     for case in selected:
-        task = match_task(case, tasks, seed)
+        task = match_task(case, tasks, seed, untagged)
         (matched if task else unmatched).append((case, task))
     work = [("case", case, task, None) for case, task in matched]
     for i, prompt in enumerate(sorted(prompts, key=lambda p: p["id"])):

@@ -493,9 +493,39 @@ def admission_check(ctx, body):
             case_list = integrations.registry_get(
                 f"/versions/{env['version']['id']}/cases", base=env["version"].get("registry")
             )["cases"]
-            selected, counts, short = sampling.select_cases(
-                plan, cells, case_list, resolved.get("tasks") or None
-            )
+            # D-059: with untagged cases on, each selected untagged case needs a reference answer from Studio's
+            # scorer; one without is excluded (and counted in the manifest) and the selection made again.
+            from anvil.rlgym.suites import cases as suite_cases
+
+            try:
+                selected, counts, short, no_ref = sampling.select_checked(
+                    plan,
+                    cells,
+                    case_list,
+                    resolved.get("tasks") or None,
+                    suite_cases.reference_checker(
+                        ctx.c, ctx.ws, env["version"]["id"], env["version"].get("registry")
+                    ),
+                )
+            except GymError as exc:
+                selected, short, no_ref = [], [], []
+                item(
+                    "references",
+                    False,
+                    "Untagged cases have reference answers",
+                    f"Studio's scorer could not be read: {exc.message}",
+                )
+            resolved["untagged_without_reference"] = no_ref
+            if plan.get("untagged_cases"):
+                untagged_n = sum(1 for c in selected if not c.get("edge_cases"))
+                item(
+                    "untagged_references",
+                    True,
+                    f"Untagged cases with a reference answer: {untagged_n}",
+                    f"Excluded, no reference answer: {len(no_ref)} ({', '.join(no_ref[:5])}{' …' if len(no_ref) > 5 else ''})"
+                    if no_ref
+                    else None,
+                )
             # E-001 §3.6: a task focused on an edge case the bound version has no cases for is held before the run.
             holds = clauses.edge_holds(resolved.get("tasks") or [], case_list, env["version"]["id"])
             if holds:
@@ -691,6 +721,7 @@ def _uses(r):
             "quotas": plan["completeness_quotas"],
             "required_edges": plan["required_edges"],
             "seed": plan["sampling_seed"],
+            **({"untagged_cases": True} if plan.get("untagged_cases") else {}),
         },
         "trust_and_safety": f"{len(r.get('prompts') or [])} approved prompts"
         if r.get("prompts")
@@ -792,6 +823,18 @@ def _manifest(run_id, check):
             "short_cells": r["short"],
             "case_ids": [c["case_id"] for c in r["selected"]],
             "case_ids_sha256": sha([c["case_id"] for c in r["selected"]]),
+            # D-059: recorded only when the option is on, so manifests without it read as before.
+            **(
+                {
+                    "untagged_cases": True,
+                    "untagged_case_ids": [
+                        c["case_id"] for c in r["selected"] if not c.get("edge_cases")
+                    ],
+                    "untagged_without_reference": r.get("untagged_without_reference") or [],
+                }
+                if r["plan"].get("untagged_cases")
+                else {}
+            ),
         },
         "trust_and_safety": {
             "enabled": bool(r["prompts"]),

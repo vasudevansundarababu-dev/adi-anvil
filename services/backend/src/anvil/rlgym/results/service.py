@@ -127,7 +127,12 @@ def appendices(d, view):
             "released": env and env["released_at"] and env["released_at"].isoformat(),
             "selection rule": m["environment"]["rule"],
             "frameworks": ", ".join(frameworks),
-            "data plan": f"{m['data_plan']['sample_size']} cases · quotas {json.dumps(m['data_plan']['completeness_quotas'], sort_keys=True)} · seed {m['data_plan']['sampling_seed']} · {m['data_plan']['missing_policy']}",
+            "data plan": f"{m['data_plan']['sample_size']} cases · quotas {json.dumps(m['data_plan']['completeness_quotas'], sort_keys=True)} · seed {m['data_plan']['sampling_seed']} · {m['data_plan']['missing_policy']}"
+            + (
+                f" · untagged cases on ({len(m['data_plan'].get('untagged_case_ids') or [])} taken, {len(m['data_plan'].get('untagged_without_reference') or [])} excluded without a reference)"
+                if m["data_plan"].get("untagged_cases")
+                else ""
+            ),
         },
         "cells": [{**cl, "selected": selected.get(cl["cell_key"], 0)} for cl in cells],
         "rubric": [
