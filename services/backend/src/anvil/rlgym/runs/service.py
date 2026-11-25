@@ -795,6 +795,10 @@ def leaderboard_eligibility(resolved, lines):
         reasons.append("no agent model chosen")
     if (resolved.get("project") or {}).get("test_only"):
         reasons.append("the project is test-only (TEST): never on the leaderboard")
+    if (resolved.get("activation") or {}).get("channel") == "test":
+        reasons.append(
+            "the template is activated on the test channel (TEST): never on the leaderboard"
+        )
     if (env_row or {}).get("channel") == "test":
         reasons.append(
             "the environment version is on Studio's test channel (TEST): never on the leaderboard"
@@ -839,6 +843,8 @@ def _manifest(run_id, check):
             "name": act["name"],
             "template_sha256": act["template_sha256"],
             "pass_mark": float(act["pass_mark"]),
+            # A test-channel template activation (TEST; absent for releases).
+            **({"channel": "test"} if act.get("channel") == "test" else {}),
             # KYC Judgment C4: the output schema the agent is shown (absent for templates without one, e.g. v8).
             **({"output_schema": act["output_schema"]} if act.get("output_schema") else {}),
         },

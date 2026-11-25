@@ -40,6 +40,13 @@ def package_bytes_match(raw, package_sha256):
     return hashlib.sha256(raw).hexdigest() == package_sha256
 
 
+def test_channel_export_problem(activation, body):
+    """A test-channel template activation never satisfies a real project's export: only test_only: true."""
+    if (activation or {}).get("channel") == "test" and (body or {}).get("test_only") is not True:
+        return "The template is activated on the test channel: only a test_only export may use it"
+    return None
+
+
 def template_hash_matches(activation, t):
     """An export names the activated version by one of its two fingerprints: the RL Gym document's `spec_sha256`, or
     (real Authoring) the joint template-version hash Studio's release recorded as `forge_template_version_hash`.
@@ -141,6 +148,9 @@ def receive_export(c, ws, actor, project_id, body):
             "TEMPLATE_NOT_ACTIVE",
             f"Template {t['id']} v{t['version']} is not active in this workspace",
         )
+    why = test_channel_export_problem(activation, body)
+    if why:
+        raise GymError("TEMPLATE_TEST_CHANNEL", why)
     require(
         template_hash_matches(activation, t),
         "HASH_MISMATCH",

@@ -255,7 +255,8 @@ def header(d):
         # Authoring's test-only marker: the report is labelled TEST.
         "test_only": bool(m.get("test_only")),
         # Studio's test channel: the environment version is a test candidate (labelled TEST like a test-only run).
-        "test_channel": (m.get("environment") or {}).get("channel") == "test",
+        "test_channel": (m.get("environment") or {}).get("channel") == "test"
+        or (m.get("template") or {}).get("channel") == "test",
         **({"placeholder_note": PLACEHOLDER_NOTE} if m.get("placeholder_graded") else {}),
         "template": m["template"],
         # D-036: how episodes were scored (S7 as published, or the RL Gym's scale for runs and tasks without S7).

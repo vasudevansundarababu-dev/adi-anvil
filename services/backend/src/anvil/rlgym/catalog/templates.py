@@ -40,7 +40,8 @@ def _required(doc):
     )
 
 
-def validate(c, ws, doc):
+def validate(c, ws, doc, allow_test=False):
+    """`allow_test`: a test-channel activation may bind Studio's test-channel environment versions."""
     _required(doc)
     checks = []
     bound = []
@@ -48,7 +49,7 @@ def validate(c, ws, doc):
         rule = {"contract_id": b["contract_id"], **b["rule"]}
         if rule["kind"] == "pinned":
             rule["pinned_version_id"] = rule.get("pinned_version_id")
-        pick, code, reason = selection.resolve_environment(c, rule)
+        pick, code, reason = selection.resolve_environment(c, rule, allow_test=allow_test)
         if pick:
             bound.append(pick)
         checks.append(
@@ -307,9 +308,13 @@ def forge_qualification(doc, record, checks):
         os.environ.get("RLGYM_FORGE_QUALIFICATION_URL"),
         os.environ.get("RLGYM_FORGE_TENANT_ID"),
     )
+    if doc.get("channel") == "test":
+        # The end-to-end test's activation: only test-only projects may export against it (Authoring must check).
+        record = {**record, "channel": "test"}
     if not (doc.get("forge_template_version_hash") and url and tenant):
         return record
     return {
+        **({"channel": "test"} if doc.get("channel") == "test" else {}),
         "_base": url,
         "_headers": {"X-Tenant-Id": tenant},
         "template_id": doc["forge_template_id"],
@@ -328,11 +333,53 @@ def forge_qualification(doc, record, checks):
 
 
 SKILLS = ("tool_calling", "instruction_following", "reasoning", "decisioning", "safety")
+HASH_EXCLUDED = (
+    "forge_template_id",
+    "forge_version",
+    "forge_template_version_hash",
+    "spec_sha256",
+    "template_sha256",
+    # How the template is activated (test channel), not what it is: the content hash is the same either way.
+    "channel",
+)
+
+
+def content_sha256(doc):
+    return sha({k: v for k, v in doc.items() if k not in HASH_EXCLUDED})
+
+
+def activation_channel(doc):
+    """None (a release) or "test" (the end-to-end test before a release: test-only projects only)."""
+    ch = doc.get("channel")
+    require(
+        ch in (None, "test"),
+        "VALIDATION_FAILED",
+        "channel is test or absent",
+        field="channel",
+    )
+    return ch
+
+
+def check_existing(existing, doc, channel):
+    """An activated version is final. A test-channel activation holds its version: a release of the same version is
+    refused (release under a new version); a test activation of a released version is the release itself."""
+    if existing.get("channel") == "test" and channel != "test":
+        raise GymError(
+            "CONFLICT",
+            "This template version is activated on the test channel; release it under a new version",
+        )
+    require(
+        existing["spec_sha256"] == doc["spec_sha256"],
+        "CONFLICT",
+        "A released template version is final; this version is active with another hash",
+    )
+    return True
 
 
 def activate(c, ws, actor, doc):
     """POST /templates/activations: store the exact template hash and its rules; record qualification in ADI Forge."""
     _required(doc)
+    channel = activation_channel(doc)
     for cr in doc.get("criteria") or []:
         require(
             cr.get("skill") in (None, *SKILLS),
@@ -340,20 +387,7 @@ def activate(c, ws, actor, doc):
             f"Unknown skill {cr.get('skill')!r} on criterion {cr.get('criterion_id')}",
             field="skill",
         )
-    expected = sha(
-        {
-            k: v
-            for k, v in doc.items()
-            if k
-            not in (
-                "forge_template_id",
-                "forge_version",
-                "forge_template_version_hash",
-                "spec_sha256",
-                "template_sha256",
-            )
-        }
-    )
+    expected = content_sha256(doc)
     require(
         doc["spec_sha256"] == expected,
         "HASH_MISMATCH",
@@ -366,13 +400,9 @@ def activate(c, ws, actor, doc):
         (ws, doc["template_id"], int(doc["version"])),
     ).fetchone()
     if existing:
-        require(
-            existing["spec_sha256"] == doc["spec_sha256"],
-            "CONFLICT",
-            "A released template version is final; this version is active with another hash",
-        )
+        check_existing(existing, doc, channel)
         return existing, False
-    result = validate(c, ws, doc)
+    result = validate(c, ws, doc, allow_test=channel == "test")
     kct = known_case_tests(
         c,
         ws,
@@ -417,8 +447,8 @@ def activate(c, ws, actor, doc):
         """INSERT INTO catalog.template_activations(workspace_id,template_id,version,template_key,name,mode,spec_sha256,template_sha256,
              forge_template_id,forge_version,studio_release,default_bindings,workflow,case_dimensions,pass_mark,checks,state,state_reason,
              activated_at,activated_by,forge_template_version_hash,expected_values_from,failure_taxonomy,edge_cases,slice_lists,verifier_files,
-             policy_bindings,output_schema)
-           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
+             policy_bindings,output_schema,channel)
+           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
         (
             ws,
             doc["template_id"],
@@ -448,6 +478,7 @@ def activate(c, ws, actor, doc):
             Jsonb(doc["policy_bindings"]) if doc.get("policy_bindings") else None,
             # KYC Judgment C4: the template's execution.output_schema, shown to the agent as "Output fields".
             Jsonb(doc["output_schema"]) if doc.get("output_schema") else None,
+            channel,
         ),
     ).fetchone()
     for cr in doc["criteria"]:
