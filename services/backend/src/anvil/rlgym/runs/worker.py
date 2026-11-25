@@ -112,6 +112,22 @@ def recover_leases(ws):
             )
 
 
+def startable(env, manifest):
+    """None when the run may start this environment version, else why not. The same versions selection allows: a
+    qualified one, or, for a run whose frozen manifest is test_only, a Studio test-channel version that isn't revoked,
+    deleted or failed (catalog/selection.py)."""
+    state = (env or {}).get("state")
+    if state == "qualified":
+        return None
+    if (
+        (manifest or {}).get("test_only") is True
+        and (env or {}).get("channel") == "test"
+        and state not in ("revoked", "deleted", "failed")
+    ):
+        return None
+    return f"{(env or {}).get('id')} is {state}; only qualified versions run"
+
+
 def prepare_runs(ws):
     """Claim one admitted run at a time (row lock held while its image is built and its instance started), so two
     runner processes never start the same run twice."""
@@ -133,10 +149,9 @@ def prepare_runs(ws):
             driver = openenv.KIND if openenv.is_openenv(env) else "bridge"
             try:
                 if driver == openenv.KIND:
-                    if env["state"] != "qualified":
-                        raise GymError(
-                            "CONFLICT", f"{vid} is {env['state']}; only qualified versions run"
-                        )
+                    why = startable(env, run["manifest"])
+                    if why:
+                        raise GymError("CONFLICT", why)
                     image = openenv.resolve(c, vid, env)
                     container, _ready = openenv.start_instance(
                         run["id"], env, image["local_image_id"]
