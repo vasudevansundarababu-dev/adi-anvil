@@ -274,7 +274,7 @@ def judgment_results(manifest, episode, bundle, reference, vctx, configs):
         if crit:
             blocks += [
                 {"id": f"{crit}.{c}", "kind": "judgment", "check": c}
-                for c in judgment_configs.GRADERS[crit]
+                for c in judgment_configs.checks_for(crit, row["config"])
             ]
     if not blocks:
         return {}

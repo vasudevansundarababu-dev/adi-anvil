@@ -601,16 +601,23 @@ def evaluate(check, x):
             "fail" if misread else "pass" if not off else "partial" if len(off) == 1 else "fail"
         )
         return _line(verdict, {"off": off, "screening_misread": misread})
-    if check == "consistency":
+    if check in ("consistency", "consistency_5e"):
         outcomes = [a.get("outcome") for a in parties.values()]
         rated_high = ((final.get("risk_rating") or {}).get("level")) == "high"
-        if (
+        escalate = (
             "specialist_review" in outcomes
             or any(a.get("referral") for a in parties.values())
             or rated_high
-        ):
+        )
+        asking = "request_information" in outcomes or any(
+            a.get("requests") for a in parties.values()
+        )
+        if check == "consistency_5e" and asking:
+            # BANK-OPERATING-RULES-DRAFT §5e.2/5e.4: missing information takes precedence; a referral stays made.
+            implied = "request_information"
+        elif escalate:
             implied = "specialist_review"
-        elif "request_information" in outcomes or any(a.get("requests") for a in parties.values()):
+        elif asking:
             implied = "request_information"
         else:
             implied = "ready_for_approval"

@@ -94,6 +94,53 @@ GRADERS = {
 }
 
 
+def checks_for(criterion, config):
+    """The judgment checks a bridge grader runs. consistency follows BANK-OPERATING-RULES-DRAFT §5e only when its
+    configuration says so (`"rule": "5e"`, evaluator version 2+), so version 1's verdicts keep their meaning."""
+    checks = list(GRADERS[criterion])
+    if criterion == "consistency" and (config or {}).get("rule") == "5e":
+        checks = ["consistency_5e" if c == "consistency" else c for c in checks]
+    return checks
+
+
+def _kc_final(rec, outcome, requests, referral):
+    return {
+        "recommendation": rec,
+        "officer_verification": False,
+        "risk_rating": {"required": False, "level": None, "factors": []},
+        "assessments": [
+            {
+                "party_id": "kc-5e-p1",
+                "outcome": outcome,
+                "issues": [],
+                "requests": requests,
+                **({"referral": referral} if referral else {}),
+            }
+        ],
+    }
+
+
+_KC_REF = {"status": "complete", "gradable": True, "conditions_approved": True}
+# The consistency fix version's added known cases (§5e.4 and §5e.3): a possible match with missing information is
+# request_information and still referred; a referral with nothing outstanding is specialist_review.
+CONSISTENCY_5E_KNOWN_CASES = {
+    "request_with_referral": {
+        "expect": "pass",
+        "evidence": {
+            "final_output": _kc_final(
+                "request_information", "request_information", ["id_document"], "sanctions"
+            )
+        },
+        "reference": _KC_REF,
+    },
+    "referral_without_request": {
+        "expect": "fail",
+        "evidence": {"final_output": _kc_final("request_information", "clear", [], "sanctions")},
+        "reference": _KC_REF,
+    },
+}
+
+
 def grader_of(config):
     """The rubric criterion a configuration's `grader` names, or None for any other configuration."""
     g = (config or {}).get("grader") or ""
@@ -116,7 +163,7 @@ def inputs_from(evidence, reference, judgment_part=None, case=None):
     }
 
 
-def known_case_lines(criterion, case, shared=None):
+def known_case_lines(criterion, case, shared=None, config=None):
     """Known-case tests: the criterion's judgment lines computed from the known case itself."""
     from anvil.rlgym.scoring import judgment
 
@@ -125,4 +172,4 @@ def known_case_lines(criterion, case, shared=None):
     x = {**inputs_from(case.get("evidence"), case.get("reference")), "placeholder_ok": True}
     # Shared truth Studio puts beside the known cases (e.g. the cases' mandatory SOP steps).
     x.update({k: v for k, v in (shared or {}).items() if k in ("mandatory_steps",)})
-    return {f"{criterion}.{c}": judgment.evaluate(c, x) for c in GRADERS[criterion]}
+    return {f"{criterion}.{c}": judgment.evaluate(c, x) for c in checks_for(criterion, config)}

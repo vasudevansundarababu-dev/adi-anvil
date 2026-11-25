@@ -413,7 +413,9 @@ def run_known_case_tests(c, ws, actor, cid, version, blocks=None, expected_value
             case["evidence"],
             case["reference"],
             extra={
-                "judgment_results": judgment_configs.known_case_lines(graded, case, shared),
+                "judgment_results": judgment_configs.known_case_lines(
+                    graded, case, shared, config=row["config"]
+                ),
                 "criterion": graded,
             }
             if graded
@@ -517,6 +519,17 @@ def run_known_case_tests(c, ws, actor, cid, version, blocks=None, expected_value
     }
 
 
+def fix_known_cases(config, base, sent):
+    """A fix version's known cases: the base version's, then the rule's own (a consistency configuration that opts
+    into BANK-OPERATING-RULES-DRAFT §5e brings its two cases), then the ones sent with the fix."""
+    from anvil.rlgym.catalog import judgment_configs
+
+    rule = {}
+    if judgment_configs.grader_of(config) == "consistency" and (config or {}).get("rule") == "5e":
+        rule = judgment_configs.CONSISTENCY_5E_KNOWN_CASES
+    return {**(base or {}), **rule, **sent}
+
+
 def create_fix_version(c, ws, actor, cid, body):
     """POST /evaluators/{id}/versions: the RL Gym's own fix (D20). No Studio inbox item unless the S7 criterion changes."""
     actor.require_person()
@@ -530,7 +543,7 @@ def create_fix_version(c, ws, actor, cid, body):
         "Fix from a version that is not revoked, or confirm allow_from_revoked",
     )
     config = body.get("config") or base["config"]
-    known_cases = {**base["known_cases"], **(body.get("known_cases") or {})}
+    known_cases = fix_known_cases(config, base["known_cases"], body.get("known_cases") or {})
     if not verifier.is_blocks_config(config):
         # A verifier-blocks configuration's known cases are built from its blocks (`_blocks`), not stored by name.
         _validate_known_cases(known_cases)
