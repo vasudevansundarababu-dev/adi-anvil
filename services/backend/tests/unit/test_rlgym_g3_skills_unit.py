@@ -107,3 +107,49 @@ def test_wired_read_only():
     assert "skill-compare" in inspect.getsource(routes)
     for word in ("INSERT", "UPDATE ", "DELETE"):
         assert word not in inspect.getsource(skills)
+
+
+# --- spec §16: skills by account type, N/A per criterion, comparison per account type ------------------------------
+
+
+def typed(model, t, n, skill, value):
+    return [
+        {**r, "application_type": t, "case_id": f"{t}-{r['case_id']}"}
+        for r in rows(model, n, skill, value)
+    ]
+
+
+def test_skills_by_account_type():
+    data = typed("m", "custodial", 3, "tool_calling", 1.0) + typed(
+        "m", "individual", 2, "tool_calling", 0.0
+    )
+    out = skills.profile_by_type(data, None)
+    assert out["custodial"]["m"]["tool_calling"]["value"] == 100.0
+    assert out["individual"]["m"]["tool_calling"] == {"value": 0.0, "n": 2, "measured": True}
+
+
+def test_outcomes_per_criterion_show_not_applicable():
+    receipts = [
+        {"criterion_id": "risk_rating", "verdict": v}
+        for v in ("pass", "not_applicable", "not_applicable", "fail")
+    ]
+    out = skills.criteria_outcomes(receipts)
+    assert out["risk_rating"] == {
+        "pass": 1,
+        "partial": 0,
+        "fail": 1,
+        "not_applicable": 2,
+        "blocked": 0,
+        "applicable": 2,
+    }
+
+
+def test_compare_per_account_type():
+    a = {"custodial": {"m@1": {"reasoning": {"value": 80.0, "n": 10, "measured": True}}}}
+    b = {
+        "custodial": {"m@1": {"reasoning": {"value": 50.0, "n": 12, "measured": True}}},
+        "individual": {"m@1": {}},
+    }
+    out = skills.compare_by_type(a, b)
+    assert list(out) == ["custodial"]
+    assert out["custodial"]["by_model"]["m@1"]["reasoning"]["delta"] == -30.0

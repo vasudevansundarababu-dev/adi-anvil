@@ -71,6 +71,37 @@ def profile(rows, discriminating):
     return result
 
 
+def profile_by_type(rows, discriminating):
+    """Spec §16: one task covers every account type, so the profile is also broken down by application type."""
+    types = sorted({r.get("application_type") for r in rows if r.get("application_type")})
+    return {
+        t: profile([r for r in rows if r.get("application_type") == t], discriminating)
+        for t in types
+    }
+
+
+def criteria_outcomes(receipts):
+    """Per criterion: how many episodes passed, partly passed, failed, were not applicable (excluded from both the
+    points and the maximum) or blocked; `applicable` is what the percentage is over."""
+    out = {}
+    for r in receipts:
+        o = out.setdefault(
+            r["criterion_id"],
+            {"pass": 0, "partial": 0, "fail": 0, "not_applicable": 0, "blocked": 0},
+        )
+        if r["verdict"] in o:
+            o[r["verdict"]] += 1
+    for o in out.values():
+        o["applicable"] = o["pass"] + o["partial"] + o["fail"]
+    return out
+
+
+def compare_by_type(first, second):
+    """Two runs' by-type profiles: per account type in both, the models in both, skill by skill (v8's per-type tasks
+    against Judgment v1's one task)."""
+    return {t: compare(first[t], second[t]) for t in sorted(set(first) & set(second))}
+
+
 def compare(first, second):
     """Two profiles keyed by "system_id@version"; the models in both, skill by skill, with the change."""
     both = sorted(set(first) & set(second))
@@ -119,6 +150,7 @@ def run_profile(d):
         rows.append(
             {
                 "system_id": f"{e['system_id']}@{versions.get(e['system_id'])}",
+                "application_type": e.get("application_type"),
                 "case_id": e["case_id"],
                 "criterion_id": r["criterion_id"],
                 "skill": skill,
@@ -139,6 +171,10 @@ def run_profile(d):
         "lookup_run": lk and lk["id"],
         "discriminating_cases": None if discriminating is None else len(discriminating),
         "profile": profile(rows, discriminating),
+        "by_account_type": profile_by_type(rows, discriminating),
+        "criteria_outcomes": criteria_outcomes(
+            [r for r in d.receipts if r["episode_id"] in episodes]
+        ),
         "note": (
             "Reasoning and decisioning count only on cases the no-AI lookup gets wrong (E-011 §3), and need at "
             f"least {MIN_DISCRIMINATING} per model. Golden KYC v8 criteria use E-011 §4's first-pass mapping "
@@ -152,4 +188,9 @@ def compare_runs(c, ws, run_a, run_b):
 
     a = run_profile(report.Data(c, ws, run_a))
     b = run_profile(report.Data(c, ws, run_b))
-    return {"first": a, "second": b, **compare(a["profile"], b["profile"])}
+    return {
+        "first": a,
+        "second": b,
+        **compare(a["profile"], b["profile"]),
+        "by_account_type": compare_by_type(a["by_account_type"], b["by_account_type"]),
+    }

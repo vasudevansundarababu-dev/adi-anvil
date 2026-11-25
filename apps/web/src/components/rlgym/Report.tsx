@@ -1408,12 +1408,29 @@ function SkillsView({ id, d }: { id: string; d: any }) {
           ...skills.map((k) => skillCell(d.profile[m][k])),
         ])}
       />
+      {Object.entries(d.by_account_type ?? {}).map(([t, prof]: [string, any]) => (
+        <section key={t}>
+          <h4>{t}</h4>
+          <ModelTable
+            head={['Model', ...skills.map((k) => SKILL_NAMES[k])]}
+            rows={Object.keys(prof).map((m) => [
+              d.models[m] ?? m,
+              ...skills.map((k) => skillCell(prof[m][k])),
+            ])}
+          />
+        </section>
+      ))}
       <ModelTable
-        head={['Criterion', 'Skill', 'From']}
-        rows={Object.entries(d.criteria ?? {}).map(([c, v]: [string, any]) => [
+        head={['Criterion', 'Skill', 'From', 'Pass', 'Partial', 'Fail', 'N/A', 'Blocked']}
+        rows={Object.entries(d.criteria_outcomes ?? {}).map(([c, o]: [string, any]) => [
           c,
-          SKILL_NAMES[v.skill] ?? v.skill,
-          v.source,
+          SKILL_NAMES[d.criteria?.[c]?.skill] ?? d.criteria?.[c]?.skill ?? '—',
+          d.criteria?.[c]?.source ?? '—',
+          o.pass,
+          o.partial,
+          o.fail,
+          o.not_applicable,
+          o.blocked,
         ])}
       />
       <div className="row">
@@ -1442,6 +1459,25 @@ function SkillsView({ id, d }: { id: string; d: any }) {
             </small>
           </p>
           {cmp.models.length === 0 && <p>No model ran in both runs.</p>}
+          {Object.entries(cmp.by_account_type ?? {}).map(([t, c]: [string, any]) =>
+            c.models.map((m: string) => (
+              <ModelTable
+                key={`${t}-${m}`}
+                head={[
+                  `${t} · ${cmp.first.models[m] ?? m}`,
+                  cmp.first.run_id,
+                  cmp.second.run_id,
+                  'Change',
+                ]}
+                rows={Object.entries(c.by_model[m]).map(([k, v]: [string, any]) => [
+                  SKILL_NAMES[k] ?? k,
+                  skillCell(v.first),
+                  skillCell(v.second),
+                  v.delta === null ? '—' : `${v.delta > 0 ? '+' : ''}${v.delta}`,
+                ])}
+              />
+            )),
+          )}
           {cmp.models.map((m: string) => (
             <ModelTable
               key={m}
