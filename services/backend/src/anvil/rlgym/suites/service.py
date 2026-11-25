@@ -229,7 +229,8 @@ def _split_cells(plan, rows, task_types):
                 {
                     "cell_key": "|".join(map(str, combo)),
                     "dimension_values": dims,
-                    "quota_kind": "share",
+                    # D-063: an equal share is a fixed number of cases (the table allows count or percent).
+                    "quota_kind": "count",
                     "quota_value": share,
                     "quota": share,
                     "available": len(combos[combo]),
