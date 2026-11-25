@@ -298,6 +298,8 @@ def run(c, ws, sv_id, requested_by, replay=True, max_cases_per_task=3):
             for t in tasks:
                 for cid in chosen.get((t["task_id"], t["revision"]), [])[:max_cases_per_task]:
                     ref = (refs.get(cid) or {}).get("reference") or {}
+                    if ref.get("status") == "awaiting_sme":
+                        continue  # reference.v2: not graded until the SME answers
                     out[(t["task_id"], cid)] = _episode(
                         session,
                         t["actor"],
@@ -318,8 +320,21 @@ def run(c, ws, sv_id, requested_by, replay=True, max_cases_per_task=3):
         conf = confirmations.get((t["package_sha256"], summ["sha256"]))
         rows = []
         for cid in chosen.get((t["task_id"], t["revision"]), [])[:max_cases_per_task]:
-            ep = first[(t["task_id"], cid)]
             ref = (refs.get(cid) or {}).get("reference") or {}
+            if ref.get("status") == "awaiting_sme":
+                rows.append(
+                    {
+                        "case_id": cid,
+                        "awaiting_sme": ref.get("awaiting_sme") or [],
+                        "failures": [],
+                        "points": None,
+                        "full_marks": None,
+                        "verdicts": {},
+                        "steps": 0,
+                    }
+                )
+                continue
+            ep = first[(t["task_id"], cid)]
             score = _score(c, ws, project, evaluators, t, ep, ref)
             row = {
                 "case_id": cid,

@@ -488,6 +488,7 @@ def judgment_agent(model_id, key, application_id):
             "notices_considered": notices,
             "rationale": (final.get("findings") or [{}])[0].get("text") or "Reviewed the records.",
             "officer_verification": False,
+            "risk_rating": {"required": False, "level": None, "factors": []},
             "audit_trail": [
                 {
                     "sop_step": 1,

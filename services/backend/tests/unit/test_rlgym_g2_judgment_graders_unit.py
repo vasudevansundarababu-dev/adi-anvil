@@ -474,7 +474,7 @@ def test_decision_per_party_with_aliases_mapped_back():
 
 def test_cases_awaiting_the_sme_are_not_graded():
     out = check("rules_applied", reference={**REF_V2, "awaiting_sme": True})
-    assert out["verdict"] == "not_applicable" and "awaiting" in out["expected"]
+    assert out["verdict"] == "not_applicable" and "awaiting" in str(out["expected"])
 
 
 def test_missing_reference_or_library_is_blocked_never_a_pass():

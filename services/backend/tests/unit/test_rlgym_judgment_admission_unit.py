@@ -6,7 +6,7 @@ import inspect
 
 import pytest
 
-from anvil.rlgym.common import GymError
+from anvil.rlgym.common import GymError, sha
 from anvil.rlgym.runs import library
 from anvil.rlgym.runs import service as runs
 
@@ -49,8 +49,8 @@ def test_v8_cases_freeze_nothing_and_call_nothing():
 
 
 def test_v2_cases_freeze_the_library_and_their_facts():
-    out = runs.judgment_part([V2], lambda: {"library": LIB, "sha256": "abc"})
-    assert out["library"] == LIB and out["library_sha256"] == "abc"
+    out = runs.judgment_part([V2], lambda: {"library": LIB, "sha256": sha(LIB)})
+    assert out["library"] == LIB and out["library_sha256"] == sha(LIB)
     assert out["cases"]["kj-1"] == {"facts": V2["facts"], "parties": V2["parties"]}
 
 
@@ -65,7 +65,7 @@ def test_a_library_whose_text_hashes_do_not_match_is_refused():
         ],
     }
     with pytest.raises(GymError) as e:
-        runs.judgment_part([V2], lambda: {"library": bad, "sha256": "x"})
+        runs.judgment_part([V2], lambda: {"library": bad, "sha256": sha(bad)})
     assert e.value.code == "HASH_MISMATCH"
 
 

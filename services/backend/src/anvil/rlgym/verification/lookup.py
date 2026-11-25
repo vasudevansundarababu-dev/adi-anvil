@@ -205,6 +205,11 @@ def run(c, ws, sv_id, requested_by, body=None):
                         {"case_id": cid, "task_id": t["task_id"], "skipped": "no reference"}
                     )
                     continue
+                if truth.get("status") == "awaiting_sme":
+                    rows.append(
+                        {"case_id": cid, "task_id": t["task_id"], "skipped": "awaiting the SME"}
+                    )
+                    continue
                 session.request({"op": "reset", "case_id": cid, "inject": None})
                 said = decide(cid, snapshot())
                 # The lookup's decision drives the procedure; the score is always against the true reference.

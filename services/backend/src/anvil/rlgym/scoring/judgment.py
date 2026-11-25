@@ -25,7 +25,12 @@ def recommend_sequence(transcript):
     for t in transcript or []:
         # The runtime's call sequence (C3's episode clock) is on the observation; older entries carry step only.
         obs = t.get("observation") or {}
-        seq = int(obs.get("sequence") or t.get("sequence") or t.get("step") or 0)
+        # Studio's clock: only calls that reached an operation carry a sequence; calls rejected before running
+        # (schema, undeclared tool, past the limit) never count. Never the transcript index.
+        raw = obs.get("sequence") if obs.get("sequence") is not None else t.get("sequence")
+        if raw is None:
+            continue
+        seq = int(raw)
         last = max(last, seq)
         if t.get("tool") == "recommend" and (t.get("observation") or {}).get("ok"):
             return seq
@@ -169,18 +174,23 @@ def evaluate(check, x):
     ref, final = x.get("reference"), x.get("final") or {}
     if ref is None:
         return _line("blocked", expected="the case's reference answers (reference.v2)")
-    if ref.get("awaiting_sme"):
-        return _line("not_applicable", expected="awaiting the SME's outcome: not graded")
+    if ref.get("status") == "awaiting_sme" or ref.get("awaiting_sme") is True:
+        reasons = ref.get("awaiting_sme") if isinstance(ref.get("awaiting_sme"), list) else []
+        return _line("not_applicable", expected={"awaiting_sme": reasons or ["awaiting the SME"]})
     fired = [
         f
         for f in x.get("fired") or []
         if (f.get("published_at_sequence") or 0) < recommend_sequence(x.get("transcript"))
     ]
+    if not fired and isinstance(ref.get("reference_if_not_fired"), dict):
+        # A rule-change case whose bulletin never fired before the decision: the answer without the change.
+        ref = ref["reference_if_not_fired"]
     if check == "rules_applied":
         if not x.get("library") or not x.get("case"):
             return _line("blocked", expected="the pinned policy library and the case's facts")
         exp = expected_rules(x["library"], x["case"], x.get("fired"), x.get("transcript"))
-        truth = [r for r in ref.get("rules_applied") or [] if "governs" in r]
+        # governs comes only from the SME's outcome; null (no overlap decided yet) is not graded.
+        truth = [r for r in ref.get("rules_applied") or [] if r.get("governs") is not None]
         out = rules_applied(
             exp,
             final.get("rules_applied"),

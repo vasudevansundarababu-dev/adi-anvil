@@ -12,9 +12,9 @@ COLLECTION = "scenario_events_fired"  # Studio runtime cc7af5a
 
 
 def scenario_events(snapshots, transcript):
-    fired = [
-        r for r in ((snapshots or {}).get("end") or {}).get(COLLECTION) or [] if isinstance(r, dict)
-    ]
+    end = (snapshots or {}).get("end") or {}
+    fired = [r for r in end.get(COLLECTION) or [] if isinstance(r, dict)]
+    published = [r for r in end.get("notices_published") or [] if isinstance(r, dict)]
     read, shown = [], []
     for t in transcript or []:
         obs = t.get("observation") or {}
@@ -38,11 +38,12 @@ def scenario_events(snapshots, transcript):
                         "source": n.get("source"),
                     }
                 )
-    if not fired and not read and not shown:
+    if not fired and not read and not shown and not published:
         return None
     seen = {n["notice_id"] for n in read}
     return {
         "fired": fired,
+        "notices_published": published,
         "notices_read": read,
         "notices_shown": shown,
         "unread": [

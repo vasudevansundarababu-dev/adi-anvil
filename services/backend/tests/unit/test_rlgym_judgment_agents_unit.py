@@ -203,7 +203,7 @@ def test_the_reference_agent_produces_the_judgment_output_from_reference_v2():
     assert (
         final["recommendation"] == "request_information" and final["officer_verification"] is False
     )
-    assert final["risk_rating"] == {"level": "low"}
+    assert final["risk_rating"] == {"required": True, "level": "low", "factors": []}
     assert final["notices_considered"] == ["bulletin-0001"]
     assert [(r["rule_id"], r["version"]) for r in final["rules_applied"]] == [
         ("GB-03", 2),

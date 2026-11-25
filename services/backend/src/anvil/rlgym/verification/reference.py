@@ -189,7 +189,12 @@ def _judgment(actor, ref, application_id, failures, operations):
         "final": {
             "recommendation": ref.get("recommendation"),
             "officer_verification": bool(ref.get("officer_verification")),
-            **({"risk_rating": {"level": rr.get("level")}} if rr.get("required") else {}),
+            # B3: {required, level, factors}.
+            "risk_rating": {
+                "required": bool(rr.get("required")),
+                "level": rr.get("level"),
+                "factors": rr.get("factors") or [],
+            },
             "rules_applied": [
                 {
                     k: r[k]

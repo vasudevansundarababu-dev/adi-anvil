@@ -558,14 +558,28 @@ def admission_check(ctx, body):
         if env and selected:
             # KYC Judgment v1: the pinned library and the cases' facts, frozen for grading (v8: nothing, no call).
             try:
+                vid, base = env["version"]["id"], env["version"].get("registry")
+
+                def scenarios_for(ids):
+                    out = {"scenarios": {}}
+                    for i in range(0, len(ids), 50):
+                        got = integrations.registry_get(
+                            f"/versions/{vid}/scenarios",
+                            params={"ids": ",".join(ids[i : i + 50])},
+                            audience="scorer",
+                            timeout=30,
+                            base=base,
+                        )
+                        out["scenarios"].update(got.get("scenarios") or {})
+                    return out
+
                 resolved["judgment"] = judgment_part(
                     selected,
                     lambda: integrations.registry_get(
-                        f"/versions/{env['version']['id']}/policy-library",
-                        audience="scorer",
-                        timeout=30,
-                        base=env["version"].get("registry"),
+                        f"/versions/{vid}/policy-library", audience="scorer", timeout=30, base=base
                     ),
+                    scenarios_for,
+                    pinned=(env["version"].get("scorer_content") or {}),
                 )
             except GymError as exc:
                 item(
@@ -961,7 +975,7 @@ def _manifest(run_id, check):
     }
 
 
-def judgment_part(selected, fetch_library):
+def judgment_part(selected, fetch_library, fetch_scenarios=None, pinned=None):
     """KYC Judgment v1: for registry-case v2 cases, the pinned policy library (scorer endpoint, RL Gym review B1; its
     text hashes checked) and each case's facts, to freeze in the manifest. None for any other case set (v8: no call)."""
     v2 = [c for c in selected or [] if c.get("schema_version") == "adi.utility.registry-case.v2"]
@@ -971,6 +985,24 @@ def judgment_part(selected, fetch_library):
 
     got = fetch_library()
     lib = got.get("library") or {}
+    want = (pinned or {}).get("policy_library_sha256")
+    if want and got.get("sha256") != want:
+        raise GymError(
+            "HASH_MISMATCH",
+            "The policy library isn't the one the environment version pins (scorer_content)",
+        )
+    if got.get("sha256") != sha(lib):
+        raise GymError(
+            "HASH_MISMATCH",
+            "The policy library doesn't match its sha256 (sorted-key compact JSON, Studio B1)",
+        )
+    scenarios = {}
+    if fetch_scenarios:
+        served = (fetch_scenarios([c["case_id"] for c in v2]) or {}).get("scenarios") or {}
+        for cid, item in served.items():
+            if sha(item.get("scenario")) != item.get("sha256"):
+                raise GymError("HASH_MISMATCH", f"The scenario of {cid} doesn't match its sha256")
+            scenarios[cid] = item["scenario"]
     bad = library.hash_problems(lib)
     if bad:
         raise GymError(
@@ -982,6 +1014,7 @@ def judgment_part(selected, fetch_library):
         "library_revision": (lib.get("export") or {}).get("library_revision"),
         "library_sha256": got.get("sha256"),
         "library": lib,
+        "scenarios": scenarios,
         "cases": {
             c["case_id"]: {"facts": c.get("facts") or {}, "parties": c.get("parties") or []}
             for c in v2
