@@ -523,7 +523,9 @@ def activate(c, ws, actor, doc):
         f"{doc['template_id']}@{doc['version']}",
         {"template_id": doc["template_id"], "version": doc["version"], "state": state},
     )
-    if state == "active":
+    # A test-channel activation's qualification reaches ADI Forge through Studio's relay (step 11), never from here,
+    # so there is only ever one sender.
+    if state == "active" and channel != "test":
         receipt_id = (
             "tq-"
             + sha({"t": doc["template_id"], "v": doc["version"], "h": doc["spec_sha256"]})[:12]

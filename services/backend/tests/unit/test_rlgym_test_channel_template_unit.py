@@ -102,3 +102,9 @@ def test_forge_gets_the_channel_inside_the_receipt_only(monkeypatch):
     assert out["status"] == "QUALIFIED" and out["template_version_hash"] == "h"
     real = templates.forge_qualification({k: v for k, v in doc.items() if k != "channel"}, rec, {})
     assert "channel" not in real and "channel" not in real["receipt"]
+
+
+def test_a_test_channel_activation_leaves_the_forge_record_to_studio():
+    """Studio's step 11 relays the test-channel activation to ADI Forge; RL Gym never sends a second record."""
+    src = inspect.getsource(templates.activate)
+    assert 'if state == "active" and channel != "test":' in src
