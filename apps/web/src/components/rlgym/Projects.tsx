@@ -132,6 +132,9 @@ export function ProjectsList() {
                           <small>
                             {p.last_export.new_count} new · {p.last_export.superseding_count}{' '}
                             superseding · {p.last_export.unchanged_count} unchanged
+                            {p.last_export.map_attached_count
+                              ? ` · ${p.last_export.map_attached_count} map attached`
+                              : ''}
                           </small>
                         </>
                       ) : (
@@ -485,10 +488,17 @@ function ExportsTab({ project }: { project: string }) {
                     <small>{e.reason}</small>
                   </td>
                   <td>{when(e.received_at)}</td>
-                  <td>{e.new_count + e.superseding_count + e.unchanged_count}</td>
+                  <td>
+                    {e.new_count +
+                      e.superseding_count +
+                      e.unchanged_count +
+                      (e.map_attached_count || 0)}
+                  </td>
                   <td>
                     {e.new_count} new · {e.superseding_count} superseding · {e.unchanged_count}{' '}
-                    unchanged · {e.blocked_count} blocked
+                    unchanged
+                    {e.map_attached_count ? ` · ${e.map_attached_count} map attached` : ''} ·{' '}
+                    {e.blocked_count} blocked
                     {e.blocked.map((b: any) => (
                       <small key={b.task_id}>
                         {b.task_id}: {b.reason} ({b.alias})

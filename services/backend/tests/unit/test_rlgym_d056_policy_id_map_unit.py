@@ -192,5 +192,8 @@ def test_import_keeps_the_map_and_the_manifest_freezes_it():
     from anvil.rlgym.projects import service as projects
     from anvil.rlgym.runs import service as runs
 
-    assert 'task.get("policy_id_map")' in inspect.getsource(projects)
-    assert '"policy_id_map": t["policy_id_map"]' in inspect.getsource(runs._manifest)
+    assert (
+        '_attach_map(c, ws, import_id, body["export_id"], task.get("policy_id_map"))'
+        in inspect.getsource(projects.receive_export)
+    )
+    assert '"policy_id_map": t["captured_policy_id_map"]' in inspect.getsource(runs._manifest)

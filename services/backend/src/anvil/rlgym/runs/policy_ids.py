@@ -135,3 +135,25 @@ def apply(actor, spec, environment_version, env_policies):
         return actor, record
     record["applied"] = True
     return shown, record
+
+
+def summarize(records):
+    """Run-level counts from the per-episode records (D-056): how many episodes had the map applied, how many warned
+    (with each distinct reason), and the ids the agent was shown. `records` are the sealed records; None means the
+    episode's task carried no map."""
+    out = {"applied": 0, "warned": 0, "warnings": [], "rules": []}
+    reasons, rules = {}, {}
+    for r in records:
+        if not r:
+            continue
+        if r.get("applied"):
+            out["applied"] += 1
+            for rule in r.get("rules") or []:
+                rules[(rule["original"], tuple(rule["shown"]))] = True
+        else:
+            out["warned"] += 1
+            why = r.get("warning") or "not applied"
+            reasons[why] = reasons.get(why, 0) + 1
+    out["warnings"] = [{"reason": k, "episodes": v} for k, v in sorted(reasons.items())]
+    out["rules"] = [{"original": o, "shown": list(s)} for o, s in rules]
+    return out

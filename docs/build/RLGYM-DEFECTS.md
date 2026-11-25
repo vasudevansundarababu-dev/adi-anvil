@@ -547,3 +547,21 @@ Authoring's S4 names its own rule ids (for example rule-set document `54e00852-â
 - Migration check (rolled back on the real database): 5,926 task imports, digest of every existing column identical before and after, 0 maps set, run/episode/evidence/score/suite/payload counts unchanged.
 - Tests: 12 new unit tests (`test_rlgym_d056_policy_id_map_unit.py`, written first); unit 736 passed.
 - Deployed 21:35 CST with no run active: backup `.local/backups/rlgym-20261124-213504-before-migration-064.sql.gz` (23.7 MB, .sha256 checked, complete dump), migration 064, API and worker restarted at 21:35:29. Digests (tasks, sealed evidence, scores, SME items, data plans, bindings, passes) identical before and after. Health: API and database ready, gym pages 200. Suite v4 admission (rolled back) still passes tasks, data plan and task match.
+
+## D-056, second part â€” maps attached to existing revisions; suite capture; shown in the app (25 Nov 2026; within the owner-approved D-056 fix, requested by the coordinator)
+
+Authoring re-exports the same task revisions and packages, now with `policy_id_map`. Bumping revisions would risk SME re-approval and break suites v4/v5. Before this change, such a re-export counted every task as "unchanged" and dropped the map. A new revision with the same package would also have been refused by the unique package hash.
+
+- **Attach (append-only):** when an export brings an already-imported revision with the same `package_sha256` and a `policy_id_map`, the map goes into the new `projects.task_policy_maps` table (import id, export id, map, `map_sha256`, `received_at`). That table is append-only (forbid-change trigger) and has RLS. The `projects.task_imports` row is never updated. The receipt counts it as `map_attached` instead of `unchanged`. That key appears only when non-zero, so other receipts keep their shape. The same map again is not attached twice. A different map for the same revision is appended, and the newest one is what new suite drafts capture. New revisions that carry a map attach it the same way. The 064 column `task_imports.policy_id_map` is left unused and empty; nothing is dropped.
+- **Suite capture:** a new draft records, in `suites.suite_tasks.policy_map_id` (new nullable column), the newest map of each pinned task. The suite hash adds `policy_maps` (package hash and map hash per task) only when some task has a map. All 28 saved suite versions recompute to their stored hash (checked on the real database). A fresh draft with maps is therefore a change and saves as a new version.
+- **Admission and manifest:** they use only the map captured in the suite version, never a later attachment or the import column. v4 and v5 have no captured map and run exactly as before.
+- **Shown:** the episode page has a "Policy map: applied" card, or "warning: <reason>", listing each S4 rule's original id and the ids shown to the agent. The run page and the report overview have a "Policy map" card with the number of episodes where it was applied and where it warned, the mapping, and each warning reason. These cards appear only for runs whose tasks carried a map. The project's export lines show "N map attached", and the suite page shows "N with a policy map".
+- **Migration 065 (additive):** one new table and one nullable column.
+- **Dry run on the real database (rolled back):**
+  - digests of task imports, suite tasks, suite versions, runs, manifests, sealed evidence and exports were identical after the migration;
+  - all 28 saved suite hashes recompute unchanged;
+  - attaching a map to the 4 ready imports returns true, and attaching it again returns false;
+  - v5 admission still has 8 episodes, $8, no failures and 0 captured maps;
+  - after discarding draft 626b0500, a new draft has 4 tasks with a map, 8 cases and T&S off, and saves as v6;
+  - v6 admission has 8 episodes, $8, no failures and 4 captured maps.
+- **Tests:** 11 new unit tests (`test_rlgym_d056_attach_unit.py`, written first), and the D-056 import/manifest test updated. Unit 747 passed; ruff clean; web `tsc --noEmit` exit 0.

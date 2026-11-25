@@ -55,6 +55,31 @@ def template_hash_matches(activation, t):
     return bool(sent & known)
 
 
+def latest_map(c, task_import_id):
+    """The newest policy_id_map attached to a task import (D-056), or None."""
+    return c.execute(
+        "SELECT * FROM projects.task_policy_maps WHERE task_import_id=%s ORDER BY received_at DESC, id DESC LIMIT 1",
+        (task_import_id,),
+    ).fetchone()
+
+
+def _attach_map(c, ws, task_import_id, export_id, policy_id_map):
+    """D-056: append Authoring's policy_id_map for a task import. True if a row was added; the same map as the newest
+    one is not added again. Never updates projects.task_imports."""
+    if policy_id_map is None:
+        return False
+    digest = sha(policy_id_map)
+    newest = latest_map(c, task_import_id)
+    if newest and newest["map_sha256"] == digest:
+        return False
+    c.execute(
+        """INSERT INTO projects.task_policy_maps(id,workspace_id,task_import_id,export_id,policy_id_map,map_sha256,received_at)
+           VALUES(%s,%s,%s,%s,%s,%s,clock_timestamp())""",
+        (str(uuid4()), ws, task_import_id, export_id, Jsonb(policy_id_map), digest),
+    )
+    return True
+
+
 def receive_export(c, ws, actor, project_id, body):
     """POST /projects/{project_id}/exports (client adi-forge). Idempotent by export hash; tasks deduplicated by
     package hash. Every package is fetched from the ADI Forge stub and checked against its hash before import."""
@@ -182,7 +207,7 @@ def receive_export(c, ws, actor, project_id, body):
         "Package content does not match package_sha256",
         tasks=mismatched,
     )
-    counts = {"new": 0, "superseding": 0, "unchanged": 0}
+    counts = {"new": 0, "superseding": 0, "unchanged": 0, "map_attached": 0}
     blocked, bindable = [], _bindable(c, ws, project_id)
     for task in body["tasks"]:
         existing = c.execute(
@@ -196,7 +221,12 @@ def receive_export(c, ws, actor, project_id, body):
                 "VALIDATION_FAILED",
                 f"{task['task_id']} r{task['revision']} already exists with another package; a correction is a new revision",
             )
-            counts["unchanged"] += 1
+            # D-056: a re-export of the same revision may bring Authoring's policy_id_map. It is attached append-only
+            # (the import row is never touched); the same map twice is not attached again.
+            if _attach_map(c, ws, same_rev["id"], body["export_id"], task.get("policy_id_map")):
+                counts["map_attached"] += 1
+            else:
+                counts["unchanged"] += 1
             continue
         latest = existing[0] if existing else None
         require(
@@ -232,13 +262,14 @@ def receive_export(c, ws, actor, project_id, body):
         if bad_clause:
             state, reason = "blocked", f"CLAUSE_INVALID: {bad_clause}"
             blocked.append({"task_id": task["task_id"], "reason": "CLAUSE_INVALID"})
+        import_id = str(uuid4())
         c.execute(
             """INSERT INTO projects.task_imports(id,workspace_id,project_id,export_id,task_id,revision,title,package_ref,package_sha256,
                  case_selector,actor_payload,private_payload,state,state_reason,corrects_id,sme_batch_id,complexity,archetype,
                  policy_clauses,policy_id_map)
                VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
-                str(uuid4()),
+                import_id,
                 ws,
                 project_id,
                 body["export_id"],
@@ -258,11 +289,13 @@ def receive_export(c, ws, actor, project_id, body):
                 package["private"].get("complexity"),
                 package["private"].get("archetype"),
                 Jsonb(policy_clauses) if policy_clauses else None,
-                # D-056: Authoring's map from its S4 rule ids to the environment's policy ids (optional, kept as sent;
-                # checked against the environment at reset, never at import, so it can't block a task).
-                Jsonb(task.get("policy_id_map")) if task.get("policy_id_map") is not None else None,
+                # D-056: the map is kept in projects.task_policy_maps (below), not in this column (left unused).
+                None,
             ),
         )
+        # D-056: Authoring's map from its S4 rule ids to the environment's policy ids (optional, kept as sent; checked
+        # against the environment at reset, never at import, so it can't block a task).
+        _attach_map(c, ws, import_id, body["export_id"], task.get("policy_id_map"))
         if latest:
             c.execute(
                 "UPDATE projects.task_imports SET state='superseded', state_reason=%s WHERE id=%s",
@@ -292,7 +325,8 @@ def receive_export(c, ws, actor, project_id, body):
     receipt = {
         "project_id": project_id,
         "export_id": body["export_id"],
-        **counts,
+        # D-056: map_attached appears only when an export attached a map, so other receipts keep their shape.
+        **{k: v for k, v in counts.items() if k != "map_attached" or v},
         "blocked": blocked,
         "default_suite_version": default_suite,
     }
@@ -1291,7 +1325,8 @@ def project_summary(c, ws, project):
                 "blocked_count",
                 "reason",
             )
-        },
+        }
+        | {"map_attached_count": int((last["receipt"] or {}).get("map_attached") or 0)},
         "suggested_actions": suggested_actions(c, ws, project),
     }
 
@@ -1370,7 +1405,8 @@ def exports(c, ws, pid):
     get_project_row(c, ws, pid)
     return c.execute(
         """SELECT export_id, export_sha256, received_at, new_count, superseding_count, unchanged_count, blocked_count, reason, blocked,
-                  receipt_sha256 FROM projects.project_exports WHERE workspace_id=%s AND project_id=%s ORDER BY received_at DESC""",
+                  receipt_sha256, coalesce((receipt->>'map_attached')::int, 0) map_attached_count
+                  FROM projects.project_exports WHERE workspace_id=%s AND project_id=%s ORDER BY received_at DESC""",
         (ws, pid),
     ).fetchall()
 

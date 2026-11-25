@@ -279,6 +279,8 @@ def view(c, ws, actor, episode_id):
         ),
         "sealed_sha256": e["sealed_sha256"],
         "manifest_sha256": e["manifest_sha256"],
+        # D-056: what the policy_id_map did at reset (applied, or the warning), from the sealed evidence.
+        "policy_map": (bundle or {}).get("policy_id_map"),
         "score": score
         and {
             "score": score["score"],

@@ -747,6 +747,7 @@ function DataPlan({
       <small>
         A run never creates input data: it selects cases from this environment version&apos;s case
         catalog. {data.tasks.count} ready tasks
+        {data.tasks.policy_maps ? ` · ${data.tasks.policy_maps} with a policy map` : ''}
         {data.tasks.unmatched.length
           ? ` · unmatched: ${data.tasks.unmatched.join(', ')}`
           : ' · every task matches cases'}

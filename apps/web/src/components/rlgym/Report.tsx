@@ -5,6 +5,7 @@ import { EdgeCaseForm, edgeBody, edgeReady, emptyEdge, type EdgeParts } from './
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { GymApiError, send, wsBase } from './api';
+import { PolicyMapSummary } from './PolicyMap';
 import { Badge, Failure, Hash, Loading, useData, useGym } from './ui';
 import { HowScored, ScoredBy } from './Scoring';
 
@@ -307,6 +308,7 @@ function OverviewView({ id, v, models }: { id: string; v: any; models: Model[] }
         </div>
         <p>{v.review_sample.state}</p>
       </section>
+      <PolicyMapSummary summary={v.policy_maps} />
       <div className="row">
         <Link href={drill(id, 'policy')}>Policy findings & document evidence</Link>
         <Link href={drill(id, 'risk')}>Risk & escalation summary</Link>

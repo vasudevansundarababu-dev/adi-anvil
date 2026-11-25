@@ -7,6 +7,7 @@ import { GymApiError, send, short, when, wsBase } from './api';
 import Episode from './Episode';
 import Report from './Report';
 import Sme from './Sme';
+import { PolicyMapSummary } from './PolicyMap';
 import { Badge, Failure, Hash, Loading, Search, Tabs, useData, useGym } from './ui';
 import { HowScored, ScoredBy } from './Scoring';
 import { Verification } from './Verification';
@@ -899,6 +900,7 @@ function Overview({ r }: { r: any }) {
           ))}
         </section>
       )}
+      <PolicyMapSummary summary={r.policy_maps} />
       {r.statistics.systems.length > 0 && (
         <div className="grid3">
           {r.statistics.systems.map((s: any) => (

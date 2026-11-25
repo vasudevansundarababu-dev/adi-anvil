@@ -506,10 +506,14 @@ def _new_version_row(c, ws, pid, suite_id, name, actor_id, based_on=None):
                  VALUES(%s,%s,%s,%s,%s,'draft','pending',%s,%s)""",
         (sv_id, ws, pid, suite_id, name, based_on, actor_id),
     )
+    from anvil.rlgym.projects.service import latest_map
+
     for t in _ready_tasks(c, ws, pid):
+        # D-056: the draft captures the task's newest attached policy_id_map; a later attachment never reaches it.
+        pm = latest_map(c, t["id"])
         c.execute(
-            "INSERT INTO suites.suite_tasks(suite_version_id,workspace_id,task_import_id) VALUES(%s,%s,%s)",
-            (sv_id, ws, t["id"]),
+            "INSERT INTO suites.suite_tasks(suite_version_id,workspace_id,task_import_id,policy_map_id) VALUES(%s,%s,%s,%s)",
+            (sv_id, ws, t["id"], pm and pm["id"]),
         )
     return sv_id
 
@@ -847,7 +851,15 @@ def _content(c, sv_id):
         "SELECT * FROM suites.data_plans WHERE suite_version_id=%s", (sv_id,)
     ).fetchone()
     ts = c.execute("SELECT * FROM suites.ts_plans WHERE suite_version_id=%s", (sv_id,)).fetchone()
+    # D-056: each task's captured policy_id_map, hashed in only when some task has one, so every suite saved without
+    # maps keeps the hash it had.
+    maps = c.execute(
+        """SELECT t.package_sha256, m.map_sha256 FROM suites.suite_tasks s JOIN projects.task_imports t ON t.id=s.task_import_id
+           JOIN projects.task_policy_maps m ON m.id=s.policy_map_id WHERE s.suite_version_id=%s ORDER BY 1""",
+        (sv_id,),
+    ).fetchall()
     return {
+        **({"policy_maps": [[m["package_sha256"], m["map_sha256"]] for m in maps]} if maps else {}),
         "bindings": c.execute(
             "SELECT alias, rule_kind, pinned_version_id, seed_family FROM suites.suite_bindings WHERE suite_version_id=%s ORDER BY alias",
             (sv_id,),
@@ -1498,8 +1510,8 @@ def view(c, ws, sv_id):
     ).fetchall()
     ts = c.execute("SELECT * FROM suites.ts_plans WHERE suite_version_id=%s", (sv_id,)).fetchone()
     tasks = c.execute(
-        """SELECT t.task_id, t.revision, t.case_selector FROM suites.suite_tasks s JOIN projects.task_imports t ON t.id=s.task_import_id
-           WHERE s.suite_version_id=%s ORDER BY t.task_id""",
+        """SELECT t.task_id, t.revision, t.case_selector, s.policy_map_id FROM suites.suite_tasks s
+           JOIN projects.task_imports t ON t.id=s.task_import_id WHERE s.suite_version_id=%s ORDER BY t.task_id""",
         (sv_id,),
     ).fetchall()
     env = c.execute(
@@ -1540,6 +1552,8 @@ def view(c, ws, sv_id):
         },
         "tasks": {
             "count": len(tasks),
+            # D-056: how many tasks carry a captured policy_id_map in this version.
+            "policy_maps": sum(1 for t in tasks if t["policy_map_id"]),
             "unmatched": unmatched,
             "by_application_type": {
                 k: sum(1 for t in tasks if t["case_selector"]["application_type"] == k)

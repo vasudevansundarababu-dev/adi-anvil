@@ -383,7 +383,22 @@ def overview(d):
             if any(t.get("clauses") for t in d.manifest["tasks"])
             else {}
         ),
+        # D-056: only runs whose tasks carried a policy_id_map have this section.
+        **(
+            {"policy_maps": policy_map_outcomes(d)}
+            if any(t.get("policy_id_map") is not None for t in d.manifest["tasks"])
+            else {}
+        ),
     }
+
+
+def policy_map_outcomes(d):
+    """D-056: episodes where the policy_id_map was applied at reset and where it warned (S4 left as authored)."""
+    from anvil.rlgym.runs import policy_ids
+
+    return policy_ids.summarize(
+        [(d.bundle(e) or {}).get("policy_id_map") for e in d.cases if e["bundle_ref"]]
+    )
 
 
 def clause_outcomes(d):

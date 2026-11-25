@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { GymApiError, send, wsBase } from './api';
+import { PolicyMapRecord } from './PolicyMap';
 import { Badge, Failure, Hash, Loading, useData, useGym } from './ui';
 
 // Episode viewer (SCREENS 3.38): read-only, from the sealed evidence. Selecting a criterion highlights its nodes on the
@@ -100,6 +101,7 @@ export default function Episode({ runId, episodeId }: { runId: string; episodeId
                 </small>
               </section>
             )}
+            <PolicyMapRecord record={v.policy_map} />
             <section className="card">
               <h4>Path taken</h4>
               <div className="graph" role="img" aria-label="Path over the workflow">

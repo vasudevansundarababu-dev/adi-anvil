@@ -223,9 +223,12 @@ def admission_check(ctx, body):
     resolved.update(project=project, sv=sv, activation=activation, model_set=ms_label, models=lines)
     if sv and project and sv["state"] == "saved":
         tasks = ctx.c.execute(
-            """SELECT t.*, p.content actor FROM suites.suite_tasks s JOIN projects.task_imports t ON t.id=s.task_import_id
+            """SELECT t.*, p.content actor, pm.id policy_map_id, pm.policy_id_map captured_policy_id_map,
+                 pm.map_sha256 policy_map_sha256
+               FROM suites.suite_tasks s JOIN projects.task_imports t ON t.id=s.task_import_id
                LEFT JOIN projects.task_payloads p ON p.workspace_id=t.workspace_id AND p.package_sha256=t.package_sha256
                  AND p.part='actor'
+               LEFT JOIN projects.task_policy_maps pm ON pm.id=s.policy_map_id
                WHERE s.suite_version_id=%s ORDER BY t.task_id""",
             (sv["id"],),
         ).fetchall()
@@ -834,10 +837,17 @@ def _manifest(run_id, check):
                     if clauses.task_clauses(t.get("actor"), t)
                     else {}
                 ),
-                # D-056: Authoring's policy_id_map, frozen whole (applied at reset against the environment run).
+                # D-056: the policy_id_map this suite version captured for the task (never a later attachment),
+                # frozen whole and applied at reset against the environment run.
                 **(
-                    {"policy_id_map": t["policy_id_map"]}
-                    if t.get("policy_id_map") is not None
+                    {
+                        "policy_id_map": t["captured_policy_id_map"],
+                        "policy_map": {
+                            "id": str(t["policy_map_id"]),
+                            "map_sha256": t["policy_map_sha256"],
+                        },
+                    }
+                    if t.get("captured_policy_id_map") is not None
                     else {}
                 ),
             }
@@ -1399,6 +1409,8 @@ def get_run(ctx, run_id):
         "passes": passes,
         "latest_pass": latest and latest["pass"],
         "statistics": stats,
+        # D-056: applied / warned counts of the tasks' policy_id_map (only runs whose tasks carried one).
+        **({"policy_maps": _policy_maps(ctx, run_id)} if m and _has_maps(m["manifest"]) else {}),
         "instance": instance,
         "report_available": run["state"] == "completed",
         "note": MOCK_NOTE if run["execution_mode"] == "controlled_mock" else LIVE_NOTE,
@@ -1437,6 +1449,21 @@ def _live_spend(ctx, run_id, m):
             }
         )
     return out
+
+
+def _has_maps(manifest):
+    return any(t.get("policy_id_map") is not None for t in manifest.get("tasks") or [])
+
+
+def _policy_maps(ctx, run_id):
+    from anvil.rlgym.runs import policy_ids
+
+    rows = ctx.c.execute(
+        """SELECT DISTINCT ON (x.episode_id) x.bundle_ref, x.sealed_sha256 FROM runs.sealed_evidence x
+           JOIN runs.episodes e ON e.id=x.episode_id WHERE e.run_id=%s ORDER BY x.episode_id, x.try DESC""",
+        (run_id,),
+    ).fetchall()
+    return policy_ids.summarize([scoring.read_sealed(r).get("policy_id_map") for r in rows])
 
 
 def episodes(
