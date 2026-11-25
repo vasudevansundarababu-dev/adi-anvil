@@ -1162,6 +1162,11 @@ def drill(c, ws, run_id, kind, key, actor):
         body = risk_drill(d)
     elif kind == "review":
         body = review_drill(d, key, actor)
+    elif kind == "tool_calling":
+        # G3 / E-011: read-only, so it applies to past runs and never changes a stored report revision.
+        from anvil.rlgym.results import tool_metrics
+
+        body = tool_metrics.tool_calling(d)
     else:
         raise GymError("VALIDATION_FAILED", "Unknown drill-down")
     return {"header": header(d), "kind": kind, "key": key, "drill": body}

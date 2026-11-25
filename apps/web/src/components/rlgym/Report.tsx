@@ -456,6 +456,7 @@ function AgentView({ id, v, models }: { id: string; v: any; models: Model[] }) {
           <div className="between">
             <h3>Capability comparison</h3>
             <Link href={drill(id, 'axes')}>Inspect axes, weights and coverage</Link>
+            <Link href={drill(id, 'tool_calling')}>Tool calling</Link>
           </div>
           {v.capabilities.map((a: any) => (
             <div key={a.capability}>
@@ -857,6 +858,7 @@ function Drill({ id, kind, keyName }: { id: string; kind: string; keyName: strin
     tscat: 'Trust & Safety category',
     policy: 'Policy findings and document evidence',
     risk: 'Risk and escalation summary',
+    tool_calling: 'Tool calling (from the trajectories)',
   };
   return (
     <Loading data={data.data} error={data.error}>
@@ -891,6 +893,60 @@ function Drill({ id, kind, keyName }: { id: string; kind: string; keyName: strin
                   </span>,
                 ])}
               />
+            )}
+            {kind === 'tool_calling' && (
+              <>
+                <p>{d.note}</p>
+                <p>
+                  <small>
+                    {d.measured} case episodes measured
+                    {d.not_measured ? ` · ${d.not_measured} without evidence or a reference` : ''}
+                  </small>
+                </p>
+                <ModelTable
+                  head={[
+                    'Model',
+                    'Episodes',
+                    'Calls per episode',
+                    'Valid calls',
+                    'Required calls made',
+                    'Wrong calls',
+                    'Polls per episode',
+                    'Episodes with a loop',
+                    'Decision-bearing share',
+                  ]}
+                  rows={d.models.map((m: any) => [
+                    m.name ?? m.system_id,
+                    m.episodes,
+                    m.calls_per_episode,
+                    pct(m.valid_rate),
+                    pct(m.required_made_rate),
+                    `${m.wrong_calls} in ${m.episodes_with_wrong_call} episodes`,
+                    m.polls_per_episode,
+                    m.episodes_with_loop,
+                    pct(m.decision_bearing_share),
+                  ])}
+                />
+                {d.episodes.length > 0 && (
+                  <ModelTable
+                    head={['Case', 'Model', 'Required calls missed', 'Wrong calls', 'Loop']}
+                    rows={d.episodes.map((e: any) => [
+                      <Link key="c" href={drill(id, 'case', e.case_id)}>
+                        {e.case_id}
+                      </Link>,
+                      e.model,
+                      e.missed.join('; ') || '—',
+                      e.wrong
+                        .map(
+                          (w: any) =>
+                            `${w.kind.replace(/_/g, ' ')} ${JSON.stringify(w.args.type ?? w.args.specialty ?? w.args.party_id ?? '')}`,
+                        )
+                        .join('; ') || '—',
+                      e.loop ? 'yes' : '—',
+                    ])}
+                  />
+                )}
+              </>
             )}
             {kind === 'axes' && (
               <>

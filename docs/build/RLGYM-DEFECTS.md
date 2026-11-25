@@ -650,3 +650,25 @@ All four tasks are edge-focused, so no task took the 80 clean complete or the 32
   - Read-only on the 15 sealed v8-template episodes of run-0234 and run-0235: no verdict changes (13 pass, 2 fail under both).
 - **Owner's clicks:** Admin → Evaluators → golden-kyc-blocks:next_action v1 → Create fix version → "Use suggested fix" → Create. It qualifies on its known cases and 7 regression fixtures. Projects on "Latest qualified" then bind it for new runs and passes, and Studio is told.
 - **Tests:** `test_rlgym_d062_party_unit.py` (17 tests, written first). The D-041 tests were updated for the longer fixture list and the wrong-party field.
+
+## G3 (part) — tool-calling metrics from trajectories (25 Nov 2026; KYC Judgment v1 build go, E-011 §2 and §5.1)
+
+- **What:** a read-only report drill-down. Report → Agent performance → "Tool calling" (`report/drill?kind=tool_calling`, `results/tool_metrics.py`). It is not part of the stored report view, so past runs get it without a new report revision. Nothing writes a score, pass or receipt.
+- **Per model:**
+  - calls per episode;
+  - valid calls (succeeded and not blocked);
+  - required calls made (identity and screening checks for every party before the recommendation; the request to each party lacking the item, by party rules 2; the reference's referral; one recommendation);
+  - wrong calls (an unneeded request or one of another type, a request to a party who has the item, an unneeded referral or the wrong specialty, a second recommendation);
+  - polls per episode (operation.read calls plus identical repeats);
+  - episodes with a loop (the same call 4 or more times in a row);
+  - decision-bearing share.
+- **Per episode:** the missed required calls and the wrong calls, linked to the case view.
+- **On past runs (read-only):**
+
+  | Run | Valid calls | Required calls made | Wrong calls | Polls per episode | Notes |
+  |---|---|---|---|---|---|
+  | run-0235 | 98.7% | 100% | 3, in 2 episodes | 13 | an extra TIN request plus a second referral to "legal"; an unneeded proof-of-address request for the minor |
+  | run-0234 | | 84% | | | |
+  | run-0228 | | 6% | | | the D-042 run where the agent never recommended |
+
+- **Tests:** `test_rlgym_g3_tool_metrics_unit.py` (8 tests, written first). Web `tsc` is clean.
