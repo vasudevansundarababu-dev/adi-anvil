@@ -15,24 +15,68 @@ evaluator version wires it in.
 from anvil.rlgym.runs import library
 
 
+def _entries(transcript):
+    """Each call as (tool, sequence, ok, ids returned, records returned), from RL Gym's sealed transcript
+    ({tool, observation}) or Studio's runtime transcript ({operation_id, sequence, state, record_ids}). A call
+    rejected before it ran has no sequence; ids count only from calls that returned data."""
+    out = []
+    for t in transcript or []:
+        if not isinstance(t, dict):
+            continue
+        if "observation" in t or "tool" in t:
+            obs = t.get("observation") or {}
+            seq = obs.get("sequence") if obs.get("sequence") is not None else t.get("sequence")
+            recs = ((obs.get("output") or {}).get("records") or []) if obs.get("ok") else []
+            ids = []
+            _ids_into(recs, ids)
+            out.append((t.get("tool"), seq, bool(obs.get("ok")), ids, recs))
+        else:
+            ok = t.get("state") in ("completed", "pending")
+            ids = list(t.get("record_ids") or []) if ok else []
+            out.append((t.get("operation_id"), t.get("sequence"), ok, ids, []))
+    return out
+
+
+def _ids_into(value, out):
+    if isinstance(value, dict):
+        for k, v in value.items():
+            if (k == "id" or k.endswith("_id")) and isinstance(v, str):
+                out.append(v)
+            _ids_into(v, out)
+    elif isinstance(value, list):
+        for v in value:
+            _ids_into(v, out)
+
+
+def _events(events):
+    """Tool events as (tool, args, reached): RL Gym's ({tool, args, ok, blocked}) or Studio's ({tool, arguments, ok}).
+    A call counts as made when it reached the operation (a pending check is ok: false but ran); a blocked one didn't."""
+    return [
+        (
+            e.get("tool"),
+            e.get("args") if e.get("args") is not None else (e.get("arguments") or {}),
+            not e.get("blocked"),
+        )
+        for e in events or []
+        if isinstance(e, dict)
+    ]
+
+
 def _key(r):
     return (r.get("rule_id"), int(r.get("version") or 0))
 
 
 def recommend_sequence(transcript):
-    """The sequence of the first successful recommend call, else one past the last call."""
+    """The sequence of the first successful recommend call, else one past the last call. Studio's clock: only calls
+    that reached an operation carry a sequence; calls rejected before running (schema, undeclared tool, past the limit)
+    never count. Never the transcript index."""
     last = 0
-    for t in transcript or []:
-        # The runtime's call sequence (C3's episode clock) is on the observation; older entries carry step only.
-        obs = t.get("observation") or {}
-        # Studio's clock: only calls that reached an operation carry a sequence; calls rejected before running
-        # (schema, undeclared tool, past the limit) never count. Never the transcript index.
-        raw = obs.get("sequence") if obs.get("sequence") is not None else t.get("sequence")
+    for tool, raw, ok, _ids, _recs in _entries(transcript):
         if raw is None:
             continue
         seq = int(raw)
         last = max(last, seq)
-        if t.get("tool") == "recommend" and (t.get("observation") or {}).get("ok"):
+        if tool == "recommend" and ok:
             return seq
     return last + 1
 
@@ -103,35 +147,39 @@ def audit_faithfulness(trail, transcript, aliases, expected):
     """Checks the final output's audit trail against what the agent was actually given (RL Gym's sealed transcript:
     real ids; the agent writes the ids it saw, mapped back through the episode's aliases)."""
     back = {alias: real for real, alias in (aliases or {}).items()}
-    seen, records, read = set(), {}, set()
-    for t in transcript or []:
-        obs = t.get("observation") or {}
-        if not obs.get("ok"):
+    seen, records, read, read_ids = set(), {}, set(), set()
+    for tool, _seq, ok, ids, recs in _entries(transcript):
+        if not ok:
             continue
-        recs = (obs.get("output") or {}).get("records") or []
-        _ids(recs, seen)
+        seen.update(ids)
         for r in recs:
             if not isinstance(r, dict):
                 continue
             for k, v in r.items():
                 if (k == "id" or k.endswith("_id")) and isinstance(v, str):
                     records.setdefault(v, r)
-            if t.get("tool") == "policy.read" and r.get("rule_id"):
+            if tool == "policy.read" and r.get("rule_id"):
                 read.add(_key(r))
+        if tool == "policy.read":
+            # Studio's transcript names the rule ids returned (no versions): a rule read is read at its version.
+            read_ids.update(i for i in ids if isinstance(i, str))
     applies = {_key(e) for e in expected or []}
     out = {"invented": [], "fact_mismatches": [], "rules_not_read": [], "rules_not_applicable": []}
     for e in trail or []:
         step = e.get("sop_step")
         for d in e.get("data_seen") or []:
             if isinstance(d, dict):
-                if _key(d) not in read:
+                if _key(d) not in read and d.get("rule_id") not in read_ids:
                     out["invented"].append(
                         {"sop_step": step, "id": f"{d.get('rule_id')}@v{d.get('version')}"}
                     )
             elif back.get(d, d) not in seen:
                 out["invented"].append({"sop_step": step, "id": d})
         for f in e.get("facts_learnt") or []:
-            rec = records.get(back.get(f.get("evidence"), f.get("evidence")))
+            ev = back.get(f.get("evidence"), f.get("evidence"))
+            rec = records.get(ev)
+            if rec is None and ev in seen:
+                continue  # returned, but its content isn't in this transcript: the id is what's checkable
             vals = set()
             _scalars(rec, vals)
             if rec is None or str(f.get("value")) not in vals:
@@ -145,7 +193,7 @@ def audit_faithfulness(trail, transcript, aliases, expected):
                 )
         for r in e.get("rules_applied") or []:
             k = _key(r)
-            if k not in read:
+            if k not in read and k[0] not in read_ids:
                 out["rules_not_read"].append({"sop_step": step, "rule_id": k[0], "version": k[1]})
             if k not in applies:
                 out["rules_not_applicable"].append(
@@ -345,19 +393,18 @@ def evaluate(check, x):
         if isinstance(a, dict)
     }
     if check == "tool_calls":
-        events = [e for e in x["tool_events"] if isinstance(e, dict)]
-        ok = [e for e in events if e.get("ok", True) and not e.get("blocked")]
-        rec_i = next((i for i, e in enumerate(ok) if e.get("tool") == "recommend"), None)
-        before = ok if rec_i is None else ok[:rec_i]
+        ran = [(t, a) for t, a, reached in _events(x["tool_events"]) if reached]
+        rec_i = next((i for i, (t, _a) in enumerate(ran) if t == "recommend"), None)
+        before = ran if rec_i is None else ran[:rec_i]
+
+        def match(a, k, v):
+            got = _real(x.get("aliases"), a.get(k))
+            # documentary is identity.check's default method
+            return got == v or (k == "method" and v == "documentary" and got is None)
 
         def made(tool, **want):
             return any(
-                e.get("tool") == tool
-                and all(
-                    _real(x.get("aliases"), (e.get("args") or {}).get(k)) == v
-                    for k, v in want.items()
-                )
-                for e in before
+                t == tool and all(match(a, k, v) for k, v in want.items()) for t, a in before
             )
 
         methods = ref.get("identity_methods") or {}
@@ -382,23 +429,19 @@ def evaluate(check, x):
             (p["party_id"], r) for p in ref.get("parties") or [] for r in p.get("requests") or []
         }
         referrals = {p.get("referral") for p in ref.get("parties") or [] if p.get("referral")}
-        for e in ok:
-            a = e.get("args") or {}
+        for tool, a in ran:
             if (
-                e.get("tool") == "information.request"
+                tool == "information.request"
                 and (_real(x.get("aliases"), a.get("party_id")), a.get("type")) not in asked
             ):
                 wrong.append(f"information.request {a.get('type')} to {a.get('party_id')}")
-            if e.get("tool") == "specialist.refer" and a.get("specialty") not in referrals:
+            if tool == "specialist.refer" and a.get("specialty") not in referrals:
                 wrong.append(f"specialist.refer {a.get('specialty')}")
-        wrong += ["a second recommend"] * max(
-            0, sum(1 for e in ok if e.get("tool") == "recommend") - 1
-        )
-        n = len(missed) + len(wrong)
-        return _line(
-            "pass" if n == 0 else "partial" if n == 1 else "fail",
-            {"missed": missed, "wrong": wrong},
-        )
+        wrong += ["a second recommend"] * max(0, sum(1 for t, _a in ran if t == "recommend") - 1)
+        # Rubric: every required check for every party is a pass condition, so a missed required call fails; one
+        # wrong or unneeded call (nothing missed) is partial.
+        verdict = "fail" if missed or len(wrong) > 1 else "partial" if wrong else "pass"
+        return _line(verdict, {"missed": missed, "wrong": wrong})
     if check == "procedure_output":
         problems = []
         if final.get("recommendation") not in (
@@ -427,7 +470,11 @@ def evaluate(check, x):
     if check == "evidence_judgment":
         off = []
         for p in ref.get("parties") or []:
-            has = bool((parties.get(p["party_id"]) or {}).get("issues"))
+            a = parties.get(p["party_id"]) or {}
+            # Attributed to the party by an issue, a non-clear outcome, a request or a referral.
+            has = bool(a.get("issues") or a.get("requests") or a.get("referral")) or (
+                a.get("outcome") not in (None, "clear")
+            )
             should = p.get("outcome") != "clear"
             if has != should:
                 off.append(
@@ -472,9 +519,23 @@ def evaluate(check, x):
             },
         )
     if check == "process_adherence":
+        mandatory = ref.get("mandatory_steps") or x.get("mandatory_steps")
+        if not mandatory:
+            return _line(
+                "not_applicable",
+                expected="the case's mandatory SOP steps aren't known (reference.v2 mandatory_steps)",
+            )
+        mandatory = [str(s) for s in mandatory]
+        entries = [e for e in final.get("audit_trail") or [] if isinstance(e, dict)]
+        done = [str(e.get("sop_step")) for e in entries if e.get("status") == "done"]
+        missing = [s for s in mandatory if s not in done]
+        seen = [s for s in done if s in mandatory]
+        order = [mandatory.index(s) for s in seen]
+        out_of_order = order != sorted(order)
         return _line(
-            "not_applicable",
-            expected="no approved SOP on the template yet: process adherence can't be graded",
+            "fail" if missing or out_of_order else "pass",
+            {"missing": missing, "out_of_order": out_of_order},
+            {"mandatory_steps": mandatory},
         )
     if check == "missing_facts":
         truth = ref.get("facts_missing")

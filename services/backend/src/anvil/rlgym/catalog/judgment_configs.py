@@ -116,11 +116,13 @@ def inputs_from(evidence, reference, judgment_part=None, case=None):
     }
 
 
-def known_case_lines(criterion, case):
+def known_case_lines(criterion, case, shared=None):
     """Known-case tests: the criterion's judgment lines computed from the known case itself."""
     from anvil.rlgym.scoring import judgment
 
     # Known cases test the grader's logic, not a result: a reference resting on placeholder rules is graded (an
     # awaiting_sme reference still isn't).
     x = {**inputs_from(case.get("evidence"), case.get("reference")), "placeholder_ok": True}
+    # Shared truth Studio puts beside the known cases (e.g. the cases' mandatory SOP steps).
+    x.update({k: v for k, v in (shared or {}).items() if k in ("mandatory_steps",)})
     return {f"{criterion}.{c}": judgment.evaluate(c, x) for c in GRADERS[criterion]}

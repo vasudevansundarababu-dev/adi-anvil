@@ -59,6 +59,8 @@ def _validate_known_cases(known_cases):
             field=f"known_cases.{name}",
         )
     for name, case in known_cases.items():
+        if not isinstance(case, dict):
+            continue  # shared truth beside the cases (e.g. mandatory_steps), not a case
         require(
             case.get("expect", KNOWN_CASE_EXPECT.get(name))
             in ("pass", "partial", "fail", "blocked", "not_applicable"),
@@ -400,7 +402,10 @@ def run_known_case_tests(c, ws, actor, cid, version, blocks=None, expected_value
     from anvil.rlgym.catalog import judgment_configs
 
     graded = judgment_configs.grader_of(row["config"])
+    shared = {k: v for k, v in (row["known_cases"] or {}).items() if not isinstance(v, dict)}
     for name, case in ({} if blocks_sha else row["known_cases"]).items():
+        if not isinstance(case, dict):
+            continue
         expect = case.get("expect", KNOWN_CASE_EXPECT.get(name))
         out = sandbox.run(
             fw,
@@ -408,7 +413,7 @@ def run_known_case_tests(c, ws, actor, cid, version, blocks=None, expected_value
             case["evidence"],
             case["reference"],
             extra={
-                "judgment_results": judgment_configs.known_case_lines(graded, case),
+                "judgment_results": judgment_configs.known_case_lines(graded, case, shared),
                 "criterion": graded,
             }
             if graded

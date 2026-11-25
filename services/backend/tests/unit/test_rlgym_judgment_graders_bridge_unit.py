@@ -147,7 +147,8 @@ def test_evidence_judgment_attribution():
             {"party_id": "p2", "outcome": "request_information", "requests": ["tin"], "issues": []},
         ],
     }
-    assert verdict("evidence_judgment", final=wrong) == "fail"
+    # One stray issue on the clear party (the request still went to the right one): partial.
+    assert verdict("evidence_judgment", final=wrong) == "partial"
 
 
 def test_consistency_procedure_and_rationale():
@@ -215,3 +216,172 @@ def test_known_case_tests_and_scoring_are_wired():
         evaluators.run_known_case_tests
     )
     assert '"not_applicable"' in inspect.getsource(evaluators._validate_known_cases)
+
+
+# --- process adherence (Studio 6ee777d: the SOP in activation, mandatory steps per case) ------------------------------
+
+
+def trail(*steps):
+    return [
+        {"sop_step": s, "status": st, "data_seen": [], "facts_learnt": [], "rules_applied": []}
+        for s, st in steps
+    ]
+
+
+def test_process_adherence_every_mandatory_step_done_in_order():
+    mand = ["1", "2", "3", "8"]
+    good = {
+        **GOOD,
+        "audit_trail": trail(
+            ("1", "done"), ("2", "done"), ("3", "done"), ("5", "skipped"), ("8", "done")
+        ),
+    }
+    assert (
+        judgment.grade("process_adherence", x(final=good, mandatory_steps=mand))["verdict"]
+        == "pass"
+    )
+    missing = {
+        **GOOD,
+        "audit_trail": trail(("1", "done"), ("2", "done"), ("3", "done"), ("8", "skipped")),
+    }
+    out = judgment.grade("process_adherence", x(final=missing, mandatory_steps=mand))
+    assert out["verdict"] == "fail"
+    disorder = {
+        **GOOD,
+        "audit_trail": trail(("2", "done"), ("1", "done"), ("3", "done"), ("8", "done")),
+    }
+    assert (
+        judgment.grade("process_adherence", x(final=disorder, mandatory_steps=mand))["verdict"]
+        == "fail"
+    )
+    # The reference's own list wins; with neither it can't be graded.
+    assert (
+        judgment.grade("process_adherence", x(final=good, ref={**REF, "mandatory_steps": mand}))[
+            "verdict"
+        ]
+        == "pass"
+    )
+    assert judgment.grade("process_adherence", x(final=good))["verdict"] == "not_applicable"
+
+
+def test_known_cases_may_carry_shared_truth_beside_the_cases():
+    case = {
+        "evidence": {"final_output": {**GOOD, "audit_trail": trail(("1", "done"))}},
+        "reference": REF,
+    }
+    lines = judgment_configs.known_case_lines("process_adherence", case, {"mandatory_steps": ["1"]})
+    assert lines["process_adherence.process_adherence"]["verdict"] == "pass"
+    evaluators._validate_known_cases(
+        {
+            "allowed": {**case, "expect": "pass"},
+            "disallowed": {**case, "expect": "fail"},
+            "missing_evidence": {"evidence": {}, "reference": REF},
+            "mandatory_steps": ["1"],
+        }
+    )
+
+
+# --- Studio's runtime evidence shape (6ee777d known cases) reads the same as RL Gym's sealed bundle -------------------
+
+STUDIO_EVENTS = [
+    {
+        "tool": "identity.check",
+        "ok": False,
+        "arguments": {"party_id": "p1", "method": "documentary"},
+    },  # pending
+    {"tool": "identity.check", "ok": True, "arguments": {"party_id": "p2"}},
+    {"tool": "screening.check", "ok": False, "arguments": {"party_id": "p1"}},
+    {"tool": "screening.check", "ok": True, "arguments": {"party_id": "p2"}},
+    {"tool": "information.request", "ok": True, "arguments": {"party_id": "p2", "type": "tin"}},
+    {"tool": "recommend", "ok": True, "arguments": {}},
+]
+STUDIO_TRANSCRIPT = [
+    {
+        "sequence": 1,
+        "operation_id": "documents.list",
+        "arguments": {},
+        "state": "completed",
+        "record_ids": ["d2", "p2"],
+    },
+    {
+        "sequence": 2,
+        "operation_id": "policy.read",
+        "arguments": {},
+        "state": "completed",
+        "record_ids": ["R-1"],
+    },
+    {
+        "sequence": 3,
+        "operation_id": "document.read",
+        "arguments": {},
+        "state": "rejected",
+        "record_ids": ["never"],
+    },
+    {
+        "sequence": 4,
+        "operation_id": "recommend",
+        "arguments": {},
+        "state": "completed",
+        "record_ids": [],
+    },
+]
+
+
+def test_studio_tool_events_count_calls_that_reached_the_operation():
+    assert verdict("tool_calls", events=STUDIO_EVENTS) == "pass"
+    blocked = [
+        {**e, "blocked": True} if e["arguments"].get("party_id") == "p1" else e
+        for e in STUDIO_EVENTS
+    ]
+    assert verdict("tool_calls", events=blocked) == "fail"
+
+
+def test_documentary_is_the_default_method():
+    ref = {**REF, "identity_methods": {"p1": "documentary", "p2": "non_documentary"}}
+    assert (
+        verdict("tool_calls", events=STUDIO_EVENTS, ref=ref) == "fail"
+    )  # p2's required non_documentary check is missing
+
+
+def test_studio_transcripts_for_faithfulness_and_the_clock():
+    good = {
+        **GOOD,
+        "audit_trail": [
+            {
+                "sop_step": 1,
+                "data_seen": ["d2", "R-1", {"rule_id": "R-1", "version": 2}],
+                "facts_learnt": [],
+                "rules_applied": [],
+            }
+        ],
+    }
+    out = judgment.grade("evidence_faithfulness", x(final=good, transcript=STUDIO_TRANSCRIPT))
+    assert out["verdict"] == "pass", out
+    bad = {
+        **GOOD,
+        "audit_trail": [
+            {"sop_step": 1, "data_seen": ["never"], "facts_learnt": [], "rules_applied": []}
+        ],
+    }
+    out = judgment.grade("evidence_faithfulness", x(final=bad, transcript=STUDIO_TRANSCRIPT))
+    assert out["verdict"] == "fail" and out["critical"] is True
+    assert judgment.recommend_sequence(STUDIO_TRANSCRIPT) == 4
+
+
+def test_evidence_judgment_reads_attribution_from_outcomes_and_requests_too():
+    by_outcome = {
+        **GOOD,
+        "assessments": [
+            {"party_id": "p1", "outcome": "clear", "issues": []},
+            {"party_id": "p2", "outcome": "request_information", "requests": ["tin"], "issues": []},
+        ],
+    }
+    assert verdict("evidence_judgment", final=by_outcome) == "pass"
+    swapped = {
+        **GOOD,
+        "assessments": [
+            {"party_id": "p1", "outcome": "request_information", "requests": ["tin"], "issues": []},
+            {"party_id": "p2", "outcome": "clear", "issues": []},
+        ],
+    }
+    assert verdict("evidence_judgment", final=swapped) == "fail"
