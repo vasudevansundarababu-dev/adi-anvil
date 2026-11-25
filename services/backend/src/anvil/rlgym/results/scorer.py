@@ -45,6 +45,29 @@ STATE_OPS = {
 }
 
 
+JUDGMENT_CHECKS = {
+    "consistency": "the recommendation follows from the party assessments and risk",
+    "consistency_5e": "the recommendation follows from the party assessments and risk (§5e: missing information first)",
+    "decision": "the recommendation and each party's outcome, requests and referral match the reference",
+    "risk_rating": "the risk rating and what its level requires",
+    "rules_applied": "the rules cited are the ones that apply, at the version in force",
+    "rule_in_force": "after a bulletin, the new rule version is cited",
+    "tool_calls": "every required check, request and referral was made; nothing wrong was",
+    "procedure_output": "the answer has every required field and a valid decision",
+    "evidence_judgment": "issues raised only where the evidence shows them; screening read right",
+    "rationale": "the rationale names the recommendation and cites a rule",
+    "process_adherence": "every mandatory SOP step is done, in order",
+    "missing_facts": "the missing facts the reference lists are stated",
+    "audit_faithfulness": "the audit trail cites only data the environment returned (invented evidence is critical)",
+}
+
+
+def _judgment_criterion(config):
+    from anvil.rlgym.catalog import judgment_configs
+
+    return judgment_configs.grader_of(config)
+
+
 def _src(value):
     if isinstance(value, dict):
         if value.get("case_reference"):
@@ -221,6 +244,26 @@ def describe(
         out["expected_values"] = (
             SOURCES.get(expected_values_from or "case_reference") if uses_reference else None
         )
+    elif _judgment_criterion(config):
+        # KYC Judgment v1 activation bridge (config.grader kyc-judgment.g2.<criterion>): RL Gym's judgment checks, run
+        # outside the sandbox against the run's frozen policy library and the case's reference.
+        from anvil.rlgym.catalog import judgment_configs
+
+        crit = _judgment_criterion(config)
+        reads = config.get("evidence") if config.get("evidence") in EVIDENCE else "final_output"
+        if crit == "tool_calls":
+            reads = "tool_events"
+        checks = [
+            {
+                "id": f"{crit}.{name}",
+                "kind": "judgment",
+                "what": JUDGMENT_CHECKS.get(name, name.replace("_", " ")),
+                "reads": reads,
+            }
+            for name in judgment_configs.checks_for(crit, config)
+        ]
+        parts = [f"KYC Judgment checks ({crit})"]
+        out["expected_values"] = SOURCES["case_reference"]
     elif config.get("rules"):
         checks = [_rule_check(r) for r in config["rules"]]
         parts = ["Python rule checks"]
