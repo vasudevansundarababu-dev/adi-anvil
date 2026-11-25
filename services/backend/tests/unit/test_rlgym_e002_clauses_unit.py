@@ -454,7 +454,7 @@ def test_worker_scoring_admission_and_activation_are_wired_and_guarded():
 
     w = inspect.getsource(worker.execute)
     assert 'selected = frozen.get("clauses") or []' in w
-    assert "instructions.build(actor, selected)" in w
+    assert "instructions.build(actor, selected" in w
     assert 'bundle["clause_receipts"], bundle["clause_engine"]' in w
     assert 'bindings=m.get("policy_bindings")' in w
     s = inspect.getsource(scoring.score_case)

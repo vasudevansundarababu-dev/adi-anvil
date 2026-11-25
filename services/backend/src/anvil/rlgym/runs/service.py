@@ -244,7 +244,9 @@ def admission_check(ctx, body):
                 not_ready.append(f"{t['task_id']} r{t['revision']}: {why}")
             else:
                 t["instructions_sha256"] = instructions.build(
-                    t["actor"], clauses.task_clauses(t["actor"], t)
+                    t["actor"],
+                    clauses.task_clauses(t["actor"], t),
+                    output_schema=(activation or {}).get("output_schema"),
                 )["sha256"]
         now_ready = {
             r["id"]
@@ -434,6 +436,8 @@ def admission_check(ctx, body):
                     "is_gate": bool(crit.get("is_gate", False)),
                     "capability": pick["capability"],
                     "skill_group": crit.get("skill_group"),
+                    # E-011: only when the template tags the criterion (v8 criteria carry none).
+                    **({"skill": crit["skill"]} if crit.get("skill") else {}),
                     "rule": b["rule_kind"],
                 }
             )
@@ -792,6 +796,8 @@ def _manifest(run_id, check):
             "name": act["name"],
             "template_sha256": act["template_sha256"],
             "pass_mark": float(act["pass_mark"]),
+            # KYC Judgment C4: the output schema the agent is shown (absent for templates without one, e.g. v8).
+            **({"output_schema": act["output_schema"]} if act.get("output_schema") else {}),
         },
         "suite": {
             "id": str(sv["id"]),

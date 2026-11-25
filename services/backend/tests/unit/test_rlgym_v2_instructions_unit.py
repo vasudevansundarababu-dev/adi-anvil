@@ -114,7 +114,7 @@ def test_only_the_actor_part_is_read():
 
     from anvil.rlgym.runs import worker
 
-    assert "instructions.build(actor, selected)" in inspect.getsource(worker.execute)
+    assert "instructions.build(actor, selected" in inspect.getsource(worker.execute)
     assert "private" not in json.dumps(actor)
 
 
@@ -145,7 +145,7 @@ def test_worker_builds_instructions_and_records_them():
     from anvil.rlgym.runs import worker
 
     src = inspect.getsource(worker.execute)
-    assert "instructions.build(actor, selected)" in src and '"instructions": instr' in src
+    assert "instructions.build(actor, selected" in src and '"instructions": instr' in src
     assert '.get("assignment"' not in src
 
 

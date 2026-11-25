@@ -271,7 +271,8 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
         {},
     )
     selected = frozen.get("clauses") or []
-    instr = instructions.build(actor, selected)
+    out_schema = (m.get("template") or {}).get("output_schema")  # KYC Judgment C4; None for v8
+    instr = instructions.build(actor, selected, output_schema=out_schema)
     model = next(x for x in m["models"] if x["system_id"] == episode["system_id"])
     offered = set((actor or {}).get("tools") or [])
     prompt = None
@@ -320,7 +321,7 @@ def execute(episode, run, manifest, instance, actor, session_factory=None):
             )
             if policy_map["applied"]:
                 original_sha = instr["sha256"]
-                instr = instructions.build(shown_actor, selected)
+                instr = instructions.build(shown_actor, selected, output_schema=out_schema)
                 policy_map["instructions_sha256"] = {
                     "original": original_sha,
                     "shown": instr["sha256"],

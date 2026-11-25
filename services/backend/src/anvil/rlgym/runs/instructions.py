@@ -73,6 +73,18 @@ def _section(key, sec):
             {k: v for k, v in sec.items() if k != "tools"},
             (("environment", "Environment"), ("failureBehaviour", "If a tool fails")),
         )
+    if key == "S4" and sec.get("policyLibrary"):
+        # KYC Judgment C4: the agent sees the policy library in force (documents), never a list of rules and never the
+        # private expectedRules or notes, even if an export carried them into the actor part. Which rules apply is
+        # the agent's to work out from policy.read.
+        lines = ["The policy library in force (read its rules with policy.read):"]
+        for d in sec["policyLibrary"]:
+            if isinstance(d, dict):
+                lines.append(
+                    f"- {_text(d.get('title'))} (document {_text(d.get('documentId'))}, version "
+                    f"{_text(d.get('documentVersion'))})"
+                )
+        return lines
     if key == "S4":
         rules = sec.get("statePolicies") or []
         lines = [
@@ -118,7 +130,25 @@ def _section(key, sec):
             lines += [
                 f"   {x}" for x in _fields({k: v for k, v in s.items() if k not in known}, ())
             ]
-        return lines + _fields({k: v for k, v in sec.items() if k != "steps"}, ())
+        rights = sec.get("decisionRights")
+        if isinstance(rights, list) and rights:
+            # KYC Judgment C4: who may take each action, as a table.
+            lines += [
+                "",
+                "Decision rights:",
+                "| Action | Who may | Needs approval from | Escalate to |",
+                "|---|---|---|---|",
+            ]
+            for r in rights:
+                if isinstance(r, dict):
+                    cells = [
+                        _text(r.get(k)) or "—"
+                        for k in ("action", "whoMay", "needsApprovalFrom", "escalateTo")
+                    ]
+                    lines.append("| " + " | ".join(cells) + " |")
+        return lines + _fields(
+            {k: v for k, v in sec.items() if k not in ("steps", "decisionRights")}, ()
+        )
     if key == "S6":
         return _fields(sec, (("outputContract", "Output contract"),))
     if key == "S8":
@@ -167,9 +197,47 @@ def from_sections(sections):
     return "\n\n".join(parts)
 
 
-def build(actor, clauses=None):
+def _kind(prop):
+    t = prop.get("type")
+    if prop.get("enum"):
+        return None, "one of " + ", ".join(map(str, prop["enum"]))
+    if t == "boolean":
+        return "true or false", None
+    if t == "array":
+        return "a list", None
+    if t == "object":
+        return "an object", None
+    return None, None
+
+
+def output_fields(schema):
+    """The template's output schema as the agent reads it: each field, whether it's required, its values or kind, its
+    description, and the fields of each list item."""
+    required = set(schema.get("required") or [])
+    lines = []
+    for name, prop in (schema.get("properties") or {}).items():
+        if not isinstance(prop, dict):
+            continue
+        word, values = _kind(prop)
+        flags = (["required"] if name in required else []) + ([word] if word else [])
+        body = "; ".join(x for x in (values, _text(prop.get("description"))) if x)
+        lines.append(
+            f"- {name}"
+            + (f" ({', '.join(flags)})" if flags else "")
+            + (f": {body}" if body else "")
+        )
+        item = prop.get("items") if isinstance(prop.get("items"), dict) else None
+        if item and item.get("properties"):
+            req = set(item.get("required") or [])
+            parts = [f"{k} (required)" if k in req else k for k in item["properties"]]
+            lines.append("  each with: " + ", ".join(parts))
+    return lines
+
+
+def build(actor, clauses=None, output_schema=None):
     """{"text", "sha256", "source"} for the actor payload, or GymError TASK_NO_INSTRUCTIONS. `clauses`: the export's
-    selected clause versions (E-002), added as a "Policy clauses" part; none → the text and hash are as before."""
+    selected clause versions (E-002), added as a "Policy clauses" part; none → the text and hash are as before.
+    `output_schema`: the template's (KYC Judgment C4), added as "Output fields"; none → as before."""
     actor = actor or {}
     if isinstance(actor.get("assignment"), str) and actor["assignment"].strip():
         text, source = actor["assignment"].strip(), "assignment"
@@ -189,6 +257,9 @@ def build(actor, clauses=None):
     extra = [] if already else clause_lines(clauses)
     if extra:
         text += "\n\n## Policy clauses\n" + "\n".join(extra)
+    fields = output_fields(output_schema) if isinstance(output_schema, dict) else []
+    if fields:
+        text += "\n\n## Output fields\n" + "\n".join(fields)
     return {"text": text, "sha256": hashlib.sha256(text.encode()).hexdigest(), "source": source}
 
 

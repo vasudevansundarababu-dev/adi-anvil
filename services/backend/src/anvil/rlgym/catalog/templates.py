@@ -327,9 +327,19 @@ def forge_qualification(doc, record, checks):
     }
 
 
+SKILLS = ("tool_calling", "instruction_following", "reasoning", "decisioning", "safety")
+
+
 def activate(c, ws, actor, doc):
     """POST /templates/activations: store the exact template hash and its rules; record qualification in ADI Forge."""
     _required(doc)
+    for cr in doc.get("criteria") or []:
+        require(
+            cr.get("skill") in (None, *SKILLS),
+            "VALIDATION_FAILED",
+            f"Unknown skill {cr.get('skill')!r} on criterion {cr.get('criterion_id')}",
+            field="skill",
+        )
     expected = sha(
         {
             k: v
@@ -407,8 +417,8 @@ def activate(c, ws, actor, doc):
         """INSERT INTO catalog.template_activations(workspace_id,template_id,version,template_key,name,mode,spec_sha256,template_sha256,
              forge_template_id,forge_version,studio_release,default_bindings,workflow,case_dimensions,pass_mark,checks,state,state_reason,
              activated_at,activated_by,forge_template_version_hash,expected_values_from,failure_taxonomy,edge_cases,slice_lists,verifier_files,
-             policy_bindings)
-           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
+             policy_bindings,output_schema)
+           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
         (
             ws,
             doc["template_id"],
@@ -436,13 +446,15 @@ def activate(c, ws, actor, doc):
             Jsonb(doc["slice_lists"]) if doc.get("slice_lists") else None,
             Jsonb(doc["verifier_files"]) if doc.get("verifier_files") else None,
             Jsonb(doc["policy_bindings"]) if doc.get("policy_bindings") else None,
+            # KYC Judgment C4: the template's execution.output_schema, shown to the agent as "Output fields".
+            Jsonb(doc["output_schema"]) if doc.get("output_schema") else None,
         ),
     ).fetchone()
     for cr in doc["criteria"]:
         c.execute(
             """INSERT INTO catalog.template_criteria(workspace_id,template_id,version,criterion_id,capability,skill_group,weight,is_gate,
-                 configuration_id,evidence_type,verdict_vocabulary,verifier_blocks)
-               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                 configuration_id,evidence_type,verdict_vocabulary,verifier_blocks,skill)
+               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 ws,
                 doc["template_id"],
@@ -456,6 +468,8 @@ def activate(c, ws, actor, doc):
                 cr["evidence_type"],
                 cr["verdict_vocabulary"],
                 Jsonb(cr["verifier_blocks"]) if cr.get("verifier_blocks") else None,
+                # E-011 / C4: the skill the criterion measures (template.v1's optional `skill`).
+                cr.get("skill"),
             ),
         )
     audit(
