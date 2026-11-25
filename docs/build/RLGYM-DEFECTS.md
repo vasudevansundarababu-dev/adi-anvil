@@ -745,3 +745,35 @@ All four tasks are edge-focused, so no task took the 80 clean complete or the 32
   - API /api/v1/health 200, /gym 200.
   - 29 saved suite hashes unchanged; v6 admission: 8 episodes, $6.40, no failures.
   - v6's four instruction hashes recompute to the values frozen in run-0235's manifest.
+
+## KYC Judgment v1, RL Gym part for the end-to-end integration (25 Nov 2026; one task, N/A scoring, agents)
+
+- **One task for every account type (spec §16):** a case_selector may name a list of application types. Matching, the plan's task types (stratified by type within the one task), catalog counts and labels follow. A single type (v8) is unchanged.
+- **Not-applicable scoring:** a check that doesn't apply to a case never decides.
+  - A criterion with no applicable line is `not_applicable`: excluded from both the points and the maximum, and never counted as blocked. The percentage is over applicable checks only.
+  - The receipts table already allowed the verdict (migration 054).
+- **G2 wired:** `judgment.evaluate` runs five checks outside the sandbox, because they need the frozen library, and hands them to the runner's new `judgment` block kind like plug-in results. A line that didn't run is blocked.
+  - **rules applied:** exact passes; one off, or one wrong governs mark, with the decision right is partial.
+  - **rule in force:** a stale version or a notice not considered fails; with no bulletin it is N/A.
+  - **audit faithfulness:** invented evidence is critical and fails the task.
+  - **risk rating:** if not required, N/A, unless given needlessly (fail). Medium means ready_for_approval with the officer flag; high means an edd referral and specialist_review.
+  - **decision per party:** aliases are mapped back; one field off is partial.
+  - Cases awaiting the SME are not graded.
+- **Admission:** for registry-case v2 cases, the pinned library (scorer endpoint, review B1; text hashes checked) and the cases' facts are frozen in the manifest. v8 makes no call.
+- **Registration:** Studio's `kyc-judgment-rubric-v1` configurations become runner v2 with RL Gym's judgment lines, hashed and versioned:
+  - rules_applied runs rules applied and the rule in force;
+  - decision_next_action runs the decision and the risk rating;
+  - evidence_judgment runs audit faithfulness.
+  - They qualify on regression fixtures; synthetic known cases run the template's own blocks.
+- **Agents:**
+  - The reference agent with reference.v2 reads the notices, makes each party's requests and referral, and writes the full Judgment output.
+  - Mock profiles (synthetic): judgment-diligent, judgment-invents-evidence and judgment-ignores-bulletins, added to the mock lineup.
+  - G4 gains a no-AI Judgment lookup in reference.v2 shape.
+- **Reports:**
+  - skills by account type;
+  - outcomes per criterion (pass, partial, fail, N/A, blocked);
+  - the comparison by skill per account type.
+- **Pipeline test (no Studio):** a fake environment, then the agents, then the real sandbox runner. The reference agent passes every criterion; invented evidence fails critically; a missed bulletin fails rules applied; with no bulletin the line is N/A.
+- **Owner Option A (US person = US citizenship only)** is pinned by a test.
+- **Tests:** unit 875 passed; ruff and tsc clean.
+- **Deployed 13:24 CST with no run active.** Restart only (no migration). Digests identical, 29 saved suite hashes unchanged, v6 admission unchanged, v6 instruction hashes equal run-0235's.
