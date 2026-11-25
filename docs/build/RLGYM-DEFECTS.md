@@ -535,7 +535,7 @@ Owner approval, relayed by the coordinator: "1.Yes. 2. Yes. ... r. Yes".
 - Tests: 14 new unit tests (`test_rlgym_d055_d056_unit.py`); unit 724 passed; ruff clean.
 - Deploy (not done): restart the API and worker (agent and gateway changes). No migration. Then run the relabel with `--apply`.
 
-## D-056 — the agent sees the environment's policy ids in S4 (24 Nov 2026; owner-approved; built, not deployed)
+## D-056 — the agent sees the environment's policy ids in S4 (24 Nov 2026; owner-approved "4. Yes"; deployed 21:35 CST)
 
 Authoring's S4 names its own rule ids (for example rule-set document `54e00852-…`). The environment's `policies` collection uses KYC-01 to KYC-04 and GB-02/03/05 (Studio's note: @12 rows have `rule_id, title, text, source`, no hash field). The agent therefore could not cite the ids the environment uses.
 
@@ -546,4 +546,4 @@ Authoring's S4 names its own rule ids (for example rule-set document `54e00852-�
 - **Evidence:** the bundle (and an errored episode's kept trajectory) gets `policy_id_map`: applied, warning, environment versions, each rule's original and shown ids, unmapped rules, and the instructions hash original vs shown. The frozen payload is never edited. A task without a map has no key, so its instructions, hash and bundle are as before.
 - Migration check (rolled back on the real database): 5,926 task imports, digest of every existing column identical before and after, 0 maps set, run/episode/evidence/score/suite/payload counts unchanged.
 - Tests: 12 new unit tests (`test_rlgym_d056_policy_id_map_unit.py`, written first); unit 736 passed.
-- Deploy (not done): `pg_dump` first, `python3 scripts/local.py migrate` (064), restart the API and worker.
+- Deployed 21:35 CST with no run active: backup `.local/backups/rlgym-20261124-213504-before-migration-064.sql.gz` (23.7 MB, .sha256 checked, complete dump), migration 064, API and worker restarted at 21:35:29. Digests (tasks, sealed evidence, scores, SME items, data plans, bindings, passes) identical before and after. Health: API and database ready, gym pages 200. Suite v4 admission (rolled back) still passes tasks, data plan and task match.
