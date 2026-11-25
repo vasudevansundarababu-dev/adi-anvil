@@ -81,3 +81,24 @@ def test_never_leaderboard_and_labelled():
 def test_validate_reads_the_documents_channel_like_activation():
     src = inspect.getsource(templates.validate)
     assert "allow_test is None" in src and "activation_channel(doc)" in src
+
+
+def test_forge_gets_the_channel_inside_the_receipt_only(monkeypatch):
+    """ADI Forge's qualification route refuses unknown top-level fields (400 'Unknown fields: channel')."""
+    monkeypatch.setenv("RLGYM_FORGE_QUALIFICATION_URL", "http://forge")
+    monkeypatch.setenv("RLGYM_FORGE_TENANT_ID", "tenant")
+    doc = {
+        "template_id": "tpl",
+        "version": 1,
+        "spec_sha256": "s",
+        "forge_template_id": "f",
+        "forge_version": 2,
+        "forge_template_version_hash": "h",
+        "channel": "test",
+    }
+    rec = {"receipt_id": "tq-1", "event_sha256": "e", "template_id": "tpl", "version": 1}
+    out = templates.forge_qualification(doc, rec, {"ok": True})
+    assert "channel" not in out and out["receipt"]["channel"] == "test"
+    assert out["status"] == "QUALIFIED" and out["template_version_hash"] == "h"
+    real = templates.forge_qualification({k: v for k, v in doc.items() if k != "channel"}, rec, {})
+    assert "channel" not in real and "channel" not in real["receipt"]

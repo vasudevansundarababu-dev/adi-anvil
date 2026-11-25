@@ -700,6 +700,8 @@ def routes():
                     "template_id": row["template_id"],
                     "version": row["version"],
                     "state": row["state"],
+                    # The test channel, when the activation is on it (absent for a release).
+                    **({"channel": row["channel"]} if row.get("channel") else {}),
                     "checks": row["checks"],
                     "created": created,
                 }

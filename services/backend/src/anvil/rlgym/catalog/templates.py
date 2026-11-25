@@ -311,13 +311,13 @@ def forge_qualification(doc, record, checks):
         os.environ.get("RLGYM_FORGE_QUALIFICATION_URL"),
         os.environ.get("RLGYM_FORGE_TENANT_ID"),
     )
-    if doc.get("channel") == "test":
+    test = doc.get("channel") == "test"
+    if test:
         # The end-to-end test's activation: only test-only projects may export against it (Authoring must check).
         record = {**record, "channel": "test"}
     if not (doc.get("forge_template_version_hash") and url and tenant):
         return record
     return {
-        **({"channel": "test"} if doc.get("channel") == "test" else {}),
         "_base": url,
         "_headers": {"X-Tenant-Id": tenant},
         "template_id": doc["forge_template_id"],
@@ -331,6 +331,8 @@ def forge_qualification(doc, record, checks):
             "spec_sha256": doc["spec_sha256"],
             "checks": {k: v for k, v in checks.items() if k != "detail"},
             "event_sha256": record["event_sha256"],
+            # ADI Forge refuses unknown top-level fields: the test channel rides in the receipt.
+            **({"channel": "test"} if test else {}),
         },
     }
 
