@@ -555,6 +555,25 @@ def admission_check(ctx, body):
                 or None,
             )
         resolved.update(plan=plan, cells=cells, selected=selected, short=short)
+        if env and selected:
+            # KYC Judgment v1: the pinned library and the cases' facts, frozen for grading (v8: nothing, no call).
+            try:
+                resolved["judgment"] = judgment_part(
+                    selected,
+                    lambda: integrations.registry_get(
+                        f"/versions/{env['version']['id']}/policy-library",
+                        audience="scorer",
+                        timeout=30,
+                        base=env["version"].get("registry"),
+                    ),
+                )
+            except GymError as exc:
+                item(
+                    "policy_library",
+                    False,
+                    "The environment's policy library can be read for grading",
+                    exc.message,
+                )
         ts = ctx.c.execute(
             "SELECT * FROM suites.ts_plans WHERE suite_version_id=%s", (sv["id"],)
         ).fetchone()
@@ -817,6 +836,8 @@ def _manifest(run_id, check):
             "local_image": image and {"tag": image["image_tag"], "id": image["local_image_id"]},
         },
         "evaluators": r["evaluator_versions"],
+        # KYC Judgment v1: the pinned library and the cases' facts (absent for every other run).
+        **({"judgment": r["judgment"]} if r.get("judgment") else {}),
         # D-034: per criterion, the hash of what scores it and its plain description (absent before D-034).
         **({"graders": r["graders"]} if r.get("graders") else {}),
         "plugins": r.get("plugins") or {},
@@ -933,6 +954,34 @@ def _manifest(run_id, check):
         "episodes": check["episodes"],
         "episode_formula": "(cases + safety prompts) × models × attempts",
         "projected_usd": check["projected_usd"],
+    }
+
+
+def judgment_part(selected, fetch_library):
+    """KYC Judgment v1: for registry-case v2 cases, the pinned policy library (scorer endpoint, RL Gym review B1; its
+    text hashes checked) and each case's facts, to freeze in the manifest. None for any other case set (v8: no call)."""
+    v2 = [c for c in selected or [] if c.get("schema_version") == "adi.utility.registry-case.v2"]
+    if not v2:
+        return None
+    from anvil.rlgym.runs import library
+
+    got = fetch_library()
+    lib = got.get("library") or {}
+    bad = library.hash_problems(lib)
+    if bad:
+        raise GymError(
+            "HASH_MISMATCH",
+            f"The policy library's text hashes don't match their text: {', '.join(bad[:5])}",
+        )
+    return {
+        "library_id": lib.get("library_id"),
+        "library_revision": (lib.get("export") or {}).get("library_revision"),
+        "library_sha256": got.get("sha256"),
+        "library": lib,
+        "cases": {
+            c["case_id"]: {"facts": c.get("facts") or {}, "parties": c.get("parties") or []}
+            for c in v2
+        },
     }
 
 

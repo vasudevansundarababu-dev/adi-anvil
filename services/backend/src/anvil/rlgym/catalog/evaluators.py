@@ -119,6 +119,13 @@ def create_from_studio(c, ws, actor, body):
             field="config.runner_version",
         )
         body = {**body, "known_cases": body.get("known_cases") or {}}
+        # KYC Judgment v1: the RL Gym's judgment checks for this rubric's criteria, in the configuration (hashed).
+        from anvil.rlgym.catalog import judgment_configs
+
+        if body.get("capability") == judgment_configs.CAPABILITY:
+            jc = judgment_configs.config_for(body.get("criterion"), body["config"])
+            if jc:
+                body = {**body, "config": jc}
         if body.get("blocks"):
             body["known_cases"] = {
                 "_blocks": body["blocks"],
@@ -162,6 +169,11 @@ def create_from_studio(c, ws, actor, body):
         field="framework",
     )
     verdicts = body.get("verdict_vocabulary") or ["pass", "partial", "fail", "blocked"]
+    if (body.get("config") or {}).get("extra_blocks") and any(
+        b.get("kind") == "judgment" for b in body["config"]["extra_blocks"]
+    ):
+        # Spec §16: a judgment check can be not applicable to a case.
+        verdicts = [*verdicts, *([] if "not_applicable" in verdicts else ["not_applicable"])]
     # A verifier-blocks configuration is the runner only: the blocks belong to the template, so they are not hashed.
     h = _config_hash(
         fw["id"],
@@ -265,9 +277,15 @@ def block_case_checks(fw, config, blocks, cases, source):
     builtin = verifier.legacy(blocks)
     checks = []
     for name, case in cases.items():
+        run_config = config
+        if case.get("judgment_results") is None and (config or {}).get("extra_blocks"):
+            # Synthetic known cases carry no judgment lines: they test the template's own blocks; the judgment
+            # lines are qualified by their regression fixtures.
+            rest = [b for b in config["extra_blocks"] if b.get("kind") != "judgment"]
+            run_config = {**config, "extra_blocks": rest}
         out = sandbox.run(
             fw,
-            config,
+            run_config,
             case["evidence"],
             case["reference"],
             extra={
@@ -275,6 +293,11 @@ def block_case_checks(fw, config, blocks, cases, source):
                 "case_id": case["case_id"],
                 "slots": case["slots"],
                 "expected_values_from": source,
+                **(
+                    {"judgment_results": case["judgment_results"]}
+                    if case.get("judgment_results") is not None
+                    else {}
+                ),
             },
         )
         ok = out["verdict"] == case["expect"]
