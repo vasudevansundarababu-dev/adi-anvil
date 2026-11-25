@@ -91,3 +91,43 @@ def test_g01_and_g02_runs_are_kept_apart():
     from anvil.rlgym.suites import routes
 
     assert "bulletin-blind-run" in inspect.getsource(routes)
+
+
+# --- only cases whose bulletin fired count (25 Nov 2026: Studio's trigger, after document.check, was never reached by
+# S5, so every bulletin stayed unpublished and the blind agent was graded on the starting rules) -------------------
+
+
+def ep(fired_seq, recommend_seq=5):
+    end = {
+        "scenario_events_fired": [{"event_id": "e", "published_at_sequence": fired_seq}]
+        if fired_seq
+        else []
+    }
+    return {
+        "snapshots": {"start": {}, "end": end},
+        "transcript": [
+            {"tool": "recommend", "observation": {"ok": True, "sequence": recommend_seq}}
+        ],
+    }
+
+
+def test_a_bulletin_that_fired_before_the_decision_counts():
+    assert bb.bulletin_fired(ep(2)) is True
+
+
+def test_a_bulletin_that_never_fired_or_fired_after_the_decision_does_not():
+    assert bb.bulletin_fired(ep(None)) is False
+    assert bb.bulletin_fired(ep(7)) is False
+
+
+def test_unfired_cases_are_reported_but_not_scored():
+    src = inspect.getsource(bb.run)
+    assert "bulletin_fired(" in src and '"bulletin never fired' in src
+    out = bb.summarize(
+        [
+            {"decision_right": False, "points": "50/50", "full_marks": True},
+        ],
+        40,
+        unfired=2,
+    )
+    assert out["bulletin_not_fired"] == 2 and out["cases"] == 1

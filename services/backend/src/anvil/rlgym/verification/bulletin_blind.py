@@ -43,6 +43,23 @@ def blind_reference(truth):
     return dict(truth["reference_if_not_fired"])
 
 
+def bulletin_fired(ep):
+    """Did the case's bulletin publish before the agent's decision? Only then does the case test the bulletin: an
+    unfired bulletin leaves the starting rules in force (the grader grades reference_if_not_fired), so the blind
+    agent's answer is simply right. Studio's trigger is an operation (e.g. after document.check), which the task's
+    procedure may never reach."""
+    from anvil.rlgym.runs import events as scenario_log
+    from anvil.rlgym.scoring import judgment
+
+    fired = (scenario_log.scenario_events(ep.get("snapshots"), ep.get("transcript")) or {}).get(
+        "fired"
+    ) or []
+    cut = judgment.recommend_sequence(ep.get("transcript"))
+    return any(
+        (f.get("published_at_sequence") or 0) < cut for f in fired if f.get("published_at_sequence")
+    )
+
+
 def threshold(body):
     v = (body or {}).get("threshold_percent", DEFAULT_THRESHOLD)
     require(
@@ -54,7 +71,7 @@ def threshold(body):
     return v
 
 
-def summarize(rows, gate):
+def summarize(rows, gate, unfired=0):
     from anvil.rlgym.verification.lookup import _points
 
     got = sum(_points(r["points"])[0] for r in rows)
@@ -63,6 +80,8 @@ def summarize(rows, gate):
     pct = round(100 * right / len(rows), 1) if rows else None
     return {
         "cases": len(rows),
+        # Rule-change cases played whose bulletin never published before the decision: not counted (nothing tested).
+        "bulletin_not_fired": unfired,
         "decisions_right": right,
         "right_percent": pct,
         "points_percent": round(100 * got / top, 1) if top else None,
@@ -121,6 +140,15 @@ def run(c, ws, sv_id, requested_by, body=None):
                 said = blind_reference(truth)
                 # The starting rules drive the procedure; no notices are read; the score is against the truth.
                 ep = reference_run._episode(session, blind_actor(t["actor"]), said, cid, snapshot)
+                if not bulletin_fired(ep):
+                    rows.append(
+                        {
+                            "case_id": cid,
+                            "task_id": t["task_id"],
+                            "skipped": "bulletin never fired before the decision (its trigger was not reached)",
+                        }
+                    )
+                    continue
                 score = reference_run._score(
                     c, ws, project, evaluators, t, ep, truth, judgment=jctx
                 )
@@ -143,9 +171,16 @@ def run(c, ws, sv_id, requested_by, body=None):
     finally:
         images.stop_instance(container)
     scored = [r for r in rows if "skipped" not in r]
+    unfired = sum(1 for r in rows if str(r.get("skipped", "")).startswith("bulletin never fired"))
     if not scored:
         raise GymError(
-            "CONFLICT", "No rule-change case of the suite's case set has a gradable reference"
+            "CONFLICT",
+            "No rule-change case of the suite's case set has a gradable reference whose bulletin fired"
+            + (
+                f" ({unfired} played; the bulletin never fired before the decision)"
+                if unfired
+                else ""
+            ),
         )
     report = {
         "kind": "bulletin_blind",
@@ -155,7 +190,7 @@ def run(c, ws, sv_id, requested_by, body=None):
         "baseline": "reference agent on the starting rules, notices never read (no model)",
         "evaluators": [f"{e['configuration_id']} v{e['version']}" for e in evaluators],
         "judge": f"{reference_run.MOCK_JUDGE} (no live call)",
-        "summary": summarize(scored, gate),
+        "summary": summarize(scored, gate, unfired),
         "cases": rows,
     }
     bid = "bb-" + uuid.uuid4().hex[:12]
