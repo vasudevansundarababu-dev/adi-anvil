@@ -12,7 +12,7 @@ Rules:
   (`approvals.require`). Without the flag the gateway refuses before reading a key. Tests pass a fake transport.
 - **No retries:** SDK-style retries are off. A request that was sent but not answered (timeout after sending, dropped
   connection) is `ambiguous`: counted at its maximum cost and never retried automatically. A refused connection was
-  never sent and is an ordinary error. D-056 (owner-approved): the one exception is a connect timeout, where the
+  never sent and is an ordinary error. D-058 (owner-approved): the one exception is a connect timeout, where the
   connection never opened (TCP/TLS not established), so no request bytes reached the provider: it is retried once,
   and the retry is recorded (`Completion.retries`; `Ambiguous.details["retries"]` if the second try fails too).
 - **Network:** no proxy from the environment, no redirects followed, a bounded timeout.
@@ -62,7 +62,7 @@ class Completion:
     request_id: str | None = None
     finish_reason: str | None = None
     raw_usage: dict = field(default_factory=dict)
-    retries: tuple = ()  # D-056: connect-timeout retries before this answer (nothing was sent on those)
+    retries: tuple = ()  # D-058: connect-timeout retries before this answer (nothing was sent on those)
 
     def cost(self, price_in, price_out):
         """USD from the approval's verified prices (per million tokens)."""
@@ -175,7 +175,7 @@ class Gateway:
                 r = client.post(url, headers=headers, json=body)
                 break
             except httpx.ConnectTimeout:
-                # D-056: the connection never opened, so no request bytes reached the provider. One retry, recorded.
+                # D-058: the connection never opened, so no request bytes reached the provider. One retry, recorded.
                 if not retries:
                     retries.append(
                         {

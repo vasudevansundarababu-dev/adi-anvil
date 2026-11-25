@@ -4,7 +4,7 @@
 The model sees only what a candidate sees: the task's instructions (built from the actor payload, D-007), the application it reviews (Studio's images), the
 declared operations and the observations. It answers with one JSON action per turn. Each model call goes through
 `LiveCaller`, which checks the caps before the call (its maximum cost), records the call with its tokens and cost,
-and stops the episode at a cap or on an ambiguous dispatch (never retried; D-056: a connect timeout, where nothing
+and stops the episode at a cap or on an ambiguous dispatch (never retried; D-058: a connect timeout, where nothing
 was sent, is retried once).
 """
 
@@ -82,7 +82,7 @@ class LiveCaller:
         return a
 
     def _record_retries(self, c, a, retries):
-        """D-056: each connect-timeout retry is in the call ledger, at its cost (none: no request bytes were sent)."""
+        """D-058: each connect-timeout retry is in the call ledger, at its cost (none: no request bytes were sent)."""
         for r in retries or ():
             approvals.record(
                 c,
@@ -93,7 +93,7 @@ class LiveCaller:
                 cost=Decimal(str(r.get("cost_usd") or 0)),
                 run_id=self.run_id,
                 episode_id=self.episode_id,
-                note=f"D-056 connect retry: {r.get('reason')}, {r.get('detail')}",
+                note=f"D-058 connect retry: {r.get('reason')}, {r.get('detail')}",
             )
 
     def __call__(self, messages):
@@ -223,7 +223,7 @@ def live_agent(
                 "latency_ms": int((time.monotonic() - started) * 1000),
             }
             if getattr(out, "retries", ()):
-                # D-056: the connection never opened on the first try; retried once before this answer.
+                # D-058: the connection never opened on the first try; retried once before this answer.
                 turn["retries"] = list(out.retries)
                 log["connect_retries"] = log.get("connect_retries", 0) + len(out.retries)
             log["turns"].append(turn)

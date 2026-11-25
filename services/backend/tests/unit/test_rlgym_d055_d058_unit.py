@@ -1,4 +1,4 @@
-"""D-056: one retry on a connect timeout (the connection never opened, nothing was sent); every other ambiguous case is
+"""D-058: one retry on a connect timeout (the connection never opened, nothing was sent); every other ambiguous case is
 still never retried. D-055: the live agent's guide says checks return records, not a verdict."""
 
 import contextlib
@@ -141,7 +141,7 @@ def test_the_retry_is_in_the_call_ledger_at_no_cost_and_on_the_episode_turn(monk
     assert "final" in next(policy)
     assert [r[0] for r in rows] == ["error", "ok"]
     retry = rows[0][1]
-    assert retry["cost"] == 0 and "D-056 connect retry" in retry["note"]
+    assert retry["cost"] == 0 and "D-058 connect retry" in retry["note"]
     assert rows[1][1]["cost"] == Decimal("0.000015")  # the answered call is counted as before
     assert (
         log["connect_retries"] == 1 and log["turns"][0]["retries"][0]["reason"] == "ConnectTimeout"
