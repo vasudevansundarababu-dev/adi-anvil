@@ -42,6 +42,16 @@ function duration(s?: number | null) {
   return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`;
 }
 
+// New run's Models list: real models first, then the controlled mocks by the template they were built for, so the KYC
+// Judgment mocks can't be mistaken for the golden-KYC ones (run 3 started twice with the wrong mock).
+const MODEL_GROUPS = ['Models', 'KYC Judgment mocks (synthetic)', 'Golden KYC mocks (synthetic)'];
+function modelGroup(s: any): string {
+  const id = String(s.system_id || '');
+  if (id.startsWith('mock-judgment-')) return 'KYC Judgment mocks (synthetic)';
+  if (id.startsWith('mock-')) return 'Golden KYC mocks (synthetic)';
+  return 'Models';
+}
+
 export default function Runs({ parts }: { parts: string[] }) {
   if (parts[0] === 'new') return <NewRun />;
   if (parts[0] === 'compare') return <Compare />;
@@ -386,7 +396,7 @@ function NewRun() {
             <select
               value={custom ? 'custom' : modelSet}
               onChange={(e) => {
-                if (e.target.value === 'custom') setCustom(members);
+                if (e.target.value === 'custom') setCustom([]);
                 else {
                   setCustom(null);
                   setModelSet(e.target.value);
@@ -461,19 +471,28 @@ function NewRun() {
         )}
         <section className="card">
           <h3>Models</h3>
-          {(systems.data?.items ?? []).map((s: any) => {
-            const on = members.some((m: any) => m.system_id === s.system_id);
+          {MODEL_GROUPS.map((group) => {
+            const items = (systems.data?.items ?? []).filter((s: any) => modelGroup(s) === group);
+            if (!items.length) return null;
             return (
-              <label key={s.system_id} className="row">
-                <input
-                  type="checkbox"
-                  checked={on}
-                  onChange={(e) => toggle(s.system_id, s.latest.version, e.target.checked)}
-                />
-                {s.name} v{s.latest.version}{' '}
-                <Badge state={s.status === 'Ready' ? 'ready' : 'draft'} label={s.status} />
-                {s.synthetic && <small>synthetic</small>}
-              </label>
+              <div key={group}>
+                <h4>{group}</h4>
+                {items.map((s: any) => {
+                  const on = members.some((m: any) => m.system_id === s.system_id);
+                  return (
+                    <label key={s.system_id} className="row">
+                      <input
+                        type="checkbox"
+                        checked={on}
+                        onChange={(e) => toggle(s.system_id, s.latest.version, e.target.checked)}
+                      />
+                      {s.name} v{s.latest.version}{' '}
+                      <Badge state={s.status === 'Ready' ? 'ready' : 'draft'} label={s.status} />
+                      {s.synthetic && <small>synthetic</small>}
+                    </label>
+                  );
+                })}
+              </div>
             );
           })}
         </section>
