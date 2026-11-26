@@ -26,11 +26,13 @@ export function ReferencePanel({ path }: { path: string }) {
       setFailure(e as GymApiError);
     }
   }
+  // The API takes 1-10 cases per task (default 3); more cases cover more of the suite's case set.
+  const [casesPerTask, setCasesPerTask] = useState(3);
   async function run() {
     setBusy(true);
     setFailure(null);
     try {
-      await send('POST', `${path}/reference-run`, { replay: true, cases_per_task: 3 });
+      await send('POST', `${path}/reference-run`, { replay: true, cases_per_task: casesPerTask });
       say('Reference agent run finished.');
       data.reload();
     } catch (e) {
@@ -52,9 +54,22 @@ export function ReferencePanel({ path }: { path: string }) {
             instance must match. No model is called; judge lines use the local mock judge.
           </small>
         </div>
-        <button className="primary" onClick={run} disabled={busy}>
-          {busy ? 'Running…' : 'Run reference agent'}
-        </button>
+        <div className="row">
+          <label>
+            Cases per task
+            <input
+              type="number"
+              min={1}
+              max={10}
+              value={casesPerTask}
+              onChange={(e) => setCasesPerTask(Math.min(10, Math.max(1, Number(e.target.value) || 1)))}
+              style={{ width: 60 }}
+            />
+          </label>
+          <button className="primary" onClick={run} disabled={busy}>
+            {busy ? 'Running…' : 'Run reference agent'}
+          </button>
+        </div>
       </div>
       <Failure error={failure} />
       {d?.latest_run && (
