@@ -91,31 +91,47 @@ def _stratum(case, strata):
     return None
 
 
-def select_checked(plan, cells, cases, tasks, references_for):
+def select_checked(plan, cells, cases, tasks, references_for, gradable_for=None, skipped=None):
     """`select_cases`, then, with the plan's `untagged_cases` on, a reference check of every selected untagged case:
     `references_for(ids)` returns the ids Studio's scorer has a (hash-valid) reference for. A case without one is
-    excluded and the selection made again without it, until every selected untagged case has one. Each case is asked
-    about once. Returns (selected, per-cell picks, short cells, excluded case ids in the order found)."""
-    excluded, checked = [], set()
+    excluded and the selection made again without it, until every selected untagged case has one. `gradable_for(ids)`
+    (optional) returns the ids whose reference can be graded: any selected case (tagged or not) that can't (awaiting
+    the SME, or the PM in a real project) is skipped the same way and its id appended to `skipped`. Each case is asked
+    about once per check. Returns (selected, per-cell picks, short cells, excluded case ids in the order found)."""
+    excluded, checked, graded = [], set(), set()
+    awaiting = []
     pool = cases
     while True:
         selected, counts, short = select_cases(plan, cells, pool, tasks)
-        if not plan.get("untagged_cases"):
+        out = []
+        if plan.get("untagged_cases"):
+            need = [
+                c["case_id"]
+                for c in selected
+                if not c.get("edge_cases") and c["case_id"] not in checked
+            ]
+            if need:
+                have = set(references_for(need))
+                checked |= set(need)
+                out = [i for i in need if i not in have]
+                excluded += out
+        if gradable_for:
+            need = [
+                c["case_id"]
+                for c in selected
+                if c["case_id"] not in graded and c["case_id"] not in out
+            ]
+            if need:
+                ok = set(gradable_for(need))
+                graded |= set(need)
+                not_ok = [i for i in need if i not in ok]
+                awaiting += not_ok
+                out += not_ok
+        if not out:
+            if skipped is not None:
+                skipped.extend(sorted(awaiting))
             return selected, counts, short, excluded
-        need = [
-            c["case_id"]
-            for c in selected
-            if not c.get("edge_cases") and c["case_id"] not in checked
-        ]
-        if not need:
-            return selected, counts, short, excluded
-        have = set(references_for(need))
-        checked |= set(need)
-        missing = [i for i in need if i not in have]
-        if not missing:
-            return selected, counts, short, excluded
-        excluded += missing
-        gone = set(excluded)
+        gone = set(excluded) | set(awaiting)
         pool = [c for c in cases if c["case_id"] not in gone]
 
 

@@ -81,6 +81,49 @@ def reference_checker(c, ws, env_id, registry=None):
     return check
 
 
+def gradable_ids(references, placeholder_ok=False):
+    """The ids of {case_id: reference} whose reference can be graded now (reference.v2: not awaiting; golden KYC
+    references have no status and always can)."""
+    from anvil.rlgym.scoring import judgment
+
+    return {
+        cid
+        for cid, ref in (references or {}).items()
+        if isinstance(ref, dict) and not judgment.awaiting(ref, placeholder_ok)
+    }
+
+
+def gradable_checker(c, ws, env_id, registry=None, placeholder_ok=False):
+    """ids -> the ones whose reference can be graded (stored references first, else Studio's scorer). Only presence
+    and status are read; nothing is stored and nothing reaches an agent."""
+
+    def check(ids):
+        ids = list(ids)
+        refs = {
+            r["case_id"]: r["reference"]
+            for r in c.execute(
+                "SELECT case_id, reference FROM scoring.case_references WHERE workspace_id=%s AND environment_version_id=%s AND case_id = ANY(%s)",
+                (ws, env_id, ids),
+            ).fetchall()
+        }
+        need = [i for i in ids if i not in refs]
+        for i in range(0, len(need), 50):
+            got = (
+                integrations.registry_get(
+                    f"/versions/{env_id}/references",
+                    params={"ids": ",".join(need[i : i + 50])},
+                    audience="scorer",
+                    timeout=30,
+                    base=registry,
+                ).get("references")
+                or {}
+            )
+            refs.update({k: (v or {}).get("reference") for k, v in got.items()})
+        return gradable_ids(refs, placeholder_ok)
+
+    return check
+
+
 def case_set(c, ws, sv_id):
     from anvil.rlgym.runs import sampling
 
@@ -98,12 +141,21 @@ def case_set(c, ws, sv_id):
         (sv_id,),
     ).fetchall()
     # The same checked selection admission makes (D-059: untagged cases need a reference answer).
+    project = c.execute(
+        "SELECT test_only FROM projects.projects WHERE workspace_id=%s AND project_id=%s",
+        (ws, sv["project_id"]),
+    ).fetchone()
+    awaiting = []
     selected, counts, short, excluded = sampling.select_checked(
         plan,
         cells,
         _rows(env),
         tasks or None,
         reference_checker(c, ws, env["id"], env.get("registry")),
+        gradable_for=gradable_checker(
+            c, ws, env["id"], env.get("registry"), bool(project and project["test_only"])
+        ),
+        skipped=awaiting,
     )
     untagged = bool(plan.get("untagged_cases"))
     out = []
@@ -128,6 +180,8 @@ def case_set(c, ws, sv_id):
         "cases": out,
         "short": short,
         **({"untagged_cases": True, "untagged_without_reference": excluded} if untagged else {}),
+        # Cases skipped because their reference can't be graded yet (awaiting the SME / PM), replaced in their cell.
+        **({"skipped_awaiting": awaiting} if awaiting else {}),
         "every_case_matches_a_task": bool(out) and all(x["task"] for x in out),
     }
 

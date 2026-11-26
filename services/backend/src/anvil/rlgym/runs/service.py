@@ -501,6 +501,7 @@ def admission_check(ctx, body):
             # scorer; one without is excluded (and counted in the manifest) and the selection made again.
             from anvil.rlgym.suites import cases as suite_cases
 
+            awaiting = []
             try:
                 selected, counts, short, no_ref = sampling.select_checked(
                     plan,
@@ -510,6 +511,15 @@ def admission_check(ctx, body):
                     suite_cases.reference_checker(
                         ctx.c, ctx.ws, env["version"]["id"], env["version"].get("registry")
                     ),
+                    # Cases whose reference can't be graded (awaiting the SME / PM) are skipped and replaced.
+                    gradable_for=suite_cases.gradable_checker(
+                        ctx.c,
+                        ctx.ws,
+                        env["version"]["id"],
+                        env["version"].get("registry"),
+                        placeholder_graded(resolved.get("project")),
+                    ),
+                    skipped=awaiting,
                 )
             except GymError as exc:
                 selected, short, no_ref = [], [], []
@@ -520,6 +530,7 @@ def admission_check(ctx, body):
                     f"Studio's scorer could not be read: {exc.message}",
                 )
             resolved["untagged_without_reference"] = no_ref
+            resolved["skipped_awaiting"] = awaiting
             if plan.get("untagged_cases"):
                 untagged_n = sum(1 for c in selected if not c.get("edge_cases"))
                 item(
@@ -874,6 +885,8 @@ def _manifest(run_id, check):
                 if r["plan"].get("untagged_cases")
                 else {}
             ),
+            # Cases skipped because their reference can't be graded (recorded only when there are any).
+            **({"skipped_awaiting": r["skipped_awaiting"]} if r.get("skipped_awaiting") else {}),
         },
         "trust_and_safety": {
             "enabled": bool(r["prompts"]),
