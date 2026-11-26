@@ -784,6 +784,10 @@ def refresh_state(c, ws, pid):
         "UPDATE projects.projects SET state=%s, state_reason=%s WHERE workspace_id=%s AND project_id=%s",
         (state, "; ".join(reasons) or None, ws, pid),
     )
+    # A suite draft follows the project's ready tasks (a draft made while a task was blocked gains it once it's ready).
+    from anvil.rlgym.suites.service import sync_drafts
+
+    sync_drafts(c, ws, pid)
     return state
 
 

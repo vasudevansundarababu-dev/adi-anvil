@@ -555,6 +555,47 @@ def _new_version_row(c, ws, pid, suite_id, name, actor_id, based_on=None):
     return sv_id
 
 
+def draft_task_changes(current, ready):
+    """(task_import ids to add, ids to drop) so a draft holds exactly the project's ready tasks."""
+    return sorted(set(ready) - set(current)), sorted(set(current) - set(ready))
+
+
+def sync_drafts(c, ws, pid):
+    """Each open draft of the project follows its ready tasks: newly ready tasks are added (with their newest
+    policy_id_map, as a new draft captures it), tasks no longer ready are dropped; rows of tasks that stay are untouched.
+    Saved versions are never touched. → {draft id: {"added": n, "dropped": n}} for drafts that changed."""
+    from anvil.rlgym.projects.service import latest_map
+
+    ready = {t["id"] for t in _ready_tasks(c, ws, pid)}
+    out = {}
+    for d in c.execute(
+        "SELECT id FROM suites.suite_versions WHERE workspace_id=%s AND project_id=%s AND state='draft'",
+        (ws, pid),
+    ).fetchall():
+        current = {
+            r["task_import_id"]
+            for r in c.execute(
+                "SELECT task_import_id FROM suites.suite_tasks WHERE suite_version_id=%s",
+                (d["id"],),
+            ).fetchall()
+        }
+        add, drop = draft_task_changes(current, ready)
+        for tid in add:
+            pm = latest_map(c, tid)
+            c.execute(
+                "INSERT INTO suites.suite_tasks(suite_version_id,workspace_id,task_import_id,policy_map_id) VALUES(%s,%s,%s,%s)",
+                (d["id"], ws, tid, pm and pm["id"]),
+            )
+        for tid in drop:
+            c.execute(
+                "DELETE FROM suites.suite_tasks WHERE suite_version_id=%s AND task_import_id=%s",
+                (d["id"], tid),
+            )
+        if add or drop:
+            out[str(d["id"])] = {"added": len(add), "dropped": len(drop)}
+    return out
+
+
 def _copy_from(c, ws, src, dst):
     for b in c.execute(
         "SELECT * FROM suites.suite_bindings WHERE suite_version_id=%s", (src,)
